@@ -301,6 +301,7 @@ def validate_story_design_candidate(
             governance = envelope.get("change_governance")
             narrative_load_policy = envelope.get("narrative_load_policy")
             narrative_load_lineage = envelope.get("narrative_load_policy_lineage")
+            arc_working_set = envelope.get("arc_working_set")
             if (
                 envelope.get("contract_version") != "planning-constraint-envelope-v2"
                 or envelope.get("generator_operation_name") != generator_operation_name
@@ -317,6 +318,22 @@ def validate_story_design_candidate(
                 or not isinstance(narrative_load_lineage, dict)
                 or narrative_load_lineage.get("policy_hash")
                 != narrative_load_policy.get("policy_hash")
+                or (
+                    arc_working_set is not None
+                    and (
+                        not isinstance(arc_working_set, dict)
+                        or arc_working_set.get("contract_version")
+                        != "arc-working-set-v1"
+                        or arc_working_set.get("working_set_digest")
+                        != _canonical_hash(
+                            {
+                                key: value
+                                for key, value in arc_working_set.items()
+                                if key != "working_set_digest"
+                            }
+                        )
+                    )
+                )
             ):
                 raise KernelError(
                     "PLANNING_CONSTRAINT_ENVELOPE_INVALID",

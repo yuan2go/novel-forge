@@ -141,13 +141,13 @@ The following target semantics require latest-code verification and, where absen
 
 - autonomous Chapter-to-Chapter liveness with advisory sidecars detached from the default critical path;
 - explicit progress/stall explainability for Book production;
-- ChapterExecutionIntent/ChapterMemo and Protected/Retrievable Context v2;
-- hybrid long-form retrieval and layered Narrative Memory;
-- explicit Arc actual/progress/outcome/checkpoint/revision and complete obligations;
+- sustained runtime proof for ChapterExecutionIntent/ChapterMemo Mission and Protected/Retrievable Context v2;
+- production-scale proof for hybrid long-form retrieval and layered Narrative Memory;
+- production qualification for Accepted-Reality Arc scheduling, composition and obligation-driven correction;
 - persistent Best Candidate/minimum improvement/rollback;
 - multi-turn dynamic Tool-calling Agent Harness;
 - unified semantic lineage/invalidation;
-- MKAOS Narrative Intelligence selection/effectiveness;
+- MKAOS Narrative Intelligence effectiveness, reader-linked fatigue evidence and sustained real-provider originality;
 - sustained real-provider long-form quality;
 - calibrated Reader Outcome / real feedback loop;
 - multi-book production qualification.

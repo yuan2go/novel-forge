@@ -128,6 +128,26 @@ and the current reducer remove that fallback. Only qualified accepted Arc
 evidence may materialize actual progress; absent evidence stays
 `NOT_OBSERVED`, `NOT_MATERIALIZED`, or `UNKNOWN`.
 
+## Accepted-reality Arc scheduling
+
+The current Book Supervisor computes the next Chapter's bounded Arc Working Set
+from the immediately preceding complete accepted projection plus current Arc
+Plans and the frozen Narrative Load policy. The deterministic domain service:
+
+- excludes terminal or dependency-illegal Arcs;
+- considers Arc Actual lifecycle/phase/progress/checkpoint evidence;
+- raises due, overdue, stale and violated linked obligations;
+- applies dormancy/starvation pressure and reader/pacing intent;
+- treats ChapterGroup cadence as a preference that may be corrected; and
+- records selected/deferred Arcs, roles/actions, reason codes and an immutable
+  digest consumed by Planning and rechecked at Chapter production admission.
+
+The working set is future intent only. It cannot create `ArcProgress` or change
+`ArcActualState`; only accepted ChapterOutcome evidence can do that. Completed
+and abandoned Arc lifecycle is monotonic across later accepted projections, and
+completion criteria accumulate across Chapters rather than being re-proved in
+one Chapter.
+
 ## Migration and rebuild
 
 Forward-only migration `20260812_0082_narrative_state_contract_v2` established:
@@ -168,3 +188,7 @@ of the bounded Narrative State v2 slice, including Book acceptance, replay,
 rebuild equality and future-leak exclusion. They do not establish real-provider
 quality, sustained 1000-chapter operation, production authorization, multi-book
 scale or long-form content qualification.
+
+The accepted-reality scheduling additions in the current Work Package have
+unit/domain-contract evidence only. PostgreSQL integration and long-form
+campaign validation were intentionally not rerun for this scope.

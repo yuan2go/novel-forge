@@ -39,6 +39,25 @@ def _authoritative_load() -> dict[str, object]:
     }
 
 
+def _arc_working_set() -> dict[str, object]:
+    return {
+        "schema_version": "novelos.arc_working_set.v1",
+        "selected_contributions": [],
+    }
+
+
+def _narrative_intelligence() -> dict[str, object]:
+    return {
+        "schema_version": "mkaos-narrative-intelligence-selection.v1",
+        "selection_status": "NO_ELIGIBLE_MATCH",
+        "selected": [],
+        "authority_boundary": {
+            "semantic_role": "POSSIBILITY_ONLY",
+            "may_mutate_story_authority": False,
+        },
+    }
+
+
 def _plan() -> dict:
     return {
         "chapter": 31,
@@ -361,6 +380,8 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
             },
             "frozen_inputs": [{"content_hash": "sha256:authority-evidence"}],
             "authoritative_narrative_load": _authoritative_load(),
+            "arc_working_set": _arc_working_set(),
+            "narrative_intelligence": _narrative_intelligence(),
         },
     )
     view = build_provider_context_view(
@@ -434,6 +455,8 @@ def test_planning_provider_context_is_deterministically_bounded() -> None:
                     }
                 ],
                 "authoritative_narrative_load": _authoritative_load(),
+                "arc_working_set": _arc_working_set(),
+                "narrative_intelligence": _narrative_intelligence(),
             },
         ),
     )
@@ -475,6 +498,8 @@ def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -
                 }
             ],
             "authoritative_narrative_load": _authoritative_load(),
+            "arc_working_set": _arc_working_set(),
+            "narrative_intelligence": _narrative_intelligence(),
         },
     )
     view = build_provider_context_view(

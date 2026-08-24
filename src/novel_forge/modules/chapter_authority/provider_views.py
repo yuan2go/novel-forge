@@ -168,6 +168,8 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             )
         frozen_inputs = inputs.get("frozen_inputs")
         authoritative_load = inputs.get("authoritative_narrative_load")
+        arc_working_set = inputs.get("arc_working_set")
+        narrative_intelligence = inputs.get("narrative_intelligence")
         if not isinstance(frozen_inputs, list) or not frozen_inputs:
             raise KernelError(
                 "PLANNING_PROVIDER_TASK_VIEW_INVALID",
@@ -184,11 +186,42 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "PLANNING_PROVIDER_TASK_VIEW_INVALID",
                 "Planning Provider Task View requires authoritative Narrative Load constraints",
             )
+        if not isinstance(arc_working_set, Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_TASK_VIEW_INVALID",
+                "Planning Provider Task View requires the governed Arc Working Set",
+            )
+        selected_intelligence = (
+            narrative_intelligence.get("selected")
+            if isinstance(narrative_intelligence, Mapping)
+            else None
+        )
+        intelligence_boundary = (
+            narrative_intelligence.get("authority_boundary")
+            if isinstance(narrative_intelligence, Mapping)
+            else None
+        )
+        if (
+            not isinstance(narrative_intelligence, Mapping)
+            or narrative_intelligence.get("schema_version")
+            != "mkaos-narrative-intelligence-selection.v1"
+            or not isinstance(selected_intelligence, list)
+            or len(selected_intelligence) > 12
+            or not isinstance(intelligence_boundary, Mapping)
+            or intelligence_boundary.get("semantic_role") != "POSSIBILITY_ONLY"
+            or intelligence_boundary.get("may_mutate_story_authority") is not False
+        ):
+            raise KernelError(
+                "PLANNING_PROVIDER_TASK_VIEW_INVALID",
+                "Planning Provider Task View requires governed Narrative Intelligence possibilities",
+            )
         return _task(
             stage,
             planning_command=_compact(command),
             frozen_inputs=_compact(frozen_inputs),
             authoritative_narrative_load=_compact(authoritative_load),
+            arc_working_set=_compact(arc_working_set),
+            narrative_intelligence=_compact(narrative_intelligence),
         )
     if stage == "narrative_semantic_evaluation":
         profiles = inputs.get("qualification_profiles")

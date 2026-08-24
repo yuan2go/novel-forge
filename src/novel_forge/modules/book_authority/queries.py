@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_authority.production import (
@@ -16,6 +16,10 @@ from novel_forge.modules.book_authority.input_resolver import (
 )
 from novel_forge.modules.story_design_authority import required_qualification_profiles
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+from novel_forge.modules.longform_narrative import (
+    build_arc_working_set,
+    reduce_accepted_obligations,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -370,9 +374,7 @@ class PostgresBookProductionQuery:
                 next_retry_at = runtime_job[3]
         blocking_reason = str(book[7] or book[8] or "")
         if not blocking_reason and error:
-            blocking_reason = str(
-                error.get("message") or error.get("code") or error
-            )
+            blocking_reason = str(error.get("message") or error.get("code") or error)
         if not blocking_reason:
             blocking_reason = semantics.blocking_reason
         if semantics.blocking_class == "NONE":
@@ -383,8 +385,7 @@ class PostgresBookProductionQuery:
             for row in sidecar_status_rows
         }
         admission_jobs_by_status: dict[str, int] = {
-            str(row[0]).lower(): int(row[1])
-            for row in sidecar_admission_job_rows
+            str(row[0]).lower(): int(row[1]) for row in sidecar_admission_job_rows
         }
         sidecar_backlog = {
             "blocking": False,
@@ -441,14 +442,10 @@ class PostgresBookProductionQuery:
                 else "NOT_REQUIRED"
             ),
             authoritative_repair_next_chapter=(
-                int(projection_repair[1])
-                if projection_repair is not None
-                else None
+                int(projection_repair[1]) if projection_repair is not None else None
             ),
             authoritative_repair_target_chapter=(
-                int(projection_repair[2])
-                if projection_repair is not None
-                else None
+                int(projection_repair[2]) if projection_repair is not None else None
             ),
             authoritative_repair_last_error=(
                 dict(projection_repair[3] or {})
@@ -1090,9 +1087,220 @@ class PostgresBookProductionQuery:
             "arc_plan_versions": relevant_arcs,
         }
 
+    def require_arc_working_set(
+        self,
+        *,
+        book_run_id: str,
+        snapshot_id: str,
+        chapter_number: int,
+        schedule_row: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Derive one bounded Planning input from the latest accepted projection."""
+
+        cursor = self.require_cursor_plan_projection(
+            snapshot_id=snapshot_id, chapter_cursor=chapter_number
+        )
+        arc_ids = tuple(str(item) for item in cursor["arc_plan_versions"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT book.project_id, book.book_id,
+                       snapshot.initial_story_state_version
+                FROM authority_book_production AS book
+                JOIN authority_book_production_input_snapshot AS snapshot
+                  ON snapshot.snapshot_id=book.input_snapshot_id
+                WHERE book.book_run_id=%s AND snapshot.snapshot_id=%s
+                """,
+                [book_run_id, snapshot_id],
+            )
+            scope = uow.cursor.fetchone()
+            if scope is None:
+                raise KernelError(
+                    "ARC_WORKING_SET_BOOK_SCOPE_INVALID",
+                    "Arc working-set input does not belong to the Book run",
+                )
+            project_id, book_id = str(scope[0]), str(scope[1])
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, version.content_hash,
+                       version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s
+                  AND version.asset_version_id=ANY(%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                """,
+                [project_id, list(arc_ids)],
+            )
+            arc_rows = tuple(uow.cursor.fetchall())
+            if {str(row[0]) for row in arc_rows} != set(arc_ids):
+                raise KernelError(
+                    "ARC_WORKING_SET_PLAN_DRIFT",
+                    "Arc working-set selection requires every current eligible Arc Plan",
+                )
+            arc_plans = {str(row[0]): dict(row[2]) for row in arc_rows}
+            policies: dict[str, dict[str, Any]] = {}
+            for content in arc_plans.values():
+                envelope = content.get("constraint_envelope")
+                if not isinstance(envelope, Mapping):
+                    candidate = content.get("candidate_payload")
+                    envelope = (
+                        candidate.get("constraint_envelope")
+                        if isinstance(candidate, Mapping)
+                        else None
+                    )
+                policy = (
+                    envelope.get("narrative_load_policy")
+                    if isinstance(envelope, Mapping)
+                    else None
+                )
+                if isinstance(policy, Mapping) and policy.get("policy_hash"):
+                    policies[str(policy["policy_hash"])] = dict(policy)
+            if len(policies) != 1:
+                raise KernelError(
+                    "ARC_WORKING_SET_LOAD_POLICY_INVALID",
+                    "Current Arc Plans must share one frozen Narrative Load Policy",
+                )
+            if chapter_number == 1:
+                initial_story_state_id = str(scope[2] or "")
+                obligation_states: list[dict[str, Any]] = []
+                uow.cursor.execute(
+                    """
+                    SELECT version.content_hash, version.content
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset
+                      ON asset.asset_id=version.asset_id
+                    WHERE asset.project_id=%s
+                      AND version.asset_version_id=%s
+                    """,
+                    [project_id, initial_story_state_id],
+                )
+                state_row = uow.cursor.fetchone()
+                if state_row is None:
+                    raise KernelError(
+                        "ARC_WORKING_SET_INITIAL_STATE_MISSING",
+                        "Initial accepted Story State is unavailable",
+                    )
+                story_state_hash = str(state_row[0])
+                state_content = dict(state_row[1])
+                entries = [
+                    dict(item)
+                    for item in (state_content.get("current_state") or {}).get(
+                        "narrative_obligation", ()
+                    )
+                    if isinstance(item, Mapping)
+                ]
+                obligation_states = reduce_accepted_obligations(
+                    entries=entries, chapter_number=chapter_number
+                )
+                accepted_narrative_state = {
+                    "asset_version_id": initial_story_state_id,
+                    "content_hash": story_state_hash,
+                    "content": state_content,
+                }
+                accepted_projection: dict[str, Any] = {
+                    "accepted_boundary": {"chapter_number": 0},
+                    "source_story_state_asset_version_id": initial_story_state_id,
+                    "source_story_state_content_hash": story_state_hash,
+                    "arc_states": [],
+                    "arc_progress": [],
+                    "arc_checkpoints": [],
+                    "obligation_states": obligation_states,
+                }
+            else:
+                uow.cursor.execute(
+                    """
+                    SELECT projection.projection_set_id,
+                           projection.projection_hash, projection.arc_state,
+                           projection.obligation_state,
+                           projection.story_state_asset_version_id,
+                           story.content_hash, story.content
+                    FROM authority_book_narrative_projection_set AS projection
+                    JOIN authority_asset_version AS story
+                      ON story.asset_version_id=
+                         projection.story_state_asset_version_id
+                    WHERE projection.book_run_id=%s
+                      AND projection.project_id=%s AND projection.book_id=%s
+                      AND projection.chapter_number=%s
+                      AND projection.status='COMPLETE'
+                    """,
+                    [book_run_id, project_id, book_id, chapter_number - 1],
+                )
+                projection_row = uow.cursor.fetchone()
+                if projection_row is None:
+                    raise KernelError(
+                        "ARC_WORKING_SET_ACCEPTED_PROJECTION_MISSING",
+                        "Arc working set requires the immediately preceding accepted projection",
+                    )
+                projection_set_id = str(projection_row[0])
+                uow.cursor.execute(
+                    """
+                    SELECT arc_plan_version_id, progress_id,
+                           observation_status, contribution_kind,
+                           progress_units, cumulative_progress_units, evidence
+                    FROM authority_arc_progress_v2
+                    WHERE projection_set_id=%s
+                    """,
+                    [projection_set_id],
+                )
+                progress_rows = [
+                    {
+                        "arc_plan_version_id": str(row[0]),
+                        "progress_id": str(row[1]),
+                        "observation_status": str(row[2]),
+                        "contribution_kind": str(row[3]),
+                        "progress_units": int(row[4]),
+                        "cumulative_progress_units": int(row[5]),
+                        "evidence": dict(row[6] or {}),
+                    }
+                    for row in uow.cursor.fetchall()
+                ]
+                uow.cursor.execute(
+                    """
+                    SELECT checkpoint
+                    FROM authority_arc_checkpoint_v2
+                    WHERE projection_set_id=%s
+                    """,
+                    [projection_set_id],
+                )
+                checkpoint_rows = [dict(row[0]) for row in uow.cursor.fetchall()]
+                accepted_projection = {
+                    "projection_set_id": projection_set_id,
+                    "projection_hash": str(projection_row[1]),
+                    "accepted_boundary": {"chapter_number": chapter_number - 1},
+                    "arc_states": list(projection_row[2] or ()),
+                    "obligation_states": list(projection_row[3] or ()),
+                    "arc_progress": progress_rows,
+                    "arc_checkpoints": checkpoint_rows,
+                }
+                accepted_narrative_state = {
+                    "asset_version_id": str(projection_row[4]),
+                    "content_hash": str(projection_row[5]),
+                    "content": dict(projection_row[6]),
+                }
+        row = dict(schedule_row or {})
+        return build_arc_working_set(
+            project_id=project_id,
+            book_id=book_id,
+            chapter_number=chapter_number,
+            arc_plan_snapshots=arc_plans,
+            accepted_projection=accepted_projection,
+            accepted_narrative_state=accepted_narrative_state,
+            narrative_load_policy=next(iter(policies.values())),
+            schedule_row=row,
+            reader_intent=(
+                dict(row.get("reader_experience") or {})
+                if isinstance(row.get("reader_experience"), Mapping)
+                else {}
+            ),
+        )
+
     def require_chapter_production_admission(
         self,
         *,
+        book_run_id: str,
         snapshot_id: str,
         chapter_group_plan_version_id: str,
         chapter_plan_version_id: str,
@@ -1266,22 +1474,6 @@ class PostgresBookProductionQuery:
                     "Narrative Scheduling must contain one row for the target Chapter",
                 )
             schedule_row = matrix_rows[0]
-            scheduled_arcs = {
-                str(item.get("arc_plan_version_id") or "")
-                for item in schedule_row.get("arc_cadence") or ()
-                if isinstance(item, dict) and str(item.get("action") or "") != "DORMANT"
-            }
-            if (
-                not scheduled_arcs
-                or "" in scheduled_arcs
-                or not scheduled_arcs.issubset(
-                    set(cursor_projection["arc_plan_versions"])
-                )
-            ):
-                raise KernelError(
-                    "CHAPTER_PRODUCTION_ARC_PROJECTION_STALE",
-                    "Scheduling Arc cadence must be a subset of the cursor-projected global portfolio",
-                )
             scheduled_fields = (
                 "primary_function",
                 "secondary_functions",
@@ -1292,8 +1484,6 @@ class PostgresBookProductionQuery:
                 "ending_hook",
                 "prohibited_outcomes",
                 "narrative_density",
-                "arc_cadence",
-                "obligation_actions",
             )
             if any(
                 canonical_hash(schedule_row.get(field))
@@ -1380,6 +1570,24 @@ class PostgresBookProductionQuery:
                 ],
             )
             rows = uow.cursor.fetchall()
+        authoritative_working_set = self.require_arc_working_set(
+            book_run_id=book_run_id,
+            snapshot_id=snapshot_id,
+            chapter_number=chapter_number,
+            schedule_row=schedule_row,
+        )
+        declared_working_set = dict(
+            (chapter_content.get("constraint_envelope") or {}).get("arc_working_set")
+            or {}
+        )
+        if (
+            not declared_working_set
+            or declared_working_set != authoritative_working_set
+        ):
+            raise KernelError(
+                "CHAPTER_PRODUCTION_ARC_WORKING_SET_STALE",
+                "Chapter design does not bind the current Accepted-Reality Arc Working Set",
+            )
         by_identity: dict[tuple[str, str], list[Any]] = {}
         for row in rows:
             by_identity.setdefault((str(row[0]), str(row[1])), []).append(row)
@@ -1423,6 +1631,10 @@ class PostgresBookProductionQuery:
             "current_volume_plan_version": cursor_projection["volume_plan_version"],
             "current_relevant_arc_plan_versions": list(
                 cursor_projection["arc_plan_versions"]
+            ),
+            "arc_working_set_digest": authoritative_working_set["working_set_digest"],
+            "selected_arc_contributions": list(
+                authoritative_working_set["selected_contributions"]
             ),
             "chapter_group_plan_version_id": chapter_group_plan_version_id,
             "chapter_plan_version_id": chapter_plan_version_id,

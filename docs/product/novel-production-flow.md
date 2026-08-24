@@ -57,6 +57,13 @@ A long-lived Narrative Thread is decomposed into bounded Macro/Meso/Micro Arc tr
 
 Arc Scheduler decides **what needs progression now**. Narrative Composer decides **how several required changes can become a small number of natural multi-function events**. Arc Progress only becomes authoritative after Accepted Chapter evidence.
 
+In the current runtime the Book Supervisor asks a deterministic domain service
+for this working set at the exact accepted boundary. Static ChapterGroup cadence
+is corrected when Accepted Arc/obligation/dependency/dormancy/load evidence
+requires it. Chapter planning must cover the selected Arcs in its schedule,
+required contributions and Scene event graph; production admission recomputes
+the same working set and fails closed on drift.
+
 ## 4. ChapterExecutionIntent and ChapterMemo
 
 The active ChapterPlan remains authoritative. Before prose, establish immutable working artifacts describing at least:
@@ -70,6 +77,11 @@ The active ChapterPlan remains authoritative. Before prose, establish immutable 
 - expected exit state.
 
 ChapterExecutionIntent freezes the exact Plan interpretation and accepted boundary. ChapterMemo supplies execution-time creative strategy and retrieval needs. Neither may modify/activate the Plan, and an unqualified degraded fallback cannot reach Draft.
+
+The current Intent compiles one Mission fingerprint and causal multi-function
+event graph from the active ChapterPlan. Memo directives and Context execution
+expectations must bind that exact Mission/Scene/Arc set, so Context no longer
+bypasses the Intent by independently interpreting the Plan.
 
 ## 5. Evidence and Context
 
@@ -177,6 +189,11 @@ source-specific observation
 ```
 
 MKAOS may offer conflict, transformation, payoff, mystery, world-causality, theme/dilemma, reader-experience and scene patterns. The Arc/Scene Architect composes them under the current Book's constraints instead of copying a source-specific sequence.
+
+Current Book/Volume/Arc/ChapterGroup/Chapter Planning uses a structured,
+bounded MKAOS selection frozen in Planning Context. Recent selection lineage
+feeds repetition-risk keys into later selection; this is not an effectiveness
+or Reader-learning Authority.
 
 ## 10. Feedback
 

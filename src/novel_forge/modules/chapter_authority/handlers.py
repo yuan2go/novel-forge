@@ -324,9 +324,14 @@ class _ExecutionIntentHandler:
 class _MemoHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         intent = request.require_input("chapter_execution_intent")
+        mission = dict(intent.content.get("chapter_mission") or {})
         result = {
             "execution_strategy": "materialize the locked objective through irreversible choice",
             "tension_strategy": "carry accepted tension into escalating scene consequences",
+            "composition_strategy": (
+                "realize each locked causal event once while combining its Arc, state, "
+                "information, relationship, and reader functions"
+            ),
             "scene_directives": [
                 {
                     "scene_id": str(item["scene_id"]),
@@ -364,13 +369,19 @@ class _MemoHandler:
                         item.get("arc_plan_version_id") or item.get("arc_id") or ""
                     ),
                     "action": str(
-                        item.get("contribution") or item.get("kind") or "ADVANCE"
+                        item.get("action")
+                        or item.get("contribution")
+                        or item.get("kind")
+                        or "ADVANCE"
                     ),
                 }
-                for item in intent.content.get("required_arc_contributions") or ()
+                for item in mission.get("arc_contributions") or ()
                 if isinstance(item, dict)
             ],
-            "stop_conditions": ["do not contradict the locked ChapterPlan"],
+            "stop_conditions": [
+                "do not contradict the locked ChapterPlan or Chapter Mission",
+                "do not split one composed event into disconnected exposition-only scenes",
+            ],
         }
         return _output(
             ChapterNode.MEMO,

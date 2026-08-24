@@ -1,8 +1,12 @@
 """Deterministic MKAOS candidate, evidence, approval and pack invariants."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from decimal import Decimal, InvalidOperation
+import hashlib
+import json
+import re
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -24,8 +28,39 @@ FORBIDDEN_SOURCE_KEYS = frozenset(
         "quote",
         "quotes",
         "content_base64",
+        "ready_made_plot",
+        "source_event_sequence",
+        "source_specific_event_sequence",
+        "entity_replacement_template",
+        "character_replacement_template",
+        "plot_template",
     }
 )
+
+NARRATIVE_INTELLIGENCE_FAMILIES = frozenset(
+    {
+        "NARRATIVE_PRIMITIVE",
+        "NARRATIVE_MECHANISM",
+        "ARC_BEAT_PATTERN",
+        "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+        "CHARACTER_TRANSFORMATION",
+        "RELATIONSHIP",
+        "MYSTERY_CLUE_REVEAL",
+        "WORLD_CONSEQUENCE",
+        "FACTION_DYNAMICS",
+        "POWER_RESOURCE_PROGRESSION",
+        "READER_EMOTIONAL_CURVE",
+        "THEME_MORAL_DILEMMA",
+        "SCENE_INTERACTION",
+        "ANTI_PATTERN_FAILURE",
+        "PROFESSIONAL_CAUSAL_MECHANISM",
+    }
+)
+NARRATIVE_INTELLIGENCE_KINDS = frozenset(
+    {"NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"}
+)
+NARRATIVE_INTELLIGENCE_SCOPES = frozenset({"STORY", "ARC", "CHAPTER", "SCENE"})
+NARRATIVE_INTELLIGENCE_POLICY_VERSION = "structured-narrative-intelligence-v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +100,65 @@ class KnowledgePackSelection:
         object.__setattr__(self, "frozen_weight", weight)
 
 
+@dataclass(frozen=True, slots=True)
+class NarrativeIntelligenceNeed:
+    """A bounded Planning question; it is not a request for a ready-made plot."""
+
+    scope: str
+    target_stage: str
+    current_state_terms: tuple[str, ...] = ()
+    desired_transformation_terms: tuple[str, ...] = ()
+    genre_tags: tuple[str, ...] = ()
+    conflict_tags: tuple[str, ...] = ()
+    reader_effect_tags: tuple[str, ...] = ()
+    theme_tags: tuple[str, ...] = ()
+    hard_constraints: tuple[str, ...] = ()
+    recently_used_repetition_keys: tuple[str, ...] = ()
+    semantic_families: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        scope = self.scope.strip().upper()
+        if scope not in NARRATIVE_INTELLIGENCE_SCOPES:
+            raise ValueError("Narrative Intelligence scope is invalid")
+        if not self.target_stage.strip():
+            raise ValueError("Narrative Intelligence target stage is required")
+        object.__setattr__(self, "scope", scope)
+        object.__setattr__(self, "target_stage", self.target_stage.strip())
+        for field in (
+            "current_state_terms",
+            "desired_transformation_terms",
+            "genre_tags",
+            "conflict_tags",
+            "reader_effect_tags",
+            "theme_tags",
+            "hard_constraints",
+            "recently_used_repetition_keys",
+        ):
+            normalized = _bounded_terms(getattr(self, field), field)
+            object.__setattr__(self, field, normalized)
+        families = tuple(
+            sorted({str(item).strip().upper() for item in self.semantic_families})
+        )
+        if len(families) > 15 or any(
+            item not in NARRATIVE_INTELLIGENCE_FAMILIES for item in families
+        ):
+            raise ValueError("Narrative Intelligence semantic families are invalid")
+        object.__setattr__(self, "semantic_families", families)
+
+    @property
+    def need_digest(self) -> str:
+        return _canonical_hash(self.to_dict(include_digest=False))
+
+    def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
+        payload = asdict(self)
+        for key, value in tuple(payload.items()):
+            if isinstance(value, tuple):
+                payload[key] = list(value)
+        if include_digest:
+            payload["need_digest"] = self.need_digest
+        return payload
+
+
 def validate_knowledge_candidate(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise KernelError("MKAOS_CANDIDATE_INVALID", "candidate must be an object")
@@ -95,9 +189,184 @@ def validate_knowledge_candidate(payload: Mapping[str, Any]) -> dict[str, Any]:
             raise KernelError(
                 "MKAOS_CANDIDATE_INVALID", f"candidate {field} contains an invalid item"
             )
+    structured_fields = {
+        "knowledge_kind",
+        "semantic_family",
+        "mechanism",
+        "applicability",
+        "failure_conditions",
+        "selection_tags",
+        "repetition_key",
+        "originality_boundary",
+    }
+    if structured_fields & set(candidate):
+        missing = structured_fields - set(candidate)
+        if missing:
+            raise KernelError(
+                "MKAOS_CANDIDATE_INVALID",
+                "structured Narrative Intelligence fields must be complete",
+            )
+        _validate_structured_narrative_intelligence(candidate)
     _reject_forbidden_source_content(candidate)
     _validate_string_bounds(candidate)
     return candidate
+
+
+def select_narrative_intelligence(
+    need: NarrativeIntelligenceNeed,
+    cards: tuple[Mapping[str, Any], ...],
+    *,
+    limit: int = 6,
+) -> dict[str, Any]:
+    """Select governed possibilities without granting them Story Authority."""
+
+    if limit < 1 or limit > 12:
+        raise ValueError("Narrative Intelligence selection limit must be within 1..12")
+    recent = {item.casefold() for item in need.recently_used_repetition_keys}
+    requested_tags = {
+        "genre": {item.casefold() for item in need.genre_tags},
+        "conflict": {item.casefold() for item in need.conflict_tags},
+        "reader_effect": {item.casefold() for item in need.reader_effect_tags},
+        "theme": {item.casefold() for item in need.theme_tags},
+    }
+    requested_terms = _tokenize(
+        (*need.current_state_terms, *need.desired_transformation_terms)
+    )
+    ranked: list[dict[str, Any]] = []
+    rejected: list[dict[str, str]] = []
+    seen_versions: set[str] = set()
+    for card in cards:
+        asset_version_id = str(card.get("asset_version_id") or "").strip()
+        content_hash = str(card.get("content_hash") or "").strip()
+        content = card.get("content")
+        if (
+            not asset_version_id
+            or asset_version_id in seen_versions
+            or not content_hash
+            or not isinstance(content, Mapping)
+        ):
+            raise KernelError(
+                "MKAOS_NARRATIVE_INTELLIGENCE_CARD_INVALID",
+                "Narrative Intelligence selection requires immutable KnowledgeCard versions",
+            )
+        seen_versions.add(asset_version_id)
+        assert_abstract_content_safe(content)
+        abstract = content.get("abstract_content")
+        if not isinstance(abstract, Mapping):
+            raise KernelError(
+                "MKAOS_NARRATIVE_INTELLIGENCE_CARD_INVALID",
+                "KnowledgeCard does not expose governed abstract content",
+            )
+        lineage = content.get("lineage")
+        if not isinstance(lineage, Mapping):
+            lineage = {}
+        normalized = _normalized_intelligence_content(abstract)
+        repetition_key = normalized["repetition_key"]
+        if repetition_key.casefold() in recent:
+            rejected.append(
+                {
+                    "knowledge_card_asset_version_id": asset_version_id,
+                    "reason": "RECENT_REPETITION_RISK",
+                }
+            )
+            continue
+        score = 0
+        reasons: list[str] = []
+        family = normalized["semantic_family"]
+        explicit_family = "semantic_family" in abstract
+        if not need.semantic_families:
+            score += 1
+            reasons.append("UNRESTRICTED_SEMANTIC_FAMILY")
+        elif family in need.semantic_families:
+            score += 8
+            reasons.append(f"SEMANTIC_FAMILY:{family}")
+        tags = normalized["selection_tags"]
+        for tag_kind, requested in requested_tags.items():
+            overlap = requested & {item.casefold() for item in tags[tag_kind]}
+            if overlap:
+                score += min(6, len(overlap) * 2)
+                reasons.append(f"{tag_kind.upper()}:{','.join(sorted(overlap))}")
+        overlap = requested_terms & _tokenize(
+            (
+                normalized["concept_name"],
+                normalized["mechanism"],
+                *normalized["applicability"],
+                *normalized["conflict_generators"],
+            )
+        )
+        if overlap:
+            score += min(5, len(overlap))
+            reasons.append(f"TERM_OVERLAP:{','.join(sorted(overlap)[:5])}")
+        if score == 0 and not explicit_family:
+            score = 1
+            reasons.append("LEGACY_ABSTRACT_CARD_FALLBACK")
+        if score == 0:
+            rejected.append(
+                {
+                    "knowledge_card_asset_version_id": asset_version_id,
+                    "reason": "NO_STRUCTURED_MATCH",
+                }
+            )
+            continue
+        ranked.append(
+            {
+                "knowledge_card_asset_version_id": asset_version_id,
+                "content_hash": content_hash,
+                "knowledge_card_id": str(card.get("knowledge_card_id") or ""),
+                "candidate_asset_version_id": str(
+                    card.get("candidate_asset_version_id")
+                    or lineage.get("candidate_asset_version_id")
+                    or ""
+                ),
+                "governance_decision_asset_version_id": str(
+                    card.get("governance_decision_asset_version_id")
+                    or lineage.get("governance_decision_asset_version_id")
+                    or ""
+                ),
+                "score": score,
+                "match_reasons": reasons,
+                "selected_content": normalized,
+            }
+        )
+    ranked.sort(
+        key=lambda item: (
+            -int(item["score"]),
+            str(item["knowledge_card_asset_version_id"]),
+        )
+    )
+    selected = ranked[:limit]
+    for item in ranked[limit:]:
+        rejected.append(
+            {
+                "knowledge_card_asset_version_id": str(
+                    item["knowledge_card_asset_version_id"]
+                ),
+                "reason": "NARRATIVE_BANDWIDTH_LIMIT",
+            }
+        )
+    result: dict[str, Any] = {
+        "schema_version": "mkaos-narrative-intelligence-selection.v1",
+        "policy_version": NARRATIVE_INTELLIGENCE_POLICY_VERSION,
+        "need": need.to_dict(),
+        "selected": selected,
+        "rejected": sorted(
+            rejected,
+            key=lambda item: (
+                item["knowledge_card_asset_version_id"],
+                item["reason"],
+            ),
+        ),
+        "selection_status": "SELECTED" if selected else "NO_ELIGIBLE_MATCH",
+        "authority_boundary": {
+            "semantic_role": "POSSIBILITY_ONLY",
+            "may_mutate_story_authority": False,
+            "may_mutate_narrative_state": False,
+            "may_prove_accepted_reality": False,
+            "planning_must_recompose_for_project": True,
+        },
+    }
+    result["selection_digest"] = _canonical_hash(result)
+    return result
 
 
 def validate_evidence_spans(
@@ -176,6 +445,152 @@ def assert_abstract_content_safe(payload: Mapping[str, Any]) -> None:
     _validate_string_bounds(payload)
 
 
+def _validate_structured_narrative_intelligence(candidate: Mapping[str, Any]) -> None:
+    if str(candidate.get("knowledge_kind") or "").strip().upper() not in (
+        NARRATIVE_INTELLIGENCE_KINDS
+    ):
+        raise KernelError("MKAOS_CANDIDATE_INVALID", "knowledge_kind is invalid")
+    if str(candidate.get("semantic_family") or "").strip().upper() not in (
+        NARRATIVE_INTELLIGENCE_FAMILIES
+    ):
+        raise KernelError("MKAOS_CANDIDATE_INVALID", "semantic_family is invalid")
+    for field in ("mechanism", "repetition_key"):
+        value = candidate.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise KernelError("MKAOS_CANDIDATE_INVALID", f"{field} is required")
+    for field in ("applicability", "failure_conditions"):
+        value = candidate.get(field)
+        if (
+            not isinstance(value, list)
+            or not value
+            or any(not isinstance(item, str) or not item.strip() for item in value)
+        ):
+            raise KernelError(
+                "MKAOS_CANDIDATE_INVALID", f"{field} must be a non-empty string list"
+            )
+    tags = candidate.get("selection_tags")
+    if not isinstance(tags, Mapping) or set(tags) != {
+        "genre",
+        "conflict",
+        "reader_effect",
+        "theme",
+    }:
+        raise KernelError(
+            "MKAOS_CANDIDATE_INVALID", "selection_tags has an invalid shape"
+        )
+    for value in tags.values():
+        if not isinstance(value, list) or any(
+            not isinstance(item, str) or not item.strip() for item in value
+        ):
+            raise KernelError(
+                "MKAOS_CANDIDATE_INVALID", "selection_tags values must be string lists"
+            )
+    boundary = candidate.get("originality_boundary")
+    if (
+        not isinstance(boundary, Mapping)
+        or set(boundary)
+        != {
+            "source_specific_sequence_reusable",
+            "named_entity_substitution_allowed",
+            "expression_reuse_allowed",
+        }
+        or any(value is not False for value in boundary.values())
+    ):
+        raise KernelError(
+            "MKAOS_ORIGINALITY_BOUNDARY_INVALID",
+            "Narrative Intelligence must forbid source sequence, entity substitution, and expression reuse",
+        )
+
+
+def _normalized_intelligence_content(abstract: Mapping[str, Any]) -> dict[str, Any]:
+    concept_name = str(abstract.get("concept_name") or "").strip()
+    principle = str(abstract.get("abstract_principle") or "").strip()
+    if not concept_name or not principle:
+        raise KernelError(
+            "MKAOS_NARRATIVE_INTELLIGENCE_CARD_INVALID",
+            "KnowledgeCard lacks its abstract mechanism",
+        )
+    explicit_family = str(abstract.get("semantic_family") or "").strip().upper()
+    family = explicit_family or (
+        "PROFESSIONAL_CAUSAL_MECHANISM"
+        if str(abstract.get("discipline") or "").strip().casefold()
+        not in {"narrative_design", "fiction", "storytelling"}
+        else "NARRATIVE_MECHANISM"
+    )
+    if family not in NARRATIVE_INTELLIGENCE_FAMILIES:
+        raise KernelError(
+            "MKAOS_NARRATIVE_INTELLIGENCE_CARD_INVALID",
+            "KnowledgeCard semantic family is unsupported",
+        )
+    raw_tags = abstract.get("selection_tags")
+    tags = dict(raw_tags) if isinstance(raw_tags, Mapping) else {}
+    normalized_tags = {
+        key: sorted(
+            {str(item).strip() for item in tags.get(key) or () if str(item).strip()}
+        )
+        for key in ("genre", "conflict", "reader_effect", "theme")
+    }
+    repetition_key = str(abstract.get("repetition_key") or "").strip()
+    if not repetition_key:
+        repetition_key = (
+            re.sub(r"[^a-z0-9]+", "-", concept_name.casefold()).strip("-")
+            or _canonical_hash({"concept_name": concept_name})[-16:]
+        )
+    return {
+        "knowledge_kind": str(
+            abstract.get("knowledge_kind") or "NARRATIVE_INTELLIGENCE"
+        )
+        .strip()
+        .upper(),
+        "semantic_family": family,
+        "concept_name": concept_name,
+        "mechanism": str(abstract.get("mechanism") or principle).strip(),
+        "applicability": _string_list(
+            abstract.get("applicability"), fallback=abstract.get("constraints")
+        ),
+        "failure_conditions": _string_list(
+            abstract.get("failure_conditions"),
+            fallback=abstract.get("review_checks"),
+        ),
+        "constraints": _string_list(abstract.get("constraints")),
+        "conflict_generators": _string_list(abstract.get("conflict_generators")),
+        "review_checks": _string_list(abstract.get("review_checks")),
+        "copyright_boundaries": _string_list(abstract.get("copyright_boundaries")),
+        "selection_tags": normalized_tags,
+        "repetition_key": repetition_key,
+    }
+
+
+def _string_list(value: Any, *, fallback: Any = None) -> list[str]:
+    source = value if isinstance(value, list) and value else fallback
+    return [str(item).strip() for item in source or () if str(item).strip()]
+
+
+def _bounded_terms(values: tuple[str, ...], field: str) -> tuple[str, ...]:
+    normalized = tuple(
+        sorted({str(item).strip() for item in values if str(item).strip()})
+    )
+    if len(normalized) > 32 or any(len(item) > 500 for item in normalized):
+        raise ValueError(f"Narrative Intelligence {field} exceeds its bound")
+    return normalized
+
+
+def _tokenize(values: tuple[str, ...]) -> set[str]:
+    return {
+        token
+        for value in values
+        for token in re.findall(r"[\w\u4e00-\u9fff]+", value.casefold())
+        if len(token) > 1
+    }
+
+
+def _canonical_hash(value: Mapping[str, Any]) -> str:
+    serialized = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(serialized).hexdigest()
+
+
 def _reject_forbidden_source_content(value: Any, *, path: str = "candidate") -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -208,8 +623,10 @@ def _validate_string_bounds(value: Any, *, path: str = "candidate") -> None:
 
 def _require_sha256(value: str, label: str) -> None:
     digest = value.removeprefix("sha256:")
-    if not value.startswith("sha256:") or len(digest) != 64 or any(
-        character not in "0123456789abcdef" for character in digest
+    if (
+        not value.startswith("sha256:")
+        or len(digest) != 64
+        or any(character not in "0123456789abcdef" for character in digest)
     ):
         raise ValueError(f"{label} must be canonical sha256")
 
@@ -217,7 +634,11 @@ def _require_sha256(value: str, label: str) -> None:
 __all__ = [
     "KnowledgeEvidenceSpan",
     "KnowledgePackSelection",
+    "NARRATIVE_INTELLIGENCE_FAMILIES",
+    "NARRATIVE_INTELLIGENCE_POLICY_VERSION",
+    "NarrativeIntelligenceNeed",
     "assert_abstract_content_safe",
+    "select_narrative_intelligence",
     "validate_evidence_spans",
     "validate_knowledge_candidate",
     "validate_pack_selections",

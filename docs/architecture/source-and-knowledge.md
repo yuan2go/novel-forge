@@ -84,6 +84,15 @@ current state
 
 Selection returns relevant mechanisms/patterns/domain evidence, not a complete source-derived plot. Arc Architect/Narrative Composer then creates a project-specific solution constrained by current Narrative State and planning.
 
+The current Planning runtime implements this through the existing MKAOS
+Authority query and Planning Context path. It builds a bounded need from current
+state terms, desired transformation, scope, genre, conflict, reader effect,
+theme, hard constraints and recent repetition keys. Active, clear,
+production-eligible KnowledgeCards are ranked deterministically; selected
+mechanisms, applicability, failure conditions, review checks and provenance are
+frozen into the Planning Context and Provider Task View for Story, Arc, Chapter
+and Scene-oriented planning stages.
+
 ## 6. Governance
 
 Reusable promotion should consider:
@@ -119,4 +128,21 @@ This loop may improve future selection. It never directly mutates Canon or activ
 
 ## 8. Current proof boundary
 
-The repository already contains governed Source Import, Source Authority/Intelligence, MKAOS candidate/approval/pack and production wiring with bounded tests. The richer Narrative Intelligence taxonomy, source-specific efficacy, originality guarantees, and sustained real-provider value must be verified/implemented incrementally. Do not claim them from this document alone.
+The repository contains governed Source Import, Source
+Authority/Intelligence, MKAOS candidate/approval/pack, structured Narrative
+Intelligence families, originality-boundary validation, task-specific Planning
+selection and bounded usage lineage:
+
+```text
+KnowledgeCard
+→ Planning Context selection
+→ Provider input / Planning Candidate
+→ optional active Plan binding
+```
+
+Ready-made plots, source-specific event sequences and entity-replacement
+templates are forbidden candidate fields. Fixture-derived cards are excluded
+from production Planning selection. Current evidence is deterministic/unit
+coverage; it does not establish source-specific effectiveness, cross-source
+generalization quality, sustained real-provider originality, reader-linked
+effectiveness, or production qualification.

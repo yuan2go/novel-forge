@@ -925,6 +925,7 @@ class PostgresBookAuthority:
 
         query = PostgresBookProductionQuery(self.database_url)
         authoritative = query.require_chapter_production_admission(
+            book_run_id=command.book_run_id,
             snapshot_id=str(book["input_snapshot_id"]),
             chapter_group_plan_version_id=command.parent_group_version_id,
             chapter_plan_version_id=command.chapter_plan_asset_version_id,

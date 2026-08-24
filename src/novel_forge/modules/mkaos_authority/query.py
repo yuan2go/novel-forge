@@ -7,12 +7,40 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
+from .domain import NarrativeIntelligenceNeed, select_narrative_intelligence
+
 
 class MkaosAuthorityQuery:
     def __init__(self, database_url: str) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
+
+    def resolve_narrative_intelligence(
+        self,
+        *,
+        project_id: str,
+        need: NarrativeIntelligenceNeed,
+        limit: int = 6,
+    ) -> dict[str, Any]:
+        """Resolve governed possibilities from active cards for one Planning task."""
+
+        if limit < 1 or limit > 12:
+            raise ValueError("Narrative Intelligence limit must be within 1..12")
+        cards = self.list_cards(project_id=project_id, status="ACTIVE", limit=500)
+        eligible = tuple(
+            card
+            for card in cards
+            if card["lifecycle"] == "ACTIVE"
+            and card["eligibility"] in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+            and card["governance"] == "CLEAR"
+            and card["operation_status"] == "SUCCEEDED"
+            and _production_context_eligible_card(card)
+        )
+        selection = select_narrative_intelligence(need, eligible, limit=limit)
+        selection["project_id"] = project_id
+        selection["eligible_card_count"] = len(eligible)
+        return selection
 
     def list_candidates(
         self, *, project_id: str, status: str = "", limit: int = 100
@@ -173,6 +201,113 @@ class MkaosAuthorityQuery:
             "created_at",
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
+
+    def list_planning_usage(
+        self,
+        *,
+        project_id: str,
+        book_id: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Trace selected cards through Planning Context, Candidate, and Plan binding."""
+
+        _validate(project_id, limit)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT context_output.operation_id,
+                       context_version.asset_version_id,
+                       context_version.content_hash,
+                       context_version.content,
+                       operation.status,
+                       candidate_output.asset_version_id,
+                       candidate_version.content,
+                       binding.binding_id, binding.execution_scope,
+                       binding.freshness, context_output.created_at
+                FROM authority_operation_output_asset AS context_output
+                JOIN authority_asset_version AS context_version
+                  ON context_version.asset_version_id=
+                     context_output.asset_version_id
+                JOIN authority_asset AS context_asset
+                  ON context_asset.asset_id=context_version.asset_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=context_output.operation_id
+                LEFT JOIN authority_operation_output_asset AS candidate_output
+                  ON candidate_output.operation_id=context_output.operation_id
+                 AND candidate_output.output_key='story_planning.candidate'
+                LEFT JOIN authority_asset_version AS candidate_version
+                  ON candidate_version.asset_version_id=
+                     candidate_output.asset_version_id
+                LEFT JOIN story_plan_binding AS binding
+                  ON binding.project_id=context_asset.project_id
+                 AND binding.asset_version_id=candidate_output.asset_version_id
+                WHERE context_asset.project_id=%s
+                  AND context_output.output_key='planning.context_bundle'
+                  AND context_version.content->>'schema_version'=
+                      'novelos.planning_context_bundle.v1'
+                  AND (%s='' OR context_version.content->>'book_id'=%s)
+                  AND operation.status IN ('WAITING_GATE','SUCCEEDED')
+                ORDER BY context_output.created_at DESC,
+                         context_version.asset_version_id
+                LIMIT %s
+                """,
+                [project_id, book_id, book_id, min(limit, 50)],
+            )
+            rows = uow.cursor.fetchall()
+        usage: list[dict[str, Any]] = []
+        for row in rows:
+            context = dict(row[3] or {})
+            selection = context.get("narrative_intelligence")
+            if not isinstance(selection, dict):
+                continue
+            need = selection.get("need")
+            if not isinstance(need, dict):
+                need = {}
+            candidate_content = dict(row[6] or {})
+            evidence = dict(candidate_content.get("execution_evidence") or {})
+            for item in selection.get("selected") or ():
+                if not isinstance(item, dict):
+                    continue
+                selected_content = dict(item.get("selected_content") or {})
+                usage.append(
+                    {
+                        "project_id": project_id,
+                        "book_id": str(context.get("book_id") or ""),
+                        "planning_stage": str(
+                            need.get("target_stage") or ""
+                        ),
+                        "planning_operation_id": str(row[0]),
+                        "planning_operation_status": str(row[4]),
+                        "context_bundle_asset_version_id": str(row[1]),
+                        "context_bundle_content_hash": str(row[2]),
+                        "selection_digest": str(
+                            selection.get("selection_digest") or ""
+                        ),
+                        "knowledge_card_asset_version_id": str(
+                            item.get("knowledge_card_asset_version_id") or ""
+                        ),
+                        "repetition_key": str(
+                            selected_content.get("repetition_key") or ""
+                        ),
+                        "candidate_asset_version_id": str(row[5] or ""),
+                        "plan_binding_id": str(row[7] or ""),
+                        "plan_execution_scope": str(row[8] or ""),
+                        "plan_freshness": str(row[9] or ""),
+                        "consumption_status": (
+                            "REAL_PROVIDER_CONSUMED"
+                            if evidence.get("real_provider_proven") is True
+                            else "FIXTURE_PROTOCOL_USED"
+                            if evidence.get("fixture_protocol_only") is True
+                            else "PLANNING_CANDIDATE_MATERIALIZED"
+                            if row[5]
+                            else "CONTEXT_FROZEN"
+                        ),
+                        "selected_at": row[10],
+                    }
+                )
+                if len(usage) >= limit:
+                    return usage
+        return usage
 
     def require_pack(
         self, *, project_id: str, knowledge_pack_id: str
@@ -400,6 +535,18 @@ class MkaosAuthorityQuery:
 def _validate(project_id: str, limit: int) -> None:
     if not project_id or limit < 1 or limit > 500:
         raise ValueError("project_id and a limit between 1 and 500 are required")
+
+
+def _production_context_eligible_card(card: dict[str, Any]) -> bool:
+    content = card.get("content")
+    policy = content.get("source_policy") if isinstance(content, dict) else None
+    return bool(
+        isinstance(policy, dict)
+        and policy.get("knowledge_card_context_eligible") is True
+        and policy.get("raw_source_expression_included") is False
+        and policy.get("source_chunks_direct_context_eligible") is False
+        and policy.get("fixture_protocol_only") is False
+    )
 
 
 def _pack_items(pack: dict[str, Any]) -> dict[str, dict[str, Any]]:

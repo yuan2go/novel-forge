@@ -29,6 +29,9 @@ Stable current boundaries:
 - accepted Chapter/Book lineage is the boundary from candidate output to story truth.
 - Narrative State is projected from accepted evidence; Context/retrieval are derived.
 - planning supports multiple Arc plan versions at a chapter cursor and cross-Arc planning semantics; accepted `chapter-outcome-v3` evidence now materializes the explicit Arc Actual/Progress/Outcome/Checkpoint contract at Book Acceptance.
+- Book Planning derives a bounded Arc Working Set from the immediately preceding complete accepted projection. ChapterGroup `arc_cadence` is a preference: lifecycle, dependency legality, checkpoint correction, obligation debt, dormancy, Narrative Load and reader intent may deterministically correct it before Chapter planning and production admission.
+- ChapterPlan, ChapterExecutionIntent v2 and ChapterMemo v2 jointly carry Chapter Mission and multi-Arc composition semantics; Context consumes the locked Mission instead of rebuilding expectations directly from the Plan.
+- Planning Context performs governed, structured MKAOS Narrative Intelligence selection for Book/Volume/Arc/ChapterGroup/Chapter stages. Selected cards remain possibilities, are source-isolated, repetition-aware, and retain Context/Candidate/Plan usage lineage.
 - Legacy remains migration-only.
 
 ## Current converged production shape
@@ -49,6 +52,11 @@ Progressive Plan + Arc Working Set
 ```
 
 This chain extends existing Planning/Narrative State/Context/Chapter Authority; it does not create a second narrative runtime.
+
+The current implementation realizes the working-set, composition/Mission and
+structured Narrative Intelligence links in this chain. This Work Package has
+deterministic/unit evidence only; it did not run PostgreSQL integration,
+campaign, real-provider or production qualification.
 
 The target hierarchy is four-dimensional: optional organization/IP scopes, narrative containment, cross-cutting Arc Graph and ChapterGroup production coordination. The current runtime has no independent Narrative Segment consumer, shared-Universe Canon Authority or reason to add empty persistence roots.
 
@@ -112,7 +120,8 @@ Current documentation does **not** establish by itself:
 - long-running real-provider Chapter-to-Chapter liveness;
 - 30/100/300-chapter correctness/quality;
 - independent PostgreSQL vector candidate retrieval at production scale;
-- real-provider Agent Harness execution proof (controlled composition is wired);
+- sustained or production-qualified real-provider Agent Harness operation (the
+  exact-SHA bounded qualification proves one real Agent Session only);
 - real-reader learning closure;
 - multi-book production;
 - Production Admission.

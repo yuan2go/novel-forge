@@ -205,6 +205,7 @@ class _PlanningGenerationHandler:
                         for role, asset_version_id in authority_roles.items()
                     },
                     candidate_payload=candidate.candidate_payload,
+                    arc_working_set=command.arc_working_set,
                 ),
             ),
             qualification_policy="story-planning-candidate-only-v1",
@@ -1447,6 +1448,7 @@ class StoryPlanningGenerationApplication:
             repair_reason=f"{error.code}:{report_hash}",
             repair_number=command.repair_number + 1,
             auto_approve_low_risk=command.auto_approve_low_risk,
+            arc_working_set=command.arc_working_set,
         )
         return self.generate(repaired, principal=principal)
 
@@ -2395,6 +2397,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "parent_agent_session_operation_id": (
             command.parent_agent_session_operation_id
         ),
+        "arc_working_set": dict(command.arc_working_set or {}),
     }
 
 
@@ -2433,6 +2436,7 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         parent_agent_session_operation_id=str(
             payload.get("parent_agent_session_operation_id") or ""
         ),
+        arc_working_set=dict(payload.get("arc_working_set") or {}) or None,
     )
 
 
@@ -2501,6 +2505,17 @@ def _validate_frozen_arc_references(
         str(command.input_versions["arc_plans"]),
         *command.related_arc_plan_version_ids,
     }
+    if command.arc_working_set:
+        selected = {
+            str(item.get("arc_plan_version_id") or "")
+            for item in command.arc_working_set.get("selected_contributions") or ()
+            if isinstance(item, dict)
+        }
+        if selected != frozen:
+            raise KernelError(
+                "PLANNING_ARC_WORKING_SET_DRIFT",
+                "Planning output Arc portfolio differs from the frozen Working Set",
+            )
     references: list[str] = []
     if command.generator_operation_name == "chapter_group_plan.generate":
         portfolio = [
@@ -2510,7 +2525,7 @@ def _validate_frozen_arc_references(
         if len(portfolio) != len(set(portfolio)) or set(portfolio) != frozen:
             raise KernelError(
                 "PLANNING_ARC_PORTFOLIO_MISMATCH",
-                "Narrative Scheduling must classify every frozen active Arc exactly once",
+                "Narrative Scheduling must classify every frozen Working Set Arc exactly once",
             )
         references.extend(
             str(item) for item in content.get("required_arc_contributions") or ()
@@ -2534,6 +2549,48 @@ def _validate_frozen_arc_references(
                 if isinstance(item, dict)
             )
     else:
+        schedule_arcs = {
+            str(item.get("arc_plan_version_id") or "")
+            for item in content.get("arc_schedule") or ()
+            if isinstance(item, dict)
+        }
+        contribution_arcs = {
+            str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
+            for item in content.get("required_arc_contributions") or ()
+            if isinstance(item, dict)
+        }
+        scene_arcs = {
+            str(item)
+            for scene in content.get("scene_plan") or ()
+            if isinstance(scene, dict)
+            for item in scene.get("arc_progress") or ()
+            if str(item)
+        }
+        if command.arc_working_set and (
+            schedule_arcs != frozen
+            or contribution_arcs != frozen
+            or scene_arcs != frozen
+        ):
+            raise KernelError(
+                "PLANNING_ARC_COMPOSITION_INCOMPLETE",
+                "Chapter composition must cover every frozen Working Set Arc in schedule, contributions, and Scenes",
+            )
+        if command.arc_working_set:
+            expected_roles = {
+                str(item.get("arc_plan_version_id") or ""): str(item.get("role") or "")
+                for item in command.arc_working_set.get("selected_contributions") or ()
+                if isinstance(item, dict)
+            }
+            actual_roles = {
+                str(item.get("arc_plan_version_id") or ""): str(item.get("role") or "")
+                for item in content.get("arc_schedule") or ()
+                if isinstance(item, dict)
+            }
+            if actual_roles != expected_roles:
+                raise KernelError(
+                    "PLANNING_ARC_CONTRIBUTION_ROLE_DRIFT",
+                    "Chapter Arc roles must match the governed Working Set",
+                )
         references.extend(
             str(item.get("arc_plan_version_id") or "")
             for item in content.get("arc_schedule") or ()
