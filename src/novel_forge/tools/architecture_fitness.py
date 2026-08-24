@@ -31,6 +31,17 @@ def _python_paths(root: Path, values: Iterable[str]) -> tuple[Path, ...]:
     return tuple(sorted(paths))
 
 
+def _source_packages(root: Path) -> tuple[Path, ...]:
+    """Count source-bearing packages, never stale bytecode-only directories."""
+    return tuple(
+        sorted(
+            path
+            for path in root.iterdir()
+            if path.is_dir() and any(path.rglob("*.py"))
+        )
+    )
+
+
 def _imports(path: Path) -> tuple[str, ...]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     values: list[str] = []
@@ -329,15 +340,7 @@ def build_report(repo_root: str | Path = ".") -> dict[str, Any]:
     violations: list[dict[str, str]] = []
 
     domain_root = root / str(policy["domain_package_root"])
-    domain_packages = tuple(
-        sorted(
-            path
-            for path in domain_root.iterdir()
-            if path.is_dir()
-            and path.name != "__pycache__"
-            and any(path.rglob("*.py"))
-        )
-    )
+    domain_packages = _source_packages(domain_root)
     domain_filenames = set(str(value) for value in policy["domain_layer_filenames"])
     domain_paths = {
         path

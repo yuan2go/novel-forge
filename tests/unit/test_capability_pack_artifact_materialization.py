@@ -317,3 +317,241 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     assert evidence["provider_view"]["provider_context_estimated_tokens"] > 0
     assert '"contract_version":"provider-task-view-v1"' in prompt
     assert '"contract_version":"provider-context-view-v2"' in prompt
+
+
+def test_codex_prompt_projects_governed_context_once_without_runtime_evidence() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    context = {
+        "project_id": "project-1",
+        "book_id": "book-1",
+        "stage": "draft",
+        "chapter": 1,
+        "goal": "Open the investigation.",
+        "context_digest": HASH,
+        "token_budget": 16_000,
+        "estimated_tokens": 120,
+        "context_segments": [
+            {
+                "asset_version_id": "world:v1",
+                "asset_type": "world_bible",
+                "safe_summary": "SEMANTIC-CONTEXT-ONCE",
+                "structured_facts": [{"kind": "objective", "value": "investigate"}],
+                "content_digest": HASH,
+                "allowed_use": "generation",
+            }
+        ],
+        "stage_context_view": {
+            "stage": "draft",
+            "segments": [
+                {
+                    "asset_version_id": "plan:v1",
+                    "asset_type": "chapter_plan",
+                    "safe_summary": "SEMANTIC-CONTEXT-ONCE",
+                    "structured_facts": [
+                        {"kind": "objective", "value": "investigate"}
+                    ],
+                    "content_digest": HASH,
+                    "allowed_use": "generation",
+                }
+            ],
+            "rendered_safe_context": "SEMANTIC-CONTEXT-ONCE",
+            "token_count": 120,
+        },
+        "actual_context": {
+            "premise": "A ledger vanishes.",
+            "stage_context_view": {
+                "segments": [
+                    {
+                        "safe_summary": "SEMANTIC-CONTEXT-ONCE",
+                    }
+                ]
+            },
+        },
+        "context_manifest": {
+            "authority_state_boundary": {"accepted_through_chapter": 0},
+            "selected_inputs": [{"asset_version_id": "world:v1"}],
+        },
+    }
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="draft",
+        inputs={
+            "chapter": 1,
+            "plan": {
+                "chapter": 1,
+                "objective": "Investigate the vanished ledger.",
+                "provider_evidence": {"receipt": "RUNTIME-EVIDENCE-MUST-NOT-RENDER"},
+            },
+        },
+        materialization=_prompt_materialization(context),
+    )
+
+    assert prompt.count("SEMANTIC-CONTEXT-ONCE") == 1
+    assert "RUNTIME-EVIDENCE-MUST-NOT-RENDER" not in prompt
+    assert evidence["provider_prompt_projection_version"] == (
+        "authority-projection-task-provider-v1"
+    )
+    assert evidence["rendered_prompt_bytes"] == len(prompt.encode("utf-8"))
+    assert evidence["rendered_prompt_estimated_tokens"] > 0
+
+
+def test_quality_prompt_uses_budgeted_quality_view_not_full_context_bundle() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    context = {
+        "project_id": "project-1",
+        "book_id": "book-1",
+        "stage": "draft",
+        "chapter": 1,
+        "context_digest": HASH,
+        "context_segments": [
+            {"safe_summary": "GENERIC-CONTEXT-MUST-NOT-RENDER-FOR-QUALITY"}
+        ],
+    }
+    context = {
+        "schema_version": "novelos.reader_outcome_context_bundle.v2",
+        "selected_inputs": [
+            {
+                "asset_version_id": "draft:v1",
+                "asset_type": "draft_version",
+                "projection": {
+                    "chapter": 1,
+                    "text": "READER-VISIBLE-CHAPTER",
+                    "provider_evidence": {"receipt": "DRAFT-RECEIPT-NOISE"},
+                },
+            },
+            {
+                "asset_version_id": "state:v1",
+                "asset_type": "story_state_snapshot",
+                "projection": {
+                    "accepted_through_chapter": 1,
+                    "reader_facing_state": [
+                        {
+                            "state_kind": "character_state",
+                            "identity": {"entity_id": "protagonist"},
+                            "mutation": {"status": "cornered"},
+                            "provider_receipt_refs": ["STATE-RECEIPT-NOISE"],
+                        }
+                    ],
+                    "reducer_applications": ["REDUCER-AUDIT-NOISE"],
+                },
+            },
+            {
+                "asset_version_id": "outcome:v1",
+                "asset_type": "chapter_outcome",
+                "projection": {
+                    "state_events": [
+                        {
+                            "state_kind": "relationship_state",
+                            "identity": {"entity_id": "pair"},
+                            "mutation": {"trust": "lower"},
+                        }
+                    ],
+                    "cost_receipt_refs": ["COST-RECEIPT-NOISE"],
+                },
+            },
+        ],
+    }
+    prompt, _ = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="quality_longform",
+        inputs={
+            "revision": {"text": "The revised chapter."},
+            "quality_context": {
+                "type": "LongformQualityContextView",
+                "revision_text": "The revised chapter.",
+                "previous_state_snapshots": {
+                    "canon_snapshot": {
+                        "ledger": [{"structured_facts": ["QUALITY-SEMANTIC-STATE"]}]
+                    }
+                },
+                "token_budget": 28_000,
+                "coverage_report": {"critical_facts_preserved": True},
+            },
+            "dimensions": ["canon_consistency"],
+        },
+        materialization=_prompt_materialization(context),
+    )
+
+    assert "QUALITY-SEMANTIC-STATE" in prompt
+    assert "GENERIC-CONTEXT-MUST-NOT-RENDER-FOR-QUALITY" not in prompt
+
+
+def test_reader_outcome_prompt_projects_semantics_without_authority_lineage() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    prompt, _ = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="reader_outcome",
+        inputs={
+            "chapter": 1,
+            "book_id": "book-1",
+            "reader_contract_version": "reader-contract-v1",
+            "evaluation_profile_version": "reader-profile-v1",
+        },
+        materialization=_prompt_materialization(context),
+    )
+
+    assert "READER-VISIBLE-CHAPTER" in prompt
+    assert '"status":"cornered"' in prompt
+    assert '"trust":"lower"' in prompt
+    for excluded in (
+        "DRAFT-RECEIPT-NOISE",
+        "STATE-RECEIPT-NOISE",
+        "REDUCER-AUDIT-NOISE",
+        "COST-RECEIPT-NOISE",
+    ):
+        assert excluded not in prompt
+
+
+def _prompt_materialization(context: dict[str, object]) -> dict[str, object]:
+    return {
+        "materialization_hash": HASH,
+        "pack_artifacts": {
+            "system_instruction": {
+                "ref": "system",
+                "version": "v1",
+                "content_hash": HASH,
+                "content": {"text": "System instruction."},
+            },
+            "prompt_template": {
+                "ref": "template",
+                "version": "v1",
+                "content_hash": HASH,
+                "content": {
+                    "text": (
+                        "{{stage}} {{target_scope}} {{input_manifest}} "
+                        "{{context_bundle}} {{output_schema_ref}}"
+                    )
+                },
+            },
+            "skill": {
+                "ref": "skill",
+                "version": "v1",
+                "content_hash": HASH,
+                "content": {"text": "Skill body."},
+            },
+        },
+        "context_selection": [
+            {"asset_version_id": "context:v1", "content": context}
+        ],
+        "knowledge_selection": [
+            {"content_hash": HASH, "content": {"rules": ["causal cost"]}}
+        ],
+        "tool_permissions": {
+            "allowed": ["model.provider.invoke"],
+            "denied": ["storage.object.put"],
+        },
+        "output_schema": {
+            "ref": "schema:stage:v1",
+            "content_hash": HASH,
+            "content": {"type": "object"},
+        },
+    }
