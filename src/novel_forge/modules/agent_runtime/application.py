@@ -35,7 +35,6 @@ from novel_forge.modules.capability_packs.runtime_binding import (
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
     CapabilityPackRuntimeResolver,
-    chapter_node_binding_from_snapshot,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -49,8 +48,8 @@ from .definitions import (
     AGENT_RUNTIME_ADMIN_HANDLER_KEY,
     AGENT_RUNTIME_ADMIN_OPERATIONS,
     AGENT_RUNTIME_DEFINITION_VERSION,
-    AGENT_RUNTIME_EXECUTION_HANDLER_KEY,
     AGENT_RUNTIME_HARNESS_HANDLER_KEY,
+    AGENT_SESSION_DEFINITION_VERSION,
     AGENT_SESSION_WORKFLOW_DEFINITION_REF,
     agent_runtime_operation_definitions,
 )
@@ -62,6 +61,7 @@ from .harness import (
     AgentToolSpec,
     AutonomousAgentRole,
     canonical_execution_contract_hash,
+    with_skill_activation_tool,
 )
 from .policy import ServerAgentHarnessPolicyResolver
 
@@ -237,6 +237,7 @@ class AgentHarnessAdmissionRequest:
     policy_snapshot: Mapping[str, Any] = dataclass_field(default_factory=dict)
     execution_contract: Mapping[str, Any] = dataclass_field(default_factory=dict)
     execution_contract_hash: str = ""
+    requested_skill_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
@@ -284,6 +285,7 @@ class AgentHarnessAdmissionRequest:
                 for tool in self.tool_policy
             ],
             "skill_bindings": [dict(item) for item in self.skill_bindings],
+            "requested_skill_ids": list(self.requested_skill_ids),
             "budget": asdict(self.budget),
             "policy_snapshot": dict(self.policy_snapshot),
             "execution_contract": dict(self.execution_contract),
@@ -325,6 +327,15 @@ class AgentRuntimeAuthorityApplication:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
+        if command.definition_name in {
+            "agent.chapter_binding.register",
+            "agent.chapter_binding.activate",
+        }:
+            raise KernelError(
+                "LEGACY_AGENT_BINDING_CREATE_RETIRED",
+                "new per-stage Agent bindings are retired; existing bindings remain "
+                "available only for durable migration recovery",
+            )
         principal.require("agent.authority.admin", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError("Agent Runtime actor must be the trusted Principal")
@@ -371,152 +382,13 @@ class AgentRuntimeAuthorityApplication:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
-        principal.require("agent.authority.execute", request.project_id)
-        if principal.principal_id != request.actor_id:
-            raise PermissionError("Agent run actor must be the trusted Principal")
-        self._register_definitions()
-        context = AdmissionContext(
-            actor_id=principal.principal_id,
-            permissions=principal.permissions,
-            available_handlers=frozenset({AGENT_RUNTIME_EXECUTION_HANDLER_KEY}),
-            application_build_id=self.application_build_id,
-            commit_sha=self.commit_sha,
+        del request, principal
+        raise KernelError(
+            "LEGACY_AGENT_RUN_ADMISSION_RETIRED",
+            "new fixed per-stage Agent runs are retired; use the Unified Agent "
+            "Harness or typed Capability runtime. Existing Operations remain "
+            "queryable and recoverable through the migration surface",
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            snapshot = None
-            if self.runtime_environment.controlled:
-                pack_id, separator, _ = request.capability_pack_ref.rpartition("@")
-                if not separator:
-                    raise KernelError(
-                        "CAPABILITY_PACK_REFERENCE_INVALID",
-                        "Agent run requires an exact Capability Pack ref",
-                    )
-                snapshot = self.pack_resolver.resolve_in_uow(
-                    uow,
-                    CapabilityPackResolutionRequest(
-                        project_id=request.project_id,
-                        workspace_id=request.workspace_id,
-                        book_id=request.book_id,
-                        workflow_definition_ref=request.workflow_definition_ref,
-                        workflow_node_id=request.workflow_node_id,
-                        environment=self.runtime_environment.value,
-                        runtime_profile=self.runtime_environment.value,
-                        release_channel=self.release_channel,
-                        release_sha=request.release_sha,
-                        operation_definition_ref=request.operation_definition_ref,
-                        pack_id=pack_id,
-                    ),
-                )
-                self.pack_resolver.validate_runtime_admission(
-                    snapshot, request.command_input()
-                )
-                pack_drift = [
-                    key
-                    for key, expected in {
-                        "capability_pack_deployment_id": snapshot.deployment_id,
-                        "capability_pack_activation_version": (
-                            snapshot.activation_version
-                        ),
-                        "capability_pack_binding_set_id": snapshot.binding_set_id,
-                        "capability_pack_binding_set_hash": snapshot.binding_set_hash,
-                        "capability_pack_scope_type": (
-                            snapshot.selected_scope_type.value
-                        ),
-                        "capability_pack_assignment_ref": snapshot.assignment_ref,
-                    }.items()
-                    if str(getattr(request, key)) != str(expected)
-                ]
-                if pack_drift:
-                    raise KernelError(
-                        "CAPABILITY_PACK_RUNTIME_SNAPSHOT_DRIFT",
-                        "Agent run Pack snapshot differs from resolver: "
-                        + ", ".join(pack_drift),
-                    )
-            active_definition = uow.repositories.agent_runtime.lock_active_definition(
-                request.agent_id
-            )
-            active_binding = (
-                chapter_node_binding_from_snapshot(snapshot)
-                if snapshot is not None
-                else uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
-                    workflow_definition_ref=request.workflow_definition_ref,
-                    workflow_node_id=request.workflow_node_id,
-                )
-            )
-            self._validate_run_admission(
-                request,
-                active_definition=active_definition,
-                active_binding=active_binding,
-            )
-            self._validate_collaboration_scope(uow, request)
-            admitted = admit_command_in_uow(
-                uow,
-                {
-                    "definition_name": "agent.candidate.execute",
-                    "definition_version": AGENT_RUNTIME_DEFINITION_VERSION,
-                    "project_id": request.project_id,
-                    "workspace_id": request.workspace_id,
-                    "book_id": request.book_id,
-                    "agent_id": request.agent_id,
-                    "actor_id": principal.principal_id,
-                    "idempotency_scope": "project:agent-runtime",
-                    "idempotency_key": request.idempotency_key,
-                    "trace_id": request.trace_id,
-                    "span_id": str(uuid4()),
-                    "correlation_id": request.correlation_id,
-                    "causation_id": "",
-                    "input": request.command_input(),
-                    "input_assets": [
-                        {
-                            "asset_version_id": asset_version_id,
-                            "content_hash": content_hash,
-                        }
-                        for asset_version_id, content_hash in request.input_assets
-                    ],
-                },
-                context=context,
-            )
-            uow.commit()
-        operation_id = str(admitted["operation_id"])
-        start_saga(
-            self.database_url,
-            GraphCommandContext(
-                project_id=request.project_id,
-                actor_id=principal.principal_id,
-                trace_id=request.trace_id,
-                correlation_id=request.correlation_id,
-            ),
-            root_operation_id=operation_id,
-        )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(
-                operation_id, request.project_id
-            )
-        if state["status"] == "ADMITTED":
-            transition_operation(
-                self.database_url,
-                OperationTransitionCommand(
-                    operation_id=operation_id,
-                    project_id=request.project_id,
-                    expected_version=int(state["version"]),
-                    expected_status="ADMITTED",
-                    target_status="READY",
-                    actor_id=principal.principal_id,
-                    reason="frozen Agent run admitted for worker execution",
-                    trace_id=request.trace_id,
-                    correlation_id=request.correlation_id,
-                ),
-            )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            current = uow.repositories.attempt_runtime.operation_state(
-                operation_id, request.project_id
-            )
-        return {
-            "agent_run_id": operation_id,
-            "operation_id": operation_id,
-            "status": str(current["status"]),
-            "replayed": bool(admitted["replayed"]),
-        }
 
     def admit_harness_session(
         self,
@@ -562,7 +434,7 @@ class AgentRuntimeAuthorityApplication:
                         release_channel=self.release_channel,
                         release_sha=self.commit_sha,
                         operation_definition_ref=(
-                            f"agent.session.execute@{AGENT_RUNTIME_DEFINITION_VERSION}"
+                            f"agent.session.execute@{AGENT_SESSION_DEFINITION_VERSION}"
                         ),
                         pack_id=pack_id,
                     ),
@@ -680,12 +552,28 @@ class AgentRuntimeAuthorityApplication:
                     execution_contract=execution_contract,
                     execution_contract_hash=execution_contract_hash,
                 )
+            effective = replace(
+                effective,
+                tool_policy=with_skill_activation_tool(
+                    effective.tool_policy, effective.skill_bindings
+                ),
+            )
+            unknown_requested_skills = sorted(
+                set(effective.requested_skill_ids)
+                - {str(item.get("skill_id") or "") for item in effective.skill_bindings}
+            )
+            if unknown_requested_skills:
+                raise KernelError(
+                    "AGENT_REQUESTED_SKILL_NOT_IN_FROZEN_CATALOG",
+                    "requested Skills are outside the admission-frozen catalog: "
+                    + ", ".join(unknown_requested_skills),
+                )
             self._validate_harness_accepted_boundary(uow, effective)
             admitted = admit_command_in_uow(
                 uow,
                 {
                     "definition_name": "agent.session.execute",
-                    "definition_version": AGENT_RUNTIME_DEFINITION_VERSION,
+                    "definition_version": AGENT_SESSION_DEFINITION_VERSION,
                     "project_id": effective.project_id,
                     "workspace_id": effective.workspace_id,
                     "book_id": effective.book_id,

@@ -44,6 +44,7 @@ from .harness import (
     AgentToolCall,
     AgentToolObservation,
     AgentToolSpec,
+    SKILL_ACTIVATION_TOOL,
     UnifiedAgentHarness,
 )
 from .definitions import AGENT_SESSION_WORKFLOW_DEFINITION_REF
@@ -325,6 +326,11 @@ class PostgresProductionAgentModelTurnPort:
                 },
                 "tools": [self._tool_payload(item) for item in session.tool_policy],
                 "skills": [dict(item) for item in session.skill_bindings],
+                "active_skill_activations": [
+                    dict(item.result)
+                    for item in observations
+                    if item.tool_name == SKILL_ACTIVATION_TOOL.tool_name
+                ],
                 "committed_transcript": [dict(item) for item in committed_transcript],
                 "observations": [asdict(item) for item in observations],
                 "turn_number": turn_number,

@@ -6,26 +6,36 @@ from typing import Any
 
 
 AGENT_RUNTIME_DEFINITION_VERSION = "2.0.0"
+AGENT_SESSION_DEFINITION_VERSION = "2.1.0"
 AGENT_RUNTIME_ADMIN_HANDLER_KEY = "novel_forge.agent_runtime.admin"
 AGENT_RUNTIME_EXECUTION_HANDLER_KEY = "novel_forge.agent_runtime.candidate"
 AGENT_RUNTIME_HARNESS_HANDLER_KEY = "novel_forge.agent_runtime.harness"
 AGENT_SESSION_WORKFLOW_DEFINITION_ID = "agent_session_runtime"
-AGENT_SESSION_WORKFLOW_DEFINITION_VERSION = AGENT_RUNTIME_DEFINITION_VERSION
+AGENT_SESSION_WORKFLOW_DEFINITION_VERSION = AGENT_SESSION_DEFINITION_VERSION
 AGENT_SESSION_WORKFLOW_DEFINITION_REF = (
     f"{AGENT_SESSION_WORKFLOW_DEFINITION_ID}@"
     f"{AGENT_SESSION_WORKFLOW_DEFINITION_VERSION}"
 )
 
-AGENT_RUNTIME_ADMIN_OPERATIONS = (
+AGENT_RUNTIME_CANONICAL_ADMIN_OPERATIONS = (
     "agent.definition.register",
     "agent.definition.activate",
     "agent.definition.disable",
+)
+AGENT_RUNTIME_LEGACY_ADMIN_OPERATIONS = (
     "agent.chapter_binding.register",
     "agent.chapter_binding.activate",
 )
-AGENT_RUNTIME_OPERATIONS = (
-    *AGENT_RUNTIME_ADMIN_OPERATIONS,
+AGENT_RUNTIME_ADMIN_OPERATIONS = (
+    *AGENT_RUNTIME_CANONICAL_ADMIN_OPERATIONS,
+    *AGENT_RUNTIME_LEGACY_ADMIN_OPERATIONS,
+)
+AGENT_RUNTIME_LEGACY_OPERATIONS = (
+    *AGENT_RUNTIME_LEGACY_ADMIN_OPERATIONS,
     "agent.candidate.execute",
+)
+AGENT_RUNTIME_OPERATIONS = (
+    *AGENT_RUNTIME_CANONICAL_ADMIN_OPERATIONS,
     "agent.session.execute",
 )
 AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES = (
@@ -128,7 +138,11 @@ def _definition(
     )
     return {
         "name": name,
-        "definition_version": AGENT_RUNTIME_DEFINITION_VERSION,
+        "definition_version": (
+            AGENT_SESSION_DEFINITION_VERSION
+            if harness
+            else AGENT_RUNTIME_DEFINITION_VERSION
+        ),
         "family": "agent_runtime_authority",
         "enabled": True,
         "command_schema": command_schema,
@@ -319,6 +333,7 @@ def _harness_schema() -> dict[str, Any]:
             "accepted_boundary",
             "tool_policy",
             "skill_bindings",
+            "requested_skill_ids",
             "budget",
             "policy_snapshot",
             "execution_contract",
@@ -336,6 +351,11 @@ def _harness_schema() -> dict[str, Any]:
             "accepted_boundary": {"type": "object"},
             "tool_policy": {"type": "array", "minItems": 1},
             "skill_bindings": {"type": "array"},
+            "requested_skill_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1},
+                "uniqueItems": True,
+            },
             "budget": {"type": "object"},
             "policy_snapshot": {"type": "object"},
             "execution_contract": {"type": "object"},
@@ -351,10 +371,14 @@ def _harness_schema() -> dict[str, Any]:
 __all__ = [
     "AGENT_RUNTIME_ADMIN_HANDLER_KEY",
     "AGENT_RUNTIME_ADMIN_OPERATIONS",
+    "AGENT_RUNTIME_CANONICAL_ADMIN_OPERATIONS",
     "AGENT_RUNTIME_DEFINITION_VERSION",
     "AGENT_RUNTIME_EXECUTION_HANDLER_KEY",
     "AGENT_RUNTIME_HARNESS_HANDLER_KEY",
+    "AGENT_RUNTIME_LEGACY_ADMIN_OPERATIONS",
+    "AGENT_RUNTIME_LEGACY_OPERATIONS",
     "AGENT_SESSION_WORKFLOW_DEFINITION_ID",
+    "AGENT_SESSION_DEFINITION_VERSION",
     "AGENT_SESSION_WORKFLOW_DEFINITION_REF",
     "AGENT_SESSION_WORKFLOW_DEFINITION_VERSION",
     "AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES",

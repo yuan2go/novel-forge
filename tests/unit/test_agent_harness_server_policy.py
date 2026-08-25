@@ -14,6 +14,7 @@ from novel_forge.modules.agent_runtime.harness import (
     AgentToolObservation,
     AgentToolSpec,
     AutonomousAgentRole,
+    SKILL_ACTIVATION_TOOL,
 )
 from novel_forge.modules.agent_runtime.harness_runtime import BoundAgentToolRouter
 from novel_forge.modules.agent_runtime.policy import (
@@ -122,7 +123,7 @@ def test_server_snapshot_freezes_definition_pack_skill_and_authority_policy() ->
         caller_skills=(),
     )
 
-    assert tools == caller
+    assert tools == (*caller, SKILL_ACTIVATION_TOOL)
     assert skills == (
         {
             "skill_id": "skill-bundle:studio:v1",
@@ -132,6 +133,7 @@ def test_server_snapshot_freezes_definition_pack_skill_and_authority_policy() ->
     )
     assert snapshot["authority_policy"] == "SUBMIT_ONLY_NO_DIRECT_MUTATION"
     assert snapshot["skills_do_not_grant_authority"] is True
+    assert snapshot["skill_activation_policy"] == "EXPLICIT_TRANSCRIPT_EVENT_ONLY"
     assert str(snapshot["policy_hash"]).startswith("sha256:")
 
 

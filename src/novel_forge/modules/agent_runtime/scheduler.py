@@ -362,6 +362,9 @@ class AgentAuthorityScheduler:
         payload = dict(operation["command_payload"] or {})
         session_id = str(payload.get("agent_session_id") or "")
         instruction = str(payload.get("instruction") or "")
+        requested_skill_ids = tuple(
+            str(item) for item in payload.get("requested_skill_ids") or () if str(item)
+        )
         try:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 session = uow.repositories.agent_runtime.require_harness_session(
@@ -443,6 +446,7 @@ class AgentAuthorityScheduler:
                         instruction=instruction,
                         attempt_id=attempt_id,
                         trace_id=str(operation["trace_id"]),
+                        requested_skill_ids=requested_skill_ids,
                     )
                 self.harness_fault_injector("after_harness_transcript_commit")
             self._record_harness_completion(

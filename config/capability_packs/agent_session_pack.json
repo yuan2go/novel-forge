@@ -97,15 +97,15 @@
   },
   "workflow_template": {
     "workflow_id": "agent_session_runtime",
-    "workflow_version": "2.0.0",
+    "workflow_version": "2.1.0",
     "execution_mode": "SAGA",
     "idempotency_scope": "project:agent-harness",
     "nodes": [
       {
         "node_id": "agent_session",
         "operation_name": "agent.session.execute",
-        "operation_definition_ref": "agent.session.execute@2.0.0",
-        "operation_definition_hash": "sha256:86137c367e6ad5a904369868de3801442a5ebeafc70ba42294a6626e6ad7f96b",
+        "operation_definition_ref": "agent.session.execute@2.1.0",
+        "operation_definition_hash": "sha256:795a11ec394f82a6d99295e0dcef31778533d2a048ef8ca22f7651d22fea7a1b",
         "handler_key": "novel_forge.agent_runtime.harness",
         "stage": "agent_session",
         "capability_id": "agent.workspace.execute",

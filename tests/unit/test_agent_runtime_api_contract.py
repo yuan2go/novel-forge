@@ -14,9 +14,7 @@ def test_agent_runtime_authority_routes_cover_control_and_query_surface() -> Non
         SimpleNamespace(services=services, models={}, app_settings=SimpleNamespace())
     )
     routes = {
-        (method, route.path)
-        for route in router.routes
-        for method in route.methods
+        (method, route.path) for route in router.routes for method in route.methods
     }
 
     assert ("POST", "/product/production/agent-runtime/agent-sessions") in routes
@@ -26,11 +24,10 @@ def test_agent_runtime_authority_routes_cover_control_and_query_surface() -> Non
     ) in routes
     assert ("POST", "/product/production/agent-runtime/agent-runs") not in routes
     assert (
-        "POST", "/product/production/agent-runtime/migration/agent-runs"
-    ) in routes
-    assert (
-        "GET", "/product/production/agent-runtime/migration/agent-runs"
-    ) in routes
+        "POST",
+        "/product/production/agent-runtime/migration/agent-runs",
+    ) not in routes
+    assert ("GET", "/product/production/agent-runtime/migration/agent-runs") in routes
     assert (
         "GET",
         "/product/production/agent-runtime/health/recovery",

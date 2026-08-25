@@ -18,6 +18,7 @@ from novel_forge.modules.agent_runtime.harness import (
     AgentToolSpec,
     AgentTranscriptEventType,
     AutonomousAgentRole,
+    SKILL_ACTIVATION_TOOL,
     UnifiedAgentHarness,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -120,6 +121,7 @@ def _session(*, max_turns: int = 3) -> AgentHarnessSession:
                 output_schema_ref="schema:result:v1",
                 allowed_roles=(AutonomousAgentRole.STUDIO_DIRECTOR,),
             ),
+            SKILL_ACTIVATION_TOOL,
         ),
         skill_bindings=(
             {
@@ -200,6 +202,140 @@ def test_harness_observes_dynamic_tool_then_commits_final_response() -> None:
         AgentTranscriptEventType.MODEL_MESSAGE,
         AgentTranscriptEventType.REQUEST_COMMITTED,
     ]
+
+
+def test_model_skill_activation_is_explicit_frozen_and_permission_neutral() -> None:
+    transcript = _Transcript()
+    model = _Model(
+        (
+            AgentModelTurn(
+                message="Activate the frozen planning Skill.",
+                operation_id="operation-1",
+                attempt_id="attempt-1",
+                external_effect_id="effect-1",
+                input_tokens=2,
+                output_tokens=2,
+                cost_amount="0",
+                tool_call=AgentToolCall(
+                    tool_name="skill.activate",
+                    arguments={
+                        "skill_id": "director-planning",
+                        "skill_version": "1.0.0",
+                        "skill_hash": "sha256:" + "a" * 64,
+                    },
+                    reason="apply the relevant frozen planning method",
+                ),
+            ),
+            AgentModelTurn(
+                message="Candidate ready.",
+                operation_id="operation-1",
+                attempt_id="attempt-1",
+                external_effect_id="effect-2",
+                input_tokens=2,
+                output_tokens=2,
+                cost_amount="0",
+                final_response={"candidate_only": True},
+            ),
+        )
+    )
+
+    result = UnifiedAgentHarness(
+        transcript=transcript,
+        model=model,
+        tools=_Tools(),
+        cancellation=_Cancellation(),
+    ).execute_request(
+        session=_session(),
+        request_id="request-skill",
+        instruction="Explore one direction.",
+        attempt_id="attempt-1",
+        trace_id="trace-1",
+    )
+
+    activation = next(
+        event
+        for event in transcript.events
+        if event["event_type"] is AgentTranscriptEventType.SKILL_ACTIVATED
+    )
+    assert activation["payload"]["skill_id"] == "director-planning"
+    assert activation["payload"]["skill_version"] == "1.0.0"
+    assert activation["payload"]["skill_hash"] == "sha256:" + "a" * 64
+    assert activation["payload"]["additional_tool_permissions"] == []
+    assert activation["payload"]["additional_authority_permissions"] == []
+    assert result.observations[0].tool_name == "skill.activate"
+
+
+def test_explicit_caller_skill_selection_is_recorded_before_model_turn() -> None:
+    transcript = _Transcript()
+    model = _Model(
+        (
+            AgentModelTurn(
+                message="Candidate ready.",
+                operation_id="operation-1",
+                attempt_id="attempt-1",
+                external_effect_id="effect-1",
+                input_tokens=2,
+                output_tokens=2,
+                cost_amount="0",
+                final_response={"candidate_only": True},
+            ),
+        )
+    )
+
+    UnifiedAgentHarness(
+        transcript=transcript,
+        model=model,
+        tools=_Tools(),
+        cancellation=_Cancellation(),
+    ).execute_request(
+        session=_session(),
+        request_id="request-explicit-skill",
+        instruction="Use the specified planning Skill.",
+        attempt_id="attempt-1",
+        trace_id="trace-1",
+        requested_skill_ids=("director-planning",),
+    )
+
+    assert [event["event_type"] for event in transcript.events[:2]] == [
+        AgentTranscriptEventType.REQUEST_STARTED,
+        AgentTranscriptEventType.SKILL_ACTIVATED,
+    ]
+    assert transcript.events[1]["payload"]["requested_by"] == "USER_OR_CALLER"
+
+
+def test_skill_activation_outside_frozen_catalog_fails_closed() -> None:
+    model = _Model(
+        (
+            AgentModelTurn(
+                message="Activate an unbound Skill.",
+                operation_id="operation-1",
+                attempt_id="attempt-1",
+                external_effect_id="effect-1",
+                input_tokens=1,
+                output_tokens=1,
+                cost_amount="0",
+                tool_call=AgentToolCall(
+                    tool_name="skill.activate",
+                    arguments={"skill_id": "unfrozen-skill"},
+                    reason="try to expand permissions",
+                ),
+            ),
+        )
+    )
+    with pytest.raises(KernelError) as raised:
+        UnifiedAgentHarness(
+            transcript=_Transcript(),
+            model=model,
+            tools=_Tools(),
+            cancellation=_Cancellation(),
+        ).execute_request(
+            session=_session(max_turns=1),
+            request_id="request-unfrozen-skill",
+            instruction="Do not escape governance.",
+            attempt_id="attempt-1",
+            trace_id="trace-1",
+        )
+    assert raised.value.code == "AGENT_HARNESS_SKILL_NOT_IN_FROZEN_CATALOG"
 
 
 def test_agent_turn_reserves_only_remaining_aggregate_budget() -> None:
