@@ -31,6 +31,8 @@ def test_supervisor_reports_planning_generation_operation_identity(
 ) -> None:
     book = {
         "book_run_id": "book-run:1",
+        "project_id": "project:1",
+        "book_id": "book:1",
         "version": 7,
         "state": BookProductionState.READY.value,
         "input_mode": "RESOLVED_AUTHORITY_INPUT",
@@ -47,6 +49,12 @@ def test_supervisor_reports_planning_generation_operation_identity(
     )
     supervisor.principal = SimpleNamespace()
     supervisor.replan = SimpleNamespace(latest_for_book=lambda _book_run_id: None)
+    supervisor.realizations = SimpleNamespace(
+        require_current_for_chapter=lambda **_values: {
+            "realization_id": "realization:v1",
+            "contract_digest": "sha256:" + "b" * 64,
+        }
+    )
     supervisor._checkpoint_if_needed = lambda _book: None
     supervisor._active_group_run = lambda _book, *_args: (
         {"group_run_id": "group-run:1", "state": "RUNNING"}

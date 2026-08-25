@@ -53,6 +53,13 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 }
             ],
             "expected_exit_state": {"summary": "trust is publicly conditional"},
+            "narrative_realization_slice": {
+                "realization_id": "realization:v1",
+                "contract_digest": "sha256:" + "b" * 64,
+                "chapter_group_plan_version_id": "chapter-group:v1",
+                "chapter_number": 1,
+                "events": [{"event_id": "event:v1"}],
+            },
             "scene_plan": [
                 {
                     "scene_id": "chapter:1:scene:1",

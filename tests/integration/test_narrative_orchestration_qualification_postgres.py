@@ -63,7 +63,6 @@ from tests.integration.test_core_functional_loops_postgres import (
     RELEASE_SHA,
     _activate_planning_pack,
     _principal,
-    _seed_fixture_book_design_qualification,
     _seed_inputs,
 )
 import tests.integration.test_postgresql_only_chapter_slice as chapter_slice_fixture
@@ -945,9 +944,6 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
         )
         narrative_card_version = _seed_prequalified_narrative_card(
             project_id=project_id, workspace_id=workspace_id
-        )
-        _seed_fixture_book_design_qualification(
-            project_id, book_id, generic["book_design"]
         )
         initial_story, initial_canon = _seed_initial_narrative_pair(
             project_id=project_id,

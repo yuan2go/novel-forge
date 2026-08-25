@@ -89,6 +89,13 @@ class ChapterPlanFidelityTests(unittest.TestCase):
             "expected_exit_state": {
                 "summary": "The witness is safe but the conspiracy is alerted."
             },
+            "narrative_realization_slice": {
+                "realization_id": "narrative-realization:group-1",
+                "slice_id": "narrative-realization-slice:chapter-8",
+                "contract_digest": "sha256:realization",
+                "chapter_number": 8,
+                "events": [{"event_id": "event:public-choice"}],
+            },
         }
         source = {
             "project_id": "project-1",

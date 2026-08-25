@@ -116,6 +116,9 @@ from tests.integration.authority_postgres_support import (
 from tests.integration.capability_pack_postgres_support import (
     CapabilityPackPostgresHarness,
 )
+from tests.integration.hierarchy_closure_postgres_support import (
+    seed_ready_story_foundation,
+)
 
 
 RELEASE_SHA = "e" * 40
@@ -683,6 +686,16 @@ def _seed_inputs(
             "promise_ledger",
         }
     )
+    canonical_foundation_roles = {
+        "creative_foundation",
+        "theme_contract",
+        "ending_intent",
+        "reader_promise",
+        "world_bible",
+        "character_cast",
+        "book_design",
+    }
+    roles = [role for role in roles if role not in canonical_foundation_roles]
     result: dict[str, str] = {}
     with transaction() as connection, connection.cursor() as cursor:
         for role in roles:
@@ -713,8 +726,6 @@ def _seed_inputs(
                             }
                         ],
                     }
-            elif role == "book_design":
-                content["ending_contract"] = {"outcome": "costly agency"}
             elif role == "platform_profile":
                 content["safe_summary"] = "Versioned internal platform policy."
                 content["structured_facts"] = [
@@ -815,6 +826,39 @@ def _seed_inputs(
                 ],
             )
             result[result_key] = version_id
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT workspace_id FROM authority_book WHERE project_id=%s AND book_id=%s",
+            [project_id, book_id],
+        )
+        workspace_id = str(cursor.fetchone()[0])
+    formation_principal = Principal(
+        principal_id=f"hierarchy-formation:{project_id}",
+        principal_type=PrincipalType.LOCAL_OPERATOR,
+        permissions=frozenset(
+            {
+                "story_design.authority.execute",
+                "book.authority.execute",
+                "book_design.authority.execute",
+                "book_design.authority.query",
+            }
+        ),
+        project_scope=frozenset({project_id}),
+        authentication_source="controlled-core-loop-fixture",
+    )
+    hierarchy = seed_ready_story_foundation(
+        DATABASE_URL,
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        principal=formation_principal,
+        target_chapters=target_chapter_count,
+        release_sha=RELEASE_SHA,
+    )
+    result.update(hierarchy["asset_versions"])
+    result["foundation_set_digest"] = hierarchy["foundation_set_digest"]
+    result["story_formation_run"] = hierarchy["formation_run_id"]
+    result["book_version"] = str(hierarchy["book_version"])
     return result
 
 
@@ -1204,7 +1248,6 @@ def _activate_plan_chain(
         "volume_plan.generate",
         "arc_plan.generate",
         "chapter_group_plan.generate",
-        "chapter_plan.generate",
     )
     for generator in sequence:
         inputs = {
@@ -1495,14 +1538,6 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
         if role not in {"book_plan", "volume_plan"}
     }
     planning_inputs = {role: generic[role] for role in opening_roles}
-    planning_inputs["book_design"] = str(candidate["asset_version_id"])
-    planning_inputs.update(
-        {
-            role: str(version_id)
-            for role, version_id in activated["foundation_asset_versions"].items()
-            if role in opening_roles
-        }
-    )
 
     with tempfile.TemporaryDirectory(prefix="narrative-evolution-opening-") as root:
         settings = IndustrialSettings(
@@ -1538,7 +1573,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             workspace_id=workspace_id,
             book_id=book_id,
             actor_id=principal.principal_id,
-            expected_book_version=2,
+            expected_book_version=int(generic["book_version"]),
             production_profile=generic["production_profile"],
             planning_input_versions=planning_inputs,
             arc_logical_keys=("arc:central", "arc:relationship"),
@@ -1554,7 +1589,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
 
     assert opened.search_ids == replay.search_ids
     assert len(opened.search_ids) == 4
-    assert opened.book_design_version == candidate["asset_version_id"]
+    assert opened.book_design_version == generic["book_design"]
     assert opened.input_snapshot.snapshot_id == replay.input_snapshot.snapshot_id
     assert opened.input_snapshot.book_plan_version == opened.book_plan_version
     assert opened.input_snapshot.current_volume_plan_version == (
@@ -1665,60 +1700,16 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             ("CHAPTER_GROUP", "PRIMARY", 1),
             ("CHAPTER_GROUP", "REQUIRED_CONTRIBUTION", 1),
             ("CHAPTER_GROUP", "CHECKPOINT_EXPECTATION", 1),
-            ("CHAPTER", "REQUIRED_CONTRIBUTION", 1),
         }
         uow.cursor.execute(
             """
-            SELECT asset.asset_type,
-                   version.content->>'source_planning_candidate_asset_version_id',
-                   operation.definition_name, operation.status,
-                   version.content->>'title', version.content->>'premise'
-            FROM authority_operation_output_asset AS output
-            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
-            JOIN authority_asset_version AS version
-              ON version.asset_version_id=output.asset_version_id
-            JOIN authority_operation AS operation
-              ON operation.operation_id=output.operation_id
-            WHERE operation.project_id=%s
-              AND output.output_key='story_planning.chapter_plan_projection'
+            SELECT COUNT(*)
+            FROM story_plan_binding
+            WHERE project_id=%s AND book_id=%s AND contract_type='CHAPTER'
             """,
-            [project_id],
+            [project_id, book_id],
         )
-        assert uow.cursor.fetchall() == [
-            (
-                "chapter_plan",
-                activated["chapter_plan.generate"],
-                "story_planning.chapter_plan.materialize",
-                "SUCCEEDED",
-                "Chapter 1: The Door Closes",
-                "Chapter 1 forces the protagonist into a witnessed choice.",
-            )
-        ]
-        uow.cursor.execute(
-            """
-            SELECT segment.narrative_segment_id,
-                   arc.thread_id,
-                   chapter.chapter_intent,
-                   jsonb_array_length(chapter.arc_schedule),
-                   jsonb_array_length(chapter.scene_plan)
-            FROM authority_narrative_segment_projection AS segment
-            JOIN authority_narrative_arc_graph_projection AS arc
-              ON arc.project_id=segment.project_id
-             AND arc.book_id=segment.book_id
-            JOIN authority_chapter_execution_plan_projection AS chapter
-              ON chapter.project_id=segment.project_id
-             AND chapter.book_id=segment.book_id
-            WHERE segment.project_id=%s
-            """,
-            [project_id],
-        )
-        assert uow.cursor.fetchone() == (
-            "narrative-segment:1",
-            "thread:central-conflict",
-            "Force a witnessed choice that advances the central conflict.",
-            1,
-            1,
-        )
+        assert int(uow.cursor.fetchone()[0]) == 0
         uow.cursor.execute(
             """
             SELECT generation_id
@@ -1730,6 +1721,34 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             [project_id],
         )
         generation_id = str(uow.cursor.fetchone()[0])
+
+    with pytest.raises(ValueError, match="Frozen Narrative Realization"):
+        StoryPlanningGenerationCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="chapter_plan.generate",
+            logical_key="chapter:1:illegal-direct",
+            input_versions={
+                role: (
+                    activated["book_plan.generate"]
+                    if role == "book_plan"
+                    else activated["volume_plan.generate"]
+                    if role == "volume_plan"
+                    else activated["arc_plan.generate"]
+                    if role == "arc_plans"
+                    else activated["chapter_group_plan.generate"]
+                    if role == "chapter_group_plan"
+                    else generic[role]
+                )
+                for role in GENERATOR_INPUT_ROLES["chapter_plan.generate"]
+            },
+            parent_version_id=activated["chapter_group_plan.generate"],
+            idempotency_key=f"{project_id}:illegal-direct-chapter",
+            trace_id=f"trace:{project_id}:illegal-direct-chapter",
+            correlation_id=f"correlation:{project_id}",
+        )
     with pytest.raises(psycopg.errors.CheckViolation):
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -1931,7 +1950,7 @@ def test_planning_generation_freezes_typed_governance_action_in_canonical_input(
     )
 
 
-def test_production_composition_executes_five_planning_generators_via_pep() -> None:
+def test_production_composition_executes_upstream_planning_via_pep() -> None:
     harness = CapabilityPackPostgresHarness("planning-production-composition")
     _activate_planning_pack(harness)
     generic = _seed_inputs(harness.project_id, harness.book_ids[0])
@@ -1971,7 +1990,12 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
         )
         execution.close()
 
-    assert set(activated) == set(GENERATOR_INPUT_ROLES)
+    assert set(activated) == {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+    }
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -1988,7 +2012,7 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             """,
             [harness.project_id],
         )
-        assert uow.cursor.fetchone() == (5, 5)
+        assert uow.cursor.fetchone() == (4, 4)
         uow.cursor.execute(
             """
             SELECT DISTINCT version.content->'contract'->>'model_id',
@@ -2787,7 +2811,6 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         application=planning,
         multi_volume_arc=True,
     )
-    _seed_fixture_book_design_qualification(project_id, book_id, generic["book_design"])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -2815,7 +2838,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             """,
             [project_id],
         )
-        assert uow.cursor.fetchone() == (7, 7, 7, 7)
+        assert uow.cursor.fetchone() == (6, 6, 6, 6)
         uow.cursor.execute(
             """
             SELECT
@@ -3182,6 +3205,38 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             [book.book_run_id],
         )
         assert int(uow.cursor.fetchone()[0]) == 1
+        uow.cursor.execute(
+            """
+            SELECT realization.realization_id, realization.lifecycle,
+                   COUNT(event.event_id),
+                   COUNT(consumption.planned_event_id) FILTER (
+                     WHERE consumption.coverage_status='ACCEPTED'
+                   ), binding.execution_scope
+            FROM authority_narrative_realization AS realization
+            JOIN authority_narrative_realization_event AS event
+              ON event.realization_id=realization.realization_id
+            LEFT JOIN authority_narrative_realization_consumption AS consumption
+              ON consumption.realization_id=event.realization_id
+             AND consumption.planned_event_id=event.event_id
+            JOIN story_plan_binding AS binding
+              ON binding.asset_version_id=%s
+             AND binding.contract_type='CHAPTER'
+            WHERE realization.project_id=%s AND realization.book_id=%s
+              AND realization.chapter_group_plan_version_id=%s
+            GROUP BY realization.realization_id, realization.lifecycle,
+                     binding.execution_scope
+            """,
+            [
+                str(checkpoint_payload["chapter_plan_asset_version_id"]),
+                project_id,
+                book_id,
+                str(checkpoint_payload["parent_group_version_id"]),
+            ],
+        )
+        partial_realization = uow.cursor.fetchone()
+        assert partial_realization is not None
+        original_realization_id = str(partial_realization[0])
+        assert tuple(partial_realization[1:]) == ("FROZEN", 3, 1, "EXECUTED")
     chapter_admission = dict(
         checkpoint_payload["preparation_report"]["chapter_production_admission"]
     )
@@ -3403,6 +3458,24 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                     )
                 )
             )
+            uow.cursor.execute(
+                """
+                SELECT realization.lifecycle, COUNT(event.event_id),
+                       COUNT(consumption.planned_event_id) FILTER (
+                         WHERE consumption.coverage_status='ACCEPTED'
+                       )
+                FROM authority_narrative_realization AS realization
+                JOIN authority_narrative_realization_event AS event
+                  ON event.realization_id=realization.realization_id
+                LEFT JOIN authority_narrative_realization_consumption AS consumption
+                  ON consumption.realization_id=event.realization_id
+                 AND consumption.planned_event_id=event.event_id
+                WHERE realization.realization_id=%s
+                GROUP BY realization.lifecycle
+                """,
+                [original_realization_id],
+            )
+            assert uow.cursor.fetchone() == ("EXECUTED", 3, 3)
         production_execution.close()
         for worker_execution in worker_production_executions:
             worker_execution.close()
@@ -3557,13 +3630,32 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         binding_count = int(uow.cursor.fetchone()[0])
     assert old_group_freshness == "STALE"
     assert binding_count == 2
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT lifecycle
+            FROM authority_narrative_realization
+            WHERE realization_id=%s
+            """,
+            [original_realization_id],
+        )
+        assert uow.cursor.fetchone() == ("STALE",)
 
-    group_transition = worker_tick(restarted)
-    if group_transition["action"] == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value:
-        group_started = worker_tick(restarted)
+    post_replan_planning_actions: list[str] = []
+    for _ in range(8):
+        group_transition = worker_tick(restarted)
+        action = str(group_transition["action"])
+        post_replan_planning_actions.append(action)
+        if action == SupervisorAction.START_CHAPTER_GROUP.value:
+            break
     else:
-        group_started = group_transition
-    assert group_started["action"] == SupervisorAction.START_CHAPTER_GROUP.value
+        raise AssertionError(
+            "replacement ChapterGroup did not pass realization and ChapterPlan gates"
+        )
+    assert SupervisorAction.QUALIFY_NARRATIVE_REALIZATION.value in (
+        post_replan_planning_actions
+    )
+    assert SupervisorAction.DISPATCH_CHAPTER.value not in post_replan_planning_actions
     paused = book_authority.pause(
         book.book_run_id, reason="restart recovery probe", principal=principal
     )
@@ -3600,6 +3692,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             break
     else:
         raise AssertionError("Canonical Worker did not resume through Chapter 2")
+    assert SupervisorAction.GENERATE_CHAPTER_PLAN.value in after_replan_actions
+    assert SupervisorAction.FREEZE_CHAPTER_PLAN.value in after_replan_actions
     assert SupervisorAction.DISPATCH_CHAPTER.value in after_replan_actions
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
     assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
