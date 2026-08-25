@@ -44,6 +44,16 @@ parallel truth.
 7. Missing, stale, mixed-lineage or digest-drifted Foundation, parent plan,
    realization proof, Working Set or accepted boundary fails closed at
    generation and production admission.
+8. Realization proof is a separate versioned semantic qualification receipt,
+   not inherited scheduling success. Exact criterion PASS/rationale/evidence is
+   required for Canon/state, motivation, world, knowledge, causality, state
+   transition, obligation, Arc, load and decomposition legality.
+9. Child Foundation candidates and their generation Operations both freeze the
+   same exact parent AssetVersion/hash set. Formation jobs freeze stage/version;
+   stale technical retries cannot advance a later semantic stage.
+10. Book opening is admitted as a durable Operation/RuntimeJob and executed by
+    the existing Book worker. HTTP owns admission/control only; post-commit
+    retries reconcile the persisted result.
 
 ## Consequences
 

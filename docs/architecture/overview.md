@@ -36,18 +36,19 @@ Stable current boundaries:
 
 ## Current Narrative Evolution runtime
 
-At this baseline `book-design.v4` still contains a monolithic Creative/World/
-Character design and projects component assets after BookDesign activation.
-This has lifecycle evidence but does not establish the required upstream
-Creative → World → Character → BookDesign Authority chain. New production must
-converge on separately qualified Foundation contracts and a reference-only
-BookDesign v5; v4 remains replay/migration compatibility.
+New production now requires six exact qualified Foundation bindings (Creative,
+Theme, Ending, Reader Promise, WorldBible and CharacterCast) and an active
+reference-only BookDesign v5. Durable Story Formation binds exact parent
+AssetVersions/hashes and generation input snapshots; mixed set generation or
+an unfinished Formation fails closed. `book-design.v4` remains replay/migration
+compatibility and is not a new-production Foundation root.
 
-`BookProductionComposition.open_book` exists and has bounded PostgreSQL fixture
-coverage, but no durable command/admission API invokes it. It is therefore code
-and test reachable, not a complete operator-reachable Book opening flow. The
-closure must admit a durable Operation and let a worker coordinate existing
-Authorities rather than running provider work in an HTTP lifecycle.
+Book opening is an operator-reachable durable command surface. HTTP admits an
+Operation and `BOOK_OPENING_EXECUTE` RuntimeJob, while the Book worker performs
+the searched Book/Volume/Arc baseline and input-snapshot resolution. Query,
+resume and abort operate on the persisted opening run. A worker crash after the
+business commit reconciles the stored COMPLETE result on the same job retry;
+the request lifecycle never owns Provider execution.
 
 Story Planning persists each search at one exact parent/accepted boundary, its
 immutable branch candidates, structured future projections, independent
@@ -57,14 +58,14 @@ Supervisor uses this path for consequential ChapterGroup planning; governed
 Replan uses it for Book/Volume/Arc/ChapterGroup replacement. Operational Chapter
 planning remains just-in-time and single-candidate.
 
-The current search and replay fixture does not establish a closed Foundation
-hierarchy or literary quality. Real-provider search behavior, human preference
-and long-form stability remain explicitly unqualified until a later bounded
-campaign.
+The current PostgreSQL fixture establishes the closed Foundation hierarchy and
+durable process/replay semantics. It does not establish literary quality,
+real-provider search behavior, human preference or long-form stability; those
+remain explicitly unqualified until a later bounded campaign.
 
 ## Current converged production shape
 
-The converged target moves chapter production from broad context-driven generation toward:
+The converged production path is:
 
 ```text
 Progressive Plan + Arc Working Set
@@ -80,10 +81,12 @@ Progressive Plan + Arc Working Set
 → atomic Accepted Outcome projection set
 ```
 
-The baseline Book Supervisor currently skips the Narrative Realization step and
-creates ChapterPlan directly from ChapterGroup. Closing that gap extends
-existing Planning/Narrative State/Context/Chapter Authority; it does not create
-a second narrative runtime or another `PlanContractType` scale.
+The Book Supervisor now qualifies, approves and freezes Narrative Realization
+before ChapterPlan generation. Chapter generation and activation resolve the
+current slice from Planning Authority and exact-compare caller transport; Book
+production admission revalidates its lineage and digest. Realization remains a
+causal correctness contract inside Hierarchical Planning, not another
+`PlanContractType`, runtime or accepted-actual Authority.
 
 The current implementation realizes the working-set, composition/Mission and
 structured Narrative Intelligence links in this chain. The 2026-08-24

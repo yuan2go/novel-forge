@@ -664,6 +664,18 @@ workers. It owns process progress and output bindings only. It cannot directly
 change StoryDesign or BookDesign truth, and an API request only admits or
 controls the durable run; it never owns the Provider chain.
 
+Every child candidate declares the exact parent role → AssetVersion/content-hash
+map, and its generation Operation must contain those same frozen parent assets.
+A RuntimeJob freezes the Formation stage and version it may advance; a stale
+technical retry cannot advance a later semantic stage. Resume cancels a pending
+stale job and schedules a new job for the current persisted stage/version.
+
+Book opening follows the same durable boundary: API admission persists the
+frozen request and schedules `BOOK_OPENING_EXECUTE`; the worker runs existing
+Narrative Search/Planning/Input Resolver applications. Query/resume/abort are
+commands over the persisted run, and post-commit worker failure reconciles the
+stored result without another semantic search.
+
 Creative Search may reuse immutable candidate/evaluation/comparison/selection
 primitives with Narrative Search, but Creative is not forced into a Planning
 scope. Search selection is evidence for normal design qualification and
@@ -695,6 +707,14 @@ Working Set and establishes goal coverage, Canon/state/world/knowledge legality,
 motivation, causal escalation, state-transition coverage, obligation/Arc
 coverage, load bounds and legal Chapter decomposition.
 
+The proof is not projected from scheduling success. ChapterGroup qualification
+records a separate versioned `NARRATIVE_REALIZATION_PROOF` receipt with exact
+criterion evidence for Canon/state legality, character motivation, world rules,
+knowledge boundaries, causal escalation, state transitions, obligation and Arc
+coverage, Narrative Load and Chapter decomposition. Every criterion must be an
+independent PASS with rationale and evidence references. Planned disclosures
+must be permitted by the frozen reader knowledge boundary.
+
 No current Qualified/Approved/Frozen realization means no ChapterPlan. A
 ChapterPlan keeps ChapterGroup as its structural parent and binds the exact
 realization slice and planned event identities. Production admission recomputes
@@ -709,9 +729,10 @@ Planned Event → Observed Event → Accepted Chapter Outcome → Accepted Actua
 
 A ChapterPlan becomes `EXECUTED` atomically with its accepted Chapter. A
 multi-Chapter realization advances only the accepted event/slice coverage and
-becomes `EXECUTED` only after all required coverage is accepted. Unobserved
+becomes `EXECUTED` only after every required event is accepted and every
+optional event is either accepted or explicitly not observed. Unobserved
 planned events never advance Canon, Narrative State, Arc Actual or obligation
-state. Missing, additional or materially divergent observations create
+state. Missing, additional, causal, state-delta or disclosure drift creates
 immutable deviation/replan evidence and stale only affected future intent.
 They never rewrite accepted history or silently alter the frozen realization.
 
@@ -1307,33 +1328,21 @@ remain separate, explicitly authorized runs:
 - bounded-context and long-distance obligation proof;
 - million-word retrieval quality and growth-slope evidence.
 
-### P1 — Canonical hierarchy closure (active convergence)
+### P1 — Canonical hierarchy closure (implemented; bounded integration proven)
 
-The next closure must replace the currently disconnected/incorrect opening
-semantics with one durable hierarchy:
+The current runtime uses separately qualified Foundation contracts,
+reference-only BookDesign v5, durable Formation/Opening coordination and the
+Planning-owned Narrative Realization contract. Book/Chapter production rejects
+missing, stale or mixed lineage; accepted outcome evidence consumes planned
+event coverage and future-only Replan invalidates affected intent. PostgreSQL
+integration proves bounded formation, planning, 1–4 Chapter execution,
+acceptance, partial/full coverage, deviation/staleness, retry/recovery/replay
+and fresh/upgrade migration behavior.
 
-- qualify and activate the complete Foundation Set under layer-specific
-  Authorities, with BookDesign as synthesis/reference rather than copied truth;
-- explore and compare persistent Book/Volume/Arc/ChapterGroup futures through
-  Story Planning rather than accepting one sample by default;
-- require a Qualified/Approved/Frozen Narrative Realization before ChapterPlan
-  and consume its event coverage only from accepted outcome evidence;
-- carry selected-future projection and creative-intelligence evidence into
-  downstream Planning Context;
-- reopen only affected future space after accepted-state or governed Replan
-  evidence changes the parent boundary;
-- preserve existing Chapter Mission, Working Set, Accepted Outcome and
-  PlanChange Authorities.
-
-At the baseline of this work, `book-design.v4` still owns and projects a
-monolithic Foundation, `BookProductionComposition.open_book` has no durable
-admission API, and Book Supervisor generates ChapterPlan directly from a
-ChapterGroup. Those are known gaps, not proof of closure. The target uses
-BookDesign v5 references, durable Story Formation/opening commands and the
-Planning-owned Narrative Realization contract without replacing the existing
-runtime. Engineering completion does not establish sustained literary quality;
-bounded real-provider Arc/Volume campaigns, human blind comparison and reader
-evidence remain later independent qualifications.
+This evidence is engineering qualification, not sustained literary quality or
+production proof. Real-provider Arc/Volume campaigns, human blind comparison,
+reader evidence, long-form stability and multi-book operation remain later
+independent qualifications.
 
 ### P2 — Creative collaboration and author IDE
 
