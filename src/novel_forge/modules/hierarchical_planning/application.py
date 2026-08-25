@@ -763,7 +763,10 @@ class PostgresHierarchicalPlanningAuthority:
         )
 
         foundation = require_current_foundation_set(
-            cursor, project_id=project_id, book_id=book_id
+            cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
         )
         by_role = {
             str(item.get("role") or ""): item

@@ -20,6 +20,7 @@ TERMINAL_JOB_STATUSES = frozenset(
 )
 OPERATIONAL_RUNTIME_JOB_CONTRACTS = {
     "STORY_FORMATION_ADVANCE": ("story_formation", "STORY_FORMATION_RUN"),
+    "BOOK_OPENING_EXECUTE": ("book_opening", "BOOK_OPENING_RUN"),
     "BOOK_COORDINATION_TICK": ("book", "BOOK_RUN"),
     "BOOK_FOLLOWUP_ADMISSION": ("book_followup", "CHAPTER_ACCEPTANCE"),
     "BOOK_PROJECTION_REPAIR": ("book_repair", "BOOK_RUN"),
@@ -238,6 +239,72 @@ class RuntimeJobAuthority:
             "coalesced_active_subject": not exact_dedupe,
             "input_hash": spec.input_hash,
         }
+
+    def cancel_pending_for_subject(
+        self,
+        *,
+        job_kind: str,
+        runtime_group: str,
+        subject_kind: str,
+        subject_id: str,
+        project_id: str,
+        reason: str,
+    ) -> tuple[str, ...]:
+        """Supersede retryable jobs before a governed business resume."""
+
+        if any(
+            not value.strip()
+            for value in (
+                job_kind,
+                runtime_group,
+                subject_kind,
+                subject_id,
+                project_id,
+                reason,
+            )
+        ):
+            raise ValueError("runtime job cancellation scope is incomplete")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT runtime_job_id
+                FROM authority_runtime_job
+                WHERE job_kind=%s AND runtime_group=%s AND subject_kind=%s
+                  AND subject_id=%s AND project_id=%s
+                  AND status IN ('READY','RETRY_WAIT')
+                ORDER BY runtime_job_id
+                FOR UPDATE
+                """,
+                [job_kind, runtime_group, subject_kind, subject_id, project_id],
+            )
+            job_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            if job_ids:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_runtime_job
+                    SET status='CANCELLED', last_error=%s, updated_at=NOW()
+                    WHERE runtime_job_id=ANY(%s)
+                      AND status IN ('READY','RETRY_WAIT')
+                    """,
+                    [Jsonb({"code": "SUPERSEDED_BY_RESUME", "reason": reason}), list(job_ids)],
+                )
+                if uow.cursor.rowcount != len(job_ids):
+                    raise KernelError(
+                        "RUNTIME_JOB_CANCEL_CONFLICT",
+                        "runtime job became active while resume superseded it",
+                    )
+                for runtime_job_id in job_ids:
+                    self._append_event(
+                        uow,
+                        runtime_job_id=runtime_job_id,
+                        attempt_id="",
+                        event_type="runtime_job.cancelled",
+                        worker_id="",
+                        fencing_token=0,
+                        payload={"reason": reason},
+                    )
+            uow.commit()
+        return job_ids
 
     def claim(
         self,

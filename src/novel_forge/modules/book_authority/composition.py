@@ -24,7 +24,7 @@ from novel_forge.modules.story_planning_runtime import (
 
 from .input_resolver import BookProductionInputResolver
 from .opening import (
-    BookOpeningResult,
+    BookOpeningAdmission,
     OpenBookProductionRequest,
     PostgresBookOpeningApplication,
 )
@@ -60,13 +60,13 @@ class BookProductionComposition:
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         return self.supervisor.tick(book_run_id)
 
-    def open_book(self, request: OpenBookProductionRequest) -> BookOpeningResult:
+    def open_book(self, request: OpenBookProductionRequest) -> BookOpeningAdmission:
         if self.opening is None:
             raise KernelError(
                 "BOOK_OPENING_RUNTIME_NOT_CONFIGURED",
                 "Book opening is unavailable in this explicitly partial composition",
             )
-        return self.opening.open(request, principal=self.principal)
+        return self.opening.admit(request, principal=self.principal)
 
     def approve_replan(
         self,

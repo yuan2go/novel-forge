@@ -188,7 +188,7 @@ def _validate_world(
         normalized = dict(raw)
         normalized.setdefault("consequence", raw.get("observable_consequence"))
         _required_fields(normalized, required, f"WORLD_BIBLE.rules[{index}]")
-    _require_exact_parent_refs(content, parents, required=False)
+    _require_declared_parent_bindings(content, parents)
 
 
 def _validate_characters(
@@ -219,13 +219,13 @@ def _validate_characters(
                 "FOUNDATION_LAYER_STRUCTURAL_INVALID",
                 f"CHARACTER_CAST[{index}] requires an Arc direction",
             )
-    _require_exact_parent_refs(content, parents, required=False)
+    _require_declared_parent_bindings(content, parents)
 
 
 def _require_creative_alignment(
     content: Mapping[str, Any], parents: Mapping[FoundationRole, Mapping[str, Any]]
 ) -> None:
-    _require_exact_parent_refs(content, parents, required=False)
+    _require_declared_parent_bindings(content, parents)
     creative = parents[FoundationRole.CREATIVE_FOUNDATION]
     declared_genre = str(content.get("genre") or "").strip().casefold()
     creative_genre = str(
@@ -238,27 +238,41 @@ def _require_creative_alignment(
         )
 
 
-def _require_exact_parent_refs(
+def _require_declared_parent_bindings(
     content: Mapping[str, Any],
     parents: Mapping[FoundationRole, Mapping[str, Any]],
-    *,
-    required: bool,
 ) -> None:
-    refs = content.get("foundation_parent_version_ids")
-    if refs is None and not required:
-        return
+    refs = content.get("foundation_parent_bindings")
     if not isinstance(refs, Mapping):
         raise KernelError(
             "FOUNDATION_LINEAGE_DRIFT",
-            "foundation_parent_version_ids must be an exact role/version map",
+            "foundation_parent_bindings must freeze exact parent versions and hashes",
         )
-    # Actual version equality is enforced by FoundationBinding.  Content-level
-    # refs, when emitted, must at least name the complete parent role set and
-    # may never smuggle additional authority roles.
-    if set(str(key) for key in refs) != {role.value for role in parents}:
+    expected = {
+        role.value: {
+            "asset_version_id": str(parent.get("asset_version_id") or ""),
+            "content_hash": str(parent.get("content_hash") or ""),
+        }
+        for role, parent in parents.items()
+    }
+    normalized: dict[str, dict[str, str]] = {}
+    for role, value in refs.items():
+        if not isinstance(value, Mapping) or set(value) != {
+            "asset_version_id",
+            "content_hash",
+        }:
+            raise KernelError(
+                "FOUNDATION_LINEAGE_DRIFT",
+                "Foundation parent binding fields must match exactly",
+            )
+        normalized[str(role)] = {
+            "asset_version_id": str(value.get("asset_version_id") or ""),
+            "content_hash": str(value.get("content_hash") or ""),
+        }
+    if normalized != expected:
         raise KernelError(
             "FOUNDATION_LINEAGE_DRIFT",
-            "Foundation child content declares a mixed or incomplete parent set",
+            "Foundation child was generated against different parent evidence",
         )
 
 

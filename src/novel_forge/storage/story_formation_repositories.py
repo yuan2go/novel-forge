@@ -149,7 +149,14 @@ class StoryFormationRepository:
             )
         return self.require(formation_run_id)
 
-    def advance_one(self, formation_run_id: str, operation_id: str) -> dict[str, Any]:
+    def advance_one(
+        self,
+        formation_run_id: str,
+        operation_id: str,
+        *,
+        expected_stage: str,
+        expected_version: int,
+    ) -> dict[str, Any]:
         self.cursor.execute(
             """
             SELECT project_id, book_id, lifecycle, current_stage,
@@ -171,6 +178,11 @@ class StoryFormationRepository:
             raise KernelError(
                 "STORY_FORMATION_NOT_RUNNABLE",
                 "Formation is not in a restartable lifecycle",
+            )
+        if str(row[3]) != expected_stage or int(row[8]) != expected_version:
+            raise KernelError(
+                "STORY_FORMATION_JOB_STALE",
+                "Formation RuntimeJob does not match its frozen stage/version",
             )
         frozen = StoryFormationInput.from_mapping(dict(row[4]))
         if frozen.digest != str(row[5]):
@@ -615,6 +627,7 @@ class StoryFormationRepository:
         parents = self._current_parent_bindings(
             project_id=project_id, book_id=book_id, role=layer.role
         )
+        self._require_generation_parent_inputs(layer, parents)
         parent_contents = self._parent_contents(project_id, parents)
         content = dict(row[1])
         layer_payload = content.get("candidate_payload")
@@ -849,6 +862,40 @@ class StoryFormationRepository:
             )
         return tuple(by_role[item] for item in role.required_parents)
 
+    def _require_generation_parent_inputs(
+        self,
+        layer: FormationLayerInput,
+        parents: tuple[FoundationBinding, ...],
+    ) -> None:
+        if not parents:
+            return
+        self.cursor.execute(
+            """
+            SELECT input_asset_snapshot
+            FROM authority_operation
+            WHERE operation_id=%s
+            """,
+            [layer.generation_operation_id],
+        )
+        row = self.cursor.fetchone()
+        snapshot = row[0] if row is not None else None
+        if not isinstance(snapshot, list):
+            raise KernelError(
+                "FOUNDATION_GENERATION_LINEAGE_MISSING",
+                f"{layer.role.value} generation has no frozen parent inputs",
+            )
+        frozen = {
+            (str(item.get("asset_version_id") or ""), str(item.get("content_hash") or ""))
+            for item in snapshot
+            if isinstance(item, dict)
+        }
+        expected = {(item.asset_version_id, item.content_hash) for item in parents}
+        if not expected.issubset(frozen):
+            raise KernelError(
+                "FOUNDATION_GENERATION_LINEAGE_DRIFT",
+                f"{layer.role.value} was not generated against its current exact parents",
+            )
+
     def _parent_contents(
         self, project_id: str, parents: tuple[FoundationBinding, ...]
     ) -> dict[FoundationRole, dict[str, Any]]:
@@ -876,7 +923,11 @@ class StoryFormationRepository:
                     "FOUNDATION_AUTHORITY_ENVELOPE_INVALID",
                     f"{parent.role.value} is not a schema-backed Story Design candidate",
                 )
-            result[parent.role] = payload
+            result[parent.role] = {
+                **payload,
+                "asset_version_id": parent.asset_version_id,
+                "content_hash": parent.content_hash,
+            }
         return result
 
     def _require_book_design(

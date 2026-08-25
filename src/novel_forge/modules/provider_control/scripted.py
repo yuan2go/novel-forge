@@ -173,6 +173,19 @@ class ScriptedProviderAdapterV2:
                             event.get("consequence")
                             or "the planned consequence occurs"
                         ),
+                        "observed_action": str(event.get("action") or "planned action"),
+                        "observed_decision": str(
+                            event.get("decision") or "planned decision"
+                        ),
+                        "observed_cause_event_ids": list(event.get("causes") or ()),
+                        "observed_disclosures": list(
+                            event.get("disclosures") or ()
+                        ),
+                        "observed_state_deltas": [
+                            dict(delta)
+                            for delta in event.get("state_deltas") or ()
+                            if isinstance(delta, dict)
+                        ],
                         "observed_state_event_ids": [
                             str(delta.get("entity_id") or "")
                             for delta in event.get("state_deltas") or ()

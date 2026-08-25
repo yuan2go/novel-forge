@@ -107,7 +107,7 @@ class AcceptedBoundaryBinding:
                 "NARRATIVE_REALIZATION_INVALID",
                 "accepted_through_chapter must be a non-negative integer",
             )
-        return cls(
+        result = cls(
             accepted_through_chapter=chapter,
             story_state_version_id=_required(
                 value.get("story_state_version_id"), "story_state_version_id"
@@ -122,6 +122,7 @@ class AcceptedBoundaryBinding:
                 value.get("canon_content_hash"), "canon_content_hash"
             ),
         )
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,13 +138,14 @@ class ArcPlanBinding:
                 "NARRATIVE_REALIZATION_INVALID",
                 "Arc binding fields must match the contract exactly",
             )
-        return cls(
+        result = cls(
             arc_id=_required(value.get("arc_id"), "arc_id"),
             asset_version_id=_required(
                 value.get("asset_version_id"), "arc asset_version_id"
             ),
             content_hash=_hash(value.get("content_hash"), "arc content_hash"),
         )
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,7 +274,7 @@ class NarrativeRealizationEvent:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID", "event required must be boolean"
             )
-        return cls(
+        result = cls(
             event_id=_required(value.get("event_id"), "event_id"),
             slice_id=_required(value.get("slice_id"), "slice_id"),
             chapter_number=chapter,
@@ -301,6 +303,18 @@ class NarrativeRealizationEvent:
             ),
             required=bool(value["required"]),
         )
+        disclosures = set(result.disclosures)
+        if not disclosures.issubset(set(result.knowledge_boundary.reader_may_learn)):
+            raise KernelError(
+                "REALIZATION_KNOWLEDGE_BOUNDARY_INVALID",
+                "planned disclosures must be explicitly permitted for the reader",
+            )
+        if disclosures & set(result.knowledge_boundary.forbidden_disclosures):
+            raise KernelError(
+                "REALIZATION_KNOWLEDGE_BOUNDARY_INVALID",
+                "planned disclosures intersect the frozen forbidden boundary",
+            )
+        return result
 
     def to_dict(self) -> dict[str, Any]:
         return _json_value(asdict(self))

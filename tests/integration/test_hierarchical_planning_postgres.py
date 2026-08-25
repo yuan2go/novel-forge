@@ -5,6 +5,7 @@ import json
 import unittest
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.book_design_authority import FoundationRole
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
@@ -25,6 +26,9 @@ from tests.integration.authority_postgres_support import (
     insert_definition,
     insert_operation,
     seed_authority_project_book,
+)
+from tests.integration.hierarchy_closure_postgres_support import (
+    seed_ready_story_foundation,
 )
 
 
@@ -69,6 +73,15 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             commit_sha="b" * 40,
         )
         self.counter = 0
+        self.foundation_result = seed_ready_story_foundation(
+            DATABASE_URL,
+            project_id=self.project_id,
+            workspace_id=f"workspace:{self.project_id}",
+            book_id=self.book_id,
+            principal=self.principal,
+            target_chapters=100,
+            release_sha="b" * 40,
+        )
         self._seed_realization_authority_inputs()
 
     def _seed_realization_authority_inputs(self) -> None:
@@ -140,11 +153,6 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             "group:1",
             parent=volume,
         )
-        chapter = self._activate_and_bind(
-            PlanContractType.CHAPTER,
-            "chapter:1",
-            parent=group,
-        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -160,13 +168,12 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             relations,
             [
                 "BOOK_CONTAINS_VOLUME",
-                "CHAPTER_GROUP_CONTAINS_CHAPTER",
                 "VOLUME_CONTAINS_CHAPTER_GROUP",
             ],
         )
         self.assertEqual(
-            chapter["parent_version_id"],
-            group["asset_version_id"],
+            group["parent_version_id"],
+            volume["asset_version_id"],
         )
 
         other_book = self._activate_and_bind(
@@ -175,12 +182,12 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(KernelError, "PLANNING_PARENT_BINDING_INVALID"):
             self._activate_and_bind(
-                PlanContractType.CHAPTER,
-                "chapter:bad-parent",
+                PlanContractType.CHAPTER_GROUP,
+                "group:bad-parent",
                 parent=other_book,
             )
 
-    def test_arc_crosses_volumes_and_chapter_contributes_to_multiple_arcs(
+    def test_arc_crosses_volumes_and_relations_form_closure(
         self,
     ) -> None:
         book = self._activate_and_bind(
@@ -233,40 +240,6 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                         "relation_type": "ENABLES",
                     }
                 ],
-            },
-        )
-        group = self._activate_and_bind(
-            PlanContractType.CHAPTER_GROUP,
-            "group:1",
-            parent=volume1,
-            extra={
-                "primary_arc_ids": [arc1["asset_version_id"]],
-                "secondary_arc_ids": [arc2["asset_version_id"]],
-                "required_arc_contributions": [
-                    arc1["asset_version_id"],
-                    arc2["asset_version_id"],
-                ],
-                "arc_checkpoint_expectations": [
-                    {
-                        "arc_plan_version_id": arc1["asset_version_id"],
-                        "expectation": "public accountability advances",
-                    },
-                    {
-                        "arc_plan_version_id": arc2["asset_version_id"],
-                        "expectation": "costly trust becomes actionable",
-                    },
-                ],
-            },
-        )
-        chapter = self._activate_and_bind(
-            PlanContractType.CHAPTER,
-            "chapter:1",
-            parent=group,
-            extra={
-                "required_arc_contributions": [
-                    {"arc_plan_version_id": arc1["asset_version_id"]},
-                    {"arc_plan_version_id": arc2["asset_version_id"]},
-                ]
             },
         )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -339,14 +312,6 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             (volume2["asset_version_id"], arc1["asset_version_id"]),
             edges,
         )
-        self.assertIn(
-            (arc1["asset_version_id"], chapter["asset_version_id"]),
-            edges,
-        )
-        self.assertIn(
-            (arc2["asset_version_id"], chapter["asset_version_id"]),
-            edges,
-        )
         self.assertEqual(
             relation_edges,
             (
@@ -401,7 +366,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 [(source["asset_version_id"], target["asset_version_id"])],
             )
 
-    def test_canonical_segment_arc_and_chapter_execution_views_compose(self) -> None:
+    def test_canonical_segment_arc_and_group_views_compose(self) -> None:
         book = self._activate_and_bind(PlanContractType.BOOK, "book:canonical")
         volume = self._activate_and_bind(
             PlanContractType.VOLUME,
@@ -464,105 +429,6 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 ],
             },
         )
-        chapter = self._activate_and_bind(
-            PlanContractType.CHAPTER,
-            "chapter:canonical",
-            parent=group,
-            extra={
-                "narrative_architecture_version": "canonical-narrative-v1",
-                "narrative_segment_ref": {
-                    "volume_plan_version_id": volume["asset_version_id"],
-                    "segment_id": "segment:commitment",
-                },
-                "chapter_intent": "make the choice visible",
-                "arc_schedule": [
-                    {
-                        "arc_plan_version_id": arc["asset_version_id"],
-                        "role": "PRIMARY",
-                        "segment_id": "arc-segment:choice",
-                        "expected_movement": "denial to action",
-                    }
-                ],
-                "required_arc_contributions": [
-                    {
-                        "arc_plan_version_id": arc["asset_version_id"],
-                        "contribution": "denial becomes visible action",
-                    }
-                ],
-                "setups": [],
-                "payoffs": [],
-                "character_participation": [
-                    {
-                        "character_id": "character:lin",
-                        "role": "PROTAGONIST",
-                        "trajectory_ref": "character-arc:accountability",
-                        "causal_trigger": "publicly accepts custody",
-                        "entry_emotion": "guarded",
-                        "exit_emotion": "costly resolve",
-                        "resource_changes": ["personal-liability:+1"],
-                        "relationship_changes": ["witness:conditional-trust"],
-                        "known_fact_ids": ["fact:ledger"],
-                        "reachable_location_ids": ["location:registry"],
-                    }
-                ],
-                "knowledge_boundaries": [
-                    {
-                        "layer": "READER_KNOWLEDGE",
-                        "fact_id": "fact:ledger",
-                        "subject_id": "READER",
-                        "status": "KNOWN",
-                    }
-                ],
-                "disclosures": [
-                    {
-                        "disclosure_id": "disclosure:ledger",
-                        "fact_id": "fact:ledger",
-                        "audience": "READER",
-                        "mode": "CONFIRM",
-                        "presentation_channel": "the signed custody record",
-                    }
-                ],
-                "required_state_transitions": [
-                    {
-                        "state_kind": "character_state",
-                        "entity_key": "character:lin",
-                        "from_state": "avoids responsibility",
-                        "to_state": "accepts public responsibility",
-                    }
-                ],
-                "reader_experience": {"target_emotion": "costly relief"},
-                "scene_plan": [
-                    {
-                        "scene_id": "scene:1",
-                        "goal": "make the custody choice public",
-                        "participants": ["character:lin"],
-                        "pov_character_id": "character:lin",
-                        "focalization": "INTERNAL",
-                        "location_id": "location:registry",
-                        "story_time": {
-                            "timeline_id": "timeline:main",
-                            "start_ordinal": 1,
-                            "end_ordinal": 1,
-                            "precision": "EXACT",
-                        },
-                        "narrative_time_relation": "ESTABLISHES",
-                        "accessible_knowledge": ["fact:ledger"],
-                        "state_transitions": ["character:lin"],
-                        "entry_state": "custody is deniable",
-                        "exit_state": "custody is signed and witnessed",
-                        "beats": [
-                            {
-                                "beat_id": "beat:public-choice",
-                                "ordinal": 1,
-                                "function": "make the costly choice observable",
-                            }
-                        ],
-                    }
-                ],
-                "expected_exit_state": {"summary": "the choice is public"},
-            },
-        )
-
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 "SELECT narrative_segment_id FROM authority_narrative_segment_projection "
@@ -577,11 +443,11 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             )
             self.assertEqual(uow.cursor.fetchone()[0], "thread:accountability")
             uow.cursor.execute(
-                "SELECT chapter_intent FROM authority_chapter_execution_plan_projection "
-                "WHERE project_id=%s AND chapter_plan_version_id=%s",
-                [self.project_id, chapter["asset_version_id"]],
+                "SELECT execution_scope FROM story_plan_binding "
+                "WHERE project_id=%s AND asset_version_id=%s",
+                [self.project_id, group["asset_version_id"]],
             )
-            self.assertEqual(uow.cursor.fetchone()[0], "make the choice visible")
+            self.assertEqual(uow.cursor.fetchone()[0], "PLANNED")
 
     def test_active_plan_unique_and_frozen_replacement_requires_approval(
         self,
@@ -938,8 +804,37 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             "context_profile_ref": "context:planning:v1",
         }
         if contract_type is PlanContractType.BOOK:
+            foundation = self.foundation_result["foundation"]
+            foundation_roles = {
+                FoundationRole.CREATIVE_FOUNDATION: "creative_foundation",
+                FoundationRole.THEME_CONTRACT: "theme_contract",
+                FoundationRole.ENDING_INTENT: "ending_intent",
+                FoundationRole.READER_PROMISE: "reader_promise",
+                FoundationRole.WORLD_BIBLE: "world_bible",
+                FoundationRole.CHARACTER_CAST: "character_cast",
+            }
+            frozen_foundation = [
+                {
+                    "role": input_role,
+                    "asset_version_id": foundation.by_role[role].asset_version_id,
+                    "content_hash": foundation.by_role[role].content_hash,
+                }
+                for role, input_role in foundation_roles.items()
+            ]
             values.update(
                 {
+                    "frozen_inputs": [
+                        *frozen_foundation,
+                        {
+                            "role": "book_design",
+                            "asset_version_id": self.foundation_result[
+                                "book_design_asset_version_id"
+                            ],
+                            "content_hash": self.foundation_result[
+                                "book_design_content_hash"
+                            ],
+                        },
+                    ],
                     "reader_promise": "progress with meaningful cost",
                     "central_conflict_engine": "agency versus control",
                     "protagonist_transformation": "reactive to responsible",
@@ -1008,6 +903,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                     "secondary_arc_ids": [],
                     "required_arc_contributions": [],
                     "arc_checkpoint_expectations": [],
+                    "narrative_event_chain": self._narrative_event_chain(),
                 }
             )
         else:
@@ -1023,6 +919,10 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         if (extra or {}).get("narrative_architecture_version") == (
             "canonical-narrative-v1"
         ):
+            canonical_frozen_inputs = [
+                *list(values.get("frozen_inputs") or ()),
+                *self.realization_inputs,
+            ]
             plan_horizon = {
                 PlanContractType.BOOK: "STRATEGIC",
                 PlanContractType.VOLUME: "STRATEGIC",
@@ -1086,7 +986,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 {
                     "planning_horizon": plan_horizon,
                     "realization_level": realization_level,
-                    "frozen_inputs": list(self.realization_inputs),
+                    "frozen_inputs": canonical_frozen_inputs,
                     "constraint_envelope": {
                         "generation_operation_id": (
                             self.realization_generation_operation_id
@@ -1185,6 +1085,45 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             "ending_hook": ending_hook,
             "prohibited_outcomes": ["premature closure"],
         }
+
+    @staticmethod
+    def _narrative_event_chain() -> list[dict]:
+        event_ids = [f"event:fixture:{chapter}" for chapter in range(1, 4)]
+        return [
+            {
+                "event_id": event_id,
+                "slice_id": f"slice:fixture:{chapter}",
+                "chapter_number": chapter,
+                "causes": [] if chapter == 1 else [event_ids[chapter - 2]],
+                "actor_ref": "character:protagonist",
+                "motivation": "protect the witness without hiding the cost",
+                "preconditions": ["the institutional pressure remains active"],
+                "knowledge_boundary": {
+                    "actor_knows": ["fact:public-risk"],
+                    "reader_may_learn": ["fact:hidden-cost"],
+                    "forbidden_disclosures": ["fact:future-plan"],
+                },
+                "action": "confront the institutional resistance",
+                "decision": "accept a visible cost instead of retreating",
+                "resistance": "the opposition closes the safe alternative",
+                "consequence": "the choice creates the next pressure",
+                "state_deltas": [
+                    {
+                        "state_kind": "character_arc",
+                        "entity_id": "protagonist:accountability",
+                        "from_state": f"stage:{chapter - 1}",
+                        "to_state": f"stage:{chapter}",
+                    }
+                ],
+                "disclosures": ["fact:hidden-cost"],
+                "obligation_actions": ["promise:choice:ADVANCE"],
+                "arc_contributions": ["arc:fixture:ADVANCE"],
+                "irreversible_change": "the choice becomes publicly witnessed",
+                "next_event_ids": [] if chapter == 3 else [event_ids[chapter]],
+                "required": True,
+            }
+            for chapter, event_id in enumerate(event_ids, start=1)
+        ]
 
     @staticmethod
     def _fixture_pep_evidence(

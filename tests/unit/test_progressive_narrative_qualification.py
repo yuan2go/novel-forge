@@ -54,10 +54,13 @@ def test_every_qualification_profile_binds_a_governed_execution_capability() -> 
             "arc_plan.generate",
             {NarrativeDesignLayer.NARRATIVE_ARC_GRAPH},
         ),
-        (
-            "chapter_group_plan.generate",
-            {NarrativeDesignLayer.NARRATIVE_SCHEDULING},
-        ),
+            (
+                "chapter_group_plan.generate",
+                {
+                    NarrativeDesignLayer.NARRATIVE_SCHEDULING,
+                    NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF,
+                },
+            ),
         (
             "chapter_plan.generate",
             {

@@ -61,6 +61,9 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NarrativeSemanticEvaluationExecutionPort,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
 
 from .binder import PlanningExecutionBinder
 from .domain import (
@@ -344,6 +347,7 @@ class StoryPlanningGenerationApplication:
             for item in frozen_change_evidence
         )
         if command.narrative_realization:
+            self._require_frozen_realization_slice(command)
             proof = self._require_asset(
                 project_id=command.project_id,
                 asset_version_id=str(
@@ -701,6 +705,11 @@ class StoryPlanningGenerationApplication:
         generation_record = self.require_generation(
             generation["generation_operation_id"]
         )
+        generation_command = self._generation_command(
+            generation["generation_operation_id"]
+        )
+        if generation_command.generator_operation_name == "chapter_plan.generate":
+            self._require_frozen_realization_slice(generation_command)
         narrative_search_id = str(generation_record.get("narrative_search_id") or "")
         if narrative_search_id:
             self._require_selected_search_candidate(
@@ -920,6 +929,40 @@ class StoryPlanningGenerationApplication:
                         "Planning candidate input identity or currentness changed before activation",
                     )
 
+    def _require_frozen_realization_slice(
+        self, command: StoryPlanningGenerationCommand
+    ) -> dict[str, Any]:
+        """Resolve Chapter elaboration identity from Planning Authority itself.
+
+        Caller-supplied mappings are only transport.  Generation, retry, and
+        activation all compare them with the current Frozen contract so a
+        shaped or stale mapping cannot materialize a ChapterPlan.
+        """
+
+        supplied = dict(command.narrative_realization or {})
+        if command.generator_operation_name != "chapter_plan.generate" or not supplied:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_REQUIRED",
+                "ChapterPlan generation requires a Frozen Narrative Realization slice",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            current = NarrativeRealizationRepository(
+                uow.cursor
+            ).require_current_for_chapter(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                chapter_group_plan_version_id=str(
+                    supplied.get("chapter_group_plan_version_id") or ""
+                ),
+                chapter_number=int(supplied.get("chapter_number") or 0),
+            )
+        if current != supplied:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_SLICE_DRIFT",
+                "ChapterPlan generation input differs from the current Frozen Narrative Realization",
+            )
+        return current
+
     def _materialize_chapter_plan_projection(
         self,
         *,
@@ -949,12 +992,16 @@ class StoryPlanningGenerationApplication:
                 asset_version_id=candidate_asset_version_id,
             )
             uow.commit()
+        generation_command = self._generation_command(
+            generation["generation_operation_id"]
+        )
 
         def materialize(
             uow: AuthorityUnitOfWork,
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            self._require_frozen_realization_slice(generation_command)
             checkpoint("after_domain_validation")
             content = {
                 **_chapter_runtime_projection(dict(candidate["content"])),
@@ -1084,6 +1131,9 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_CHAPTER_PROJECTION_ACTIVATION_REQUIRED",
                 "typed ChapterPlan projection requires an Active candidate",
             )
+        self._require_frozen_realization_slice(
+            self._generation_command(generation["generation_operation_id"])
+        )
         projection = self._materialize_chapter_plan_projection(
             generation=generation,
             candidate_asset_version_id=candidate_asset_version_id,
@@ -1225,6 +1275,8 @@ class StoryPlanningGenerationApplication:
         replayed: bool,
         definition: Any,
     ) -> PlanningGenerationResult:
+        if command.generator_operation_name == "chapter_plan.generate":
+            self._require_frozen_realization_slice(command)
         try:
             state = self.story_design.require(
                 project_id=command.project_id,

@@ -1626,6 +1626,8 @@ def build_book_production_composition(
             settings.database_url,
             narrative_search=narrative_search,
             input_resolver=input_resolver,
+            application_build_id=authority.application_build_id,
+            commit_sha=authority.commit_sha,
         ),
         formation=StoryFormationApplication(
             settings.database_url,

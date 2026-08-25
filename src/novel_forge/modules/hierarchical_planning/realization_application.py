@@ -32,7 +32,76 @@ from .realization_domain import (
     NarrativeRealizationLifecycle,
 )
 from novel_forge.modules.story_design_authority import required_qualification_profiles
+from novel_forge.modules.story_design_authority.qualification import (
+    NarrativeDesignLayer,
+)
 from novel_forge.storage.foundation_repositories import require_current_foundation_set
+
+
+_REALIZATION_PROOF_CRITERIA = {
+    "CANON_STATE_LEGAL": "canon_state_legal",
+    "CHARACTER_MOTIVATION_LEGAL": "character_motivation_legal",
+    "WORLD_RULES_LEGAL": "world_rules_legal",
+    "KNOWLEDGE_BOUNDARIES_LEGAL": "knowledge_boundaries_legal",
+    "CAUSAL_ESCALATION": "causal_escalation_proven",
+    "STATE_TRANSITION_COVERAGE": "state_transitions_covered",
+    "OBLIGATION_LIFECYCLE": "obligations_covered",
+    "ARC_CONTRIBUTION_COVERAGE": "arc_contributions_covered",
+    "NARRATIVE_LOAD_LEGAL": "narrative_load_legal",
+    "CHAPTER_DECOMPOSITION_LEGAL": "chapter_decomposition_legal",
+}
+
+
+def _realization_proof_decisions(evaluation: dict[str, Any]) -> dict[str, bool]:
+    """Derive proof gates from the independent, versioned semantic receipt.
+
+    Planning may project an existing evaluation into its causal contract, but it
+    may not mint unsupported success decisions.  Every proof field therefore
+    has one exact criterion with a PASS verdict and attributable evidence.
+    """
+
+    criteria = evaluation.get("criteria")
+    if not isinstance(criteria, list):
+        raise KernelError(
+            "REALIZATION_PROOF_INCOMPLETE",
+            "Narrative Realization semantic proof has no criterion evidence",
+        )
+    by_id: dict[str, dict[str, Any]] = {}
+    for raw in criteria:
+        if not isinstance(raw, dict):
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "Narrative Realization semantic criterion is not typed",
+            )
+        criterion = str(raw.get("criterion") or "")
+        if not criterion or criterion in by_id:
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "Narrative Realization semantic criteria are ambiguous",
+            )
+        by_id[criterion] = raw
+    if set(by_id) != set(_REALIZATION_PROOF_CRITERIA):
+        raise KernelError(
+            "REALIZATION_PROOF_INCOMPLETE",
+            "Narrative Realization proof criteria differ from current policy",
+        )
+    decisions: dict[str, bool] = {}
+    for criterion, field in _REALIZATION_PROOF_CRITERIA.items():
+        receipt = by_id[criterion]
+        evidence_refs = receipt.get("evidence_refs")
+        if (
+            str(receipt.get("verdict") or "") != "PASS"
+            or not str(receipt.get("rationale") or "").strip()
+            or not isinstance(evidence_refs, list)
+            or not evidence_refs
+            or any(not str(item).strip() for item in evidence_refs)
+        ):
+            raise KernelError(
+                "REALIZATION_PROOF_FAILED",
+                f"Narrative Realization criterion did not pass: {criterion}",
+            )
+        decisions[field] = True
+    return decisions
 
 
 @dataclass(frozen=True, slots=True)
@@ -361,7 +430,10 @@ class PostgresNarrativeRealizationApplication:
             )
         project_id, book_id = str(row[0]), str(row[1])
         foundation = require_current_foundation_set(
-            cursor, project_id=project_id, book_id=book_id
+            cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
         )
         if foundation.set_digest != str(row[11]):
             raise KernelError(
@@ -413,7 +485,10 @@ class PostgresNarrativeRealizationApplication:
             SELECT qualification.design_layer, qualification.profile_id,
                    qualification.profile_version, qualification.profile_hash,
                    qualification.evaluation_asset_version_id,
-                   evaluation.content_hash
+                   evaluation.content_hash, qualification.evaluation,
+                   qualification.qualification_status,
+                   qualification.trust_boundary,
+                   qualification.evaluator_execution_class
             FROM authority_current_narrative_design_qualification AS qualification
             JOIN authority_operation AS operation
               ON operation.operation_id=qualification.source_operation_id
@@ -439,12 +514,22 @@ class PostgresNarrativeRealizationApplication:
                 profile.profile_id,
                 profile.profile_version,
                 profile.profile_hash,
-            ):
+            ) or tuple(str(item) for item in receipt[7:9]) != (
+                "PASS",
+                "INDEPENDENT",
+            ) or str(receipt[9]) not in {
+                "MODEL_PROVIDER",
+                "SCRIPTED_FIXTURE",
+                "OPERATOR_REVIEW",
+            }:
                 raise KernelError(
                     "REALIZATION_PROOF_STALE",
                     "ChapterGroup semantic proof differs from current policy",
                 )
-        proof_receipt = qualifications[profiles[0].layer.value]
+        proof_receipt = qualifications[
+            NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF.value
+        ]
+        proof_decisions = _realization_proof_decisions(dict(proof_receipt[6]))
         realization_seed = (
             f"{chapter_group_plan_version_id}:{row[8]}:{row[2]}:"
             f"{row[3]}:{row[4]}:{working_digest}:{foundation.set_digest}"
@@ -487,16 +572,7 @@ class PostgresNarrativeRealizationApplication:
                     f"chapter-group:{chapter_group_plan_version_id}:objective",
                     *[f"arc:{arc_id}:contribution" for arc_id in selected],
                 ],
-                "canon_state_legal": True,
-                "character_motivation_legal": True,
-                "world_rules_legal": True,
-                "knowledge_boundaries_legal": True,
-                "causal_escalation_proven": True,
-                "state_transitions_covered": True,
-                "obligations_covered": True,
-                "arc_contributions_covered": True,
-                "narrative_load_legal": True,
-                "chapter_decomposition_legal": True,
+                **proof_decisions,
                 "semantic_evaluation_asset_version_id": proof_asset_version_id,
                 "semantic_evaluation_hash": proof_hash,
             },

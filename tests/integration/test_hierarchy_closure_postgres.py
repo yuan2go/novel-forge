@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import pytest
+
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.foundation_repositories import (
+    require_current_foundation_set,
+)
 from tests.integration.capability_pack_postgres_support import (
     CapabilityPackPostgresHarness,
 )
 from tests.integration.authority_postgres_support import DATABASE_URL
+from tests.integration.authority_postgres_support import transaction
 from tests.integration.hierarchy_closure_postgres_support import (
     seed_ready_story_foundation,
 )
@@ -119,6 +126,45 @@ def test_story_formation_is_durable_qualified_and_reference_only() -> None:
     assert "characters" not in book_design
     assert result["formation_replayed"] is True
     assert result["formation_recovery_exercised"] is True
-    assert jobs and all(status == "SUCCEEDED" for status, _attempts in jobs)
-    assert sum(int(attempts) == 2 for _status, attempts in jobs) == 1
-    assert all(int(attempts) in {1, 2} for _status, attempts in jobs)
+    assert jobs and {status for status, _attempts in jobs} == {
+        "SUCCEEDED",
+        "CANCELLED",
+    }
+    assert sum(status == "CANCELLED" for status, _attempts in jobs) == 1
+    assert all(int(attempts) == 1 for _status, attempts in jobs)
+
+    with pytest.raises(KernelError, match="FOUNDATION_FORMATION_NOT_READY"):
+        with transaction() as _connection, _connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE authority_story_formation_run
+                SET lifecycle='WAITING_APPROVAL', current_stage='BOOK_DESIGN'
+                WHERE formation_run_id=%s
+                """,
+                [result["formation_run_id"]],
+            )
+            require_current_foundation_set(
+                cursor,
+                project_id=project_id,
+                book_id=book_id,
+                require_ready=True,
+            )
+
+    with pytest.raises(KernelError, match="FOUNDATION_SET_MIXED_GENERATION"):
+        with transaction() as _connection, _connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE authority_book_foundation_binding
+                SET set_generation=set_generation+1
+                WHERE project_id=%s AND book_id=%s
+                  AND foundation_role='CHARACTER_CAST'
+                  AND freshness='CURRENT'
+                """,
+                [project_id, book_id],
+            )
+            require_current_foundation_set(
+                cursor,
+                project_id=project_id,
+                book_id=book_id,
+                require_ready=True,
+            )

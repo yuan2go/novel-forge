@@ -9,8 +9,13 @@ from novel_forge.modules.book_design_authority import (
     FoundationRole,
     QualifiedFoundationSet,
     foundation_upstream_digest,
+    FormationLayerInput,
+)
+from novel_forge.modules.book_design_authority.foundation_validation import (
+    validate_foundation_layer,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.story_formation_repositories import StoryFormationRepository
 
 
 def _hash(seed: str) -> str:
@@ -167,3 +172,96 @@ def test_book_design_v5_rejects_copied_foundation_truth() -> None:
 
     with pytest.raises(KernelError, match="BOOK_DESIGN_INVALID"):
         BookDesignPayload.from_mapping(payload)
+
+
+def test_world_activation_freezes_exact_parent_versions_and_hashes() -> None:
+    complete = _foundation_set()
+    parents = tuple(
+        complete.by_role[role] for role in FoundationRole.WORLD_BIBLE.required_parents
+    )
+    parent_contents = {
+        binding.role: {
+            "asset_version_id": binding.asset_version_id,
+            "content_hash": binding.content_hash,
+        }
+        for binding in parents
+    }
+    content = {
+        "rules": [
+            {
+                "rule": "Witnessed maps preserve erased places.",
+                "cost": "The witness becomes publicly accountable.",
+                "consequence": "Hidden districts remain reachable.",
+                "narrative_function": "Turn discovery into costly agency.",
+            }
+        ],
+        "foundation_parent_bindings": {
+            binding.role.value: {
+                "asset_version_id": binding.asset_version_id,
+                "content_hash": binding.content_hash,
+            }
+            for binding in parents
+        },
+    }
+
+    evidence = validate_foundation_layer(
+        role=FoundationRole.WORLD_BIBLE,
+        content=content,
+        parent_bindings=parents,
+        parent_contents=parent_contents,
+    )
+    assert evidence["cross_layer"] == "PASS"
+
+    content["foundation_parent_bindings"][
+        FoundationRole.CREATIVE_FOUNDATION.value
+    ]["asset_version_id"] = "creative:forged"
+    with pytest.raises(KernelError, match="FOUNDATION_LINEAGE_DRIFT"):
+        validate_foundation_layer(
+            role=FoundationRole.WORLD_BIBLE,
+            content=content,
+            parent_bindings=parents,
+            parent_contents=parent_contents,
+        )
+
+
+def test_formation_rejects_generation_without_frozen_parent_assets() -> None:
+    complete = _foundation_set()
+    parents = tuple(
+        complete.by_role[role] for role in FoundationRole.WORLD_BIBLE.required_parents
+    )
+    layer = FormationLayerInput(
+        role=FoundationRole.WORLD_BIBLE,
+        asset_version_id="world:v1",
+        content_hash=_hash("w"),
+        schema_version="world-bible.v1",
+        generation_operation_id="generation:world:v1",
+        qualification_evidence_asset_version_id="qualification:world:v1",
+        qualification_hash=_hash("q"),
+        activation_operation_id="activation:world:v1",
+        candidate_asset_version_ids=("world:v1",),
+        selection_reason=("selected for causal coherence",),
+    )
+
+    class Cursor:
+        snapshot: list[dict[str, str]] = []
+
+        def execute(self, _sql: str, _values: list[str]) -> None:
+            return None
+
+        def fetchone(self) -> tuple[list[dict[str, str]]]:
+            return (self.snapshot,)
+
+    cursor = Cursor()
+    repository = StoryFormationRepository(cursor)
+    cursor.snapshot = [
+        {
+            "asset_version_id": binding.asset_version_id,
+            "content_hash": binding.content_hash,
+        }
+        for binding in parents
+    ]
+    repository._require_generation_parent_inputs(layer, parents)
+
+    cursor.snapshot[-1]["content_hash"] = _hash("x")
+    with pytest.raises(KernelError, match="FOUNDATION_GENERATION_LINEAGE_DRIFT"):
+        repository._require_generation_parent_inputs(layer, parents)

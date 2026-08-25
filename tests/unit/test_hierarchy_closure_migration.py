@@ -26,6 +26,9 @@ def test_hierarchy_schema_reuses_authorities_without_new_plan_scale() -> None:
     assert "ALTER TABLE story_plan_binding" not in sql
     assert "NARRATIVE_REALIZATION'" not in sql
     assert "AcceptedNarrativeRealization" not in sql
+    assert "'NARRATIVE_REALIZATION_PROOF'" in sql
+    assert "authority_narrative_design_qualification_design_layer_check" in sql
+    assert "CREATE TABLE authority_book_opening_run" in sql
 
 
 def test_realization_schema_tracks_partial_accepted_coverage() -> None:

@@ -10,6 +10,12 @@ from novel_forge.modules.hierarchical_planning.realization_domain import (
     NarrativeRealizationContract,
     NarrativeRealizationLifecycle,
 )
+from novel_forge.modules.hierarchical_planning.realization_application import (
+    _realization_proof_decisions,
+)
+from novel_forge.storage.narrative_realization_repositories import (
+    _realization_event_deviations,
+)
 
 
 def _hash(seed: str) -> str:
@@ -53,7 +59,7 @@ def _contract() -> NarrativeRealizationContract:
                     "preconditions": ["Mara possesses the altered map."],
                     "knowledge_boundary": {
                         "actor_knows": ["the district is missing"],
-                        "reader_may_learn": ["a witness delays erasure"],
+                        "reader_may_learn": ["witness-delay rule"],
                         "forbidden_disclosures": ["archive master key"],
                     },
                     "action": "Mara asks the witness to testify publicly.",
@@ -85,7 +91,7 @@ def _contract() -> NarrativeRealizationContract:
                     "preconditions": ["The witness is publicly known."],
                     "knowledge_boundary": {
                         "actor_knows": ["the witness identity"],
-                        "reader_may_learn": ["the archive coerces witnesses"],
+                        "reader_may_learn": ["archive transit leverage"],
                         "forbidden_disclosures": ["archive master key"],
                     },
                     "action": "The archive freezes the witness's transit access.",
@@ -117,7 +123,7 @@ def _contract() -> NarrativeRealizationContract:
                     "preconditions": ["The archive has frozen witness access."],
                     "knowledge_boundary": {
                         "actor_knows": ["collective custody is possible"],
-                        "reader_may_learn": ["Mara caused an earlier map failure"],
+                        "reader_may_learn": ["Mara's prior failure"],
                         "forbidden_disclosures": ["archive master key"],
                     },
                     "action": "Mara gives the map to a public witness council.",
@@ -214,6 +220,11 @@ def test_realization_rejects_proof_or_slice_coverage_gaps() -> None:
     with pytest.raises(KernelError, match="REALIZATION_SLICE_INVALID"):
         NarrativeRealizationContract.from_mapping(values)
 
+    values = _contract().to_dict()
+    values["events"][0]["disclosures"] = ["archive master key"]
+    with pytest.raises(KernelError, match="REALIZATION_KNOWLEDGE_BOUNDARY_INVALID"):
+        NarrativeRealizationContract.from_mapping(values)
+
 
 def test_realization_lifecycle_never_implies_actual() -> None:
     realization = _contract()
@@ -224,3 +235,65 @@ def test_realization_lifecycle_never_implies_actual() -> None:
 
     assert frozen.lifecycle is NarrativeRealizationLifecycle.FROZEN
     assert not hasattr(frozen, "accepted_actual")
+
+
+def test_realization_proof_requires_independent_criterion_evidence() -> None:
+    criteria = [
+        {
+            "criterion": criterion,
+            "verdict": "PASS",
+            "rationale": f"independent evidence for {criterion}",
+            "evidence_refs": [f"evidence:{criterion.lower()}"],
+        }
+        for criterion in (
+            "CANON_STATE_LEGAL",
+            "CHARACTER_MOTIVATION_LEGAL",
+            "WORLD_RULES_LEGAL",
+            "KNOWLEDGE_BOUNDARIES_LEGAL",
+            "CAUSAL_ESCALATION",
+            "STATE_TRANSITION_COVERAGE",
+            "OBLIGATION_LIFECYCLE",
+            "ARC_CONTRIBUTION_COVERAGE",
+            "NARRATIVE_LOAD_LEGAL",
+            "CHAPTER_DECOMPOSITION_LEGAL",
+        )
+    ]
+
+    decisions = _realization_proof_decisions({"criteria": criteria})
+
+    assert len(decisions) == 10
+    assert all(decisions.values())
+    criteria[4]["verdict"] = "FAIL"
+    with pytest.raises(KernelError, match="REALIZATION_PROOF_FAILED"):
+        _realization_proof_decisions({"criteria": criteria})
+
+
+def test_accepted_realization_evidence_detects_material_causal_drift() -> None:
+    planned = _contract().to_dict()["events"][0]
+    exact = {
+        "observed_action": planned["action"],
+        "observed_decision": planned["decision"],
+        "observed_consequence": planned["consequence"],
+        "observed_cause_event_ids": planned["causes"],
+        "observed_disclosures": planned["disclosures"],
+        "observed_state_deltas": planned["state_deltas"],
+        "observed_state_event_ids": [
+            item["entity_id"] for item in planned["state_deltas"]
+        ],
+    }
+
+    assert _realization_event_deviations(planned, exact) == ()
+
+    drifted = {
+        **exact,
+        "observed_action": "Mara hides the map and leaves.",
+        "observed_disclosures": ["archive master key"],
+        "observed_state_deltas": [
+            {**planned["state_deltas"][0], "to_state": "solitary certainty"}
+        ],
+    }
+    assert set(_realization_event_deviations(planned, drifted)) == {
+        "CAUSALITY_DRIFT",
+        "KNOWLEDGE_BOUNDARY_DRIFT",
+        "STATE_DELTA_DRIFT",
+    }

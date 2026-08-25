@@ -161,20 +161,54 @@ class StoryFormationApplication:
 
     def advance(self, formation_run_id: str, *, principal: Principal) -> dict[str, Any]:
         run = self.require(formation_run_id)
+        return self.advance_expected(
+            formation_run_id,
+            expected_stage=str(run["current_stage"]),
+            expected_version=int(run["version"]),
+            principal=principal,
+        )
+
+    def advance_expected(
+        self,
+        formation_run_id: str,
+        *,
+        expected_stage: str,
+        expected_version: int,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Execute or reconcile exactly one RuntimeJob-frozen semantic stage."""
+
+        run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
-        if run["lifecycle"] in {"READY", "ABORTED"}:
+        if run["lifecycle"] in {"READY", "ABORTED"} and (
+            str(run["current_stage"]) == expected_stage
+            and int(run["version"]) == expected_version
+        ):
             return run
+        if not expected_stage.strip() or expected_version < 0:
+            raise KernelError(
+                "STORY_FORMATION_JOB_INVALID",
+                "Formation RuntimeJob has no frozen stage/version",
+            )
         frozen = self._frozen_input(formation_run_id)
-        stage = str(run["current_stage"])
         executed = self._control(
             run=run,
             principal=principal,
             definition_name="story.formation.advance",
-            idempotency_key=f"{formation_run_id}:advance:{stage}:{run['version']}",
-            payload={"stage": stage},
+            idempotency_key=(
+                f"{formation_run_id}:advance:{expected_stage}:{expected_version}"
+            ),
+            payload={
+                "stage": expected_stage,
+                "expected_version": expected_version,
+            },
             frozen_input=frozen,
         )
-        return {**self.require(formation_run_id), "operation_id": executed["operation_id"]}
+        return {
+            **self.require(formation_run_id),
+            "operation_id": executed["operation_id"],
+            "replayed": bool(executed["replayed"]),
+        }
 
     def resume(
         self,
@@ -195,6 +229,14 @@ class StoryFormationApplication:
             frozen_input=frozen,
         )
         resumed = self.require(formation_run_id)
+        self.runtime_jobs.cancel_pending_for_subject(
+            job_kind="STORY_FORMATION_ADVANCE",
+            runtime_group="story_formation",
+            subject_kind="STORY_FORMATION_RUN",
+            subject_id=formation_run_id,
+            project_id=str(resumed["project_id"]),
+            reason=f"Formation resumed at version {resumed['version']}",
+        )
         self._schedule(resumed)
         return {**resumed, "operation_id": executed["operation_id"]}
 
@@ -416,7 +458,12 @@ class StoryFormationApplication:
                 ),
             )
         elif definition_name == "story.formation.advance":
-            result = repository.advance_one(formation_run_id, operation_id)
+            result = repository.advance_one(
+                formation_run_id,
+                operation_id,
+                expected_stage=str(payload["stage"]),
+                expected_version=int(payload["expected_version"]),
+            )
         elif definition_name == "story.formation.resume":
             result = repository.resume(
                 formation_run_id, int(payload["expected_version"])

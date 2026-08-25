@@ -44,6 +44,7 @@ from novel_forge.modules.story_planning_runtime.application import (
     _validate_frozen_arc_references,
     StoryPlanningGenerationApplication,
 )
+from novel_forge.modules.story_planning_runtime import application as planning_application
 
 
 HASH = "sha256:" + "a" * 64
@@ -1693,6 +1694,59 @@ def test_planning_change_evidence_cannot_alias_generator_input() -> None:
             correlation_id=command.correlation_id,
             change_evidence_version_ids=(next(iter(command.input_versions.values())),),
         )
+
+
+def test_chapter_plan_rejects_caller_shaped_realization_slice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = _realization_slice(parent_version_id="asset:chapter_group_plan:v1")
+
+    class FakeUow:
+        cursor = object()
+
+        def __init__(self, _database_url: str) -> None:
+            pass
+
+        def __enter__(self) -> "FakeUow":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    class FakeRepository:
+        def __init__(self, _cursor: object) -> None:
+            pass
+
+        def require_current_for_chapter(self, **_values: object) -> dict[str, object]:
+            return current
+
+    monkeypatch.setattr(planning_application, "AuthorityUnitOfWork", FakeUow)
+    monkeypatch.setattr(
+        planning_application, "NarrativeRealizationRepository", FakeRepository
+    )
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.database_url = "postgresql://unused"
+    command = _command("chapter_plan.generate")
+
+    assert application._require_frozen_realization_slice(command) == current
+
+    forged = dict(current)
+    forged["events"] = [{**current["events"][0], "action": "forged action"}]
+    forged_command = StoryPlanningGenerationCommand(
+        project_id=command.project_id,
+        workspace_id=command.workspace_id,
+        book_id=command.book_id,
+        actor_id=command.actor_id,
+        generator_operation_name=command.generator_operation_name,
+        logical_key=command.logical_key,
+        input_versions=command.input_versions,
+        idempotency_key="generate:forged-realization",
+        trace_id=command.trace_id,
+        correlation_id=command.correlation_id,
+        narrative_realization=forged,
+    )
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_SLICE_DRIFT"):
+        application._require_frozen_realization_slice(forged_command)
 
 
 def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:

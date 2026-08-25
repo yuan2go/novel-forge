@@ -13,7 +13,11 @@ if TYPE_CHECKING:
 
 
 def require_current_foundation_set(
-    cursor: Any, *, project_id: str, book_id: str
+    cursor: Any,
+    *,
+    project_id: str,
+    book_id: str,
+    require_ready: bool = False,
 ) -> QualifiedFoundationSet:
     # Keep the storage module loadable while Book Design Authority composes its
     # application package.  Runtime construction happens only after both
@@ -37,7 +41,9 @@ def require_current_foundation_set(
                state.lifecycle, state.qualification, state.approval,
                state.freshness, active.activated_by_operation_id,
                qualification.content_hash, qualification.lifecycle,
-               qualification.eligibility, qualification.governance
+               qualification.eligibility, qualification.governance,
+               binding.set_generation, binding.formation_run_id,
+               formation.lifecycle, formation.current_stage
         FROM authority_book_foundation_binding AS binding
         JOIN authority_asset_version AS version
           ON version.asset_version_id=binding.asset_version_id
@@ -50,6 +56,8 @@ def require_current_foundation_set(
         JOIN authority_asset_version AS qualification
           ON qualification.asset_version_id=
              binding.qualification_evidence_asset_version_id
+        JOIN authority_story_formation_run AS formation
+          ON formation.formation_run_id=binding.formation_run_id
         WHERE binding.project_id=%s AND binding.book_id=%s
           AND binding.freshness='CURRENT' AND binding.retired_at IS NULL
         ORDER BY binding.foundation_role
@@ -57,6 +65,25 @@ def require_current_foundation_set(
         [project_id, book_id],
     )
     rows = cursor.fetchall()
+    if len({int(row[23]) for row in rows}) > 1 or len(
+        {str(row[24]) for row in rows}
+    ) > 1:
+        raise KernelError(
+            "FOUNDATION_SET_MIXED_GENERATION",
+            "Foundation Set cannot mix Formation runs or set generations",
+        )
+    allowed_formation_states = (
+        {("READY", "COMPLETE")}
+        if require_ready
+        else {("WAITING_APPROVAL", "BOOK_DESIGN"), ("READY", "COMPLETE")}
+    )
+    if any(
+        (str(row[25]), str(row[26])) not in allowed_formation_states for row in rows
+    ):
+        raise KernelError(
+            "FOUNDATION_FORMATION_NOT_READY",
+            "Foundation bindings are not at an allowed durable Formation boundary",
+        )
     bindings: list[FoundationBinding] = []
     for row in rows:
         if tuple(str(item) for item in row[9:14]) != (

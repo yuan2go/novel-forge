@@ -36,6 +36,8 @@ def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None
                 or SimpleNamespace(snapshot_id="snapshot:ready")
             )
         ),
+        application_build_id="book-opening-unit",
+        commit_sha="a" * 40,
     )
     opening._require_qualified_foundation = (  # type: ignore[method-assign]
         lambda _request: "foundation:v5"
@@ -71,7 +73,7 @@ def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None
     )
     principal = SimpleNamespace(require=lambda _permission, _project_id: None)
 
-    result = opening.open(request, principal=principal)
+    result = opening._open_frozen(request, principal=principal)
 
     assert [item.generation.generator_operation_name for item in search_requests] == [
         "book_plan.generate",

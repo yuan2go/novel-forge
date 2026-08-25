@@ -36,6 +36,8 @@ from novel_forge.modules.book_design_authority import (
 )
 from novel_forge.modules.book_authority.production import BookProductionState
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.workers.book_authority import execute_book_opening_claim
 from novel_forge.modules.book_followup_authority import LongformCheckpointType
 from novel_forge.modules.book_followup_authority.coordinator import (
     PostgresBookFollowupCoordinator,
@@ -1583,25 +1585,140 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             initial_story_state_version=generic["initial_story_state"],
             initial_canon_snapshot_version=generic["initial_canon_snapshot"],
         )
-        opened = composition.open_book(request)
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from novel_forge.api.models import product_model_map
+        from novel_forge.api.routers.book_authority import create_router
+        from novel_forge.api.routers.context import ProductRouterContext
+
+        authority_api = FastAPI()
+        authority_api.include_router(
+            create_router(
+                ProductRouterContext(
+                    app_settings=settings,
+                    models=product_model_map(),
+                    services=SimpleNamespace(book_production=composition),
+                )
+            )
+        )
+        opening_trusted = SimpleNamespace(
+            resolve_api_principal=lambda **_values: principal
+        )
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=opening_trusted,
+            ),
+            TestClient(authority_api) as opening_client,
+        ):
+            opening_response = opening_client.post(
+                f"/product/production/book-authority/books/{book_id}/opening-runs",
+                json={
+                    "project_id": project_id,
+                    "workspace_id": workspace_id,
+                    "expected_book_version": int(generic["book_version"]),
+                    "production_profile": generic["production_profile"],
+                    "planning_input_versions": planning_inputs,
+                    "arc_logical_keys": ["arc:central", "arc:relationship"],
+                    "initial_story_state_version": generic["initial_story_state"],
+                    "initial_canon_snapshot_version": generic["initial_canon_snapshot"],
+                    "idempotency_key": f"{project_id}:open-book",
+                    "actor_id": principal.principal_id,
+                    "trace_id": f"trace:{project_id}:open-book",
+                    "correlation_id": f"correlation:{project_id}",
+                },
+            )
+        assert opening_response.status_code == 202
+        admission = SimpleNamespace(**opening_response.json())
+        assert composition.opening is not None
+        runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+        opening_claim = runtime_jobs.claim(
+            runtime_group="book_opening",
+            worker_id="opening-integration-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_OPENING_EXECUTE",),
+            project_id=project_id,
+        )
+        assert opening_claim is not None
+
+        class CrashAfterOpeningCommit:
+            def __init__(self, delegate: RuntimeJobAuthority) -> None:
+                self.delegate = delegate
+
+            def __getattr__(self, name: str) -> object:
+                return getattr(self.delegate, name)
+
+            def complete(self, _claim: object, _result: object) -> None:
+                raise RuntimeError("injected crash after opening commit")
+
+        with pytest.raises(RuntimeError, match="injected crash after opening commit"):
+            execute_book_opening_claim(
+                CrashAfterOpeningCommit(runtime_jobs),  # type: ignore[arg-type]
+                composition.opening,
+                principal,
+                opening_claim,
+                lease_seconds=30,
+            )
+        assert (
+            composition.opening.require(admission.opening_run_id)["lifecycle"]
+            == "COMPLETE"
+        )
+        replay_claim = runtime_jobs.claim(
+            runtime_group="book_opening",
+            worker_id="opening-integration-recovery-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_OPENING_EXECUTE",),
+            project_id=project_id,
+        )
+        assert replay_claim is not None
+        assert replay_claim.runtime_job_id == opening_claim.runtime_job_id
+        assert replay_claim.attempt_number == 2
+        opened = execute_book_opening_claim(
+            runtime_jobs,
+            composition.opening,
+            principal,
+            replay_claim,
+            lease_seconds=30,
+        )
         replay = composition.open_book(request)
+        opening_run = composition.opening.require(admission.opening_run_id)
+        snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
+        opening_query_principal = Principal(
+            principal_id=f"opening-query:{project_id}",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"book.authority.query"}),
+            project_scope=frozenset({project_id}),
+            authentication_source="postgres-opening-query-fixture",
+        )
+        opening_query_trusted = SimpleNamespace(
+            resolve_api_principal=lambda **_values: opening_query_principal
+        )
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=opening_query_trusted,
+            ),
+            TestClient(authority_api) as opening_client,
+        ):
+            opening_detail = opening_client.get(
+                "/product/production/book-authority/opening-runs/"
+                f"{admission.opening_run_id}"
+            )
+        assert opening_detail.status_code == 200
+        assert opening_detail.json()["lifecycle"] == "COMPLETE"
         execution.close()
 
-    assert opened.search_ids == replay.search_ids
-    assert len(opened.search_ids) == 4
-    assert opened.book_design_version == generic["book_design"]
-    assert opened.input_snapshot.snapshot_id == replay.input_snapshot.snapshot_id
-    assert opened.input_snapshot.book_plan_version == opened.book_plan_version
-    assert opened.input_snapshot.current_volume_plan_version == (
-        opened.volume_plan_version
-    )
-    assert set(opened.input_snapshot.arc_portfolio_plan_versions) == set(
-        opened.arc_plan_versions
-    )
-    assert (
-        opened.input_snapshot.initial_story_state_version
-        == (generic["initial_story_state"])
-    )
+    assert replay.replayed is True
+    assert replay.opening_run_id == admission.opening_run_id
+    assert replay.runtime_job_id == admission.runtime_job_id
+    assert opening_run["lifecycle"] == "COMPLETE"
+    assert len(opened["search_ids"]) == 4
+    assert opened["book_design_version"] == generic["book_design"]
+    assert snapshot.book_plan_version == opened["book_plan_version"]
+    assert snapshot.current_volume_plan_version == opened["volume_plan_version"]
+    assert set(snapshot.arc_portfolio_plan_versions) == set(opened["arc_plan_versions"])
+    assert snapshot.initial_story_state_version == (generic["initial_story_state"])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """

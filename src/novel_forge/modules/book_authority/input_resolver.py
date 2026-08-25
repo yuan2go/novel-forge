@@ -575,7 +575,10 @@ class BookProductionInputResolver:
         )
         book_design = self._asset_content(cursor, str(book[1]), command.project_id)
         foundation = require_current_foundation_set(
-            cursor, project_id=command.project_id, book_id=command.book_id
+            cursor,
+            project_id=command.project_id,
+            book_id=command.book_id,
+            require_ready=True,
         )
         typed_design = BookDesignPayload.from_mapping(book_design)
         if (

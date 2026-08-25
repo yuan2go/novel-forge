@@ -385,6 +385,35 @@ def _canon_schema() -> dict[str, Any]:
                 "observed_consequence": _nullable(
                     {"type": "string", "minLength": 1}
                 ),
+                "observed_action": _nullable({"type": "string", "minLength": 1}),
+                "observed_decision": _nullable(
+                    {"type": "string", "minLength": 1}
+                ),
+                "observed_cause_event_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                },
+                "observed_disclosures": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                },
+                "observed_state_deltas": {
+                    "type": "array",
+                    "items": _object_schema(
+                        {
+                            "state_kind": {"type": "string", "minLength": 1},
+                            "entity_id": {"type": "string", "minLength": 1},
+                            "from_state": {"type": "string", "minLength": 1},
+                            "to_state": {"type": "string", "minLength": 1},
+                        },
+                        required=(
+                            "state_kind",
+                            "entity_id",
+                            "from_state",
+                            "to_state",
+                        ),
+                    ),
+                },
                 "observed_state_event_ids": {
                     "type": "array",
                     "items": {"type": "string", "minLength": 1},
@@ -396,6 +425,11 @@ def _canon_schema() -> dict[str, Any]:
                 "observation_status",
                 "accepted_prose_evidence",
                 "observed_consequence",
+                "observed_action",
+                "observed_decision",
+                "observed_cause_event_ids",
+                "observed_disclosures",
+                "observed_state_deltas",
                 "observed_state_event_ids",
             ),
         ),
@@ -829,6 +863,9 @@ def validate_chapter_provider_output_semantics(
                 evidence.get("observed_event_id")
                 and evidence.get("accepted_prose_evidence")
                 and evidence.get("observed_consequence")
+                and evidence.get("observed_action")
+                and evidence.get("observed_decision")
+                and evidence.get("observed_state_deltas")
             ):
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",

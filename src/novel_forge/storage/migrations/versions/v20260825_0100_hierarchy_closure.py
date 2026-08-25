@@ -76,6 +76,21 @@ UPGRADE_STATEMENTS = [
     ))
     """,
     """
+    ALTER TABLE authority_narrative_design_qualification
+    DROP CONSTRAINT authority_narrative_design_qualification_design_layer_check
+    """,
+    """
+    ALTER TABLE authority_narrative_design_qualification
+    ADD CONSTRAINT authority_narrative_design_qualification_design_layer_check
+    CHECK (design_layer IN (
+        'STORY_INTENT', 'STORY_FOUNDATION', 'BOOK_ARCHITECTURE',
+        'VOLUME_ARCHITECTURE', 'NARRATIVE_ARC_GRAPH',
+        'CHARACTER_DEVELOPMENT', 'DISCLOSURE_OBLIGATION',
+        'NARRATIVE_SCHEDULING', 'NARRATIVE_REALIZATION_PROOF',
+        'CHAPTER_EXECUTION_PLAN', 'SCENE_ARCHITECTURE'
+    ))
+    """,
+    """
     CREATE TABLE authority_story_formation_run (
         formation_run_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL REFERENCES authority_project(project_id),
@@ -172,6 +187,37 @@ UPGRADE_STATEMENTS = [
         CHECK (jsonb_typeof(binding)='object'),
         CHECK (jsonb_typeof(checkpoint)='object'),
         CHECK (jsonb_typeof(failure)='object')
+    )
+    """,
+    """
+    CREATE TABLE authority_book_opening_run (
+        opening_run_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES authority_project(project_id),
+        workspace_id TEXT NOT NULL REFERENCES authority_workspace(workspace_id),
+        book_id TEXT NOT NULL REFERENCES authority_book(book_id),
+        root_operation_id TEXT NOT NULL UNIQUE
+            REFERENCES authority_operation(operation_id),
+        stable_idempotency_key TEXT NOT NULL,
+        lifecycle TEXT NOT NULL,
+        frozen_request JSONB NOT NULL,
+        frozen_request_digest TEXT NOT NULL,
+        result JSONB NOT NULL DEFAULT '{}'::jsonb,
+        failure JSONB NOT NULL DEFAULT '{}'::jsonb,
+        recovery_instruction JSONB NOT NULL DEFAULT '{}'::jsonb,
+        version BIGINT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        FOREIGN KEY(project_id, book_id)
+            REFERENCES authority_book(project_id, book_id),
+        UNIQUE(project_id, book_id, stable_idempotency_key),
+        CHECK (lifecycle IN (
+            'ADMITTED','RUNNING','COMPLETE','FAILED','ABORTED'
+        )),
+        CHECK (jsonb_typeof(frozen_request)='object'),
+        CHECK (frozen_request_digest LIKE 'sha256:%'),
+        CHECK (jsonb_typeof(result)='object'),
+        CHECK (jsonb_typeof(failure)='object'),
+        CHECK (jsonb_typeof(recovery_instruction)='object')
     )
     """,
     """
@@ -429,6 +475,10 @@ UPGRADE_STATEMENTS = [
     """
     CREATE INDEX authority_story_formation_workspace_fk_idx
     ON authority_story_formation_run(workspace_id)
+    """,
+    """
+    CREATE INDEX authority_book_opening_workspace_fk_idx
+    ON authority_book_opening_run(workspace_id)
     """,
     """
     CREATE INDEX authority_story_formation_book_design_fk_idx

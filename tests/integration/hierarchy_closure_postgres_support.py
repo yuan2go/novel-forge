@@ -66,11 +66,24 @@ def _hash(value: Any) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
-def _payload(role: FoundationRole, *, alternate: bool = False) -> dict[str, Any]:
+def _payload(
+    role: FoundationRole,
+    *,
+    parent_candidates: dict[FoundationRole, dict[str, str]],
+    alternate: bool = False,
+) -> dict[str, Any]:
     suffix = " through contested testimony" if alternate else ""
     common = {
         "objective": f"Establish {role.value.lower()} for a causal serial novel",
     }
+    if role.required_parents:
+        common["foundation_parent_bindings"] = {
+            parent.value: {
+                "asset_version_id": parent_candidates[parent]["asset_version_id"],
+                "content_hash": parent_candidates[parent]["content_hash"],
+            }
+            for parent in role.required_parents
+        }
     if role is FoundationRole.CREATIVE_FOUNDATION:
         return {
             **common,
@@ -165,6 +178,7 @@ def _seed_candidate_and_evaluation(
     role: FoundationRole,
     label: str,
     alternate: bool,
+    parent_candidates: dict[FoundationRole, dict[str, str]],
 ) -> dict[str, str]:
     generator = _GENERATOR_BY_ROLE[role]
     logical_key = f"foundation:{role.value.lower()}:{label}"
@@ -172,7 +186,11 @@ def _seed_candidate_and_evaluation(
         project_id=project_id,
         generator=generator,
         logical_key=logical_key,
-        payload=_payload(role, alternate=alternate),
+        payload=_payload(
+            role,
+            parent_candidates=parent_candidates,
+            alternate=alternate,
+        ),
     )
     content_hash = _hash(content)
     asset_id = f"fixture:{project_id}:foundation:{role.value.lower()}:{label}"
@@ -214,6 +232,28 @@ def _seed_candidate_and_evaluation(
             definition_name=generation_definition,
             project_id=project_id,
             status="SUCCEEDED",
+        )
+        cursor.execute(
+            """
+            UPDATE authority_operation
+            SET input_asset_snapshot=%s
+            WHERE operation_id=%s
+            """,
+            [
+                Jsonb(
+                    [
+                        {
+                            "asset_version_id": parent_candidates[parent][
+                                "asset_version_id"
+                            ],
+                            "content_hash": parent_candidates[parent]["content_hash"],
+                            "project_id": project_id,
+                        }
+                        for parent in role.required_parents
+                    ]
+                ),
+                generation_operation_id,
+            ],
         )
         insert_definition(cursor, evaluation_definition)
         insert_operation(
@@ -479,6 +519,7 @@ def seed_ready_story_foundation(
             role=role,
             label="selected",
             alternate=False,
+            parent_candidates=selected,
         )
         candidate["activation_operation_id"] = _activate_story_design(
             database_url=database_url,
@@ -497,6 +538,7 @@ def seed_ready_story_foundation(
         role=FoundationRole.CREATIVE_FOUNDATION,
         label="alternate",
         alternate=True,
+        parent_candidates=selected,
     )
     _activate_story_design(
         database_url=database_url,
@@ -604,12 +646,18 @@ def seed_ready_story_foundation(
             project_id=project_id,
         )
         assert retry_claim is not None
-        assert retry_claim.runtime_job_id == claim.runtime_job_id
-        assert retry_claim.attempt_number == 2
+        assert retry_claim.runtime_job_id != claim.runtime_job_id
+        assert retry_claim.attempt_number == 1
         recovered = execute_story_formation_claim(
             runtime_jobs, formation, principal, retry_claim, lease_seconds=30
         )
         assert recovered["current_stage"] == "CREATIVE_FOUNDATION"
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                "SELECT status FROM authority_runtime_job WHERE runtime_job_id=%s",
+                [claim.runtime_job_id],
+            )
+            assert uow.cursor.fetchone() == ("CANCELLED",)
         recovery_attempted = True
         formation.schedule_candidates(limit=1)
     for _ in range(10):

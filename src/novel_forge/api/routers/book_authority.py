@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 from uuid import uuid4
 
@@ -16,6 +17,7 @@ from novel_forge.modules.book_authority.production import (
 from novel_forge.modules.book_authority.input_resolver import (
     ResolveBookProductionInputCommand,
 )
+from novel_forge.modules.book_authority.opening import OpenBookProductionRequest
 from novel_forge.modules.book_design_authority import (
     FormationLayerInput,
     StartStoryFormationCommand,
@@ -34,6 +36,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     StoryFormationBookDesignApprovalRequest = ctx.models[
         "StoryFormationBookDesignApprovalRequest"
     ]
+    BookOpeningStartRequest = ctx.models["BookOpeningStartRequest"]
+    BookOpeningControlRequest = ctx.models["BookOpeningControlRequest"]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
     BookReplanApprovalRequest = ctx.models["BookReplanApprovalRequest"]
@@ -42,6 +46,108 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
     )
+
+    @router.post("/books/{book_id}/opening-runs", status_code=202)
+    def start_book_opening(
+        book_id: str, request: BookOpeningStartRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED",
+                    "Book opening is unavailable in this partial composition",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            admission = composition.opening.admit(
+                OpenBookProductionRequest(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    book_id=book_id,
+                    actor_id=principal.principal_id,
+                    expected_book_version=request.expected_book_version,
+                    production_profile=request.production_profile,
+                    planning_input_versions=dict(request.planning_input_versions),
+                    arc_logical_keys=tuple(request.arc_logical_keys),
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id
+                    or f"correlation:{uuid4()}",
+                    initial_story_state_version=request.initial_story_state_version,
+                    initial_canon_snapshot_version=request.initial_canon_snapshot_version,
+                ),
+                principal=principal,
+            )
+            return asdict(admission)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/opening-runs/{opening_run_id}")
+    def book_opening_detail(opening_run_id: str) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            run = composition.opening.require(opening_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", str(run["project_id"]))
+            return run
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/resume", status_code=202)
+    def resume_book_opening(
+        opening_run_id: str, request: BookOpeningControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.opening.resume(
+                opening_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/abort")
+    def abort_book_opening(
+        opening_run_id: str, request: BookOpeningControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.opening.abort(
+                opening_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/books/{book_id}/formation-runs", status_code=202)
     def start_story_formation(

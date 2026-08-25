@@ -18,6 +18,63 @@ from novel_forge.storage.foundation_repositories import (
 )
 
 
+def _realization_event_deviations(
+    planned: dict[str, Any], observed: dict[str, Any]
+) -> tuple[str, ...]:
+    """Compare accepted extraction with the frozen causal event contract."""
+
+    deviations: set[str] = set()
+    if any(
+        str(observed.get(observed_field) or "")
+        != str(planned.get(planned_field) or "")
+        for observed_field, planned_field in (
+            ("observed_action", "action"),
+            ("observed_decision", "decision"),
+            ("observed_consequence", "consequence"),
+        )
+    ) or set(str(item) for item in observed.get("observed_cause_event_ids") or ()) != set(
+        str(item) for item in planned.get("causes") or ()
+    ):
+        deviations.add("CAUSALITY_DRIFT")
+
+    planned_deltas = {
+        realization_hash(dict(item))
+        for item in planned.get("state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    observed_deltas = {
+        realization_hash(dict(item))
+        for item in observed.get("observed_state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    planned_entities = {
+        str(item.get("entity_id") or "")
+        for item in planned.get("state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    if planned_deltas != observed_deltas or planned_entities != set(
+        str(item) for item in observed.get("observed_state_event_ids") or ()
+    ):
+        deviations.add("STATE_DELTA_DRIFT")
+
+    boundary = dict(planned.get("knowledge_boundary") or {})
+    disclosures = {
+        str(item) for item in observed.get("observed_disclosures") or ()
+    }
+    planned_disclosures = {str(item) for item in planned.get("disclosures") or ()}
+    allowed = {str(item) for item in boundary.get("reader_may_learn") or ()}
+    forbidden = {
+        str(item) for item in boundary.get("forbidden_disclosures") or ()
+    }
+    if (
+        disclosures != planned_disclosures
+        or not disclosures.issubset(allowed)
+        or bool(disclosures & forbidden)
+    ):
+        deviations.add("KNOWLEDGE_BOUNDARY_DRIFT")
+    return tuple(sorted(deviations))
+
+
 class NarrativeRealizationRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
@@ -445,7 +502,8 @@ class NarrativeRealizationRepository:
         self.cursor.execute(
             """
             SELECT realization.lifecycle, realization.version,
-                   event.event_id, event.required, event.planned_event_hash
+                   event.event_id, event.required, event.planned_event_hash,
+                   event.planned_event
             FROM authority_narrative_realization AS realization
             JOIN authority_narrative_realization_event AS event
               ON event.realization_id=realization.realization_id
@@ -466,7 +524,9 @@ class NarrativeRealizationRepository:
                 "NARRATIVE_REALIZATION_CONSUMPTION_INVALID",
                 "accepted Chapter does not bind a Frozen realization slice",
             )
-        planned = {str(row[2]): (bool(row[3]), str(row[4])) for row in rows}
+        planned = {
+            str(row[2]): (bool(row[3]), str(row[4]), dict(row[5])) for row in rows
+        }
         observed: dict[str, dict[str, Any]] = {}
         unplanned: list[dict[str, Any]] = []
         for item in realization_evidence:
@@ -481,14 +541,25 @@ class NarrativeRealizationRepository:
                 )
             observed[event_id] = dict(item)
         deviations: list[str] = []
-        for event_id, (required, planned_hash) in planned.items():
+        for event_id, (required, planned_hash, planned_event) in planned.items():
             evidence = observed.get(event_id)
             is_observed = bool(
                 evidence
                 and evidence.get("observation_status") == "OBSERVED"
                 and evidence.get("accepted_prose_evidence")
             )
-            status = "ACCEPTED" if is_observed else "NOT_OBSERVED"
+            event_deviations = (
+                _realization_event_deviations(planned_event, evidence)
+                if is_observed and evidence is not None
+                else ()
+            )
+            status = (
+                "DEVIATED"
+                if event_deviations
+                else "ACCEPTED"
+                if is_observed
+                else "NOT_OBSERVED"
+            )
             observed_id = (
                 str(evidence.get("observed_event_id") or "") if is_observed else None
             )
@@ -531,6 +602,7 @@ class NarrativeRealizationRepository:
             )
             if required and not is_observed:
                 deviations.append("MISSING_REQUIRED_EVENT")
+            deviations.extend(event_deviations)
         if unplanned:
             deviations.append("UNPLANNED_EVENT")
         for kind in sorted(set(deviations)):
@@ -569,6 +641,10 @@ class NarrativeRealizationRepository:
             """
             SELECT COUNT(*), COUNT(*) FILTER (
                        WHERE consumption.coverage_status='ACCEPTED'
+                   ), COUNT(*) FILTER (
+                       WHERE consumption.coverage_status='ACCEPTED'
+                          OR (NOT event.required AND
+                              consumption.coverage_status='NOT_OBSERVED')
                    )
             FROM authority_narrative_realization_event AS event
             LEFT JOIN authority_narrative_realization_consumption AS consumption
@@ -578,10 +654,10 @@ class NarrativeRealizationRepository:
             """,
             [realization_id],
         )
-        total, accepted = (int(item) for item in self.cursor.fetchone())
+        total, accepted, covered = (int(item) for item in self.cursor.fetchone())
         if deviations:
             target = NarrativeRealizationLifecycle.STALE.value
-        elif total == accepted:
+        elif total == covered:
             target = NarrativeRealizationLifecycle.EXECUTED.value
         else:
             target = NarrativeRealizationLifecycle.FROZEN.value
@@ -623,6 +699,7 @@ class NarrativeRealizationRepository:
             "lifecycle": target,
             "planned_event_count": total,
             "accepted_event_count": accepted,
+            "covered_event_count": covered,
             "deviations": sorted(set(deviations)),
         }
 
@@ -655,7 +732,10 @@ class NarrativeRealizationRepository:
 
     def _require_foundation_set(self, contract: NarrativeRealizationContract) -> None:
         foundation = require_current_foundation_set(
-            self.cursor, project_id=contract.project_id, book_id=contract.book_id
+            self.cursor,
+            project_id=contract.project_id,
+            book_id=contract.book_id,
+            require_ready=True,
         )
         if foundation.set_digest != contract.foundation_set_digest:
             raise KernelError(
@@ -816,7 +896,10 @@ class NarrativeRealizationRepository:
                 "NARRATIVE_REALIZATION_NOT_FOUND", "realization does not exist"
             )
         foundation = require_current_foundation_set(
-            self.cursor, project_id=project_id, book_id=book_id
+            self.cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
         )
         if foundation.set_digest != str(row[2]):
             raise KernelError(
