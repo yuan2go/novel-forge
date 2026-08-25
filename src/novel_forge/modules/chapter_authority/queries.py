@@ -241,7 +241,7 @@ class ChapterAuthorityQuery:
                 SELECT asset.asset_type, binding.output_key, binding.role,
                        version.asset_version_id, version.content_hash,
                        version.content, version.lifecycle, version.eligibility,
-                       version.governance
+                       version.governance, binding.operation_id
                 FROM authority_operation_output_asset AS binding
                 JOIN authority_asset AS asset
                   ON asset.asset_id=binding.asset_id
@@ -264,6 +264,7 @@ class ChapterAuthorityQuery:
                     "lifecycle": row[6],
                     "eligibility": row[7],
                     "governance": row[8],
+                    "operation_id": row[9],
                 }
                 for row in uow.cursor.fetchall()
             ]

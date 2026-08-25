@@ -18,6 +18,7 @@ from novel_forge.api.authority_dependencies import (
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.authoring import PostgresAuthoringQuery
 from novel_forge.modules.book_authority import (
     ResolveBookProductionInputCommand,
     StartBookProductionCommand,
@@ -1314,7 +1315,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                   AND output.role='primary'
                   AND output.output_key IN (
                       'chapter.plan', 'chapter.execution_intent',
-                      'chapter.memo', 'chapter.context'
+                      'chapter.memo', 'chapter.retrieval', 'chapter.context'
                   )
                 ORDER BY operation.created_at, output.created_at
                 """,
@@ -1340,6 +1341,16 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 ],
             )
             execution_artifact_plan_binding_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT context_bundle_asset_version_id, selected_asset_version_id,
+                       consumer_definition_name, consumer_status
+                FROM authority_context_runtime_usage_projection
+                WHERE project_id=%s AND book_id=%s
+                """,
+                [project_id, book_id],
+            )
+            context_runtime_usage = uow.cursor.fetchall()
         assert [int(row[0]) for row in projections] == [1, 2, 3]
         assert all(str(row[3]) == "COMPLETE" for row in projections)
         chapter_two_truth = next(
@@ -1410,6 +1421,9 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             _memo_version, _memo_hash, memo = artifacts_by_chapter[int(chapter_number)][
                 "chapter.memo"
             ]
+            _retrieval_version, _retrieval_hash, retrieval = artifacts_by_chapter[
+                int(chapter_number)
+            ]["chapter.retrieval"]
             _context_version, _context_hash, context = artifacts_by_chapter[
                 int(chapter_number)
             ]["chapter.context"]
@@ -1497,6 +1511,25 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 context["chapter_execution"]["memo_fingerprint"]
                 == memo["memo_fingerprint"]
             )
+            assert retrieval["contract_version"] == "chapter-retrieval-result-v4"
+            assert retrieval["ranking"]["lexical_signal"] == (
+                "PostgreSQL Full-Text Search / ts_rank"
+            )
+            assert retrieval["ranking"]["semantic_candidate_expansion"] is False
+            assert context["context_contract_version"] == "authority-context-bundle-v7"
+            manifest = dict(context["context_manifest"])
+            assert manifest["contract_version"] == "narrative-context-manifest-v3"
+            assert manifest["token_budget"]["protected"] > 0
+            assert (
+                manifest["token_budget"]["estimated_used"]
+                <= (manifest["token_budget"]["maximum"])
+            )
+            assert all(
+                item["context_class"]
+                in {"PROTECTED", "RETRIEVABLE", "COMPRESSIBLE", "EPHEMERAL"}
+                for item in manifest["selected_inputs"]
+            )
+            assert all(item["provenance"] for item in manifest["compressible_context"])
         assert len(intelligence_usage) == 3
         assert sum(bool(row[2]) for row in intelligence_usage) == 1
         for usage in intelligence_usage:
@@ -1537,4 +1570,65 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
         assert len(bound_usage) == 1
         assert bound_usage[0]["plan_execution_scope"] == "FROZEN"
         assert bound_usage[0]["plan_freshness"] == "CURRENT"
+        assert context_runtime_usage
+        assert all(str(row[3]) == "SUCCEEDED" for row in context_runtime_usage)
+        assert any(
+            str(row[2]) == "chapter.draft.generate" for row in context_runtime_usage
+        )
+
+        # Proof A: committed evidence creates rebuildable writer projections,
+        # the lexical-first RetrievalResult consumes the accepted boundary, and
+        # the governed v7 Context Manifest is the immutable Provider input.
+        authoring = PostgresAuthoringQuery(DATABASE_URL)
+        recent_trail = authoring.recent_trail(
+            project_id=project_id,
+            book_id=book_id,
+            through_chapter=3,
+        )
+        hook_debt = authoring.hook_debt(
+            project_id=project_id,
+            book_id=book_id,
+            through_chapter=3,
+        )
+        assert [entry["chapter_number"] for entry in recent_trail["entries"]] == [
+            1,
+            2,
+            3,
+        ]
+        assert recent_trail["authority"] == "NONE_REBUILDABLE_PROJECTION"
+        assert hook_debt["authority"] == "NONE_PROJECTION_ONLY"
+        assert hook_debt["source_authority"] == ("ACCEPTED_NARRATIVE_OBLIGATION_STATE")
+        assert hook_debt["items"][0]["obligation_id"] == "promise:late"
+        assert hook_debt["items"][0]["status"] == "FULFILLED"
+        chapter_two_retrieval = artifacts_by_chapter[2]["chapter.retrieval"][2]
+        selected_projection_kinds = {
+            str(dict(item.get("metadata") or {}).get("projection_kind") or "")
+            for item in chapter_two_retrieval["selected_documents"]
+        }
+        assert "accepted_scene_episodic_history" in selected_projection_kinds
+        assert "accepted_obligation_state" in selected_projection_kinds
+
+        # Proof B: the Workspace is a read model over the same Chapter run and
+        # immutable AssetVersions, including accepted state and future impact.
+        chapter_two_root = str(accepted_requests[1][3])
+        workspace = authoring.chapter_transaction_workspace(
+            project_id=project_id,
+            root_operation_id=chapter_two_root,
+        )
+        assert workspace["authority"] == "NONE_READ_MODEL"
+        assert workspace["activation_permissions"] == []
+        assert workspace["immutable_asset_references_only"] is True
+        assert workspace["artifacts"]["plan"]
+        assert workspace["artifacts"]["intent"]
+        assert workspace["artifacts"]["memo"]
+        assert workspace["artifacts"]["context"]
+        assert workspace["artifacts"]["draft_candidates"]
+        assert workspace["artifacts"]["reviews"]
+        assert workspace["artifacts"]["candidate_comparison"]
+        assert workspace["artifacts"]["quality"]
+        assert workspace["canon_state_change"]["acceptance"]["status"] == ("COMMITTED")
+        assert workspace["hook_debt"]["source_authority"] == (
+            "ACCEPTED_NARRATIVE_OBLIGATION_STATE"
+        )
+        assert workspace["stale_future_impact"]
         execution.close()

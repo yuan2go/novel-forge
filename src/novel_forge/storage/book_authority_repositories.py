@@ -8,6 +8,11 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
+from novel_forge.modules.authoring.projections import (
+    build_hook_debt_projection,
+    build_recent_trail_entry,
+)
+
 
 class BookAuthorityRepository:
     def __init__(self, cursor: Any) -> None:
@@ -741,6 +746,25 @@ class BookAuthorityRepository:
         accepted_draft_version_id = str(
             chapter_outcome.get("accepted_draft_asset_version_id") or ""
         )
+        accepted_boundary = {
+            **dict(projection["accepted_boundary"]),
+            "chapter_outcome_asset_version_id": sources[
+                "chapter_outcome_asset_version_id"
+            ],
+            "story_state_asset_version_id": sources["story_state_asset_version_id"],
+            "canon_snapshot_asset_version_id": sources[
+                "canon_snapshot_asset_version_id"
+            ],
+            "projection_set_id": projection["projection_set_id"],
+        }
+        recent_trail = build_recent_trail_entry(
+            accepted_boundary=accepted_boundary,
+            chapter_outcome=chapter_outcome,
+        )
+        hook_debt = build_hook_debt_projection(
+            accepted_boundary=accepted_boundary,
+            obligation_states=projection["obligation_states"],
+        )
         specifications = [
             (
                 sources["chapter_outcome_asset_version_id"],
@@ -767,8 +791,12 @@ class BookAuthorityRepository:
             (
                 sources["story_state_asset_version_id"],
                 "L4",
-                {"obligations": list(projection["obligation_states"])},
-                {"projection_kind": "accepted_obligation_state"},
+                hook_debt,
+                {
+                    "projection_kind": "accepted_obligation_state",
+                    "authoring_projection_kind": "accepted_hook_debt",
+                    "projection_contract": "hook-debt-projection-v1",
+                },
             ),
             (
                 sources["canon_snapshot_asset_version_id"],
@@ -777,15 +805,18 @@ class BookAuthorityRepository:
                 {"projection_kind": "accepted_canon"},
             ),
         ]
-        if chapter_outcome.get("scene_outcomes"):
-            specifications.append(
-                (
-                    sources["chapter_outcome_asset_version_id"],
-                    "L3",
-                    {"scene_outcomes": list(chapter_outcome["scene_outcomes"])},
-                    {"projection_kind": "accepted_scene_episodic_history"},
-                )
+        specifications.append(
+            (
+                sources["chapter_outcome_asset_version_id"],
+                "L3",
+                recent_trail,
+                {
+                    "projection_kind": "accepted_scene_episodic_history",
+                    "authoring_projection_kind": "accepted_recent_trail",
+                    "projection_contract": "recent-trail-entry-v1",
+                },
             )
+        )
         if accepted_draft_version_id:
             specifications.append(
                 (

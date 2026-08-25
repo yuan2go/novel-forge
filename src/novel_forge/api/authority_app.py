@@ -36,6 +36,7 @@ from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
 )
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+from novel_forge.modules.authoring import PostgresAuthoringQuery
 from novel_forge.modules.content_authority import (
     ContentAuthorityApplication,
     ContentAuthorityQuery,
@@ -143,6 +144,7 @@ class AuthorityApiServices:
     production_execution: ProductionExecutionComposition
     chapter_application: ChapterAuthorityApplication
     chapter_query: ChapterAuthorityQuery
+    authoring_query: PostgresAuthoringQuery
     content_authority_application: ContentAuthorityApplication
     content_authority_query: ContentAuthorityQuery
     provider_callback_service: ProviderCallbackAuthorityService
@@ -215,6 +217,7 @@ def create_authority_app(settings: IndustrialSettings):
         production_execution=production_execution,
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
+        authoring_query=PostgresAuthoringQuery(settings.database_url),
         content_authority_application=build_content_authority_application(settings),
         content_authority_query=build_content_authority_query(settings),
         provider_callback_service=ProviderCallbackAuthorityService(
@@ -331,6 +334,9 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.routers.content_intelligence import (
         create_router as create_content_intelligence_router,
     )
+    from novel_forge.api.routers.authoring import (
+        create_router as create_authoring_router,
+    )
 
     app.include_router(
         create_project_router(
@@ -433,6 +439,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_chapter_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_authoring_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

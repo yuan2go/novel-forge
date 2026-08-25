@@ -80,6 +80,9 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",
+                "/product/authoring/books/{book_id}/recent-trail",
+                "/product/authoring/books/{book_id}/hook-debt",
+                "/product/authoring/chapters/{root_operation_id}/workspace",
             }.issubset(paths)
         )
 
