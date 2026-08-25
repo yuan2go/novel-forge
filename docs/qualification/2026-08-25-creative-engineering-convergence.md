@@ -180,4 +180,3 @@ architecture-fitness stages passed independently above.
   physical deletion requires a later usage audit and qualification.
 - Million-word stability, multi-Book concurrency, sustained reader quality and
   long-form literary quality remain explicitly unverified.
-
