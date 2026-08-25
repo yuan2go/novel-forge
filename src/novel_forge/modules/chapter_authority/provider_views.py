@@ -269,6 +269,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             ),
             tools=_compact(tools),
             skills=_compact(inputs.get("skills")),
+            active_skill_activations=_compact(inputs.get("active_skill_activations")),
             committed_transcript=_compact(inputs.get("committed_transcript")),
             observations=_compact(inputs.get("observations")),
             turn_number=int(inputs.get("turn_number") or 0),
@@ -524,6 +525,7 @@ def build_provider_context_view(
     if context_bundle.get("context_contract_version") in {
         "authority-context-bundle-v5",
         "authority-context-bundle-v6",
+        "authority-context-bundle-v7",
     }:
         if not isinstance(correctness, Mapping):
             raise KernelError(
@@ -1012,9 +1014,7 @@ def _build_planning_context_view(
             repair_view
         )
         view["repair_context"] = bounded_repair
-        view["selection_explanation"]["omitted_item_count"] += (
-            omitted + repair_omitted
-        )
+        view["selection_explanation"]["omitted_item_count"] += omitted + repair_omitted
         view["selection_explanation"]["truncated_character_count"] += (
             truncated + repair_truncated
         )

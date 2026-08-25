@@ -221,6 +221,44 @@ def test_provider_context_is_one_bounded_representation_not_authority_bundle() -
     assert heavy["selection_explanation"]["omitted_fact_count"] == 1000
 
 
+def test_agent_provider_task_distinguishes_catalog_from_explicit_activation() -> None:
+    task = build_provider_task_view(
+        "agent_session",
+        {
+            "agent_session_id": "session:1",
+            "operation_id": "operation:1",
+            "instruction": "Propose without mutating truth.",
+            "accepted_boundary": {"book_id": "book:1", "accepted_through_chapter": 3},
+            "execution_contract_hash": "sha256:" + "1" * 64,
+            "execution_contract_summary": {"authority_policy": "SUBMIT_ONLY"},
+            "tools": [{"tool_name": "skill.activate"}],
+            "skills": [
+                {
+                    "skill_id": "studio-direction",
+                    "skill_version": "1.0.0",
+                    "skill_hash": "sha256:" + "2" * 64,
+                }
+            ],
+            "active_skill_activations": [
+                {
+                    "skill_id": "studio-direction",
+                    "skill_version": "1.0.0",
+                    "skill_hash": "sha256:" + "2" * 64,
+                    "additional_tool_permissions": [],
+                    "additional_authority_permissions": [],
+                }
+            ],
+            "committed_transcript": [],
+            "observations": [],
+            "turn_number": 1,
+        },
+    )
+
+    assert task["skills"][0]["skill_id"] == "studio-direction"
+    assert task["active_skill_activations"][0]["skill_hash"] == ("sha256:" + "2" * 64)
+    assert task["active_skill_activations"][0]["additional_tool_permissions"] == []
+
+
 def test_provider_admission_rejects_tampered_context_correctness_receipt() -> None:
     context = _context(1)
     context["context_correctness"]["checks"]["NO_FUTURE_FACT"]["status"] = "FAIL"

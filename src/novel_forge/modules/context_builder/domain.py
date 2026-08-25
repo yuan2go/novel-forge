@@ -12,7 +12,7 @@ import hashlib
 import json
 from typing import Any, Iterable
 
-from novel_forge.modules.context_contracts import ContextCandidate
+from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
 
 
 ELIGIBLE_QUALIFICATIONS = {"ELIGIBLE"}
@@ -55,6 +55,7 @@ class ContextSegment:
     source_policy_version: str
     token_count: int
     compression_method: str
+    context_class: ContextClass
     source_expression_included: bool = False
     physical_asset_type: str = ""
 
@@ -147,17 +148,71 @@ _ALWAYS_PROTECTED_TYPES = frozenset(
 )
 
 
-def context_candidate_class(candidate: ContextCandidate) -> str:
-    explicit = str(candidate.context_class or "").upper()
-    if explicit not in {"PROTECTED", "RETRIEVABLE"}:
-        raise ValueError("context candidate class must be PROTECTED or RETRIEVABLE")
+def context_candidate_class(candidate: ContextCandidate) -> ContextClass:
+    explicit = ContextClass(str(candidate.context_class or "").upper())
     if (
         candidate.asset_type in _ALWAYS_PROTECTED_TYPES
         or candidate.narrative_function
         in {"hard_world_rules", "critical_character_state", "critical_arc_state"}
     ):
-        return "PROTECTED"
+        return ContextClass.PROTECTED
     return explicit
+
+
+_NON_LOSSY_COMPRESSION_METHODS = frozenset(
+    {"", "none", "full", "full_asset", "raw", "authority_projection"}
+)
+
+
+def _validate_context_class_invariants(candidate: ContextCandidate) -> None:
+    context_class = context_candidate_class(candidate)
+    method = candidate.compression_method.strip().lower()
+    if context_class is ContextClass.PROTECTED:
+        if candidate.compression_trace or method not in {
+            *_NON_LOSSY_COMPRESSION_METHODS,
+            # ``safe_summary`` is historical metadata for an already-versioned
+            # Authority projection. It is not permission to compress during
+            # Context assembly.
+            "safe_summary",
+        }:
+            raise ValueError(
+                "PROTECTED_CONTEXT_COMPRESSION_FORBIDDEN: protected context "
+                "cannot be compressed during Context assembly"
+            )
+        return
+    if context_class is ContextClass.EPHEMERAL:
+        if candidate.memory_layer or candidate.retrieval_reasons:
+            raise ValueError(
+                "EPHEMERAL_CONTEXT_SEARCH_FORBIDDEN: ephemeral context cannot "
+                "enter long-term Memory or Search"
+            )
+        return
+    if (
+        context_class is ContextClass.COMPRESSIBLE
+        and method not in _NON_LOSSY_COMPRESSION_METHODS
+    ):
+        if not candidate.compression_trace or not candidate.provenance:
+            raise ValueError(
+                "COMPRESSIBLE_CONTEXT_PROVENANCE_REQUIRED: compressed context "
+                "requires source provenance and a compression trace"
+            )
+        for entry in candidate.compression_trace:
+            if (
+                not str(entry.get("source_asset_version_id") or "")
+                or not str(entry.get("method") or "")
+                or not any(
+                    str(entry.get(key) or "")
+                    for key in (
+                        "source_content_hash",
+                        "source_projection_hash",
+                        "content_fingerprint",
+                    )
+                )
+            ):
+                raise ValueError(
+                    "COMPRESSIBLE_CONTEXT_PROVENANCE_REQUIRED: compression "
+                    "trace must identify source AssetVersion, method, and digest"
+                )
 
 
 def _profile(
@@ -291,9 +346,10 @@ def select_context_candidates(
     accepted: list[ContextCandidate] = []
     rejected: list[dict[str, str]] = []
     for candidate in candidates:
+        _validate_context_class_invariants(candidate)
         reason = _rejection_reason(project_id, profile, candidate)
         if reason:
-            if context_candidate_class(candidate) == "PROTECTED":
+            if context_candidate_class(candidate) is ContextClass.PROTECTED:
                 raise ValueError(
                     f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
                 )
@@ -302,10 +358,27 @@ def select_context_candidates(
             )
         else:
             accepted.append(candidate)
+    protected_tokens = sum(
+        candidate.estimated_tokens
+        for candidate in accepted
+        if context_candidate_class(candidate) is ContextClass.PROTECTED
+    )
+    if protected_tokens > token_budget:
+        raise ValueError(
+            "PROTECTED_CONTEXT_BUDGET_EXCEEDED: protected context alone exceeds "
+            "the safe Context token budget; Provider admission is forbidden"
+        )
+    class_priority = {
+        ContextClass.PROTECTED: 0,
+        ContextClass.COMPRESSIBLE: 1,
+        ContextClass.RETRIEVABLE: 2,
+        ContextClass.EPHEMERAL: 3,
+    }
     accepted.sort(
         key=lambda item: (
-            context_candidate_class(item) != "PROTECTED",
+            context_candidate_class(item) is not ContextClass.PROTECTED,
             item.asset_type not in profile.required_asset_types,
+            class_priority[context_candidate_class(item)],
             -item.relevance_score,
             item.source_risk,
             item.asset_version_id,
@@ -315,6 +388,11 @@ def select_context_candidates(
     used = 0
     for candidate in accepted:
         if candidate.estimated_tokens < 0:
+            if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                raise ValueError(
+                    "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID: protected context "
+                    "cannot be omitted because its token estimate is invalid"
+                )
             rejected.append(
                 {
                     "asset_version_id": candidate.asset_version_id,
@@ -323,7 +401,7 @@ def select_context_candidates(
             )
             continue
         if used + candidate.estimated_tokens > token_budget:
-            if context_candidate_class(candidate) == "PROTECTED":
+            if context_candidate_class(candidate) is ContextClass.PROTECTED:
                 raise ValueError(
                     "protected context exceeds token budget; explicit replanning is required"
                 )
@@ -409,6 +487,7 @@ def build_authority_context_bundle(
                 "source_policy_version": item.source_policy_version,
                 "token_count": item.token_count,
                 "compression_method": item.compression_method,
+                "context_class": item.context_class.value,
                 "source_expression_included": item.source_expression_included,
                 "physical_asset_type": item.physical_asset_type or item.asset_type,
             }
@@ -459,7 +538,7 @@ def build_authority_context_bundle(
                 if item.asset_type in profile.evidence_only_types
                 else item.allowed_use
             ),
-            "context_class": context_candidate_class(item),
+            "context_class": context_candidate_class(item).value,
             "memory_layer": item.memory_layer,
             "retrieval_reasons": list(item.retrieval_reasons),
             "retrieval_scores": dict(item.retrieval_scores or {}),
@@ -499,7 +578,7 @@ def build_authority_context_bundle(
     )
     context_manifest = {
         "type": "NarrativeContextManifest",
-        "contract_version": "narrative-context-manifest-v2",
+        "contract_version": "narrative-context-manifest-v3",
         "task": {
             "stage": profile.name,
             "target_capability_id": target_capability_id,
@@ -528,8 +607,19 @@ def build_authority_context_bundle(
         "protected_context": [
             item for item in selected_inputs if item["context_class"] == "PROTECTED"
         ],
+        "compressible_context": [
+            item for item in selected_inputs if item["context_class"] == "COMPRESSIBLE"
+        ],
         "retrievable_context": [
             item for item in selected_inputs if item["context_class"] == "RETRIEVABLE"
+        ],
+        "ephemeral_context": [
+            {
+                **item,
+                "attempt_evidence_policy": "FROZEN_IF_SENT_NOT_SEARCH_INDEXED",
+            }
+            for item in selected_inputs
+            if item["context_class"] == "EPHEMERAL"
         ],
         "retrieval_trace": [
             {
@@ -540,7 +630,7 @@ def build_authority_context_bundle(
                 "provenance": item["provenance"],
             }
             for item in selected_inputs
-            if item["context_class"] == "RETRIEVABLE"
+            if item["context_class"] in {"RETRIEVABLE", "COMPRESSIBLE"}
         ],
         "compression_trace": [
             {
@@ -557,16 +647,26 @@ def build_authority_context_bundle(
             "protected": sum(
                 candidate.estimated_tokens
                 for candidate in selection.selected
-                if context_candidate_class(candidate) == "PROTECTED"
+                if context_candidate_class(candidate) is ContextClass.PROTECTED
+            ),
+            "compressible": sum(
+                candidate.estimated_tokens
+                for candidate in selection.selected
+                if context_candidate_class(candidate) is ContextClass.COMPRESSIBLE
             ),
             "retrievable": sum(
                 candidate.estimated_tokens
                 for candidate in selection.selected
-                if context_candidate_class(candidate) == "RETRIEVABLE"
+                if context_candidate_class(candidate) is ContextClass.RETRIEVABLE
+            ),
+            "ephemeral": sum(
+                candidate.estimated_tokens
+                for candidate in selection.selected
+                if context_candidate_class(candidate) is ContextClass.EPHEMERAL
             ),
         },
         "replay": {
-            "algorithm": "authority-context-selection-v1",
+            "algorithm": "authority-context-selection-v2-four-class",
             "input_digest": replay_input_digest,
             "output_context_digest": actual_context_digest,
         },
@@ -635,7 +735,7 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v6",
+        "context_contract_version": "authority-context-bundle-v7",
     }
 
 
@@ -941,6 +1041,7 @@ def _context_segment(
             if candidate.source_use_mode == "structure_only"
             else candidate.compression_method
         ),
+        context_class=context_candidate_class(candidate),
         source_expression_included=False,
         physical_asset_type=candidate.physical_asset_type or candidate.asset_type,
     )

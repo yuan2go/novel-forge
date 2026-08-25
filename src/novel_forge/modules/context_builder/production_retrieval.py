@@ -5,6 +5,7 @@ discovery only after a qualified ChapterMemo exists and freezes every eligible
 source AssetVersion into the retrieval Operation.  The handler can therefore
 replay ranking without observing a changing projection head.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,7 +24,7 @@ from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-RETRIEVAL_POLICY_VERSION = "accepted-hybrid-retrieval-v3"
+RETRIEVAL_POLICY_VERSION = "accepted-lexical-first-retrieval-v4"
 SEMANTIC_PROJECTION_VERSION = "accepted-retrieval-embedding-v1"
 _SEMANTIC_POLICIES = frozenset({"REQUIRED", "FALLBACK_ALLOWED", "DISABLED"})
 
@@ -123,7 +124,7 @@ def build_retrieval_query_plan(
     )
     graph = dict(intent.get("retrieval_graph") or {})
     plan = {
-        "contract_version": "retrieval-query-plan-v3",
+        "contract_version": "retrieval-query-plan-v4",
         "queries": list(queries),
         "postgresql_fts_query": " ".join(queries),
         "entity_ids": _ids(graph.get("entity_ids")),
@@ -139,7 +140,7 @@ def build_retrieval_query_plan(
         "ranking_weights": dict(RANKING_WEIGHTS),
         "semantic_policy": policy,
         "candidate_limit": 256,
-        "semantic_candidate_limit": 64,
+        "semantic_rerank_limit": 64,
         "result_limit": 24,
     }
     plan["query_plan_fingerprint"] = _hash(plan)
@@ -155,15 +156,14 @@ def discover_accepted_retrieval_candidates(
 ) -> RetrievalDiscovery:
     """Discover a bounded accepted candidate set using PostgreSQL FTS.
 
-    Semantic vectors are read only from the governed 0095 projection table.
-    The compatibility ``authority_narrative_retrieval_document.embedding``
-    column is intentionally not canonical.
+    Exact structured channels may add legal accepted candidates to that bounded
+    set. Semantic vectors never participate in discovery; they are consulted
+    later only for members of this frozen set. PostgreSQL ``ts_rank`` is not
+    described as BM25.
     """
 
     boundary = int(
-        dict(query_plan.get("accepted_boundary") or {}).get(
-            "accepted_through_chapter"
-        )
+        dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter")
         or 0
     )
     if boundary < 0 or not project_id or not book_id:
@@ -338,31 +338,9 @@ def discover_accepted_retrieval_candidates(
             [project_id, book_id, boundary, boundary],
         )
         excluded_rows = uow.cursor.fetchall()
-        ready_projection_count = 0
-        if policy != "DISABLED":
-            uow.cursor.execute(
-                """
-                SELECT COUNT(*)
-                FROM authority_retrieval_embedding_projection AS projection
-                JOIN authority_narrative_retrieval_document AS document
-                  ON document.retrieval_document_id=projection.retrieval_document_id
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=document.source_asset_version_id
-                WHERE projection.project_id=%s AND projection.book_id=%s
-                  AND projection.status='READY'
-                  AND projection.embedding_vector IS NOT NULL
-                  AND projection.source_content_hash=version.content_hash
-                  AND projection.updated_at<=%s AND document.created_at<=%s
-                  AND document.accepted_from_chapter<=%s
-                  AND (document.accepted_to_chapter IS NULL
-                       OR document.accepted_to_chapter>=%s)
-                  AND version.lifecycle IN ('ACTIVE','SUPERSEDED')
-                  AND version.eligibility='ELIGIBLE'
-                  AND version.governance='CLEAR'
-                """,
-                [project_id, book_id, cutoff, cutoff, boundary, boundary],
-            )
-            ready_projection_count = int(uow.cursor.fetchone()[0])
+        ready_projection_count = (
+            sum(bool(row[17]) for row in rows) if policy != "DISABLED" else 0
+        )
     frozen_query_plan = dict(query_plan)
     frozen_query_plan["candidate_projection_cutoff"] = cutoff.isoformat()
     frozen_query_plan.pop("query_plan_fingerprint", None)
@@ -416,10 +394,9 @@ def discover_accepted_retrieval_candidates(
             "ARC",
             "OBLIGATION",
             "TEMPORAL",
-            "VECTOR",
         ],
         "fallback": (
-            "POSTGRESQL_FTS_GRAPH_TEMPORAL"
+            "LEXICAL_STRUCTURED_DETERMINISTIC"
             if not ready_projection_count and policy == "FALLBACK_ALLOWED"
             else "NONE"
         ),
@@ -464,7 +441,7 @@ def load_frozen_retrieval_candidate_union(
             "existing candidate snapshot differs from the frozen query/ranking policy",
         )
     snapshot_core = {
-        "contract_version": "retrieval-candidate-snapshot-v3",
+        "contract_version": "retrieval-candidate-snapshot-v4",
         "project_id": project_id,
         "book_id": str(row[8]),
         "operation_id": operation_id,
@@ -512,12 +489,11 @@ def freeze_retrieval_candidate_union(
     query_embedding_dimensions: int = 0,
     query_embedding_evidence: Mapping[str, Any] | None = None,
 ) -> FrozenRetrievalCandidateUnion:
-    """Freeze parallel candidate channels under the current Attempt fence.
+    """Freeze lexical/structured candidates and optional semantic rerank data.
 
-    The vector query is scoped before distance ordering, then the complete
-    deduplicated AssetVersion set is persisted once per Retrieval Operation.
-    Replays consume that immutable snapshot rather than observing later index
-    updates.
+    The vector query is restricted to the already-discovered document IDs
+    before distance ordering. It cannot introduce a candidate. Replays consume
+    the immutable snapshot rather than observing later index updates.
     """
 
     policy = str(query_plan.get("semantic_policy") or "FALLBACK_ALLOWED")
@@ -553,6 +529,10 @@ def freeze_retrieval_candidate_union(
     if existing is not None:
         return existing
 
+    base_documents = tuple(dict(item) for item in base_documents)
+    base_document_ids = sorted(
+        {str(item["retrieval_document_id"]) for item in base_documents}
+    )
     with AuthorityUnitOfWork(database_url) as uow:
         _lock_retrieval_attempt_fence(
             uow,
@@ -563,7 +543,7 @@ def freeze_retrieval_candidate_union(
             worker_id=worker_id,
         )
         semantic_documents: tuple[dict[str, Any], ...] = ()
-        if vector:
+        if vector and base_document_ids:
             distance_expression = _vector_distance_expression(
                 query_embedding_dimensions
             )
@@ -593,6 +573,7 @@ def freeze_retrieval_candidate_union(
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=document.source_asset_version_id
                 WHERE projection.project_id=%s AND projection.book_id=%s
+                  AND document.retrieval_document_id=ANY(%s::TEXT[])
                   AND projection.status='READY'
                   AND projection.embedding_vector IS NOT NULL
                   AND projection.embedding_model=%s
@@ -612,6 +593,7 @@ def freeze_retrieval_candidate_union(
                 [
                     project_id,
                     book_id,
+                    base_document_ids,
                     query_embedding_model,
                     query_embedding_dimensions,
                     SEMANTIC_PROJECTION_VERSION,
@@ -634,7 +616,7 @@ def freeze_retrieval_candidate_union(
                         256,
                         max(
                             1,
-                            int(query_plan.get("semantic_candidate_limit") or 64),
+                            int(query_plan.get("semantic_rerank_limit") or 64),
                         ),
                     ),
                 ],
@@ -664,18 +646,20 @@ def freeze_retrieval_candidate_union(
             "status": (
                 "RETRIEVAL_SEMANTIC_DISABLED"
                 if policy == "DISABLED"
-                else "RETRIEVAL_SEMANTIC_CANDIDATES_READY"
+                else "RETRIEVAL_SEMANTIC_RERANK_READY"
                 if semantic_used
                 else "RETRIEVAL_SEMANTIC_PROJECTION_NOT_READY"
             ),
             "vector_candidate_count": semantic_used,
+            "semantic_rerank_document_count": semantic_used,
             "candidate_document_count": len(documents),
+            "semantic_candidate_expansion": False,
             "query_embedding_status": "READY" if vector else "NOT_READY",
             "query_embedding_model": query_embedding_model,
             "query_embedding_dimensions": query_embedding_dimensions,
             "ranking_policy_version": RANKING_POLICY_VERSION,
             "fallback": (
-                "POSTGRESQL_FTS_GRAPH_TEMPORAL"
+                "LEXICAL_STRUCTURED_DETERMINISTIC"
                 if policy == "FALLBACK_ALLOWED" and not semantic_used
                 else "NONE"
             ),
@@ -691,7 +675,7 @@ def freeze_retrieval_candidate_union(
         )
         query_embedding_evidence_value = dict(query_embedding_evidence or {})
         snapshot_core = {
-            "contract_version": "retrieval-candidate-snapshot-v3",
+            "contract_version": "retrieval-candidate-snapshot-v4",
             "project_id": project_id,
             "book_id": book_id,
             "operation_id": operation_id,
@@ -710,9 +694,9 @@ def freeze_retrieval_candidate_union(
             "semantic_status": frozen_semantic_status,
         }
         snapshot_hash = _hash(snapshot_core)
-        snapshot_id = "retrieval-candidates:" + hashlib.sha256(
-            operation_id.encode()
-        ).hexdigest()
+        snapshot_id = (
+            "retrieval-candidates:" + hashlib.sha256(operation_id.encode()).hexdigest()
+        )
         uow.cursor.execute(
             """
             INSERT INTO authority_retrieval_candidate_snapshot(
@@ -850,16 +834,23 @@ def _merge_candidate_channels(
     base: Iterable[Mapping[str, Any]], semantic: Iterable[Mapping[str, Any]]
 ) -> tuple[dict[str, Any], ...]:
     merged: dict[str, dict[str, Any]] = {}
-    for raw in (*tuple(base), *tuple(semantic)):
+    for raw in base:
+        item = dict(raw)
+        identity = str(item["retrieval_document_id"])
+        item["candidate_channels"] = sorted(
+            {str(value) for value in item.get("candidate_channels") or ()}
+        )
+        merged[identity] = item
+    for raw in semantic:
         item = dict(raw)
         identity = str(item["retrieval_document_id"])
         existing = merged.get(identity)
         if existing is None:
-            item["candidate_channels"] = sorted(
-                {str(value) for value in item.get("candidate_channels") or ()}
+            raise KernelError(
+                "RETRIEVAL_SEMANTIC_CANDIDATE_ESCAPE",
+                "semantic rerank attempted to introduce a document outside the "
+                "frozen lexical/structured candidate set",
             )
-            merged[identity] = item
-            continue
         channels = sorted(
             {
                 *(str(value) for value in existing.get("candidate_channels") or ()),
@@ -907,8 +898,7 @@ def build_retrieval_result(
     """Rank one frozen candidate set into a replayable RetrievalResult."""
 
     if (
-        str(query_plan.get("ranking_policy_version") or "")
-        != RANKING_POLICY_VERSION
+        str(query_plan.get("ranking_policy_version") or "") != RANKING_POLICY_VERSION
         or dict(query_plan.get("ranking_weights") or {}) != RANKING_WEIGHTS
     ):
         raise KernelError(
@@ -917,9 +907,7 @@ def build_retrieval_result(
         )
     frozen = tuple(dict(item) for item in documents)
     boundary = int(
-        dict(query_plan.get("accepted_boundary") or {}).get(
-            "accepted_through_chapter"
-        )
+        dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter")
         or 0
     )
     query_vector = tuple(float(item) for item in query_embedding)
@@ -930,9 +918,7 @@ def build_retrieval_result(
             entity_ids=tuple(_ids(query_plan.get("entity_ids"))),
             relationship_ids=tuple(_ids(query_plan.get("relationship_ids"))),
             character_ids=tuple(_ids(query_plan.get("character_ids"))),
-            arc_plan_version_ids=tuple(
-                _ids(query_plan.get("arc_plan_version_ids"))
-            ),
+            arc_plan_version_ids=tuple(_ids(query_plan.get("arc_plan_version_ids"))),
             obligation_ids=tuple(_ids(query_plan.get("obligation_ids"))),
             query_embedding=query_vector,
             limit=int(query_plan.get("result_limit") or 24),
@@ -954,7 +940,7 @@ def build_retrieval_result(
     selected = [_selected_document(item) for item in ranked]
     result = {
         "type": "RetrievalResult",
-        "contract_version": "chapter-retrieval-result-v3",
+        "contract_version": "chapter-retrieval-result-v4",
         "project_id": project_id,
         "book_id": book_id,
         "accepted_boundary": dict(query_plan.get("accepted_boundary") or {}),
@@ -976,6 +962,8 @@ def build_retrieval_result(
             "weights": dict(query_plan.get("ranking_weights") or {}),
             "lexical_signal": "PostgreSQL Full-Text Search / ts_rank",
             "semantic_signal": "cosine_similarity",
+            "candidate_discovery": "LEXICAL_AND_EXACT_STRUCTURED_ONLY",
+            "semantic_candidate_expansion": False,
             "graph_signals": [
                 "entity",
                 "character_timeline",
@@ -1119,11 +1107,14 @@ def _ids(values: Any) -> list[str]:
 
 
 def _hash(value: Mapping[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(
-            dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")
-        ).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+    )
 
 
 __all__ = [

@@ -14,12 +14,8 @@ def _intent() -> dict[str, object]:
         "chapter": 9,
         "intent_fingerprint": "sha256:" + "1" * 64,
         "accepted_boundary": {"accepted_through_chapter": 8},
-        "required_arc_contributions": [
-            {"arc_plan_version_id": "arc:trust:v3"}
-        ],
-        "active_obligations": [
-            {"state": {"obligation_id": "promise:return-key"}}
-        ],
+        "required_arc_contributions": [{"arc_plan_version_id": "arc:trust:v3"}],
+        "active_obligations": [{"state": {"obligation_id": "promise:return-key"}}],
         "retrieval_graph": {
             "entity_ids": ["key:red"],
             "character_ids": ["character:mei"],
@@ -78,7 +74,10 @@ def test_memo_is_the_authoritative_retrieval_query_input() -> None:
     assert plan["arc_plan_version_ids"] == ["arc:trust:v3"]
     assert plan["obligation_ids"] == ["promise:return-key"]
     assert plan["semantic_policy"] == "FALLBACK_ALLOWED"
-    assert plan["ranking_policy_version"] == "accepted-hybrid-ranking-v3"
+    assert plan["contract_version"] == "retrieval-query-plan-v4"
+    assert plan["ranking_policy_version"] == "accepted-lexical-first-ranking-v4"
+    assert "semantic_rerank_limit" in plan
+    assert "semantic_candidate_limit" not in plan
     assert sum(plan["ranking_weights"].values()) == 1.0
 
 
@@ -120,8 +119,12 @@ def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -
     assert first["result_fingerprint"].startswith("sha256:")
     assert first["candidate_channels"] == ["FTS", "VECTOR"]
     assert first["ranking"]["ranking_policy_version"] == (
-        "accepted-hybrid-ranking-v3"
+        "accepted-lexical-first-ranking-v4"
     )
+    assert first["ranking"]["candidate_discovery"] == (
+        "LEXICAL_AND_EXACT_STRUCTURED_ONLY"
+    )
+    assert first["ranking"]["semantic_candidate_expansion"] is False
     selected = first["selected_documents"][0]
     assert {
         "postgresql_fts",
@@ -136,9 +139,7 @@ def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -
     assert selected["compression_provenance"]["source_content_hash"] == (
         "sha256:" + "3" * 64
     )
-    assert first["rejected_documents"][0]["reason"] == (
-        "FUTURE_ACCEPTED_BOUNDARY"
-    )
+    assert first["rejected_documents"][0]["reason"] == ("FUTURE_ACCEPTED_BOUNDARY")
 
 
 def test_semantic_required_policy_is_explicit_not_a_silent_fallback() -> None:
