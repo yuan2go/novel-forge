@@ -370,6 +370,9 @@ def build_context_bundle(
             ),
             "narrative_composition": dict(mission.get("narrative_composition") or {}),
             "arc_working_set": dict(mission.get("arc_working_set") or {}),
+            "narrative_realization": dict(
+                mission.get("narrative_realization") or {}
+            ),
             "frozen_arc_plans": [
                 normalize_frozen_arc_plan(
                     arc_plan_version_id=arc_id,

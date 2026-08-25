@@ -58,11 +58,12 @@ class StoryDesignValidationResult:
 
 
 _GENERATOR_SCOPE = {
-    "creative.candidates.generate": PlanningScope.BOOK,
-    "theme.candidates.generate": PlanningScope.BOOK,
-    "ending.intent.generate": PlanningScope.BOOK,
-    "world.design.generate": PlanningScope.BOOK,
-    "character.cast.generate": PlanningScope.BOOK,
+    "creative.candidates.generate": PlanningScope.NOT_APPLICABLE,
+    "theme.candidates.generate": PlanningScope.NOT_APPLICABLE,
+    "ending.intent.generate": PlanningScope.NOT_APPLICABLE,
+    "reader.promise.generate": PlanningScope.NOT_APPLICABLE,
+    "world.design.generate": PlanningScope.NOT_APPLICABLE,
+    "character.cast.generate": PlanningScope.NOT_APPLICABLE,
     "book_plan.generate": PlanningScope.BOOK,
     "volume_plan.generate": PlanningScope.VOLUME,
     "arc_plan.generate": PlanningScope.ARC,

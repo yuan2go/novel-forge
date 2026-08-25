@@ -11,17 +11,22 @@ from psycopg.types.json import Jsonb
 from novel_forge.modules.book_design_authority.domain import (
     BOOK_DESIGN_SCHEMA_VERSION,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
     evidence_hash,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority import required_qualification_profiles
+from novel_forge.storage.foundation_repositories import (
+    require_current_foundation_set,
+)
 
 
 _PROGRESSIVE_BOOK_DESIGN_SCHEMAS = {
     BOOK_DESIGN_SCHEMA_VERSION,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
 }
 
 
@@ -123,6 +128,20 @@ class BookDesignAuthorityRepository:
         trace_id: str,
         checkpoint: Callable[[str], None],
     ) -> dict[str, str]:
+        if design.schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            current_foundation = require_current_foundation_set(
+                self.cursor,
+                project_id=book["project_id"],
+                book_id=book["book_id"],
+            )
+            if (
+                design.foundation_set is None
+                or design.foundation_set != current_foundation
+            ):
+                raise KernelError(
+                    "BOOK_DESIGN_FOUNDATION_SET_STALE",
+                    "BookDesign v5 must bind the exact current qualified Foundation Set",
+                )
         asset_id = f"book-design:{book['book_id']}"
         self.cursor.execute(
             """
@@ -175,6 +194,25 @@ class BookDesignAuthorityRepository:
             ],
         )
         checkpoint("after_asset_version_insert")
+        if design.foundation_set is not None:
+            for binding in design.foundation_set.bindings:
+                self.cursor.execute(
+                    """
+                    INSERT INTO authority_asset_dependency (
+                        dependency_id, project_id, book_id,
+                        source_asset_version_id, target_asset_version_id,
+                        dependency_type, created_by_operation_id
+                    ) VALUES (%s,%s,%s,%s,%s,'REQUIRED',%s)
+                    """,
+                    [
+                        str(uuid4()),
+                        book["project_id"],
+                        book["book_id"],
+                        asset_version_id,
+                        binding.asset_version_id,
+                        operation_id,
+                    ],
+                )
         validation = {
             "schema_version": "book-design-validation.v3",
             "validator": "BookDesignPayload.from_mapping",
@@ -282,6 +320,8 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_EVALUATION_NOT_REQUIRED",
                 "legacy BookDesign candidates do not enter the independent evaluation path",
             )
+        if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            self._require_v5_foundation(book, asset_version_id)
         target_status = "VALIDATED" if passed else "REJECTED"
         target_eligibility = "ELIGIBLE" if passed else "INELIGIBLE"
         if (
@@ -379,6 +419,8 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_DECISION_CONFLICT",
                 "only a validated candidate can be decided",
             )
+        if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            self._require_v5_foundation(book, asset_version_id)
         if candidate["schema_version"] in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS:
             self._require_progressive_qualification(book, asset_version_id)
         normalized = decision.strip().upper()
@@ -440,6 +482,8 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_ACTIVATION_CONFLICT",
                 "only an approved candidate can activate",
             )
+        if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            self._require_v5_foundation(book, asset_version_id)
         self.cursor.execute(
             """
             SELECT decision_id FROM authority_asset_decision
@@ -643,6 +687,34 @@ class BookDesignAuthorityRepository:
                     "BOOK_DESIGN_NARRATIVE_QUALIFICATION_STALE",
                     "BookDesign qualification profile differs from current policy",
                 )
+
+    def _require_v5_foundation(
+        self, book: dict[str, Any], asset_version_id: str
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT content
+            FROM authority_asset_version
+            WHERE asset_version_id=%s
+            """,
+            [asset_version_id],
+        )
+        content_row = self.cursor.fetchone()
+        if content_row is None:
+            raise KernelError(
+                "BOOK_DESIGN_CANDIDATE_NOT_FOUND", "BookDesign candidate disappeared"
+            )
+        design = BookDesignPayload.from_mapping(dict(content_row[0]))
+        current_foundation = require_current_foundation_set(
+            self.cursor,
+            project_id=book["project_id"],
+            book_id=book["book_id"],
+        )
+        if design.foundation_set is None or design.foundation_set != current_foundation:
+            raise KernelError(
+                "BOOK_DESIGN_FOUNDATION_SET_STALE",
+                "Foundation Set changed after BookDesign qualification",
+            )
 
     def _bind_output(
         self,

@@ -361,6 +361,45 @@ def _canon_schema() -> dict[str, Any]:
             ),
         ),
     }
+    properties["realization_evidence"] = {
+        "type": "array",
+        "items": _object_schema(
+            {
+                "planned_event_id": {"type": "string", "minLength": 1},
+                "observed_event_id": _nullable({"type": "string", "minLength": 1}),
+                "observation_status": {
+                    "type": "string",
+                    "enum": ["OBSERVED", "NOT_OBSERVED"],
+                },
+                "accepted_prose_evidence": {
+                    "type": "array",
+                    "items": _object_schema(
+                        {
+                            "start": {"type": "integer", "minimum": 0},
+                            "end": {"type": "integer", "minimum": 1},
+                            "summary": {"type": "string", "minLength": 1},
+                        },
+                        required=("start", "end", "summary"),
+                    ),
+                },
+                "observed_consequence": _nullable(
+                    {"type": "string", "minLength": 1}
+                ),
+                "observed_state_event_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                },
+            },
+            required=(
+                "planned_event_id",
+                "observed_event_id",
+                "observation_status",
+                "accepted_prose_evidence",
+                "observed_consequence",
+                "observed_state_event_ids",
+            ),
+        ),
+    }
     properties["obligation_changes"] = {
         "type": "array",
         "items": _object_schema(
@@ -439,7 +478,7 @@ def _canon_schema() -> dict[str, Any]:
     }
     schema = _object_schema(
         properties,
-        required=(*_CANON_FIELDS, "arc_evidence"),
+        required=(*_CANON_FIELDS, "arc_evidence", "realization_evidence"),
     )
     for field, identities in _CANON_SCHEMA_REQUIRED_IDENTITIES.items():
         change_schema = schema["properties"][field]["items"]
@@ -672,7 +711,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v11"
+        "v12"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -775,6 +814,25 @@ def validate_chapter_provider_output_semantics(
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "unobserved Arc evidence cannot advance actual progress",
+                )
+        seen_realization_ids: set[str] = set()
+        for evidence in normalized.get("realization_evidence", []):
+            planned_event_id = str(evidence.get("planned_event_id") or "")
+            if not planned_event_id or planned_event_id in seen_realization_ids:
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "realization evidence requires unique planned event identities",
+                )
+            seen_realization_ids.add(planned_event_id)
+            observed = evidence.get("observation_status") == "OBSERVED"
+            if observed != bool(
+                evidence.get("observed_event_id")
+                and evidence.get("accepted_prose_evidence")
+                and evidence.get("observed_consequence")
+            ):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "observed realization evidence requires identity, prose location and consequence",
                 )
         for field in _CANON_FIELDS:
             if field == "canon_facts":

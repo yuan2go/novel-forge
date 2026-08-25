@@ -33,6 +33,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .domain import (
     DesignTransition,
     GENERATOR_CATALOG,
+    GENERATOR_DESIGN_SCOPE,
     GENERATOR_DEFINITIONS,
     PlanningScope,
 )
@@ -109,6 +110,9 @@ class _TransitionHandler:
                 "transition": transition.value,
                 "expected_version": int(payload["expected_version"]),
                 "planning_scope": PlanningScope(str(payload["planning_scope"])).value,
+                "design_scope": GENERATOR_DESIGN_SCOPE[
+                    generator.operation_name
+                ].value,
                 "source_kind": str(payload["source_kind"]),
                 "evidence": dict(payload.get("evidence") or {}),
             },
@@ -193,6 +197,7 @@ class PostgresStoryDesignAssetAuthority:
             "transition": command.transition.value,
             "expected_version": command.expected_version,
             "planning_scope": command.planning_scope.value,
+            "design_scope": GENERATOR_DESIGN_SCOPE[generator.operation_name].value,
             "source_kind": command.source_kind,
             "evidence": dict(command.evidence or {}),
         }
@@ -279,6 +284,9 @@ class PostgresStoryDesignAssetAuthority:
                 generator_definition_version=generator.definition_version,
                 candidate_type=generator.output_candidate_type,
                 planning_scope=command.planning_scope.value,
+                design_scope=GENERATOR_DESIGN_SCOPE[
+                    generator.operation_name
+                ].value,
                 transition=command.transition.value,
                 expected_version=command.expected_version,
                 source_kind=command.source_kind,

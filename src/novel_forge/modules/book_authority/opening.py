@@ -7,7 +7,8 @@ from typing import Mapping
 
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_design_authority import (
-    EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    BookDesignPayload,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_planning_runtime import (
@@ -17,6 +18,9 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationCommand,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.foundation_repositories import (
+    require_current_foundation_set,
+)
 
 from .input_resolver import (
     BookProductionInputResolver,
@@ -124,7 +128,7 @@ class PostgresBookOpeningApplication:
     ) -> BookOpeningResult:
         principal.require("book.authority.execute", request.project_id)
         principal.require("story_planning.authority.execute", request.project_id)
-        design_version = self._require_evolution_foundation(request)
+        design_version = self._require_qualified_foundation(request)
         generic = dict(request.planning_input_versions)
         if (
             set(generic) != _OPENING_INPUT_ROLES
@@ -292,13 +296,14 @@ class PostgresBookOpeningApplication:
             values["volume_plan"] = volume_plan
         return {role: values[role] for role in GENERATOR_INPUT_ROLES[generator]}
 
-    def _require_evolution_foundation(self, request: OpenBookProductionRequest) -> str:
+    def _require_qualified_foundation(self, request: OpenBookProductionRequest) -> str:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT book.current_book_design_asset_version_id,
                        version.schema_version, version.lifecycle,
-                       version.eligibility, version.governance
+                       version.eligibility, version.governance,
+                       version.content_hash, version.content
                 FROM authority_book AS book
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=book.current_book_design_asset_version_id
@@ -313,15 +318,53 @@ class PostgresBookOpeningApplication:
                 ],
             )
             row = uow.cursor.fetchone()
-        if row is None or tuple(str(item) for item in row[1:]) != (
-            EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
-            "ACTIVE",
-            "ELIGIBLE",
-            "CLEAR",
-        ):
+            if row is None or tuple(str(item) for item in row[1:5]) != (
+                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                "ACTIVE",
+                "ELIGIBLE",
+                "CLEAR",
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_FOUNDATION_REQUIRED",
+                    "Book opening requires the exact active and qualified Foundation synthesis",
+                )
+            foundation = require_current_foundation_set(
+                uow.cursor,
+                project_id=request.project_id,
+                book_id=request.book_id,
+            )
+            design = BookDesignPayload.from_mapping(dict(row[6]))
+            if design.foundation_set != foundation:
+                raise KernelError(
+                    "BOOK_OPENING_FOUNDATION_DRIFT",
+                    "BookDesign does not bind the current qualified Foundation Set",
+                )
+            uow.cursor.execute(
+                """
+                SELECT formation_run_id
+                FROM authority_story_formation_run
+                WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+                  AND lifecycle='READY' AND current_stage='COMPLETE'
+                  AND foundation_set_digest=%s
+                  AND book_design_asset_version_id=%s
+                  AND book_design_content_hash=%s
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                [
+                    request.project_id,
+                    request.workspace_id,
+                    request.book_id,
+                    foundation.set_digest,
+                    str(row[0]),
+                    str(row[5]),
+                ],
+            )
+            formation = uow.cursor.fetchone()
+        if formation is None:
             raise KernelError(
-                "BOOK_OPENING_FOUNDATION_REQUIRED",
-                "Book opening requires the exact active and qualified evolution Foundation",
+                "BOOK_OPENING_FORMATION_NOT_READY",
+                "Book opening requires a READY durable Story Formation bound to the active synthesis",
             )
         return str(row[0])
 

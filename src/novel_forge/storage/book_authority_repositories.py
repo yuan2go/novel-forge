@@ -158,12 +158,17 @@ class BookAuthorityRepository:
                 chapter_request_id, book_run_id, project_id, chapter_number,
                 chapter_plan_version, chapter_plan_content_hash,
                 parent_group_version_id,
+                narrative_realization_id, narrative_realization_slice_id,
+                narrative_realization_contract_digest,
                 production_profile_version, stable_idempotency_key,
                 command_payload, status_reference
             ) VALUES (
                 %(chapter_request_id)s, %(book_run_id)s, %(project_id)s,
                 %(chapter_number)s, %(chapter_plan_version)s,
                 %(chapter_plan_content_hash)s, NULLIF(%(parent_group_version_id)s, ''),
+                NULLIF(%(narrative_realization_id)s, ''),
+                NULLIF(%(narrative_realization_slice_id)s, ''),
+                NULLIF(%(narrative_realization_contract_digest)s, ''),
                 %(production_profile_version)s,
                 %(stable_idempotency_key)s, %(command_payload)s, 'SUBMITTING'
             )

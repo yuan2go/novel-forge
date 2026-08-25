@@ -1602,6 +1602,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "arc_state_changes",
             "disclosure_events",
             "arc_evidence",
+            "realization_evidence",
         )
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:

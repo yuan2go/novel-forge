@@ -318,6 +318,16 @@ class StoryPlanningGenerationApplication:
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions()
         frozen_inputs = self._resolve_inputs(command)
+        if command.generator_operation_name == "book_plan.generate":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                self.planning._require_qualified_foundation_for_book_plan(
+                    uow.cursor,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    content={
+                        "frozen_inputs": [asdict(item) for item in frozen_inputs],
+                    },
+                )
         frozen_change_evidence = self._resolve_change_evidence(command)
         input_assets = [
             {
@@ -333,6 +343,26 @@ class StoryPlanningGenerationApplication:
             }
             for item in frozen_change_evidence
         )
+        if command.narrative_realization:
+            proof = self._require_asset(
+                project_id=command.project_id,
+                asset_version_id=str(
+                    command.narrative_realization["proof_asset_version_id"]
+                ),
+            )
+            if str(proof["content_hash"]) != str(
+                command.narrative_realization["proof_hash"]
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_PROOF_STALE",
+                    "ChapterPlan proof asset differs from the Frozen Realization",
+                )
+            input_assets.append(
+                {
+                    "asset_version_id": str(proof["asset_version_id"]),
+                    "content_hash": str(proof["content_hash"]),
+                }
+            )
         if command.repair_of_candidate_id:
             repair_asset = self._require_asset(
                 project_id=command.project_id,
@@ -2515,6 +2545,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "narrative_search_strategy_directive": (
             command.narrative_search_strategy_directive
         ),
+        "narrative_realization": dict(command.narrative_realization or {}),
     }
 
 
@@ -2566,6 +2597,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         ),
         narrative_search_strategy_directive=str(
             payload.get("narrative_search_strategy_directive") or ""
+        ),
+        narrative_realization=(
+            dict(payload.get("narrative_realization") or {}) or None
         ),
     )
 
@@ -2652,6 +2686,20 @@ def _validate_frozen_arc_references(
             )
     references: list[str] = []
     if command.generator_operation_name == "chapter_group_plan.generate":
+        chapter_range = content.get("chapter_range")
+        accepted_through = command.narrative_search_accepted_through_chapter
+        if (
+            accepted_through > 0
+            and (
+                not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or int(chapter_range[0]) <= accepted_through
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_HISTORY_REWRITE_FORBIDDEN",
+                "future ChapterGroup replacement must begin after the accepted boundary",
+            )
         portfolio = [
             *(str(item) for item in content.get("primary_arc_ids") or ()),
             *(str(item) for item in content.get("secondary_arc_ids") or ()),
@@ -2682,7 +2730,26 @@ def _validate_frozen_arc_references(
                 for item in row.get("required_arc_contributions") or ()
                 if isinstance(item, dict)
             )
+        event_arc_ids = {
+            str(arc_id)
+            for event in content.get("narrative_event_chain") or ()
+            if isinstance(event, dict)
+            for arc_id in event.get("arc_contributions") or ()
+            if str(arc_id)
+        }
+        if event_arc_ids != frozen:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ARC_SCOPE_INVALID",
+                "causal realization events must cover only and all frozen Working Set Arcs",
+            )
     else:
+        if dict(content.get("narrative_realization_slice") or {}) != dict(
+            command.narrative_realization or {}
+        ):
+            raise KernelError(
+                "CHAPTER_NARRATIVE_REALIZATION_DRIFT",
+                "ChapterPlan changed the exact Frozen Narrative Realization slice",
+            )
         schedule_arcs = {
             str(item.get("arc_plan_version_id") or "")
             for item in content.get("arc_schedule") or ()

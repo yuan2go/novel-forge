@@ -1938,6 +1938,36 @@ def default_chapter_fixture_response(
             "arc_state_changes": [],
             "disclosure_events": disclosure_events,
             "arc_evidence": [],
+            "realization_evidence": [
+                {
+                    "planned_event_id": str(event.get("event_id") or ""),
+                    "observed_event_id": (
+                        f"observed:{event.get('event_id')}"
+                    ),
+                    "observation_status": "OBSERVED",
+                    "accepted_prose_evidence": [
+                        {
+                            "start": 0,
+                            "end": evidence_end,
+                            "summary": "scripted fixture prose realizes the frozen event",
+                        }
+                    ],
+                    "observed_consequence": str(
+                        event.get("consequence") or "the planned consequence occurs"
+                    ),
+                    "observed_state_event_ids": [
+                        str(delta.get("entity_id") or "")
+                        for delta in event.get("state_deltas") or ()
+                        if isinstance(delta, Mapping)
+                        and str(delta.get("entity_id") or "")
+                    ],
+                }
+                for event in (
+                    expectations.get("narrative_realization") or {}
+                ).get("events")
+                or ()
+                if isinstance(event, Mapping)
+            ],
         }
         return {
             "canon_facts": [

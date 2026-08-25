@@ -85,6 +85,25 @@ def validate_chapter_execution_intent(
             "CHAPTER_MISSION_ARC_COMPOSITION_INVALID",
             "ExecutionIntent Scenes must cover the exact compiled Mission Arc set",
         )
+    realization = mission.get("narrative_realization")
+    if not isinstance(realization, Mapping):
+        raise KernelError(
+            "CHAPTER_MISSION_REALIZATION_INVALID",
+            "ExecutionIntent realization evidence must be an object",
+        )
+    # Direct/manual Chapter operations remain replay compatible. Canonical
+    # resolved Book production admits only non-empty exact realization slices
+    # at its Planning and Book Authority boundaries.
+    if realization and (
+        int(realization.get("chapter_number") or 0)
+        != int(normalized.get("chapter") or 0)
+        or not realization.get("events")
+        or not str(realization.get("contract_digest") or "").startswith("sha256:")
+    ):
+        raise KernelError(
+            "CHAPTER_MISSION_REALIZATION_INVALID",
+            "ExecutionIntent does not preserve its Frozen realization slice",
+        )
     return dict(intent)
 
 
@@ -111,6 +130,8 @@ def validate_chapter_memo(
         or normalized.get("accepted_boundary")
         != validated_intent.get("accepted_boundary")
         or normalized.get("mission_fingerprint") != mission.get("mission_fingerprint")
+        or normalized.get("narrative_realization")
+        != mission.get("narrative_realization")
     ):
         raise KernelError(
             "CHAPTER_MEMO_INTENT_DRIFT",
@@ -401,6 +422,9 @@ def build_chapter_execution_intent(
             "accepted_reality": dict(working_set.get("accepted_reality") or {}),
             "schedule_correction": dict(working_set.get("schedule_correction") or {}),
         },
+        "narrative_realization": dict(
+            chapter_plan.get("narrative_realization_slice") or {}
+        ),
     }
     mission = {**mission_body, "mission_fingerprint": _hash(mission_body)}
     intent = {
@@ -606,6 +630,7 @@ def qualify_chapter_memo(
             for item in (mission.get("narrative_composition") or {}).get("events") or ()
             if isinstance(item, Mapping)
         ],
+        "narrative_realization": dict(mission.get("narrative_realization") or {}),
         "scene_directives": [dict(item) for item in result["scene_directives"]],
         "retrieval_queries": [str(item) for item in result["retrieval_queries"]],
         "obligation_actions": [dict(item) for item in result["obligation_actions"]],

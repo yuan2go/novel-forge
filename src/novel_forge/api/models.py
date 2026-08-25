@@ -1036,6 +1036,53 @@ class BookProductionInputResolveRequest(BaseModel):
     correlation_id: str = ""
 
 
+class StoryFormationLayerRequest(BaseModel):
+    role: Literal[
+        "CREATIVE_FOUNDATION",
+        "THEME_CONTRACT",
+        "ENDING_INTENT",
+        "READER_PROMISE",
+        "WORLD_BIBLE",
+        "CHARACTER_CAST",
+    ]
+    asset_version_id: str = Field(min_length=1)
+    content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    schema_version: str = Field(min_length=1)
+    generation_operation_id: str = Field(min_length=1)
+    qualification_evidence_asset_version_id: str = Field(min_length=1)
+    qualification_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    activation_operation_id: str = Field(min_length=1)
+    candidate_asset_version_ids: list[str] = Field(min_length=1)
+    selection_reason: list[str] = Field(min_length=1)
+
+
+class StoryFormationStartRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    expected_book_version: int = Field(ge=0)
+    idempotency_key: str = Field(min_length=1)
+    layers: list[StoryFormationLayerRequest] = Field(min_length=6, max_length=6)
+    book_design_asset_version_id: str = ""
+    book_design_content_hash: str = Field(
+        default="", pattern=r"^(?:|sha256:[0-9a-f]{64})$"
+    )
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class StoryFormationControlRequest(BaseModel):
+    expected_version: int = Field(ge=0)
+    actor_id: str = ""
+
+
+class StoryFormationBookDesignApprovalRequest(BaseModel):
+    expected_version: int = Field(ge=0)
+    book_design_asset_version_id: str = Field(min_length=1)
+    book_design_content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    actor_id: str = ""
+
+
 class BookAuthorityChapterRequest(BaseModel):
     chapter_number: int = Field(ge=1)
     title: str = Field(min_length=1)
@@ -2441,6 +2488,12 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ContentAuthorityCommandRequest": ContentAuthorityCommandRequest,
         "BookAuthorityStartRequest": BookAuthorityStartRequest,
         "BookProductionInputResolveRequest": BookProductionInputResolveRequest,
+        "StoryFormationLayerRequest": StoryFormationLayerRequest,
+        "StoryFormationStartRequest": StoryFormationStartRequest,
+        "StoryFormationControlRequest": StoryFormationControlRequest,
+        "StoryFormationBookDesignApprovalRequest": (
+            StoryFormationBookDesignApprovalRequest
+        ),
         "BookAuthorityChapterRequest": BookAuthorityChapterRequest,
         "BookAuthorityControlRequest": BookAuthorityControlRequest,
         "BookReplanApprovalRequest": BookReplanApprovalRequest,

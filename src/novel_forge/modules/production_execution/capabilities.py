@@ -21,6 +21,7 @@ class CapabilityId(StrEnum):
     CREATIVE_PROPOSAL_GENERATE = "creative.proposal.generate"
     THEME_QUESTION_GENERATE = "theme.question.generate"
     ENDING_INTENT_GENERATE = "ending.intent.generate"
+    READER_PROMISE_GENERATE = "reader.promise.generate"
     WORLD_DESIGN_GENERATE = "world.design.generate"
     CHARACTER_CAST_GENERATE = "character.cast.generate"
     PLANNING_BOOK_GENERATE = "planning.book.generate"

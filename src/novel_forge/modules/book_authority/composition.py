@@ -8,6 +8,7 @@ from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
+from novel_forge.modules.book_design_authority import StoryFormationApplication
 from novel_forge.modules.book_replan import (
     BookReplanCoordinator,
     ReevaluateBookReplanCommand,
@@ -54,6 +55,7 @@ class BookProductionComposition:
     principal: Principal
     projection_repair: PostgresBookProjectionRepairAuthority
     opening: PostgresBookOpeningApplication | None = None
+    formation: StoryFormationApplication | None = None
 
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         return self.supervisor.tick(book_run_id)

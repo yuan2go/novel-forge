@@ -557,6 +557,11 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         except ValueError:
             logical_ordinal = 1
     chapter_number = _logical_chapter_number(logical_key)
+    if stage == "chapter_group_plan.generate":
+        chapter_number = max(
+            chapter_number,
+            int(command.get("narrative_search_accepted_through_chapter") or 0) + 1,
+        )
     arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
@@ -932,6 +937,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 }
                 for arc_id in arc_plan_ids or ("arc:primary",)
             ],
+            "narrative_event_chain": _fixture_narrative_event_chain(
+                chapter_number=chapter_number,
+                arc_plan_ids=arc_plan_ids or ("arc:primary",),
+            ),
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segment_ref": {
                 "volume_plan_version_id": str(
@@ -948,6 +957,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "title": f"Chapter {chapter_number}: The Door Closes",
             "premise": (
                 f"Chapter {chapter_number} forces the protagonist into a witnessed choice."
+            ),
+            "narrative_realization_slice": dict(
+                command.get("narrative_realization") or {}
             ),
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segment_ref": {
@@ -1093,6 +1105,55 @@ def _fixture_character_arc_stage(boundary: int) -> str:
         3: "OWNED",
     }
     return named.get(boundary, f"INTEGRATED_{boundary}")
+
+
+def _fixture_narrative_event_chain(
+    *, chapter_number: int, arc_plan_ids: tuple[str, ...]
+) -> list[dict[str, Any]]:
+    event_ids = [
+        f"realization:chapter-group:{chapter_number}:event:{offset}"
+        for offset in range(1, 4)
+    ]
+    result: list[dict[str, Any]] = []
+    for offset, event_id in enumerate(event_ids):
+        chapter = chapter_number + offset
+        result.append(
+            {
+                "event_id": event_id,
+                "slice_id": f"realization:chapter:{chapter}",
+                "chapter_number": chapter,
+                "causes": [] if offset == 0 else [event_ids[offset - 1]],
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "preconditions": ["the preceding pressure remains unresolved"],
+                "knowledge_boundary": {
+                    "actor_knows": ["fact:public-risk"],
+                    "reader_may_learn": ["fact:hidden-cost"],
+                    "forbidden_disclosures": ["fact:future-antagonist-plan"],
+                },
+                "action": "confront the institutional resistance",
+                "decision": "accept a visible cost instead of retreating",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "state_deltas": [
+                    {
+                        "state_kind": "character_arc",
+                        "entity_id": "protagonist:accountability",
+                        "from_state": _fixture_character_arc_stage(offset),
+                        "to_state": _fixture_character_arc_stage(offset + 1),
+                    }
+                ],
+                "disclosures": ["fact:hidden-cost"],
+                "obligation_actions": ["promise:choice:ADVANCE"],
+                "arc_contributions": list(arc_plan_ids),
+                "irreversible_change": "the choice becomes witnessed and costly",
+                "next_event_ids": (
+                    [] if offset == len(event_ids) - 1 else [event_ids[offset + 1]]
+                ),
+                "required": True,
+            }
+        )
+    return result
 
 
 def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
@@ -1681,6 +1742,7 @@ def planning_provider_output_schema(
     dependent_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
     narrative_search: bool = False,
+    narrative_realization: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
 
@@ -1850,6 +1912,80 @@ def planning_provider_output_schema(
             }
             if arc_plan_version_ids:
                 properties[field]["maxItems"] = len(arc_plan_version_ids)
+        elif field == "narrative_event_chain":
+            arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+            properties[field] = {
+                "type": "array",
+                "minItems": 3,
+                "items": _strict_object(
+                    {
+                        "event_id": string,
+                        "slice_id": string,
+                        "chapter_number": {"type": "integer", "minimum": 1},
+                        "causes": {"type": "array", "items": string},
+                        "actor_ref": string,
+                        "motivation": string,
+                        "preconditions": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": string,
+                        },
+                        "knowledge_boundary": _strict_object(
+                            {
+                                "actor_knows": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": string,
+                                },
+                                "reader_may_learn": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": string,
+                                },
+                                "forbidden_disclosures": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": string,
+                                },
+                            }
+                        ),
+                        "action": string,
+                        "decision": string,
+                        "resistance": string,
+                        "consequence": string,
+                        "state_deltas": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": _strict_object(
+                                {
+                                    "state_kind": string,
+                                    "entity_id": string,
+                                    "from_state": string,
+                                    "to_state": string,
+                                }
+                            ),
+                        },
+                        "disclosures": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": string,
+                        },
+                        "obligation_actions": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": string,
+                        },
+                        "arc_contributions": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": arc_ref,
+                        },
+                        "irreversible_change": string,
+                        "next_event_ids": {"type": "array", "items": string},
+                        "required": {"type": "boolean"},
+                    }
+                ),
+            }
         elif field in integer_arrays:
             properties[field] = {
                 "type": "array",
@@ -2004,6 +2140,17 @@ def planning_provider_output_schema(
             ),
         )
     )
+    if contract_type is PlanContractType.CHAPTER:
+        realization = dict(narrative_realization or {})
+        if not realization:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_REQUIRED",
+                "Chapter provider schema requires a Frozen Narrative Realization slice",
+            )
+        # ``const`` freezes the complete nested contract.  Omitting a second,
+        # redundant object schema also keeps OpenAI strict-schema validation
+        # from inventing a parallel shape for Planning-owned evidence.
+        properties["narrative_realization_slice"] = {"const": realization}
     if narrative_search:
         if contract_type is PlanContractType.CHAPTER:
             raise ValueError("Chapter planning is operational, not a search portfolio")
@@ -2510,6 +2657,7 @@ class PostgresPlanningExecutionPreparer:
                 *command.dependent_arc_plan_version_ids,
             ),
             narrative_search=bool(command.narrative_search_id),
+            narrative_realization=command.narrative_realization,
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
@@ -2648,6 +2796,9 @@ class PostgresPlanningExecutionPreparer:
                     ),
                     "narrative_search_strategy_directive": (
                         command.narrative_search_strategy_directive
+                    ),
+                    "narrative_realization": dict(
+                        command.narrative_realization or {}
                     ),
                 },
                 "frozen_inputs": [

@@ -57,6 +57,7 @@ class StoryDesignRepository:
         generator_definition_version: str,
         candidate_type: str,
         planning_scope: str,
+        design_scope: str,
         transition: str,
         expected_version: int,
         source_kind: str,
@@ -94,12 +95,12 @@ class StoryDesignRepository:
                         generator_operation_name,
                         generator_definition_version, candidate_type,
                         lifecycle, qualification, approval, freshness,
-                        planning_scope, source_kind, execution_evidence,
+                        planning_scope, design_scope, source_kind, execution_evidence,
                         created_by_operation_id, updated_by_operation_id
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s,
                         'CANDIDATE', 'PENDING', 'NOT_REQUESTED', 'CURRENT',
-                        %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s
                     )
                     """,
                     [
@@ -110,6 +111,7 @@ class StoryDesignRepository:
                         generator_definition_version,
                         candidate_type,
                         planning_scope,
+                        design_scope,
                         source_kind,
                         Jsonb(evidence),
                         operation_id,
@@ -229,7 +231,7 @@ class StoryDesignRepository:
             SELECT project_id, asset_version_id, logical_key,
                    generator_operation_name, generator_definition_version,
                    candidate_type, lifecycle, qualification, approval,
-                   freshness, planning_scope, source_kind,
+                   freshness, planning_scope, design_scope, source_kind,
                    execution_evidence, semantic_repair_count,
                    structural_regeneration_count, created_by_operation_id,
                    updated_by_operation_id, version
@@ -256,6 +258,7 @@ class StoryDesignRepository:
             "approval",
             "freshness",
             "planning_scope",
+            "design_scope",
             "source_kind",
             "execution_evidence",
             "semantic_repair_count",

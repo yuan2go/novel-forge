@@ -206,6 +206,7 @@ TYPE_FIELDS = {
         "secondary_arc_ids",
         "required_arc_contributions",
         "arc_checkpoint_expectations",
+        "narrative_event_chain",
     ),
     PlanContractType.CHAPTER: (
         "chapter_number",
@@ -277,10 +278,21 @@ def validate_planning_contract(
     parent_version_id: str,
     execution_scope: PlanExecutionScope,
     content: dict[str, Any],
+    allow_pre_hierarchy_compatibility: bool = False,
 ) -> PlanningContract:
+    compatibility_fields = (
+        {"narrative_event_chain"}
+        if contract_type is PlanContractType.CHAPTER_GROUP
+        else {"narrative_realization_slice"}
+        if contract_type is PlanContractType.CHAPTER
+        else set()
+    )
     missing = [
         field
         for field in (*COMMON_FIELDS, *TYPE_FIELDS[contract_type])
+        if not (
+            allow_pre_hierarchy_compatibility and field in compatibility_fields
+        )
         if field not in content or content.get(field) in (None, "")
     ]
     if missing:
@@ -346,11 +358,26 @@ def validate_planning_contract(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
         )
+        if content.get("narrative_event_chain"):
+            from .realization_domain import validate_narrative_realization_event_chain
+
+            validate_narrative_realization_event_chain(
+                list(content["narrative_event_chain"]), chapter_range=(start, end)
+            )
+        elif not allow_pre_hierarchy_compatibility:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_EVENT_CHAIN_REQUIRED",
+                "new ChapterGroup contracts require a causal event chain",
+            )
     if contract_type is PlanContractType.CHAPTER:
         _validate_chapter_arc_contributions(content["required_arc_contributions"])
     if content.get("narrative_architecture_version") == "canonical-narrative-v1":
         _validate_canonical_narrative_contract(
-            project_id, book_id, contract_type, content
+            project_id,
+            book_id,
+            contract_type,
+            content,
+            allow_pre_hierarchy_compatibility=allow_pre_hierarchy_compatibility,
         )
     return PlanningContract(
         project_id=project_id,
@@ -370,6 +397,8 @@ def _validate_canonical_narrative_contract(
     book_id: str,
     contract_type: PlanContractType,
     content: dict[str, Any],
+    *,
+    allow_pre_hierarchy_compatibility: bool = False,
 ) -> None:
     _validate_progressive_planning_contract(project_id, book_id, contract_type, content)
     if contract_type is PlanContractType.BOOK:
@@ -479,12 +508,35 @@ def _validate_canonical_narrative_contract(
         "reader_experience",
         "scene_plan",
         "expected_exit_state",
+        *(
+            ()
+            if allow_pre_hierarchy_compatibility
+            and not content.get("narrative_realization_slice")
+            else ("narrative_realization_slice",)
+        ),
     )
     missing = [field for field in required if not content.get(field)]
     if missing:
         raise KernelError(
             "CHAPTER_EXECUTION_PLAN_INCOMPLETE",
             "canonical ChapterPlan missing: " + ", ".join(missing),
+        )
+    realization_slice = content.get("narrative_realization_slice")
+    if realization_slice is not None and (
+        not isinstance(realization_slice, dict)
+        or int(realization_slice.get("chapter_number") or 0)
+        != int(content.get("chapter_number") or 0)
+        or str(realization_slice.get("chapter_group_plan_version_id") or "")
+        != str(content.get("parent_version_id") or "")
+        or not str(realization_slice.get("realization_id") or "")
+        or not str(realization_slice.get("contract_digest") or "").startswith(
+            "sha256:"
+        )
+        or not realization_slice.get("events")
+    ):
+        raise KernelError(
+            "CHAPTER_NARRATIVE_REALIZATION_INVALID",
+            "canonical ChapterPlan must bind one exact Frozen Narrative Realization slice",
         )
     transitions = content["required_state_transitions"]
     if not isinstance(transitions, list) or any(

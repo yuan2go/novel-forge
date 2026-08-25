@@ -13,12 +13,14 @@ from novel_forge.api.authority_dependencies import (
     build_production_execution_composition,
     build_trusted_principal_resolver,
 )
+from novel_forge.modules.authority_security import Principal
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.book_authority import (
     BookProductionComposition,
     PostgresBookAuthorityScheduler,
 )
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+from novel_forge.modules.book_design_authority import StoryFormationApplication
 from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerProgrammingError,
@@ -222,6 +224,65 @@ def execute_book_projection_repair_claim(
         raise
 
 
+def execute_story_formation_claim(
+    runtime_jobs: RuntimeJobAuthority,
+    formation: StoryFormationApplication,
+    principal: Principal,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int = 30,
+) -> dict[str, object]:
+    if (
+        claim.job_kind != "STORY_FORMATION_ADVANCE"
+        or claim.runtime_group != "story_formation"
+        or claim.subject_kind != "STORY_FORMATION_RUN"
+    ):
+        raise RuntimeError("Book worker received an invalid Story Formation job")
+    runtime_jobs.start(claim)
+    runtime_jobs.checkpoint(
+        claim,
+        {
+            "stage": "STORY_FORMATION_ADVANCE_STARTED",
+            "formation_run_id": claim.subject_id,
+            "observed_stage": claim.input_snapshot.get("observed_stage", ""),
+        },
+    )
+    try:
+        with LeaseHeartbeatGuard(
+            lambda: runtime_jobs.heartbeat(claim, lease_seconds=lease_seconds),
+            lease_seconds=lease_seconds,
+            label=f"runtime-job:{claim.attempt_id}",
+        ):
+            result = formation.advance(claim.subject_id, principal=principal)
+        runtime_jobs.checkpoint(
+            claim,
+            {
+                "stage": "STORY_FORMATION_ADVANCE_COMMITTED",
+                "current_stage": result["current_stage"],
+                "lifecycle": result["lifecycle"],
+                "version": result["version"],
+            },
+        )
+        runtime_jobs.complete(claim, result)
+        return result
+    except Exception as exc:
+        failure = {
+            "code": getattr(exc, "code", type(exc).__name__),
+            "message": str(exc),
+            "formation_run_id": claim.subject_id,
+        }
+        formation.record_failure(
+            claim.subject_id,
+            error=failure,
+            runtime_attempt_id=claim.attempt_id,
+        )
+        runtime_jobs.fail(
+            claim,
+            failure,
+        )
+        raise
+
+
 def main() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
@@ -265,6 +326,42 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop)
     try:
         while not stopping:
+            if composition.formation is not None:
+                composition.formation.schedule_candidates(limit=batch_size)
+                formation_claim = runtime_jobs.claim(
+                    runtime_group="story_formation",
+                    worker_id=worker_id,
+                    lease_seconds=lease_seconds,
+                    job_kinds=("STORY_FORMATION_ADVANCE",),
+                )
+                if formation_claim is not None:
+                    supervisor.polled(idle=False)
+                    try:
+                        failures = boundary.execute_batch(
+                            (formation_claim,),
+                            identity=lambda item: (
+                                item.project_id,
+                                item.runtime_job_id,
+                            ),
+                            execute=lambda item: execute_story_formation_claim(
+                                runtime_jobs,
+                                composition.formation,
+                                principal,
+                                item,
+                                lease_seconds=lease_seconds,
+                            ),
+                            on_task_start=supervisor.operation_started,
+                            on_task_finish=lambda operation_id, succeeded: (
+                                supervisor.operation_finished(
+                                    operation_id, succeeded=succeeded
+                                )
+                            ),
+                        )
+                        supervisor.batch_completed(failures)
+                    except WorkerProgrammingError as error:
+                        supervisor.fatal(error)
+                        return WorkerSupervisor.FATAL_EXIT_CODE
+                    continue
             repair_claim = runtime_jobs.claim(
                 runtime_group="book_repair",
                 worker_id=worker_id,
@@ -356,6 +453,7 @@ __all__ = [
     "cli",
     "execute_book_coordination_claim",
     "execute_book_projection_repair_claim",
+    "execute_story_formation_claim",
     "main",
     "schedule_book_coordination_jobs",
 ]

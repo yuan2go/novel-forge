@@ -119,6 +119,14 @@ class ScriptedProviderAdapterV2:
         if request.stage == "review":
             return {"score": 90, "issues": []}
         if request.stage == "canon_extraction":
+            inputs = request.request_payload.get("input")
+            inputs = inputs if isinstance(inputs, dict) else {}
+            expectations = inputs.get("execution_expectations")
+            expectations = expectations if isinstance(expectations, dict) else {}
+            realization = expectations.get("narrative_realization")
+            realization = realization if isinstance(realization, dict) else {}
+            events = realization.get("events")
+            events = events if isinstance(events, list) else []
             return {
                 "canon_facts": [
                     {
@@ -147,6 +155,34 @@ class ScriptedProviderAdapterV2:
                 "arc_state_changes": [],
                 "disclosure_events": [],
                 "arc_evidence": [],
+                "realization_evidence": [
+                    {
+                        "planned_event_id": str(event.get("event_id") or ""),
+                        "observed_event_id": f"observed:{event.get('event_id')}",
+                        "observation_status": "OBSERVED",
+                        "accepted_prose_evidence": [
+                            {
+                                "start": 0,
+                                "end": 8,
+                                "summary": (
+                                    "scripted fixture prose realizes the frozen event"
+                                ),
+                            }
+                        ],
+                        "observed_consequence": str(
+                            event.get("consequence")
+                            or "the planned consequence occurs"
+                        ),
+                        "observed_state_event_ids": [
+                            str(delta.get("entity_id") or "")
+                            for delta in event.get("state_deltas") or ()
+                            if isinstance(delta, dict)
+                            and str(delta.get("entity_id") or "")
+                        ],
+                    }
+                    for event in events
+                    if isinstance(event, dict) and str(event.get("event_id") or "")
+                ],
             }
         if request.stage.startswith("quality_"):
             inputs = request.request_payload.get("input")
