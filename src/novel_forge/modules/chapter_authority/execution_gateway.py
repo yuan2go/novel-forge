@@ -145,7 +145,6 @@ def _canonical(payload: Any) -> str:
     )
 
 
-
 def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
@@ -2877,10 +2876,16 @@ def _materialize_production_codex_prompt(
             else None
         ),
     )
+    grounding_observations = [
+        item
+        for item in inputs.get("observations") or ()
+        if isinstance(item, Mapping)
+        and str(item.get("tool_name") or "") != "skill.activate"
+    ]
     if (
         stage == "agent_session"
         and int(inputs.get("turn_number") or 0) == 1
-        and not inputs.get("observations")
+        and not grounding_observations
         and "narrative.query_accepted" in agent_tool_names
     ):
         stage_semantic_contract += (

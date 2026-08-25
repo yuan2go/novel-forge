@@ -12,10 +12,13 @@ from novel_forge.modules.context_builder.domain import (
     resolve_context_profile,
     select_context_candidates,
 )
+from novel_forge.modules.context_contracts import ContextClass
 
 
 class ContextAuthorityDomainTests(unittest.TestCase):
-    def test_dynamic_required_assets_are_preserved_before_optional_context(self) -> None:
+    def test_dynamic_required_assets_are_preserved_before_optional_context(
+        self,
+    ) -> None:
         required = self.candidate(
             "style-v1",
             "style_policy",
@@ -54,6 +57,45 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             bundle["rejected_asset_versions"],
         )
 
+    def test_required_retrievable_context_precedes_optional_compressible_context(
+        self,
+    ) -> None:
+        bundle = build_authority_context_bundle(
+            project_id="project-a",
+            stage="draft",
+            created_by_operation_id="operation-required-ordering",
+            context_profile_version="draft-v1",
+            token_budget=180,
+            required_asset_types=("commercial_quality_report",),
+            candidates=(
+                self.candidate(
+                    "plan-v1",
+                    "chapter_plan",
+                    estimated_tokens=80,
+                ),
+                self.candidate(
+                    "quality-required-v1",
+                    "commercial_quality_report",
+                    estimated_tokens=100,
+                    relevance_score=0.1,
+                    context_class=ContextClass.RETRIEVABLE.value,
+                ),
+                self.candidate(
+                    "optional-compressible-v1",
+                    "knowledge_card",
+                    estimated_tokens=100,
+                    relevance_score=1.0,
+                    context_class=ContextClass.COMPRESSIBLE.value,
+                    compression_method="none",
+                ),
+            ),
+        )
+
+        self.assertEqual(
+            bundle["selected_asset_version_ids"],
+            ["plan-v1", "quality-required-v1"],
+        )
+
     def candidate(self, asset_version_id: str, asset_type: str, **changes):
         values = {
             "asset_version_id": asset_version_id,
@@ -72,37 +114,56 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertEqual(
             set(CONTEXT_PROFILES),
             {
-                "creative", "worldbuilding", "character", "outline", "chapter_plan",
-                "draft", "review", "revision", "canon_extraction", "quality",
-                "longform_recap", "ending",
+                "creative",
+                "worldbuilding",
+                "character",
+                "outline",
+                "chapter_plan",
+                "draft",
+                "review",
+                "revision",
+                "canon_extraction",
+                "quality",
+                "longform_recap",
+                "ending",
             },
         )
         self.assertEqual(resolve_context_profile("prose").name, "draft")
 
-    def test_selection_fails_closed_for_cross_project_and_source_governance(self) -> None:
+    def test_selection_fails_closed_for_cross_project_and_source_governance(
+        self,
+    ) -> None:
         selection = select_context_candidates(
             project_id="project-a",
             profile=resolve_context_profile("draft"),
             token_budget=600,
             candidates=[
                 self.candidate("plan-v1", "chapter_plan"),
-                self.candidate("other-project", "material_card", project_id="project-b"),
+                self.candidate(
+                    "other-project", "material_card", project_id="project-b"
+                ),
                 self.candidate("revoked", "knowledge_card", qualification="REVOKED"),
                 self.candidate("stale", "knowledge_card", qualification="STALE"),
-                self.candidate("quarantine", "knowledge_card", qualification="QUARANTINED"),
-                self.candidate("review-only", "knowledge_card", source_use_mode="review_only"),
-                self.candidate("structure-only", "knowledge_card", source_use_mode="structure_only"),
-                self.candidate("raw", "source_document", raw_source=True),
                 self.candidate(
-                    "observation", "source_deconstruction_observation"
+                    "quarantine", "knowledge_card", qualification="QUARANTINED"
                 ),
+                self.candidate(
+                    "review-only", "knowledge_card", source_use_mode="review_only"
+                ),
+                self.candidate(
+                    "structure-only", "knowledge_card", source_use_mode="structure_only"
+                ),
+                self.candidate("raw", "source_document", raw_source=True),
+                self.candidate("observation", "source_deconstruction_observation"),
             ],
         )
         self.assertEqual(
             [item.asset_version_id for item in selection.selected],
             ["plan-v1", "structure-only"],
         )
-        reasons = {item["asset_version_id"]: item["reason"] for item in selection.rejected}
+        reasons = {
+            item["asset_version_id"]: item["reason"] for item in selection.rejected
+        }
         self.assertEqual(reasons["other-project"], "cross_project")
         self.assertEqual(reasons["revoked"], "qualification:REVOKED")
         self.assertEqual(reasons["stale"], "qualification:STALE")
@@ -117,13 +178,24 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             profile=resolve_context_profile("draft"),
             token_budget=200,
             candidates=[
-                self.candidate("plan-v1", "chapter_plan", estimated_tokens=100, relevance_score=0.5),
-                self.candidate("best", "knowledge_card", estimated_tokens=100, relevance_score=0.9),
-                self.candidate("overflow", "material_card", estimated_tokens=100, relevance_score=0.1),
+                self.candidate(
+                    "plan-v1", "chapter_plan", estimated_tokens=100, relevance_score=0.5
+                ),
+                self.candidate(
+                    "best", "knowledge_card", estimated_tokens=100, relevance_score=0.9
+                ),
+                self.candidate(
+                    "overflow",
+                    "material_card",
+                    estimated_tokens=100,
+                    relevance_score=0.1,
+                ),
             ],
         )
         self.assertEqual(selection.estimated_tokens, 200)
-        self.assertEqual([item.asset_version_id for item in selection.selected], ["plan-v1", "best"])
+        self.assertEqual(
+            [item.asset_version_id for item in selection.selected], ["plan-v1", "best"]
+        )
         self.assertIn(
             {"asset_version_id": "overflow", "reason": "token_budget"},
             selection.rejected,
@@ -137,8 +209,12 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             context_profile_version="draft-profile-v2",
             token_budget=600,
             candidates=[
-                self.candidate("plan-v1", "chapter_plan", invalidation_keys=("plan:1",)),
-                self.candidate("pack-v3", "knowledge_pack", invalidation_keys=("source:9",)),
+                self.candidate(
+                    "plan-v1", "chapter_plan", invalidation_keys=("plan:1",)
+                ),
+                self.candidate(
+                    "pack-v3", "knowledge_pack", invalidation_keys=("source:9",)
+                ),
             ],
             version_refs={
                 "chapter_plan_version": "plan-v1",
@@ -155,29 +231,61 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertTrue(bundle["source_isolation_result"]["passed"])
         self.assertTrue(bundle["actual_context_digest"].startswith("sha256:"))
         self.assertEqual(bundle["created_by_operation_id"], "operation-1")
-        self.assertIn("Safe facts for plan-v1", bundle["stage_context_view"]["rendered_safe_context"])
+        self.assertIn(
+            "Safe facts for plan-v1",
+            bundle["stage_context_view"]["rendered_safe_context"],
+        )
         self.assertTrue(bundle["context_segments"])
         self.assertTrue(
-            all(not item["source_expression_included"] for item in bundle["context_segments"])
+            all(
+                not item["source_expression_included"]
+                for item in bundle["context_segments"]
+            )
         )
 
-    def test_structure_only_becomes_an_abstract_segment_and_changes_digest(self) -> None:
+    def test_structure_only_becomes_an_abstract_segment_and_changes_digest(
+        self,
+    ) -> None:
         base = self.candidate("plan-v1", "chapter_plan")
         first = build_authority_context_bundle(
-            project_id="project-a", stage="draft", created_by_operation_id="op-1",
-            context_profile_version="draft-v3", token_budget=600,
-            candidates=[base, self.candidate("knowledge-v1", "knowledge_card", source_use_mode="structure_only", safe_summary="Escalate by narrowing choices")],
+            project_id="project-a",
+            stage="draft",
+            created_by_operation_id="op-1",
+            context_profile_version="draft-v3",
+            token_budget=600,
+            candidates=[
+                base,
+                self.candidate(
+                    "knowledge-v1",
+                    "knowledge_card",
+                    source_use_mode="structure_only",
+                    safe_summary="Escalate by narrowing choices",
+                ),
+            ],
         )
         second = build_authority_context_bundle(
-            project_id="project-a", stage="draft", created_by_operation_id="op-1",
-            context_profile_version="draft-v3", token_budget=600,
-            candidates=[base, self.candidate("knowledge-v1", "knowledge_card", source_use_mode="structure_only", safe_summary="Escalate by increasing public cost")],
+            project_id="project-a",
+            stage="draft",
+            created_by_operation_id="op-1",
+            context_profile_version="draft-v3",
+            token_budget=600,
+            candidates=[
+                base,
+                self.candidate(
+                    "knowledge-v1",
+                    "knowledge_card",
+                    source_use_mode="structure_only",
+                    safe_summary="Escalate by increasing public cost",
+                ),
+            ],
         )
         segment = first["context_segments"][1]
         self.assertEqual(segment["allowed_use"], "structure_only")
         self.assertEqual(segment["compression_method"], "structural_abstraction")
         self.assertFalse(segment["source_expression_included"])
-        self.assertNotEqual(first["actual_context_digest"], second["actual_context_digest"])
+        self.assertNotEqual(
+            first["actual_context_digest"], second["actual_context_digest"]
+        )
 
     def test_required_asset_and_profile_budget_fail_closed(self) -> None:
         with self.assertRaisesRegex(ValueError, "required context asset types missing"):
@@ -195,7 +303,9 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 candidates=[self.candidate("plan-v1", "chapter_plan")],
             )
 
-    def test_narrative_context_manifest_is_replayable_and_records_knowledge_use(self) -> None:
+    def test_narrative_context_manifest_is_replayable_and_records_knowledge_use(
+        self,
+    ) -> None:
         plan = self.candidate(
             "plan-v12",
             "chapter_plan",
@@ -270,21 +380,19 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            first["context_contract_version"], "authority-context-bundle-v6"
+            first["context_contract_version"], "authority-context-bundle-v7"
         )
         self.assertEqual(
             first["actual_context_digest"], replayed["actual_context_digest"]
         )
         self.assertEqual(first["context_manifest"], replayed["context_manifest"])
         manifest = first["context_manifest"]
-        self.assertEqual(
-            manifest["contract_version"], "narrative-context-manifest-v2"
-        )
-        self.assertEqual(
-            manifest["accepted_boundary"]["accepted_through_chapter"], 11
-        )
+        self.assertEqual(manifest["contract_version"], "narrative-context-manifest-v3")
+        self.assertEqual(manifest["accepted_boundary"]["accepted_through_chapter"], 11)
         self.assertIn("protected_context", manifest)
+        self.assertIn("compressible_context", manifest)
         self.assertIn("retrievable_context", manifest)
+        self.assertIn("ephemeral_context", manifest)
         self.assertTrue(manifest["context_fingerprint"].startswith("sha256:"))
         self.assertEqual(manifest["narrative_position"]["chapter"], 12)
         self.assertEqual(
@@ -301,9 +409,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 "capability_pack_snapshot_ref": "pack-snapshot-8",
             },
         )
-        self.assertTrue(
-            manifest["replay"]["input_digest"].startswith("sha256:")
-        )
+        self.assertTrue(manifest["replay"]["input_digest"].startswith("sha256:"))
         boundaries = manifest["narrative_boundaries"]
         self.assertEqual(
             boundaries["character_knowledge_and_belief"][0]["state"]["status"],
@@ -389,9 +495,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             "NO_DUPLICATE_SEMANTIC_REPRESENTATION": (
                 plan,
                 state,
-                self.candidate(
-                    "canon-v1", "canon_snapshot", structured_facts=(fact,)
-                ),
+                self.candidate("canon-v1", "canon_snapshot", structured_facts=(fact,)),
             ),
             "NO_IRRELEVANT_FULL_ASSET": (
                 plan,
@@ -412,9 +516,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                         **arguments,
                         candidates=candidates,
                     )
-        with self.assertRaisesRegex(
-            ValueError, "REQUIRED_LONG_DISTANCE_FACT_PRESENT"
-        ):
+        with self.assertRaisesRegex(ValueError, "REQUIRED_LONG_DISTANCE_FACT_PRESENT"):
             build_authority_context_bundle(
                 **base,
                 candidates=(plan, state),
@@ -440,6 +542,130 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             build_authority_context_bundle(
                 **base,
                 candidates=(plan, hidden_canon),
+            )
+
+    def test_four_context_classes_enforce_budget_and_lineage_invariants(self) -> None:
+        protected = self.candidate(
+            "plan-protected",
+            "chapter_plan",
+            estimated_tokens=120,
+        )
+        with self.assertRaisesRegex(ValueError, "PROTECTED_CONTEXT_BUDGET_EXCEEDED"):
+            select_context_candidates(
+                project_id="project-a",
+                profile=resolve_context_profile("draft"),
+                candidates=(protected,),
+                token_budget=100,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID"
+        ):
+            select_context_candidates(
+                project_id="project-a",
+                profile=resolve_context_profile("draft"),
+                candidates=(
+                    self.candidate(
+                        "plan-invalid-token-estimate",
+                        "chapter_plan",
+                        estimated_tokens=-1,
+                    ),
+                ),
+                token_budget=100,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, "PROTECTED_CONTEXT_COMPRESSION_FORBIDDEN"
+        ):
+            select_context_candidates(
+                project_id="project-a",
+                profile=resolve_context_profile("draft"),
+                candidates=(
+                    self.candidate(
+                        "plan-compressed",
+                        "chapter_plan",
+                        compression_method="deterministic_bounded_extract",
+                        compression_trace=({"method": "truncate"},),
+                    ),
+                ),
+                token_budget=500,
+            )
+
+        compressed = self.candidate(
+            "recap-compressed",
+            "longform_recap_report",
+            context_class=ContextClass.COMPRESSIBLE,
+            compression_method="deterministic_bounded_extract",
+            provenance={"projection": "accepted-only"},
+            compression_trace=(
+                {
+                    "source_asset_version_id": "recap-source-v1",
+                    "source_content_hash": "sha256:" + "1" * 64,
+                    "method": "deterministic_bounded_extract",
+                },
+            ),
+        )
+        ephemeral = self.candidate(
+            "attempt-note-v1",
+            "operator_checklist",
+            context_class=ContextClass.EPHEMERAL,
+            memory_layer="",
+            retrieval_reasons=(),
+            retrieval_scores={},
+        )
+        bundle = build_authority_context_bundle(
+            project_id="project-a",
+            stage="draft",
+            created_by_operation_id="context-operation-v1",
+            context_profile_version="draft-v4",
+            candidates=(protected, compressed, ephemeral),
+            token_budget=500,
+        )
+        manifest = bundle["context_manifest"]
+        self.assertEqual(
+            [item["asset_version_id"] for item in manifest["protected_context"]],
+            ["plan-protected"],
+        )
+        self.assertEqual(
+            [item["asset_version_id"] for item in manifest["compressible_context"]],
+            ["recap-compressed"],
+        )
+        self.assertEqual(
+            [item["asset_version_id"] for item in manifest["ephemeral_context"]],
+            ["attempt-note-v1"],
+        )
+        self.assertEqual(
+            manifest["ephemeral_context"][0]["attempt_evidence_policy"],
+            "FROZEN_IF_SENT_NOT_SEARCH_INDEXED",
+        )
+        self.assertEqual(manifest["token_budget"]["protected"], 120)
+        self.assertEqual(manifest["token_budget"]["compressible"], 100)
+        self.assertEqual(manifest["token_budget"]["ephemeral"], 100)
+
+        with self.assertRaisesRegex(
+            ValueError, "COMPRESSIBLE_CONTEXT_PROVENANCE_REQUIRED"
+        ):
+            select_context_candidates(
+                project_id="project-a",
+                profile=resolve_context_profile("draft"),
+                candidates=(
+                    protected,
+                    self.candidate(
+                        "recap-untraced",
+                        "longform_recap_report",
+                        context_class=ContextClass.COMPRESSIBLE,
+                        compression_method="deterministic_bounded_extract",
+                    ),
+                ),
+                token_budget=500,
+            )
+
+        with self.assertRaisesRegex(ValueError, "ephemeral context cannot"):
+            self.candidate(
+                "ephemeral-indexed",
+                "operator_checklist",
+                context_class=ContextClass.EPHEMERAL,
+                memory_layer="L7",
             )
 
 

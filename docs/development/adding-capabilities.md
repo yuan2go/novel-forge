@@ -27,6 +27,11 @@ If no Authority owns the decision, define that boundary before writing a worker.
 
 Agent tools may expose read-only accepted-boundary queries, Typed Capability invocation and typed Authority Command submission. They must not expose direct Canon/State/Arc/Obligation/plan/acceptance mutation. Binding a Skill never grants Tool permission.
 
+Do not add new per-stage Agent admission. Existing fixed Agent candidate and
+Chapter binding records are migration/recovery compatibility only. New
+autonomous work uses the Unified Agent Harness; ordinary stage work remains a
+Typed Capability.
+
 ## Reuse the production execution plane
 
 Provider and object-store work must use `ProductionExecutionComposition` and current PEP contracts. Add a governed capability/route and explicit port as needed; do not borrow a peer application's internals. The Domain Authority validates and commits the returned candidate.

@@ -10,10 +10,8 @@ from pydantic import BaseModel, Field
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.agent_collaboration.domain import AgentMessageType
 from novel_forge.modules.agent_runtime.application import (
     AgentHarnessAdmissionRequest,
-    AgentRunAdmissionRequest,
     AgentRuntimeAdminCommand,
 )
 from novel_forge.modules.agent_runtime.harness import (
@@ -35,78 +33,6 @@ from novel_forge.modules.command_kernel.recovery import (
     RecoverOperationCommand,
     recover_operation,
 )
-
-
-class FrozenInputAsset(BaseModel):
-    asset_version_id: str = Field(min_length=1)
-    content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
-
-
-class AgentRunRequest(BaseModel):
-    project_id: str
-    workspace_id: str
-    book_id: str
-    chapter_number: int = Field(ge=1)
-    actor_id: str
-    agent_id: str
-    agent_definition_version: int = Field(ge=1)
-    agent_definition_hash: str
-    capability_id: str
-    capability_version: int = Field(ge=1)
-    capability_hash: str
-    execution_capability_id: str
-    execution_capability_hash: str
-    capability_pack_ref: str
-    capability_pack_compilation_hash: str
-    workflow_definition_ref: str
-    workflow_node_id: str
-    operation_definition_ref: str
-    operation_definition_hash: str
-    chapter_node_binding_ref: str
-    collaboration_session_id: str
-    scope_snapshot_ref: str
-    participant_snapshot_ref: str
-    context_bundle_asset_version_id: str
-    context_bundle_hash: str
-    input_assets: list[FrozenInputAsset]
-    prompt_bundle_ref: str
-    prompt_bundle_hash: str
-    skill_bundle_ref: str
-    skill_bundle_hash: str
-    tool_policy_ref: str
-    tool_policy_hash: str
-    context_policy_ref: str
-    context_policy_hash: str
-    route_policy_ref: str
-    model_profile_ref: str
-    budget_policy_ref: str
-    timeout_policy_ref: str
-    approval_policy_ref: str
-    validation_policy_ref: str
-    commit_policy_ref: str
-    commit_authority: str
-    message_type: AgentMessageType
-    business_goal: str
-    current_issue: str
-    candidate_version_ref: str = ""
-    evidence_refs: list[str] = Field(default_factory=list)
-    must_preserve: list[str] = Field(default_factory=list)
-    must_change: list[str] = Field(default_factory=list)
-    forbidden_changes: list[str] = Field(default_factory=list)
-    acceptance_criteria: list[str] = Field(default_factory=list)
-    risk_level: str
-    failure_policy: str
-    continuation_policy: str
-    release_sha: str
-    capability_pack_deployment_id: str
-    capability_pack_activation_version: int = Field(ge=1)
-    capability_pack_binding_set_id: str
-    capability_pack_binding_set_hash: str
-    capability_pack_scope_type: str
-    capability_pack_assignment_ref: str
-    idempotency_key: str
-    trace_id: str = ""
-    correlation_id: str = ""
 
 
 class AgentAdminRequest(BaseModel):
@@ -134,6 +60,7 @@ class AgentHarnessRequest(BaseModel):
     accepted_boundary: dict[str, Any]
     tool_policy: list[dict[str, Any]] = Field(min_length=1)
     skill_bindings: list[dict[str, Any]] = Field(default_factory=list)
+    requested_skill_ids: list[str] = Field(default_factory=list)
     budget: dict[str, Any]
     idempotency_key: str
     trace_id: str = ""
@@ -158,50 +85,6 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     application = ctx.services.agent_runtime_authority_application
     query = ctx.services.agent_runtime_query
 
-    @router.post("/migration/agent-runs", status_code=202)
-    def admit_agent_run(request: AgentRunRequest) -> dict[str, Any]:
-        try:
-            principal = build_trusted_principal_resolver().resolve_api_principal(
-                claimed_actor_id=request.actor_id
-            )
-            payload = request.model_dump()
-            payload["input_assets"] = tuple(
-                (item.asset_version_id, item.content_hash)
-                for item in request.input_assets
-            )
-            for name in (
-                "evidence_refs",
-                "must_preserve",
-                "must_change",
-                "forbidden_changes",
-                "acceptance_criteria",
-            ):
-                payload[name] = tuple(payload[name])
-            payload["trace_id"] = request.trace_id or f"trace:agent:{uuid4()}"
-            payload["correlation_id"] = (
-                request.correlation_id or f"correlation:agent:{uuid4()}"
-            )
-            result = application.admit_run(
-                AgentRunAdmissionRequest(**payload), principal=principal
-            )
-            return {
-                **result,
-                "query_url": (
-                    "/product/production/agent-runtime/migration/agent-runs/"
-                    + str(result["agent_run_id"])
-                    + f"?project_id={request.project_id}"
-                ),
-            }
-        except PermissionError as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
-        except KernelError as exc:
-            raise HTTPException(
-                status_code=409,
-                detail={"code": exc.code, "message": exc.message},
-            ) from exc
-        except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-
     @router.post("/agent-sessions", status_code=202)
     def admit_agent_session(request: AgentHarnessRequest) -> dict[str, Any]:
         try:
@@ -215,8 +98,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     input_schema_ref=str(item["input_schema_ref"]),
                     output_schema_ref=str(item["output_schema_ref"]),
                     allowed_roles=tuple(
-                        AutonomousAgentRole(str(role))
-                        for role in item["allowed_roles"]
+                        AutonomousAgentRole(str(role)) for role in item["allowed_roles"]
                     ),
                     external_effect_required=bool(
                         item.get("external_effect_required", False)
@@ -236,17 +118,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     agent_session_id=request.agent_session_id,
                     agent_role=request.agent_role,
                     instruction=request.instruction,
-                    accepted_boundary=AcceptedBoundaryRef(
-                        **request.accepted_boundary
-                    ),
+                    accepted_boundary=AcceptedBoundaryRef(**request.accepted_boundary),
                     tool_policy=tools,
                     skill_bindings=tuple(request.skill_bindings),
+                    requested_skill_ids=tuple(request.requested_skill_ids),
                     budget=AgentHarnessBudget(**request.budget),
                     idempotency_key=request.idempotency_key,
                     trace_id=request.trace_id or f"trace:agent-session:{uuid4()}",
                     correlation_id=(
-                        request.correlation_id
-                        or f"correlation:agent-session:{uuid4()}"
+                        request.correlation_id or f"correlation:agent-session:{uuid4()}"
                     ),
                     agent_id=request.agent_id,
                 ),
@@ -303,7 +183,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
     @router.get("/health/recovery")
     def agent_runtime_recovery_health(
-        project_id: str = Query(..., min_length=1)
+        project_id: str = Query(..., min_length=1),
     ) -> dict[str, Any]:
         _authorize("agent.authority.query", project_id)
         return query.recovery_health(project_id=project_id)
@@ -314,9 +194,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> dict[str, Any]:
         _authorize("agent.authority.query", project_id)
         try:
-            return query.require_run(
-                project_id=project_id, agent_run_id=agent_run_id
-            )
+            return query.require_run(project_id=project_id, agent_run_id=agent_run_id)
         except KernelError as exc:
             raise HTTPException(
                 status_code=404 if exc.code == "AGENT_RUN_NOT_FOUND" else 409,
@@ -398,9 +276,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         limit: int = Query(default=100, ge=1, le=500),
     ) -> list[dict[str, Any]]:
         _authorize("agent.authority.query", project_id)
-        return query.list_agents(
-            activation_status=activation_status, limit=limit
-        )
+        return query.list_agents(activation_status=activation_status, limit=limit)
 
     @router.get("/agents/{agent_id}/versions")
     def list_agent_versions(
@@ -419,13 +295,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         try:
             return application.execute_admin(
                 AgentRuntimeAdminCommand(
-                    **request.model_dump(
-                        exclude={"trace_id", "correlation_id"}
-                    ),
+                    **request.model_dump(exclude={"trace_id", "correlation_id"}),
                     trace_id=request.trace_id or f"trace:agent-admin:{uuid4()}",
                     correlation_id=(
-                        request.correlation_id
-                        or f"correlation:agent-admin:{uuid4()}"
+                        request.correlation_id or f"correlation:agent-admin:{uuid4()}"
                     ),
                 ),
                 principal=principal,

@@ -184,6 +184,93 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
 
+    def test_previous_head_disables_legacy_agent_admission_and_upgrades_context_views(
+        self,
+    ) -> None:
+        with (
+            psycopg.connect(self.test_url) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.execute(
+                """
+                CREATE TABLE nf_schema_migrations (
+                    migration_id TEXT PRIMARY KEY,
+                    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            for migration in MIGRATIONS[:-1]:
+                for statement in migration.upgrade_statements:
+                    cursor.execute(statement)
+                cursor.execute(
+                    "INSERT INTO nf_schema_migrations (migration_id) VALUES (%s)",
+                    [migration.migration_id],
+                )
+            for name in (
+                "agent.chapter_binding.register",
+                "agent.chapter_binding.activate",
+                "agent.candidate.execute",
+                "agent.session.execute",
+            ):
+                cursor.execute(
+                    """
+                    INSERT INTO authority_operation_definition(
+                        name, definition_version, family, enabled,
+                        command_schema, result_schema, policy,
+                        completion_contract
+                    ) VALUES (
+                        %s, '2.0.0', 'legacy-agent-runtime', TRUE,
+                        '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+                    )
+                    """,
+                    [name],
+                )
+
+        status = run_migrations(self.test_url)
+
+        self.assertTrue(status["ok"])
+        with psycopg.connect(self.test_url) as connection:
+            legacy = connection.execute(
+                """
+                SELECT name, enabled
+                FROM authority_operation_definition
+                WHERE name IN (
+                    'agent.chapter_binding.register',
+                    'agent.chapter_binding.activate',
+                    'agent.candidate.execute',
+                    'agent.session.execute'
+                )
+                ORDER BY name
+                """
+            ).fetchall()
+            transcript_constraint = connection.execute(
+                """
+                SELECT pg_get_constraintdef(oid)
+                FROM pg_constraint
+                WHERE conname=
+                    'authority_agent_transcript_event_event_type_check'
+                """
+            ).fetchone()
+            context_view = connection.execute(
+                "SELECT pg_get_viewdef('authority_context_runtime_usage_projection')"
+            ).fetchone()
+            mkaos_view = connection.execute(
+                "SELECT pg_get_viewdef('authority_mkaos_runtime_selection_projection')"
+            ).fetchone()
+        self.assertEqual(
+            legacy,
+            [
+                ("agent.candidate.execute", False),
+                ("agent.chapter_binding.activate", False),
+                ("agent.chapter_binding.register", False),
+                ("agent.session.execute", False),
+            ],
+        )
+        self.assertIn("SKILL_ACTIVATED", str(transcript_constraint[0]))
+        self.assertIn("authority-context-bundle-v7", str(context_view[0]))
+        self.assertIn("narrative-context-manifest-v3", str(context_view[0]))
+        self.assertIn("authority-context-bundle-v7", str(mkaos_view[0]))
+
     def test_existing_previous_head_upgrades_with_runtime_identity_and_0092_schema(
         self,
     ) -> None:

@@ -38,6 +38,7 @@ class AgentTranscriptEventType(StrEnum):
     MODEL_MESSAGE = "MODEL_MESSAGE"
     TOOL_REQUESTED = "TOOL_REQUESTED"
     TOOL_OBSERVED = "TOOL_OBSERVED"
+    SKILL_ACTIVATED = "SKILL_ACTIVATED"
     AUTHORITY_COMMAND_SUBMITTED = "AUTHORITY_COMMAND_SUBMITTED"
     REQUEST_COMMITTED = "REQUEST_COMMITTED"
     REQUEST_FAILED = "REQUEST_FAILED"
@@ -204,6 +205,46 @@ class AgentToolSpec:
                 raise ValueError("Agent cannot bind a direct truth-mutation command")
 
 
+SKILL_ACTIVATION_TOOL = AgentToolSpec(
+    tool_name="skill.activate",
+    kind=AgentToolKind.READ_ONLY_QUERY,
+    input_schema_ref="schema:agent-tool:skill-activate:v1",
+    output_schema_ref="schema:agent-tool:skill-activated:v1",
+    allowed_roles=(
+        AutonomousAgentRole.STUDIO_DIRECTOR,
+        AutonomousAgentRole.RESEARCH_KNOWLEDGE,
+    ),
+)
+
+
+def with_skill_activation_tool(
+    tools: tuple[AgentToolSpec, ...],
+    skills: tuple[Mapping[str, Any], ...],
+) -> tuple[AgentToolSpec, ...]:
+    """Expose the Harness-native activation action for a frozen Skill catalog."""
+
+    has_native = any(
+        tool.tool_name == SKILL_ACTIVATION_TOOL.tool_name for tool in tools
+    )
+    if skills and not has_native:
+        return (*tools, SKILL_ACTIVATION_TOOL)
+    if not skills and has_native:
+        raise ValueError("Skill activation Tool requires a non-empty frozen catalog")
+    return tools
+
+
+def skill_catalog_hash(skills: tuple[Mapping[str, Any], ...]) -> str:
+    catalog = [
+        {
+            "skill_id": str(item.get("skill_id") or ""),
+            "skill_version": str(item.get("skill_version") or ""),
+            "skill_hash": str(item.get("skill_hash") or ""),
+        }
+        for item in skills
+    ]
+    return transcript_payload_hash({"skills": catalog})
+
+
 @dataclass(frozen=True, slots=True)
 class AgentHarnessSession:
     agent_session_id: str
@@ -246,6 +287,13 @@ class AgentHarnessSession:
             required = ("skill_id", "skill_version", "skill_hash")
             if any(not str(binding.get(key) or "").strip() for key in required):
                 raise ValueError("Agent Harness Skill binding is not frozen")
+        expected_tools = with_skill_activation_tool(
+            self.tool_policy, self.skill_bindings
+        )
+        if expected_tools != self.tool_policy:
+            raise ValueError(
+                "Agent Harness frozen Skill catalog lacks its explicit activation Tool"
+            )
         frozen_contract = dict(self.execution_contract)
         object.__setattr__(self, "execution_contract", frozen_contract)
         if bool(frozen_contract) != bool(self.execution_contract_hash):
@@ -410,6 +458,7 @@ class UnifiedAgentHarness:
         instruction: str,
         attempt_id: str,
         trace_id: str,
+        requested_skill_ids: tuple[str, ...] = (),
     ) -> AgentHarnessResult:
         if session.status not in {
             AgentHarnessStatus.READY,
@@ -431,12 +480,35 @@ class UnifiedAgentHarness:
             payload={
                 "instruction": instruction,
                 "accepted_boundary": asdict(session.accepted_boundary),
+                "skill_catalog": [dict(item) for item in session.skill_bindings],
+                "skill_catalog_hash": skill_catalog_hash(session.skill_bindings),
+                "requested_skill_ids": list(requested_skill_ids),
             },
             trace_id=trace_id,
             attempt_id=attempt_id,
             target_status=AgentHarnessStatus.RUNNING,
         )
         observations: list[AgentToolObservation] = []
+        for skill_id in dict.fromkeys(requested_skill_ids):
+            activation = self._activate_skill(
+                session=current,
+                skill_id=str(skill_id),
+                skill_version="",
+                skill_hash="",
+                reason="explicit_caller_selection",
+                requested_by="USER_OR_CALLER",
+                attempt_id=attempt_id,
+            )
+            current = self.transcript.append_event(
+                session=current,
+                request_id=request_id,
+                turn_number=0,
+                event_type=AgentTranscriptEventType.SKILL_ACTIVATED,
+                payload=dict(activation.result),
+                trace_id=trace_id,
+                attempt_id=attempt_id,
+            )
+            observations.append(activation)
         committed = self.transcript.committed_request_events(
             agent_session_id=session.agent_session_id
         )
@@ -537,13 +609,28 @@ class UnifiedAgentHarness:
                     target_status=AgentHarnessStatus.WAITING_TOOL,
                     usage=tool_usage,
                 )
-                observation = self.tools.invoke(
-                    spec=spec,
-                    call=turn.tool_call,
-                    session=current,
-                    request_id=request_id,
-                    turn_number=turn_number,
-                )
+                if spec.tool_name == SKILL_ACTIVATION_TOOL.tool_name:
+                    observation = self._activate_skill(
+                        session=current,
+                        skill_id=str(turn.tool_call.arguments.get("skill_id") or ""),
+                        skill_version=str(
+                            turn.tool_call.arguments.get("skill_version") or ""
+                        ),
+                        skill_hash=str(
+                            turn.tool_call.arguments.get("skill_hash") or ""
+                        ),
+                        reason=turn.tool_call.reason,
+                        requested_by="MODEL_EXPLICIT_TOOL_CALL",
+                        attempt_id=attempt_id,
+                    )
+                else:
+                    observation = self.tools.invoke(
+                        spec=spec,
+                        call=turn.tool_call,
+                        session=current,
+                        request_id=request_id,
+                        turn_number=turn_number,
+                    )
                 if observation.operation_id and (
                     observation.operation_id != current.operation_id
                     or observation.attempt_id != attempt_id
@@ -566,7 +653,9 @@ class UnifiedAgentHarness:
                     )
                 observed_usage.require_within(current.budget)
                 event_type = (
-                    AgentTranscriptEventType.AUTHORITY_COMMAND_SUBMITTED
+                    AgentTranscriptEventType.SKILL_ACTIVATED
+                    if spec.tool_name == SKILL_ACTIVATION_TOOL.tool_name
+                    else AgentTranscriptEventType.AUTHORITY_COMMAND_SUBMITTED
                     if spec.kind is AgentToolKind.AUTHORITY_COMMAND
                     else AgentTranscriptEventType.TOOL_OBSERVED
                 )
@@ -575,13 +664,17 @@ class UnifiedAgentHarness:
                     request_id=request_id,
                     turn_number=turn_number,
                     event_type=event_type,
-                    payload={
-                        "tool": observation.tool_name,
-                        "result": dict(observation.result),
-                        "authority_command_id": observation.authority_command_id,
-                        "candidate_only": spec.kind
-                        is not AgentToolKind.READ_ONLY_QUERY,
-                    },
+                    payload=(
+                        dict(observation.result)
+                        if event_type is AgentTranscriptEventType.SKILL_ACTIVATED
+                        else {
+                            "tool": observation.tool_name,
+                            "result": dict(observation.result),
+                            "authority_command_id": observation.authority_command_id,
+                            "candidate_only": spec.kind
+                            is not AgentToolKind.READ_ONLY_QUERY,
+                        }
+                    ),
                     trace_id=trace_id,
                     attempt_id=attempt_id,
                     external_effect_id=observation.external_effect_id,
@@ -617,6 +710,51 @@ class UnifiedAgentHarness:
                     ),
                 )
             raise
+
+    @staticmethod
+    def _activate_skill(
+        *,
+        session: AgentHarnessSession,
+        skill_id: str,
+        skill_version: str,
+        skill_hash: str,
+        reason: str,
+        requested_by: str,
+        attempt_id: str,
+    ) -> AgentToolObservation:
+        matches = [
+            dict(item)
+            for item in session.skill_bindings
+            if str(item.get("skill_id") or "") == skill_id
+            and (
+                not skill_version
+                or str(item.get("skill_version") or "") == skill_version
+            )
+            and (not skill_hash or str(item.get("skill_hash") or "") == skill_hash)
+        ]
+        if len(matches) != 1:
+            raise KernelError(
+                "AGENT_HARNESS_SKILL_NOT_IN_FROZEN_CATALOG",
+                "Skill activation must identify exactly one frozen catalog entry",
+            )
+        binding = matches[0]
+        return AgentToolObservation(
+            tool_name=SKILL_ACTIVATION_TOOL.tool_name,
+            result={
+                "activation_contract": "agent-skill-activation.v1",
+                "skill_id": str(binding["skill_id"]),
+                "skill_version": str(binding["skill_version"]),
+                "skill_hash": str(binding["skill_hash"]),
+                "catalog_hash": skill_catalog_hash(session.skill_bindings),
+                "requested_by": requested_by,
+                "reason": reason,
+                "additional_tool_permissions": [],
+                "additional_authority_permissions": [],
+                "business_authority": "NONE",
+            },
+            operation_id=session.operation_id,
+            attempt_id=attempt_id,
+        )
 
     @staticmethod
     def _authorize_tool(
@@ -673,6 +811,9 @@ __all__ = [
     "AgentTranscriptEventType",
     "AutonomousAgentRole",
     "UnifiedAgentHarness",
+    "SKILL_ACTIVATION_TOOL",
     "canonical_execution_contract_hash",
     "transcript_payload_hash",
+    "skill_catalog_hash",
+    "with_skill_activation_tool",
 ]

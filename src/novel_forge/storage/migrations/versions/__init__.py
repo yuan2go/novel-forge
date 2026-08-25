@@ -99,6 +99,7 @@ from . import (
     v20260821_0096_runtime_hardening,
     v20260824_0097_narrative_evaluator_codex_lineage,
     v20260825_0098_narrative_evolution_engine,
+    v20260825_0099_creative_engineering_convergence,
 )
 
 VERSION_MODULES = [
@@ -200,6 +201,7 @@ VERSION_MODULES = [
     v20260821_0096_runtime_hardening,
     v20260824_0097_narrative_evaluator_codex_lineage,
     v20260825_0098_narrative_evolution_engine,
+    v20260825_0099_creative_engineering_convergence,
 ]
 
 __all__ = ["VERSION_MODULES"]

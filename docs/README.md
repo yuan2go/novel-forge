@@ -42,6 +42,7 @@ Keep operational and development guides focused on executable procedures. Approv
 
 Completed exact-SHA evidence:
 
+- [Creative Engineering Convergence bounded qualification](qualification/2026-08-25-creative-engineering-convergence.md)
 - [Narrative Orchestration bounded qualification](qualification/2026-08-24-narrative-orchestration-qualification.md)
 - [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 

@@ -1,4 +1,4 @@
-"""Deterministic hybrid retrieval over accepted Narrative Memory projections."""
+"""Deterministic lexical-first ranking over accepted Narrative Memory."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Any
 
 _TOKEN = re.compile(r"[\w\u3400-\u9fff]+", re.UNICODE)
 
-RANKING_POLICY_VERSION = "accepted-hybrid-ranking-v3"
+RANKING_POLICY_VERSION = "accepted-lexical-first-ranking-v4"
 RANKING_WEIGHTS = {
     "postgresql_fts": 0.16,
     "lexical_overlap": 0.06,
@@ -58,7 +58,11 @@ def hybrid_retrieve(
     query: HybridRetrievalQuery,
     documents: Iterable[Mapping[str, Any]],
 ) -> tuple[dict[str, Any], ...]:
-    """Rank lexical, vector, graph, temporal, Arc and obligation signals together."""
+    """Rank one already-bounded lexical/structured candidate set.
+
+    Embeddings can only rerank documents supplied by discovery. This pure
+    function never performs semantic candidate discovery.
+    """
 
     query_tokens = _tokens(query.text)
     ranked: list[dict[str, Any]] = []

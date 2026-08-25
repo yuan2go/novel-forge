@@ -296,8 +296,13 @@ class ScriptedAgentHarnessEffectAdapter:
                 {"error": "unsupported_capability"},
             )
         observations = list(request_payload.get("observations") or ())
+        grounding_observations = [
+            item
+            for item in observations
+            if str(item.get("tool_name") or "") != "skill.activate"
+        ]
         tool_names = [str(item) for item in request_payload.get("tool_names") or ()]
-        if not observations and "narrative.query_accepted" in tool_names:
+        if not grounding_observations and "narrative.query_accepted" in tool_names:
             turn = {
                 "message": "Inspect the frozen accepted narrative boundary.",
                 "tool_call": {

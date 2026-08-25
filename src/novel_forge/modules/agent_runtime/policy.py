@@ -12,6 +12,7 @@ from .harness import (
     AgentToolKind,
     AgentToolSpec,
     AutonomousAgentRole,
+    with_skill_activation_tool,
 )
 from .production import canonical_policy_hash
 
@@ -103,18 +104,18 @@ class ServerAgentHarnessPolicyResolver:
                 "active Agent Definition names unbound production Tools: "
                 + ", ".join(unknown),
             )
-        resolved = tuple(
+        business_tools = tuple(
             SERVER_AGENT_TOOL_CATALOG[name]
             for name in allowed_names
             if role in SERVER_AGENT_TOOL_CATALOG[name].allowed_roles
         )
-        if not resolved:
+        if not business_tools:
             raise KernelError(
                 "AGENT_TOOL_POLICY_EMPTY",
                 "active Agent Definition grants no Tools to the requested role",
             )
         if caller_tools and self._tool_payloads(caller_tools) != self._tool_payloads(
-            resolved
+            business_tools
         ):
             raise KernelError(
                 "AGENT_CALLER_TOOL_POLICY_MISMATCH",
@@ -132,6 +133,7 @@ class ServerAgentHarnessPolicyResolver:
                 "AGENT_CALLER_SKILL_BINDING_MISMATCH",
                 "caller Skill bindings differ from the active Definition snapshot",
             )
+        resolved = with_skill_activation_tool(business_tools, skills)
         policy = {
             "policy_version": "agent-harness-server-policy.v1",
             "authority": "POSTGRESQL_AGENT_DEFINITION",
@@ -156,6 +158,8 @@ class ServerAgentHarnessPolicyResolver:
             "tools": self._tool_payloads(resolved),
             "model_binding": dict(self.production_model_binding or {}),
             "skills_do_not_grant_authority": True,
+            "skill_catalog_hash": canonical_policy_hash({"skills": list(skills)}),
+            "skill_activation_policy": "EXPLICIT_TRANSCRIPT_EVENT_ONLY",
         }
         return (
             resolved,

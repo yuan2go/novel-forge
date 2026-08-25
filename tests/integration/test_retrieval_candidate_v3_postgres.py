@@ -198,7 +198,7 @@ def _seed_document(
     return document_id, asset_version_id, content_hash
 
 
-def test_vector_channel_recalls_distant_accepted_document_and_freezes_union() -> None:
+def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None:
     ensure_migrated()
     project_id = identifier("retrieval-v3-project")
     workspace_id = f"workspace:{project_id}"
@@ -342,7 +342,7 @@ def test_vector_channel_recalls_distant_accepted_document_and_freezes_union() ->
     assert replay.replayed is True
     assert replay.snapshot_hash == frozen.snapshot_hash
     by_id = {item["retrieval_document_id"]: item for item in frozen.documents}
-    assert "VECTOR" in by_id[distant_id]["candidate_channels"]
+    assert distant_id not in by_id
     assert set(by_id[duplicate_id]["candidate_channels"]) == {"ENTITY", "VECTOR"}
     assert future_id not in by_id
     assert stale_id not in by_id
@@ -369,13 +369,13 @@ def test_vector_channel_recalls_distant_accepted_document_and_freezes_union() ->
     selected_ids = {
         item["retrieval_document_id"] for item in first["selected_documents"]
     }
-    assert distant_id in selected_ids
-    assert (distant_version_id, distant_hash) in {
+    assert distant_id not in selected_ids
+    assert (distant_version_id, distant_hash) not in {
         (item["asset_version_id"], item["content_hash"])
         for item in first["candidate_asset_versions"]
     }
     assert first["ranking"]["ranking_policy_version"] == (
-        "accepted-hybrid-ranking-v3"
+        "accepted-lexical-first-ranking-v4"
     )
     assert first["result_fingerprint"].startswith("sha256:")
     with transaction() as connection, connection.cursor() as cursor:
@@ -399,9 +399,8 @@ def test_vector_channel_recalls_distant_accepted_document_and_freezes_union() ->
         persisted_sources, persisted_hash = cursor.fetchone()
     assert len(hnsw_indexes) == 3
     assert str(persisted_hash) == frozen.snapshot_hash
-    assert (distant_version_id, distant_hash) in {
-        (item["asset_version_id"], item["content_hash"])
-        for item in persisted_sources
+    assert (distant_version_id, distant_hash) not in {
+        (item["asset_version_id"], item["content_hash"]) for item in persisted_sources
     }
     with pytest.raises(psycopg.errors.CheckViolation):
         with transaction() as connection, connection.cursor() as cursor:

@@ -1,4 +1,5 @@
 """Storage-free evidence contracts for Chapter Quality Authority."""
+
 from .domain import (
     LONGITUDINAL_QUALITY_DIMENSIONS,
     QUALITY_DIMENSIONS,
@@ -25,15 +26,46 @@ from .calibration import (
     quality_calibration_metrics,
 )
 from .accepted_projection import load_accepted_quality_observations
+from .calibration_v2 import (
+    AdjudicatedEvaluation,
+    BlindPairPreference,
+    CalibrationResult,
+    CalibrationRun,
+    HumanEvaluation,
+    JudgeEvaluation,
+    QualityProfileVersion,
+    ReaderOutcomeEvidence,
+    evaluate_quality_calibration_v2,
+)
 
 __all__ = [
-    "LONGITUDINAL_QUALITY_DIMENSIONS", "QUALITY_DIMENSIONS", "QUALITY_GROUPS",
-    "QUALITY_SCALES", "build_chapter_quality_evidence",
-    "build_multiscale_quality_report", "build_quality_group_evidence",
+    "LONGITUDINAL_QUALITY_DIMENSIONS",
+    "QUALITY_DIMENSIONS",
+    "QUALITY_GROUPS",
+    "QUALITY_SCALES",
+    "build_chapter_quality_evidence",
+    "build_multiscale_quality_report",
+    "build_quality_group_evidence",
     "load_accepted_quality_observations",
-    "build_quality_context_view", "compile_platform_policy", "compile_quality_policy",
-    "QualityCalibrationProfile", "QualityCalibrationReport", "QualityCalibrationRun",
-    "QualityCalibrationStatus", "QualityGoldenSample", "QualityHumanDecision",
-    "QualityProviderDecision", "evaluate_calibration_run",
+    "build_quality_context_view",
+    "compile_platform_policy",
+    "compile_quality_policy",
+    "QualityCalibrationProfile",
+    "QualityCalibrationReport",
+    "QualityCalibrationRun",
+    "QualityCalibrationStatus",
+    "QualityGoldenSample",
+    "QualityHumanDecision",
+    "QualityProviderDecision",
+    "evaluate_calibration_run",
     "quality_calibration_metrics",
+    "AdjudicatedEvaluation",
+    "BlindPairPreference",
+    "CalibrationResult",
+    "CalibrationRun",
+    "HumanEvaluation",
+    "JudgeEvaluation",
+    "QualityProfileVersion",
+    "ReaderOutcomeEvidence",
+    "evaluate_quality_calibration_v2",
 ]

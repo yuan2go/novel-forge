@@ -604,6 +604,8 @@ class _ContextHandler:
                 documents,
                 key=lambda item: float(item.get("retrieval_score") or 0.0),
             )
+            compression_method = str(best.get("compression_method") or "none")
+            compression_provenance = dict(best.get("compression_provenance") or {})
             candidate_metadata[source_id] = {
                 "asset_version_id": source_id,
                 "asset_type": "narrative_retrieval_document",
@@ -621,7 +623,11 @@ class _ContextHandler:
                 ),
                 "source_use_mode": "generation",
                 "allowed_use": "generation",
-                "context_class": "RETRIEVABLE",
+                "context_class": (
+                    "COMPRESSIBLE"
+                    if compression_method not in {"", "none", "full", "full_asset"}
+                    else "RETRIEVABLE"
+                ),
                 "memory_layer": str(best.get("memory_layer") or ""),
                 "relevance_score": max(
                     float(item.get("retrieval_score") or 0.0) for item in documents
@@ -647,8 +653,12 @@ class _ContextHandler:
                         str(item.get("projection_hash") or "") for item in documents
                     ),
                 },
-                "compression_method": str(best.get("compression_method") or "none"),
-                "compression_trace": [dict(best.get("compression_provenance") or {})],
+                "compression_method": compression_method,
+                "compression_trace": (
+                    [compression_provenance]
+                    if compression_method not in {"", "none", "full", "full_asset"}
+                    else []
+                ),
             }
         frozen_candidates = [
             item

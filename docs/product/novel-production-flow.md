@@ -17,8 +17,8 @@ Idea / Material / Reader Promise
 → active ChapterPlan
 → ChapterExecutionIntent
 → ChapterMemo
-→ Context v2 @ complete Accepted Boundary
-→ Protected Context + hybrid retrieved evidence
+→ governed Context @ complete Accepted Boundary
+→ PROTECTED / RETRIEVABLE / COMPRESSIBLE / EPHEMERAL evidence
 → Chapter Production Packet
 → Scene Plan
 → immutable Draft Candidate
@@ -104,7 +104,7 @@ bypasses the Intent by independently interpreting the Plan.
 
 ## 5. Evidence and Context
 
-Build Context v2 only after the Memo has produced its frozen query inputs:
+Build governed Context only after the Memo has produced its frozen query inputs:
 
 ```text
 ChapterPlan
@@ -123,24 +123,27 @@ Retrieval Operation freezes every selected candidate AssetVersion and records
 selected/rejected documents, ranking evidence and a result fingerprint so the
 Context build is replayable.
 
-Context v2 then builds three partitions:
+Context Manifest v3 records four enforceable classes across three compilation stages:
 
-1. protected correctness context that fails closed on budget overflow;
-2. task-specific state/evidence retrieval;
-3. optional creative/professional enrichment.
+1. PROTECTED correctness context that cannot be omitted/compressed and fails closed before Provider execution when it alone exceeds budget;
+2. RETRIEVABLE task-specific state/evidence and COMPRESSIBLE evidence with source/compression provenance;
+3. optional creative/professional enrichment, including EPHEMERAL input that is excluded from Memory/Search but frozen when sent to a Provider.
 
 Examples: combat retrieves only currently legal skills/weapons/resources/injuries/environment; investigation retrieves relevant clues, known/unknown facts and beliefs. MKAOS enrichment may improve creative realization but cannot create Story Truth.
 
-Retrieval combines PostgreSQL Full-Text Search (`to_tsvector`,
-`plainto_tsquery`, `ts_rank`), an independently scoped PostgreSQL vector
-candidate channel, entity/relationship, character timeline, temporal, Arc and
-Narrative Obligation channels, followed by union, dedupe, versioned hybrid
-rerank and compressible-evidence compression. Vector candidates are filtered by
-Project, Book, Accepted Boundary, document lifecycle and compatible embedding
-identity before they enter the union; vector top-k is never allowed to discover
-future or stale evidence and filter it only afterwards.
-This signal is named PostgreSQL FTS ranking. Provider context must remain bounded
-as the Book grows; protected entries cannot be silently dropped.
+Retrieval first combines PostgreSQL Full-Text Search (`to_tsvector`,
+`plainto_tsquery`, `ts_rank`) with exact entity/relationship, character
+timeline, temporal, Arc and Narrative Obligation channels. This creates the
+bounded legal candidate set. Compatible vector similarity may rerank only that
+set and cannot add another document; when unavailable, lexical/structured
+ranking is the deterministic fallback. This is PostgreSQL FTS ranking, not
+BM25. Provider context must remain bounded as the Book grows.
+
+Acceptance also rebuilds Recent Trail and Hook Debt projections from the same
+accepted outcome/state evidence. Authoring APIs and the Chapter Transaction
+Workspace expose them alongside immutable Chapter artifacts and current stale
+future-plan evidence without acquiring Canon, State, Planning or Acceptance
+Authority.
 
 ## 6. Chapter production
 

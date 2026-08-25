@@ -18,6 +18,12 @@ Do not hand-edit `.claude/skills/` as the source. A Skill change requires valida
 
 Capability Pack manifests bind Skills by reference, version, content hash, input/output contracts, invocation limit, dependency graph, and drift policy. A Skill describes how a capability is performed; it does not create a second operation lifecycle or confer business commit authority.
 
+The Unified Agent Harness freezes the discoverable Skill catalog at admission.
+Activation is explicit and records Skill id/version/hash, catalog hash, caller
+or model origin, reason and transcript lineage. `skill.activate` is a
+Harness-native metadata action: it grants no Tool permission, Authority
+permission or hidden capability outside the frozen Pack.
+
 ## Agent selection
 
 Use the Agent/Skill map in `AGENTS.md` to choose procedures for a bounded task. Production Agent execution additionally requires an active Agent definition, qualified capability mapping, frozen runtime contract, allowed tools/context, budgets, and an accepting Domain Authority.

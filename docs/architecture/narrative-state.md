@@ -112,12 +112,15 @@ selection, rejection, source isolation, immutable refs and token budgets.
 Historical evidence is obtained through an explicit temporal read; the normal
 Context is not an unbounded history list.
 
-Context v2 protects the exact active plan and critical accepted
-state/Canon/Arc/Obligation entries from token trimming, then retrieves
-historical evidence through lexical, embedding, entity/relationship, timeline,
-temporal, Arc and obligation signals. The 22-node Chapter composition consumes
-the resulting Manifest/Bundle after ExecutionIntent and Memo. Missing protected
-budget fails closed; vector similarity is only one retrieval signal.
+Context Manifest v3 protects the exact active plan and critical accepted
+state/Canon/Arc/Obligation entries from token trimming. The four-class contract
+also preserves provenance for COMPRESSIBLE inputs and freezes sent EPHEMERAL
+inputs without indexing them in Memory/Search. Historical discovery is
+lexical-first plus exact entity/relationship, timeline, temporal, Arc and
+obligation channels; optional vector similarity only reranks that bounded set.
+The 22-node Chapter composition consumes the resulting Manifest/Bundle after
+ExecutionIntent and Memo. Missing or over-budget protected context fails closed
+before Provider execution.
 
 ## Arc observation defect at the audit baseline
 

@@ -32,6 +32,12 @@ Read services may join multiple authority projections when the query has a stabl
 - reports missing or stale evidence explicitly;
 - preserves project/workspace and accepted-chapter boundaries.
 
+Recent Trail and Hook Debt are rebuildable projections of committed Chapter
+Outcome and accepted Narrative Obligation state. Chapter Transaction Workspace
+is a cross-Authority authoring read model that references immutable
+AssetVersions and evidence. None can activate a Plan, accept a Candidate, commit
+Canon/State, or become a parallel truth store.
+
 ## Candidate versus authority
 
 Story Design generation, Agent reasoning, quality evaluation, reader outcomes, and source analysis produce candidates, evidence, decisions, or proposals. They cannot directly mutate Canon, StoryState, an active typed plan, or a Book/Chapter state. The owning Authority validates and commits the result.

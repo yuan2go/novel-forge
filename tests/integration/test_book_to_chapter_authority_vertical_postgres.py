@@ -727,7 +727,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                         project_id=project_id,
                         limit=20,
                     )
-                    self.assertEqual(len(embedding_operations), 6)
+                    self.assertEqual(len(embedding_operations), 7)
                     for operation_id in embedding_operations:
                         embedding_runtime.tick(
                             project_id=project_id,
@@ -920,9 +920,9 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     for item in chapter_two_retrieval["selected_documents"]
                 )
             )
-            # Each accepted Chapter contributes the five structured
-            # correctness projections plus its accepted prose archive entry.
-            self.assertEqual(retrieval_document_count, 12)
+            # Each accepted Chapter contributes six structured correctness and
+            # authoring projections plus its accepted prose archive entry.
+            self.assertEqual(retrieval_document_count, 14)
             self.assertGreaterEqual(retrieval_layer_count, 5)
             self.assertTrue(context_bundles[1]["context_manifest"]["retrieval_trace"])
             accepted_retrieval_trace = [

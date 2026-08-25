@@ -71,8 +71,8 @@ Progressive Plan + Arc Working Set
 → active ChapterPlan
 → ChapterExecutionIntent / ChapterMemo
 → Retrieval Query Plan / immutable RetrievalResult at the frozen Accepted Boundary
-→ Context v2
-→ Protected Context + hybrid retrieval
+→ governed Context Manifest v3
+→ PROTECTED / RETRIEVABLE / COMPRESSIBLE / EPHEMERAL Context
 → Draft / Review / Revision / Best Candidate
 → provisional Canon/Arc/Obligation evidence
 → verification / quality
@@ -89,6 +89,21 @@ Intent/Memo/Context, accepted Arc/Obligation projection and the next scheduling
 decision. It also proved frozen Planning Context retry, MKAOS revocation
 fail-closed behavior and persisted usage lineage. This is bounded fixture
 evidence, not real-provider, long-form campaign or production qualification.
+
+Current Context compilation enforces all four classes. Protected overflow
+fails before Provider execution; compressed evidence retains source and
+compression provenance; provider-visible ephemeral input is Attempt evidence
+but never long-lived Memory/Search. Retrieval candidate discovery is
+lexical-first (`ts_rank`, not BM25) plus exact structured channels; compatible
+semantic similarity may only rerank that frozen bounded set and deterministically
+falls back when unavailable.
+
+Committed Chapter acceptance rebuilds two writer-facing projections in the
+existing retrieval store: Recent Trail from typed accepted outcomes and Hook
+Debt from accepted Narrative Obligations. The Chapter Transaction Workspace API
+joins these projections with existing Plan/Intent/Memo/Context/Candidate/Review/
+Quality/Acceptance and stale PlanBinding evidence. These are read models with no
+activation permission, not new narrative Authorities.
 
 The target hierarchy is four-dimensional: optional organization/IP scopes, narrative containment, cross-cutting Arc Graph and ChapterGroup production coordination. The current runtime has no independent Narrative Segment consumer, shared-Universe Canon Authority or reason to add empty persistence roots.
 
@@ -144,9 +159,10 @@ The repository contains substantial implementation/runtime/test evidence for:
 - PlanChange/Replan;
 - Source/MKAOS;
 - Agent Collaboration/Runtime;
-- multi-turn Agent Harness transcript contracts and partial recovery wiring;
-- Memo-driven Context v2 protected/retrievable selection, immutable retrieval
-  results, PostgreSQL FTS/graph/temporal candidate discovery, embedding-based
+- multi-turn Agent Harness transcript contracts, explicit frozen-catalog Skill
+  activation, and recovery wiring;
+- Memo-driven governed Context four-class selection, immutable retrieval
+  results, lexical/structured-first candidate discovery, bounded semantic
   reranking and layered-memory contracts;
 - ChapterExecutionIntent/ChapterMemo and Best Candidate selection;
 - accepted Arc/Obligation projection sets and semantic invalidation;

@@ -25,6 +25,7 @@ from novel_forge.storage.migrations.versions import (
     v20260821_0096_runtime_hardening as runtime_hardening_migration,
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage_migration,
     v20260825_0098_narrative_evolution_engine as evolution_migration,
+    v20260825_0099_creative_engineering_convergence as creative_engineering_migration,
 )
 
 
@@ -57,7 +58,10 @@ def test_source_import_runtime_is_registered_forward_only_head() -> None:
         == runtime_hardening_migration.MIGRATION_ID
     )
     assert evolution_migration.DOWN_REVISION == codex_lineage_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == evolution_migration.MIGRATION_ID
+    assert (
+        creative_engineering_migration.DOWN_REVISION == evolution_migration.MIGRATION_ID
+    )
+    assert LATEST_MIGRATION_ID == creative_engineering_migration.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260811_0075_source_deconstruction_intelligence"
     assert migration.FORWARD_ONLY is True
     sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()

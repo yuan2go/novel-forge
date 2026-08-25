@@ -321,6 +321,7 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
                 idempotency_key=f"{project_id}:agent-session",
                 trace_id=identifier("agent-harness-trace"),
                 correlation_id=identifier("agent-harness-correlation"),
+                requested_skill_ids=("studio-direction",),
             ),
             principal=agent_principal,
         )
@@ -370,7 +371,31 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
                     admitted["operation_id"],
                 ],
             ).fetchone()
-        self.assertEqual(tuple(counts), (1, 2, 6, 1, 0))
+            activation = connection.execute(
+                """
+                SELECT payload
+                FROM authority_agent_transcript_event
+                WHERE agent_session_id=%s AND event_type='SKILL_ACTIVATED'
+                """,
+                [session_id],
+            ).fetchone()
+            grounded_query = connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_agent_transcript_event
+                WHERE agent_session_id=%s AND event_type='TOOL_REQUESTED'
+                  AND payload->>'tool'='narrative.query_accepted'
+                """,
+                [session_id],
+            ).fetchone()
+        self.assertEqual(tuple(counts), (1, 2, 7, 1, 0))
+        self.assertIsNotNone(activation)
+        self.assertEqual(activation[0]["skill_id"], "studio-direction")
+        self.assertEqual(activation[0]["skill_version"], "1.0.0")
+        self.assertEqual(activation[0]["skill_hash"], "sha256:" + "a" * 64)
+        self.assertEqual(activation[0]["additional_tool_permissions"], [])
+        self.assertEqual(activation[0]["additional_authority_permissions"], [])
+        self.assertEqual(int(grounded_query[0]), 1)
 
     def test_completed_transcript_replays_after_process_crash_without_new_effect(
         self,
