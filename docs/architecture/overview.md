@@ -36,18 +36,18 @@ Stable current boundaries:
 
 ## Current Narrative Evolution runtime
 
-`book-design.v4` is the current complete Creative Foundation contract. Its
-normal candidate/evaluation/decision/activation lifecycle remains BookDesign
-Authority-owned. Activation projects typed Creative Foundation, World,
-Character/trajectory, Theme, Ending and Reader Promise assets from the exact
-active design version; v4 cannot take the legacy qualification shortcut.
+At this baseline `book-design.v4` still contains a monolithic Creative/World/
+Character design and projects component assets after BookDesign activation.
+This has lifecycle evidence but does not establish the required upstream
+Creative → World → Character → BookDesign Authority chain. New production must
+converge on separately qualified Foundation contracts and a reference-only
+BookDesign v5; v4 remains replay/migration compatibility.
 
-`BookProductionComposition.open_book` is the reachable opening coordinator. It
-requires that active qualified Foundation plus explicit authoritative opening
-inputs, then drives bounded Book, first-Volume and Arc-portfolio searches and
-resolves the resulting active baseline into the existing immutable Book
-Production input snapshot. It is a coordinator over BookDesign, Story Planning,
-Hierarchical Planning and Input Resolver Authorities, not a new Authority.
+`BookProductionComposition.open_book` exists and has bounded PostgreSQL fixture
+coverage, but no durable command/admission API invokes it. It is therefore code
+and test reachable, not a complete operator-reachable Book opening flow. The
+closure must admit a durable Operation and let a worker coordinate existing
+Authorities rather than running provider work in an HTTP lifecycle.
 
 Story Planning persists each search at one exact parent/accepted boundary, its
 immutable branch candidates, structured future projections, independent
@@ -57,10 +57,10 @@ Supervisor uses this path for consequential ChapterGroup planning; governed
 Replan uses it for Book/Volume/Arc/ChapterGroup replacement. Operational Chapter
 planning remains just-in-time and single-candidate.
 
-This establishes Runtime reachability plus a bounded PostgreSQL opening and
-replay fixture; it does not establish literary quality. Real-provider search
-behavior, human preference and long-form stability remain explicitly
-unqualified until a later bounded campaign.
+The current search and replay fixture does not establish a closed Foundation
+hierarchy or literary quality. Real-provider search behavior, human preference
+and long-form stability remain explicitly unqualified until a later bounded
+campaign.
 
 ## Current converged production shape
 
@@ -68,6 +68,7 @@ The converged target moves chapter production from broad context-driven generati
 
 ```text
 Progressive Plan + Arc Working Set
+→ Qualified / Approved / Frozen Narrative Realization
 → active ChapterPlan
 → ChapterExecutionIntent / ChapterMemo
 → Retrieval Query Plan / immutable RetrievalResult at the frozen Accepted Boundary
@@ -79,7 +80,10 @@ Progressive Plan + Arc Working Set
 → atomic Accepted Outcome projection set
 ```
 
-This chain extends existing Planning/Narrative State/Context/Chapter Authority; it does not create a second narrative runtime.
+The baseline Book Supervisor currently skips the Narrative Realization step and
+creates ChapterPlan directly from ChapterGroup. Closing that gap extends
+existing Planning/Narrative State/Context/Chapter Authority; it does not create
+a second narrative runtime or another `PlanContractType` scale.
 
 The current implementation realizes the working-set, composition/Mission and
 structured Narrative Intelligence links in this chain. The 2026-08-24
