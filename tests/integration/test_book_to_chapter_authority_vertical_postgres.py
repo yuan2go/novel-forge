@@ -975,8 +975,30 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 accepted_versions[0][1],
             )
             self.assertEqual(
+                quality_observations[0]["projection_contract_version"],
+                "accepted-quality-observation-v2",
+            )
+            self.assertTrue(
+                quality_observations[0]["canon_snapshot_asset_version_id"]
+            )
+            self.assertNotIn("text", quality_observations[0])
+            self.assertEqual(
                 multiscale_quality["source_acceptance_ids"],
                 [quality_observations[0]["acceptance_id"]],
+            )
+            self.assertEqual(
+                multiscale_quality["contract_version"],
+                "multiscale-narrative-quality-v2",
+            )
+            self.assertEqual(
+                multiscale_quality["canonical_longitudinal_evidence"][
+                    "observation_status"
+                ],
+                "MEASURED",
+            )
+            self.assertEqual(
+                multiscale_quality["compatibility_projection"]["status"],
+                "DEPRECATED_NON_CANONICAL",
             )
 
             rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(

@@ -55,6 +55,21 @@ from .qualification import (
     decide_quality_qualification,
     transition_campaign,
 )
+from .longitudinal import (
+    ArcQualityEvaluation,
+    LongitudinalQualityEvidence,
+    MomentumEvidence,
+    ObligationTimeline,
+    PromisePayoffEvidence,
+    READER_OUTCOME_DIMENSIONS,
+    REPETITION_DIMENSIONS,
+    ReaderTrendEvidence,
+    RepetitionEvidence,
+    VolumeSliceQualityEvaluation,
+    build_arc_quality_evaluation,
+    build_longitudinal_quality_evidence,
+    build_volume_slice_quality_evaluation,
+)
 
 __all__ = [
     "LONGITUDINAL_QUALITY_DIMENSIONS",
@@ -100,4 +115,17 @@ __all__ = [
     "QualificationStatus",
     "decide_quality_qualification",
     "transition_campaign",
+    "ArcQualityEvaluation",
+    "LongitudinalQualityEvidence",
+    "MomentumEvidence",
+    "ObligationTimeline",
+    "PromisePayoffEvidence",
+    "READER_OUTCOME_DIMENSIONS",
+    "REPETITION_DIMENSIONS",
+    "ReaderTrendEvidence",
+    "RepetitionEvidence",
+    "VolumeSliceQualityEvaluation",
+    "build_arc_quality_evaluation",
+    "build_longitudinal_quality_evidence",
+    "build_volume_slice_quality_evaluation",
 ]

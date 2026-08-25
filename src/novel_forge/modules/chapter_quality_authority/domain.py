@@ -10,9 +10,17 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timezone
 import re
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+
+from .longitudinal import (
+    READER_OUTCOME_DIMENSIONS,
+    REPETITION_DIMENSIONS,
+    build_arc_quality_evaluation,
+    build_longitudinal_quality_evidence,
+    build_volume_slice_quality_evaluation,
+)
 
 
 QUALITY_GROUPS: dict[str, tuple[str, ...]] = {
@@ -258,9 +266,30 @@ def build_multiscale_quality_report(
         for window, rows in windows.items()
     ]
     observed = bool(observations)
+    canonical = build_longitudinal_quality_evidence(observations)
+    arc_ids = sorted(
+        {
+            str(item.get("arc_plan_version_id") or "")
+            for observation in observations
+            for item in observation.get("arc_evidence") or ()
+            if isinstance(item, Mapping)
+            and str(item.get("arc_plan_version_id") or "")
+        }
+    )
+    arc_evaluations = tuple(
+        build_arc_quality_evaluation(
+            observations, arc_plan_version_id=arc_plan_version_id
+        )
+        for arc_plan_version_id in arc_ids
+    )
+    volume_evaluation = build_volume_slice_quality_evaluation(
+        observations,
+        arc_evaluations=arc_evaluations,
+        volume_scope_id=current_volume or f"{book_id}:accepted-slice",
+    )
     return {
         "type": "MultiScaleNarrativeQualityReport",
-        "contract_version": "multiscale-narrative-quality-v1",
+        "contract_version": "multiscale-narrative-quality-v2",
         "project_id": project_id,
         "book_id": book_id,
         "accepted_through_chapter": accepted_through_chapter,
@@ -270,6 +299,23 @@ def build_multiscale_quality_report(
         "dimensions": list(LONGITUDINAL_QUALITY_DIMENSIONS),
         "scope_reports": scope_reports,
         "window_reports": window_reports,
+        "canonical_longitudinal_evidence": canonical.to_dict(),
+        "arc_evaluations": [item.to_dict() for item in arc_evaluations],
+        "bounded_volume_evaluation": volume_evaluation.to_dict(),
+        "canonical_dimension_families": [
+            "momentum",
+            "promise_payoff",
+            *REPETITION_DIMENSIONS,
+            *READER_OUTCOME_DIMENSIONS,
+        ],
+        "compatibility_projection": {
+            "status": "DEPRECATED_NON_CANONICAL",
+            "dimensions": list(LONGITUDINAL_QUALITY_DIMENSIONS),
+            "reason": (
+                "legacy query consumers require scope/window fields; Arc and "
+                "Volume qualification use causal accepted evidence above"
+            ),
+        },
         "source_acceptance_ids": sorted(
             {str(item["acceptance_id"]) for item in observations}
         ),
