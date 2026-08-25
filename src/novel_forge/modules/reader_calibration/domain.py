@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 import hashlib
 import math
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -15,6 +16,184 @@ class PreferenceChoice(StrEnum):
     B = "B"
     TIE = "TIE"
     REJECT_BOTH = "REJECT_BOTH"
+    CANNOT_JUDGE = "CANNOT_JUDGE"
+
+
+class BlindScope(StrEnum):
+    CHAPTER = "CHAPTER"
+    ARC = "ARC"
+
+
+class EvaluatorIdentityClass(StrEnum):
+    PROFESSIONAL_EDITOR = "PROFESSIONAL_EDITOR"
+    AUTHOR_EDITOR = "AUTHOR_EDITOR"
+    EXPERIENCED_READER = "EXPERIENCED_READER"
+    GENERAL_READER = "GENERAL_READER"
+
+
+BLIND_EVALUATION_DIMENSIONS = (
+    "overall_preference",
+    "readability",
+    "character_credibility",
+    "scene_effectiveness",
+    "tension_momentum",
+    "emotional_impact",
+    "prose_quality",
+    "continuity",
+    "payoff_satisfaction",
+    "desire_to_continue",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class HumanBlindDecision:
+    """One immutable subjective observation, never editorial Ground Truth."""
+
+    decision_id: str
+    pair_token: str
+    reviewer_id: str
+    evaluator_identity_class: EvaluatorIdentityClass
+    protocol_version: str
+    evaluation_version: str
+    scope_type: BlindScope
+    chapter_start: int
+    chapter_end: int
+    choice: PreferenceChoice
+    dimension_scores: Mapping[str, Mapping[str, int | None]]
+    confidence: float
+    rationale: str
+    evidence_spans: tuple[dict[str, Any], ...]
+
+    def __post_init__(self) -> None:
+        for name in (
+            "decision_id",
+            "pair_token",
+            "reviewer_id",
+            "protocol_version",
+            "evaluation_version",
+        ):
+            if not str(getattr(self, name) or "").strip():
+                raise ValueError(f"{name} is required")
+        try:
+            identity_class = EvaluatorIdentityClass(self.evaluator_identity_class)
+        except ValueError as exc:
+            raise ValueError("evaluator identity class is invalid") from exc
+        try:
+            scope = BlindScope(self.scope_type)
+        except ValueError as exc:
+            raise ValueError("blind evaluation scope is invalid") from exc
+        try:
+            choice = PreferenceChoice(self.choice)
+        except ValueError as exc:
+            raise ValueError("blind preference choice is invalid") from exc
+        if choice is PreferenceChoice.REJECT_BOTH:
+            raise ValueError("REJECT_BOTH is historical-only in the blind protocol")
+        if self.chapter_start <= 0 or self.chapter_end < self.chapter_start:
+            raise ValueError("blind evaluation chapter scope is invalid")
+        if scope is BlindScope.CHAPTER and self.chapter_start != self.chapter_end:
+            raise ValueError("Chapter scope must cover exactly one chapter")
+        if not 0 <= self.confidence <= 1:
+            raise ValueError("blind evaluation confidence must be between 0 and 1")
+        if set(self.dimension_scores) != set(BLIND_EVALUATION_DIMENSIONS):
+            raise ValueError("dimension_scores must contain the exact frozen dimensions")
+        frozen_scores: dict[str, Mapping[str, int | None]] = {}
+        for dimension in BLIND_EVALUATION_DIMENSIONS:
+            raw = self.dimension_scores[dimension]
+            if not isinstance(raw, Mapping) or set(raw) != {"a", "b"}:
+                raise ValueError(
+                    f"{dimension} must score candidate a and b"
+                )
+            a, b = raw["a"], raw["b"]
+            if choice is PreferenceChoice.CANNOT_JUDGE and a is None and b is None:
+                frozen_scores[dimension] = MappingProxyType({"a": None, "b": None})
+                continue
+            if (
+                not isinstance(a, int)
+                or isinstance(a, bool)
+                or not isinstance(b, int)
+                or isinstance(b, bool)
+                or not 1 <= a <= 5
+                or not 1 <= b <= 5
+            ):
+                raise ValueError("dimension scores must be between 1 and 5")
+            frozen_scores[dimension] = MappingProxyType({"a": a, "b": b})
+        for span in self.evidence_spans:
+            if not isinstance(span, dict):
+                raise ValueError("evidence spans must be typed objects")
+            candidate = str(span.get("candidate") or "")
+            start, end = span.get("start"), span.get("end")
+            if (
+                candidate not in {"A", "B"}
+                or not isinstance(start, int)
+                or isinstance(start, bool)
+                or not isinstance(end, int)
+                or isinstance(end, bool)
+                or start < 0
+                or end <= start
+            ):
+                raise ValueError("evidence span is outside a blinded candidate")
+        object.__setattr__(self, "evaluator_identity_class", identity_class)
+        object.__setattr__(self, "scope_type", scope)
+        object.__setattr__(self, "choice", choice)
+        object.__setattr__(
+            self, "dimension_scores", MappingProxyType(frozen_scores)
+        )
+
+    @property
+    def preferred_candidate(self) -> str | None:
+        return self.choice.value if self.choice in {PreferenceChoice.A, PreferenceChoice.B} else None
+
+
+@dataclass(frozen=True, slots=True)
+class BlindAdjudication:
+    status: str
+    adjudicator_id: str
+    resolved_choice: PreferenceChoice | None
+    rationale: str
+    raw_decisions: tuple[HumanBlindDecision, ...]
+    evidence_class: str = "SUBJECTIVE_ADJUDICATION_NOT_GROUND_TRUTH"
+
+
+def reviewer_visible_decisions(
+    decisions: Iterable[HumanBlindDecision], reviewer_id: str
+) -> tuple[HumanBlindDecision, ...]:
+    """Do not reveal another evaluator's decisions before pack completion."""
+
+    return tuple(item for item in decisions if item.reviewer_id == reviewer_id)
+
+
+def adjudicate_blind_decisions(
+    decisions: Iterable[HumanBlindDecision],
+    *,
+    adjudicator_id: str,
+    resolved_choice: PreferenceChoice | None,
+    rationale: str,
+) -> BlindAdjudication:
+    rows = tuple(decisions)
+    if (
+        len(rows) < 2
+        or len({item.reviewer_id for item in rows}) < 2
+        or len({item.pair_token for item in rows}) != 1
+        or not adjudicator_id
+        or not rationale.strip()
+    ):
+        raise ValueError("adjudication requires two independent scoped decisions")
+    if resolved_choice is not None:
+        resolved_choice = PreferenceChoice(resolved_choice)
+        if resolved_choice is PreferenceChoice.REJECT_BOTH:
+            raise ValueError("REJECT_BOTH cannot adjudicate the current protocol")
+        status = "ADJUDICATED"
+    elif len({item.choice for item in rows}) == 1:
+        status = "AGREED"
+    else:
+        status = "DISAGREED"
+    return BlindAdjudication(
+        status=status,
+        adjudicator_id=adjudicator_id,
+        resolved_choice=resolved_choice,
+        rationale=rationale,
+        raw_decisions=rows,
+    )
 
 
 class CalibrationStatus(StrEnum):
@@ -455,15 +634,21 @@ def _specificity(
 
 
 __all__ = [
+    "BLIND_EVALUATION_DIMENSIONS",
+    "BlindAdjudication",
+    "BlindScope",
     "CalibrationCandidate",
     "CalibrationScope",
     "CalibrationStatus",
     "JudgeMode",
+    "EvaluatorIdentityClass",
+    "HumanBlindDecision",
     "ReaderJudgeQualificationStatus",
     "ReaderOutcomeDecisionPolicy",
     "DEFAULT_READER_OUTCOME_DECISION_POLICY",
     "PreferenceChoice",
     "blind_pair_order",
+    "adjudicate_blind_decisions",
     "calibrated_probability",
     "calibration_metrics",
     "human_agreement_report",
@@ -473,5 +658,6 @@ __all__ = [
     "evaluate_reader_outcome_consumption",
     "require_exposure_denominator",
     "resolve_calibration_profile",
+    "reviewer_visible_decisions",
     "transition_reader_judge_qualification",
 ]

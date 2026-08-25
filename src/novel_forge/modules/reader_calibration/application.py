@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime, timezone
 import hashlib
 from typing import Any
 from uuid import uuid4
@@ -34,11 +33,13 @@ from novel_forge.modules.content_authority.scheduler import (
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
+    BlindScope,
     CalibrationCandidate,
     CalibrationScope,
     CalibrationStatus,
     JudgeMode,
     PreferenceChoice,
+    HumanBlindDecision,
     blind_pair_order,
     calibration_metrics,
     human_agreement_report,
@@ -47,6 +48,7 @@ from .domain import (
     require_exposure_denominator,
     resolve_calibration_profile,
 )
+from .blind_export import BlindExportBundle
 
 
 VERSION = "1.0.0"
@@ -66,6 +68,14 @@ DEFINITIONS = {
     "reader.preference.agreement.evaluate": (
         "human_judge_agreement_report",
         "reader.preference.agreement",
+    ),
+    "reader.preference.pack.export": (
+        "human_preference_evaluation_pack",
+        "reader.preference.pack",
+    ),
+    "reader.preference.adjudication.record": (
+        "human_preference_adjudication",
+        "reader.preference.adjudication",
     ),
     "reader.behavior.session.start": (
         "reader_session_receipt",
@@ -119,6 +129,7 @@ class _Handler:
                 "Reader calibration payload must be an object",
             )
         asset_type, output_key = DEFINITIONS[request.definition_name]
+        reviewer_safe = request.definition_name == "reader.preference.pack.export"
         return AuthorityHandlerOutput(
             asset_type=asset_type,
             output_key=output_key,
@@ -131,9 +142,11 @@ class _Handler:
                 "contract_version": request.definition_name.replace(".", "-")
                 + "-v1",
                 **payload,
-                "source_asset_versions": [
-                    item.asset_version_id for item in request.inputs
-                ],
+                "source_asset_versions": (
+                    []
+                    if reviewer_safe
+                    else [item.asset_version_id for item in request.inputs]
+                ),
             },
             qualification_policy="reader-calibration-v1",
             reference_asset_version_ids=tuple(
@@ -205,10 +218,36 @@ class PostgresReaderCalibrationAuthority:
         evidence_level: str,
         idempotency_key: str,
         principal: Principal,
+        campaign_id: str = "",
+        protocol_version: str = "",
+        evaluation_profile_version: str = "",
+        required_evaluator_count: int = 0,
+        evaluator_identity_classes: tuple[str, ...] = (),
+        scope_manifest: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         principal.require("book.authority.execute", project_id)
         if evidence_level not in {"FIXTURE", "HUMAN_VERIFIED"}:
             raise ValueError("preference evidence level is invalid")
+        versioned_protocol = bool(protocol_version)
+        if versioned_protocol and (
+            not campaign_id
+            or not evaluation_profile_version
+            or required_evaluator_count < 2
+            or len(evaluator_identity_classes) < 2
+            or not isinstance(scope_manifest, dict)
+            or not scope_manifest
+        ):
+            raise ValueError("versioned blind preference protocol is incomplete")
+        if not versioned_protocol and any(
+            (
+                campaign_id,
+                evaluation_profile_version,
+                required_evaluator_count,
+                evaluator_identity_classes,
+                scope_manifest,
+            )
+        ):
+            raise ValueError("legacy preference task cannot contain partial protocol fields")
         operation_id = self._execute(
             "reader.preference.task.create",
             project_id=project_id,
@@ -219,6 +258,12 @@ class PostgresReaderCalibrationAuthority:
                 "reader_segment": reader_segment,
                 "task_type": "AB_BLIND",
                 "evidence_level": evidence_level,
+                "campaign_id": campaign_id,
+                "protocol_version": protocol_version,
+                "evaluation_profile_version": evaluation_profile_version,
+                "required_evaluator_count": required_evaluator_count,
+                "evaluator_identity_classes": list(evaluator_identity_classes),
+                "scope_manifest": scope_manifest or {},
             },
             input_assets=(),
             principal=principal,
@@ -230,9 +275,16 @@ class PostgresReaderCalibrationAuthority:
                 INSERT INTO human_preference_task(
                     task_id, project_id, book_id, reader_segment,
                     task_type, status, evidence_level,
-                    created_by_operation_id, stable_idempotency_key
+                    created_by_operation_id, stable_idempotency_key,
+                    campaign_id, protocol_version,
+                    evaluation_profile_version, required_evaluator_count,
+                    evaluator_identity_classes, scope_manifest,
+                    blind_pack_status
                 ) VALUES (
-                    %s, %s, %s, %s, 'AB_BLIND', 'OPEN', %s, %s, %s
+                    %s, %s, %s, %s, 'AB_BLIND', 'OPEN', %s, %s, %s,
+                    NULLIF(%s, ''), NULLIF(%s, ''), NULLIF(%s, ''),
+                    NULLIF(%s, 0), %s, %s,
+                    CASE WHEN NULLIF(%s, '') IS NULL THEN NULL ELSE 'PENDING' END
                 )
                 ON CONFLICT(project_id, stable_idempotency_key) DO NOTHING
                 """,
@@ -244,12 +296,23 @@ class PostgresReaderCalibrationAuthority:
                     evidence_level,
                     operation_id,
                     idempotency_key,
+                    campaign_id,
+                    protocol_version,
+                    evaluation_profile_version,
+                    required_evaluator_count,
+                    Jsonb(list(evaluator_identity_classes))
+                    if versioned_protocol
+                    else None,
+                    Jsonb(scope_manifest) if versioned_protocol else None,
+                    protocol_version,
                 ],
             )
             uow.cursor.execute(
                 """
                 SELECT task_id, project_id, book_id, reader_segment,
-                       evidence_level, status
+                       evidence_level, status, campaign_id,
+                       protocol_version, evaluation_profile_version,
+                       required_evaluator_count, blind_pack_status
                 FROM human_preference_task
                 WHERE project_id=%s AND stable_idempotency_key=%s
                 """,
@@ -266,6 +329,11 @@ class PostgresReaderCalibrationAuthority:
                     "reader_segment",
                     "evidence_level",
                     "status",
+                    "campaign_id",
+                    "protocol_version",
+                    "evaluation_profile_version",
+                    "required_evaluator_count",
+                    "blind_pack_status",
                 ),
                 row,
                 strict=True,
@@ -359,6 +427,560 @@ class PostgresReaderCalibrationAuthority:
             )
             uow.commit()
         return self._pair_by_key(task_id, canonical, order)
+
+    def register_blind_packs(
+        self,
+        *,
+        task_id: str,
+        bundle: BlindExportBundle,
+        principal: Principal,
+    ) -> dict[str, dict[str, Any]]:
+        """Persist public packs and private mappings in their separate boundaries."""
+
+        task = self._task(task_id)
+        principal.require("book.authority.execute", task["project_id"])
+        if not task["protocol_version"] or not task["campaign_id"]:
+            raise KernelError(
+                "BLIND_PACK_PROTOCOL_REQUIRED",
+                "evaluation packs require a versioned Quality campaign task",
+            )
+        results: dict[str, dict[str, Any]] = {}
+        for reviewer_id, pack in bundle.packs.items():
+            public = pack.public_payload
+            if (
+                public.get("protocol_version") != task["protocol_version"]
+                or str(public.get("evaluation_version") or "")
+                != task["evaluation_profile_version"]
+            ):
+                raise KernelError(
+                    "BLIND_PACK_VERSION_MISMATCH",
+                    "pack protocol differs from the frozen preference task",
+                )
+            input_version_ids = tuple(
+                dict.fromkeys(
+                    version_id
+                    for mapping in pack.private_mapping
+                    for version_id in (
+                        mapping.candidate_a_asset_version_id,
+                        mapping.candidate_b_asset_version_id,
+                    )
+                )
+            )
+            operation_id = self._execute(
+                "reader.preference.pack.export",
+                project_id=task["project_id"],
+                workspace_id=f"workspace:{task['project_id']}",
+                idempotency_key=f"{task_id}:{pack.pack_token}:export",
+                payload=public,
+                input_assets=self._resolve(task["project_id"], input_version_ids),
+                principal=principal,
+            )
+            output = self._output(operation_id, "reader.preference.pack")
+            chapter_count = sum(
+                item.scope_type is BlindScope.CHAPTER for item in pack.private_mapping
+            )
+            arc_count = sum(
+                item.scope_type is BlindScope.ARC for item in pack.private_mapping
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    """
+                    INSERT INTO human_preference_evaluation_pack(
+                        pack_id, task_id, campaign_id, project_id,
+                        reviewer_id, evaluator_identity_class,
+                        protocol_version, evaluation_profile_version,
+                        pack_asset_version_id, pack_content_hash,
+                        private_mapping_hash, pair_count,
+                        chapter_pair_count, arc_pair_count, status,
+                        created_by_operation_id, exported_at
+                    ) VALUES (
+                        %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                        'EXPORTED',%s,NOW()
+                    )
+                    ON CONFLICT(task_id, reviewer_id) DO NOTHING
+                    """,
+                    [
+                        pack.pack_token,
+                        task_id,
+                        task["campaign_id"],
+                        task["project_id"],
+                        reviewer_id,
+                        str(public["evaluator_identity_class"]),
+                        task["protocol_version"],
+                        task["evaluation_profile_version"],
+                        output["asset_version_id"],
+                        pack.content_hash,
+                        pack.private_mapping_hash,
+                        len(pack.private_mapping),
+                        chapter_count,
+                        arc_count,
+                        operation_id,
+                    ],
+                )
+                uow.commit()
+            for ordinal, mapping in enumerate(pack.private_mapping, start=1):
+                subject = self._qualification_subject(mapping.subject_id)
+                if (
+                    subject["campaign_id"] != task["campaign_id"]
+                    or subject["project_id"] != task["project_id"]
+                    or subject["scope_type"] != mapping.scope_type.value
+                    or int(subject["chapter_start"]) != mapping.chapter_start
+                    or int(subject["chapter_end"]) != mapping.chapter_end
+                ):
+                    raise KernelError(
+                        "BLIND_PACK_SUBJECT_SCOPE_MISMATCH",
+                        "private pair mapping differs from its Quality subject",
+                    )
+                expected_ids = {
+                    subject["canonical_asset_version_id"],
+                    subject["baseline_asset_version_id"],
+                }
+                if {
+                    mapping.candidate_a_asset_version_id,
+                    mapping.candidate_b_asset_version_id,
+                } != expected_ids:
+                    raise KernelError(
+                        "BLIND_PACK_PRIVATE_MAPPING_MISMATCH",
+                        "private pair mapping does not preserve the frozen candidates",
+                    )
+                pair_operation_id = self._execute(
+                    "reader.preference.pair.create",
+                    project_id=task["project_id"],
+                    workspace_id=f"workspace:{task['project_id']}",
+                    idempotency_key=f"{task_id}:{mapping.pair_token}",
+                    payload={
+                        "task_id": task_id,
+                        "pack_token": pack.pack_token,
+                        "pair_token": mapping.pair_token,
+                        "scope_type": mapping.scope_type.value,
+                        "chapter_start": mapping.chapter_start,
+                        "chapter_end": mapping.chapter_end,
+                        "assigned_reviewer_token": public["reviewer_token"],
+                        "blinded": True,
+                    },
+                    input_assets=self._resolve(
+                        task["project_id"],
+                        (
+                            subject["canonical_asset_version_id"],
+                            subject["baseline_asset_version_id"],
+                        ),
+                    ),
+                    principal=principal,
+                )
+                pair_id = f"preference-pair:{pair_operation_id}"
+                order = "AB" if mapping.canonical_position == "A" else "BA"
+                canonical_key = ":".join(sorted(expected_ids))
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute(
+                        """
+                        INSERT INTO human_preference_pair(
+                            pair_id, task_id, project_id, canonical_pair_key,
+                            asset_a_version_id, asset_b_version_id,
+                            left_asset_version_id, right_asset_version_id,
+                            presentation_order, randomization_hash, blinded,
+                            reversal_of_pair_id, created_by_operation_id,
+                            subject_id, pack_id, protocol_version, scope_type,
+                            chapter_start, chapter_end, arc_plan_version_ids,
+                            pair_ordinal, assigned_reviewer_id,
+                            blind_pair_token, private_mapping_hash
+                        ) VALUES (
+                            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,NULL,%s,
+                            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+                        )
+                        ON CONFLICT(task_id, canonical_pair_key, presentation_order)
+                        DO NOTHING
+                        """,
+                        [
+                            pair_id,
+                            task_id,
+                            task["project_id"],
+                            canonical_key,
+                            subject["canonical_asset_version_id"],
+                            subject["baseline_asset_version_id"],
+                            mapping.candidate_a_asset_version_id,
+                            mapping.candidate_b_asset_version_id,
+                            order,
+                            pack.private_mapping_hash,
+                            pair_operation_id,
+                            mapping.subject_id,
+                            pack.pack_token,
+                            task["protocol_version"],
+                            mapping.scope_type.value,
+                            mapping.chapter_start,
+                            mapping.chapter_end,
+                            Jsonb(subject["arc_plan_version_ids"]),
+                            ordinal,
+                            reviewer_id,
+                            mapping.pair_token,
+                            pack.private_mapping_hash,
+                        ],
+                    )
+                    uow.commit()
+            results[reviewer_id] = {
+                "pack_id": pack.pack_token,
+                "pack_asset_version_id": output["asset_version_id"],
+                "pack_content_hash": pack.content_hash,
+                "pair_count": len(pack.private_mapping),
+                "status": "EXPORTED",
+            }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE human_preference_task
+                SET blind_pack_status='EXPORTED', updated_at=NOW()
+                WHERE task_id=%s AND blind_pack_status IN ('PENDING','EXPORTED')
+                """,
+                [task_id],
+            )
+            uow.commit()
+        return results
+
+    def reviewer_pack(
+        self,
+        *,
+        pack_id: str,
+        reviewer_id: str,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        pack = self._pack(pack_id)
+        principal.require("book.authority.execute", pack["project_id"])
+        if pack["reviewer_id"] != reviewer_id:
+            raise KernelError(
+                "BLIND_PACK_REVIEWER_SCOPE_MISMATCH",
+                "an evaluator cannot read another evaluator's pack",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_asset_version AS version
+                WHERE version.asset_version_id=%s
+                """,
+                [pack["pack_asset_version_id"]],
+            )
+            content = dict(uow.cursor.fetchone()[0])
+        content.pop("source_asset_versions", None)
+        return content
+
+    def record_blind_decision(
+        self,
+        decision: HumanBlindDecision,
+        *,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        pair = self._pair_by_token(decision.pair_token)
+        task = self._task(pair["task_id"])
+        principal.require("book.authority.execute", pair["project_id"])
+        if task["status"] != "OPEN":
+            raise KernelError(
+                "PREFERENCE_TASK_CLOSED",
+                "decisions cannot be added after agreement is finalized",
+            )
+        if (
+            pair["assigned_reviewer_id"] != decision.reviewer_id
+            or pair["protocol_version"] != decision.protocol_version
+            or task["evaluation_profile_version"] != decision.evaluation_version
+            or pair["scope_type"] != decision.scope_type.value
+            or int(pair["chapter_start"]) != decision.chapter_start
+            or int(pair["chapter_end"]) != decision.chapter_end
+        ):
+            raise KernelError(
+                "BLIND_DECISION_SCOPE_MISMATCH",
+                "decision differs from its assigned blinded pair",
+            )
+        preferred = (
+            pair["left_asset_version_id"]
+            if decision.choice is PreferenceChoice.A
+            else pair["right_asset_version_id"]
+            if decision.choice is PreferenceChoice.B
+            else None
+        )
+        scores = {
+            dimension: dict(value)
+            for dimension, value in decision.dimension_scores.items()
+        }
+        reviewer_group = (
+            "EDITOR"
+            if decision.evaluator_identity_class.value
+            in {"PROFESSIONAL_EDITOR", "AUTHOR_EDITOR"}
+            else "READER"
+        )
+        operation_id = self._execute(
+            "reader.preference.decision.record",
+            project_id=pair["project_id"],
+            workspace_id=f"workspace:{pair['project_id']}",
+            idempotency_key=f"{pair['pair_id']}:{decision.reviewer_id}",
+            payload={
+                "pair_token": decision.pair_token,
+                "reviewer_group": reviewer_group,
+                "choice": decision.choice.value,
+                "dimension_scores": scores,
+                "confidence": decision.confidence,
+                "rationale": decision.rationale,
+                "evidence_spans": list(decision.evidence_spans),
+                "protocol_version": decision.protocol_version,
+                "evaluation_version": decision.evaluation_version,
+            },
+            input_assets=(),
+            principal=principal,
+        )
+        decision_id = f"preference-decision:{operation_id}"
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO human_preference_decision(
+                    decision_id, pair_id, project_id, reviewer_id,
+                    reviewer_group, choice, preferred_asset_version_id,
+                    evidence_spans, confidence, annotation_reason,
+                    position_revealed_after_decision,
+                    decision_operation_id, pack_id, protocol_version,
+                    evaluation_version, evaluator_identity_class,
+                    scope_type, dimension_scores, adjudication_status,
+                    submitted_at
+                ) VALUES (
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,%s,%s,%s,%s,%s,
+                    %s,%s,'UNREVIEWED',NOW()
+                )
+                ON CONFLICT(pair_id, reviewer_id) DO NOTHING
+                """,
+                [
+                    decision_id,
+                    pair["pair_id"],
+                    pair["project_id"],
+                    decision.reviewer_id,
+                    reviewer_group,
+                    decision.choice.value,
+                    preferred,
+                    Jsonb(list(decision.evidence_spans)),
+                    decision.confidence,
+                    decision.rationale,
+                    operation_id,
+                    pair["pack_id"],
+                    decision.protocol_version,
+                    decision.evaluation_version,
+                    decision.evaluator_identity_class.value,
+                    decision.scope_type.value,
+                    Jsonb(scores),
+                ],
+            )
+            uow.cursor.execute(
+                """
+                SELECT decision_id, choice, confidence, dimension_scores,
+                       adjudication_status
+                FROM human_preference_decision
+                WHERE pair_id=%s AND reviewer_id=%s
+                """,
+                [pair["pair_id"], decision.reviewer_id],
+            )
+            row = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                UPDATE human_preference_evaluation_pack AS pack
+                SET status='COMPLETED', completed_at=NOW()
+                WHERE pack.pack_id=%s
+                  AND pack.pair_count=(
+                      SELECT COUNT(*)
+                      FROM human_preference_decision AS decision
+                      WHERE decision.pack_id=pack.pack_id
+                  )
+                """,
+                [pair["pack_id"]],
+            )
+            uow.commit()
+        return {
+            "decision_id": str(row[0]),
+            "pair_token": decision.pair_token,
+            "choice": str(row[1]),
+            "confidence": float(row[2]),
+            "dimension_scores": dict(row[3]),
+            "adjudication_status": str(row[4]),
+        }
+
+    def reviewer_decisions(
+        self,
+        *,
+        pack_id: str,
+        reviewer_id: str,
+        principal: Principal,
+    ) -> list[dict[str, Any]]:
+        pack = self._pack(pack_id)
+        principal.require("book.authority.execute", pack["project_id"])
+        if pack["reviewer_id"] != reviewer_id:
+            raise KernelError(
+                "BLIND_DECISION_REVIEWER_SCOPE_MISMATCH",
+                "an evaluator cannot read another evaluator's decisions",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT pair.blind_pair_token, decision.choice,
+                       decision.dimension_scores, decision.confidence,
+                       decision.annotation_reason, decision.evidence_spans,
+                       decision.adjudication_status
+                FROM human_preference_decision AS decision
+                JOIN human_preference_pair AS pair
+                  ON pair.pair_id=decision.pair_id
+                WHERE decision.pack_id=%s AND decision.reviewer_id=%s
+                ORDER BY pair.pair_ordinal
+                """,
+                [pack_id, reviewer_id],
+            )
+            fields = (
+                "pair_token",
+                "choice",
+                "dimension_scores",
+                "confidence",
+                "rationale",
+                "evidence_spans",
+                "adjudication_status",
+            )
+            return [dict(zip(fields, row, strict=True)) for row in uow.cursor.fetchall()]
+
+    def adjudicate_blind_subject(
+        self,
+        *,
+        task_id: str,
+        subject_id: str,
+        adjudicator_id: str,
+        resolved_choice: PreferenceChoice | None,
+        rationale: str,
+        dimension_scores: dict[str, Any],
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Append an adjudication without modifying either raw human decision."""
+
+        task = self._task(task_id)
+        principal.require("book.authority.execute", task["project_id"])
+        if not adjudicator_id or not rationale.strip():
+            raise ValueError("adjudication identity and rationale are required")
+        if resolved_choice is PreferenceChoice.REJECT_BOTH:
+            raise ValueError("REJECT_BOTH is historical-only")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT decision.decision_id, decision.choice,
+                       decision.preferred_asset_version_id,
+                       decision.dimension_scores
+                FROM human_preference_decision AS decision
+                JOIN human_preference_pair AS pair
+                  ON pair.pair_id=decision.pair_id
+                WHERE pair.task_id=%s AND pair.subject_id=%s
+                ORDER BY decision.reviewer_id
+                """,
+                [task_id, subject_id],
+            )
+            raw_rows = uow.cursor.fetchall()
+        if len(raw_rows) < 2:
+            raise KernelError(
+                "BLIND_ADJUDICATION_DECISIONS_REQUIRED",
+                "adjudication requires two independent human decisions",
+            )
+        source_ids = [str(row[0]) for row in raw_rows]
+        raw_preferences = {
+            (str(row[1]), str(row[2] or "")) for row in raw_rows
+        }
+        if resolved_choice is not None:
+            status = "ADJUDICATED"
+        elif len(raw_preferences) == 1:
+            status = "AGREED"
+        else:
+            status = "DISAGREED"
+        payload = {
+            "task_id": task_id,
+            "subject_id": subject_id,
+            "status": status,
+            "resolved_choice": (
+                resolved_choice.value if resolved_choice is not None else None
+            ),
+            "dimension_scores": dimension_scores,
+            "source_decision_ids": source_ids,
+            "adjudicator_id": adjudicator_id,
+            "evidence_class": "SUBJECTIVE_ADJUDICATION_NOT_GROUND_TRUTH",
+            "rationale": rationale,
+            "protocol_version": task["protocol_version"],
+            "evaluation_version": task["evaluation_profile_version"],
+        }
+        operation_id = self._execute(
+            "reader.preference.adjudication.record",
+            project_id=task["project_id"],
+            workspace_id=f"workspace:{task['project_id']}",
+            idempotency_key=f"{task_id}:{subject_id}:adjudication:v1",
+            payload=payload,
+            input_assets=(),
+            principal=principal,
+        )
+        output = self._output(operation_id, "reader.preference.adjudication")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO human_preference_adjudication(
+                    adjudication_id, campaign_id, task_id, subject_id,
+                    project_id, protocol_version, evaluation_version,
+                    status, resolved_choice, dimension_scores,
+                    source_decision_ids, adjudicator_id,
+                    evaluator_identity_class, rationale,
+                    adjudication_asset_version_id,
+                    adjudication_content_hash, adjudication_operation_id
+                ) VALUES (
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                    'PROFESSIONAL_EDITOR',%s,%s,%s,%s
+                )
+                ON CONFLICT(task_id, subject_id) DO NOTHING
+                """,
+                [
+                    f"preference-adjudication:{operation_id}",
+                    task["campaign_id"],
+                    task_id,
+                    subject_id,
+                    task["project_id"],
+                    task["protocol_version"],
+                    task["evaluation_profile_version"],
+                    status,
+                    resolved_choice.value if resolved_choice is not None else None,
+                    Jsonb(dimension_scores),
+                    Jsonb(source_ids),
+                    adjudicator_id,
+                    rationale,
+                    output["asset_version_id"],
+                    output["content_hash"],
+                    operation_id,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE human_preference_decision
+                SET adjudication_status=%s
+                WHERE decision_id=ANY(%s)
+                  AND adjudication_status IN (
+                      'UNREVIEWED','AGREED','DISAGREED','ADJUDICATED'
+                  )
+                """,
+                [status, source_ids],
+            )
+            uow.cursor.execute(
+                """
+                SELECT adjudication_id, status, resolved_choice,
+                       source_decision_ids, evidence_class
+                FROM (
+                    SELECT adjudication_id, status, resolved_choice,
+                           source_decision_ids,
+                           'SUBJECTIVE_ADJUDICATION_NOT_GROUND_TRUTH' AS evidence_class
+                    FROM human_preference_adjudication
+                    WHERE task_id=%s AND subject_id=%s
+                ) AS recorded
+                """,
+                [task_id, subject_id],
+            )
+            row = uow.cursor.fetchone()
+            uow.commit()
+        fields = (
+            "adjudication_id",
+            "status",
+            "resolved_choice",
+            "source_decision_ids",
+            "evidence_class",
+        )
+        return dict(zip(fields, row, strict=True))
 
     def record_preference_decision(
         self,
@@ -1128,7 +1750,9 @@ class PostgresReaderCalibrationAuthority:
             uow.cursor.execute(
                 """
                 SELECT task_id, project_id, book_id, reader_segment,
-                       evidence_level, status
+                       evidence_level, status, campaign_id,
+                       protocol_version, evaluation_profile_version,
+                       required_evaluator_count, blind_pack_status
                 FROM human_preference_task WHERE task_id=%s
                 """,
                 [task_id],
@@ -1147,6 +1771,11 @@ class PostgresReaderCalibrationAuthority:
                     "reader_segment",
                     "evidence_level",
                     "status",
+                    "campaign_id",
+                    "protocol_version",
+                    "evaluation_profile_version",
+                    "required_evaluator_count",
+                    "blind_pack_status",
                 ),
                 row,
                 strict=True,
@@ -1160,7 +1789,11 @@ class PostgresReaderCalibrationAuthority:
                 SELECT pair_id, task_id, project_id, canonical_pair_key,
                        asset_a_version_id, asset_b_version_id,
                        left_asset_version_id, right_asset_version_id,
-                       presentation_order
+                       presentation_order, subject_id, pack_id,
+                       protocol_version, scope_type, chapter_start,
+                       chapter_end, arc_plan_version_ids, pair_ordinal,
+                       assigned_reviewer_id, blind_pair_token,
+                       private_mapping_hash
                 FROM human_preference_pair WHERE pair_id=%s
                 """,
                 [pair_id],
@@ -1181,7 +1814,11 @@ class PostgresReaderCalibrationAuthority:
                 SELECT pair_id, task_id, project_id, canonical_pair_key,
                        asset_a_version_id, asset_b_version_id,
                        left_asset_version_id, right_asset_version_id,
-                       presentation_order
+                       presentation_order, subject_id, pack_id,
+                       protocol_version, scope_type, chapter_start,
+                       chapter_end, arc_plan_version_ids, pair_ordinal,
+                       assigned_reviewer_id, blind_pair_token,
+                       private_mapping_hash
                 FROM human_preference_pair
                 WHERE task_id=%s AND canonical_pair_key=%s
                   AND presentation_order=%s
@@ -1202,6 +1839,108 @@ class PostgresReaderCalibrationAuthority:
             "left_asset_version_id",
             "right_asset_version_id",
             "presentation_order",
+            "subject_id",
+            "pack_id",
+            "protocol_version",
+            "scope_type",
+            "chapter_start",
+            "chapter_end",
+            "arc_plan_version_ids",
+            "pair_ordinal",
+            "assigned_reviewer_id",
+            "blind_pair_token",
+            "private_mapping_hash",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def _pair_by_token(self, pair_token: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT pair_id, task_id, project_id, canonical_pair_key,
+                       asset_a_version_id, asset_b_version_id,
+                       left_asset_version_id, right_asset_version_id,
+                       presentation_order, subject_id, pack_id,
+                       protocol_version, scope_type, chapter_start,
+                       chapter_end, arc_plan_version_ids, pair_ordinal,
+                       assigned_reviewer_id, blind_pair_token,
+                       private_mapping_hash
+                FROM human_preference_pair
+                WHERE blind_pair_token=%s
+                """,
+                [pair_token],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "PREFERENCE_PAIR_NOT_FOUND", "blinded pair token does not exist"
+            )
+        return self._pair_row(row)
+
+    def _qualification_subject(self, subject_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT subject_id, campaign_id, project_id, scope_type,
+                       chapter_start, chapter_end, arc_plan_version_ids,
+                       canonical_asset_version_id, baseline_asset_version_id
+                FROM authority_quality_qualification_subject
+                WHERE subject_id=%s
+                """,
+                [subject_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "QUALITY_QUALIFICATION_SUBJECT_NOT_FOUND",
+                "blind pair subject is not registered",
+            )
+        fields = (
+            "subject_id",
+            "campaign_id",
+            "project_id",
+            "scope_type",
+            "chapter_start",
+            "chapter_end",
+            "arc_plan_version_ids",
+            "canonical_asset_version_id",
+            "baseline_asset_version_id",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def _pack(self, pack_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT pack_id, task_id, campaign_id, project_id,
+                       reviewer_id, evaluator_identity_class,
+                       protocol_version, evaluation_profile_version,
+                       pack_asset_version_id, pack_content_hash,
+                       private_mapping_hash, pair_count, status
+                FROM human_preference_evaluation_pack
+                WHERE pack_id=%s
+                """,
+                [pack_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BLIND_PACK_NOT_FOUND", "blind evaluation pack does not exist"
+            )
+        fields = (
+            "pack_id",
+            "task_id",
+            "campaign_id",
+            "project_id",
+            "reviewer_id",
+            "evaluator_identity_class",
+            "protocol_version",
+            "evaluation_profile_version",
+            "pack_asset_version_id",
+            "pack_content_hash",
+            "private_mapping_hash",
+            "pair_count",
+            "status",
         )
         return dict(zip(fields, row, strict=True))
 
