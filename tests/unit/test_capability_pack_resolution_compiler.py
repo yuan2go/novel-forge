@@ -44,7 +44,9 @@ from novel_forge.modules.chapter_authority.definitions import (
     chapter_operation_definitions,
 )
 from novel_forge.modules.command_kernel.lifecycle import AttemptStatus, OperationStatus
-from novel_forge.modules.production_execution.capability_registry import default_capability_registry
+from novel_forge.modules.production_execution.capability_registry import (
+    default_capability_registry,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -139,7 +141,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
         compiled = result.compiled
         assert compiled is not None
         node_ids = {node.node_id for node in compiled.workflow_nodes}
-        self.assertEqual(len(node_ids), 21)
+        self.assertEqual(len(node_ids), 22)
         self.assertTrue(
             {"execution_intent", "memo", "best_candidate"}.issubset(node_ids)
         )
@@ -178,9 +180,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
         ).compiled
         reversed_result = self.compile(
             manifest,
-            artifact_resolver=ExplicitArtifactResolver(
-                reversed(resolver.artifacts())
-            ),
+            artifact_resolver=ExplicitArtifactResolver(reversed(resolver.artifacts())),
         ).compiled
         self.assertEqual(normal.compilation_hash, reversed_result.compilation_hash)
 
@@ -295,16 +295,18 @@ class CapabilityPackP1ATests(unittest.TestCase):
             {"commit_sha": "f" * 40},
         )
         for change in changes:
-            with self.subTest(change=change), self.assertRaisesRegex(
-                ValueError, "different full snapshot"
+            with (
+                self.subTest(change=change),
+                self.assertRaisesRegex(ValueError, "different full snapshot"),
             ):
                 InMemoryOperationDefinitionCatalog((row, {**row, **change}))
 
     def test_operation_enabled_requires_exact_boolean(self) -> None:
         row = self.operation_rows()[0]
         for invalid in ("false", 0, None):
-            with self.subTest(invalid=invalid), self.assertRaisesRegex(
-                TypeError, "exact boolean"
+            with (
+                self.subTest(invalid=invalid),
+                self.assertRaisesRegex(TypeError, "exact boolean"),
             ):
                 InMemoryOperationDefinitionCatalog(({**row, "enabled": invalid},))
 
@@ -356,9 +358,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
     def test_operation_snapshot_release_sha_mismatch_is_rejected(self) -> None:
         catalog = chapter_operation_definition_catalog(release_sha="f" * 40)
         result = self.compile(operation_catalog=catalog)
-        self.assertIn(
-            "CAPABILITY_PACK_RELEASE_IDENTITY_CONFLICT", self.codes(result)
-        )
+        self.assertIn("CAPABILITY_PACK_RELEASE_IDENTITY_CONFLICT", self.codes(result))
 
     def test_skill_real_content_hash_is_verified(self) -> None:
         manifest = self.manifest()
@@ -475,15 +475,20 @@ class CapabilityPackP1ATests(unittest.TestCase):
                 )
 
     def test_resolution_does_not_use_network_or_environment(self) -> None:
-        with mock.patch("os.getenv", side_effect=AssertionError("environment read")), mock.patch(
-            "urllib.request.urlopen", side_effect=AssertionError("network read")
+        with (
+            mock.patch("os.getenv", side_effect=AssertionError("environment read")),
+            mock.patch(
+                "urllib.request.urlopen", side_effect=AssertionError("network read")
+            ),
         ):
             result = self.compile()
         self.assertTrue(result.report.ok, result.report.errors)
 
     def test_workflow_input_without_producer_is_rejected(self) -> None:
         payload = self.payload()
-        payload["workflow_template"]["nodes"][2]["input_asset_types"].append("missing_asset")
+        payload["workflow_template"]["nodes"][2]["input_asset_types"].append(
+            "missing_asset"
+        )
         self.assertIn(
             "CAPABILITY_PACK_WORKFLOW_INPUT_UNSATISFIED",
             self.codes(self.compile(self.manifest(payload))),
@@ -491,16 +496,16 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_workflow_cycle_returns_structured_compilation_report(self) -> None:
         payload = self.payload()
-        payload["workflow_template"]["nodes"][0]["depends_on"] = [
-            "final_release_gate"
-        ]
+        payload["workflow_template"]["nodes"][0]["depends_on"] = ["final_release_gate"]
         result = self.compile(self.manifest(payload))
         self.assertIsNone(result.compiled)
         self.assertIn("CAPABILITY_PACK_WORKFLOW_CYCLE", self.codes(result))
 
     def test_completion_output_without_producer_is_rejected(self) -> None:
         payload = self.payload()
-        payload["workflow_template"]["completion"]["required_output_asset_types"].append("missing_asset")
+        payload["workflow_template"]["completion"][
+            "required_output_asset_types"
+        ].append("missing_asset")
         self.assertIn(
             "CAPABILITY_PACK_COMPLETION_OUTPUT_UNPRODUCED",
             self.codes(self.compile(self.manifest(payload))),
@@ -508,7 +513,9 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_evaluation_evidence_without_producer_is_rejected(self) -> None:
         payload = self.payload()
-        payload["evaluation"]["required_gates"][0]["required_evidence"] = ["missing_evidence"]
+        payload["evaluation"]["required_gates"][0]["required_evidence"] = [
+            "missing_evidence"
+        ]
         self.assertIn(
             "CAPABILITY_PACK_EVALUATION_EVIDENCE_UNPRODUCED",
             self.codes(self.compile(self.manifest(payload))),
@@ -571,17 +578,18 @@ class CapabilityPackP1ATests(unittest.TestCase):
             manifest,
             pack_catalog=ReadOnlyPackCatalog((PackCatalogEntry(catalog_manifest),)),
         )
-        self.assertIn(
-            "CAPABILITY_PACK_CATALOG_IDENTITY_CONFLICT", self.codes(result)
-        )
+        self.assertIn("CAPABILITY_PACK_CATALOG_IDENTITY_CONFLICT", self.codes(result))
 
     def test_compile_creates_no_authority_or_provider_state(self) -> None:
-        with mock.patch(
-            "novel_forge.storage.authority_uow.AuthorityUnitOfWork",
-            side_effect=AssertionError("database access"),
-        ), mock.patch(
-            "novel_forge.modules.production_execution.gateway.ProductionExecutionGateway.submit",
-            side_effect=AssertionError("Provider execution"),
+        with (
+            mock.patch(
+                "novel_forge.storage.authority_uow.AuthorityUnitOfWork",
+                side_effect=AssertionError("database access"),
+            ),
+            mock.patch(
+                "novel_forge.modules.production_execution.gateway.ProductionExecutionGateway.submit",
+                side_effect=AssertionError("Provider execution"),
+            ),
         ):
             result = self.compile()
         self.assertTrue(result.report.ok, result.report.errors)
@@ -621,9 +629,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_pack_identity_with_different_dependencies_is_rejected(self) -> None:
         manifest = self.manifest()
-        with self.assertRaisesRegex(
-            ValueError, "different manifest or dependencies"
-        ):
+        with self.assertRaisesRegex(ValueError, "different manifest or dependencies"):
             ReadOnlyPackCatalog(
                 (
                     PackCatalogEntry(manifest),
@@ -641,8 +647,9 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_floating_reference_aliases_are_rejected(self) -> None:
         for alias in ("latest", "stable", "main", "HEAD", "nightly"):
-            with self.subTest(alias=alias), self.assertRaisesRegex(
-                ValueError, "floating"
+            with (
+                self.subTest(alias=alias),
+                self.assertRaisesRegex(ValueError, "floating"),
             ):
                 exact_ref_version(f"schema:chapter-plan:{alias}")
 

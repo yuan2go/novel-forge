@@ -120,7 +120,7 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
     def _seed_inputs(project_id: str) -> list[dict[str, str]]:
         payloads = {
             "chapter_plan": {"project_id": project_id, "chapter": 1},
-            "draft_version": {"project_id": project_id, "chapter": 1},
+            "best_draft_candidate": {"project_id": project_id, "chapter": 1},
             "re_review_report": {
                 "decision": "PASSED",
                 "blocking_issue_count": 0,
@@ -149,9 +149,7 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
                 },
             },
             "quality_score_report": {"gate": "PASSED"},
-            "release_package": {
-                "release_status": "READY_FOR_BLOB_VERIFICATION"
-            },
+            "release_package": {"release_status": "READY_FOR_BLOB_VERIFICATION"},
             "final_release_gate_report": {
                 "gate": "PASSED",
                 "release_status": "INTERNAL_RELEASE_FINALIZED",
@@ -160,16 +158,17 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
         }
         references: list[dict[str, str]] = []
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            for index, (asset_type, content) in enumerate(
-                payloads.items(), start=1
-            ):
+            for index, (asset_type, content) in enumerate(payloads.items(), start=1):
                 asset_id = f"{project_id}:{asset_type}"
                 version_id = f"{asset_id}:v1"
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(
-                        content, sort_keys=True, separators=(",", ":")
-                    ).encode()
-                ).hexdigest()
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 uow.cursor.execute(
                     """
                     INSERT INTO authority_asset(asset_id, project_id, asset_type)

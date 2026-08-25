@@ -879,6 +879,7 @@ class CapabilityPackPostgresHarness:
                 )
 
     def _chapter_plan_candidate(self, chapter_number: int) -> dict[str, Any]:
+        arc_plan_version_id = f"{self.project_id}:fixture-arc-plan-v1"
         content = {
             "project_id": self.project_id,
             "chapter": chapter_number,
@@ -887,6 +888,32 @@ class CapabilityPackPostgresHarness:
             "chapter_objective": "Make one irreversible public choice.",
             "scene_sequence": [
                 {"scene_id": "scene-1", "goal": "preserve the frozen choice"}
+            ],
+            "required_arc_contributions": [
+                {
+                    "arc_plan_version_id": arc_plan_version_id,
+                    "contribution": "ADVANCE",
+                }
+            ],
+            "constraint_envelope": {
+                "arc_working_set": {
+                    "selected_contributions": [
+                        {
+                            "arc_plan_version_id": arc_plan_version_id,
+                            "role": "PRIMARY",
+                            "action": "ADVANCE",
+                        }
+                    ]
+                }
+            },
+            "scene_plan": [
+                {
+                    "scene_id": "scene-1",
+                    "goal": "preserve the frozen choice",
+                    "conflict": "recovery pressure threatens the public choice",
+                    "arc_progress": [arc_plan_version_id],
+                    "beats": ["pressure", "choice", "durable consequence"],
+                }
             ],
             "chapter_hook": "Recovery proves the choice was not re-resolved.",
         }

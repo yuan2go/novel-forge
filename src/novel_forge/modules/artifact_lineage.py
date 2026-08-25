@@ -36,6 +36,21 @@ ACCEPTED_HISTORY_TYPES = frozenset(
     }
 )
 
+# These observations and decisions are immutable evidence about an accepted
+# boundary.  They are not Story Authority, but a future PlanChange must not
+# retroactively invalidate them or propagate through them into the replacement
+# future that they justified.
+IMMUTABLE_NARRATIVE_EVIDENCE_TYPES = frozenset(
+    {
+        "reader_outcome_report",
+        "reader_state_transition",
+        "reader_issue_set",
+        "longform_recap",
+        "replan_request",
+    }
+)
+IMMUTABLE_HISTORY_TYPES = ACCEPTED_HISTORY_TYPES | IMMUTABLE_NARRATIVE_EVIDENCE_TYPES
+
 
 @dataclass(frozen=True, slots=True)
 class ArtifactLineageEdge:
@@ -145,9 +160,7 @@ class PostgresArtifactLineageRepository:
             [edge.lineage_edge_id],
         )
         row = self.cursor.fetchone()
-        if row is None or (
-            str(row[0]), tuple(row[1] or ()), str(row[2])
-        ) != (
+        if row is None or (str(row[0]), tuple(row[1] or ()), str(row[2])) != (
             edge.invalidation_policy.value,
             edge.semantic_dimensions,
             edge.context_fingerprint,
@@ -193,6 +206,22 @@ class PostgresArtifactLineageRepository:
                  AND edge.upstream_asset_version_id=impact.target_id
                 WHERE edge.invalidation_policy<>'INFORMATIONAL'
                   AND edge.semantic_dimensions ?| %s::TEXT[]
+                  AND impact.invalidation_policy<>'IMMUNE_ACCEPTED_HISTORY'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM authority_asset_version AS boundary_version
+                      JOIN authority_asset AS boundary_asset
+                        ON boundary_asset.asset_id=boundary_version.asset_id
+                      WHERE boundary_version.asset_version_id=impact.target_id
+                        AND boundary_asset.asset_type=ANY(%s::TEXT[])
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM story_plan_binding AS boundary_binding
+                      WHERE boundary_binding.project_id=%s
+                        AND boundary_binding.asset_version_id=impact.target_id
+                        AND boundary_binding.execution_scope='EXECUTED'
+                  )
                   AND NOT edge.downstream_asset_version_id=ANY(impact.path)
             )
             SELECT DISTINCT ON (impact.target_id)
@@ -214,6 +243,8 @@ class PostgresArtifactLineageRepository:
                 list(semantic_diff.dimensions),
                 project_id,
                 list(semantic_diff.dimensions),
+                list(IMMUTABLE_HISTORY_TYPES),
+                project_id,
                 project_id,
             ],
         )
@@ -228,12 +259,10 @@ class PostgresArtifactLineageRepository:
             policy = InvalidationPolicy(str(raw_policy))
             immutable = (
                 policy is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
-                or str(asset_type) in ACCEPTED_HISTORY_TYPES
+                or str(asset_type) in IMMUTABLE_HISTORY_TYPES
                 or str(execution_scope) == "EXECUTED"
             )
-            status = (
-                InvalidationStatus.IMMUNE if immutable else InvalidationStatus.OPEN
-            )
+            status = InvalidationStatus.IMMUNE if immutable else InvalidationStatus.OPEN
             invalidation_id = str(
                 uuid5(
                     NAMESPACE_URL,
@@ -324,14 +353,15 @@ class PostgresArtifactLineageRepository:
         )
         if self.cursor.rowcount != 1:
             raise KernelError(
-                "ARTIFACT_INVALIDATION_CAS_CONFLICT", "invalidation changed concurrently"
+                "ARTIFACT_INVALIDATION_CAS_CONFLICT",
+                "invalidation changed concurrently",
             )
 
 
 def lineage_policy_for(asset_type: str) -> InvalidationPolicy:
     return (
         InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
-        if asset_type in ACCEPTED_HISTORY_TYPES
+        if asset_type in IMMUTABLE_HISTORY_TYPES
         else InvalidationPolicy.REQUALIFY
         if asset_type in {"context_bundle", "context_manifest"}
         else InvalidationPolicy.PROPAGATE
@@ -364,6 +394,8 @@ def semantic_dimensions_for(asset_types: tuple[str, ...]) -> tuple[str, ...]:
 
 __all__ = [
     "ACCEPTED_HISTORY_TYPES",
+    "IMMUTABLE_HISTORY_TYPES",
+    "IMMUTABLE_NARRATIVE_EVIDENCE_TYPES",
     "ArtifactLineageEdge",
     "InvalidationPolicy",
     "InvalidationStatus",

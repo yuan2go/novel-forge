@@ -23,7 +23,7 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.8.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.9.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.8.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -173,6 +173,11 @@ class StoryPlanningGenerationCommand:
     auto_approve_low_risk: bool = False
     parent_agent_session_operation_id: str = ""
     arc_working_set: Mapping[str, Any] | None = None
+    narrative_search_id: str = ""
+    narrative_search_branch_key: str = ""
+    narrative_search_parent_state_asset_version_id: str = ""
+    narrative_search_accepted_through_chapter: int = 0
+    narrative_search_strategy_directive: str = ""
 
     def __post_init__(self) -> None:
         required = (
@@ -324,6 +329,36 @@ class StoryPlanningGenerationCommand:
             raise ValueError(
                 "Planning generation cannot have both repair and Agent parent causation"
             )
+        search_values = (
+            self.narrative_search_id,
+            self.narrative_search_branch_key,
+            self.narrative_search_strategy_directive,
+        )
+        if any(search_values) and not all(str(item).strip() for item in search_values):
+            raise ValueError("Narrative Search identity and strategy must be complete")
+        if self.narrative_search_id:
+            if self.generator_operation_name == "chapter_plan.generate":
+                raise ValueError("Chapter planning is operational, not a Search scope")
+            if self.auto_approve_low_risk:
+                raise ValueError(
+                    "Narrative Search candidates must stop before approval/activation"
+                )
+            if self.narrative_search_accepted_through_chapter < 0:
+                raise ValueError(
+                    "Narrative Search accepted boundary cannot be negative"
+                )
+            if (
+                self.narrative_search_accepted_through_chapter > 0
+                and not self.narrative_search_parent_state_asset_version_id
+            ):
+                raise ValueError(
+                    "continuing Narrative Search requires exact accepted parent state"
+                )
+        elif (
+            self.narrative_search_parent_state_asset_version_id
+            or self.narrative_search_accepted_through_chapter
+        ):
+            raise ValueError("Narrative Search parent state cannot be supplied alone")
 
     @property
     def planning_scope(self) -> PlanningScope:
@@ -903,7 +938,10 @@ def canonical_hash(value: Any) -> str:
 
 def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
     planning_roles = {
-        role for role in roles if not role.startswith("narrative_governance_action:")
+        role
+        for role in roles
+        if not role.startswith("narrative_governance_action:")
+        and role != "narrative_search_parent_state"
     }
     if not planning_roles:
         return True

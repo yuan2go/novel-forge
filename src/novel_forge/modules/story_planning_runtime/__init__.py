@@ -38,6 +38,18 @@ from .domain import (
     canonical_hash,
 )
 from .execution import PlanningExecutionRoute, PostgresPlanningExecutionPreparer
+from .narrative_search import (
+    NarrativeSearchCandidate,
+    NarrativeSearchComparison,
+    NarrativeSearchProjection,
+    NarrativeSearchStatus,
+    compare_narrative_futures,
+)
+from .search_application import (
+    NarrativeSearchRequest,
+    NarrativeSearchResult,
+    PostgresNarrativeSearchApplication,
+)
 
 __all__ = [
     "GENERATOR_INPUT_ROLES",
@@ -61,6 +73,13 @@ __all__ = [
     "PlanningGenerationStatus",
     "PlanningRepairRequest",
     "PlanningValidationReport",
+    "NarrativeSearchCandidate",
+    "NarrativeSearchComparison",
+    "NarrativeSearchProjection",
+    "NarrativeSearchRequest",
+    "NarrativeSearchResult",
+    "NarrativeSearchStatus",
+    "PostgresNarrativeSearchApplication",
     "STORY_PLANNING_MAX_ATTEMPTS",
     "STORY_PLANNING_OPERATION_DEFINITION_REF",
     "STORY_PLANNING_OPERATION_TIMEOUT_SECONDS",
@@ -73,6 +92,7 @@ __all__ = [
     "StoryPlanningGenerationApplication",
     "StoryPlanningGenerationHandlerRegistry",
     "build_planning_constraint_envelope",
+    "compare_narrative_futures",
     "canonical_hash",
     "story_planning_generation_definition",
 ]

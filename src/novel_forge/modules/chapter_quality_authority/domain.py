@@ -4,6 +4,7 @@ Deterministic checks only decide properties they can actually observe.  Semantic
 dimensions require a versioned calibrated evidence asset and otherwise fail
 closed with an explicit non-passing status.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -16,41 +17,92 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 QUALITY_GROUPS: dict[str, tuple[str, ...]] = {
     "structural": (
-        "readability", "mobile_reading", "chapter_economy", "basic_prose_integrity",
-        "scene_completeness", "dialogue_narration_balance", "paragraph_structure",
-        "repetition", "summary_like_prose",
+        "readability",
+        "mobile_reading",
+        "chapter_economy",
+        "basic_prose_integrity",
+        "scene_completeness",
+        "dialogue_narration_balance",
+        "paragraph_structure",
+        "repetition",
+        "summary_like_prose",
     ),
     "commercial": (
-        "golden_opening", "reader_promise", "reward", "protagonist_charm",
-        "antagonist_pressure", "toxic_point", "chapter_hook", "suspense_progression",
-        "emotional_curve", "serialization_function",
+        "golden_opening",
+        "reader_promise",
+        "reward",
+        "protagonist_charm",
+        "antagonist_pressure",
+        "toxic_point",
+        "chapter_hook",
+        "suspense_progression",
+        "emotional_curve",
+        "serialization_function",
     ),
     "source_originality": (
-        "source_leakage", "originality", "anti_ai", "style_drift", "copyright_boundary",
+        "source_leakage",
+        "originality",
+        "anti_ai",
+        "style_drift",
+        "copyright_boundary",
     ),
     "longform": (
-        "canon_consistency", "character_motivation_drift", "relationship_continuity",
-        "timeline_consistency", "foreshadow_status", "promise_payoff_debt",
-        "world_rule_conflict", "power_state_conflict", "narrative_pattern_repetition",
+        "canon_consistency",
+        "character_motivation_drift",
+        "relationship_continuity",
+        "timeline_consistency",
+        "foreshadow_status",
+        "promise_payoff_debt",
+        "world_rule_conflict",
+        "power_state_conflict",
+        "narrative_pattern_repetition",
         "arc_progress",
     ),
     "platform": (
-        "chapter_length", "format", "sensitive_content", "ai_content_policy",
-        "opening_expectations", "platform_rhythm", "publish_metadata",
+        "chapter_length",
+        "format",
+        "sensitive_content",
+        "ai_content_policy",
+        "opening_expectations",
+        "platform_rhythm",
+        "publish_metadata",
     ),
 }
-QUALITY_DIMENSIONS = tuple(item for values in QUALITY_GROUPS.values() for item in values)
-QUALITY_EVIDENCE_STATUSES = frozenset({
-    "PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED", "FAILED", "UNCALIBRATED",
-    "INSUFFICIENT_EVIDENCE", "REQUIRES_PROVIDER_JUDGE", "REQUIRES_HUMAN_REVIEW",
-    "WAIVED_BY_APPROVAL",
-})
-BLOCKING_DIMENSIONS = frozenset({
-    "readability", "basic_prose_integrity", "source_leakage", "originality", "anti_ai",
-    "copyright_boundary", "canon_consistency", "timeline_consistency", "world_rule_conflict",
-    "power_state_conflict", "chapter_length", "format", "sensitive_content",
-    "ai_content_policy", "publish_metadata",
-})
+QUALITY_DIMENSIONS = tuple(
+    item for values in QUALITY_GROUPS.values() for item in values
+)
+QUALITY_EVIDENCE_STATUSES = frozenset(
+    {
+        "PASSED",
+        "PASSED_WITH_WARNINGS",
+        "PASSED_WITH_UNCALIBRATED",
+        "FAILED",
+        "UNCALIBRATED",
+        "INSUFFICIENT_EVIDENCE",
+        "REQUIRES_PROVIDER_JUDGE",
+        "REQUIRES_HUMAN_REVIEW",
+        "WAIVED_BY_APPROVAL",
+    }
+)
+BLOCKING_DIMENSIONS = frozenset(
+    {
+        "readability",
+        "basic_prose_integrity",
+        "source_leakage",
+        "originality",
+        "anti_ai",
+        "copyright_boundary",
+        "canon_consistency",
+        "timeline_consistency",
+        "world_rule_conflict",
+        "power_state_conflict",
+        "chapter_length",
+        "format",
+        "sensitive_content",
+        "ai_content_policy",
+        "publish_metadata",
+    }
+)
 LONGITUDINAL_QUALITY_DIMENSIONS = (
     "arc_dormancy",
     "hook_repetition",
@@ -65,31 +117,62 @@ QUALITY_SCALES = ("BOOK", "VOLUME", "ARC", "SEGMENT", "CHAPTER", "SCENE")
 
 
 def build_quality_group_evidence(
-    *, group: str, project_id: str, revision: dict[str, Any],
-    revision_asset_version_id: str, context_bundle: dict[str, Any],
-    canon: dict[str, Any], fixture: bool,
+    *,
+    group: str,
+    project_id: str,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    context_bundle: dict[str, Any],
+    canon: dict[str, Any],
+    fixture: bool,
 ) -> dict[str, Any]:
     if group not in QUALITY_GROUPS:
         raise KernelError("QUALITY_GROUP_INVALID", f"unknown quality group: {group}")
     text = str(revision.get("text") or "").strip()
     if not all((project_id, revision_asset_version_id, text)):
-        raise KernelError("QUALITY_EVIDENCE_INPUT_INVALID", "quality target lineage is incomplete")
+        raise KernelError(
+            "QUALITY_EVIDENCE_INPUT_INVALID", "quality target lineage is incomplete"
+        )
     metrics = _structural_metrics(text)
     segments = tuple(context_bundle.get("context_segments", ()))
     profile_ids = _profile_ids(context_bundle)
     reports = [
         _evaluate(
-            group=group, dimension=dimension, project_id=project_id,
-            target=revision_asset_version_id, metrics=metrics, segments=segments,
-            context_bundle=context_bundle, canon=canon, fixture=fixture,
+            group=group,
+            dimension=dimension,
+            project_id=project_id,
+            target=revision_asset_version_id,
+            metrics=metrics,
+            segments=segments,
+            context_bundle=context_bundle,
+            canon=canon,
+            fixture=fixture,
             profile_ids=profile_ids,
         )
         for dimension in QUALITY_GROUPS[group]
     ]
-    blocked = [item for item in reports if item["blocking"] and item["gate_status"] not in {"PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED", "WAIVED_BY_APPROVAL"}]
-    group_status = "FAILED" if any(item["gate_status"] == "FAILED" for item in blocked) else (
-        "INSUFFICIENT_EVIDENCE" if blocked else
-        "PASSED_WITH_WARNINGS" if any(item["gate_status"] != "PASSED" for item in reports) else "PASSED"
+    blocked = [
+        item
+        for item in reports
+        if item["blocking"]
+        and item["gate_status"]
+        not in {
+            "PASSED",
+            "PASSED_WITH_WARNINGS",
+            "PASSED_WITH_UNCALIBRATED",
+            "WAIVED_BY_APPROVAL",
+        }
+    ]
+    group_status = (
+        "FAILED"
+        if any(item["gate_status"] == "FAILED" for item in blocked)
+        else (
+            "INSUFFICIENT_EVIDENCE"
+            if blocked
+            else "PASSED_WITH_WARNINGS"
+            if any(item["gate_status"] != "PASSED" for item in reports)
+            else "PASSED"
+        )
     )
     return {
         "type": "ChapterQualityGroupReport",
@@ -142,9 +225,13 @@ def build_multiscale_quality_report(
         "LAST_10_CHAPTERS": observations[-10:],
         "LAST_30_CHAPTERS": observations[-30:],
     }
-    current_volume = str(observations[-1].get("volume_id") or "") if observations else ""
+    current_volume = (
+        str(observations[-1].get("volume_id") or "") if observations else ""
+    )
     windows["CURRENT_VOLUME"] = [
-        item for item in observations if current_volume and item.get("volume_id") == current_volume
+        item
+        for item in observations
+        if current_volume and item.get("volume_id") == current_volume
     ]
     scope_reports: list[dict[str, Any]] = [
         _quality_scope("BOOK", book_id, observations)
@@ -293,9 +380,7 @@ def _longitudinal_dimensions(
     character_gaps = _identity_max_gap(observations, "character_ids")
     hooks = [str(item.get("hook_signature") or "") for item in observations]
     hooks = [item for item in hooks if item]
-    hook_ratio = (
-        max(Counter(hooks).values()) / len(hooks) if hooks else None
-    )
+    hook_ratio = max(Counter(hooks).values()) / len(hooks) if hooks else None
     payoff_count = sum(int(item.get("payoff_count") or 0) for item in observations)
     payoff_density = payoff_count / len(observations)
     debt_values = [
@@ -304,9 +389,7 @@ def _longitudinal_dimensions(
         if isinstance(item.get("narrative_debt_score"), (int, float))
         and not isinstance(item.get("narrative_debt_score"), bool)
     ]
-    world_load = [
-        len(item.get("new_world_concept_ids") or []) for item in observations
-    ]
+    world_load = [len(item.get("new_world_concept_ids") or []) for item in observations]
     style_values = [
         float(item["average_sentence_length"])
         for item in observations
@@ -324,23 +407,23 @@ def _longitudinal_dimensions(
         "arc_dormancy": (max(arc_gaps.values(), default=0), 10, arc_gaps),
         "hook_repetition": (hook_ratio, 0.4, {"hook_count": len(hooks)}),
         "character_disappearance": (
-            max(character_gaps.values(), default=0), 10, character_gaps
+            max(character_gaps.values(), default=0),
+            10,
+            character_gaps,
         ),
-        "payoff_density": (
-            payoff_density, 0.1, {"payoff_count": payoff_count}
-        ),
+        "payoff_density": (payoff_density, 0.1, {"payoff_count": payoff_count}),
         "narrative_debt": (
             debt_values[-1] if debt_values else None,
             10.0,
             {"peak": max(debt_values) if debt_values else None},
         ),
         "world_expansion_rate": (
-            sum(world_load) / len(world_load), 3.0, {"new_concepts": sum(world_load)}
+            sum(world_load) / len(world_load),
+            3.0,
+            {"new_concepts": sum(world_load)},
         ),
         "style_prose_drift": (drift, 0.3, {"sample_size": len(style_values)}),
-        "reader_reward_rhythm": (
-            reward_gap, 5, {"reward_chapters": reward_chapters}
-        ),
+        "reader_reward_rhythm": (reward_gap, 5, {"reward_chapters": reward_chapters}),
     }
     reports: list[dict[str, Any]] = []
     for dimension in LONGITUDINAL_QUALITY_DIMENSIONS:
@@ -353,16 +436,17 @@ def _longitudinal_dimensions(
             status = "PASSED" if float(value) <= float(threshold) else "WARNING"
         reports.append(
             _longitudinal_result(
-                dimension, status, value, len(observations),
+                dimension,
+                status,
+                value,
+                len(observations),
                 {**evidence, "threshold": threshold},
             )
         )
     return reports
 
 
-def _identity_max_gap(
-    observations: list[dict[str, Any]], field: str
-) -> dict[str, int]:
+def _identity_max_gap(observations: list[dict[str, Any]], field: str) -> dict[str, int]:
     appearances: dict[str, list[int]] = {}
     for row in observations:
         for identity in row.get(field) or []:
@@ -431,9 +515,16 @@ def _longitudinal_result(
 
 
 def _evaluate(
-    *, group: str, dimension: str, project_id: str, target: str,
-    metrics: dict[str, Any], segments: tuple[dict[str, Any], ...],
-    context_bundle: dict[str, Any], canon: dict[str, Any], fixture: bool,
+    *,
+    group: str,
+    dimension: str,
+    project_id: str,
+    target: str,
+    metrics: dict[str, Any],
+    segments: tuple[dict[str, Any], ...],
+    context_bundle: dict[str, Any],
+    canon: dict[str, Any],
+    fixture: bool,
     profile_ids: dict[str, str],
 ) -> dict[str, Any]:
     calibrated = _calibrated_evidence(
@@ -442,7 +533,10 @@ def _evaluate(
     if calibrated is not None:
         status = str(calibrated.get("gate_status") or "INSUFFICIENT_EVIDENCE").upper()
         if status not in QUALITY_EVIDENCE_STATUSES:
-            raise KernelError("QUALITY_EVIDENCE_STATUS_INVALID", f"invalid {dimension} evidence status")
+            raise KernelError(
+                "QUALITY_EVIDENCE_STATUS_INVALID",
+                f"invalid {dimension} evidence status",
+            )
         waiver = None
         if status == "WAIVED_BY_APPROVAL":
             waiver = _approved_fixture_waiver(
@@ -456,12 +550,30 @@ def _evaluate(
                     "QUALITY_FIXTURE_WAIVER_INVALID",
                     f"{dimension} waiver lacks a current scoped approval",
                 )
+        elif fixture and status == "PASSED_WITH_UNCALIBRATED":
+            # A fixture Provider result remains non-production evidence.  It
+            # may close an internal corrective loop only through the exact,
+            # frozen operator waiver; a failed result is never converted.
+            waiver = _approved_fixture_waiver(
+                dimension,
+                segments,
+                project_id=project_id,
+                target_asset_version_id=target,
+            )
+            if waiver is not None:
+                status = "WAIVED_BY_APPROVAL"
         report = _report(
-            group, dimension, project_id, target, status,
-            score=calibrated.get("score"), calibration=str(calibrated["calibration_status"]),
+            group,
+            dimension,
+            project_id,
+            target,
+            status,
+            score=calibrated.get("score"),
+            calibration=str(calibrated["calibration_status"]),
             source=str(calibrated.get("evidence_source") or "authority_asset"),
             locations=list(calibrated.get("evidence_locations") or []),
-            fixture=fixture, profile_ids=profile_ids,
+            fixture=fixture,
+            profile_ids=profile_ids,
             provider_verified=bool(calibrated.get("provider_verified")),
             human_verified=bool(calibrated.get("human_verified")),
         )
@@ -469,29 +581,112 @@ def _evaluate(
             report["waiver"] = waiver
         return report
 
-    source_clear = bool(context_bundle.get("source_isolation_result", {}).get("passed")) and all(
+    source_clear = bool(
+        context_bundle.get("source_isolation_result", {}).get("passed")
+    ) and all(
         not segment.get("source_expression_included", True) for segment in segments
     )
     if dimension in {"source_leakage", "copyright_boundary"}:
-        passed = source_clear and context_bundle.get("copyright_boundary") == "abstract_or_project_owned_only"
-        return _report(group, dimension, project_id, target, "PASSED" if passed else "FAILED", score=None, calibration="DETERMINISTIC", source="context_source_isolation", locations=[{"source_clear": source_clear, "copyright_boundary": context_bundle.get("copyright_boundary")}], fixture=fixture, profile_ids=profile_ids)
+        passed = (
+            source_clear
+            and context_bundle.get("copyright_boundary")
+            == "abstract_or_project_owned_only"
+        )
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            "PASSED" if passed else "FAILED",
+            score=None,
+            calibration="DETERMINISTIC",
+            source="context_source_isolation",
+            locations=[
+                {
+                    "source_clear": source_clear,
+                    "copyright_boundary": context_bundle.get("copyright_boundary"),
+                }
+            ],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     if dimension == "readability":
         average = float(metrics["average_sentence"])
         score = round(max(0.0, min(100.0, 100.0 - max(0.0, average - 36.0) * 2.0)), 2)
-        return _report(group, dimension, project_id, target, "PASSED" if score >= 70 else "FAILED", score=score, calibration="DETERMINISTIC", source="readability_metrics", locations=[{"average_sentence_length": average}], fixture=fixture, profile_ids=profile_ids)
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            "PASSED" if score >= 70 else "FAILED",
+            score=score,
+            calibration="DETERMINISTIC",
+            source="readability_metrics",
+            locations=[{"average_sentence_length": average}],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     if dimension in {"mobile_reading", "paragraph_structure"}:
         average = float(metrics["average_paragraph"])
         status = "PASSED" if average <= 270 else "FAILED"
-        return _report(group, dimension, project_id, target, status, score=None, calibration="DETERMINISTIC", source="mobile_paragraph_metrics", locations=[{"average_paragraph_length": average}], fixture=fixture, profile_ids=profile_ids)
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            status,
+            score=None,
+            calibration="DETERMINISTIC",
+            source="mobile_paragraph_metrics",
+            locations=[{"average_paragraph_length": average}],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     if dimension == "basic_prose_integrity":
         passed = metrics["sentences"] >= 2 and metrics["characters"] >= 80
-        return _report(group, dimension, project_id, target, "PASSED" if passed else "FAILED", score=None, calibration="DETERMINISTIC", source="prose_integrity_metrics", locations=[metrics], fixture=fixture, profile_ids=profile_ids)
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            "PASSED" if passed else "FAILED",
+            score=None,
+            calibration="DETERMINISTIC",
+            source="prose_integrity_metrics",
+            locations=[metrics],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     if dimension == "repetition":
         ratio = float(metrics["duplicate_sentence_ratio"])
-        return _report(group, dimension, project_id, target, "PASSED" if ratio <= .25 else "FAILED", score=None, calibration="DETERMINISTIC", source="repetition_metrics", locations=[{"duplicate_sentence_ratio": ratio}], fixture=fixture, profile_ids=profile_ids)
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            "PASSED" if ratio <= 0.25 else "FAILED",
+            score=None,
+            calibration="DETERMINISTIC",
+            source="repetition_metrics",
+            locations=[{"duplicate_sentence_ratio": ratio}],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     if dimension == "canon_consistency":
         conflicts = list(canon.get("conflicts") or [])
-        return _report(group, dimension, project_id, target, "PASSED" if not conflicts else "FAILED", score=None, calibration="DETERMINISTIC", source="canon_reduction", locations=[{"conflict_count": len(conflicts)}], fixture=fixture, profile_ids=profile_ids)
+        return _report(
+            group,
+            dimension,
+            project_id,
+            target,
+            "PASSED" if not conflicts else "FAILED",
+            score=None,
+            calibration="DETERMINISTIC",
+            source="canon_reduction",
+            locations=[{"conflict_count": len(conflicts)}],
+            fixture=fixture,
+            profile_ids=profile_ids,
+        )
     # Profile existence is deterministic; profile-specific compliance is not.
     if group == "platform" and not profile_ids["platform_profile_version_id"]:
         status = "INSUFFICIENT_EVIDENCE"
@@ -499,7 +694,19 @@ def _evaluate(
         status = "REQUIRES_PROVIDER_JUDGE"
     else:
         status = "INSUFFICIENT_EVIDENCE"
-    return _report(group, dimension, project_id, target, status, score=None, calibration="FIXTURE_UNCALIBRATED" if fixture else "PROVIDER_UNCALIBRATED", source="none", locations=[], fixture=fixture, profile_ids=profile_ids)
+    return _report(
+        group,
+        dimension,
+        project_id,
+        target,
+        status,
+        score=None,
+        calibration="FIXTURE_UNCALIBRATED" if fixture else "PROVIDER_UNCALIBRATED",
+        source="none",
+        locations=[],
+        fixture=fixture,
+        profile_ids=profile_ids,
+    )
 
 
 def _calibrated_evidence(
@@ -510,11 +717,17 @@ def _calibrated_evidence(
     fixture: bool,
 ) -> dict[str, Any] | None:
     for segment in segments:
-        facts = {str(item.get("key")): item.get("value") for item in segment.get("structured_facts", [])}
+        facts = {
+            str(item.get("key")): item.get("value")
+            for item in segment.get("structured_facts", [])
+        }
         entries = list(facts.get("dimension_evidence") or [])
         entries.append(facts)
         for entry in entries:
-            if str(entry.get("dimension") or segment.get("narrative_function") or "") != dimension:
+            if (
+                str(entry.get("dimension") or segment.get("narrative_function") or "")
+                != dimension
+            ):
                 continue
             target = str(entry.get("target_asset_version_id") or "")
             fixture_protocol = fixture and entry.get("fixture_protocol_only") is True
@@ -523,16 +736,22 @@ def _calibrated_evidence(
             calibration = str(entry.get("calibration_status") or "").upper()
             human = entry.get("human_verified") is True
             provider = entry.get("provider_verified") is True
-            qualified = calibration in {
-                "HUMAN_CALIBRATED",
-                "GOLDEN_SET_CALIBRATED",
-            } and not fixture_protocol
-            real_provider_uncalibrated = (
-                not fixture
-                and provider
-                and calibration == "PROVIDER_UNCALIBRATED"
+            qualified = (
+                calibration
+                in {
+                    "HUMAN_CALIBRATED",
+                    "GOLDEN_SET_CALIBRATED",
+                }
+                and not fixture_protocol
             )
-            if not qualified and not fixture_protocol and not real_provider_uncalibrated:
+            real_provider_uncalibrated = (
+                not fixture and provider and calibration == "PROVIDER_UNCALIBRATED"
+            )
+            if (
+                not qualified
+                and not fixture_protocol
+                and not real_provider_uncalibrated
+            ):
                 continue
             gate_status = entry.get("gate_status")
             if fixture_protocol and str(gate_status).upper() == "PASSED":
@@ -540,13 +759,15 @@ def _calibrated_evidence(
             if real_provider_uncalibrated and str(gate_status).upper() == "PASSED":
                 gate_status = "PASSED_WITH_UNCALIBRATED"
             return {
-                "gate_status": gate_status, "score": entry.get("score"),
+                "gate_status": gate_status,
+                "score": entry.get("score"),
                 "calibration_status": (
                     "FIXTURE_UNCALIBRATED"
                     if fixture_protocol
                     else calibration or "PROVIDER_UNCALIBRATED"
                 ),
-                "human_verified": human, "provider_verified": provider,
+                "human_verified": human,
+                "provider_verified": provider,
                 "evidence_source": segment.get("asset_version_id"),
                 "evidence_locations": entry.get("evidence_locations") or [],
                 "fixture_protocol_only": fixture_protocol,
@@ -563,9 +784,7 @@ def _approved_fixture_waiver(
 ) -> dict[str, Any] | None:
     by_type = {str(item.get("asset_type")): item for item in segments}
     checklist = by_type.get("operator_checklist", {})
-    approval = by_type.get("approval_decision") or by_type.get(
-        "operator_approval", {}
-    )
+    approval = by_type.get("approval_decision") or by_type.get("operator_approval", {})
     checklist_facts = {
         str(item.get("key")): item.get("value")
         for item in checklist.get("structured_facts", [])
@@ -586,11 +805,9 @@ def _approved_fixture_waiver(
     valid = (
         bool(checklist.get("asset_version_id"))
         and checklist_facts.get("completed") is True
-        and checklist_facts.get("contract_version")
-        == "fixture-waiver-checklist-v1"
+        and checklist_facts.get("contract_version") == "fixture-waiver-checklist-v1"
         and bool(approval.get("asset_version_id"))
-        and approval_facts.get("contract_version")
-        == "fixture-waiver-approval-v1"
+        and approval_facts.get("contract_version") == "fixture-waiver-approval-v1"
         and approval_facts.get("decision") == "APPROVED"
         and approval_facts.get("fixture_protocol_only") is True
         and bool(str(approval_facts.get("waiver_reason") or "").strip())
@@ -618,18 +835,46 @@ def _approved_fixture_waiver(
     }
 
 
-def _report(group: str, dimension: str, project_id: str, target: str, status: str, *, score: Any, calibration: str, source: str, locations: list[dict[str, Any]], fixture: bool, profile_ids: dict[str, str], provider_verified: bool = False, human_verified: bool = False) -> dict[str, Any]:
+def _report(
+    group: str,
+    dimension: str,
+    project_id: str,
+    target: str,
+    status: str,
+    *,
+    score: Any,
+    calibration: str,
+    source: str,
+    locations: list[dict[str, Any]],
+    fixture: bool,
+    profile_ids: dict[str, str],
+    provider_verified: bool = False,
+    human_verified: bool = False,
+) -> dict[str, Any]:
     return {
-        "type": "ChapterQualityEvidence", "group": group, "project_id": project_id,
-        "target_asset_version_id": target, "dimension": dimension,
-        "gate_type": f"{group}_quality_gate", "score": score,
-        "threshold": 70.0 if score is not None else None, "gate_status": status,
-        "blocking": dimension in BLOCKING_DIMENSIONS, "weight": 1.0 if score is not None else 0.0,
-        "calibration_status": calibration, "source": source,
-        "evidence_locations": locations, "revision_strategy": [] if status in {"PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED"} else [f"obtain or repair {dimension} evidence"],
-        "confidence": 1.0 if calibration == "DETERMINISTIC" else .5,
-        **profile_ids, "fixture": fixture, "production_verified": False,
-        "provider_verified": provider_verified, "human_verified": human_verified,
+        "type": "ChapterQualityEvidence",
+        "group": group,
+        "project_id": project_id,
+        "target_asset_version_id": target,
+        "dimension": dimension,
+        "gate_type": f"{group}_quality_gate",
+        "score": score,
+        "threshold": 70.0 if score is not None else None,
+        "gate_status": status,
+        "blocking": dimension in BLOCKING_DIMENSIONS,
+        "weight": 1.0 if score is not None else 0.0,
+        "calibration_status": calibration,
+        "source": source,
+        "evidence_locations": locations,
+        "revision_strategy": []
+        if status in {"PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED"}
+        else [f"obtain or repair {dimension} evidence"],
+        "confidence": 1.0 if calibration == "DETERMINISTIC" else 0.5,
+        **profile_ids,
+        "fixture": fixture,
+        "production_verified": False,
+        "provider_verified": provider_verified,
+        "human_verified": human_verified,
         "contract_version": "chapter-quality-evidence-v2",
     }
 
@@ -637,23 +882,45 @@ def _report(group: str, dimension: str, project_id: str, target: str, status: st
 def _profile_ids(context_bundle: dict[str, Any]) -> dict[str, str]:
     manifest = context_bundle.get("production_input_manifest", {})
     return {
-        "quality_profile_version_id": str(manifest.get("quality_profile_version_id") or context_bundle.get("quality_profile_version") or ""),
-        "platform_profile_version_id": str(manifest.get("platform_profile_version_id") or context_bundle.get("platform_profile_version") or ""),
+        "quality_profile_version_id": str(
+            manifest.get("quality_profile_version_id")
+            or context_bundle.get("quality_profile_version")
+            or ""
+        ),
+        "platform_profile_version_id": str(
+            manifest.get("platform_profile_version_id")
+            or context_bundle.get("platform_profile_version")
+            or ""
+        ),
     }
 
 
 def _structural_metrics(text: str) -> dict[str, Any]:
     paragraphs = [item.strip() for item in re.split(r"\n+", text) if item.strip()]
-    sentences = [item.strip() for item in re.split(r"[。！？!?\.]+", text) if item.strip()]
+    sentences = [
+        item.strip() for item in re.split(r"[。！？!?\.]+", text) if item.strip()
+    ]
     units = [len(item.split()) if " " in item else len(item) for item in sentences]
     normalized = [re.sub(r"\s+", " ", item.lower()) for item in sentences]
     return {
-        "characters": len(text), "paragraphs": len(paragraphs) or 1,
+        "characters": len(text),
+        "paragraphs": len(paragraphs) or 1,
         "sentences": len(sentences) or 1,
         "average_sentence": sum(units) / max(len(units), 1),
         "average_paragraph": len(text) / max(len(paragraphs), 1),
-        "duplicate_sentence_ratio": (len(normalized) - len(set(normalized))) / max(len(normalized), 1),
+        "duplicate_sentence_ratio": (len(normalized) - len(set(normalized)))
+        / max(len(normalized), 1),
     }
 
 
-__all__ = ["BLOCKING_DIMENSIONS", "LONGITUDINAL_QUALITY_DIMENSIONS", "QUALITY_DIMENSIONS", "QUALITY_EVIDENCE_STATUSES", "QUALITY_GROUPS", "QUALITY_SCALES", "build_chapter_quality_evidence", "build_multiscale_quality_report", "build_quality_group_evidence"]
+__all__ = [
+    "BLOCKING_DIMENSIONS",
+    "LONGITUDINAL_QUALITY_DIMENSIONS",
+    "QUALITY_DIMENSIONS",
+    "QUALITY_EVIDENCE_STATUSES",
+    "QUALITY_GROUPS",
+    "QUALITY_SCALES",
+    "build_chapter_quality_evidence",
+    "build_multiscale_quality_report",
+    "build_quality_group_evidence",
+]

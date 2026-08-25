@@ -110,6 +110,9 @@ _AUTHORITY_INPUT_ASSET_TYPES = {
     "ending_reachability": frozenset(
         {"ending_reachability", "ending_reachability_report"}
     ),
+    "narrative_search_parent_state": frozenset(
+        {"story_state", "story_state_snapshot", "narrative_state"}
+    ),
 }
 
 
@@ -668,6 +671,13 @@ class StoryPlanningGenerationApplication:
         generation_record = self.require_generation(
             generation["generation_operation_id"]
         )
+        narrative_search_id = str(generation_record.get("narrative_search_id") or "")
+        if narrative_search_id:
+            self._require_selected_search_candidate(
+                search_id=narrative_search_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+                generation_operation_id=generation["generation_operation_id"],
+            )
         if str(generation_record["status"]) != "ACTIVE":
             self._require_generation_inputs_current(
                 operation_id=generation["generation_operation_id"],
@@ -741,11 +751,87 @@ class StoryPlanningGenerationApplication:
                 correlation_id=correlation_id,
             )
         self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
+        if narrative_search_id:
+            self._record_search_activation(
+                search_id=narrative_search_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+            )
         return {
             "story_design": state,
             "planning_binding": binding,
             "chapter_plan_projection": chapter_plan_projection,
         }
+
+    def _require_selected_search_candidate(
+        self,
+        *,
+        search_id: str,
+        candidate_asset_version_id: str,
+        generation_operation_id: str,
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT search.status, search.selected_candidate_asset_version_id,
+                       member.status, decision.selected_candidate_asset_version_id,
+                       member.generation_operation_id, search.book_run_id,
+                       search.project_id, search.book_id,
+                       search.accepted_through_chapter,
+                       search.parent_state_asset_version_id,
+                       production.project_id, production.book_id,
+                       production.accepted_through_chapter,
+                       production.active_story_state_version_id
+                FROM authority_story_narrative_search AS search
+                JOIN authority_story_narrative_search_candidate AS member
+                  ON member.search_id=search.search_id
+                 AND member.candidate_asset_version_id=%s
+                JOIN authority_story_narrative_search_decision AS decision
+                  ON decision.search_id=search.search_id
+                LEFT JOIN authority_book_production AS production
+                  ON production.book_run_id=search.book_run_id
+                WHERE search.search_id=%s
+                """,
+                [candidate_asset_version_id, search_id],
+            )
+            row = uow.cursor.fetchone()
+        if (
+            row is None
+            or str(row[0]) not in {"SELECTED", "ACTIVATED"}
+            or str(row[1]) != candidate_asset_version_id
+            or str(row[2]) != "SELECTED"
+            or str(row[3]) != candidate_asset_version_id
+            or str(row[4]) != generation_operation_id
+            or (
+                int(row[8]) > 0
+                and (
+                    not str(row[5] or "")
+                    or str(row[6]) != str(row[10] or "")
+                    or str(row[7]) != str(row[11] or "")
+                    or int(row[8]) != int(row[12] or -1)
+                    or str(row[9] or "") != str(row[13] or "")
+                )
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_SELECTION_REQUIRED",
+                "a search candidate cannot activate without its exact immutable comparison decision",
+            )
+
+    def _record_search_activation(
+        self, *, search_id: str, candidate_asset_version_id: str
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_story_narrative_search
+                SET status='ACTIVATED', version=version+1, updated_at=NOW()
+                WHERE search_id=%s
+                  AND selected_candidate_asset_version_id=%s
+                  AND status='SELECTED'
+                """,
+                [search_id, candidate_asset_version_id],
+            )
+            uow.commit()
 
     def _require_generation_inputs_current(
         self, *, operation_id: str, project_id: str, book_id: str
@@ -987,7 +1073,9 @@ class StoryPlanningGenerationApplication:
                        book_id, generator_operation_name, planning_scope,
                        logical_key, input_snapshot, input_snapshot_hash,
                        status, candidate_asset_version_id,
-                       repair_of_candidate_id, repair_number, version
+                       repair_of_candidate_id, repair_number, version,
+                       COALESCE(narrative_search_id, ''),
+                       COALESCE(narrative_search_branch_key, '')
                 FROM authority_story_planning_generation
                 WHERE operation_id=%s
                 """,
@@ -1014,6 +1102,8 @@ class StoryPlanningGenerationApplication:
             "repair_of_candidate_id",
             "repair_number",
             "version",
+            "narrative_search_id",
+            "narrative_search_branch_key",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -1449,6 +1539,17 @@ class StoryPlanningGenerationApplication:
             repair_number=command.repair_number + 1,
             auto_approve_low_risk=command.auto_approve_low_risk,
             arc_working_set=command.arc_working_set,
+            narrative_search_id=command.narrative_search_id,
+            narrative_search_branch_key=command.narrative_search_branch_key,
+            narrative_search_parent_state_asset_version_id=(
+                command.narrative_search_parent_state_asset_version_id
+            ),
+            narrative_search_accepted_through_chapter=(
+                command.narrative_search_accepted_through_chapter
+            ),
+            narrative_search_strategy_directive=(
+                command.narrative_search_strategy_directive
+            ),
         )
         return self.generate(repaired, principal=principal)
 
@@ -1787,10 +1888,12 @@ class StoryPlanningGenerationApplication:
                     book_id, generator_operation_name, planning_scope,
                     logical_key, parent_version_id, input_snapshot,
                     input_snapshot_hash, status, repair_of_candidate_id,
-                    repair_reason, repair_number
+                    repair_reason, repair_number, narrative_search_id,
+                    narrative_search_branch_key
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
-                    %s, %s, 'ADMITTED', NULLIF(%s, ''), NULLIF(%s, ''), %s
+                    %s, %s, 'ADMITTED', NULLIF(%s, ''), NULLIF(%s, ''), %s,
+                    NULLIF(%s, ''), NULLIF(%s, '')
                 )
                 ON CONFLICT (operation_id) DO NOTHING
                 """,
@@ -1809,6 +1912,8 @@ class StoryPlanningGenerationApplication:
                     command.repair_of_candidate_id,
                     command.repair_reason,
                     command.repair_number,
+                    command.narrative_search_id,
+                    command.narrative_search_branch_key,
                 ],
             )
             uow.commit()
@@ -2327,7 +2432,8 @@ def story_planning_generation_definition(
             "semantic_evaluation_operation_separate": True,
             "repair_candidate_asset_input_allowed": True,
             "capability_pack_attempt_snapshot_required": True,
-            "agent_runtime_binding_required": True,
+            "typed_capability_binding_required": True,
+            "agent_runtime_binding_required": False,
             "production_execution_gateway_required": True,
             "high_risk_auto_approval": False,
         },
@@ -2398,6 +2504,17 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
             command.parent_agent_session_operation_id
         ),
         "arc_working_set": dict(command.arc_working_set or {}),
+        "narrative_search_id": command.narrative_search_id,
+        "narrative_search_branch_key": command.narrative_search_branch_key,
+        "narrative_search_parent_state_asset_version_id": (
+            command.narrative_search_parent_state_asset_version_id
+        ),
+        "narrative_search_accepted_through_chapter": (
+            command.narrative_search_accepted_through_chapter
+        ),
+        "narrative_search_strategy_directive": (
+            command.narrative_search_strategy_directive
+        ),
     }
 
 
@@ -2437,13 +2554,26 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
             payload.get("parent_agent_session_operation_id") or ""
         ),
         arc_working_set=dict(payload.get("arc_working_set") or {}) or None,
+        narrative_search_id=str(payload.get("narrative_search_id") or ""),
+        narrative_search_branch_key=str(
+            payload.get("narrative_search_branch_key") or ""
+        ),
+        narrative_search_parent_state_asset_version_id=str(
+            payload.get("narrative_search_parent_state_asset_version_id") or ""
+        ),
+        narrative_search_accepted_through_chapter=int(
+            payload.get("narrative_search_accepted_through_chapter") or 0
+        ),
+        narrative_search_strategy_directive=str(
+            payload.get("narrative_search_strategy_directive") or ""
+        ),
     )
 
 
 def _authority_role_versions(
     command: StoryPlanningGenerationCommand,
 ) -> dict[str, str]:
-    return {
+    roles = {
         **dict(command.input_versions),
         **{
             f"arc_scope_volume:{index}": asset_version_id
@@ -2470,6 +2600,10 @@ def _authority_role_versions(
             )
         },
     }
+    parent_state = command.narrative_search_parent_state_asset_version_id
+    if parent_state and parent_state not in roles.values():
+        roles["narrative_search_parent_state"] = parent_state
+    return roles
 
 
 def _validate_frozen_arc_references(

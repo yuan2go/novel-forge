@@ -209,6 +209,34 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     "premise": "A public promise becomes irreversible.",
                     "chapter_objective": "Make the public promise costly.",
                     "scene_sequence": [{"scene_id": "s1", "goal": "choose the cost"}],
+                    "required_arc_contributions": [
+                        {
+                            "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                            "contribution": "ADVANCE",
+                        }
+                    ],
+                    "constraint_envelope": {
+                        "arc_working_set": {
+                            "selected_contributions": [
+                                {
+                                    "arc_plan_version_id": (
+                                        f"{project_id}:fixture-arc-plan-v1"
+                                    ),
+                                    "role": "PRIMARY",
+                                    "action": "ADVANCE",
+                                }
+                            ]
+                        }
+                    },
+                    "scene_plan": [
+                        {
+                            "scene_id": "s1",
+                            "goal": "choose the cost",
+                            "conflict": "safety requires breaking the promise",
+                            "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
+                            "beats": ["pressure", "choice", "visible cost"],
+                        }
+                    ],
                     "chapter_hook": "A new obligation arrives.",
                 },
             },
@@ -725,11 +753,16 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 principal=principal,
             )
             scheduler = application.scheduler(principal=principal)
-            for _ in range(2):
-                scheduler.tick(
+            context_materialized = False
+            for _ in range(12):
+                tick = scheduler.tick(
                     project_id=project_id,
                     root_operation_id=admission.root_operation_id,
                 )
+                if tick.node == "context" and tick.operation_status == "SUCCEEDED":
+                    context_materialized = True
+                    break
+            self.assertTrue(context_materialized)
 
         query = MkaosAuthorityQuery(DATABASE_URL)
         self.assertEqual(len(query.list_runtime_selections(project_id=project_id)), 1)
@@ -929,9 +962,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(measurement["metrics"]["provider_cost"], 0.0)
             self.assertEqual(measurement["metrics"]["provider_trace_missing_count"], 0)
             self.assertEqual(
-                measurement["observations"]["planning"]["status"], "NOT_OBSERVED"
+                measurement["observations"]["planning"]["status"], "MEASURED"
             )
-            self.assertIsNone(measurement["metrics"]["planning_drift_count"])
+            self.assertEqual(measurement["metrics"]["planning_drift_count"], 0)
             self.assertEqual(
                 measurement["observations"]["mkaos_consumption"]["status"],
                 "MEASURED",

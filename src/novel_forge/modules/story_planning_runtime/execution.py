@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import hashlib
 import json
@@ -89,6 +89,11 @@ from .domain import (
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
+)
+from .narrative_search import (
+    CREATIVE_INTELLIGENCE_DIMENSIONS,
+    NARRATIVE_SEARCH_PROJECTION_VERSION,
+    narrative_search_projection_schema,
 )
 
 
@@ -286,6 +291,30 @@ def _narrative_intelligence_limit(stage: str) -> int:
 
 def _merge_selection_terms(*values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(sorted({item for group in values for item in group if item}))[:32]
+
+
+def _recent_activated_repetition_keys(
+    usage_records: Sequence[Mapping[str, Any]],
+) -> tuple[str, ...]:
+    """Return repetition debt owned by current Planning intent.
+
+    A Context frozen for one divergent-search branch is evidence that the
+    provider saw a mechanism, not evidence that the Story selected or used
+    it. Counting every sibling branch here biases later branches and makes
+    their comparison inputs order-dependent. Current Plan bindings are the
+    first Planning-owned boundary that can legitimately constrain the next
+    search or elaboration task.
+    """
+
+    return tuple(
+        dict.fromkeys(
+            str(item.get("repetition_key") or "")
+            for item in usage_records
+            if str(item.get("repetition_key") or "")
+            and str(item.get("plan_binding_id") or "")
+            and str(item.get("plan_freshness") or "") == "CURRENT"
+        )
+    )[:32]
 
 
 def _realization_reference_contract(
@@ -677,6 +706,66 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             }
         ],
     }
+    search_id = str(command.get("narrative_search_id") or "")
+    branch_key = str(command.get("narrative_search_branch_key") or "")
+    if search_id:
+        try:
+            branch_number = max(1, int(branch_key.rsplit("-", 1)[-1]))
+        except ValueError:
+            branch_number = 1
+        branch_bias = min(0.12, (branch_number - 1) * 0.04)
+        payload["narrative_search_projection"] = {
+            "contract_version": NARRATIVE_SEARCH_PROJECTION_VERSION,
+            "strategy_fingerprint": (
+                f"{stage}:{logical_key}:causal-strategy-{branch_number}"
+            ),
+            "assumptions": [
+                f"branch {branch_number} preserves the frozen parent boundary"
+            ],
+            "projected_consequences": [
+                f"branch {branch_number} turns pressure into an accepted-state choice"
+            ],
+            "narrative_opportunities": [
+                f"branch {branch_number} opens a distinct convergence path"
+            ],
+            "narrative_risks": [
+                f"branch {branch_number} may compress one later payoff window"
+            ],
+            "irreversible_decisions": (
+                [f"branch {branch_number} commits the public cost"]
+                if branch_number == 3
+                else []
+            ),
+            "future_options": [
+                f"branch {branch_number} can escalate through relationship pressure",
+                f"branch {branch_number} can pivot through world consequence",
+            ],
+            "repetition_keys": [f"fixture-causal-strategy-{branch_number}"],
+            "creative_intelligence": {
+                dimension: round(
+                    min(
+                        0.95,
+                        0.68
+                        + branch_bias
+                        + (
+                            0.04
+                            if dimension
+                            in {
+                                "character_agency",
+                                "choice_cost_consequence",
+                                "future_optionality",
+                            }
+                            else 0.0
+                        ),
+                    ),
+                    3,
+                )
+                for dimension in CREATIVE_INTELLIGENCE_DIMENSIONS
+            },
+            "selection_summary": (
+                f"fixture branch {branch_number} balances causal pressure and optionality"
+            ),
+        }
     if command.get("change_evidence_version_ids"):
         payload["objective"] = (
             f"{payload['objective']} adjusted by governed change evidence"
@@ -1066,13 +1155,9 @@ def _canonical_narrative_provider_properties(
     world_invariant_ref = _realization_authority_ref_schema("WORLD_INVARIANT")
     world_structure_ref = _realization_authority_ref_schema("WORLD_STRUCTURE")
     world_state_ref = _realization_authority_ref_schema("WORLD_STATE")
-    character_identity_ref = _realization_authority_ref_schema(
-        "CHARACTER_IDENTITY"
-    )
+    character_identity_ref = _realization_authority_ref_schema("CHARACTER_IDENTITY")
     character_state_ref = _realization_authority_ref_schema("CHARACTER_STATE")
-    character_trajectory_ref = _realization_authority_ref_schema(
-        "CHARACTER_TRAJECTORY"
-    )
+    character_trajectory_ref = _realization_authority_ref_schema("CHARACTER_TRAJECTORY")
     architecture = {
         "narrative_architecture_version": {
             "type": "string",
@@ -1595,6 +1680,7 @@ def planning_provider_output_schema(
     related_arc_plan_version_ids: tuple[str, ...] = (),
     dependent_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
+    narrative_search: bool = False,
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
 
@@ -1918,6 +2004,10 @@ def planning_provider_output_schema(
             ),
         )
     )
+    if narrative_search:
+        if contract_type is PlanContractType.CHAPTER:
+            raise ValueError("Chapter planning is operational, not a search portfolio")
+        properties["narrative_search_projection"] = narrative_search_projection_schema()
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         properties["parent_version_id"] = (
             {"type": "string", "const": parent_version_id}
@@ -2419,6 +2509,7 @@ class PostgresPlanningExecutionPreparer:
                 *command.related_arc_plan_version_ids,
                 *command.dependent_arc_plan_version_ids,
             ),
+            narrative_search=bool(command.narrative_search_id),
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
@@ -2545,6 +2636,19 @@ class PostgresPlanningExecutionPreparer:
                     "repair_number": command.repair_number,
                     "repair_reason": command.repair_reason,
                     "arc_working_set": dict(command.arc_working_set or {}),
+                    "narrative_search_id": command.narrative_search_id,
+                    "narrative_search_branch_key": (
+                        command.narrative_search_branch_key
+                    ),
+                    "narrative_search_parent_state_asset_version_id": (
+                        command.narrative_search_parent_state_asset_version_id
+                    ),
+                    "narrative_search_accepted_through_chapter": (
+                        command.narrative_search_accepted_through_chapter
+                    ),
+                    "narrative_search_strategy_directive": (
+                        command.narrative_search_strategy_directive
+                    ),
                 },
                 "frozen_inputs": [
                     {
@@ -2567,6 +2671,23 @@ class PostgresPlanningExecutionPreparer:
                     ],
                 },
                 "arc_working_set": dict(command.arc_working_set or {}),
+                "narrative_search": (
+                    {
+                        "search_id": command.narrative_search_id,
+                        "branch_key": command.narrative_search_branch_key,
+                        "parent_state_asset_version_id": (
+                            command.narrative_search_parent_state_asset_version_id
+                        ),
+                        "accepted_through_chapter": (
+                            command.narrative_search_accepted_through_chapter
+                        ),
+                        "strategy_directive": (
+                            command.narrative_search_strategy_directive
+                        ),
+                    }
+                    if command.narrative_search_id
+                    else {}
+                ),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -3147,17 +3268,13 @@ class PostgresPlanningExecutionPreparer:
             command=command,
             selected_inputs=selected,
             production_profile=production_profile,
-            recent_repetition_keys=tuple(
-                dict.fromkeys(
-                    str(item.get("repetition_key") or "")
-                    for item in self.mkaos.list_planning_usage(
-                        project_id=command.project_id,
-                        book_id=command.book_id,
-                        limit=100,
-                    )
-                    if str(item.get("repetition_key") or "")
+            recent_repetition_keys=_recent_activated_repetition_keys(
+                self.mkaos.list_planning_usage(
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    limit=100,
                 )
-            )[:32],
+            ),
         )
         narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
             project_id=command.project_id,
@@ -3179,6 +3296,21 @@ class PostgresPlanningExecutionPreparer:
             "logical_key": command.logical_key,
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
+            "narrative_search": (
+                {
+                    "search_id": command.narrative_search_id,
+                    "branch_key": command.narrative_search_branch_key,
+                    "parent_state_asset_version_id": (
+                        command.narrative_search_parent_state_asset_version_id
+                    ),
+                    "accepted_through_chapter": (
+                        command.narrative_search_accepted_through_chapter
+                    ),
+                    "strategy_directive": (command.narrative_search_strategy_directive),
+                }
+                if command.narrative_search_id
+                else {}
+            ),
             "narrative_intelligence": narrative_intelligence,
             "realization_reference_contract": _realization_reference_contract(
                 project_id=command.project_id,

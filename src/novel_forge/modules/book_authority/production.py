@@ -2208,6 +2208,11 @@ class PostgresBookAuthority:
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_SCOPE_INVALID",
                 "Book Production snapshot does not belong to the requested scope",
             )
+        if not str(row[17]) or not str(row[18]):
+            raise KernelError(
+                "BOOK_INITIAL_NARRATIVE_STATE_REQUIRED",
+                "controlled Book Production requires an initial accepted Story State and Canon pair",
+            )
         expected = {
             "book_design_version": str(row[3]),
             "book_plan_version": str(row[4]),

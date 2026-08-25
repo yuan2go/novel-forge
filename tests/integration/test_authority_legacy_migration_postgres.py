@@ -34,7 +34,11 @@ from novel_forge.modules.source_authority import (
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.database_runtime import DatabaseRuntime, DatabaseRuntimeConfig
 from novel_forge.storage.migrations import run_migrations
-from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
+from tests.integration.authority_postgres_support import (
+    DATABASE_URL,
+    ensure_migrated,
+    identifier,
+)
 
 
 def _migration_plan_content(
@@ -161,6 +165,26 @@ def _migration_chapter_row(
         "reward_action": "partial",
         "ending_hook": ending_hook,
         "prohibited_outcomes": ["premature closure"],
+        "narrative_density": "MEDIUM",
+        "arc_cadence": [
+            {
+                "arc_plan_version_id": "arc:main",
+                "action": "ADVANCE",
+            }
+        ],
+        "obligation_actions": [],
+        "reader_experience": {
+            "target_emotion": {
+                "DISCOVERY": "uneasy curiosity",
+                "ESCALATION": "mounting pressure",
+                "REVERSAL": "costly surprise",
+            }.get(primary_function, "uncertain momentum"),
+            "reward_mode": {
+                "DISCOVERY": "DISCOVERY",
+                "ESCALATION": "PROGRESS",
+                "REVERSAL": "REVERSAL",
+            }.get(primary_function, "PROGRESS"),
+        },
     }
 
 
@@ -440,7 +464,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             ("NEEDS_REVIEW", "ARCHIVAL_NATIVE", "ACTIVATE", 6, "RESOLVED"),
         )
 
-    def test_independent_approval_is_versioned_audited_and_does_not_activate(self) -> None:
+    def test_independent_approval_is_versioned_audited_and_does_not_activate(
+        self,
+    ) -> None:
         project_id = identifier("migration-approval-project")
         workspace_id = identifier("migration-approval-workspace")
         service = LegacyMigrationService(
@@ -549,7 +575,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [approved["operation_id"]],
             )
             audit_count, outbox_count = uow.cursor.fetchone()
-        self.assertEqual(tuple(persisted), ("QUALIFIED", "IMPORTED", "PENDING_EVALUATION", 1))
+        self.assertEqual(
+            tuple(persisted), ("QUALIFIED", "IMPORTED", "PENDING_EVALUATION", 1)
+        )
         self.assertGreaterEqual(int(audit_count), 1)
         self.assertEqual(int(outbox_count), 1)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -592,11 +620,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 """,
                 [str(project_item[0])],
             )
-            self.assertEqual(
-                uow.cursor.fetchone(), ("INELIGIBLE", "DOMAIN_REJECTED")
-            )
+            self.assertEqual(uow.cursor.fetchone(), ("INELIGIBLE", "DOMAIN_REJECTED"))
 
-    def test_server_validation_record_supersedes_stale_validation_and_binds_decision(self) -> None:
+    def test_server_validation_record_supersedes_stale_validation_and_binds_decision(
+        self,
+    ) -> None:
         nonce = str(uuid4())
         project_id = identifier(f"migration-validation-project:{nonce}")
         workspace_id = identifier(f"migration-validation-workspace:{nonce}")
@@ -688,9 +716,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             approval.execute(
                 LegacyMigrationDecisionCommand(
                     **common,
-                    migration_validation_id=str(
-                        first["migration_validation_id"]
-                    ),
+                    migration_validation_id=str(first["migration_validation_id"]),
                     idempotency_key=f"approve-stale:{item[0]}",
                 )
             )
@@ -749,7 +775,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(tuple(int(value) for value in persisted[3:]), (1, 1, 1))
         self.assertEqual(tuple(item_semantics), ("ARCHIVAL", "DOMAIN_NOT_APPLICABLE"))
 
-    def test_book_and_book_design_use_real_domain_authority_after_approval(self) -> None:
+    def test_book_and_book_design_use_real_domain_authority_after_approval(
+        self,
+    ) -> None:
         project_id = identifier("domain-book-project")
         workspace_id = identifier("domain-book-workspace")
         book_id = identifier("domain-book")
@@ -837,9 +865,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             root.chmod(0o555)
             imported = service.import_snapshot(root)
             verification_root = self._retain_snapshot(root)
-        activation_order = service.domain_activation_order(
-            imported["migration_run_id"]
-        )
+        activation_order = service.domain_activation_order(imported["migration_run_id"])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -1011,11 +1037,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [current_items["book"][0]],
             )
             concurrent_book_version = int(uow.cursor.fetchone()[0])
-        with patch.object(
-            service_module,
-            "load_validation_snapshot",
-            side_effect=pause_after_design_snapshot,
-        ), ThreadPoolExecutor(max_workers=2) as executor:
+        with (
+            patch.object(
+                service_module,
+                "load_validation_snapshot",
+                side_effect=pause_after_design_snapshot,
+            ),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
             verify_future = executor.submit(
                 service.verify,
                 imported["migration_run_id"],
@@ -1485,7 +1514,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                             "flaw": "Treats urgency as authority",
                             "arc": "From unilateral action to auditable coordination",
                         },
-                        "world_rules": ["Every plan revision produces an immutable version"],
+                        "world_rules": [
+                            "Every plan revision produces an immutable version"
+                        ],
                         "target_chapters": 20,
                     },
                 },
@@ -1598,9 +1629,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             bindings = list(uow.cursor.fetchall())
         self.assertEqual(len(bindings), 7)
         counts_by_type = {
-            contract_type: sum(
-                1 for row in bindings if str(row[0]) == contract_type
-            )
+            contract_type: sum(1 for row in bindings if str(row[0]) == contract_type)
             for contract_type in {str(row[0]) for row in bindings}
         }
         self.assertEqual(
@@ -1608,11 +1637,16 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             {"BOOK": 2, "VOLUME": 1, "ARC": 1, "CHAPTER_GROUP": 1, "CHAPTER": 2},
         )
         for contract_type, parent, _active, hierarchy_count in bindings:
-            expected_hierarchy = 1 if str(contract_type) in {
-                "VOLUME",
-                "CHAPTER_GROUP",
-                "CHAPTER",
-            } else 0
+            expected_hierarchy = (
+                1
+                if str(contract_type)
+                in {
+                    "VOLUME",
+                    "CHAPTER_GROUP",
+                    "CHAPTER",
+                }
+                else 0
+            )
             self.assertEqual(int(hierarchy_count), expected_hierarchy)
             if str(contract_type) == "CHAPTER":
                 self.assertEqual(
@@ -1620,7 +1654,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     activated["chapter_group_plan"]["target_asset_version_id"],
                 )
 
-    def test_story_design_migration_uses_versioned_server_validator_receipts(self) -> None:
+    def test_story_design_migration_uses_versioned_server_validator_receipts(
+        self,
+    ) -> None:
         project_id = identifier("domain-story-design-project")
         workspace_id = identifier("domain-story-design-workspace")
         service = LegacyMigrationService(
@@ -2133,7 +2169,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             ),
         )
 
-    def test_mkaos_migration_builds_candidate_card_and_pack_with_fixture_boundary(self) -> None:
+    def test_mkaos_migration_builds_candidate_card_and_pack_with_fixture_boundary(
+        self,
+    ) -> None:
         project_id = identifier("domain-mkaos-project")
         workspace_id = identifier("domain-mkaos-workspace")
         build_id = "legacy-domain-mkaos-integration"
@@ -2258,11 +2296,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 "real_provider_proven": False,
                 "production_verified": False,
             }
-            execution_hash = "sha256:" + hashlib.sha256(
-                json.dumps(
-                    execution_content, sort_keys=True, separators=(",", ":")
-                ).encode()
-            ).hexdigest()
+            execution_hash = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        execution_content, sort_keys=True, separators=(",", ":")
+                    ).encode()
+                ).hexdigest()
+            )
             uow.cursor.execute(
                 "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s, %s, 'model_call_log')",
                 [execution_asset_id, project_id],
@@ -2324,12 +2365,8 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             "conflict_generators": [
                 "Beneficiary and patron disagree whether the debt is settled."
             ],
-            "review_checks": [
-                "Reject proper nouns and source-specific expressions."
-            ],
-            "copyright_boundaries": [
-                "Retain only the abstract obligation mechanism."
-            ],
+            "review_checks": ["Reject proper nouns and source-specific expressions."],
+            "copyright_boundaries": ["Retain only the abstract obligation mechanism."],
         }
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -2361,8 +2398,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                                 "chunk_byte_start": 0,
                                 "chunk_byte_end": 10,
                                 "evidence_hash": (
-                                    "sha256:"
-                                    + hashlib.sha256(b"span-0-10").hexdigest()
+                                    "sha256:" + hashlib.sha256(b"span-0-10").hexdigest()
                                 ),
                             }
                         ],
@@ -2385,8 +2421,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                                 "chunk_byte_start": 0,
                                 "chunk_byte_end": 10,
                                 "evidence_hash": (
-                                    "sha256:"
-                                    + hashlib.sha256(b"span-0-10").hexdigest()
+                                    "sha256:" + hashlib.sha256(b"span-0-10").hexdigest()
                                 ),
                             }
                         ],
@@ -2538,7 +2573,12 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             )
             pack = uow.cursor.fetchone()
         self.assertEqual(tuple(card), ("ACTIVE", "ACTIVE", "ELIGIBLE", "CLEAR"))
-        self.assertEqual(tuple(int(value) if index else str(value) for index, value in enumerate(pack)), ("ACTIVE", 1, 1))
+        self.assertEqual(
+            tuple(
+                int(value) if index else str(value) for index, value in enumerate(pack)
+            ),
+            ("ACTIVE", 1, 1),
+        )
 
     def _validate_approve_activate(
         self,

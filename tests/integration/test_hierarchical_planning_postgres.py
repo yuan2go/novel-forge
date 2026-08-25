@@ -550,6 +550,13 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                         "state_transitions": ["character:lin"],
                         "entry_state": "custody is deniable",
                         "exit_state": "custody is signed and witnessed",
+                        "beats": [
+                            {
+                                "beat_id": "beat:public-choice",
+                                "ordinal": 1,
+                                "function": "make the costly choice observable",
+                            }
+                        ],
                     }
                 ],
                 "expected_exit_state": {"summary": "the choice is public"},
@@ -1006,6 +1013,13 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         else:
             values.update(self._chapter_matrix_row(1, "DISCOVERY", "new threat"))
             values["required_arc_contributions"] = []
+            values.update(
+                {
+                    "narrative_density": "MEDIUM",
+                    "arc_cadence": [],
+                    "obligation_actions": [],
+                }
+            )
         if (extra or {}).get("narrative_architecture_version") == (
             "canonical-narrative-v1"
         ):

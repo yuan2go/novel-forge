@@ -6,9 +6,12 @@ This is a derived product view of [`canonical-overall-design.md`](../architectur
 
 ```text
 Idea / Material / Reader Promise
-→ Story / World / Character Design
+→ Creative Exploration (several materially distinct foundations)
+→ evaluation / comparison / approval
+→ active Creative Foundation + World / Character Foundations
 → Narrative Threads + Transformation Maps
-→ Progressive Structural Plan + Narrative Arc Network
+→ bounded Book / Volume / Arc future search
+→ selected Progressive Structural Plan + Narrative Arc Network
 → Arc Working Set / ChapterArcContributions
 → Narrative Composer
 → active ChapterPlan
@@ -27,6 +30,8 @@ Idea / Material / Reader Promise
 → ACCEPT
 → AcceptedChapterOutcome
 → Canon + Narrative State + Arc Progress + Obligation State
+→ re-evaluate affected future commitments
+→ maintain plan or open a new bounded search
 → Next Chapter
 
 Accepted Chapter
@@ -37,6 +42,20 @@ Accepted Chapter
 The critical path and observation sidecars are intentionally separate.
 
 ## 2. Design and planning
+
+A Book is ready for production only when the active BookDesign Creative
+Foundation, stable World/Character projections, qualified Book/Volume/Arc
+baseline, initial accepted boundary and required operational profiles resolve
+to one immutable Book Production input snapshot. Individually callable content
+generators are not an opening flow.
+
+At Book/Volume/Arc and consequential ChapterGroup decisions, Planning explores
+a small number of immutable alternatives from the same frozen parent state.
+Each alternative carries assumptions, consequences, opportunities, risks,
+irreversible choices, creative-intelligence signals and remaining optionality.
+Only independently qualified candidates enter deterministic comparison. Search
+selection is evidence for the normal approval/activation gates; it does not
+replace them.
 
 The four structures are:
 

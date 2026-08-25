@@ -84,6 +84,26 @@ def test_supervisor_reports_planning_generation_operation_identity(
     ]
 
 
+def test_checkpoint_pending_records_accepted_checkpoint_without_dispatching() -> None:
+    book = {
+        "book_run_id": "book-run:1",
+        "state": BookProductionState.CHECKPOINT_PENDING.value,
+        "input_mode": "RESOLVED_AUTHORITY_INPUT",
+        "accepted_through_chapter": 4,
+    }
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
+    supervisor._checkpoint_if_needed = lambda _book: {
+        "volume_checkpoint": {"checkpoint_id": "volume-checkpoint:4"}
+    }
+
+    tick = supervisor.tick("book-run:1")
+
+    assert tick.action is SupervisorAction.UPDATE_CHECKPOINTS
+    assert tick.state == BookProductionState.CHECKPOINT_PENDING.value
+    assert tick.evidence_ref == "volume-checkpoint:4"
+
+
 @pytest.mark.parametrize(
     ("scope", "contract", "generator"),
     (
@@ -147,9 +167,9 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
 
     request = supervisor._chapter_preparation_request(
         book={
-                "project_id": "project:1",
-                "workspace_id": "workspace:1",
-                "book_id": "book:1",
+            "project_id": "project:1",
+            "workspace_id": "workspace:1",
+            "book_id": "book:1",
             "stable_idempotency_key": "book:1",
         },
         next_chapter=3,

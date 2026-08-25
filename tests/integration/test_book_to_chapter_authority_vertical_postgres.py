@@ -1423,7 +1423,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "chapter_intent": "Turn denial into a witnessed commitment.",
                 "arc_schedule": [
                     {
-                        "arc_plan_version_id": "arc-plan:v1",
+                        "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
                         "role": "PRIMARY",
                         "segment_id": "arc-segment:1",
                         "expected_movement": "denial becomes commitment",
@@ -1484,7 +1484,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                         "goal": "make the choice unavoidable",
                         "conflict": "silence endangers the witness",
                         "participants": ["protagonist"],
-                        "arc_progress": ["arc-plan:v1"],
+                        "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
                         "information_gain": ["fact:hidden-cost"],
                         "state_transitions": ["protagonist:accountability"],
                         "entry_state": "private denial",
@@ -1653,7 +1653,11 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         versions: dict[str, Any] = {}
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             for key, asset_type in types.items():
-                version_id = f"{project_id}:{asset_type}:v1"
+                version_id = (
+                    f"{project_id}:fixture-arc-plan-v1"
+                    if key == "arc_plan_versions"
+                    else f"{project_id}:{asset_type}:v1"
+                )
                 asset_id = f"{version_id}:asset"
                 content = {
                     "contract_version": f"{asset_type}-fixture-v1",

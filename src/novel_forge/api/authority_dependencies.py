@@ -65,6 +65,7 @@ from novel_forge.modules.book_authority.queries import PostgresBookProductionQue
 from novel_forge.modules.book_authority.projection_repair import (
     PostgresBookProjectionRepairAuthority,
 )
+from novel_forge.modules.book_authority.opening import PostgresBookOpeningApplication
 from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.book_replan import BookReplanCoordinator
 from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
@@ -84,6 +85,7 @@ from novel_forge.modules.story_planning_runtime import (
     PlanningExecutionRoute,
     PostgresPlanningExecutionBundleResolver,
     PostgresPlanningExecutionPreparer,
+    PostgresNarrativeSearchApplication,
     STORY_PLANNING_WORKFLOW_DEFINITION_REF,
     StoryPlanningGenerationApplication,
 )
@@ -1556,6 +1558,9 @@ def build_book_production_composition(
         ),
     )
     query = PostgresBookProductionQuery(settings.database_url)
+    narrative_search = PostgresNarrativeSearchApplication(
+        settings.database_url, planning=planning
+    )
     replan = BookReplanCoordinator(
         settings.database_url,
         book_authority=authority,
@@ -1563,6 +1568,7 @@ def build_book_production_composition(
         plan_change=plan_change,
         input_resolver=input_resolver,
         principal=principal,
+        narrative_search=narrative_search,
     )
     supervisor = PostgresBookProductionSupervisor(
         authority,
@@ -1572,6 +1578,7 @@ def build_book_production_composition(
         principal=principal,
         replan=replan,
         production_preparation=preparation,
+        narrative_search=narrative_search,
         context_token_budget=int(
             values.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET") or 16_000
         ),
@@ -1602,6 +1609,11 @@ def build_book_production_composition(
                 values.get("NOVEL_FORGE_BOOK_REPAIR_WORKER_ID")
                 or "book-projection-repair-worker"
             ),
+        ),
+        opening=PostgresBookOpeningApplication(
+            settings.database_url,
+            narrative_search=narrative_search,
+            input_resolver=input_resolver,
         ),
     )
 

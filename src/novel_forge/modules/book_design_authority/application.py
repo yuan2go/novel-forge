@@ -16,6 +16,7 @@ from novel_forge.modules.book_design_authority.definitions import (
 from novel_forge.modules.book_design_authority.domain import (
     BookDesignPayload,
     BookScope,
+    EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -69,8 +70,7 @@ class ApprovedBookDesignMigrationEvidence:
         if (
             any(not value.strip() for value in identities)
             or any(
-                len(value) != 71 or not value.startswith("sha256:")
-                for value in hashes
+                len(value) != 71 or not value.startswith("sha256:") for value in hashes
             )
             or self.item_version <= 0
         ):
@@ -219,9 +219,7 @@ class BookDesignAuthorityApplication:
         if migration_lineage is not None:
             input_assets.append(
                 {
-                    "asset_version_id": migration_lineage[
-                        "archival_asset_version_id"
-                    ],
+                    "asset_version_id": migration_lineage["archival_asset_version_id"],
                     "content_hash": migration_lineage["archival_content_hash"],
                 }
             )
@@ -640,6 +638,17 @@ class BookDesignAuthorityApplication:
                         operation_id=operation_id,
                     )
                 )
+                result["foundation_asset_versions"] = (
+                    self._materialize_evolution_foundation(
+                        uow,
+                        operation_id=operation_id,
+                        project_id=project_id,
+                        book_id=book_id,
+                        design_asset_version_id=target,
+                        trace_id=str(operation["trace_id"]),
+                        correlation_id=str(operation["correlation_id"]),
+                    )
+                )
                 checkpoint("after_business_projection_update")
             else:
                 raise KernelError(
@@ -669,6 +678,153 @@ class BookDesignAuthorityApplication:
         )
         checkpoint("after_outbox_insert")
         return result
+
+    @staticmethod
+    def _materialize_evolution_foundation(
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        project_id: str,
+        book_id: str,
+        design_asset_version_id: str,
+        trace_id: str,
+        correlation_id: str,
+    ) -> dict[str, str]:
+        uow.cursor.execute(
+            """
+            SELECT content, schema_version
+            FROM authority_asset_version
+            WHERE asset_version_id=%s
+            """,
+            [design_asset_version_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or str(row[1]) != EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
+            return {}
+        content = dict(row[0])
+        characters = list(content["character_system"])
+        outputs: tuple[tuple[str, str, str, dict[str, Any]], ...] = (
+            (
+                "creative_foundation",
+                "creative-foundation.v1",
+                "creative-foundation",
+                {
+                    **dict(content["creative_foundation"]),
+                    "genre": content["genre"],
+                    "premise": content["premise"],
+                    "core_conflict": content["core_conflict"],
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "world_bible",
+                "world-bible.v1",
+                "world-bibles",
+                {
+                    "rules": list(content["world_system"]),
+                    "legacy_rule_summaries": list(content["world_rules"]),
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "character_cast",
+                "character-cast.v1",
+                "character-casts",
+                {
+                    "characters": characters,
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "character_arc_portfolio",
+                "character-arc-portfolio.v1",
+                "character-arcs",
+                {
+                    "trajectories": [
+                        {
+                            "character_id": item["character_id"],
+                            "desire": item["desire"],
+                            "need": item["need"],
+                            "false_belief": item["false_belief"],
+                            "arc_direction": item["arc_direction"],
+                        }
+                        for item in characters
+                    ],
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "theme_contract",
+                "theme-contract.v1",
+                "theme-contracts",
+                {
+                    "theme": content["theme"],
+                    "thematic_question": content["creative_foundation"][
+                        "thematic_question"
+                    ],
+                    "recurring_choice": content["narrative_dna"]["recurring_choice"],
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "ending_intent",
+                "ending-intent.v1",
+                "ending-intents",
+                {
+                    "ending": content["ending"],
+                    "direction": content["creative_foundation"]["ending_direction"],
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+            (
+                "reader_promise",
+                "reader-promise.v1",
+                "reader-promises",
+                {
+                    "promise": content["reader_promise"],
+                    "target_reader": content["creative_foundation"]["target_reader"],
+                    "emotional_contract": content["creative_foundation"][
+                        "emotional_contract"
+                    ],
+                    "foundation_design_asset_version_id": design_asset_version_id,
+                },
+            ),
+        )
+        versions: dict[str, str] = {}
+        for asset_type, schema_version, category, output_content in outputs:
+            logical_ref = f"books/{book_id}/{asset_type.replace('_', '-')}"
+            uow.cursor.execute(
+                """
+                SELECT current_asset_version_id
+                FROM authority_asset_locator
+                WHERE project_id=%s AND logical_ref=%s
+                """,
+                [project_id, logical_ref],
+            )
+            current = uow.cursor.fetchone()
+            document = uow.repositories.asset_documents.materialize_output(
+                AuthorityAssetWriteCommand(
+                    operation_id=operation_id,
+                    project_id=project_id,
+                    asset_id=f"{asset_type}:{book_id}",
+                    asset_type=asset_type,
+                    schema_version=schema_version,
+                    logical_ref=logical_ref,
+                    category=category,
+                    output_key=f"book_design.{asset_type}",
+                    role="foundation",
+                    content=output_content,
+                    qualification_policy="book-design-evolution-foundation-v1",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    causation_id=design_asset_version_id,
+                    expected_current_asset_version_id=(
+                        str(current[0]) if current is not None else None
+                    ),
+                )
+            )
+            versions[asset_type] = document.asset_version_id
+        return versions
 
     @staticmethod
     def _project_for_operation(uow: AuthorityUnitOfWork, operation_id: str) -> str:

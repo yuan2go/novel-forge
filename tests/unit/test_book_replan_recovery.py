@@ -28,6 +28,7 @@ def test_crash_after_plan_change_proposal_replays_same_identity() -> None:
         story_design_state={},
     )
     planning_commands: list[object] = []
+    search_requests: list[object] = []
     proposal_commands: list[object] = []
     durable_proposals: dict[str, dict[str, str]] = {}
     checkpoint_payloads: list[dict[str, object]] = []
@@ -68,6 +69,7 @@ def test_crash_after_plan_change_proposal_replays_same_identity() -> None:
                 "input_mode": "RESOLVED_AUTHORITY_INPUT",
                 "input_snapshot_id": "snapshot:1",
                 "accepted_through_chapter": 20,
+                "active_story_state_version_id": "asset-version:story-state:20",
                 "state": BookProductionState.REPLAN_REQUIRED.value,
             }
         ),
@@ -79,6 +81,12 @@ def test_crash_after_plan_change_proposal_replays_same_identity() -> None:
             require=lambda _permission, _project_id: None,
         ),
         fault_injector=inject,
+        narrative_search=SimpleNamespace(
+            explore=lambda request, *, principal, activate_selected: (
+                search_requests.append(request)
+                or SimpleNamespace(selected_generation=generated)
+            )
+        ),
     )
     coordinator._find_by_idempotency = lambda _project_id, _key: state.get(  # type: ignore[method-assign,assignment]
         "result"
@@ -143,7 +151,8 @@ def test_crash_after_plan_change_proposal_replays_same_identity() -> None:
 
     assert recovered["status"] == "APPROVAL_PENDING"
     assert recovered["plan_change_proposal_id"] == "plan-change:stable"
-    assert len(planning_commands) == 2
+    assert planning_commands == []
+    assert len(search_requests) == 2
     assert len(proposal_commands) == 2
     assert len(durable_proposals) == 1
     assert len(checkpoint_payloads) == 1

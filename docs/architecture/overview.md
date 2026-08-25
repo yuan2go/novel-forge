@@ -34,6 +34,34 @@ Stable current boundaries:
 - Planning Context performs governed, structured MKAOS Narrative Intelligence selection for Book/Volume/Arc/ChapterGroup/Chapter stages. Selected cards remain possibilities, are source-isolated, repetition-aware, and retain Context/Candidate/Plan usage lineage.
 - Legacy remains migration-only.
 
+## Current Narrative Evolution runtime
+
+`book-design.v4` is the current complete Creative Foundation contract. Its
+normal candidate/evaluation/decision/activation lifecycle remains BookDesign
+Authority-owned. Activation projects typed Creative Foundation, World,
+Character/trajectory, Theme, Ending and Reader Promise assets from the exact
+active design version; v4 cannot take the legacy qualification shortcut.
+
+`BookProductionComposition.open_book` is the reachable opening coordinator. It
+requires that active qualified Foundation plus explicit authoritative opening
+inputs, then drives bounded Book, first-Volume and Arc-portfolio searches and
+resolves the resulting active baseline into the existing immutable Book
+Production input snapshot. It is a coordinator over BookDesign, Story Planning,
+Hierarchical Planning and Input Resolver Authorities, not a new Authority.
+
+Story Planning persists each search at one exact parent/accepted boundary, its
+immutable branch candidates, structured future projections, independent
+qualification hashes, deterministic comparison and rejected lineage. Only the
+selected candidate can pass the normal approval/activation gate. The Book
+Supervisor uses this path for consequential ChapterGroup planning; governed
+Replan uses it for Book/Volume/Arc/ChapterGroup replacement. Operational Chapter
+planning remains just-in-time and single-candidate.
+
+This establishes Runtime reachability plus a bounded PostgreSQL opening and
+replay fixture; it does not establish literary quality. Real-provider search
+behavior, human preference and long-form stability remain explicitly
+unqualified until a later bounded campaign.
+
 ## Current converged production shape
 
 The converged target moves chapter production from broad context-driven generation toward:

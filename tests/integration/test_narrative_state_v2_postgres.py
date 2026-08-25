@@ -15,7 +15,9 @@ from tests.integration.authority_postgres_support import (
     ensure_migrated,
     identifier,
 )
-from tests.integration import test_chapter_outcome_story_state_postgres as outcome_fixture
+from tests.integration import (
+    test_chapter_outcome_story_state_postgres as outcome_fixture,
+)
 
 
 class NarrativeStateV2PostgresTests(unittest.TestCase):
@@ -104,7 +106,7 @@ class NarrativeStateV2PostgresTests(unittest.TestCase):
             contracts,
             {
                 "canon_snapshot": "canon-snapshot-v2",
-                "chapter_outcome": "chapter-outcome-v2",
+                "chapter_outcome": "chapter-outcome-v3",
                 "story_state_snapshot": "story-state-snapshot-v2",
             },
         )

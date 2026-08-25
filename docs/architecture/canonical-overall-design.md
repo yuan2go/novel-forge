@@ -22,14 +22,16 @@ Novel Forge is an **Industrial Autonomous Novel OS**: a governed Human-AI long-f
 
 It is not a prompt chain, chapter generator, chat memory system, or free-form multi-Agent demo. The system must remain correct while the manuscript grows, while plans change, while providers fail, and while production continues without continuous human supervision.
 
-The defining model is:
+The defining model is a governed Narrative Evolution loop:
 
 ```text
-S(n) + governed future intent
-→ bounded chapter production
+Creative Foundation + Accepted Reality S(n)
+→ explore several bounded narrative futures
+→ compare / select / freeze the near future
+→ progressively elaborate one operational Chapter
 → AcceptedChapterOutcome(n+1)
 → Canon + NarrativeState(n+1)
-→ future-only planning evolution
+→ re-evaluate commitments and reopen only affected future space
 ```
 
 The system first determines **what the next chapter must accomplish and what is currently true**; generative models decide **how to express the authorized transformation as effective prose**.
@@ -106,12 +108,20 @@ Novel Forge is organized around six connected loops.
 
 ```text
 Human Intent / Material / Question
-→ Story Intelligence
-→ Story Foundation / Book Design
-→ World + Character Design
+→ divergent Creative Exploration
+→ evaluated and approved Creative Foundation / Book Design
+→ World + Character Foundations as narrative engines
 → Narrative Threads / transformation directions
 → strategic future design
 ```
+
+The production-grade opening boundary is `Book Ready for Production`, not the
+existence of disconnected DTOs. A complete opening freezes an approved
+Creative Foundation, its stable World/Character design projections, a
+qualified Book/Volume/Arc planning baseline, initial accepted-boundary
+projections, and the operational profiles required to resolve one immutable
+Book Production input snapshot. Candidate generation, semantic qualification,
+comparison, approval and activation remain separate evidence-bearing steps.
 
 ### 5.2 Progressive long-form planning
 
@@ -548,6 +558,64 @@ Future design distinguishes `HARD_CONSTRAINT`, `SOFT_INTENT`, and `OPEN_DESIGN_S
 
 Planning can create/extend/split/merge/spawn/supersede/abandon future Arc candidates, but accepted history is immutable. Replan invalidates the smallest affected future dependency closure and requalifies it.
 
+### 12.1 Divergent Narrative Search
+
+Important strategic/tactical decisions are not reduced to one provider sample.
+Book Architecture, Volume, Arc and consequential ChapterGroup planning support
+a bounded search portfolio:
+
+```text
+exact parent design / accepted boundary + frozen constraints
+→ several immutable future candidates
+→ candidate-specific projection / simulation
+→ independent semantic qualification
+→ deterministic cross-candidate comparison
+→ select one candidate with recorded reason
+→ owning Authority approval and activation
+```
+
+The search portfolio is a Planning-owned lifecycle over existing generation
+Operations and immutable candidates, not a second Planning Runtime. It records
+the exact parent state and planning horizon, assumptions, projected
+consequences, opportunities, risks, irreversible decisions, future optionality,
+creative-intelligence signals, evaluation evidence, rejected alternatives and
+selection lineage. Search selection grants no activation permission. A
+search-created candidate cannot activate unless it is the selected member of
+the current, non-stale portfolio and the normal StoryDesign/Planning approval
+and activation gates also pass.
+
+Candidate projections must expose how the future changes conflict pressure,
+character agency and transformation, costly choice/consequence, reversal and
+reveal paths, setup/payoff debt, emotional/pacing variation, relationship and
+world consequences, pattern repetition risk, Arc momentum, reader promise and
+remaining optionality. These are structured decision inputs rather than a
+single universal literary score. Deterministic comparison may rank qualified
+candidates; semantic quality remains independently evaluated and attributable.
+
+Technical retry reuses the same candidate branch and frozen Context. Mutation,
+hybridization or a newly opened future is a new semantic branch/generation.
+Rejected candidates remain immutable lineage. A changed complete Accepted
+Boundary, active parent version or frozen constraint digest makes an unselected
+portfolio stale and requires a new search generation; it is never silently
+edited.
+
+### 12.2 Rolling-wave stability
+
+Future intent has explicit stability by horizon:
+
+```text
+Book / Ending     strategic anchors; change only through governed high-impact replan
+Volume            stable direction with bounded future replacement
+Arc               selected hypothesis; re-open when accepted evidence changes viability
+ChapterGroup      tactical window; accepted reality may correct or replace it
+Chapter           frozen operational mission
+Scene / Beat      just-in-time typed children of ChapterPlan
+```
+
+One accepted Chapter never rewrites accepted history or automatically discards
+the Book strategy. It may invalidate the smallest future closure, trigger a new
+search portfolio at that scope, and then regenerate affected descendants.
+
 ---
 
 ## 13. World and Character architecture
@@ -561,6 +629,13 @@ Character = Stable Identity + Current Temporal State + Development Trajectory
 Stable identity may define desire, fear, values, voice, core contradictions, long-term goals and intended development. Current Narrative State owns what is currently true: location, health, knowledge, belief, relationship, reputation, resources, power, status and access.
 
 Character Arc planning expresses desired transformations; only accepted behavioral/state evidence advances reality.
+
+The active Creative Foundation projects stable Character Foundations with at
+least desire, need, fear, wound, false belief, values, moral boundary, agency,
+capability/cost, weakness, voice, secret, relationships and Arc direction.
+Planning/Context consume these stable definitions together with the exact
+accepted dynamic Character/Relationship state; neither substitutes for the
+other.
 
 ### 13.2 World
 
@@ -583,6 +658,12 @@ Action → Consequence → World State Change → Future Constraint
 ```
 
 Professional/history/economics/politics/military knowledge from MKAOS may supply causal mechanisms; it never becomes world Canon merely because it was retrieved.
+
+The active Creative Foundation projects World rules as
+`Rule → Cost → Exception → Consequence → Conflict Potential → Narrative Function`.
+Planning/Context combine those stable constraints with accepted Faction,
+Resource, Power, Location and Knowledge state. Accepted actions alone advance
+the temporal side of that model.
 
 ---
 
@@ -1118,6 +1199,30 @@ remain separate, explicitly authorized runs:
 - bounded-context and long-distance obligation proof;
 - million-word retrieval quality and growth-slope evidence.
 
+### P1 — Narrative Evolution Engine convergence (current runtime)
+
+The governed creative and production surfaces are now connected by one
+reachable opening and rolling-wave path:
+
+- activate a complete Creative Foundation and its stable World/Character
+  projections through BookDesign Authority;
+- explore and compare persistent Book/Volume/Arc/ChapterGroup futures through
+  Story Planning rather than accepting one sample by default;
+- carry selected-future projection and creative-intelligence evidence into
+  downstream Planning Context;
+- reopen only affected future space after accepted-state or governed Replan
+  evidence changes the parent boundary;
+- preserve existing Chapter Mission, Working Set, Accepted Outcome and
+  PlanChange Authorities.
+
+The current runtime implements these boundaries through `book-design.v4`,
+`BookProductionComposition.open_book`, Planning-owned Narrative Search,
+ChapterGroup search in Book Supervisor, and search-backed future replacement in
+Replan. Engineering completion for this convergence does not establish
+sustained literary quality. PostgreSQL execution evidence is environment-bound;
+bounded real-provider Arc/Volume campaigns, human blind comparison and reader
+evidence remain later independent qualifications.
+
 ### P2 — Creative collaboration and author IDE
 
 Complete Chief Editor / specialist conversations, Chapter Editor, selected-text change routing, Author Intent and what-if branches by extending existing Agent Collaboration and PlanChange paths. Do not create a second chat Authority/runtime.
@@ -1153,12 +1258,14 @@ Only after single-book liveness/correctness/quality:
 ```text
 SOURCE / RESEARCH / MKAOS NARRATIVE INTELLIGENCE
                       │
-HUMAN INTENT ─────────┼────────── STORY / WORLD / CHARACTER DESIGN
+HUMAN INTENT ─────────┼────────── CREATIVE FOUNDATION / WORLD / CHARACTER
                       ▼
                 NARRATIVE THREADS
                       ▼
-             NARRATIVE ARC NETWORK
-          + STRUCTURAL PROGRESSIVE PLAN
+       DIVERGENT BOOK / VOLUME / ARC SEARCH
+        + PROJECTION / EVALUATION / SELECTION
+                      ▼
+        SELECTED STRUCTURAL PLAN + ARC NETWORK
                       ▼
                  ARC SCHEDULER
                       ▼
@@ -1190,12 +1297,12 @@ HUMAN INTENT ─────────┼────────── STORY 
                       │
              ┌────────┴─────────┐
              ▼                  ▼
-       NEXT CHAPTER        ASYNC SIDECARS
-                           reader / recap /
-                           MKAOS feedback /
-                           analytics / learning
-                                  │
-                                  ▼
+  RE-EVALUATE / REOPEN     ASYNC SIDECARS
+  AFFECTED FUTURE SPACE    reader / recap /
+             │             MKAOS feedback /
+             ▼             analytics / learning
+       NEXT CHAPTER              │
+                                 ▼
                          GOVERNED FUTURE REPLAN
 ```
 
@@ -1205,10 +1312,12 @@ The final system should be globally rich but locally bounded: the Book may accum
 
 ## 29. Final architectural position
 
-Novel Forge is not “many Agents writing chapters.” It is a **Narrative Change Operating System** in which:
+Novel Forge is not “many Agents writing chapters.” It is a **Narrative Evolution Operating System** in which:
 
 - Narrative State is the truth center;
 - Planning/Arc is the future-change center;
+- Narrative Search explores qualified possibilities inside Planning without
+  becoming Authority;
 - Chapter is the expression and acceptance unit;
 - MKAOS is the reusable intelligence layer;
 - Agents are deliberative creative actors;
