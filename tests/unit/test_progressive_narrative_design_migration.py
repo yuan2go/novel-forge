@@ -29,6 +29,7 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage,
     v20260825_0098_narrative_evolution_engine as evolution,
+    v20260825_0099_creative_engineering_convergence as convergence,
 )
 
 
@@ -46,7 +47,8 @@ def test_progressive_narrative_design_is_forward_only_head() -> None:
     assert runtime_hardening.DOWN_REVISION == repair.MIGRATION_ID
     assert codex_lineage.DOWN_REVISION == runtime_hardening.MIGRATION_ID
     assert evolution.DOWN_REVISION == codex_lineage.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == evolution.MIGRATION_ID
+    assert convergence.DOWN_REVISION == evolution.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == convergence.MIGRATION_ID
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
     assert "CREATE TABLE authority_narrative_design_qualification" in sql
     assert "LONGFORM_DESIGN_QUALIFIED" in sql

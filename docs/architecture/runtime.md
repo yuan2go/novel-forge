@@ -58,6 +58,12 @@ accepted-boundary reads, typed Capability invocation and typed Authority Command
 submission. No Tool directly commits Canon, accepted Narrative State, Arc
 Actual, Obligation state, plan activation or Chapter acceptance.
 
+Admission freezes a Skill catalog with exact id/version/hash and one catalog
+hash. User selection or the Harness-native `skill.activate` meta-tool records a
+`SKILL_ACTIVATED` transcript event; activation does not expand the admitted Tool
+allowlist or Authority permissions. A Skill activation observation also cannot
+satisfy the mandatory accepted-boundary grounding query.
+
 The repository's scripted Harness adapter is fixture-only. Controlled
 validation/production composition now resolves the Agent Definition, Role,
 Capability Pack, Skill bindings, Tool policy and Authority policy on the server,
@@ -72,9 +78,11 @@ costs. The bounded exact-SHA qualification ran two real model turns around one
 `narrative.query_accepted` observation and recovered a committed transcript.
 This earns `PROVIDER_PROVEN` only for that small Agent slice; it does not earn
 long-form or production qualification.
-The pre-Harness fixed Agent-candidate API is retained only under the explicit
-`/agent-runtime/migration/agent-runs` namespace for persisted-operation
-recovery. Canonical Chapter and Planning compositions cannot admit through it.
+New fixed per-stage Agent bindings and Agent-candidate runs are retired. Their
+old OperationDefinitions are disabled, the migration namespace has no create
+route, and canonical Chapter/Planning compositions cannot admit through them.
+Queries plus retry/recovery/cancel/replay handlers remain for already-persisted
+durable Operations; physical schema removal requires a later migration audit.
 
 ## Health and shutdown
 
@@ -91,8 +99,8 @@ recovery. Canonical Chapter and Planning compositions cannot admit through it.
 - CAS/version checks prevent stale business transitions.
 - Attempt leases and fences prevent stale worker commits.
 - ExternalEffect identity and receipts are the required mechanism preventing
-  blind re-execution after uncertain outcomes. Each worker must classify
-  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; latest-main
-  embedding projection did not yet satisfy this invariant at reconciliation.
+  blind re-execution after uncertain outcomes. Each worker classifies
+  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; embedding
+  projection recovery is covered by the current bounded PostgreSQL suite.
 - Outbox records are committed with business state and delivered later.
 - Supervisor checkpoints and trace/correlation identities survive process restarts.

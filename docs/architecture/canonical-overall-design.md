@@ -381,7 +381,7 @@ RuntimeJob / Operation / Attempt / Lease / Fence
     └── next turn / checkpoint / stop / escalation
 ```
 
-It must support multi-turn resume, dynamic allowlisted Tool selection, Skill id/version/hash provenance, cancellation/deadline checks, token/cost/turn/effect hard stops, committed-request restoration and runtime trace. Every turn validates the Attempt execution binding against the immutable admission contract; restart or configuration drift never silently replaces provider, model, route, Pack or policy. Session budgets aggregate Agent turns plus descendant Typed Capability and Tool tokens, cost and effects through authoritative Operation/ledger lineage rather than copied accounting rows. Skill activation never grants permission. An Agent may query, invoke Capabilities and submit typed Authority Commands; it cannot directly mutate Canon, accepted Narrative State, Arc actuals, Narrative Obligations, active plans or Chapter acceptance.
+It must support multi-turn resume, dynamic allowlisted Tool selection, Skill id/version/hash provenance, cancellation/deadline checks, token/cost/turn/effect hard stops, committed-request restoration and runtime trace. Every turn validates the Attempt execution binding against the immutable admission contract; restart or configuration drift never silently replaces provider, model, route, Pack or policy. Session budgets aggregate Agent turns plus descendant Typed Capability and Tool tokens, cost and effects through authoritative Operation/ledger lineage rather than copied accounting rows. Skill discovery starts from one admission-frozen catalog. User or model activation is an explicit Harness event bound to the exact Skill id/version/hash and catalog hash; it grants neither Tool nor business-Authority permission. An Agent may query, invoke Capabilities and submit typed Authority Commands; it cannot directly mutate Canon, accepted Narrative State, Arc actuals, Narrative Obligations, active plans or Chapter acceptance.
 
 ---
 
@@ -686,7 +686,7 @@ L9 External Knowledge / Reference
 
 L1/L2/L4/L5 and accepted lineage are authoritative story projections. L3/L6/L7 are rebuildable consumers. L9 is Source/MKAOS-governed external evidence, never Canon. Working Context and interaction transcripts are frozen execution evidence, not another memory Authority. No private Agent memory may silently override these boundaries.
 
-### 14.2 Context Contract v2 and Chapter Production Packet
+### 14.2 Governed Context Contract and Chapter Production Packet
 
 The Writer should not receive Book Bible + all characters + all history. Context is compiled only at the latest complete Accepted Boundary:
 
@@ -695,18 +695,23 @@ ChapterPlan
 → ChapterExecutionIntent
 → qualified ChapterMemo
 → Retrieval Query Plan at the frozen Accepted Boundary
-→ parallel PostgreSQL FTS / vector / graph / temporal candidate channels
-→ accepted-boundary and embedding-compatibility governed candidate union
-→ rerank
+→ PostgreSQL FTS plus exact structured accepted-evidence discovery
+→ bounded lexical/structured candidate set
+→ optional semantic rerank inside that exact set
 → compressible evidence compression
 → immutable RetrievalResult
-→ Context Manifest v2
+→ Context Manifest
 → Chapter Production Packet
 ```
 
-**Protected Context** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If they exceed budget, compilation fails; none is silently dropped or semantically weakened.
+The Context classes are operational invariants, not labels:
 
-**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL retrieval runs independent Full-Text Search (`ts_rank`), vector, entity/relationship, timeline/temporal, Arc and obligation candidate channels. Every channel applies Project, Book, Accepted Boundary and lifecycle eligibility; the vector channel additionally requires compatible embedding model/version/dimensions. The frozen union records all contributing channels, deduplicates by retrieval document, then applies a versioned hybrid ranking policy and optional compression. Vector similarity is one signal, never the memory system.
+- **PROTECTED** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If protected tokens alone exceed the safe provider budget, compilation fails before provider execution; none is silently dropped, compressed or semantically weakened.
+- **RETRIEVABLE** is rebuildable accepted-history or governed-knowledge evidence selected from the frozen retrieval candidate set.
+- **COMPRESSIBLE** may be rendered through a governed compact projection only when its exact source AssetVersion and compression provenance remain in the manifest.
+- **EPHEMERAL** is excluded from long-lived Memory/Search. If sent to a provider, its exact content/identity is still frozen in Attempt evidence for replay and audit.
+
+Retrievable evidence includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. Candidate discovery is lexical-first: PostgreSQL Full-Text Search (`ts_rank`) and exact entity/relationship/timeline/temporal/Arc/obligation channels produce one bounded set under Project, Book, Accepted Boundary and lifecycle eligibility. Optional compatible vector similarity may rerank only members of that frozen set; it cannot introduce a candidate. If semantic projection/provider support is unavailable, ranking deterministically falls back to lexical/structured signals. PostgreSQL FTS is not called BM25.
 
 The bounded packet contains only what the chapter needs, conceptually including:
 
@@ -722,7 +727,7 @@ The bounded packet contains only what the chapter needs, conceptually including:
 - style/voice requirements;
 - Scene Plan.
 
-Context Manifest v2 records accepted boundary, selected/rejected artifact versions, protected/retrievable class, retrieval reasons/scores/provenance, token partitions, compression lineage, policy/Skill/capability versions and a replayable fingerprint.
+Context Manifest v3 records accepted boundary, selected/rejected artifact versions, all four Context classes, retrieval reasons/scores/provenance, protected/other token partitions, compression lineage, ephemeral Attempt-evidence policy, policy/Skill/capability versions and a replayable fingerprint.
 
 ### 14.3 Three-stage context compilation
 
@@ -932,7 +937,7 @@ Keep three quality classes separate:
 
 Generator output cannot mint its own PASS. Semantic evaluation must be independently attributable and candidate-hash/version bound.
 
-Avoid Judge monoculture and Goodhart loops. Quality qualification should progressively combine deterministic invariants, calibrated model judges, human editorial evidence, and eventually real reader evidence.
+Avoid Judge monoculture and Goodhart loops. Quality qualification should progressively combine deterministic invariants, calibrated model judges, human editorial evidence, and eventually real reader evidence. Keep `JudgeEvaluation`, `HumanEvaluation`, blind pair preference, adjudicated evaluation, reader-outcome evidence, calibration run/result and versioned Quality Profile distinct. A single subjective human literary opinion is not `GroundTruth`; that term is reserved for objectively decidable facts. Subjective calibration compares a Judge to an explicit adjudication over independently attributable human evidence, while reader outcomes remain advisory evidence and cannot mutate narrative truth.
 
 Do not add more Judges until existing Judges have evidence for calibration, disagreement handling, stability and independence.
 
@@ -1159,7 +1164,9 @@ The convergence implementation now preserves the industrial base and has:
 - added explicit ArcPlan/ActualState/Progress/Outcome/Checkpoint/Revision and removed plan-to-actual fallback;
 - completed accepted-only Narrative Obligation semantics;
 - added ChapterExecutionIntent/ChapterMemo before accepted-bound Context compilation;
-- added Protected/Retrievable Context v2, layered memory and PostgreSQL hybrid retrieval;
+- added enforceable four-class Context Manifest v3, layered accepted-memory
+  projections and lexical-first PostgreSQL retrieval with bounded optional
+  semantic reranking;
 - added persistent CandidateComparison/BestCandidateSnapshot/minimum improvement/rollback;
 - provided one semantic lineage/invalidation contract and isolated legacy parallel graphs;
 - added a multi-turn Tool-calling Agent Harness inside Operation/Attempt/ExternalEffect while classifying ordinary creative work as Typed Capabilities;

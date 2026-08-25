@@ -44,8 +44,8 @@ Narrative Design
 
 Narrative Execution
 ├ ChapterExecutionIntent / ChapterMemo
-├ Protected + retrievable Context Compiler v2
-├ hybrid long-form retrieval / compression
+├ governed four-class Context Compiler
+├ lexical-first long-form retrieval / bounded semantic rerank / compression
 ├ Scene architecture
 ├ prose generation
 ├ diagnosis / revision / re-review / Best Candidate
@@ -141,7 +141,7 @@ The following target semantics require latest-code verification and, where absen
 
 - autonomous Chapter-to-Chapter liveness with advisory sidecars detached from the default critical path;
 - explicit progress/stall explainability for Book production;
-- sustained runtime proof for ChapterExecutionIntent/ChapterMemo Mission and Protected/Retrievable Context v2;
+- sustained runtime proof for ChapterExecutionIntent/ChapterMemo Mission and four-class governed Context;
 - production-scale proof for hybrid long-form retrieval and layered Narrative Memory;
 - production qualification for Accepted-Reality Arc scheduling, composition and obligation-driven correction;
 - persistent Best Candidate/minimum improvement/rollback;

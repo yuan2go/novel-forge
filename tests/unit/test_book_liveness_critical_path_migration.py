@@ -6,6 +6,7 @@ from novel_forge.storage.migrations.versions import (
     v20260820_0093_book_liveness_critical_path_closure as migration,
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage,
     v20260825_0098_narrative_evolution_engine as evolution,
+    v20260825_0099_creative_engineering_convergence as convergence,
 )
 
 
@@ -14,7 +15,8 @@ def test_book_liveness_closure_is_the_forward_only_backup_required_head() -> Non
 
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert evolution.DOWN_REVISION == codex_lineage.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == evolution.MIGRATION_ID
+    assert convergence.DOWN_REVISION == evolution.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == convergence.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is True
     assert "pre-0093 backup" in migration.FORWARD_FIX
