@@ -25,7 +25,12 @@ from .calibration import (
     evaluate_calibration_run,
     quality_calibration_metrics,
 )
-from .accepted_projection import load_accepted_quality_observations
+from .accepted_projection import (
+    CURRENT_CHAPTER_OUTCOME_CONTRACT,
+    SUPPORTED_CHAPTER_OUTCOME_CONTRACTS,
+    load_accepted_quality_observations,
+    validate_chapter_outcome_contract,
+)
 from .calibration_v2 import (
     AdjudicatedEvaluation,
     BlindPairPreference,
@@ -60,6 +65,9 @@ __all__ = [
     "build_multiscale_quality_report",
     "build_quality_group_evidence",
     "load_accepted_quality_observations",
+    "CURRENT_CHAPTER_OUTCOME_CONTRACT",
+    "SUPPORTED_CHAPTER_OUTCOME_CONTRACTS",
+    "validate_chapter_outcome_contract",
     "build_quality_context_view",
     "compile_platform_policy",
     "compile_quality_policy",

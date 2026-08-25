@@ -14,6 +14,22 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 _MAX_ACCEPTED_QUALITY_OBSERVATIONS = 300
 _TERMINAL_ARC_STATES = {"CLOSED", "RESOLVED", "FULFILLED", "CANCELLED"}
+CURRENT_CHAPTER_OUTCOME_CONTRACT = "chapter-outcome-v3"
+SUPPORTED_CHAPTER_OUTCOME_CONTRACTS = (
+    "chapter-outcome-v2",
+    CURRENT_CHAPTER_OUTCOME_CONTRACT,
+)
+
+
+def validate_chapter_outcome_contract(value: object) -> str:
+    contract = str(value or "")
+    if contract not in SUPPORTED_CHAPTER_OUTCOME_CONTRACTS:
+        raise KernelError(
+            "LONGITUDINAL_QUALITY_OUTCOME_CONTRACT_UNSUPPORTED",
+            "accepted Quality projection reads historical ChapterOutcome v2 "
+            "or canonical ChapterOutcome v3 only",
+        )
+    return contract
 
 
 def load_accepted_quality_observations(
@@ -36,11 +52,25 @@ def load_accepted_quality_observations(
                    acceptance.chapter_number,
                    acceptance.chapter_outcome_asset_version_id,
                    outcome.content, plan.content, draft.content,
-                   quality.content, story.content
+                   quality.content, story.content,
+                   acceptance.story_state_asset_version_id,
+                   acceptance.canon_snapshot_asset_version_id,
+                   canon.content,
+                   request.narrative_realization_id,
+                   request.narrative_realization_slice_id,
+                   request.narrative_realization_contract_digest,
+                   realization.content_asset_version_id,
+                   realization.contract_digest,
+                   COALESCE(realization_coverage.rows, '[]'::jsonb)
             FROM authority_book_chapter_acceptance AS acceptance
             JOIN authority_book_production AS production
               ON production.book_run_id=acceptance.book_run_id
              AND production.project_id=acceptance.project_id
+            JOIN authority_book_chapter_request AS request
+              ON request.chapter_request_id=acceptance.chapter_request_id
+             AND request.project_id=acceptance.project_id
+             AND request.book_run_id=acceptance.book_run_id
+             AND request.chapter_number=acceptance.chapter_number
             JOIN authority_operation AS acceptance_operation
               ON acceptance_operation.operation_id=acceptance.acceptance_operation_id
              AND acceptance_operation.project_id=acceptance.project_id
@@ -64,7 +94,9 @@ def load_accepted_quality_observations(
             JOIN authority_asset AS draft_asset
               ON draft_asset.asset_id=draft.asset_id
              AND draft_asset.project_id=acceptance.project_id
-             AND draft_asset.asset_type='draft_version'
+             AND draft_asset.asset_type IN (
+                 'draft_version','best_draft_candidate'
+             )
             JOIN authority_asset_version AS quality
               ON quality.asset_version_id=outcome.content->>'quality_aggregate_asset_version_id'
             JOIN authority_asset AS quality_asset
@@ -77,11 +109,41 @@ def load_accepted_quality_observations(
               ON story_asset.asset_id=story.asset_id
              AND story_asset.project_id=acceptance.project_id
              AND story_asset.asset_type='story_state_snapshot'
+            JOIN authority_asset_version AS canon
+              ON canon.asset_version_id=acceptance.canon_snapshot_asset_version_id
+             AND canon.eligibility='ELIGIBLE'
+             AND canon.governance='CLEAR'
+            JOIN authority_asset AS canon_asset
+              ON canon_asset.asset_id=canon.asset_id
+             AND canon_asset.project_id=acceptance.project_id
+             AND canon_asset.asset_type='canon_snapshot'
+            LEFT JOIN authority_narrative_realization AS realization
+              ON realization.realization_id=request.narrative_realization_id
+             AND realization.project_id=acceptance.project_id
+             AND realization.book_id=production.book_id
+             AND acceptance.chapter_number BETWEEN
+                 realization.chapter_start AND realization.chapter_end
+            LEFT JOIN LATERAL (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'planned_event_id', consumption.planned_event_id,
+                        'observed_event_id', consumption.observed_event_id,
+                        'coverage_status', consumption.coverage_status,
+                        'evidence', consumption.evidence
+                    ) ORDER BY consumption.planned_event_id
+                ) AS rows
+                FROM authority_narrative_realization_consumption AS consumption
+                WHERE consumption.acceptance_id=acceptance.acceptance_id
+                  AND consumption.chapter_outcome_asset_version_id=
+                      acceptance.chapter_outcome_asset_version_id
+            ) AS realization_coverage ON TRUE
             WHERE acceptance.project_id=%s
               AND production.book_id=%s
               AND acceptance.status='COMMITTED'
               AND acceptance.chapter_number<=%s
-              AND outcome.content->>'contract_version'='chapter-outcome-v2'
+              AND outcome.content->>'contract_version' IN (
+                  'chapter-outcome-v2','chapter-outcome-v3'
+              )
             ORDER BY acceptance.chapter_number
             LIMIT %s
             """,
@@ -111,6 +173,15 @@ def load_accepted_quality_observations(
             draft=dict(row[6]),
             quality=dict(row[7]),
             story_state=dict(row[8]),
+            story_state_asset_version_id=str(row[9]),
+            canon_snapshot_asset_version_id=str(row[10]),
+            canon_snapshot=dict(row[11]),
+            narrative_realization_id=str(row[12] or ""),
+            narrative_realization_slice_id=str(row[13] or ""),
+            requested_realization_contract_digest=str(row[14] or ""),
+            narrative_realization_asset_version_id=str(row[15] or ""),
+            narrative_realization_contract_digest=str(row[16] or ""),
+            realization_coverage=tuple(dict(item) for item in (row[17] or ())),
         )
         for row in rows
     ]
@@ -129,7 +200,19 @@ def _observation(
     draft: dict[str, Any],
     quality: dict[str, Any],
     story_state: dict[str, Any],
+    story_state_asset_version_id: str,
+    canon_snapshot_asset_version_id: str,
+    canon_snapshot: dict[str, Any],
+    narrative_realization_id: str,
+    narrative_realization_slice_id: str,
+    requested_realization_contract_digest: str,
+    narrative_realization_asset_version_id: str,
+    narrative_realization_contract_digest: str,
+    realization_coverage: tuple[dict[str, Any], ...],
 ) -> dict[str, Any]:
+    outcome_contract = validate_chapter_outcome_contract(
+        outcome.get("contract_version")
+    )
     if (
         outcome.get("project_id") != project_id
         or outcome.get("book_id") != book_id
@@ -139,6 +222,39 @@ def _observation(
         raise KernelError(
             "LONGITUDINAL_QUALITY_ACCEPTED_LINEAGE_REQUIRED",
             "accepted Quality projection resolved inconsistent Chapter lineage",
+        )
+    if story_state.get("contract_version") == "story-state-snapshot-v2" and (
+        story_state.get("project_id") != project_id
+        or story_state.get("book_id") != book_id
+        or story_state.get("based_on_chapter_outcome_asset_version_id")
+        != accepted_asset_version_id
+    ):
+        raise KernelError(
+            "LONGITUDINAL_QUALITY_ACCEPTED_LINEAGE_REQUIRED",
+            "accepted Story State does not derive from the accepted ChapterOutcome",
+        )
+    if (
+        canon_snapshot.get("contract_version") != "canon-snapshot-v2"
+        or canon_snapshot.get("project_id") != project_id
+        or canon_snapshot.get("book_id") != book_id
+        or int(canon_snapshot.get("accepted_through_chapter") or 0)
+        != chapter_number
+        or canon_snapshot.get("based_on_chapter_outcome_asset_version_id")
+        != accepted_asset_version_id
+    ):
+        raise KernelError(
+            "LONGITUDINAL_QUALITY_ACCEPTED_LINEAGE_REQUIRED",
+            "accepted Canon does not derive from the accepted ChapterOutcome",
+        )
+    if narrative_realization_id and (
+        not narrative_realization_asset_version_id
+        or not narrative_realization_contract_digest
+        or requested_realization_contract_digest
+        != narrative_realization_contract_digest
+    ):
+        raise KernelError(
+            "LONGITUDINAL_QUALITY_REALIZATION_LINEAGE_REQUIRED",
+            "accepted Quality projection lost its Narrative Realization binding",
         )
     segment = dict(plan.get("narrative_segment_ref") or {})
     active_arcs = sorted(
@@ -210,6 +326,27 @@ def _observation(
         "acceptance_id": acceptance_id,
         "accepted_asset_version_id": accepted_asset_version_id,
         "acceptance_status": acceptance_status,
+        "chapter_outcome_contract_version": outcome_contract,
+        "chapter_plan_asset_version_id": str(
+            outcome.get("chapter_plan_version_id") or ""
+        ),
+        "accepted_draft_asset_version_id": str(
+            outcome.get("accepted_draft_asset_version_id") or ""
+        ),
+        "quality_aggregate_asset_version_id": str(
+            outcome.get("quality_aggregate_asset_version_id") or ""
+        ),
+        "story_state_asset_version_id": story_state_asset_version_id,
+        "canon_snapshot_asset_version_id": canon_snapshot_asset_version_id,
+        "narrative_realization_id": narrative_realization_id,
+        "narrative_realization_slice_id": narrative_realization_slice_id,
+        "narrative_realization_asset_version_id": (
+            narrative_realization_asset_version_id
+        ),
+        "narrative_realization_contract_digest": (
+            narrative_realization_contract_digest
+        ),
+        "realization_coverage": [dict(item) for item in realization_coverage],
         "volume_id": str(segment.get("volume_plan_version_id") or ""),
         "segment_ids": [str(segment.get("segment_id") or "")]
         if segment.get("segment_id")
@@ -227,7 +364,7 @@ def _observation(
         ),
         "reader_reward_count": reader_reward_count,
         "quality_gate": str(quality.get("gate") or ""),
-        "projection_contract_version": "accepted-quality-observation-v1",
+        "projection_contract_version": "accepted-quality-observation-v2",
     }
 
 
@@ -260,4 +397,9 @@ def _digest(value: str) -> str:
     ).hexdigest()
 
 
-__all__ = ["load_accepted_quality_observations"]
+__all__ = [
+    "CURRENT_CHAPTER_OUTCOME_CONTRACT",
+    "SUPPORTED_CHAPTER_OUTCOME_CONTRACTS",
+    "load_accepted_quality_observations",
+    "validate_chapter_outcome_contract",
+]

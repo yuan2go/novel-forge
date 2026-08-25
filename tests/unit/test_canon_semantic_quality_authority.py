@@ -9,13 +9,39 @@ from novel_forge.modules.canon_graph.domain import (
 )
 from novel_forge.modules.chapter_authority.domain_handlers import build_quality_report
 from novel_forge.modules.chapter_quality_authority import (
+    CURRENT_CHAPTER_OUTCOME_CONTRACT,
     QUALITY_DIMENSIONS,
+    SUPPORTED_CHAPTER_OUTCOME_CONTRACTS,
     build_multiscale_quality_report,
     build_quality_group_evidence,
+    validate_chapter_outcome_contract,
 )
 
 
 class CanonSemanticQualityAuthorityTests(unittest.TestCase):
+    def test_accepted_quality_projection_reads_v2_history_and_requires_v3_now(
+        self,
+    ) -> None:
+        self.assertEqual(CURRENT_CHAPTER_OUTCOME_CONTRACT, "chapter-outcome-v3")
+        self.assertEqual(
+            SUPPORTED_CHAPTER_OUTCOME_CONTRACTS,
+            ("chapter-outcome-v2", "chapter-outcome-v3"),
+        )
+        self.assertEqual(
+            validate_chapter_outcome_contract("chapter-outcome-v2"),
+            "chapter-outcome-v2",
+        )
+        self.assertEqual(
+            validate_chapter_outcome_contract("chapter-outcome-v3"),
+            "chapter-outcome-v3",
+        )
+        with self.assertRaises(KernelError) as raised:
+            validate_chapter_outcome_contract("chapter-outcome-v1")
+        self.assertEqual(
+            raised.exception.code,
+            "LONGITUDINAL_QUALITY_OUTCOME_CONTRACT_UNSUPPORTED",
+        )
+
     def test_multiscale_quality_uses_only_accepted_lineage_and_bounded_windows(
         self,
     ) -> None:
