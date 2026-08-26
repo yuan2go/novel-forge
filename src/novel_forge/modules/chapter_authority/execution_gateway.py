@@ -2563,8 +2563,17 @@ def _stage_semantic_contract(
         )
     if stage == "narrative_semantic_evaluation":
         return (
-            "Independently evaluate only the immutable candidate against every frozen "
-            "qualification profile and criterion. Copy layer, profile_id, "
+            "Independently evaluate the immutable candidate against every frozen "
+            "qualification profile and criterion. The frozen Provider Context is the "
+            "complete evidence boundary. For EXACT_CANDIDATE_ONLY, use only the first "
+            "selected input. For EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES, keep the "
+            "first selected input as the sole candidate under evaluation and consume "
+            "each remaining exact qualified dependency payload as evidence for that "
+            "candidate's cross-layer claims. A reference-only BookDesign field is not "
+            "missing evidence when its exact referenced dependency supplies the "
+            "semantics. Do not consume prior qualification verdicts, demand downstream "
+            "plans that cannot legally exist at the candidate's stage, or infer anything "
+            "outside the frozen candidate-and-dependency envelope. Copy layer, profile_id, "
             "profile_version, profile_hash, capability_id, skill_ref, criterion, and "
             "candidate evidence identities exactly. Return one verdict per criterion. "
             "A non-PASS verdict must include a concrete repair_directive; PASS must "

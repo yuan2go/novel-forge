@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from novel_forge.modules.capability_packs.longform_profiles import (
+    NARRATIVE_EVALUATION_PROMPT_VERSION,
     STORY_PLANNING_PROMPT_VERSION,
     build_narrative_evaluation_pack_profile,
     build_reader_outcome_pack_profile,
@@ -46,6 +47,22 @@ def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
     )
     assert binding.operation_name == "story_design.semantic_evaluate"
     assert binding.primary_output_asset_type == "narrative_design_evaluation"
+    assert profile.manifest["prompt_binding"]["system_instruction_version"] == (
+        NARRATIVE_EVALUATION_PROMPT_VERSION
+    )
+    instruction = next(
+        item
+        for item in profile.artifact_catalog["artifacts"]
+        if item["kind"] == "PROMPT_SYSTEM_INSTRUCTION"
+        and item["ref"] == "prompt-system:narrative-semantic-evaluation-pack"
+    )
+    assert instruction["version"] == NARRATIVE_EVALUATION_PROMPT_VERSION
+    assert "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES" in instruction["content"][
+        "text"
+    ]
+    assert "do not mistake a reference-only BookDesign field" in instruction[
+        "content"
+    ]["text"]
 
 
 def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:

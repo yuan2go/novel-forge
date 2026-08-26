@@ -98,6 +98,16 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "Never replace the full chapter with a summary or excerpt" in contract
 
 
+def test_narrative_evaluation_contract_consumes_exact_foundation_closure() -> None:
+    contract = _stage_semantic_contract("narrative_semantic_evaluation")
+
+    assert "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES" in contract
+    assert "sole candidate under evaluation" in contract
+    assert "consume each remaining exact qualified dependency payload" in contract
+    assert "Do not consume prior qualification verdicts" in contract
+    assert "demand downstream plans" in contract
+
+
 def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() -> None:
     contract = _stage_semantic_contract(
         "retrieval",
