@@ -81,6 +81,9 @@ PY
 The real campaign must use a dedicated Project and one BookRun. The Provider
 artifact queries every model call in that Project, so exploratory or unrelated
 calls contaminate lineage and consume the same call/token/cost budget.
+Every external effect whose `effect_type` is `model.invoke` is counted,
+regardless of whether its capability is named `planning.*`, `chapter.*`,
+`quality_*` or `model.*`.
 
 ## Canonical Authority preparation
 
@@ -254,6 +257,10 @@ PYTHONPATH=src python scripts/run_bounded_quality_qualification.py \
 
 Any SHA, migration, Pack, Foundation, Planning, route or profile drift requires
 a new campaign identity. Never edit a frozen descriptor to point at new state.
+Freeze also reads settled Budget Authority reservations and refuses admission
+unless preparation leaves at least 80 Provider calls, 4,800,000 measured tokens
+and USD 60.00 for execution. Unresolved reservations, an existing budget breach
+or a model effect without a reservation also blocks freeze.
 
 ## Execute or recover the bounded campaign
 
@@ -267,10 +274,11 @@ PYTHONPATH=src python scripts/run_bounded_quality_qualification.py \
 
 The runner executes Group 1-4, drains Reader/Recap evidence, then executes
 Group 5-8. It checks budget after every Chapter and follow-up tick. Frozen
-ceilings are eight Chapters, 120 Provider dispatches, 16 retries, 800,000 input
-tokens, 220,000 output tokens, 1,020,000 total tokens, USD 4 per call, USD 20 per
-Chapter, USD 80 per campaign Project and four hours per invocation. A ceiling
-is a hard stop, not a target.
+ceilings are eight Chapters, 120 Provider dispatches, 16 retries, 5,400,000
+input tokens, 1,200,000 output tokens, 6,600,000 total tokens, USD 4 per call,
+USD 20 per Chapter, USD 80 per campaign Project and four hours per invocation.
+These empirically bounded ceilings include canonical preparation, search and
+repair calls. A ceiling is a hard stop, not a target.
 
 Before the first Chapter provider call, each ChapterGroup Narrative Search must
 show the complete frozen request in its generation command and Context Bundle.
@@ -305,6 +313,13 @@ PYTHONPATH=src python scripts/run_bounded_quality_qualification.py \
 Resume reconciles durable Attempts, receipts, Chapter acceptance and Group
 state. Do not delete failures, release unresolved budgets manually, or create a
 second BookRun to hide a failed attempt.
+
+A terminal budget, wall-clock, route, Pack or Provider-evidence violation is
+persisted as an `ENGINEERING_QUALIFICATION_FAILURE` and moves the campaign to
+`FAILED / FAIL`. It leaves Hard Correctness, Editorial Quality and
+Reader/Longitudinal Quality at `NOT_PROVEN`; an engineering failure is not
+rewritten as a narrative failure. Transient recoverable interruptions remain
+resumable and do not use this terminal path.
 
 At eight acceptances the campaign must remain
 `WAITING_HUMAN_EVIDENCE / NOT_PROVEN`. This is the expected zero-human result,

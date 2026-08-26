@@ -161,13 +161,18 @@
     "chapter_limit": 8,
     "provider_call_limit": 120,
     "retry_limit": 16,
-    "input_token_limit": 800000,
-    "output_token_limit": 220000,
-    "token_limit": 1020000,
+    "input_token_limit": 5400000,
+    "output_token_limit": 1200000,
+    "token_limit": 6600000,
     "cost_limit_per_call_usd": "4.00",
     "cost_limit_per_chapter_usd": "20.00",
     "cost_limit_usd": "80.00",
-    "wall_clock_seconds": 14400
+    "wall_clock_seconds": 14400,
+    "freeze_headroom_policy": {
+      "minimum_remaining_provider_calls": 80,
+      "minimum_remaining_tokens": 4800000,
+      "minimum_remaining_cost_usd": "60.00"
+    }
   },
   "stop_policy": {
     "accepted_through_chapter": 8,

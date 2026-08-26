@@ -276,6 +276,90 @@ class TestQualityQualificationPostgres:
             operation_evidence = uow.cursor.fetchone()
         assert tuple(int(value) for value in operation_evidence) == (9, 0, 1)
 
+    def test_terminal_runtime_failure_is_not_recast_as_narrative_failure(
+        self,
+    ) -> None:
+        manifest = QualityCampaignManifest.from_mapping(
+            _manifest(self.project_id, self.workspace_id, self.book_id)
+        )
+        self.app.admit_campaign(
+            manifest,
+            stable_idempotency_key=f"{self.project_id}:terminal:v1",
+            trace_id=f"trace:{self.project_id}:terminal",
+            correlation_id=f"correlation:{self.project_id}:terminal",
+            principal=self.principal,
+        )
+        self.app.freeze_campaign(
+            manifest.campaign_id,
+            expected_version=0,
+            principal=self.principal,
+        )
+        self.app.start_campaign(
+            manifest.campaign_id,
+            expected_version=1,
+            principal=self.principal,
+        )
+        source = self._asset(
+            "model_call_log",
+            "terminal-budget-source",
+            {"measured_total_tokens": 1_566_433},
+        )
+
+        decision = self.app.record_terminal_failure(
+            manifest.campaign_id,
+            expected_version=2,
+            failure_code="CAMPAIGN_BUDGET_OR_LINEAGE_BREACH",
+            reasons=("measured_total_tokens>token_limit",),
+            measurements={
+                "measured_total_tokens": 1_566_433,
+                "token_limit": 1_020_000,
+            },
+            source_asset_version_ids=(source["asset_version_id"],),
+            principal=self.principal,
+        )
+        replay = self.app.record_terminal_failure(
+            manifest.campaign_id,
+            expected_version=2,
+            failure_code="CAMPAIGN_BUDGET_OR_LINEAGE_BREACH",
+            reasons=("measured_total_tokens>token_limit",),
+            measurements={
+                "measured_total_tokens": 1_566_433,
+                "token_limit": 1_020_000,
+            },
+            source_asset_version_ids=(source["asset_version_id"],),
+            principal=self.principal,
+        )
+
+        assert replay == decision
+        assert decision["qualification_status"] == "FAIL"
+        assert decision["campaign_lifecycle"] == "FAILED"
+        assert decision["hard_correctness_status"] == "NOT_PROVEN"
+        assert decision["editorial_quality_status"] == "NOT_PROVEN"
+        assert decision["reader_longitudinal_status"] == "NOT_PROVEN"
+        assert "ENGINEERING_QUALIFICATION_FAILURE" in decision["limitations"]
+        campaign = self.app.require_campaign(
+            manifest.campaign_id,
+            principal=self.principal,
+        )
+        assert campaign["lifecycle"] == "FAILED"
+        assert campaign["qualification_status"] == "FAIL"
+        assert campaign["human_evidence_status"] == "WAITING_HUMAN_EVIDENCE"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT definition_name,definition_version
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND definition_name='quality.qualification.campaign.fail'
+                """,
+                [self.project_id],
+            )
+            terminal_operation = uow.cursor.fetchone()
+        assert terminal_operation == (
+            "quality.qualification.campaign.fail",
+            "1.1.0",
+        )
+
     def test_materialized_comparison_artifact_is_source_bound_and_bounded(
         self,
     ) -> None:

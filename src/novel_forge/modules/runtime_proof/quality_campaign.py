@@ -86,6 +86,25 @@ _SEMANTIC_ARC_KEYS = frozenset(
         "open_arc_ids",
     }
 )
+
+
+class QualityCampaignTerminalError(RuntimeError):
+    """A bounded campaign violation that must become terminal evidence."""
+
+    def __init__(
+        self,
+        failure_code: str,
+        message: str,
+        *,
+        reasons: tuple[str, ...] = (),
+        measurements: Mapping[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.failure_code = failure_code
+        self.reasons = reasons
+        self.measurements = dict(measurements or {})
+
+
 _SEMANTIC_IDENTITY_SUFFIXES = (
     "_asset_version_id",
     "_asset_version_ids",
@@ -359,6 +378,30 @@ class BoundedQualityCampaignProfile:
             budget["cost_limit_usd"]
         ):
             raise ValueError("budget_policy cost ceilings are not monotonic")
+        freeze_headroom = _mapping(
+            budget.get("freeze_headroom_policy"),
+            "budget_policy.freeze_headroom_policy",
+        )
+        minimum_remaining_provider_calls = int(
+            freeze_headroom.get("minimum_remaining_provider_calls") or 0
+        )
+        minimum_remaining_tokens = int(
+            freeze_headroom.get("minimum_remaining_tokens") or 0
+        )
+        try:
+            minimum_remaining_cost = float(
+                freeze_headroom.get("minimum_remaining_cost_usd") or 0
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("freeze headroom cost must be positive") from exc
+        if not (
+            0 < minimum_remaining_provider_calls <= int(budget["provider_call_limit"])
+            and 0 < minimum_remaining_tokens <= int(budget["token_limit"])
+            and 0 < minimum_remaining_cost <= float(budget["cost_limit_usd"])
+        ):
+            raise ValueError(
+                "freeze headroom must fit inside bounded campaign ceilings"
+            )
 
         stop = _mapping(payload["stop_policy"], "stop_policy")
         if not (
@@ -641,7 +684,18 @@ class BoundedQualityCampaignRunner:
 
         def require_within_deadline() -> None:
             if monotonic() > deadline:
-                raise RuntimeError("bounded Quality campaign wall-clock budget expired")
+                raise QualityCampaignTerminalError(
+                    "CAMPAIGN_WALL_CLOCK_BUDGET_EXPIRED",
+                    "bounded Quality campaign wall-clock budget expired",
+                    reasons=("wall_clock_seconds>wall_clock_budget",),
+                    measurements={
+                        "wall_clock_seconds": int(
+                            self.profile.to_dict()["budget_policy"][
+                                "wall_clock_seconds"
+                            ]
+                        )
+                    },
+                )
 
         checkpoint = checkpoint or CampaignExecutionCheckpoint(
             profile_digest=self.profile.digest,

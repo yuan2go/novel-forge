@@ -286,3 +286,33 @@ def test_runtime_environment_applies_profile_caps_and_real_validation_boundary()
     }
     with pytest.raises(RuntimeError, match="controlled validation"):
         module._runtime_env(state, mode="real", profile=profile)
+
+
+def test_freeze_budget_headroom_uses_settled_authority_usage() -> None:
+    module = _module()
+    profile = module.load_quality_campaign_profile(
+        module.DEFAULT_PROFILE,
+        repository_root=ROOT,
+    )
+    usage = {
+        "provider_call_count": 21,
+        "settled_tokens": 811_672,
+        "settled_cost_amount": "3.60445500",
+        "unresolved_reservation_count": 0,
+        "budget_breach_count": 0,
+        "unbound_effect_count": 0,
+    }
+
+    headroom = module._require_freeze_budget_headroom(profile, usage)
+
+    assert headroom["remaining_provider_calls"] == 99
+    assert headroom["remaining_tokens"] == 5_788_328
+    assert headroom["remaining_cost_usd"] == "76.39554500"
+
+    starved = {**usage, "settled_tokens": 2_000_001}
+    with pytest.raises(RuntimeError, match="remaining_tokens"):
+        module._require_freeze_budget_headroom(profile, starved)
+
+    unresolved = {**usage, "unresolved_reservation_count": 1}
+    with pytest.raises(RuntimeError, match="unresolved_reservations"):
+        module._require_freeze_budget_headroom(profile, unresolved)

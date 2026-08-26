@@ -11,6 +11,7 @@ from novel_forge.modules.runtime_proof.quality_campaign import (
     BoundedQualityCampaignProfile,
     BoundedQualityCampaignRunner,
     CampaignExecutionCheckpoint,
+    QualityCampaignTerminalError,
     bounded_quality_chapter_fixture_response,
     bounded_quality_planning_fixture_response,
     load_quality_campaign_profile,
@@ -42,6 +43,13 @@ def test_repository_profile_is_exactly_two_by_four_and_hash_frozen() -> None:
         profile.provider_routes["real"]["judge"]["independence_relationship"]
         == "DEPENDENT_SAME_MODEL"
     )
+    budget = profile.to_dict()["budget_policy"]
+    assert budget["token_limit"] == 6_600_000
+    assert budget["freeze_headroom_policy"] == {
+        "minimum_remaining_provider_calls": 80,
+        "minimum_remaining_tokens": 4_800_000,
+        "minimum_remaining_cost_usd": "60.00",
+    }
 
 
 @pytest.mark.parametrize(
@@ -54,6 +62,16 @@ def test_repository_profile_is_exactly_two_by_four_and_hash_frozen() -> None:
         (
             {"budget_policy": {"cost_limit_per_call_usd": "90.00"}},
             "monotonic",
+        ),
+        (
+            {
+                "budget_policy": {
+                    "freeze_headroom_policy": {
+                        "minimum_remaining_provider_calls": 121,
+                    }
+                }
+            },
+            "freeze headroom",
         ),
     ],
 )
@@ -221,8 +239,12 @@ def test_runner_fails_closed_when_wall_clock_budget_expires(
     clock = iter((0.0, 0.0, 2.0))
     monkeypatch.setattr(campaign_module, "monotonic", lambda: next(clock))
 
-    with pytest.raises(RuntimeError, match="wall-clock budget expired"):
+    with pytest.raises(
+        QualityCampaignTerminalError,
+        match="wall-clock budget expired",
+    ) as raised:
         BoundedQualityCampaignRunner(profile).run(_Runtime())
+    assert raised.value.failure_code == "CAMPAIGN_WALL_CLOCK_BUDGET_EXPIRED"
 
 
 def test_checkpoint_rejects_profile_drift_or_chapter_nine() -> None:

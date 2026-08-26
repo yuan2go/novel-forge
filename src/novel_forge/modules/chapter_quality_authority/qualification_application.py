@@ -50,7 +50,7 @@ from .qualification import (
 )
 
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 HANDLER_PREFIX = "novel_forge.quality_qualification"
 MANAGE_PERMISSION = "quality.qualification.manage"
 QUERY_PERMISSION = "quality.qualification.query"
@@ -70,6 +70,10 @@ DEFINITIONS = {
     "quality.qualification.campaign.resume": (
         "quality_qualification_lifecycle_receipt",
         "quality.qualification.lifecycle",
+    ),
+    "quality.qualification.campaign.fail": (
+        "quality_qualification_decision",
+        "quality.qualification.decision",
     ),
     "quality.qualification.subject.bind": (
         "quality_qualification_subject_binding",
@@ -884,6 +888,168 @@ class PostgresQualityQualificationAuthority:
                         campaign_id,
                     ],
                 )
+            uow.commit()
+        return self._decision_by_asset(output["asset_version_id"])
+
+    def record_terminal_failure(
+        self,
+        campaign_id: str,
+        *,
+        expected_version: int,
+        failure_code: str,
+        reasons: tuple[str, ...],
+        measurements: dict[str, Any],
+        source_asset_version_ids: tuple[str, ...],
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Fail the qualification process without inventing Narrative evidence."""
+
+        campaign = self._require_campaign_row(campaign_id)
+        principal.require(MANAGE_PERMISSION, campaign["project_id"])
+        if (
+            not failure_code.startswith("CAMPAIGN_")
+            or failure_code != failure_code.upper()
+            or not reasons
+            or not source_asset_version_ids
+            or not isinstance(measurements, dict)
+        ):
+            raise ValueError("terminal campaign failure evidence is incomplete")
+        source_ids = tuple(dict.fromkeys(source_asset_version_ids))
+        layer_statuses = {layer.value: "NOT_PROVEN" for layer in EvidenceLayer}
+        fingerprint = _canonical_hash(
+            {
+                "campaign_id": campaign_id,
+                "failure_code": failure_code,
+                "reasons": list(reasons),
+                "measurements": measurements,
+                "source_asset_version_ids": list(source_ids),
+            }
+        )
+        limitations = [
+            "ENGINEERING_QUALIFICATION_FAILURE",
+            failure_code,
+            *reasons,
+            "NARRATIVE_QUALITY_NOT_INFERRED_FROM_RUNTIME_FAILURE",
+        ]
+        payload = {
+            "campaign_id": campaign_id,
+            "decision_fingerprint": fingerprint,
+            "qualification_status": "FAIL",
+            "campaign_lifecycle": "FAILED",
+            "human_evidence_status": "WAITING_HUMAN_EVIDENCE",
+            "layer_statuses": layer_statuses,
+            "failure_class": "ENGINEERING_QUALIFICATION_FAILURE",
+            "failure_code": failure_code,
+            "reasons": list(reasons),
+            "measurements": measurements,
+            "limitations": limitations,
+            "evidence_asset_version_ids": list(source_ids),
+            "human_subjectivity_is_ground_truth": False,
+            "narrative_quality_inference_allowed": False,
+            "bounded_evidence_only": True,
+        }
+        inputs = self._resolve_assets(
+            campaign["project_id"],
+            [
+                (campaign["manifest_asset_version_id"], campaign["manifest_hash"]),
+                *((version_id, "") for version_id in source_ids),
+            ],
+        )
+        operation_id, output = self._execute(
+            definition="quality.qualification.campaign.fail",
+            project_id=campaign["project_id"],
+            workspace_id=campaign["workspace_id"],
+            idempotency_key=f"{campaign_id}:terminal:{fingerprint}",
+            trace_id=f"trace:{campaign_id}:terminal:{fingerprint[-12:]}",
+            correlation_id=campaign_id,
+            payload=payload,
+            input_assets=inputs,
+            principal=principal,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT decision_id
+                FROM authority_quality_qualification_decision
+                WHERE decision_asset_version_id=%s
+                """,
+                [output["asset_version_id"]],
+            )
+            existing = uow.cursor.fetchone()
+            if existing is None:
+                uow.cursor.execute(
+                    """
+                    SELECT lifecycle,version
+                    FROM authority_quality_qualification_campaign
+                    WHERE campaign_id=%s FOR UPDATE
+                    """,
+                    [campaign_id],
+                )
+                locked = uow.cursor.fetchone()
+                if locked is None:
+                    raise KernelError(
+                        "QUALITY_QUALIFICATION_CAMPAIGN_NOT_FOUND",
+                        "campaign disappeared before terminal decision commit",
+                    )
+                current = CampaignLifecycle(str(locked[0]))
+                version = int(locked[1])
+                if version != expected_version:
+                    raise KernelError(
+                        "QUALITY_QUALIFICATION_CAMPAIGN_VERSION_CONFLICT",
+                        "campaign version differs from terminal failure request",
+                    )
+                transition_campaign(current, CampaignLifecycle.FAILED)
+                uow.cursor.execute(
+                    """
+                    SELECT COALESCE(MAX(decision_version),0)+1
+                    FROM authority_quality_qualification_decision
+                    WHERE campaign_id=%s
+                    """,
+                    [campaign_id],
+                )
+                decision_version = int(uow.cursor.fetchone()[0])
+                decision_id = f"quality-decision:{campaign_id}:v{decision_version}"
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_quality_qualification_decision(
+                        decision_id,campaign_id,decision_version,project_id,
+                        decision_asset_version_id,decision_content_hash,
+                        qualification_status,campaign_lifecycle,
+                        human_evidence_status,hard_correctness_status,
+                        editorial_quality_status,reader_longitudinal_status,
+                        limitations,evidence_asset_version_ids,
+                        decided_by_operation_id
+                    ) VALUES (%s,%s,%s,%s,%s,%s,'FAIL','FAILED',
+                              'WAITING_HUMAN_EVIDENCE','NOT_PROVEN',
+                              'NOT_PROVEN','NOT_PROVEN',%s,%s,%s)
+                    """,
+                    [
+                        decision_id,
+                        campaign_id,
+                        decision_version,
+                        campaign["project_id"],
+                        output["asset_version_id"],
+                        output["content_hash"],
+                        Jsonb(limitations),
+                        Jsonb(list(source_ids)),
+                        operation_id,
+                    ],
+                )
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_quality_qualification_campaign
+                    SET lifecycle='FAILED',qualification_status='FAIL',
+                        human_evidence_status='WAITING_HUMAN_EVIDENCE',
+                        version=version+1,completed_at=NOW(),updated_at=NOW()
+                    WHERE campaign_id=%s AND lifecycle=%s AND version=%s
+                    """,
+                    [campaign_id, current.value, expected_version],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "QUALITY_QUALIFICATION_CAMPAIGN_VERSION_CONFLICT",
+                        "campaign changed before terminal failure commit",
+                    )
             uow.commit()
         return self._decision_by_asset(output["asset_version_id"])
 

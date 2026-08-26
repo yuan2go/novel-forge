@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 import json
 import os
 from pathlib import Path
@@ -40,6 +41,7 @@ from novel_forge.modules.runtime_proof import (
     BoundedQualityCampaignRunner,
     HumanReviewerTarget,
     PostgresBoundedQualityCampaignRuntime,
+    QualityCampaignTerminalError,
     bounded_quality_chapter_fixture_response,
     bounded_quality_planning_fixture_response,
     load_quality_book_contract,
@@ -1006,6 +1008,11 @@ def _freeze(args: argparse.Namespace) -> dict[str, Any]:
         mode=args.mode,
         values=values,
     )
+    budget_headroom = _verify_freeze_budget_headroom(
+        args.database_url,
+        str(state["project_id"]),
+        profile,
+    )
     manifest = profile.freeze_manifest(
         campaign_id=str(state["campaign_id"]),
         exact_release_sha=str(state["exact_release_sha"]),
@@ -1040,8 +1047,117 @@ def _freeze(args: argparse.Namespace) -> dict[str, Any]:
         "status": "FROZEN",
         "campaign": admitted,
         "manifest": manifest.to_dict(),
+        "freeze_budget_headroom": budget_headroom,
         **proof,
     }
+
+
+def _campaign_budget_usage(database_url: str, project_id: str) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM authority_external_effect_dispatch AS dispatch
+            JOIN authority_external_effect AS effect
+              ON effect.external_effect_id=dispatch.external_effect_id
+            WHERE effect.project_id=%s AND effect.effect_type='model.invoke'
+            """,
+            [project_id],
+        )
+        provider_call_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT COALESCE(SUM(actual_tokens) FILTER (
+                       WHERE status='SETTLED'),0),
+                   COALESCE(SUM(settled_amount) FILTER (
+                       WHERE status='SETTLED'),0),
+                   COUNT(*) FILTER (
+                       WHERE status NOT IN ('SETTLED','RELEASED')),
+                   COUNT(*) FILTER (WHERE budget_breach)
+            FROM authority_budget_reservation
+            WHERE project_id=%s
+            """,
+            [project_id],
+        )
+        tokens, cost, unresolved, breaches = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM authority_external_effect AS effect
+            LEFT JOIN authority_budget_reservation AS reservation
+              ON reservation.external_effect_id=effect.external_effect_id
+             AND reservation.project_id=effect.project_id
+            WHERE effect.project_id=%s
+              AND effect.effect_type='model.invoke'
+              AND reservation.reservation_id IS NULL
+            """,
+            [project_id],
+        )
+        unbound_effect_count = int(uow.cursor.fetchone()[0])
+    return {
+        "provider_call_count": provider_call_count,
+        "settled_tokens": int(tokens),
+        "settled_cost_amount": format(Decimal(str(cost)), "f"),
+        "unresolved_reservation_count": int(unresolved),
+        "budget_breach_count": int(breaches),
+        "unbound_effect_count": unbound_effect_count,
+    }
+
+
+def _require_freeze_budget_headroom(
+    profile: Any,
+    usage: Mapping[str, Any],
+) -> dict[str, Any]:
+    budget = dict(profile.to_dict()["budget_policy"])
+    policy = dict(budget["freeze_headroom_policy"])
+    try:
+        settled_cost = Decimal(str(usage["settled_cost_amount"]))
+        cost_limit = Decimal(str(budget["cost_limit_usd"]))
+        minimum_remaining_cost = Decimal(str(policy["minimum_remaining_cost_usd"]))
+    except (InvalidOperation, KeyError) as exc:
+        raise RuntimeError("freeze budget evidence is invalid") from exc
+    remaining = {
+        "remaining_provider_calls": int(budget["provider_call_limit"])
+        - int(usage["provider_call_count"]),
+        "remaining_tokens": int(budget["token_limit"]) - int(usage["settled_tokens"]),
+        "remaining_cost_usd": format(cost_limit - settled_cost, "f"),
+    }
+    failures: list[str] = []
+    if int(usage["unresolved_reservation_count"]):
+        failures.append("unresolved_reservations")
+    if int(usage["budget_breach_count"]):
+        failures.append("existing_budget_breach")
+    if int(usage["unbound_effect_count"]):
+        failures.append("model_effect_without_budget_reservation")
+    if remaining["remaining_provider_calls"] < int(
+        policy["minimum_remaining_provider_calls"]
+    ):
+        failures.append("remaining_provider_calls")
+    if remaining["remaining_tokens"] < int(policy["minimum_remaining_tokens"]):
+        failures.append("remaining_tokens")
+    if Decimal(remaining["remaining_cost_usd"]) < minimum_remaining_cost:
+        failures.append("remaining_cost_usd")
+    if failures:
+        raise RuntimeError(
+            "bounded Quality freeze lacks execution headroom: " + ", ".join(failures)
+        )
+    return {
+        **dict(usage),
+        **remaining,
+        "policy": policy,
+        "status": "PASS",
+    }
+
+
+def _verify_freeze_budget_headroom(
+    database_url: str,
+    project_id: str,
+    profile: Any,
+) -> dict[str, Any]:
+    return _require_freeze_budget_headroom(
+        profile,
+        _campaign_budget_usage(database_url, project_id),
+    )
 
 
 def _runtime_env(
@@ -1221,7 +1337,11 @@ def _run_campaign(
             campaign_secret=_campaign_secret(mode),
             mode=mode,
         )
-        result = BoundedQualityCampaignRunner(profile, mode=mode).run(runtime)
+        try:
+            result = BoundedQualityCampaignRunner(profile, mode=mode).run(runtime)
+        except QualityCampaignTerminalError as exc:
+            runtime.record_terminal_failure(exc)
+            raise
         current = quality.require_campaign(
             str(state["campaign_id"]),
             principal=operator,
@@ -1492,12 +1612,14 @@ def main() -> int:
         else:  # pragma: no cover - argparse owns the command set
             raise AssertionError(args.command)
     except (KernelError, RuntimeError, ValueError, OSError) as exc:
+        failure_code = getattr(exc, "failure_code", "")
         print(
             json.dumps(
                 {
                     "status": "FAILED",
                     "error_type": type(exc).__name__,
                     "error": str(exc),
+                    **({"failure_code": failure_code} if failure_code else {}),
                 },
                 ensure_ascii=False,
             ),

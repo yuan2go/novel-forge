@@ -299,11 +299,17 @@ real campaign freezes:
 - one primary Arc completion target and optional secondary Arc progress target;
 - per-stage token limits, total input/output token ceiling, estimated cost
   ceiling, provider-call ceiling, retry ceiling and wall-clock deadline;
+- a pre-freeze execution-headroom floor derived from settled Budget Authority
+  reservations, with every `model.invoke` dispatch counted independently of
+  capability naming;
 - stop boundary `accepted_through_chapter == 8`.
 
 Budget exhaustion, route drift, pack drift, dirty checkout, migration drift or
 attempting Chapter 9 fails closed. Cost is reported as measured usage and
 estimated cost unless the Provider supplies billed cost.
+Terminal engineering qualification failures produce an overall `FAIL` record
+while L1/L2/L3 remain `NOT_PROVEN`; they are not evidence that narrative quality
+itself failed.
 
 ## 10. Recovery and idempotency
 

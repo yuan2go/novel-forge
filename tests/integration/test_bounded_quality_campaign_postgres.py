@@ -270,13 +270,9 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
             "NOVEL_FORGE_CANON_EXTRACTION_MODEL": "scripted-quality-campaign-v1",
             "NOVEL_FORGE_QUALITY_MODEL": "scripted-quality-campaign-v1",
             "NOVEL_FORGE_READER_OUTCOME_MODEL": "scripted-quality-campaign-v1",
-            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": (
-                "scripted-quality-campaign-v1"
-            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": ("scripted-quality-campaign-v1"),
             "NOVEL_FORGE_REASONING_EFFORT": "high",
-            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
-                "high"
-            ),
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": ("high"),
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "bounded-quality-worker",
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
@@ -496,6 +492,17 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
+            SELECT COUNT(*)
+            FROM authority_external_effect_dispatch AS dispatch
+            JOIN authority_external_effect AS effect
+              ON effect.external_effect_id=dispatch.external_effect_id
+            WHERE effect.project_id=%s AND effect.effect_type='model.invoke'
+            """,
+            [project_id],
+        )
+        model_provider_dispatch_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
             SELECT chapter_start,chapter_end,state,accepted_through_chapter
             FROM authority_chapter_group_production
             WHERE book_run_id=%s
@@ -563,6 +570,7 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
             [campaign_id],
         )
         persisted_longitudinal = uow.cursor.fetchone()
+    assert result.provider_dispatch_count == model_provider_dispatch_count
     assert [tuple(row) for row in groups] == [
         (1, 4, "COMPLETED", 4),
         (5, 8, "COMPLETED", 8),

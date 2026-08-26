@@ -48,6 +48,7 @@ from novel_forge.workers.book_authority import (
 from .quality_campaign import (
     BoundedQualityCampaignProfile,
     QUALITY_CHAPTERS,
+    QualityCampaignTerminalError,
     semantic_quality_evidence_identity,
 )
 
@@ -173,6 +174,51 @@ class PostgresBoundedQualityCampaignRuntime:
             "reader_state_asset_version_id": reader_state_id,
             "recap_asset_version_id": recap_id,
         }
+
+    def record_terminal_failure(
+        self,
+        error: QualityCampaignTerminalError,
+    ) -> Mapping[str, Any]:
+        """Persist an engineering qualification failure without recasting L1-L3."""
+
+        summary = self._provider_runtime_summary()
+        source_ids = tuple(
+            dict.fromkeys(
+                (
+                    *(str(item) for item in summary["model_call_asset_version_ids"]),
+                    *(str(item) for item in summary["cost_ledger_asset_version_ids"]),
+                )
+            )
+        )
+        if not source_ids:
+            raise RuntimeError(
+                "terminal campaign failure lacks Provider source AssetVersions"
+            )
+        campaign = self.quality.require_campaign(
+            self.campaign_id,
+            principal=self.operator,
+        )
+        measurements = {
+            **error.measurements,
+            "provider_dispatch_count": summary["provider_dispatch_count"],
+            "real_provider_call_count": summary["real_provider_call_count"],
+            "provider_failure_count": summary["provider_failure_count"],
+            "provider_retry_count": summary["provider_retry_count"],
+            "measured_input_tokens": summary["measured_input_tokens"],
+            "measured_output_tokens": summary["measured_output_tokens"],
+            "measured_total_tokens": summary["measured_total_tokens"],
+            "settled_cost_amount": summary["settled_cost_amount"],
+            "currency": summary["currency"],
+        }
+        return self.quality.record_terminal_failure(
+            self.campaign_id,
+            expected_version=int(campaign["version"]),
+            failure_code=error.failure_code,
+            reasons=error.reasons,
+            measurements=measurements,
+            source_asset_version_ids=source_ids,
+            principal=self.operator,
+        )
 
     def final_evidence(self) -> Mapping[str, Any]:
         book = self.composition.authority.require(self.book_run_id)
@@ -492,7 +538,7 @@ class PostgresBoundedQualityCampaignRuntime:
                 FROM scoped_operations
                 JOIN authority_external_effect AS effect
                   ON effect.operation_id=scoped_operations.operation_id
-                WHERE effect.capability LIKE 'model.%%'
+                WHERE effect.effect_type='model.invoke'
                 ORDER BY effect.external_effect_id
                 """,
                 [
@@ -574,7 +620,7 @@ class PostgresBoundedQualityCampaignRuntime:
                 LEFT JOIN authority_external_receipt AS receipt
                   ON receipt.dispatch_id=dispatch.dispatch_id
                 WHERE effect.project_id=%s
-                  AND effect.capability LIKE 'model.%%'
+                  AND effect.effect_type='model.invoke'
                 GROUP BY effect.external_effect_id, effect.operation_id,
                          effect.capability, effect.status, effect.model_id
                 ORDER BY effect.external_effect_id
@@ -953,9 +999,34 @@ class PostgresBoundedQualityCampaignRuntime:
         if summary["pack_snapshot_drift_ids"]:
             failures.append("capability_pack_snapshot_drift")
         if failures:
-            raise RuntimeError(
+            measurements = {
+                field: summary[field]
+                for field in (
+                    "provider_dispatch_count",
+                    "provider_retry_count",
+                    "measured_input_tokens",
+                    "measured_output_tokens",
+                    "measured_total_tokens",
+                    "settled_cost_amount",
+                )
+            }
+            measurements["budget_policy"] = {
+                key: budget[key]
+                for key in (
+                    "provider_call_limit",
+                    "retry_limit",
+                    "input_token_limit",
+                    "output_token_limit",
+                    "token_limit",
+                    "cost_limit_usd",
+                )
+            }
+            raise QualityCampaignTerminalError(
+                "CAMPAIGN_BUDGET_OR_LINEAGE_BREACH",
                 "bounded Quality campaign budget/lineage failed closed: "
-                + ", ".join(failures)
+                + ", ".join(failures),
+                reasons=tuple(failures),
+                measurements=measurements,
             )
 
     def _validate_final_provider_evidence(self, summary: Mapping[str, Any]) -> None:
@@ -985,8 +1056,18 @@ class PostgresBoundedQualityCampaignRuntime:
             if int(summary["real_provider_call_count"]) <= 0:
                 failures.append("no attributable real Provider call")
         if failures:
-            raise RuntimeError(
-                "final Provider runtime evidence is incomplete: " + "; ".join(failures)
+            raise QualityCampaignTerminalError(
+                "CAMPAIGN_PROVIDER_EVIDENCE_INCOMPLETE",
+                "final Provider runtime evidence is incomplete: " + "; ".join(failures),
+                reasons=tuple(failures),
+                measurements={
+                    "provider_dispatch_count": summary["provider_dispatch_count"],
+                    "real_provider_call_count": summary["real_provider_call_count"],
+                    "provider_failure_count": summary["provider_failure_count"],
+                    "provider_retry_count": summary["provider_retry_count"],
+                    "measured_total_tokens": summary["measured_total_tokens"],
+                    "settled_cost_amount": summary["settled_cost_amount"],
+                },
             )
 
     def _candidate_pairs(self) -> tuple[_CandidatePair, ...]:
