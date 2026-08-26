@@ -406,6 +406,90 @@ def test_reader_outcome_v1_context_replays_through_deterministic_read_upgrade() 
     assert view["selection_explanation"]["omitted_segment_count"] == 1
 
 
+def test_narrative_evaluator_projects_exact_canonical_foundation_closure() -> None:
+    dependency_types = {
+        "CREATIVE_FOUNDATION": "creative_foundation",
+        "THEME_CONTRACT": "theme_contract",
+        "ENDING_INTENT": "ending_intent",
+        "READER_PROMISE": "reader_promise",
+        "WORLD_BIBLE": "world_bible",
+        "CHARACTER_CAST": "character_cast",
+    }
+    selected = [
+        {
+            "asset_version_id": "book-design:v5",
+            "asset_type": "book_design",
+            "content_hash": "sha256:" + "a" * 64,
+            "candidate": {"schema_version": "book-design.v5"},
+        }
+    ]
+    lineage = []
+    for index, (role, asset_type) in enumerate(dependency_types.items(), start=1):
+        selected.append(
+            {
+                "asset_version_id": f"foundation:{index}",
+                "asset_type": asset_type,
+                "content_hash": "sha256:" + str(index) * 64,
+                "dependency_role": role,
+                "candidate": {"candidate_payload": {"role": role}},
+            }
+        )
+        lineage.append(
+            {
+                "role": role,
+                "asset_version_id": f"foundation:{index}",
+                "content_hash": "sha256:" + str(index) * 64,
+                "qualification_evidence_asset_version_id": f"qualification:{index}",
+                "qualification_hash": "sha256:" + format(index + 6, "x") * 64,
+            }
+        )
+
+    view = build_provider_context_view(
+        "narrative_semantic_evaluation",
+        {
+            "source_isolation": "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES",
+            "dependency_resolution": "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE",
+            "selected_inputs": selected,
+            "dependency_lineage": lineage,
+        },
+        {},
+    )
+
+    assert len(view["selected_inputs"]) == 7
+    assert view["selection_explanation"]["policy"] == (
+        "exact-candidate-and-canonical-foundation-closure"
+    )
+    assert "qualification" not in json.dumps(view, ensure_ascii=False)
+
+
+def test_narrative_evaluator_rejects_unbound_dependency_projection() -> None:
+    with pytest.raises(KernelError, match="PROVIDER_CONTEXT_INVALID"):
+        build_provider_context_view(
+            "narrative_semantic_evaluation",
+            {
+                "source_isolation": "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES",
+                "dependency_resolution": "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE",
+                "selected_inputs": [
+                    {
+                        "asset_version_id": "book-design:v5",
+                        "asset_type": "book_design",
+                        "content_hash": "sha256:" + "a" * 64,
+                        "candidate": {},
+                    },
+                    {
+                        "asset_version_id": "unbound:v1",
+                        "asset_type": "world_bible",
+                        "content_hash": "sha256:" + "b" * 64,
+                        "dependency_role": "WORLD_BIBLE",
+                        "candidate": {},
+                    },
+                ],
+                "dependency_lineage": [],
+            },
+            {},
+        )
+
+
 def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None:
     task = build_provider_task_view(
         "book_plan.generate",

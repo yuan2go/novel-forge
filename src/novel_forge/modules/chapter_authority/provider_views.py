@@ -34,6 +34,14 @@ _PLANNING_STAGES = frozenset(
         "chapter_plan.generate",
     }
 )
+_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES = {
+    "CREATIVE_FOUNDATION": "creative_foundation",
+    "THEME_CONTRACT": "theme_contract",
+    "ENDING_INTENT": "ending_intent",
+    "READER_PROMISE": "reader_promise",
+    "WORLD_BIBLE": "world_bible",
+    "CHARACTER_CAST": "character_cast",
+}
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
 _MAX_PLANNING_STRING_CHARACTERS = 2_000
 _MAX_PLANNING_LIST_ITEMS = 12
@@ -481,24 +489,7 @@ def build_provider_context_view(
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
-        selected = context_bundle.get("selected_inputs")
-        if not isinstance(selected, list) or len(selected) != 1:
-            raise KernelError(
-                "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
-                "Semantic Evaluation requires exactly one frozen candidate projection",
-            )
-        return {
-            "contract_version": "provider-context-view-v2",
-            "schema_version": "novelos.narrative_evaluation_context_view.v1",
-            "stage": stage,
-            "source_isolation": "EXACT_CANDIDATE_ONLY",
-            "selected_inputs": _compact(selected),
-            "selection_explanation": {
-                "policy": "exact-immutable-candidate-only",
-                "selected_count": 1,
-                "omitted_count": 0,
-            },
-        }
+        return _build_narrative_evaluation_context_view(context_bundle)
     if stage == "agent_session":
         boundary = context_bundle.get("accepted_boundary")
         if (
@@ -716,6 +707,116 @@ def build_provider_context_view(
             "rebuild the task projection with fewer accepted facts",
         )
     return view
+
+
+def _build_narrative_evaluation_context_view(
+    context_bundle: Mapping[str, Any],
+) -> dict[str, Any]:
+    selected = context_bundle.get("selected_inputs")
+    isolation = str(context_bundle.get("source_isolation") or "")
+    dependency_resolution = str(context_bundle.get("dependency_resolution") or "")
+    lineage = context_bundle.get("dependency_lineage")
+    if not isinstance(selected, list) or not selected:
+        raise KernelError(
+            "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
+            "Semantic Evaluation requires a frozen candidate projection",
+        )
+    candidate = selected[0] if isinstance(selected[0], Mapping) else {}
+    candidate_content = candidate.get("candidate")
+    candidate_valid = (
+        candidate.get("asset_type") in {"book_design", "planning_generation_candidate"}
+        and bool(candidate.get("asset_version_id"))
+        and _is_exact_sha256(candidate.get("content_hash"))
+        and isinstance(candidate_content, Mapping)
+        and "dependency_role" not in candidate
+    )
+    if isolation == "EXACT_CANDIDATE_ONLY":
+        valid = (
+            candidate_valid
+            and len(selected) == 1
+            and dependency_resolution in {"", "NOT_APPLICABLE"}
+        )
+        policy = "exact-immutable-candidate-only"
+    elif isolation == "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES":
+        valid = (
+            candidate_valid
+            and candidate.get("asset_type") == "book_design"
+            and candidate_content.get("schema_version") == "book-design.v5"
+            and dependency_resolution == "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE"
+            and len(selected) == 1 + len(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
+            and isinstance(lineage, list)
+            and len(lineage) == len(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
+        )
+        selected_by_role = {
+            str(item.get("dependency_role") or ""): item
+            for item in selected[1:]
+            if isinstance(item, Mapping)
+        }
+        lineage_by_role = {
+            str(item.get("role") or ""): item
+            for item in lineage
+            if isinstance(item, Mapping)
+        }
+        valid = valid and (
+            set(selected_by_role) == set(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
+            and set(lineage_by_role) == set(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
+            and len(selected_by_role) == len(selected) - 1
+            and len(lineage_by_role) == len(lineage)
+        )
+        if valid:
+            for (
+                role,
+                expected_asset_type,
+            ) in _NARRATIVE_FOUNDATION_DEPENDENCY_TYPES.items():
+                item = selected_by_role[role]
+                binding = lineage_by_role[role]
+                qualification_hash = str(binding.get("qualification_hash") or "")
+                valid = valid and (
+                    item.get("asset_type") == expected_asset_type
+                    and isinstance(item.get("candidate"), Mapping)
+                    and item.get("asset_version_id") == binding.get("asset_version_id")
+                    and item.get("content_hash") == binding.get("content_hash")
+                    and _is_exact_sha256(item.get("content_hash"))
+                    and bool(binding.get("qualification_evidence_asset_version_id"))
+                    and _is_exact_sha256(qualification_hash)
+                )
+        policy = "exact-candidate-and-canonical-foundation-closure"
+    else:
+        valid = False
+        policy = "invalid"
+    if not valid:
+        raise KernelError(
+            "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
+            "Semantic Evaluation context is outside its exact source-isolation contract",
+        )
+    view = {
+        "contract_version": "provider-context-view-v2",
+        "schema_version": "novelos.narrative_evaluation_context_view.v1",
+        "stage": "narrative_semantic_evaluation",
+        "source_isolation": isolation,
+        "selected_inputs": _compact(selected),
+        "selection_explanation": {
+            "policy": policy,
+            "selected_count": len(selected),
+            "omitted_count": 0,
+        },
+    }
+    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+        raise KernelError(
+            "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+            "Semantic Evaluation context exceeds the bounded Provider projection",
+        )
+    return view
+
+
+def _is_exact_sha256(value: Any) -> bool:
+    normalized = str(value or "")
+    digest = normalized.removeprefix("sha256:")
+    return (
+        normalized.startswith("sha256:")
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    )
 
 
 def project_reader_outcome_context_input(
