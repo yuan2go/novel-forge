@@ -851,6 +851,9 @@ class PostgresChapterExecutionContractBinder:
         validation_policy_snapshot_ref = (
             f"production_execution/validation_policies/{token}"
         )
+        commit_policy_snapshot_ref = (
+            f"production_execution/commit_policies/{token}"
+        )
         context_policy = ContextPolicy(
             policy_id=context_policy_snapshot_ref,
             policy_version="v1",
@@ -1085,9 +1088,13 @@ class PostgresChapterExecutionContractBinder:
         self._ensure_contract(
             operation_id=operation_id,
             project_id=project_id,
-            logical_ref=commit_policy.policy_id,
+            logical_ref=commit_policy_snapshot_ref,
             asset_type="execution_commit_policy",
-            contract=commit_policy.to_dict(),
+            contract={
+                **commit_policy.to_dict(),
+                "runtime_snapshot_ref": commit_policy_snapshot_ref,
+                "governing_capability_policy_ref": definition.commit_policy_ref,
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
