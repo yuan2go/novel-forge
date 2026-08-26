@@ -25,6 +25,7 @@ from novel_forge.api.authority_dependencies import (
     build_agent_runtime_query,
     build_capability_pack_authority_application,
     build_capability_pack_authority_query,
+    build_quality_qualification_authority,
     chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -57,6 +58,9 @@ from novel_forge.modules.capability_pack_authority.application import (
 )
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
+)
+from novel_forge.modules.chapter_quality_authority.qualification_application import (
+    PostgresQualityQualificationAuthority,
 )
 from novel_forge.modules.temporal_query import TemporalQueryService
 from novel_forge.modules.content_intelligence import PacingAnalysisService
@@ -165,6 +169,7 @@ class AuthorityApiServices:
     agent_runtime_query: AgentRuntimeQuery
     capability_pack_authority_application: CapabilityPackAuthorityApplication
     capability_pack_authority_query: CapabilityPackAuthorityQuery
+    quality_qualification_authority: PostgresQualityQualificationAuthority
     temporal_query_service: TemporalQueryService
     pacing_analysis_service: PacingAnalysisService
 
@@ -268,6 +273,7 @@ def create_authority_app(settings: IndustrialSettings):
             build_capability_pack_authority_application(settings)
         ),
         capability_pack_authority_query=build_capability_pack_authority_query(settings),
+        quality_qualification_authority=build_quality_qualification_authority(settings),
         temporal_query_service=TemporalQueryService(settings.database_url),
         pacing_analysis_service=PacingAnalysisService(settings.database_url),
     )
@@ -327,6 +333,9 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.capability_pack_authority import (
         create_router as create_capability_pack_router,
+    )
+    from novel_forge.api.routers.quality_qualification import (
+        create_router as create_quality_qualification_router,
     )
     from novel_forge.api.routers.temporal_query import (
         create_router as create_temporal_query_router,
@@ -412,6 +421,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_capability_pack_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_quality_qualification_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

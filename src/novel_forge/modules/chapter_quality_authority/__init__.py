@@ -44,6 +44,11 @@ from .qualification import (
     decide_quality_qualification,
     transition_campaign,
 )
+from .qualification_application import (
+    PostgresQualityQualificationAuthority,
+    QualityEvidenceBindingCommand,
+    QualitySubjectBindingCommand,
+)
 from .longitudinal import (
     ArcQualityEvaluation,
     LongitudinalQualityEvidence,
@@ -95,6 +100,9 @@ __all__ = [
     "QualificationStatus",
     "decide_quality_qualification",
     "transition_campaign",
+    "PostgresQualityQualificationAuthority",
+    "QualityEvidenceBindingCommand",
+    "QualitySubjectBindingCommand",
     "ArcQualityEvaluation",
     "LongitudinalQualityEvidence",
     "MomentumEvidence",

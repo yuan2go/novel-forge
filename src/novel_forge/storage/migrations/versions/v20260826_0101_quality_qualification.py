@@ -166,8 +166,9 @@ UPGRADE_STATEMENTS = [
     """
     CREATE TABLE authority_quality_qualification_decision (
         decision_id TEXT PRIMARY KEY,
-        campaign_id TEXT NOT NULL UNIQUE
+        campaign_id TEXT NOT NULL
             REFERENCES authority_quality_qualification_campaign(campaign_id),
+        decision_version BIGINT NOT NULL,
         project_id TEXT NOT NULL REFERENCES authority_project(project_id),
         decision_asset_version_id TEXT NOT NULL UNIQUE
             REFERENCES authority_asset_version(asset_version_id),
@@ -183,6 +184,8 @@ UPGRADE_STATEMENTS = [
         decided_by_operation_id TEXT NOT NULL UNIQUE
             REFERENCES authority_operation(operation_id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(campaign_id, decision_version),
+        CHECK (decision_version > 0),
         CHECK (decision_content_hash LIKE 'sha256:%'),
         CHECK (qualification_status IN (
             'PASS','PASS_WITH_LIMITATIONS','FAIL','NOT_PROVEN'
@@ -214,6 +217,19 @@ UPGRADE_STATEMENTS = [
             OR qualification_status='FAIL'
         )
     )
+    """,
+    """
+    CREATE VIEW authority_current_quality_qualification_decision AS
+    SELECT DISTINCT ON (campaign_id)
+           decision_id, campaign_id, decision_version, project_id,
+           decision_asset_version_id, decision_content_hash,
+           qualification_status, campaign_lifecycle,
+           human_evidence_status, hard_correctness_status,
+           editorial_quality_status, reader_longitudinal_status,
+           limitations, evidence_asset_version_ids,
+           decided_by_operation_id, created_at
+    FROM authority_quality_qualification_decision
+    ORDER BY campaign_id, decision_version DESC, created_at DESC, decision_id DESC
     """,
     """
     ALTER TABLE human_preference_task

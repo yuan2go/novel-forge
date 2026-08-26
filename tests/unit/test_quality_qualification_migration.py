@@ -44,6 +44,9 @@ def test_campaign_evidence_schema_is_layered_and_fail_closed() -> None:
     assert "realization_lineage" in sql
     assert "budget_policy" in sql
     assert "chapter_group_ranges" in sql
+    assert "decision_version BIGINT NOT NULL" in sql
+    assert "UNIQUE(campaign_id, decision_version)" in sql
+    assert "CREATE VIEW authority_current_quality_qualification_decision" in sql
 
 
 def test_human_blind_schema_extends_existing_reader_calibration_authority() -> None:

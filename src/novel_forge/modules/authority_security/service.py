@@ -136,6 +136,8 @@ class TrustedPrincipalResolver:
                     "capability_pack.authority.rollback",
                     "capability_pack.authority.retire",
                     "capability_pack.authority.query",
+                    "quality.qualification.manage",
+                    "quality.qualification.query",
                 }
             ),
             project_scope=self.configured_project_scope,
