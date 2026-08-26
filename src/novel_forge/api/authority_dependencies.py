@@ -321,6 +321,12 @@ def build_production_execution_composition(
     *,
     env: Mapping[str, str] | None = None,
     provider_registry: ProviderAdapterRegistry | None = None,
+    planning_fixture_factory: (
+        Callable[[str, Mapping[str, object]], dict[str, object]] | None
+    ) = None,
+    chapter_fixture_factory: (
+        Callable[[str, Mapping[str, object]], dict[str, object]] | None
+    ) = None,
 ) -> ProductionExecutionComposition:
     values = os.environ if env is None else env
     if not settings.database_url:
@@ -888,8 +894,10 @@ def build_production_execution_composition(
             "chapter_group_plan.generate",
             "chapter_plan.generate",
         }:
-            return planning_fixture_response(stage, inputs)
-        return default_chapter_fixture_response(stage, inputs)
+            fixture = planning_fixture_factory or planning_fixture_response
+            return fixture(stage, inputs)
+        fixture = chapter_fixture_factory or default_chapter_fixture_response
+        return fixture(stage, inputs)
 
     def execution_session(project_id: str) -> ChapterExecutionGatewaySession:
         contracts = PostgresExecutionContractSource(

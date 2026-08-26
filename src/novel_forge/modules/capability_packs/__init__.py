@@ -68,6 +68,12 @@ from .versioning import (
     ReadOnlyPackCatalog,
     ResolvedPackSet,
 )
+from .validation_deployment import (
+    VALIDATION_PACK_PERMISSIONS,
+    install_chapter_validation_pack,
+    install_longform_validation_pack,
+    register_validation_runtime_definitions,
+)
 
 
 __all__ = [
@@ -124,4 +130,8 @@ __all__ = [
     "load_capability_pack_payload",
     "validate_capability_pack",
     "validate_capability_pack_semantics",
+    "VALIDATION_PACK_PERMISSIONS",
+    "install_chapter_validation_pack",
+    "install_longform_validation_pack",
+    "register_validation_runtime_definitions",
 ]

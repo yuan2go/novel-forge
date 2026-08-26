@@ -29,6 +29,7 @@ from novel_forge.modules.command_kernel.service import AdmissionContext, admit_c
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
+from .domain import GENERATOR_DESIGN_SCOPE
 from .qualification import (
     NarrativeEvaluationLineage,
     NarrativeQualificationProfile,
@@ -851,8 +852,12 @@ class NarrativeSemanticEvaluationApplication:
                 and str(row[10] or "") == command.candidate_asset_version_id
             )
         else:
+            expected_scope = GENERATOR_DESIGN_SCOPE.get(
+                command.generator_operation_name
+            )
             pending = (
-                str(row[3]) == "story_design_candidate"
+                expected_scope is not None
+                and str(row[3]) == expected_scope.value.lower()
                 and str(row[11] or "") == "MATERIALIZED"
                 and str(row[12] or "") == "STRUCTURALLY_VALID"
                 and str(row[13] or "") == command.generator_operation_name

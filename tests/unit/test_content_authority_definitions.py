@@ -17,6 +17,8 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
             {
                 "book.production_profile.author",
                 "book.previous_volume_outcome.author",
+                "book.previous_chapter_group_outcome.author",
+                "book.previous_chapter_outcome.author",
                 "book.arc_portfolio.author",
                 "book.ending_reachability.author",
                 "book.character_arc_portfolio.author",
@@ -24,6 +26,7 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
                 "book.foreshadowing_ledger.author",
                 "book.reader_segment.author",
                 "book.reader_contract.author",
+                "book.reader_state.author",
                 "book.character_state.author",
                 "book.foreshadowing_state.author",
                 "book.quality_trend.author",
@@ -31,8 +34,14 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
                 "book.promise_ledger.author",
                 "book.initial_story_state.author",
                 "book.initial_canon.author",
-                "story_design.candidate.author",
+                "story_design.creative_foundation.author",
+                "story_design.theme_contract.author",
+                "story_design.ending_intent.author",
+                "story_design.reader_promise.author",
+                "story_design.world_bible.author",
+                "story_design.character_cast.author",
                 "story_design.review.author",
+                "chapter.fixture_waiver_approval.author",
             }.issubset(names)
         )
         for item in definitions:

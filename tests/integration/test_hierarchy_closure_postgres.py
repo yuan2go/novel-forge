@@ -101,7 +101,7 @@ def test_operator_authored_foundation_uses_independent_semantic_authority() -> N
     author = harness.principal(
         "foundation-author",
         "content.authority.execute",
-        "content.operation:story_design.candidate.author",
+        "content.operation:story_design.creative_foundation.author",
         "story_design.authority.execute",
     )
     reviewer = harness.principal(
@@ -119,7 +119,7 @@ def test_operator_authored_foundation_uses_independent_semantic_authority() -> N
     )
     authored = content.execute(
         ContentOperationRequest(
-            definition_name="story_design.candidate.author",
+            definition_name="story_design.creative_foundation.author",
             project_id=project_id,
             workspace_id=workspace_id,
             actor_id=author.principal_id,

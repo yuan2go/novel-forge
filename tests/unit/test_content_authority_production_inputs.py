@@ -8,6 +8,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_authority import CONTENT_CODECS
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 
 
 def _request(name: str, content: dict) -> AuthorityHandlerRequest:
@@ -112,8 +113,73 @@ def test_operator_authored_input_rejects_raw_source() -> None:
         )
 
 
+def test_fixture_waiver_approval_is_explicitly_nonproduction_and_nonhuman() -> None:
+    name = "chapter.fixture_waiver_approval.author"
+    output = CONTENT_CODECS[name].execute(
+        _request(
+            name,
+            {
+                "type": "operator_approval",
+                "book_id": "book:input",
+                "decision": "APPROVED",
+                "contract_version": "fixture-waiver-approval-v1",
+                "fixture_protocol_only": True,
+                "production_verified": False,
+                "waiver_reason": "Exercise only the bounded scripted protocol.",
+                "waived_dimensions": list(QUALITY_DIMENSIONS),
+                "scope": {
+                    "project_id": "project:input",
+                    "scope_type": "PROJECT_FIXTURE",
+                    "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                },
+                "expiry": "2099-01-01T00:00:00Z",
+                "safe_summary": "Fixture-only approval evidence.",
+                "structured_facts": [],
+            },
+        )
+    )
+
+    facts = {
+        item["key"]: item["value"] for item in output.content["structured_facts"]
+    }
+    assert output.asset_type == "operator_approval"
+    assert output.content["allowed_use"] == "evidence_only"
+    assert output.content["production_verified"] is False
+    assert output.content["human_preference_evidence"] is False
+    assert facts["fixture_protocol_only"] is True
+    assert facts["human_preference_evidence"] is False
+
+
+def test_fixture_waiver_approval_rejects_production_claim() -> None:
+    name = "chapter.fixture_waiver_approval.author"
+    with pytest.raises(KernelError, match="fixture-only"):
+        CONTENT_CODECS[name].execute(
+            _request(
+                name,
+                {
+                    "type": "operator_approval",
+                    "book_id": "book:input",
+                    "decision": "APPROVED",
+                    "contract_version": "fixture-waiver-approval-v1",
+                    "fixture_protocol_only": True,
+                    "production_verified": True,
+                    "waiver_reason": "Invalid production claim.",
+                    "waived_dimensions": list(QUALITY_DIMENSIONS),
+                    "scope": {
+                        "project_id": "project:input",
+                        "scope_type": "PROJECT_FIXTURE",
+                        "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                    },
+                    "expiry": "2099-01-01T00:00:00Z",
+                    "safe_summary": "Invalid fixture approval.",
+                    "structured_facts": [],
+                },
+            )
+        )
+
+
 def test_operator_authored_story_design_is_candidate_only_and_source_safe() -> None:
-    name = "story_design.candidate.author"
+    name = "story_design.creative_foundation.author"
     content = {
         "schema_version": "story_design.authority.v1",
         "project_id": "project:input",
@@ -130,7 +196,7 @@ def test_operator_authored_story_design_is_candidate_only_and_source_safe() -> N
 
     output = CONTENT_CODECS[name].execute(_request(name, content))
 
-    assert output.asset_type == "story_design_candidate"
+    assert output.asset_type == "creative_foundation"
     assert output.content == content
     assert output.evidence["codec"] == name
 
@@ -139,7 +205,7 @@ def test_operator_story_design_review_binds_exact_candidate_and_is_not_human() -
     name = "story_design.review.author"
     candidate = AuthorityInputAsset(
         asset_version_id="asset:story-design:v1",
-        asset_type="story_design_candidate",
+        asset_type="creative_foundation",
         content_hash="sha256:" + "a" * 64,
         content={"schema_version": "story_design.authority.v1"},
     )
@@ -194,6 +260,26 @@ def test_operator_story_design_review_binds_exact_candidate_and_is_not_human() -
             {"contract_version": "previous-volume-outcome-v1", "status": "NONE"},
         ),
         (
+            "book.previous_chapter_group_outcome.author",
+            "previous_chapter_group_outcome",
+            "PRE_CHAPTER_0",
+            {
+                "contract_version": "previous-chapter-group-outcome-v1",
+                "status": "NO_PREVIOUS_CHAPTER_GROUP",
+                "actual_outcomes": [],
+            },
+        ),
+        (
+            "book.previous_chapter_outcome.author",
+            "previous_chapter_outcome",
+            "PRE_CHAPTER_0",
+            {
+                "contract_version": "previous-chapter-outcome-v1",
+                "status": "NO_PREVIOUS_CHAPTER",
+                "actual_outcomes": [],
+            },
+        ),
+        (
             "book.arc_portfolio.author",
             "arc_portfolio",
             "FUTURE_INTENT",
@@ -234,6 +320,19 @@ def test_operator_story_design_review_binds_exact_candidate_and_is_not_human() -
             "reader_contract",
             "ADVISORY",
             {"profile_id": "reader:bounded", "profile_version": "reader-outcome-v3"},
+        ),
+        (
+            "book.reader_state.author",
+            "reader_state",
+            "ADVISORY",
+            {
+                "contract_version": "reader-state-genesis-v1",
+                "profile_version": "reader-outcome-v3",
+                "status": "NOT_OBSERVED",
+                "accepted_through_chapter": 0,
+                "observations": [],
+                "evidence_class": "READER_PROXY_ADVISORY",
+            },
         ),
         (
             "book.character_state.author",

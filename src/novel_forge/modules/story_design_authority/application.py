@@ -47,6 +47,33 @@ STORY_DESIGN_TRANSITION_HANDLER = (
     "novel_forge.story_design_authority.lifecycle_transition"
 )
 
+_OPERATOR_AUTHOR_OPERATION_BY_GENERATOR = {
+    "creative.candidates.generate": (
+        "story_design.creative_foundation.author",
+        "creative_foundation",
+    ),
+    "theme.candidates.generate": (
+        "story_design.theme_contract.author",
+        "theme_contract",
+    ),
+    "ending.intent.generate": (
+        "story_design.ending_intent.author",
+        "ending_intent",
+    ),
+    "reader.promise.generate": (
+        "story_design.reader_promise.author",
+        "reader_promise",
+    ),
+    "world.design.generate": (
+        "story_design.world_bible.author",
+        "world_bible",
+    ),
+    "character.cast.generate": (
+        "story_design.character_cast.author",
+        "character_cast",
+    ),
+}
+
 
 @dataclass(frozen=True, slots=True)
 class StoryDesignTransitionCommand:
@@ -112,9 +139,7 @@ class _TransitionHandler:
                 "transition": transition.value,
                 "expected_version": int(payload["expected_version"]),
                 "planning_scope": PlanningScope(str(payload["planning_scope"])).value,
-                "design_scope": GENERATOR_DESIGN_SCOPE[
-                    generator.operation_name
-                ].value,
+                "design_scope": GENERATOR_DESIGN_SCOPE[generator.operation_name].value,
                 "source_kind": str(payload["source_kind"]),
                 "evidence": dict(payload.get("evidence") or {}),
             },
@@ -303,9 +328,7 @@ class PostgresStoryDesignAssetAuthority:
                 generator_definition_version=generator.definition_version,
                 candidate_type=generator.output_candidate_type,
                 planning_scope=command.planning_scope.value,
-                design_scope=GENERATOR_DESIGN_SCOPE[
-                    generator.operation_name
-                ].value,
+                design_scope=GENERATOR_DESIGN_SCOPE[generator.operation_name].value,
                 transition=command.transition.value,
                 expected_version=command.expected_version,
                 source_kind=command.source_kind,
@@ -321,6 +344,14 @@ class PostgresStoryDesignAssetAuthority:
     def _require_operator_authored_candidate(
         self, command: StoryDesignTransitionCommand
     ) -> None:
+        expected_authoring = _OPERATOR_AUTHOR_OPERATION_BY_GENERATOR.get(
+            command.generator_operation_name
+        )
+        if expected_authoring is None:
+            raise KernelError(
+                "STORY_DESIGN_OPERATOR_AUTHORING_LINEAGE_INVALID",
+                "generator has no governed operator-authoring operation",
+            )
         operation_id = str((command.evidence or {}).get("authoring_operation_id") or "")
         if operation_id != str((command.evidence or {}).get("operation_id") or ""):
             raise KernelError(
@@ -348,9 +379,9 @@ class PostgresStoryDesignAssetAuthority:
         if (
             row is None
             or str(row[0]) != "SUCCEEDED"
-            or str(row[1]) != "story_design.candidate.author"
+            or str(row[1]) != expected_authoring[0]
             or str(row[2]) != command.content_hash
-            or str(row[3]) != "story_design_candidate"
+            or str(row[3]) != expected_authoring[1]
         ):
             raise KernelError(
                 "STORY_DESIGN_OPERATOR_AUTHORING_LINEAGE_INVALID",

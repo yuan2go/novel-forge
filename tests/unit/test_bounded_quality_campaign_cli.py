@@ -79,6 +79,7 @@ def test_cli_exposes_only_bounded_quality_operations() -> None:
         if action.__class__.__name__ == "_SubParsersAction"
     )
     assert set(subparsers.choices) == {
+        "prepare",
         "capture-real-state",
         "dry-run",
         "freeze",

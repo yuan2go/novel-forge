@@ -31,6 +31,7 @@ from novel_forge.modules.chapter_quality_authority.calibration_v2 import (
     ReaderOutcomeEvidence,
     evaluate_quality_calibration_v2,
 )
+from novel_forge.modules.chapter_quality_authority.domain import QUALITY_DIMENSIONS
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_intelligence import (
     build_world_consequence_candidate,
@@ -640,6 +641,16 @@ _BOOK_BOOTSTRAP_INPUT_SPECS: dict[str, tuple[str, tuple[str, ...], str]] = {
         ("book_id", "contract_version", "status"),
         "PRE_CHAPTER_0",
     ),
+    "book.previous_chapter_group_outcome.author": (
+        "previous_chapter_group_outcome",
+        ("book_id", "contract_version", "status"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.previous_chapter_outcome.author": (
+        "previous_chapter_outcome",
+        ("book_id", "contract_version", "status"),
+        "PRE_CHAPTER_0",
+    ),
     "book.arc_portfolio.author": (
         "arc_portfolio",
         ("book_id", "portfolio_id", "contract_version"),
@@ -673,6 +684,11 @@ _BOOK_BOOTSTRAP_INPUT_SPECS: dict[str, tuple[str, tuple[str, ...], str]] = {
     "book.reader_contract.author": (
         "reader_contract",
         ("book_id", "profile_id", "profile_version"),
+        "ADVISORY",
+    ),
+    "book.reader_state.author": (
+        "reader_state",
+        ("book_id", "contract_version", "profile_version", "status"),
         "ADVISORY",
     ),
     "book.character_state.author": (
@@ -741,11 +757,22 @@ def _author_book_bootstrap_input(
             "entries",
             "active_conflicts",
             "current_actual_conflicts",
+            "actual_outcomes",
         ):
             if field in content and content[field] != []:
                 raise ValueError(
                     f"operator-authored {asset_type} cannot declare accepted {field}"
                 )
+    if asset_type == "reader_state" and (
+        content.get("profile_version") != "reader-outcome-v3"
+        or content.get("status") != "NOT_OBSERVED"
+        or content.get("accepted_through_chapter") != 0
+        or content.get("observations") != []
+        or content.get("evidence_class") != "READER_PROXY_ADVISORY"
+    ):
+        raise ValueError(
+            "operator-authored reader_state must be an empty Reader Outcome v3 advisory genesis"
+        )
     if asset_type == "production_profile":
         target = content.get("target_chapter_count")
         if not isinstance(target, int) or isinstance(target, bool) or target <= 0:
@@ -964,6 +991,88 @@ def author_operator_checklist(request: AuthorityHandlerRequest) -> dict[str, Any
     }
 
 
+def author_fixture_waiver_approval(
+    request: AuthorityHandlerRequest,
+) -> dict[str, Any]:
+    content = _operator_authored_input(
+        request,
+        asset_type="operator_approval",
+        required_fields=(
+            "book_id",
+            "decision",
+            "contract_version",
+            "waiver_reason",
+            "waived_dimensions",
+            "scope",
+            "expiry",
+        ),
+    )
+    scope = content.get("scope")
+    dimensions = content.get("waived_dimensions")
+    expiry = str(content.get("expiry") or "")
+    try:
+        expires_at = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("fixture waiver approval expiry must be ISO-8601") from exc
+    if (
+        content.get("decision") != "APPROVED"
+        or content.get("contract_version") != "fixture-waiver-approval-v1"
+        or content.get("fixture_protocol_only") is not True
+        or content.get("production_verified") is not False
+        or not str(content.get("waiver_reason") or "").strip()
+        or not isinstance(dimensions, list)
+        or set(str(item) for item in dimensions) != set(QUALITY_DIMENSIONS)
+        or not isinstance(scope, dict)
+        or scope.get("project_id") != request.project_id
+        or scope.get("scope_type") != "PROJECT_FIXTURE"
+        or scope.get("release_readiness") != "INTERNAL_REVIEW_RELEASE"
+        or expires_at.tzinfo is None
+    ):
+        raise ValueError(
+            "fixture waiver approval must be scoped, expiring, fixture-only, "
+            "and cover the canonical Quality dimensions"
+        )
+    governed_keys = {
+        "approved",
+        "decision",
+        "contract_version",
+        "fixture_protocol_only",
+        "production_verified",
+        "waiver_reason",
+        "waived_dimensions",
+        "scope",
+        "expiry",
+        "human_preference_evidence",
+    }
+    facts = [
+        item
+        for item in content["structured_facts"]
+        if isinstance(item, dict)
+        and str(item.get("key") or "") not in governed_keys
+    ]
+    return {
+        **content,
+        "allowed_use": "evidence_only",
+        "human_preference_evidence": False,
+        "structured_facts": [
+            *facts,
+            {"key": "approved", "value": True},
+            {"key": "decision", "value": "APPROVED"},
+            {
+                "key": "contract_version",
+                "value": "fixture-waiver-approval-v1",
+            },
+            {"key": "fixture_protocol_only", "value": True},
+            {"key": "production_verified", "value": False},
+            {"key": "waiver_reason", "value": content["waiver_reason"]},
+            {"key": "waived_dimensions", "value": list(dimensions)},
+            {"key": "scope", "value": dict(scope)},
+            {"key": "expiry", "value": expiry},
+            {"key": "human_preference_evidence", "value": False},
+        ],
+    }
+
+
 def author_story_design_candidate(
     request: AuthorityHandlerRequest,
 ) -> dict[str, Any]:
@@ -1030,10 +1139,55 @@ def author_story_design_candidate(
     return dict(content)
 
 
+_STORY_DESIGN_AUTHOR_SPECS = {
+    "story_design.creative_foundation.author": (
+        "creative_foundation",
+        "creative.candidates.generate",
+    ),
+    "story_design.theme_contract.author": (
+        "theme_contract",
+        "theme.candidates.generate",
+    ),
+    "story_design.ending_intent.author": (
+        "ending_intent",
+        "ending.intent.generate",
+    ),
+    "story_design.reader_promise.author": (
+        "reader_promise",
+        "reader.promise.generate",
+    ),
+    "story_design.world_bible.author": (
+        "world_bible",
+        "world.design.generate",
+    ),
+    "story_design.character_cast.author": (
+        "character_cast",
+        "character.cast.generate",
+    ),
+}
+
+
+def _story_design_author_binder(generator_operation_name: str) -> Binder:
+    def bind(request: AuthorityHandlerRequest) -> dict[str, Any]:
+        content = author_story_design_candidate(request)
+        if content.get("generator_operation_name") != generator_operation_name:
+            raise ValueError(
+                "operator-authored Story Design operation and generator differ"
+            )
+        return content
+
+    return bind
+
+
 def author_story_design_review(request: AuthorityHandlerRequest) -> dict[str, Any]:
     candidate = _one(
         request,
-        "story_design_candidate",
+        "creative_foundation",
+        "theme_contract",
+        "ending_intent",
+        "reader_promise",
+        "world_bible",
+        "character_cast",
         "book_design",
         "planning_generation_candidate",
     )
@@ -1624,10 +1778,19 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
             author_operator_checklist,
         ),
         (
-            "story_design.candidate.author",
-            "story_design_candidate",
-            "story_design.candidate",
-            author_story_design_candidate,
+            "chapter.fixture_waiver_approval.author",
+            "operator_approval",
+            "chapter.fixture_waiver_approval",
+            author_fixture_waiver_approval,
+        ),
+        *(
+            (
+                name,
+                asset_type,
+                f"story_design.{asset_type}",
+                _story_design_author_binder(generator),
+            )
+            for name, (asset_type, generator) in _STORY_DESIGN_AUTHOR_SPECS.items()
         ),
         (
             "story_design.review.author",
@@ -1677,6 +1840,7 @@ __all__ = [
     "author_chapter_plan",
     "author_platform_profile",
     "author_operator_checklist",
+    "author_fixture_waiver_approval",
     "author_quality_rubric",
     "author_story_design_candidate",
     "author_story_design_review",

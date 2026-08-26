@@ -4,6 +4,7 @@ import hashlib
 import json
 import unittest
 
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from novel_forge.modules.content_authority import CONTENT_CODECS
 from novel_forge.modules.content_authority.application import (
     ContentAuthorityApplication,
@@ -911,6 +912,23 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "completed": True,
                 "contract_version": "internal-release-checklist-v1",
             },
+            "chapter.fixture_waiver_approval.author": {
+                "type": "operator_approval",
+                "book_id": f"book:{self.project_id}",
+                "decision": "APPROVED",
+                "contract_version": "fixture-waiver-approval-v1",
+                "fixture_protocol_only": True,
+                "production_verified": False,
+                "human_preference_evidence": False,
+                "waiver_reason": "Exercise fixture-only Quality gate wiring.",
+                "waived_dimensions": list(QUALITY_DIMENSIONS),
+                "scope": {
+                    "project_id": self.project_id,
+                    "scope_type": "PROJECT_FIXTURE",
+                    "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                },
+                "expiry": "2099-12-31T23:59:59Z",
+            },
         }
         for name, content in authored_inputs.items():
             self.run_op(
@@ -926,42 +944,162 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 },
             )
 
-        story_design_candidate = self.run_op(
-            "story_design.candidate.author",
-            payload={
-                "content": {
-                    "schema_version": "story_design.authority.v1",
-                    "project_id": self.project_id,
-                    "generator_operation_name": "creative.candidates.generate",
-                    "planning_scope": "NOT_APPLICABLE",
-                    "logical_key": "foundation:creative:content-runtime-v1",
-                    "operator_authored": True,
-                    "provider_generated": False,
-                    "candidate_payload": {
-                        "objective": "Establish a costly public-truth mystery engine.",
-                        "target_reader": "adult speculative mystery readers",
-                        "why_worth_writing": "Public truth creates responsibility.",
-                        "genre": "speculative mystery",
-                        "subgenre": "institutional mystery",
-                        "core_desire": "restore erased belonging",
-                        "core_fear": "truth will expose protected people",
-                        "core_conflict": "witnesses challenge a self-editing archive",
-                        "narrative_engine": "each anomaly forces disclosure or concealment",
-                        "differentiation": "geography changes through accountable choices",
-                        "emotional_contract": "wonder becomes costly shared responsibility",
-                        "serialization_potential": "each district exposes a distinct bargain",
-                    },
-                }
+        def author_foundation(
+            name: str,
+            generator: str,
+            logical_role: str,
+            candidate_payload: dict,
+            parents: dict[str, dict] | None = None,
+        ) -> dict:
+            frozen_parents = parents or {}
+            return self.run_op(
+                name,
+                list(frozen_parents.values()),
+                {
+                    "content": {
+                        "schema_version": "story_design.authority.v1",
+                        "project_id": self.project_id,
+                        "generator_operation_name": generator,
+                        "planning_scope": "NOT_APPLICABLE",
+                        "logical_key": (
+                            f"foundation:{logical_role}:content-runtime-v1"
+                        ),
+                        "operator_authored": True,
+                        "provider_generated": False,
+                        "candidate_payload": {
+                            **candidate_payload,
+                            **(
+                                {
+                                    "foundation_parent_bindings": {
+                                        role: {
+                                            "asset_version_id": item[
+                                                "asset_version_id"
+                                            ],
+                                            "content_hash": item["content_hash"],
+                                        }
+                                        for role, item in frozen_parents.items()
+                                    }
+                                }
+                                if frozen_parents
+                                else {}
+                            ),
+                        },
+                    }
+                },
+            )
+
+        creative = author_foundation(
+            "story_design.creative_foundation.author",
+            "creative.candidates.generate",
+            "creative",
+            {
+                "objective": "Establish a costly public-truth mystery engine.",
+                "target_reader": "adult speculative mystery readers",
+                "why_worth_writing": "Public truth creates responsibility.",
+                "genre": "speculative mystery",
+                "subgenre": "institutional mystery",
+                "core_desire": "restore erased belonging",
+                "core_fear": "truth will expose protected people",
+                "core_conflict": "witnesses challenge a self-editing archive",
+                "narrative_engine": "each anomaly forces disclosure or concealment",
+                "differentiation": "geography changes through accountable choices",
+                "emotional_contract": "wonder becomes costly shared responsibility",
+                "serialization_potential": "each district exposes a distinct bargain",
             },
+        )
+        creative_parent = {"CREATIVE_FOUNDATION": creative}
+        theme = author_foundation(
+            "story_design.theme_contract.author",
+            "theme.candidates.generate",
+            "theme",
+            {
+                "objective": "Bind truth to humane public choice.",
+                "thematic_question": "Can public truth remain humane under pressure?",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        ending = author_foundation(
+            "story_design.ending_intent.author",
+            "ending.intent.generate",
+            "ending",
+            {
+                "objective": "Make collective custody an earned ending direction.",
+                "ending_direction": "collective custody replaces solitary control",
+                "protagonist_cost": "Mara surrenders exclusive certainty",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        promise = author_foundation(
+            "story_design.reader_promise.author",
+            "reader.promise.generate",
+            "reader-promise",
+            {
+                "objective": "Promise discovery through costly public choices.",
+                "reader_promise": "Every discovery forces a costly public choice",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        creative_contracts = {
+            "CREATIVE_FOUNDATION": creative,
+            "THEME_CONTRACT": theme,
+            "ENDING_INTENT": ending,
+            "READER_PROMISE": promise,
+        }
+        world = author_foundation(
+            "story_design.world_bible.author",
+            "world.design.generate",
+            "world",
+            {
+                "objective": "Turn witnessed truth into bounded world causality.",
+                "rules": [
+                    {
+                        "rule": "A witnessed place resists erasure for seven days",
+                        "cost": "the witness becomes publicly exposed",
+                        "exception": "a witness may formally recant",
+                        "consequence": "access remains open while testimony stands",
+                        "narrative_function": "turn knowledge into costly agency",
+                    }
+                ],
+            },
+            creative_contracts,
+        )
+        author_foundation(
+            "story_design.character_cast.author",
+            "character.cast.generate",
+            "characters",
+            {
+                "objective": "Give the witness mystery an agentic cast.",
+                "characters": [
+                    {
+                        "character_id": "mara",
+                        "desire": "restore the erased district",
+                        "need": "share uncertain evidence",
+                        "fear": "causing another erasure",
+                        "wound": "a failed solitary proof",
+                        "false_belief": "only certainty protects people",
+                        "values": ["truth", "care"],
+                        "moral_boundary": "never fabricate a witness",
+                        "agency": "chooses when evidence becomes public",
+                        "capability": "reads archival topology",
+                        "weakness": "withholds uncertainty",
+                        "voice": "precise until emotionally cornered",
+                        "secret": "her first map caused harm",
+                        "relationship_function": "learn accountable trust",
+                        "arc_direction": "certainty becomes shared responsibility",
+                    }
+                ],
+            },
+            {**creative_contracts, "WORLD_BIBLE": world},
         )
         self.run_op(
             "story_design.review.author",
-            [story_design_candidate],
+            [creative],
             {
-                "candidate_asset_version_id": story_design_candidate[
-                    "asset_version_id"
-                ],
-                "candidate_content_hash": story_design_candidate["content_hash"],
+                "candidate_asset_version_id": creative["asset_version_id"],
+                "candidate_content_hash": creative["content_hash"],
                 "evaluation": {
                     "schema_version": "progressive-narrative-qualification.v1",
                     "evaluations": [],
@@ -990,6 +1128,20 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "type": "previous_volume_outcome",
                 "contract_version": "v1",
                 "status": "NO_PREVIOUS_VOLUME",
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.previous_chapter_group_outcome.author": {
+                "type": "previous_chapter_group_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_CHAPTER_GROUP",
+                "actual_outcomes": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.previous_chapter_outcome.author": {
+                "type": "previous_chapter_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_CHAPTER",
+                "actual_outcomes": [],
                 "authority_boundary": "PRE_CHAPTER_0",
             },
             "book.arc_portfolio.author": {
@@ -1032,6 +1184,16 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "type": "reader_contract",
                 "profile_id": "reader:bounded",
                 "profile_version": "reader-outcome-v3",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reader_state.author": {
+                "type": "reader_state",
+                "contract_version": "reader-state-genesis-v1",
+                "profile_version": "reader-outcome-v3",
+                "status": "NOT_OBSERVED",
+                "accepted_through_chapter": 0,
+                "observations": [],
+                "evidence_class": "READER_PROXY_ADVISORY",
                 "authority_boundary": "ADVISORY",
             },
             "book.character_state.author": {

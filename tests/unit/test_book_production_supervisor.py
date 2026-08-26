@@ -168,6 +168,51 @@ def test_replan_chapter_context_uses_only_scheduled_nondormant_arcs() -> None:
     ) == ["arc:v1", "arc:v3"]
 
 
+def test_chapter_plan_inputs_bind_matrix_row_to_active_chapter_group() -> None:
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    snapshot = {
+        "book_plan_version": "book-plan:v1",
+        "character_state_version": "character-state:v1",
+        "foreshadowing_state_version": "foreshadowing-state:v1",
+        "quality_trend_version": "quality-trend:v1",
+        "reward_ledger_version": "reward-ledger:v1",
+        "promise_ledger_version": "promise-ledger:v1",
+    }
+    latest = {
+        "previous_chapter_outcome": "chapter-outcome:v0",
+        "story_state": "story-state:v0",
+        "canon_snapshot": "canon:v0",
+        "reader_state": "reader-state:v0",
+    }
+    looked_up_roles: list[str] = []
+    supervisor.query = SimpleNamespace(
+        require_input_snapshot=lambda _snapshot_id: dict(snapshot)
+    )
+    supervisor._active_plan = lambda *_args: {
+        "asset_version_id": "chapter-group:v1"
+    }
+
+    def latest_role_asset(_book, role):
+        looked_up_roles.append(role)
+        return latest.get(role, "")
+
+    supervisor._latest_role_asset = latest_role_asset
+
+    resolved = supervisor._resolve_generation_inputs(
+        {
+            "input_snapshot_id": "snapshot:1",
+            "accepted_through_chapter": 0,
+        },
+        "chapter_plan.generate",
+        primary_arc_version="arc:v1",
+        volume_plan_version="volume:v1",
+    )
+
+    assert resolved["chapter_group_plan"] == "chapter-group:v1"
+    assert resolved["chapter_function_matrix_row"] == "chapter-group:v1"
+    assert "chapter_function_matrix_row" not in looked_up_roles
+
+
 def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:
     supervisor = object.__new__(PostgresBookProductionSupervisor)
     supervisor.context_token_budget = 16_000

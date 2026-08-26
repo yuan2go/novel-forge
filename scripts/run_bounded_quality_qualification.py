@@ -36,9 +36,13 @@ from novel_forge.modules.reader_calibration import (
     PreferenceChoice,
 )
 from novel_forge.modules.runtime_proof import (
+    BoundedQualityCampaignPreparer,
     BoundedQualityCampaignRunner,
     HumanReviewerTarget,
     PostgresBoundedQualityCampaignRuntime,
+    bounded_quality_chapter_fixture_response,
+    bounded_quality_planning_fixture_response,
+    load_quality_book_contract,
     load_quality_campaign_profile,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -50,6 +54,9 @@ from novel_forge.storage.migrations import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROFILE = ROOT / "config/proof_campaigns/quality_qualification_v1.json"
+DEFAULT_BOOK_CONTRACT = (
+    ROOT / "config/proof_campaigns/quality_qualification_book_v1.json"
+)
 STATE_SCHEMA = "novel-forge.bounded-quality-runtime-state.v1"
 RESULT_SCHEMA = "novel-forge.bounded-quality-campaign-result.v1"
 _REQUIRED_STATE_FIELDS = frozenset(
@@ -582,6 +589,104 @@ def _capture_real_state(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _prepare(args: argparse.Namespace) -> dict[str, Any]:
+    allow_dirty = bool(args.allow_dirty and args.mode == "scripted")
+    repository = _repository_state(allow_dirty=allow_dirty)
+    migration = get_migration_status(args.database_url)
+    if not migration["ok"] or migration["current"] != LATEST_MIGRATION_ID:
+        raise RuntimeError(
+            "bounded Quality preparation requires the current migration head"
+        )
+    profile = load_quality_campaign_profile(args.profile, repository_root=ROOT)
+    book_contract = load_quality_book_contract(
+        args.book_contract,
+        campaign_profile=profile,
+    )
+    raw_runtime_env = _json_file(args.runtime_env)
+    if any(isinstance(value, (dict, list)) for value in raw_runtime_env.values()):
+        raise ValueError("runtime environment values must be scalar")
+    runtime_env = {str(key): str(value) for key, value in raw_runtime_env.items()}
+    settings_values = {
+        **{str(key): str(value) for key, value in os.environ.items()},
+        **runtime_env,
+        "NOVEL_FORGE_ROOT": str(ROOT),
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+        "NOVEL_FORGE_DATABASE_URL": args.database_url,
+        "NOVEL_FORGE_ENVIRONMENT": (
+            "test" if args.mode == "scripted" else "validation"
+        ),
+    }
+    settings = IndustrialSettings.from_env(settings_values, root=ROOT)
+    prepared = BoundedQualityCampaignPreparer(
+        database_url=args.database_url,
+        repository_root=ROOT,
+        settings=settings,
+        runtime_env=runtime_env,
+        profile=profile,
+        book_contract=book_contract,
+        campaign_id=args.campaign_id,
+        exact_release_sha=repository["commit_sha"],
+        mode=args.mode,
+    ).prepare()
+    planning = dict(prepared.planning_lineage)
+    arc_versions = list(planning["arc_plan_asset_version_ids"])
+    if not arc_versions:
+        raise RuntimeError("prepared bounded Book has no Arc plan")
+    foundation = {
+        **dict(prepared.foundation_lineage),
+        "story_formation_run_id": prepared.foundation_lineage["formation_run_id"],
+        "source_classification": "FROZEN_AUTHORITY_INPUT_NOT_QUALITY_EVIDENCE",
+    }
+    safe_runtime_env = {
+        key: value
+        for key, value in prepared.runtime_env.items()
+        if key != "NOVEL_FORGE_DATABASE_URL"
+    }
+    state = _validate_state_document(
+        {
+            "schema_version": STATE_SCHEMA,
+            "campaign_id": args.campaign_id,
+            "project_id": prepared.project_id,
+            "workspace_id": prepared.workspace_id,
+            "book_id": prepared.book_id,
+            "book_run_id": prepared.book_run_id,
+            "primary_arc_plan_version_id": arc_versions[0],
+            "volume_scope_id": profile.to_dict()["book"]["bounded_volume_scope"],
+            "exact_release_sha": prepared.exact_release_sha,
+            "migration_head": LATEST_MIGRATION_ID,
+            "capability_pack_manifest": prepared.capability_pack_manifest,
+            "foundation_lineage": foundation,
+            "planning_lineage": planning,
+            "realization_lineage": {
+                "contract": "narrative-realization-v1",
+                "expected_chapter_group_ranges": [[1, 4], [5, 8]],
+                "binding_policy": "QUALIFICATION_FROZEN_BEFORE_EXECUTION",
+            },
+            "initial_state_lineage": prepared.initial_state_lineage,
+            "reviewers": _reviewer_targets(args.reviewer),
+            "runtime_env": safe_runtime_env,
+        }
+    )
+    effective_env = _runtime_env(state, mode=args.mode, profile=profile)
+    _verify_runtime_routes(profile, effective_env, mode=args.mode)
+    _verify_runtime_pack_ids(state, effective_env, mode=args.mode)
+    _verify_freeze_lineage(
+        args.database_url,
+        state,
+        mode=args.mode,
+        values=effective_env,
+    )
+    state_path = _write_json(args.output, state)
+    return {
+        "status": "PREPARED",
+        "mode": args.mode,
+        "state_path": str(state_path),
+        "state": state,
+        "repository": repository,
+        "migration": migration,
+    }
+
+
 def _verify_freeze_lineage(
     database_url: str,
     state: Mapping[str, Any],
@@ -1048,7 +1153,16 @@ def _run_campaign(
         },
         root=ROOT,
     )
-    execution = build_production_execution_composition(settings, env=env)
+    execution = build_production_execution_composition(
+        settings,
+        env=env,
+        planning_fixture_factory=(
+            bounded_quality_planning_fixture_response if mode == "scripted" else None
+        ),
+        chapter_fixture_factory=(
+            bounded_quality_chapter_fixture_response if mode == "scripted" else None
+        ),
+    )
     try:
         chapter = build_chapter_authority_application(
             settings,
@@ -1278,6 +1392,26 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    prepare = subparsers.add_parser(
+        "prepare",
+        help="prepare one canonical unstarted 4+4 Book and write frozen state",
+    )
+    prepare.add_argument("--database-url", required=True)
+    prepare.add_argument("--campaign-id", required=True)
+    prepare.add_argument("--mode", choices=("scripted", "real"), required=True)
+    prepare.add_argument("--runtime-env", required=True)
+    prepare.add_argument(
+        "--reviewer",
+        action="append",
+        required=True,
+        metavar="ID:IDENTITY_CLASS",
+        help="repeat exactly twice for the independent human reviewer targets",
+    )
+    prepare.add_argument("--profile", default=str(DEFAULT_PROFILE))
+    prepare.add_argument("--book-contract", default=str(DEFAULT_BOOK_CONTRACT))
+    prepare.add_argument("--output", required=True)
+    prepare.add_argument("--allow-dirty", action="store_true")
+
     capture = subparsers.add_parser(
         "capture-real-state",
         help="capture one prepared canonical 4+4 Book as a non-authoritative state descriptor",
@@ -1337,7 +1471,9 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = _parser().parse_args()
     try:
-        if args.command == "capture-real-state":
+        if args.command == "prepare":
+            result = _prepare(args)
+        elif args.command == "capture-real-state":
             result = _capture_real_state(args)
         elif args.command == "freeze":
             result = _freeze(args)

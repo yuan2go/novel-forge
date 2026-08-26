@@ -228,15 +228,13 @@ class PostgresBoundedQualityCampaignRuntime:
             evidence_asset_ids,
             provider_runtime_asset_id,
             provider_runtime_content_hash,
-        ) = (
-            self._materialize_and_bind_evidence(
-                observations=observations,
-                longitudinal=longitudinal.to_dict(),
-                arc=arc.to_dict(),
-                volume=volume.to_dict(),
-                semantic_evidence_hash=semantic_evidence_hash,
-                provider_runtime=provider_runtime,
-            )
+        ) = self._materialize_and_bind_evidence(
+            observations=observations,
+            longitudinal=longitudinal.to_dict(),
+            arc=arc.to_dict(),
+            volume=volume.to_dict(),
+            semantic_evidence_hash=semantic_evidence_hash,
+            provider_runtime=provider_runtime,
         )
         packs = self._export_blind_packs(subjects)
         self._inject("after_pack_export")
@@ -259,12 +257,8 @@ class PostgresBoundedQualityCampaignRuntime:
             "semantic_evidence_hash": semantic_evidence_hash,
             "evidence_asset_version_ids": list(evidence_asset_ids),
             "provider_runtime_evidence": provider_runtime,
-            "provider_runtime_evidence_asset_version_id": (
-                provider_runtime_asset_id
-            ),
-            "provider_runtime_evidence_content_hash": (
-                provider_runtime_content_hash
-            ),
+            "provider_runtime_evidence_asset_version_id": (provider_runtime_asset_id),
+            "provider_runtime_evidence_content_hash": (provider_runtime_content_hash),
             "qualification_decision": decision,
         }
 
@@ -293,8 +287,15 @@ class PostgresBoundedQualityCampaignRuntime:
             if int(book["accepted_through_chapter"]) > end:
                 raise RuntimeError("Book crossed the bounded ChapterGroup stop")
             tick = self._book_worker_tick()
-            if str(tick.get("action") or "") == "DISPATCH_CHAPTER":
+            action = str(tick.get("action") or "")
+            if action == "DISPATCH_CHAPTER":
                 self._run_chapter(str(tick["operation_id"]))
+            elif action == "RECONCILE_CHAPTER":
+                # A resumed campaign may already own an admitted/running child.
+                # Book reconciliation observes it but does not execute the
+                # Chapter worker. Continue the exact frozen child operation;
+                # never submit a replacement or mutate its input snapshot.
+                self._run_chapter(self._active_chapter_root_operation_id())
         raise RuntimeError(
             f"Canonical Book runtime did not close ChapterGroup {start}-{end}"
         )
@@ -333,6 +334,17 @@ class PostgresBoundedQualityCampaignRuntime:
             if tick.saga_status == "SUCCEEDED":
                 return
         raise RuntimeError("Chapter Authority did not reach SUCCEEDED")
+
+    def _active_chapter_root_operation_id(self) -> str:
+        book = self.composition.authority.require(self.book_run_id)
+        request_id = str(book.get("active_chapter_request_id") or "")
+        if not request_id:
+            raise RuntimeError("Book reconciliation lacks an active Chapter request")
+        request = self.composition.authority.require_chapter_request(request_id)
+        root_operation_id = str(request.get("chapter_root_operation_id") or "")
+        if not root_operation_id:
+            raise RuntimeError("active Chapter request lacks its Authority operation")
+        return root_operation_id
 
     def _drain_followups(self, through_chapter: int) -> None:
         for _ in range(96):
@@ -710,8 +722,7 @@ class PostgresBoundedQualityCampaignRuntime:
             failure_marker = bool(
                 str(content.get("call_status") or "")
                 or (
-                    isinstance(post_provider_failure, Mapping)
-                    and post_provider_failure
+                    isinstance(post_provider_failure, Mapping) and post_provider_failure
                 )
             )
             succeeded = not failure_marker and (
@@ -871,9 +882,7 @@ class PostgresBoundedQualityCampaignRuntime:
         )
         measured_input_tokens = sum(item[0] for item in unique_usage.values())
         measured_output_tokens = sum(item[1] for item in unique_usage.values())
-        provider_failures = sum(
-            1 for item in calls if not bool(item["succeeded"])
-        )
+        provider_failures = sum(1 for item in calls if not bool(item["succeeded"]))
         successful_effect_missing_receipts = sorted(
             item["external_effect_id"]
             for item in provider_effects
@@ -899,9 +908,7 @@ class PostgresBoundedQualityCampaignRuntime:
             "settled_cost_amount": format(settled_cost, "f"),
             "currency": "USD",
             "route_mismatch_asset_version_ids": sorted(route_mismatches),
-            "unclassified_model_call_asset_version_ids": sorted(
-                unclassified_calls
-            ),
+            "unclassified_model_call_asset_version_ids": sorted(unclassified_calls),
             "fixture_call_asset_version_ids": sorted(fixture_calls),
             "successful_measurement_missing_asset_version_ids": sorted(
                 successful_measurement_missing
@@ -920,9 +927,7 @@ class PostgresBoundedQualityCampaignRuntime:
             "provider_effects": provider_effects,
             "budget_reservations": budgets,
             "capability_pack_snapshots": pack_snapshots,
-            "model_call_asset_version_ids": [
-                str(row[0]) for row in model_rows
-            ],
+            "model_call_asset_version_ids": [str(row[0]) for row in model_rows],
             "cost_ledger_asset_version_ids": list(cost_asset_ids),
         }
 
@@ -981,8 +986,7 @@ class PostgresBoundedQualityCampaignRuntime:
                 failures.append("no attributable real Provider call")
         if failures:
             raise RuntimeError(
-                "final Provider runtime evidence is incomplete: "
-                + "; ".join(failures)
+                "final Provider runtime evidence is incomplete: " + "; ".join(failures)
             )
 
     def _candidate_pairs(self) -> tuple[_CandidatePair, ...]:
@@ -1197,15 +1201,11 @@ class PostgresBoundedQualityCampaignRuntime:
                 (
                     *(
                         str(item)
-                        for item in provider_runtime[
-                            "model_call_asset_version_ids"
-                        ]
+                        for item in provider_runtime["model_call_asset_version_ids"]
                     ),
                     *(
                         str(item)
-                        for item in provider_runtime[
-                            "cost_ledger_asset_version_ids"
-                        ]
+                        for item in provider_runtime["cost_ledger_asset_version_ids"]
                     ),
                 )
             )
@@ -1271,9 +1271,7 @@ class PostgresBoundedQualityCampaignRuntime:
                 EvidenceSeverity.WARNING,
                 {"longitudinal": longitudinal, "arc": arc, "volume": volume},
                 tuple(
-                    dict.fromkeys(
-                        (*accepted_ids, *reader_ids, provider_artifact_id)
-                    )
+                    dict.fromkeys((*accepted_ids, *reader_ids, provider_artifact_id))
                 ),
             ),
         )

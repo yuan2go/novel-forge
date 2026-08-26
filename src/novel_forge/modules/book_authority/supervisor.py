@@ -896,6 +896,11 @@ class PostgresBookProductionSupervisor:
         )
         if group:
             fixed["chapter_group_plan"] = group["asset_version_id"]
+            # Planning Authority accepts the frozen ChapterGroupPlan itself as
+            # the source for this role and validates/extracts the unique row
+            # for the requested Chapter.  Reuse that exact Active version so a
+            # stale standalone matrix asset can never outrank the current plan.
+            fixed["chapter_function_matrix_row"] = group["asset_version_id"]
         result: dict[str, str] = {}
         for role in GENERATOR_INPUT_ROLES[generator]:
             value = fixed.get(role) or self._latest_role_asset(book, role)

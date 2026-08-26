@@ -54,10 +54,10 @@ from novel_forge.modules.content_intelligence import (
 from novel_forge.modules.content_authority.codecs import (
     CONTENT_CODECS,
     author_chapter_plan,
+    author_fixture_waiver_approval,
     author_operator_checklist,
     author_platform_profile,
     author_quality_rubric,
-    author_story_design_candidate,
     author_story_design_review,
     author_style_policy,
 )
@@ -101,7 +101,7 @@ CONTENT_DOMAIN_HANDLERS = {
     "chapter.quality_rubric.author": author_quality_rubric,
     "chapter.platform_profile.author": author_platform_profile,
     "chapter.operator_checklist.author": author_operator_checklist,
-    "story_design.candidate.author": author_story_design_candidate,
+    "chapter.fixture_waiver_approval.author": author_fixture_waiver_approval,
     "story_design.review.author": author_story_design_review,
     "creative.candidates.generate": build_candidate_pool,
 }
@@ -109,6 +109,6 @@ CONTENT_DOMAIN_HANDLERS.update(
     {
         name: codec.bind_and_execute
         for name, codec in CONTENT_CODECS.items()
-        if name.startswith("book.") and name.endswith(".author")
+        if name not in CONTENT_DOMAIN_HANDLERS
     }
 )
