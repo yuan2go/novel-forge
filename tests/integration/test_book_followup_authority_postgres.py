@@ -334,11 +334,37 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
                 [admission.operation_id],
             )
             attempts = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT binding.output_key, version.content
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id=%s
+                  AND binding.output_key IN (
+                    'reader_outcome.report',
+                    'reader_outcome.state_transition',
+                    'reader_outcome.issue_set'
+                  )
+                """,
+                [admission.operation_id],
+            )
+            reader_outputs = {
+                str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
+            }
         self.assertEqual(
             effect,
             (1, "model.reader_outcome", "SUCCEEDED", "reader_outcome"),
         )
         self.assertEqual(attempts, 1)
+        self.assertEqual(
+            {content["evidence_class"] for content in reader_outputs.values()},
+            {"READER_PROXY_ADVISORY"},
+        )
+        report = reader_outputs["reader_outcome.report"]
+        self.assertFalse(report["canon_mutation_allowed"])
+        self.assertFalse(report["future_intent_actualization_allowed"])
+        self.assertFalse(report["direct_plan_activation_allowed"])
         self.assertTrue(
             projection
         )  # query type is production-wired; link view is Book-owned
@@ -446,6 +472,8 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         self.assertTrue(str(evidence[3]).startswith("sha256:"))
         self.assertEqual(evidence[4], "SUCCEEDED")
         self.assertEqual(report["mode"], "SHADOW")
+        self.assertEqual(report["evidence_class"], "READER_PROXY_ADVISORY")
+        self.assertEqual(report["confidence_status"], "NOT_MEASURED")
         self.assertFalse(report["publish_blocking"])
         self.assertTrue(result.output.asset_version_id)
 
@@ -547,6 +575,8 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             )
             proposal = dict(uow.cursor.fetchone()[0])
         self.assertFalse(proposal["mutates_plan"])
+        self.assertFalse(proposal["activation_allowed"])
+        self.assertEqual(proposal["required_authority"], "PLAN_CHANGE_AUTHORITY")
         self.assertEqual(proposal["decision_status"], "AUTHORITY_PENDING")
 
     @staticmethod

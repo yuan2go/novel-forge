@@ -22,6 +22,9 @@ from novel_forge.modules.book_followup_authority.application import (
 from novel_forge.modules.book_followup_authority.domain import (
     should_trigger_longform_recap,
 )
+from novel_forge.modules.book_followup_authority.query import (
+    BookFollowupProjectionQuery,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -69,10 +72,14 @@ class PostgresBookFollowupCoordinator:
         *,
         query: PostgresBookProductionQuery,
         principal: Principal,
+        followup_query: BookFollowupProjectionQuery | None = None,
     ) -> None:
         self.authority = authority
         self.query = query
         self.principal = principal
+        self.followup_query = followup_query or BookFollowupProjectionQuery(
+            authority.database_url
+        )
 
     def admission_candidates(
         self, *, limit: int
@@ -123,6 +130,20 @@ class PostgresBookFollowupCoordinator:
             project_id=candidate.project_id,
             output_key="reader_outcome.report",
         )
+        reader_evidence = self.followup_query.reader_recap_evidence(
+            project_id=candidate.project_id,
+            book_run_id=candidate.book_run_id,
+            through_chapter=candidate.chapter_number,
+            current_report_asset_version_id=str(reader["asset_version_id"]),
+        )
+        quality_trend = self.followup_query.asset(
+            project_id=candidate.project_id,
+            asset_version_id=str(snapshot["quality_trend_version"]),
+        )
+        canon = self.followup_query.asset(
+            project_id=candidate.project_id,
+            asset_version_id=str(snapshot["accepted_canon_snapshot_version"]),
+        )
         ending_reachability = self.query.ending_reachability(
             book_run_id=candidate.book_run_id,
             chapter_number=candidate.chapter_number,
@@ -138,6 +159,12 @@ class PostgresBookFollowupCoordinator:
             chapter_group_complete=self._chapter_group_complete(snapshot),
             authority_requested=bool(ending_reachability.get("replan_required")),
             arc_checkpoint=arc_checkpoint is not None,
+            reader_outcome_declining=bool(reader_evidence["trend"]["declining"]),
+            canon_risk=bool(canon["content"].get("conflicts")),
+            quality_trend_declining=(
+                str(quality_trend["content"].get("direction") or "").upper()
+                == "DECLINING"
+            ),
         )
         if not trigger["should_trigger"]:
             raise KernelError(
@@ -150,6 +177,9 @@ class PostgresBookFollowupCoordinator:
             trigger=trigger,
             ending_reachability=ending_reachability,
             arc_checkpoint=arc_checkpoint,
+            reader_evidence=reader_evidence,
+            quality_trend=quality_trend,
+            canon=canon,
         )
         if arc_checkpoint is not None:
             self._bind_arc_checkpoint_followup(
@@ -186,6 +216,18 @@ class PostgresBookFollowupCoordinator:
                 str(snapshot["accepted_story_state_version"]),
             ),
         )
+        previous_reader_state = self.query.previous_reader_state(
+            book_run_id=str(snapshot["book_run_id"]),
+            chapter_number=int(snapshot["chapter_number"]),
+        )
+        previous_state_inputs = (
+            ()
+            if previous_reader_state == "NONE"
+            else self.authority.resolve_asset_refs(
+                project_id=str(snapshot["project_id"]),
+                asset_version_ids=(previous_reader_state,),
+            )
+        )
         return self.authority.schedule_reader_outcome(
             str(snapshot["chapter_request_id"]),
             principal=self.principal,
@@ -193,9 +235,7 @@ class PostgresBookFollowupCoordinator:
                 "book_id": snapshot["book_id"],
                 "chapter_id": f"chapter:{snapshot['chapter_number']}",
                 "chapter_number": int(snapshot["chapter_number"]),
-                "observed_through_chapter": int(
-                    snapshot["observed_through_chapter"]
-                ),
+                "observed_through_chapter": int(snapshot["observed_through_chapter"]),
                 "acceptance_operation_id": snapshot["acceptance_operation_id"],
                 "book_production_input_snapshot_id": snapshot[
                     "book_production_input_snapshot_id"
@@ -211,19 +251,12 @@ class PostgresBookFollowupCoordinator:
                 "reader_segment_version": snapshot["reader_segment_version"],
                 "reader_contract_version": snapshot["reader_contract_version"],
                 "platform_profile_version": snapshot["platform_profile_version"],
-                "canon_snapshot_version": snapshot[
-                    "accepted_canon_snapshot_version"
-                ],
-                "chapter_outcome_version": snapshot[
-                    "accepted_chapter_outcome_version"
-                ],
+                "canon_snapshot_version": snapshot["accepted_canon_snapshot_version"],
+                "chapter_outcome_version": snapshot["accepted_chapter_outcome_version"],
                 "story_state_version": snapshot["accepted_story_state_version"],
                 "quality_evidence_version": quality["asset_version_id"],
                 "input_manifest_ref": manifest["asset_version_id"],
-                "previous_reader_state_version": self.query.previous_reader_state(
-                    book_run_id=str(snapshot["book_run_id"]),
-                    chapter_number=int(snapshot["chapter_number"]),
-                ),
+                "previous_reader_state_version": previous_reader_state,
                 "evaluation_profile_version": "reader-evaluation:v1",
                 "model_strategy_version": snapshot["production_profile_version"],
             },
@@ -233,6 +266,7 @@ class PostgresBookFollowupCoordinator:
                 self._asset_ref(quality),
                 self._asset_ref(manifest),
                 *authority_inputs,
+                *previous_state_inputs,
             ),
         )
 
@@ -244,6 +278,9 @@ class PostgresBookFollowupCoordinator:
         trigger: dict[str, Any],
         ending_reachability: dict[str, Any],
         arc_checkpoint: dict[str, Any] | None,
+        reader_evidence: dict[str, Any],
+        quality_trend: dict[str, Any],
+        canon: dict[str, Any],
     ) -> BookFollowupAdmission:
         chapter = int(snapshot["chapter_number"])
         arc_plan_versions = tuple(str(item) for item in snapshot["arc_plan_versions"])
@@ -260,6 +297,16 @@ class PostgresBookFollowupCoordinator:
                 str(snapshot["accepted_canon_snapshot_version"]),
             ),
         )
+        input_assets = self._unique_asset_refs(
+            (
+                {
+                    "asset_version_id": reader["asset_version_id"],
+                    "content_hash": reader["content_hash"],
+                },
+                *tuple(reader_evidence["source_assets"]),
+                *authority_inputs,
+            )
+        )
         return self.authority.schedule_longform_recap(
             str(snapshot["chapter_request_id"]),
             principal=self.principal,
@@ -273,9 +320,7 @@ class PostgresBookFollowupCoordinator:
                     ),
                     chapter,
                 ],
-                "observed_through_chapter": int(
-                    snapshot["observed_through_chapter"]
-                ),
+                "observed_through_chapter": int(snapshot["observed_through_chapter"]),
                 "acceptance_operation_id": snapshot["acceptance_operation_id"],
                 "book_production_input_snapshot_id": snapshot[
                     "book_production_input_snapshot_id"
@@ -284,44 +329,34 @@ class PostgresBookFollowupCoordinator:
                 "book_plan_version": snapshot["book_plan_version"],
                 "volume_plan_version": snapshot["volume_plan_version"],
                 "arc_plan_versions": list(arc_plan_versions),
-                "canon_snapshot_version": snapshot[
-                    "accepted_canon_snapshot_version"
-                ],
+                "canon_snapshot_version": snapshot["accepted_canon_snapshot_version"],
                 "story_state_version": snapshot["accepted_story_state_version"],
-                "reader_state_version": reader["asset_version_id"],
-                "quality_trend_version": snapshot["quality_trend_version"],
-                "chapter_outcome_versions": [
-                    snapshot["accepted_chapter_outcome_version"]
+                "reader_state_version": reader_evidence[
+                    "current_state_asset_version_id"
                 ],
+                "quality_trend_version": snapshot["quality_trend_version"],
+                "chapter_outcome_versions": list(
+                    reader_evidence["chapter_outcome_versions"]
+                ),
                 "observations": {
-                    "reader_state": dict(reader["content"].get("reader_state") or {}),
-                    "reader_qualification": {
-                        "qualification_status": str(
-                            reader["content"].get("judge_qualification_status")
-                            or "SHADOW"
-                        ),
-                        "sample_size": int(reader["content"].get("sample_size") or 0),
-                        "confidence": float(reader["content"].get("confidence") or 0),
-                        "disagreement": True,
-                        "position_bias": True,
-                        "ood": True,
-                        "drift_detected": False,
-                        "recent_reports": [],
-                        "last_adjustment_chapter": None,
+                    "reader_evidence_class": "READER_PROXY_ADVISORY",
+                    "reader_state": dict(reader_evidence["current_reader_state"]),
+                    "reader_qualification": dict(reader_evidence["qualification"]),
+                    "reader_longitudinal": {
+                        "contract_version": reader_evidence["contract_version"],
+                        "observed_through_chapter": reader_evidence[
+                            "observed_through_chapter"
+                        ],
+                        "recent_reports": list(reader_evidence["recent_reports"]),
+                        "trend": dict(reader_evidence["trend"]),
                     },
-                    "canon": {"conflicts": []},
-                    "quality_trend": {"direction": "STABLE"},
+                    "canon": dict(canon["content"]),
+                    "quality_trend": dict(quality_trend["content"]),
                     "ending_reachability": ending_reachability,
                     "accepted_arc_checkpoint": dict(arc_checkpoint or {}),
                 },
             },
-            input_assets=(
-                {
-                    "asset_version_id": reader["asset_version_id"],
-                    "content_hash": reader["content_hash"],
-                },
-                *authority_inputs,
-            ),
+            input_assets=input_assets,
         )
 
     def _bind_arc_checkpoint_followup(
@@ -547,6 +582,32 @@ class PostgresBookFollowupCoordinator:
             "asset_version_id": str(item["asset_version_id"]),
             "content_hash": str(item["content_hash"]),
         }
+
+    @staticmethod
+    def _unique_asset_refs(
+        items: tuple[dict[str, Any], ...],
+    ) -> tuple[dict[str, str], ...]:
+        result: list[dict[str, str]] = []
+        hashes: dict[str, str] = {}
+        for item in items:
+            version_id = str(item["asset_version_id"])
+            content_hash = str(item["content_hash"])
+            prior = hashes.get(version_id)
+            if prior is not None:
+                if prior != content_hash:
+                    raise KernelError(
+                        "BOOK_FOLLOWUP_INPUT_HASH_CONFLICT",
+                        "one frozen AssetVersion resolved to different hashes",
+                    )
+                continue
+            hashes[version_id] = content_hash
+            result.append(
+                {
+                    "asset_version_id": version_id,
+                    "content_hash": content_hash,
+                }
+            )
+        return tuple(result)
 
     @staticmethod
     def _result(

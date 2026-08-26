@@ -42,6 +42,9 @@ from novel_forge.modules.book_followup_authority import LongformCheckpointType
 from novel_forge.modules.book_followup_authority.coordinator import (
     PostgresBookFollowupCoordinator,
 )
+from novel_forge.modules.book_followup_authority.query import (
+    BookFollowupProjectionQuery,
+)
 from novel_forge.modules.book_replan import (
     CoordinateBookReplanCommand,
 )
@@ -3846,6 +3849,37 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
+    previous_reader_state = composition.query.previous_reader_state(
+        book_run_id=book.book_run_id,
+        chapter_number=2,
+    )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT input_asset_snapshot
+            FROM authority_operation
+            WHERE operation_id=%s
+            """,
+            [reader["operation_id"]],
+        )
+        chapter_two_reader_inputs = list(uow.cursor.fetchone()[0])
+    assert previous_reader_state != "NONE"
+    assert previous_reader_state in {
+        str(item["asset_version_id"]) for item in chapter_two_reader_inputs
+    }
+    reader_longitudinal = BookFollowupProjectionQuery(
+        DATABASE_URL
+    ).reader_recap_evidence(
+        project_id=project_id,
+        book_run_id=book.book_run_id,
+        through_chapter=2,
+        current_report_asset_version_id=str(reader["asset_version_id"]),
+    )
+    assert len(reader_longitudinal["recent_reports"]) == 2
+    assert reader_longitudinal["evidence_class"] == "READER_PROXY_ADVISORY"
+    assert reader_longitudinal["qualification"]["disagreement"] is True
+    assert reader_longitudinal["qualification"]["position_bias"] is True
+    assert reader_longitudinal["qualification"]["ood"] is True
     authority_inputs = book_authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(

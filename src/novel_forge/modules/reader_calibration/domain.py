@@ -1,4 +1,5 @@
 """Pure contracts for human preference and reader behavior calibration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -95,14 +96,14 @@ class HumanBlindDecision:
         if not 0 <= self.confidence <= 1:
             raise ValueError("blind evaluation confidence must be between 0 and 1")
         if set(self.dimension_scores) != set(BLIND_EVALUATION_DIMENSIONS):
-            raise ValueError("dimension_scores must contain the exact frozen dimensions")
+            raise ValueError(
+                "dimension_scores must contain the exact frozen dimensions"
+            )
         frozen_scores: dict[str, Mapping[str, int | None]] = {}
         for dimension in BLIND_EVALUATION_DIMENSIONS:
             raw = self.dimension_scores[dimension]
             if not isinstance(raw, Mapping) or set(raw) != {"a", "b"}:
-                raise ValueError(
-                    f"{dimension} must score candidate a and b"
-                )
+                raise ValueError(f"{dimension} must score candidate a and b")
             a, b = raw["a"], raw["b"]
             if choice is PreferenceChoice.CANNOT_JUDGE and a is None and b is None:
                 frozen_scores[dimension] = MappingProxyType({"a": None, "b": None})
@@ -135,13 +136,15 @@ class HumanBlindDecision:
         object.__setattr__(self, "evaluator_identity_class", identity_class)
         object.__setattr__(self, "scope_type", scope)
         object.__setattr__(self, "choice", choice)
-        object.__setattr__(
-            self, "dimension_scores", MappingProxyType(frozen_scores)
-        )
+        object.__setattr__(self, "dimension_scores", MappingProxyType(frozen_scores))
 
     @property
     def preferred_candidate(self) -> str | None:
-        return self.choice.value if self.choice in {PreferenceChoice.A, PreferenceChoice.B} else None
+        return (
+            self.choice.value
+            if self.choice in {PreferenceChoice.A, PreferenceChoice.B}
+            else None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -335,33 +338,22 @@ def blind_pair_order(
 def preference_bias_report(
     decisions: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    decisive = [
-        item for item in decisions if item.get("choice") in {"A", "B"}
-    ]
+    decisive = [item for item in decisions if item.get("choice") in {"A", "B"}]
     left_choices = sum(
         1
         for item in decisive
-        if (
-            item["choice"] == "A"
-            and item.get("asset_a_position") == "LEFT"
-        )
-        or (
-            item["choice"] == "B"
-            and item.get("asset_b_position") == "LEFT"
-        )
+        if (item["choice"] == "A" and item.get("asset_a_position") == "LEFT")
+        or (item["choice"] == "B" and item.get("asset_b_position") == "LEFT")
     )
     left_rate = left_choices / len(decisive) if decisive else 0.0
     position_bias = bool(decisive) and abs(left_rate - 0.5) >= 0.25
     by_pair: dict[str, list[dict[str, Any]]] = {}
     for item in decisive:
-        by_pair.setdefault(str(item.get("canonical_pair_key") or ""), []).append(
-            item
-        )
+        by_pair.setdefault(str(item.get("canonical_pair_key") or ""), []).append(item)
     reversals = [
         pair
         for pair in by_pair.values()
-        if {item.get("presentation_order") for item in pair}
-        >= {"AB", "BA"}
+        if {item.get("presentation_order") for item in pair} >= {"AB", "BA"}
     ]
     consistent = sum(
         1
@@ -373,9 +365,7 @@ def preference_bias_report(
         "left_choice_rate": left_rate,
         "position_bias_detected": position_bias,
         "reversal_pair_count": len(reversals),
-        "reversal_consistency": (
-            consistent / len(reversals) if reversals else None
-        ),
+        "reversal_consistency": (consistent / len(reversals) if reversals else None),
     }
 
 
@@ -384,9 +374,7 @@ def human_agreement_report(
 ) -> dict[str, Any]:
     by_pair: dict[str, list[str]] = {}
     for item in decisions:
-        by_pair.setdefault(str(item["pair_id"]), []).append(
-            str(item["choice"])
-        )
+        by_pair.setdefault(str(item["pair_id"]), []).append(str(item["choice"]))
     comparable = [items for items in by_pair.values() if len(items) >= 2]
     agreements = 0
     comparisons = 0
@@ -450,11 +438,13 @@ def calibration_metrics(
         }
     epsilon = 1e-12
     brier = sum((p - y) ** 2 for p, y in observations) / count
-    log_loss = -sum(
-        y * math.log(max(p, epsilon))
-        + (1 - y) * math.log(max(1 - p, epsilon))
-        for p, y in observations
-    ) / count
+    log_loss = (
+        -sum(
+            y * math.log(max(p, epsilon)) + (1 - y) * math.log(max(1 - p, epsilon))
+            for p, y in observations
+        )
+        / count
+    )
     predicted = sum(p for p, _ in observations) / count
     observed = sum(y for _, y in observations) / count
     return {
@@ -491,9 +481,7 @@ def calibrated_probability(
     return max(0.0, min(1.0, raw_score))
 
 
-def mode_after_drift(
-    current_mode: JudgeMode, *, severe_drift: bool
-) -> JudgeMode:
+def mode_after_drift(current_mode: JudgeMode, *, severe_drift: bool) -> JudgeMode:
     return JudgeMode.SHADOW if severe_drift else current_mode
 
 
@@ -574,59 +562,72 @@ def evaluate_reader_outcome_consumption(
     policy: ReaderOutcomeDecisionPolicy = DEFAULT_READER_OUTCOME_DECISION_POLICY,
 ) -> dict[str, Any]:
     status = ReaderJudgeQualificationStatus(qualification_status)
-    reasons: list[str] = []
+    activation_blockers: list[str] = []
     if status is not ReaderJudgeQualificationStatus.QUALIFIED:
-        reasons.append("JUDGE_NOT_QUALIFIED")
+        activation_blockers.append("JUDGE_NOT_QUALIFIED")
     if sample_size < policy.minimum_sample_size:
-        reasons.append("MINIMUM_SAMPLE_NOT_MET")
+        activation_blockers.append("MINIMUM_SAMPLE_NOT_MET")
     if confidence < policy.minimum_confidence:
-        reasons.append("CONFIDENCE_BELOW_POLICY")
+        activation_blockers.append("CONFIDENCE_BELOW_POLICY")
     if disagreement:
-        reasons.append("JUDGE_DISAGREEMENT")
+        activation_blockers.append("JUDGE_DISAGREEMENT")
     if position_bias:
-        reasons.append("POSITION_BIAS")
+        activation_blockers.append("POSITION_BIAS")
     if ood:
-        reasons.append("OOD")
+        activation_blockers.append("OOD")
     if drift_detected or status is ReaderJudgeQualificationStatus.DRIFTED:
-        reasons.append("DRIFT")
+        activation_blockers.append("DRIFT")
     if current_chapter <= 0:
         raise ValueError("Reader Outcome consumption requires a positive chapter")
     if (
         last_adjustment_chapter is not None
         and current_chapter - last_adjustment_chapter < policy.cooldown_chapters
     ):
-        reasons.append("COOLDOWN_ACTIVE")
+        activation_blockers.append("COOLDOWN_ACTIVE")
+    trend_blockers: list[str] = []
     usable_reports = recent_reports[-policy.minimum_consecutive_chapters :]
     if len(usable_reports) < policy.minimum_consecutive_chapters:
-        reasons.append("TREND_WINDOW_INSUFFICIENT")
+        trend_blockers.append("TREND_WINDOW_INSUFFICIENT")
     elif not all(bool(item.get("declining")) for item in usable_reports):
-        reasons.append("NO_CONSECUTIVE_DECLINE")
-    allowed = not reasons
+        trend_blockers.append("NO_CONSECUTIVE_DECLINE")
+    advisory_allowed = not trend_blockers
+    activation_eligible = advisory_allowed and not activation_blockers
+    if activation_eligible:
+        decision = "PLAN_ADJUSTMENT_CANDIDATE"
+    elif advisory_allowed:
+        decision = "ADVISORY_RECOMMENDATION"
+    else:
+        decision = "SHADOW_ONLY"
     return {
-        "contract_version": "reader-outcome-consumption-decision-v1",
+        "contract_version": "reader-outcome-consumption-decision-v2",
         "policy_version": policy.policy_version,
-        "decision": "PLAN_ADJUSTMENT_CANDIDATE" if allowed else "SHADOW_ONLY",
-        "future_production_influence_allowed": allowed,
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "decision": decision,
+        "advisory_recommendation_allowed": advisory_allowed,
+        "activation_eligible": activation_eligible,
+        # Compatibility field: influence means eligibility to enter the
+        # governed future-plan change path, never direct mutation.
+        "future_production_influence_allowed": activation_eligible,
         "direct_plan_activation_allowed": False,
         "direct_body_mutation_allowed": False,
+        "direct_canon_mutation_allowed": False,
+        "future_intent_actualization_allowed": False,
         "human_approval_required": policy.human_approval_required,
         "maximum_adjustment_chapters": policy.maximum_adjustment_chapters,
-        "reasons": reasons,
+        "activation_blockers": activation_blockers,
+        "trend_blockers": trend_blockers,
+        "reasons": [*activation_blockers, *trend_blockers],
     }
 
 
-def _scope_matches(
-    requested: CalibrationScope, candidate: CalibrationScope
-) -> bool:
+def _scope_matches(requested: CalibrationScope, candidate: CalibrationScope) -> bool:
     return all(
         getattr(candidate, field) in {"*", getattr(requested, field)}
         for field in CalibrationScope.__dataclass_fields__
     )
 
 
-def _specificity(
-    requested: CalibrationScope, candidate: CalibrationScope
-) -> int:
+def _specificity(requested: CalibrationScope, candidate: CalibrationScope) -> int:
     return sum(
         getattr(candidate, field) == getattr(requested, field)
         for field in CalibrationScope.__dataclass_fields__

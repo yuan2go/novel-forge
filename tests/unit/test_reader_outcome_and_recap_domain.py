@@ -9,9 +9,36 @@ from novel_forge.modules.book_followup_authority.domain import (
     evaluate_reader_outcome,
     should_trigger_longform_recap,
 )
+from novel_forge.modules.book_followup_authority.query import (
+    _diagnostic_risk,
+    _reader_state_trend,
+)
 
 
 class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
+    def test_reader_diagnostics_and_trend_are_derived_from_evidence(self) -> None:
+        self.assertFalse(_diagnostic_risk("AGREED", safe={"AGREED", "PASSED"}))
+        self.assertTrue(_diagnostic_risk("NOT_MEASURED", safe={"AGREED", "PASSED"}))
+        trend = _reader_state_trend(
+            {
+                "continue_intent": 0.8,
+                "confusion": 0.2,
+                "repetition_fatigue": 0.2,
+            },
+            {
+                "continue_intent": 0.7,
+                "confusion": 0.27,
+                "repetition_fatigue": 0.2,
+            },
+        )
+
+        self.assertTrue(trend["declining"])
+        self.assertEqual(
+            trend["declining_dimensions"],
+            ["confusion", "continue_intent"],
+        )
+        self.assertFalse(trend["comparison_status"].startswith("NO_PREVIOUS"))
+
     def test_reader_outcome_is_multidimensional_and_explainable(self) -> None:
         result = evaluate_reader_outcome(
             {
@@ -31,11 +58,25 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         )
 
         self.assertEqual(result["gate"], ReaderOutcomeGate.PASS.value)
-        self.assertEqual(set(result["reader_state"]), {
-            "continue_intent", "curiosity", "satisfaction", "confusion", "trust",
-            "character_attachment", "antagonist_pressure", "promise_expectation",
-            "payoff_satisfaction", "drop_risk", "repetition_fatigue",
-        })
+        self.assertEqual(result["evidence_class"], "READER_PROXY_ADVISORY")
+        self.assertFalse(result["canon_mutation_allowed"])
+        self.assertFalse(result["future_intent_actualization_allowed"])
+        self.assertEqual(
+            set(result["reader_state"]),
+            {
+                "continue_intent",
+                "curiosity",
+                "satisfaction",
+                "confusion",
+                "trust",
+                "character_attachment",
+                "antagonist_pressure",
+                "promise_expectation",
+                "payoff_satisfaction",
+                "drop_risk",
+                "repetition_fatigue",
+            },
+        )
         self.assertEqual(result["issues"], [])
         self.assertTrue(result["evidence"])
 
@@ -76,7 +117,9 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
             reader_outcome_declining=True,
         )
 
-        self.assertEqual(cadence["checkpoint_type"], LongformCheckpointType.CHAPTER_CADENCE.value)
+        self.assertEqual(
+            cadence["checkpoint_type"], LongformCheckpointType.CHAPTER_CADENCE.value
+        )
         self.assertEqual(cadence["level"], "FORMAL")
         self.assertEqual(risk["reasons"], ["READER_OUTCOME_CONTINUOUS_DECLINE"])
 
@@ -106,12 +149,22 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         )
 
         self.assertFalse(outputs["recap"]["plan_mutation_allowed"])
-        deviation_types = {item["type"] for item in outputs["deviation_report"]["deviations"]}
+        self.assertEqual(
+            outputs["recap"]["reader_evidence_class"],
+            "READER_PROXY_ADVISORY",
+        )
+        deviation_types = {
+            item["type"] for item in outputs["deviation_report"]["deviations"]
+        }
         self.assertTrue(
             {"CANON_CONFLICT", "READER_CONFUSION_RISE", "QUALITY_TREND_DECLINE"}
             <= deviation_types
         )
-        self.assertEqual(outputs["adjustment_proposal"]["decision_status"], "AUTHORITY_PENDING")
+        self.assertEqual(
+            outputs["adjustment_proposal"]["decision_status"], "AUTHORITY_PENDING"
+        )
+        self.assertTrue(outputs["adjustment_proposal"]["reader_activation_eligible"])
+        self.assertFalse(outputs["adjustment_proposal"]["activation_allowed"])
         self.assertIsNotNone(outputs["replan_request"])
         actions = outputs["adjustment_proposal"]["proposed_actions"]
         self.assertIn(
@@ -122,6 +175,42 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         self.assertTrue(outputs["replan_request"]["impact_scope"]["future_only"])
         self.assertIn(
             "accepted_canon", outputs["replan_request"]["preserved_invariants"]
+        )
+
+    def test_unqualified_reader_trend_can_advise_but_cannot_activate(self) -> None:
+        outputs = build_longform_recap_outputs(
+            project_id="project:1",
+            book_id="book:1",
+            chapter_range=(1, 4),
+            checkpoint_type=LongformCheckpointType.CHAPTER_GROUP_COMPLETE,
+            observations={
+                "reader_state": {"confusion": 0.8, "repetition_fatigue": 0.7},
+                "reader_qualification": {
+                    "qualification_status": "SHADOW",
+                    "sample_size": 4,
+                    "confidence": 0.0,
+                    "recent_reports": [{"declining": True}] * 3,
+                    "disagreement": True,
+                    "position_bias": True,
+                    "ood": True,
+                    "drift_detected": False,
+                },
+            },
+        )
+
+        consumption = outputs["recap"]["reader_outcome_consumption"]
+        self.assertEqual(consumption["decision"], "ADVISORY_RECOMMENDATION")
+        self.assertTrue(consumption["advisory_recommendation_allowed"])
+        self.assertFalse(consumption["activation_eligible"])
+        self.assertFalse(consumption["future_production_influence_allowed"])
+        self.assertEqual(
+            {item["type"] for item in outputs["deviation_report"]["deviations"]},
+            {"READER_CONFUSION_RISE", "REPETITION_FATIGUE"},
+        )
+        self.assertFalse(outputs["adjustment_proposal"]["activation_allowed"])
+        self.assertEqual(
+            outputs["adjustment_proposal"]["required_authority"],
+            "PLAN_CHANGE_AUTHORITY",
         )
 
     def test_ending_reachability_checkpoint_is_a_blocking_replan_reason(self) -> None:

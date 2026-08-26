@@ -3,6 +3,7 @@
 This module intentionally cannot write assets, mutate Canon, or activate plans.
 Handlers persist its outputs through the shared Authority handler runtime.
 """
+
 from __future__ import annotations
 
 from enum import Enum
@@ -111,12 +112,15 @@ def evaluate_reader_outcome(
     else:
         gate = ReaderOutcomeGate.PASS
     return {
-        "contract_version": "reader-outcome-decision-v1",
+        "contract_version": "reader-outcome-decision-v2",
+        "evidence_class": "READER_PROXY_ADVISORY",
         "reader_state": normalized,
         "gate": gate.value,
         "issues": issues,
         "evidence": [dict(item) for item in evidence],
         "body_mutation_allowed": False,
+        "canon_mutation_allowed": False,
+        "future_intent_actualization_allowed": False,
         "decision_explanation": {
             "blocking_issue_count": blocking_count,
             "major_issue_count": major_count,
@@ -152,15 +156,39 @@ def should_trigger_longform_recap(
         reasons.append("LIGHT_CHAPTER_CADENCE")
         level = "LIGHT"
     for condition, reason, kind in (
-        (chapter_group_complete, "CHAPTER_GROUP_COMPLETE", LongformCheckpointType.CHAPTER_GROUP_COMPLETE),
+        (
+            chapter_group_complete,
+            "CHAPTER_GROUP_COMPLETE",
+            LongformCheckpointType.CHAPTER_GROUP_COMPLETE,
+        ),
         (arc_checkpoint, "ARC_CHECKPOINT", LongformCheckpointType.ARC_CHECKPOINT),
-        (volume_checkpoint, "VOLUME_CHECKPOINT", LongformCheckpointType.VOLUME_CHECKPOINT),
+        (
+            volume_checkpoint,
+            "VOLUME_CHECKPOINT",
+            LongformCheckpointType.VOLUME_CHECKPOINT,
+        ),
         (manual, "MANUAL_TRIGGER", LongformCheckpointType.MANUAL),
-        (reader_outcome_declining, "READER_OUTCOME_CONTINUOUS_DECLINE", LongformCheckpointType.READER_OUTCOME_RISK),
+        (
+            reader_outcome_declining,
+            "READER_OUTCOME_CONTINUOUS_DECLINE",
+            LongformCheckpointType.READER_OUTCOME_RISK,
+        ),
         (canon_risk, "CANON_RISK", LongformCheckpointType.CANON_RISK),
-        (debt_threshold_exceeded, "NARRATIVE_DEBT_THRESHOLD", LongformCheckpointType.DEBT_THRESHOLD),
-        (quality_trend_declining, "QUALITY_TREND_DECLINE", LongformCheckpointType.QUALITY_TREND),
-        (authority_requested, "BOOK_AUTHORITY_REQUEST", LongformCheckpointType.BOOK_AUTHORITY_REQUEST),
+        (
+            debt_threshold_exceeded,
+            "NARRATIVE_DEBT_THRESHOLD",
+            LongformCheckpointType.DEBT_THRESHOLD,
+        ),
+        (
+            quality_trend_declining,
+            "QUALITY_TREND_DECLINE",
+            LongformCheckpointType.QUALITY_TREND,
+        ),
+        (
+            authority_requested,
+            "BOOK_AUTHORITY_REQUEST",
+            LongformCheckpointType.BOOK_AUTHORITY_REQUEST,
+        ),
     ):
         if condition:
             reasons.append(reason)
@@ -215,7 +243,9 @@ def build_longform_recap_outputs(
     promises = _mapping(observations.get("promise_ledger"))
     ending_reachability = _mapping(observations.get("ending_reachability"))
     arc_checkpoint = _mapping(observations.get("accepted_arc_checkpoint"))
-    _add_if(deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon)
+    _add_if(
+        deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon
+    )
     _add_if(
         deviations,
         bool(ending_reachability.get("replan_required")),
@@ -238,14 +268,47 @@ def build_longform_recap_outputs(
         "MAJOR",
         arc_checkpoint,
     )
-    reader_allowed = bool(
-        reader_consumption["future_production_influence_allowed"]
+    reader_allowed = bool(reader_consumption["advisory_recommendation_allowed"])
+    reader_evidence = {
+        **reader,
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "activation_eligible": bool(reader_consumption["activation_eligible"]),
+    }
+    _add_if(
+        deviations,
+        reader_allowed and float(reader.get("confusion") or 0) >= 0.65,
+        "READER_CONFUSION_RISE",
+        "MAJOR",
+        reader_evidence,
     )
-    _add_if(deviations, reader_allowed and float(reader.get("confusion") or 0) >= 0.65, "READER_CONFUSION_RISE", "MAJOR", reader)
-    _add_if(deviations, reader_allowed and float(reader.get("repetition_fatigue") or 0) >= 0.65, "REPETITION_FATIGUE", "MAJOR", reader)
-    _add_if(deviations, str(quality.get("direction") or "").upper() == "DECLINING", "QUALITY_TREND_DECLINE", "MAJOR", quality)
-    _add_if(deviations, int(rewards.get("overdue") or 0) > 0, "REWARD_CADENCE_FAILURE", "MAJOR", rewards)
-    _add_if(deviations, int(promises.get("overdue") or 0) > 0, "PROMISE_DEBT", "MAJOR", promises)
+    _add_if(
+        deviations,
+        reader_allowed and float(reader.get("repetition_fatigue") or 0) >= 0.65,
+        "REPETITION_FATIGUE",
+        "MAJOR",
+        reader_evidence,
+    )
+    _add_if(
+        deviations,
+        str(quality.get("direction") or "").upper() == "DECLINING",
+        "QUALITY_TREND_DECLINE",
+        "MAJOR",
+        quality,
+    )
+    _add_if(
+        deviations,
+        int(rewards.get("overdue") or 0) > 0,
+        "REWARD_CADENCE_FAILURE",
+        "MAJOR",
+        rewards,
+    )
+    _add_if(
+        deviations,
+        int(promises.get("overdue") or 0) > 0,
+        "PROMISE_DEBT",
+        "MAJOR",
+        promises,
+    )
 
     for key, deviation_type in (
         ("main_plot_stagnation", "MAIN_PLOT_STAGNATION"),
@@ -273,6 +336,7 @@ def build_longform_recap_outputs(
         "observation_snapshot": dict(observations),
         "deviation_count": len(deviations),
         "plan_mutation_allowed": False,
+        "reader_evidence_class": "READER_PROXY_ADVISORY",
         "reader_outcome_consumption": reader_consumption,
     }
     deviation_report = {
@@ -288,6 +352,10 @@ def build_longform_recap_outputs(
         "contract_version": "plan-adjustment-proposal-v2",
         "decision_status": "AUTHORITY_PENDING",
         "mutates_plan": False,
+        "activation_allowed": False,
+        "required_authority": "PLAN_CHANGE_AUTHORITY",
+        "reader_evidence_class": "READER_PROXY_ADVISORY",
+        "reader_activation_eligible": bool(reader_consumption["activation_eligible"]),
         "reader_outcome_consumption": reader_consumption,
         "decision_chain": {
             "observation_range": [start, end],
@@ -302,9 +370,7 @@ def build_longform_recap_outputs(
         "proposed_actions": required_actions,
     }
     blocking_actions = [
-        action
-        for action in required_actions
-        if action["severity"] == "BLOCKING"
+        action for action in required_actions if action["severity"] == "BLOCKING"
     ]
     affected_scope = _widest_scope(blocking_actions)
     if checkpoint_decision in {"CORRECT", "REPLAN_REQUIRED"}:
@@ -339,22 +405,22 @@ def build_longform_recap_outputs(
     else:
         replan = (
             {
-            "contract_version": "book-replan-request-v2",
-            "decision_status": "AUTHORITY_PENDING",
-            "reason_refs": [item["type"] for item in blocking],
-            "affected_scope": affected_scope,
-            "impact_scope": {
-                "chapter_range": [start, end],
-                "future_only": True,
-            },
-            "preserved_invariants": [
-                "accepted_canon",
-                "executed_chapter_history",
-                "unaffected_active_plan_versions",
-            ],
-            "decision_evidence": blocking,
-            "required_authority": _authority_for_scope(affected_scope),
-        }
+                "contract_version": "book-replan-request-v2",
+                "decision_status": "AUTHORITY_PENDING",
+                "reason_refs": [item["type"] for item in blocking],
+                "affected_scope": affected_scope,
+                "impact_scope": {
+                    "chapter_range": [start, end],
+                    "future_only": True,
+                },
+                "preserved_invariants": [
+                    "accepted_canon",
+                    "executed_chapter_history",
+                    "unaffected_active_plan_versions",
+                ],
+                "decision_evidence": blocking,
+                "required_authority": _authority_for_scope(affected_scope),
+            }
             if blocking
             else None
         )
@@ -382,7 +448,9 @@ def _add_if(
             {
                 "type": deviation_type,
                 "severity": severity,
-                "evidence": dict(evidence) if isinstance(evidence, Mapping) else evidence,
+                "evidence": dict(evidence)
+                if isinstance(evidence, Mapping)
+                else evidence,
             }
         )
 
@@ -452,9 +520,7 @@ def _widest_scope(actions: Sequence[Mapping[str, Any]]) -> str:
 def _canon_conflict_scope(evidence: Any) -> str:
     value = dict(evidence) if isinstance(evidence, Mapping) else {}
     conflicts = [
-        dict(item)
-        for item in value.get("conflicts") or []
-        if isinstance(item, Mapping)
+        dict(item) for item in value.get("conflicts") or [] if isinstance(item, Mapping)
     ]
     if conflicts and all(
         not bool(item.get("executed_content_affected"))

@@ -67,8 +67,7 @@ class ReaderOutcomeHandler:
             )
         try:
             observed_through_chapter = int(
-                payload.get("observed_through_chapter")
-                or payload["chapter_number"]
+                payload.get("observed_through_chapter") or payload["chapter_number"]
             )
             if observed_through_chapter != int(payload["chapter_number"]):
                 raise KernelError(
@@ -126,6 +125,7 @@ class ReaderOutcomeHandler:
         decision = evaluate_reader_outcome(raw_state, evidence=raw_evidence)
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         common_evidence = {
+            "evidence_class": "READER_PROXY_ADVISORY",
             "provider": result.provider_id,
             "model": result.model_id,
             "prompt_version": result.prompt_version,
@@ -149,9 +149,7 @@ class ReaderOutcomeHandler:
                 "accepted_chapter_outcome_version": str(
                     payload["chapter_outcome_version"]
                 ),
-                "accepted_story_state_version": str(
-                    payload["story_state_version"]
-                ),
+                "accepted_story_state_version": str(payload["story_state_version"]),
                 "accepted_canon_snapshot_version": str(
                     payload["canon_snapshot_version"]
                 ),
@@ -171,14 +169,13 @@ class ReaderOutcomeHandler:
         report = {
             "type": "ReaderOutcomeReport",
             "contract_version": "reader-outcome-report-v1",
+            "evidence_class": "READER_PROXY_ADVISORY",
             "project_id": request.project_id,
             "book_id": str(payload["book_id"]),
             "chapter_id": str(payload["chapter_id"]),
             "chapter_number": int(payload["chapter_number"]),
             "observed_through_chapter": observed_through_chapter,
-            "accepted_input_lineage": dict(
-                common_evidence["accepted_input_lineage"]
-            ),
+            "accepted_input_lineage": dict(common_evidence["accepted_input_lineage"]),
             **decision,
             "source_asset_versions": list(source_refs),
             "model_evidence": result.to_evidence(),
@@ -189,6 +186,8 @@ class ReaderOutcomeHandler:
             "calibration_status": judge.calibration_label,
             "score_semantics": judge.score_semantics,
             "publish_blocking": judge.publish_blocking,
+            "confidence": 0.0,
+            "confidence_status": "NOT_MEASURED",
             "judge_profile_version": str(payload["evaluation_profile_version"]),
             "target_asset_version_id": str(payload["final_draft_asset_version"]),
             "reader_segment_version": str(payload.get("reader_segment_version") or ""),
@@ -205,6 +204,9 @@ class ReaderOutcomeHandler:
             "position_sensitivity": {"status": "NOT_MEASURED"},
             "ood_status": "NOT_EVALUATED",
             "mutation_stability": {"status": "NOT_MEASURED"},
+            "canon_mutation_allowed": False,
+            "future_intent_actualization_allowed": False,
+            "direct_plan_activation_allowed": False,
             "usage_receipt_ref": str(execution_result.get("usage_receipt_ref") or ""),
             "cost_receipt_ref": str(execution_result.get("cost_receipt_ref") or ""),
         }
@@ -216,6 +218,7 @@ class ReaderOutcomeHandler:
                 content={
                     "type": "ReaderStateTransition",
                     "contract_version": "reader-state-transition-v1",
+                    "evidence_class": "READER_PROXY_ADVISORY",
                     "previous_reader_state_version": str(
                         payload["previous_reader_state_version"]
                     ),
@@ -226,6 +229,8 @@ class ReaderOutcomeHandler:
                     "calibration_status": judge.calibration_label,
                     "score_semantics": judge.score_semantics,
                     "authority_commit_allowed": judge.authority_commit_allowed,
+                    "canon_mutation_allowed": False,
+                    "future_intent_actualization_allowed": False,
                 },
                 qualification_policy="reader-outcome-output-v1",
                 reference_asset_version_ids=source_refs,
@@ -238,6 +243,7 @@ class ReaderOutcomeHandler:
                 content={
                     "type": "ReaderIssueSet",
                     "contract_version": "reader-issue-set-v1",
+                    "evidence_class": "READER_PROXY_ADVISORY",
                     "issues": decision["issues"],
                     "gate": decision["gate"],
                 },
@@ -265,6 +271,7 @@ class ReaderOutcomeHandler:
                     content={
                         "type": "ReaderPlanAdjustmentCandidate",
                         "contract_version": "reader-plan-adjustment-candidate-v1",
+                        "evidence_class": "READER_PROXY_ADVISORY",
                         "book_id": str(payload["book_id"]),
                         "source_chapter": chapter,
                         "affected_chapter_range": [
@@ -275,6 +282,8 @@ class ReaderOutcomeHandler:
                         "target_scope": "FUTURE_ONLY",
                         "candidate_only": True,
                         "plan_change_activation_required": True,
+                        "activation_allowed": False,
+                        "required_authority": "PLAN_CHANGE_AUTHORITY",
                         "body_mutation_allowed": False,
                         "executed_plan_mutation_allowed": False,
                         "ending_mutation_allowed": False,
@@ -346,8 +355,7 @@ class LongformRecapHandler:
             )
         try:
             observed_through_chapter = int(
-                payload.get("observed_through_chapter")
-                or chapter_range[1]
+                payload.get("observed_through_chapter") or chapter_range[1]
             )
         except (TypeError, ValueError) as exc:
             raise KernelError(
