@@ -54,6 +54,13 @@ not planning notes. `title` must be a concise reader-facing chapter title.
 `premise` must be a concise reader-facing synopsis of the chapter. Neither may
 contain instructions to plan, draft, review, validate, approve, or activate the
 chapter, nor internal terms such as candidate, future-only, or Authority state.
+The frozen `chapter_function_matrix_row` is the immutable Scheduling contract.
+Copy its `primary_function`, `secondary_functions`, `required_state_delta`,
+`promise_action`, `foreshadow_action`, `reward_action`, `ending_hook`,
+`prohibited_outcomes`, and `narrative_density` exactly. Also copy its
+`reader_experience.target_emotion` and `reader_experience.reward_mode` exactly;
+only the chapter-specific entry/exit questions and non-scheduled operational
+detail may be elaborated.
 `character_participation.known_fact_ids` is the chapter-entry knowledge boundary;
 facts first learned during this chapter stay in `unknown_fact_ids` at entry. A
 Scene's `accessible_knowledge` must be known to its POV character before that

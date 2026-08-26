@@ -23,10 +23,23 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.10.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.9.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.11.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.10.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
+
+CHAPTER_SCHEDULE_FIELDS = (
+    "primary_function",
+    "secondary_functions",
+    "required_state_delta",
+    "promise_action",
+    "foreshadow_action",
+    "reward_action",
+    "ending_hook",
+    "prohibited_outcomes",
+    "narrative_density",
+)
+CHAPTER_READER_SCHEDULE_FIELDS = ("target_emotion", "reward_mode")
 
 NARRATIVE_LOAD_LIMIT_FIELDS = (
     "max_active_arcs",
@@ -1103,6 +1116,53 @@ def canonical_hash(value: Any) -> str:
     return _hash(value)
 
 
+def require_chapter_schedule_row(
+    source_content: Mapping[str, Any], *, chapter_number: int
+) -> dict[str, Any]:
+    """Extract one immutable Chapter row from its frozen Scheduling source."""
+
+    if chapter_number <= 0:
+        raise ValueError("Chapter schedule binding requires a positive Chapter number")
+    matrix = source_content.get("chapter_function_matrix")
+    if isinstance(matrix, list):
+        candidates = [
+            item
+            for item in matrix
+            if isinstance(item, Mapping)
+            and item.get("chapter_number") == chapter_number
+            and not isinstance(item.get("chapter_number"), bool)
+        ]
+    else:
+        nested = source_content.get("chapter_function_matrix_row")
+        candidate = nested if isinstance(nested, Mapping) else source_content
+        candidates = (
+            [candidate]
+            if candidate.get("chapter_number") == chapter_number
+            and not isinstance(candidate.get("chapter_number"), bool)
+            else []
+        )
+    if len(candidates) != 1:
+        raise ValueError(
+            "Scheduling source must contain exactly one row for the requested Chapter"
+        )
+    row = dict(candidates[0])
+    missing = [field for field in CHAPTER_SCHEDULE_FIELDS if field not in row]
+    reader = row.get("reader_experience")
+    if not isinstance(reader, Mapping):
+        missing.append("reader_experience")
+    else:
+        missing.extend(
+            f"reader_experience.{field}"
+            for field in CHAPTER_READER_SCHEDULE_FIELDS
+            if field not in reader
+        )
+    if missing:
+        raise ValueError(
+            "Chapter schedule row is incomplete: " + ", ".join(sorted(missing))
+        )
+    return row
+
+
 def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
     planning_roles = {
         role
@@ -1136,6 +1196,8 @@ def _hash(value: Any) -> str:
 
 
 __all__ = [
+    "CHAPTER_READER_SCHEDULE_FIELDS",
+    "CHAPTER_SCHEDULE_FIELDS",
     "GENERATOR_INPUT_ROLES",
     "GENERATOR_SCOPE",
     "FrozenPlanningInput",
@@ -1149,4 +1211,5 @@ __all__ = [
     "StoryPlanningGenerationCommand",
     "build_planning_constraint_envelope",
     "canonical_hash",
+    "require_chapter_schedule_row",
 ]

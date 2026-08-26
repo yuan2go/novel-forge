@@ -107,6 +107,40 @@ def _realization_slice(
     }
 
 
+def _chapter_schedule_row(*, chapter_number: int = 1) -> dict[str, object]:
+    return {
+        "chapter_number": chapter_number,
+        "primary_function": "force a witnessed choice",
+        "secondary_functions": ["escalate institutional pressure", "advance trust"],
+        "required_state_delta": {
+            "summary": "the protagonist loses anonymity after choosing publicly"
+        },
+        "required_arc_contributions": [
+            {"arc_plan_version_id": "arc:v1", "contribution": "advance"}
+        ],
+        "promise_action": "advance the promise of accountable agency",
+        "foreshadow_action": "plant the institution's visible response",
+        "reward_action": "deliver one costly discovery",
+        "ending_hook": "the antagonist answers the public choice",
+        "prohibited_outcomes": ["silent reset", "off-page resolution"],
+        "narrative_density": "HIGH",
+        "reader_experience": {
+            "target_emotion": "costly resolve",
+            "reward_mode": "DISCOVERY",
+        },
+        "arc_cadence": [
+            {"arc_plan_version_id": "arc:v1", "action": "ADVANCE"}
+        ],
+        "obligation_actions": [
+            {
+                "obligation_id": "promise:choice",
+                "action": "ADVANCE",
+                "due_chapter": chapter_number + 2,
+            }
+        ],
+    }
+
+
 def test_repetition_debt_ignores_unselected_search_branches() -> None:
     assert _recent_activated_repetition_keys(
         (
@@ -349,6 +383,11 @@ def test_planning_provider_schema_is_codex_strict(
             if contract_type is PlanContractType.CHAPTER
             else None
         ),
+        chapter_schedule_row=(
+            _chapter_schedule_row()
+            if contract_type is PlanContractType.CHAPTER
+            else None
+        ),
     )
 
     def assert_strict(value: object) -> None:
@@ -507,6 +546,7 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         parent_version_id="group:v1",
         arc_plan_version_id="arc:v1",
         narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=_chapter_schedule_row(),
     )
 
     assert volume["properties"]["narrative_segments"]["minItems"] == 1
@@ -556,6 +596,68 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in chapter["required"]
 
     assert "narrative_qualification" not in chapter["properties"]
+
+
+def test_chapter_provider_schema_freezes_active_schedule_row() -> None:
+    schedule = _chapter_schedule_row()
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER,
+        parent_version_id="group:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=schedule,
+    )
+    properties = schema["properties"]
+
+    assert properties["primary_function"]["const"] == schedule["primary_function"]
+    assert properties["secondary_functions"]["minItems"] == 2
+    assert properties["secondary_functions"]["maxItems"] == 2
+    assert properties["secondary_functions"]["items"]["enum"] == (
+        schedule["secondary_functions"]
+    )
+    assert properties["required_state_delta"]["properties"]["summary"][
+        "const"
+    ] == schedule["required_state_delta"]["summary"]
+    assert properties["promise_action"]["const"] == schedule["promise_action"]
+    assert properties["narrative_density"]["const"] == "HIGH"
+    reader = properties["reader_experience"]["properties"]
+    assert reader["target_emotion"]["const"] == "costly resolve"
+    assert reader["reward_mode"]["const"] == "DISCOVERY"
+    assert "const" not in reader["entry_question"]
+    assert "const" not in reader["exit_question"]
+
+
+def test_chapter_schedule_binding_rejects_reworded_scheduling() -> None:
+    schedule = _chapter_schedule_row()
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:1",
+                "parent_version_id": "group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    for field in (
+        "primary_function",
+        "secondary_functions",
+        "required_state_delta",
+        "promise_action",
+        "foreshadow_action",
+        "reward_action",
+        "ending_hook",
+        "prohibited_outcomes",
+        "narrative_density",
+    ):
+        content[field] = deepcopy(schedule[field])
+    content["reader_experience"].update(schedule["reader_experience"])
+
+    planning_application._validate_chapter_schedule_binding(content, schedule)
+    content["promise_action"] = "a plausible paraphrase that changes the schedule"
+
+    with pytest.raises(KernelError, match="CHAPTER_SCHEDULE_BINDING_DRIFT"):
+        planning_application._validate_chapter_schedule_binding(content, schedule)
 
 
 def test_chapter_group_search_schema_freezes_exact_horizon() -> None:
@@ -622,6 +724,7 @@ def test_chapter_realization_schema_merges_repeated_object_scalar_vocabulary() -
         parent_version_id="group:v1",
         arc_plan_version_id="arc:v1",
         narrative_realization=realization,
+        chapter_schedule_row=_chapter_schedule_row(),
     )
 
     state_delta = schema["properties"]["narrative_realization_slice"]["properties"][
@@ -957,6 +1060,7 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         arc_plan_version_id="arc:v1",
         related_arc_plan_version_ids=("arc:v2", "arc:v3"),
         narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=_chapter_schedule_row(),
     )
 
     assert schema["properties"]["arc_schedule"]["maxItems"] == 3

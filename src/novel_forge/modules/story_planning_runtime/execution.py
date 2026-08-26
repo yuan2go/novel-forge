@@ -83,12 +83,15 @@ from novel_forge.storage.database_runtime import get_database_runtime
 
 from .binder import PreparedPlanningExecution
 from .domain import (
+    CHAPTER_READER_SCHEDULE_FIELDS,
+    CHAPTER_SCHEDULE_FIELDS,
     FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
+    require_chapter_schedule_row,
 )
 from .narrative_search import (
     CREATIVE_INTELLIGENCE_DIMENSIONS,
@@ -1827,6 +1830,7 @@ def planning_provider_output_schema(
     narrative_search: bool = False,
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
+    chapter_schedule_row: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
 
@@ -2270,6 +2274,27 @@ def planning_provider_output_schema(
                 "NARRATIVE_REALIZATION_REQUIRED",
                 "Chapter provider schema requires a Frozen Narrative Realization slice",
             )
+        try:
+            schedule_row = require_chapter_schedule_row(
+                dict(chapter_schedule_row or {}),
+                chapter_number=int(realization.get("chapter_number") or 0),
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "CHAPTER_SCHEDULE_BINDING_REQUIRED",
+                "Chapter provider schema requires one complete frozen Scheduling row",
+            ) from exc
+        for field in CHAPTER_SCHEDULE_FIELDS:
+            properties[field] = _frozen_provider_value_schema([schedule_row[field]])
+        scheduled_reader = dict(schedule_row["reader_experience"])
+        reader_schema = dict(properties["reader_experience"])
+        reader_properties = dict(reader_schema["properties"])
+        for field in CHAPTER_READER_SCHEDULE_FIELDS:
+            reader_properties[field] = _frozen_provider_value_schema(
+                [scheduled_reader[field]]
+            )
+        reader_schema["properties"] = reader_properties
+        properties["reader_experience"] = reader_schema
         properties["narrative_realization_slice"] = _frozen_provider_value_schema(
             [realization]
         )
@@ -2756,6 +2781,33 @@ class PostgresPlanningExecutionPreparer:
             command=command,
             inputs=inputs,
         )
+        chapter_schedule_row: dict[str, Any] | None = None
+        if command.planning_scope.value == PlanContractType.CHAPTER.value:
+            by_role = {
+                item.role: document
+                for item, document in zip(
+                    inputs, input_documents[: len(inputs)], strict=True
+                )
+            }
+            schedule_source = by_role.get("chapter_function_matrix_row")
+            if schedule_source is None:
+                raise KernelError(
+                    "CHAPTER_SCHEDULE_BINDING_REQUIRED",
+                    "Chapter generation lacks its frozen Scheduling input",
+                )
+            try:
+                chapter_schedule_row = require_chapter_schedule_row(
+                    schedule_source.content,
+                    chapter_number=int(
+                        (command.narrative_realization or {}).get("chapter_number")
+                        or 0
+                    ),
+                )
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "CHAPTER_SCHEDULE_BINDING_INVALID",
+                    "Frozen Scheduling input does not contain one complete Chapter row",
+                ) from exc
         pack_materialization = self.pack_runtime.materialize_attempt_artifacts(
             attempt_snapshot
         )
@@ -2781,12 +2833,13 @@ class PostgresPlanningExecutionPreparer:
             narrative_search=bool(command.narrative_search_id),
             narrative_search_horizon=(command.narrative_search_planning_horizon),
             narrative_realization=command.narrative_realization,
+            chapter_schedule_row=chapter_schedule_row,
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
             + (
-                ":v4"
+                ":v5"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
                 else ":v3"
                 if command.planning_scope.value == PlanContractType.CHAPTER_GROUP.value
