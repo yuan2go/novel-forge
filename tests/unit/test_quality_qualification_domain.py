@@ -85,10 +85,15 @@ def test_manifest_freezes_exact_lineage_and_has_canonical_digest() -> None:
     assert manifest.chapter_group_ranges == ((1, 4), (5, 8))
     assert manifest.allows_chapter(8) is True
     assert manifest.allows_chapter(9) is False
-    assert manifest.to_dict()["provider_route_manifest"] == raw["provider_route_manifest"]
+    assert (
+        manifest.to_dict()["provider_route_manifest"] == raw["provider_route_manifest"]
+    )
 
     raw["provider_route_manifest"]["generator"]["model"] = "mutated"  # type: ignore[index]
-    assert manifest.to_dict()["provider_route_manifest"]["generator"]["model"] == "frozen-generator"
+    assert (
+        manifest.to_dict()["provider_route_manifest"]["generator"]["model"]
+        == "frozen-generator"
+    )
     with pytest.raises(FrozenInstanceError):
         manifest.campaign_id = "changed"  # type: ignore[misc]
 
@@ -116,8 +121,14 @@ def test_manifest_rejects_scope_or_lineage_drift(
 
 
 def test_campaign_lifecycle_is_explicit_and_fail_closed() -> None:
-    assert transition_campaign(CampaignLifecycle.DRAFT, CampaignLifecycle.FROZEN) is CampaignLifecycle.FROZEN
-    assert transition_campaign(CampaignLifecycle.FROZEN, CampaignLifecycle.RUNNING) is CampaignLifecycle.RUNNING
+    assert (
+        transition_campaign(CampaignLifecycle.DRAFT, CampaignLifecycle.FROZEN)
+        is CampaignLifecycle.FROZEN
+    )
+    assert (
+        transition_campaign(CampaignLifecycle.FROZEN, CampaignLifecycle.RUNNING)
+        is CampaignLifecycle.RUNNING
+    )
     assert (
         transition_campaign(
             CampaignLifecycle.RUNNING,
@@ -132,7 +143,10 @@ def test_campaign_lifecycle_is_explicit_and_fail_closed() -> None:
         )
         is CampaignLifecycle.EVALUATING
     )
-    assert transition_campaign(CampaignLifecycle.EVALUATING, CampaignLifecycle.COMPLETE) is CampaignLifecycle.COMPLETE
+    assert (
+        transition_campaign(CampaignLifecycle.EVALUATING, CampaignLifecycle.COMPLETE)
+        is CampaignLifecycle.COMPLETE
+    )
 
     with pytest.raises(ValueError, match="cannot transition"):
         transition_campaign(CampaignLifecycle.DRAFT, CampaignLifecycle.RUNNING)
@@ -174,7 +188,10 @@ def test_severe_l1_failure_forces_fail_without_score_compensation() -> None:
     )
 
     assert decision.status is QualificationStatus.FAIL
-    assert decision.layer_statuses[EvidenceLayer.L1_HARD_CORRECTNESS] is QualificationStatus.FAIL
+    assert (
+        decision.layer_statuses[EvidenceLayer.L1_HARD_CORRECTNESS]
+        is QualificationStatus.FAIL
+    )
     assert "SEVERE_L1_FAILURE" in decision.diagnostics
 
 
@@ -190,11 +207,14 @@ def test_missing_required_layer_is_not_proven() -> None:
     assert "MISSING_L3_READER_LONGITUDINAL" in decision.diagnostics
 
 
-def test_no_human_evidence_waits_and_cannot_pass() -> None:
+@pytest.mark.parametrize("human_collection_closed", [False, True])
+def test_no_human_evidence_waits_and_cannot_pass(
+    human_collection_closed: bool,
+) -> None:
     decision = decide_quality_qualification(
         _passing_evidence(),
         valid_human_evaluator_ids=(),
-        human_collection_closed=False,
+        human_collection_closed=human_collection_closed,
     )
 
     assert decision.status is QualificationStatus.NOT_PROVEN

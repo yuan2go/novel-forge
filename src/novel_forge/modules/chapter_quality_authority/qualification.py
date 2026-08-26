@@ -159,7 +159,9 @@ class QualityCampaignManifest:
         if missing:
             raise ValueError("campaign manifest lacks fields: " + ", ".join(missing))
         if unknown:
-            raise ValueError("campaign manifest has unknown fields: " + ", ".join(unknown))
+            raise ValueError(
+                "campaign manifest has unknown fields: " + ", ".join(unknown)
+            )
 
         canonical = _canonical_json(dict(raw))
         payload = json.loads(canonical)
@@ -227,9 +229,7 @@ class QualityCampaignManifest:
             protocol_version=values["protocol_version"],
             evaluation_profile_version=values["evaluation_profile_version"],
             quality_profile_version=values["quality_profile_version"],
-            reader_outcome_profile_version=values[
-                "reader_outcome_profile_version"
-            ],
+            reader_outcome_profile_version=values["reader_outcome_profile_version"],
             project_id=values["project_id"],
             workspace_id=values["workspace_id"],
             book_id=values["book_id"],
@@ -240,9 +240,10 @@ class QualityCampaignManifest:
 
     @property
     def digest(self) -> str:
-        return "sha256:" + hashlib.sha256(
-            self._canonical_payload.encode("utf-8")
-        ).hexdigest()
+        return (
+            "sha256:"
+            + hashlib.sha256(self._canonical_payload.encode("utf-8")).hexdigest()
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return a detached copy; callers cannot mutate the frozen manifest."""
@@ -250,12 +251,18 @@ class QualityCampaignManifest:
         return json.loads(self._canonical_payload)
 
     def allows_chapter(self, chapter_number: int) -> bool:
-        return any(start <= chapter_number <= end for start, end in self.chapter_group_ranges)
+        return any(
+            start <= chapter_number <= end for start, end in self.chapter_group_ranges
+        )
 
 
 _ALLOWED_TRANSITIONS: Mapping[CampaignLifecycle, frozenset[CampaignLifecycle]] = {
-    CampaignLifecycle.DRAFT: frozenset({CampaignLifecycle.FROZEN, CampaignLifecycle.ABORTED}),
-    CampaignLifecycle.FROZEN: frozenset({CampaignLifecycle.RUNNING, CampaignLifecycle.ABORTED}),
+    CampaignLifecycle.DRAFT: frozenset(
+        {CampaignLifecycle.FROZEN, CampaignLifecycle.ABORTED}
+    ),
+    CampaignLifecycle.FROZEN: frozenset(
+        {CampaignLifecycle.RUNNING, CampaignLifecycle.ABORTED}
+    ),
     CampaignLifecycle.RUNNING: frozenset(
         {
             CampaignLifecycle.WAITING_HUMAN_EVIDENCE,
@@ -265,7 +272,11 @@ _ALLOWED_TRANSITIONS: Mapping[CampaignLifecycle, frozenset[CampaignLifecycle]] =
         }
     ),
     CampaignLifecycle.WAITING_HUMAN_EVIDENCE: frozenset(
-        {CampaignLifecycle.EVALUATING, CampaignLifecycle.FAILED, CampaignLifecycle.ABORTED}
+        {
+            CampaignLifecycle.EVALUATING,
+            CampaignLifecycle.FAILED,
+            CampaignLifecycle.ABORTED,
+        }
     ),
     CampaignLifecycle.EVALUATING: frozenset(
         {
@@ -370,8 +381,7 @@ def decide_quality_qualification(
         for layer in EvidenceLayer
     }
     layer_statuses = {
-        layer: _layer_status(layer_rows)
-        for layer, layer_rows in grouped.items()
+        layer: _layer_status(layer_rows) for layer, layer_rows in grouped.items()
     }
     diagnostics: list[str] = []
     limitations: list[str] = []
@@ -388,7 +398,13 @@ def decide_quality_qualification(
         diagnostics.append("SEVERE_L1_FAILURE")
 
     evaluators = tuple(
-        sorted({str(item).strip() for item in valid_human_evaluator_ids if str(item).strip()})
+        sorted(
+            {
+                str(item).strip()
+                for item in valid_human_evaluator_ids
+                if str(item).strip()
+            }
+        )
     )
     if not evaluators:
         human_status = HumanEvidenceStatus.WAITING_HUMAN_EVIDENCE
@@ -402,6 +418,12 @@ def decide_quality_qualification(
     if any(value is QualificationStatus.FAIL for value in layer_statuses.values()):
         status = QualificationStatus.FAIL
         lifecycle = CampaignLifecycle.FAILED
+    elif not evaluators:
+        # Closing collection is meaningful only after at least one valid human
+        # evaluation exists. Zero-human campaigns remain explicitly waiting;
+        # an operator flag cannot manufacture subjective evidence.
+        status = QualificationStatus.NOT_PROVEN
+        lifecycle = CampaignLifecycle.WAITING_HUMAN_EVIDENCE
     elif len(evaluators) < required_evaluator_count and not human_collection_closed:
         status = QualificationStatus.NOT_PROVEN
         lifecycle = CampaignLifecycle.WAITING_HUMAN_EVIDENCE
