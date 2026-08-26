@@ -23,6 +23,12 @@ UPGRADE_STATEMENTS = [
         OR (name='agent.session.execute' AND definition_version='2.0.0')
     """,
     """
+    ALTER TABLE authority_story_design_version_state
+    DROP CONSTRAINT authority_story_design_version_state_source_kind_check,
+    ADD CONSTRAINT authority_story_design_version_state_source_kind_check
+    CHECK (source_kind IN ('GENERATED','LEGACY_IMPORT','OPERATOR_AUTHORED'))
+    """,
+    """
     CREATE TABLE authority_quality_qualification_campaign (
         campaign_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL REFERENCES authority_project(project_id),

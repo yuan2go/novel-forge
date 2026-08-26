@@ -92,3 +92,10 @@ def test_migration_preserves_historical_rows_and_is_non_destructive() -> None:
     assert "REJECT_BOTH" in sql
     assert migration.BACKUP_REQUIRED is False
     assert "historical" in migration.FORWARD_FIX.lower()
+
+
+def test_operator_authored_foundation_source_is_explicit_not_provider_evidence() -> None:
+    sql = "\n".join(migration.UPGRADE_STATEMENTS)
+
+    assert "OPERATOR_AUTHORED" in sql
+    assert "authority_story_design_version_state_source_kind_check" in sql

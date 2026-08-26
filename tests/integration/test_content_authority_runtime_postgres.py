@@ -926,6 +926,184 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 },
             )
 
+        story_design_candidate = self.run_op(
+            "story_design.candidate.author",
+            payload={
+                "content": {
+                    "schema_version": "story_design.authority.v1",
+                    "project_id": self.project_id,
+                    "generator_operation_name": "creative.candidates.generate",
+                    "planning_scope": "NOT_APPLICABLE",
+                    "logical_key": "foundation:creative:content-runtime-v1",
+                    "operator_authored": True,
+                    "provider_generated": False,
+                    "candidate_payload": {
+                        "objective": "Establish a costly public-truth mystery engine.",
+                        "target_reader": "adult speculative mystery readers",
+                        "why_worth_writing": "Public truth creates responsibility.",
+                        "genre": "speculative mystery",
+                        "subgenre": "institutional mystery",
+                        "core_desire": "restore erased belonging",
+                        "core_fear": "truth will expose protected people",
+                        "core_conflict": "witnesses challenge a self-editing archive",
+                        "narrative_engine": "each anomaly forces disclosure or concealment",
+                        "differentiation": "geography changes through accountable choices",
+                        "emotional_contract": "wonder becomes costly shared responsibility",
+                        "serialization_potential": "each district exposes a distinct bargain",
+                    },
+                }
+            },
+        )
+        self.run_op(
+            "story_design.review.author",
+            [story_design_candidate],
+            {
+                "candidate_asset_version_id": story_design_candidate[
+                    "asset_version_id"
+                ],
+                "candidate_content_hash": story_design_candidate["content_hash"],
+                "evaluation": {
+                    "schema_version": "progressive-narrative-qualification.v1",
+                    "evaluations": [],
+                    "fixture_protocol_only": True,
+                },
+                "review_rationale": (
+                    "Independent fixture operator binds review evidence to the exact "
+                    "candidate; this is not human preference or Provider evidence."
+                ),
+            },
+        )
+
+        book_id = f"book:{self.project_id}"
+        bootstrap_inputs = {
+            "book.production_profile.author": {
+                "type": "production_profile",
+                "profile_id": "bounded-quality-v1",
+                "target_chapter_count": 8,
+                "language_contract": {
+                    "language": "zh-CN",
+                    "script": "Hans",
+                },
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.previous_volume_outcome.author": {
+                "type": "previous_volume_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_VOLUME",
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.arc_portfolio.author": {
+                "type": "arc_portfolio",
+                "portfolio_id": "arc-portfolio:bounded",
+                "contract_version": "v1",
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.ending_reachability.author": {
+                "type": "ending_reachability",
+                "contract_version": "v1",
+                "status": "PLANNED_NOT_ACTUAL",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.character_arc_portfolio.author": {
+                "type": "character_arc_portfolio",
+                "portfolio_id": "character-arc-portfolio:bounded",
+                "contract_version": "v1",
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.conflict_state.author": {
+                "type": "conflict_state",
+                "contract_version": "v1",
+                "active_conflicts": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.foreshadowing_ledger.author": {
+                "type": "foreshadowing_ledger",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.reader_segment.author": {
+                "type": "reader_segment_profile",
+                "profile_id": "reader:bounded",
+                "profile_version": "reader-outcome-v3",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reader_contract.author": {
+                "type": "reader_contract",
+                "profile_id": "reader:bounded",
+                "profile_version": "reader-outcome-v3",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.character_state.author": {
+                "type": "character_state_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.foreshadowing_state.author": {
+                "type": "foreshadow_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.quality_trend.author": {
+                "type": "quality_trend",
+                "contract_version": "v1",
+                "status": "NO_ACCEPTED_CHAPTERS",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reward_ledger.author": {
+                "type": "reward_ledger_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.promise_ledger.author": {
+                "type": "promise_ledger_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+        }
+        for name, content in bootstrap_inputs.items():
+            self.run_op(
+                name,
+                payload={
+                    "content": {
+                        **content,
+                        "book_id": book_id,
+                        "safe_summary": f"Bounded {content['type']} bootstrap.",
+                        "structured_facts": [
+                            {
+                                "key": "authority_boundary",
+                                "value": content["authority_boundary"],
+                            }
+                        ],
+                    }
+                },
+            )
+        campaign_identity = (
+            "sha256:"
+            + hashlib.sha256(
+                f"{self.project_id}\x00{book_id}\x00bounded-quality-v1".encode()
+            ).hexdigest()
+        )
+        initial_story_state = self.run_op(
+            "book.initial_story_state.author",
+            payload={
+                "book_id": book_id,
+                "campaign_contract_identity": campaign_identity,
+            },
+        )
+        self.run_op(
+            "book.initial_canon.author",
+            [initial_story_state],
+            {
+                "book_id": book_id,
+                "campaign_contract_identity": campaign_identity,
+            },
+        )
+
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 "SELECT definition_name, status FROM authority_operation WHERE project_id = %s",

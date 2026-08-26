@@ -37,6 +37,8 @@ from .domain import (
     GENERATOR_DEFINITIONS,
     PlanningScope,
 )
+from .qualification import required_qualification_profiles
+from .validators import validate_story_design_candidate
 
 
 STORY_DESIGN_TRANSITION_DEFINITION = "story_design.lifecycle.transition"
@@ -187,6 +189,23 @@ class PostgresStoryDesignAssetAuthority:
                 "GENERATOR_DEFINITION_NOT_FOUND",
                 "unknown Story Design GeneratorDefinition",
             )
+        current_state: dict[str, Any] | None = None
+        if command.transition is not DesignTransition.ENROLL:
+            current_state = self.require(
+                project_id=command.project_id,
+                asset_version_id=command.asset_version_id,
+            )
+        if (
+            command.transition is DesignTransition.ENROLL
+            and command.source_kind == "OPERATOR_AUTHORED"
+        ):
+            self._require_operator_authored_candidate(command)
+        if (
+            command.transition is DesignTransition.SEMANTIC_VALIDATE
+            and current_state is not None
+            and str(current_state["source_kind"]) == "OPERATOR_AUTHORED"
+        ):
+            self._require_operator_semantic_evaluation(command, current_state)
         self._register_contracts()
         payload = {
             "asset_version_id": command.asset_version_id,
@@ -298,6 +317,117 @@ class PostgresStoryDesignAssetAuthority:
     def require(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             return uow.repositories.story_design.require(project_id, asset_version_id)
+
+    def _require_operator_authored_candidate(
+        self, command: StoryDesignTransitionCommand
+    ) -> None:
+        operation_id = str((command.evidence or {}).get("authoring_operation_id") or "")
+        if operation_id != str((command.evidence or {}).get("operation_id") or ""):
+            raise KernelError(
+                "STORY_DESIGN_OPERATOR_AUTHORING_LINEAGE_INVALID",
+                "operator-authored candidate has inconsistent Operation lineage",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation.status, operation.definition_name,
+                       output.content_hash, asset.asset_type, version.content
+                FROM authority_operation AS operation
+                JOIN authority_operation_output_asset AS output
+                  ON output.operation_id=operation.operation_id
+                 AND output.asset_version_id=%s
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=output.asset_version_id
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE operation.operation_id=%s AND operation.project_id=%s
+                  AND asset.project_id=operation.project_id
+                """,
+                [command.asset_version_id, operation_id, command.project_id],
+            )
+            row = uow.cursor.fetchone()
+        if (
+            row is None
+            or str(row[0]) != "SUCCEEDED"
+            or str(row[1]) != "story_design.candidate.author"
+            or str(row[2]) != command.content_hash
+            or str(row[3]) != "story_design_candidate"
+        ):
+            raise KernelError(
+                "STORY_DESIGN_OPERATOR_AUTHORING_LINEAGE_INVALID",
+                "operator-authored candidate is not an exact successful Content Authority output",
+            )
+        validate_story_design_candidate(
+            content=dict(row[4]),
+            project_id=command.project_id,
+            generator_operation_name=command.generator_operation_name,
+            planning_scope=command.planning_scope,
+            logical_key=command.logical_key,
+        )
+
+    def _require_operator_semantic_evaluation(
+        self,
+        command: StoryDesignTransitionCommand,
+        state: dict[str, Any],
+    ) -> None:
+        evidence = dict(command.evidence or {})
+        evaluation_asset_version_id = str(
+            evidence.get("evaluation_asset_version_id") or ""
+        )
+        qualification_hash = str(evidence.get("qualification_hash") or "")
+        expected_profiles = required_qualification_profiles(
+            command.generator_operation_name
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT qualification.design_layer, qualification.profile_id,
+                       qualification.qualification_status,
+                       qualification.qualification_hash,
+                       qualification.evaluator_execution_class,
+                       qualification.generation_operation_id,
+                       qualification.evaluation_asset_version_id,
+                       qualification.candidate_content_hash,
+                       generation.actor_id, evaluation.actor_id,
+                       evaluation.status
+                FROM authority_narrative_design_qualification AS qualification
+                JOIN authority_operation AS generation
+                  ON generation.operation_id=qualification.generation_operation_id
+                JOIN authority_operation AS evaluation
+                  ON evaluation.operation_id=qualification.evaluation_operation_id
+                WHERE qualification.project_id=%s
+                  AND qualification.asset_version_id=%s
+                ORDER BY qualification.design_layer, qualification.profile_id
+                """,
+                [command.project_id, command.asset_version_id],
+            )
+            rows = uow.cursor.fetchall()
+        expected = {
+            (profile.layer.value, profile.profile_id) for profile in expected_profiles
+        }
+        observed = {(str(row[0]), str(row[1])) for row in rows}
+        authoring_operation_id = str(
+            dict(state.get("execution_evidence") or {}).get("operation_id") or ""
+        )
+        if (
+            not evaluation_asset_version_id
+            or not qualification_hash.startswith("sha256:")
+            or observed != expected
+            or any(
+                str(row[2]) != "PASS"
+                or str(row[3]) != qualification_hash
+                or str(row[4]) != "OPERATOR_REVIEW"
+                or str(row[5]) != authoring_operation_id
+                or str(row[6]) != evaluation_asset_version_id
+                or str(row[7]) != command.content_hash
+                or str(row[8]) == str(row[9])
+                or str(row[10]) != "SUCCEEDED"
+                for row in rows
+            )
+        ):
+            raise KernelError(
+                "STORY_DESIGN_OPERATOR_EVALUATION_REQUIRED",
+                "operator-authored candidate requires an exact independent passing Narrative Evaluation",
+            )
 
     def _register_contracts(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:

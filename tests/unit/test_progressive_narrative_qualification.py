@@ -39,6 +39,30 @@ def test_every_qualification_profile_binds_a_governed_execution_capability() -> 
     ("generator", "layers"),
     (
         (
+            "creative.candidates.generate",
+            {NarrativeDesignLayer.STORY_INTENT},
+        ),
+        (
+            "theme.candidates.generate",
+            {NarrativeDesignLayer.STORY_INTENT},
+        ),
+        (
+            "ending.intent.generate",
+            {NarrativeDesignLayer.STORY_INTENT},
+        ),
+        (
+            "reader.promise.generate",
+            {NarrativeDesignLayer.STORY_INTENT},
+        ),
+        (
+            "world.design.generate",
+            {NarrativeDesignLayer.STORY_FOUNDATION},
+        ),
+        (
+            "character.cast.generate",
+            {NarrativeDesignLayer.CHARACTER_DEVELOPMENT},
+        ),
+        (
             "book_plan.generate",
             {
                 NarrativeDesignLayer.BOOK_ARCHITECTURE,

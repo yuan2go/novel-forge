@@ -266,11 +266,25 @@ class NarrativeSemanticEvaluationHandler:
                     "NARRATIVE_EVALUATION_FIXTURE_FORBIDDEN",
                     "SCRIPTED_FIXTURE Narrative Evaluation is disabled outside an explicit test runtime",
                 )
-        elif not evidence_inputs:
-            raise KernelError(
-                "NARRATIVE_EVALUATION_OPERATOR_EVIDENCE_REQUIRED",
-                "operator evaluation requires immutable review evidence",
-            )
+        else:
+            review = evidence_inputs[0] if len(evidence_inputs) == 1 else None
+            review_content = dict(review.content) if review is not None else {}
+            if (
+                review is None
+                or review.asset_type != "narrative_design_operator_review"
+                or review_content.get("contract_version")
+                != "narrative-design-operator-review.v1"
+                or review_content.get("candidate_asset_version_id") != candidate_id
+                or review_content.get("candidate_content_hash") != candidate_hash
+                or review_content.get("evaluation") != evaluation
+                or review_content.get("evaluator_execution_class") != "OPERATOR_REVIEW"
+                or review_content.get("human_preference_evidence") is not False
+                or review_content.get("provider_evidence_claimed") is not False
+            ):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_OPERATOR_EVIDENCE_REQUIRED",
+                    "operator evaluation requires one exact immutable non-human review evidence asset",
+                )
         qualification = validate_narrative_qualification(
             generator_operation_name=str(payload.get("generator_operation_name") or ""),
             value=evaluation,
@@ -686,8 +700,7 @@ class NarrativeSemanticEvaluationApplication:
         admission_command: dict[str, Any],
     ) -> dict[str, Any]:
         concurrency_key = (
-            f"book:{command.book_id}:evaluation:"
-            f"{command.candidate_asset_version_id}"
+            f"book:{command.book_id}:evaluation:{command.candidate_asset_version_id}"
         )
         with AuthorityUnitOfWork(self.database_url) as claim_uow:
             claim_uow.cursor.execute(
@@ -777,6 +790,10 @@ class NarrativeSemanticEvaluationApplication:
                        planning_generation.operation_id,
                        planning_generation.generator_operation_name,
                        planning_generation.candidate_asset_version_id,
+                       design_state.lifecycle,
+                       design_state.qualification,
+                       design_state.generator_operation_name,
+                       design_state.execution_evidence->>'operation_id',
                        replay.operation_id
                 FROM authority_operation_output_asset AS output
                 JOIN authority_operation AS operation
@@ -794,6 +811,9 @@ class NarrativeSemanticEvaluationApplication:
                   ON planning_generation.operation_id=operation.operation_id
                  AND planning_generation.candidate_asset_version_id=
                      version.asset_version_id
+                LEFT JOIN authority_story_design_version_state AS design_state
+                  ON design_state.project_id=operation.project_id
+                 AND design_state.asset_version_id=version.asset_version_id
                 LEFT JOIN authority_operation AS replay
                   ON replay.project_id=operation.project_id
                  AND replay.idempotency_scope='book:narrative-semantic-evaluation'
@@ -816,20 +836,27 @@ class NarrativeSemanticEvaluationApplication:
                 "NARRATIVE_EVALUATION_GENERATION_LINEAGE_INVALID",
                 "candidate is not an exact gated or successful output of the generation Operation",
             )
-        replay_exists = bool(row[11])
+        replay_exists = bool(row[15])
         if command.generator_operation_name == "book_design.propose":
             pending = (
                 str(row[3]) == "book_design"
                 and str(row[5] or "") == "EVALUATION_PENDING"
                 and str(row[6] or "") == command.generation_operation_id
             )
-        else:
+        elif str(row[3]) == "planning_generation_candidate":
             pending = (
-                str(row[3]) == "planning_generation_candidate"
-                and str(row[7] or "") == "EVALUATION_PENDING"
+                str(row[7] or "") == "EVALUATION_PENDING"
                 and str(row[8] or "") == command.generation_operation_id
                 and str(row[9] or "") == command.generator_operation_name
                 and str(row[10] or "") == command.candidate_asset_version_id
+            )
+        else:
+            pending = (
+                str(row[3]) == "story_design_candidate"
+                and str(row[11] or "") == "MATERIALIZED"
+                and str(row[12] or "") == "STRUCTURALLY_VALID"
+                and str(row[13] or "") == command.generator_operation_name
+                and str(row[14] or "") == command.generation_operation_id
             )
         if not pending and not replay_exists:
             raise KernelError(

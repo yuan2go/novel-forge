@@ -11,9 +11,29 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
         definitions = content_operation_definitions(
             application_build_id="test", commit_sha="a" * 40
         )
-        self.assertEqual(len(definitions), 39)
-        self.assertEqual(
-            {item["name"] for item in definitions}, set(CONTENT_DOMAIN_HANDLERS)
+        names = {item["name"] for item in definitions}
+        self.assertEqual(names, set(CONTENT_DOMAIN_HANDLERS))
+        self.assertTrue(
+            {
+                "book.production_profile.author",
+                "book.previous_volume_outcome.author",
+                "book.arc_portfolio.author",
+                "book.ending_reachability.author",
+                "book.character_arc_portfolio.author",
+                "book.conflict_state.author",
+                "book.foreshadowing_ledger.author",
+                "book.reader_segment.author",
+                "book.reader_contract.author",
+                "book.character_state.author",
+                "book.foreshadowing_state.author",
+                "book.quality_trend.author",
+                "book.reward_ledger.author",
+                "book.promise_ledger.author",
+                "book.initial_story_state.author",
+                "book.initial_canon.author",
+                "story_design.candidate.author",
+                "story_design.review.author",
+            }.issubset(names)
         )
         for item in definitions:
             self.assertTrue(callable(CONTENT_DOMAIN_HANDLERS[item["name"]]))

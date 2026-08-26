@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import hashlib
 import json
 from typing import Any, Callable
 
@@ -628,6 +629,279 @@ def _operator_authored_input(
     }
 
 
+_BOOK_BOOTSTRAP_INPUT_SPECS: dict[str, tuple[str, tuple[str, ...], str]] = {
+    "book.production_profile.author": (
+        "production_profile",
+        ("book_id", "profile_id", "target_chapter_count", "language_contract"),
+        "FUTURE_INTENT",
+    ),
+    "book.previous_volume_outcome.author": (
+        "previous_volume_outcome",
+        ("book_id", "contract_version", "status"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.arc_portfolio.author": (
+        "arc_portfolio",
+        ("book_id", "portfolio_id", "contract_version"),
+        "FUTURE_INTENT",
+    ),
+    "book.ending_reachability.author": (
+        "ending_reachability",
+        ("book_id", "contract_version", "status"),
+        "ADVISORY",
+    ),
+    "book.character_arc_portfolio.author": (
+        "character_arc_portfolio",
+        ("book_id", "portfolio_id", "contract_version"),
+        "FUTURE_INTENT",
+    ),
+    "book.conflict_state.author": (
+        "conflict_state",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.foreshadowing_ledger.author": (
+        "foreshadowing_ledger",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.reader_segment.author": (
+        "reader_segment_profile",
+        ("book_id", "profile_id", "profile_version"),
+        "ADVISORY",
+    ),
+    "book.reader_contract.author": (
+        "reader_contract",
+        ("book_id", "profile_id", "profile_version"),
+        "ADVISORY",
+    ),
+    "book.character_state.author": (
+        "character_state_snapshot",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.foreshadowing_state.author": (
+        "foreshadow_snapshot",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.quality_trend.author": (
+        "quality_trend",
+        ("book_id", "contract_version", "status"),
+        "ADVISORY",
+    ),
+    "book.reward_ledger.author": (
+        "reward_ledger_snapshot",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+    "book.promise_ledger.author": (
+        "promise_ledger_snapshot",
+        ("book_id", "contract_version"),
+        "PRE_CHAPTER_0",
+    ),
+}
+
+_PRE_CHAPTER_ZERO_ASSET_TYPES = frozenset(
+    asset_type
+    for asset_type, _required, boundary in _BOOK_BOOTSTRAP_INPUT_SPECS.values()
+    if boundary == "PRE_CHAPTER_0"
+)
+
+
+def _author_book_bootstrap_input(
+    request: AuthorityHandlerRequest,
+    *,
+    asset_type: str,
+    required_fields: tuple[str, ...],
+    authority_boundary: str,
+) -> dict[str, Any]:
+    content = _operator_authored_input(
+        request,
+        asset_type=asset_type,
+        required_fields=required_fields,
+    )
+    if str(content.get("book_id") or "").strip() == "":
+        raise ValueError("operator-authored Book input requires book_id")
+    if content.get("authority_boundary") != authority_boundary:
+        raise ValueError(
+            f"operator-authored {asset_type} requires {authority_boundary} boundary"
+        )
+    if _contains_prohibited_bootstrap_claim(content):
+        raise ValueError(
+            "operator-authored Book input cannot claim human, Provider, or Narrative Truth evidence"
+        )
+    if asset_type in _PRE_CHAPTER_ZERO_ASSET_TYPES:
+        accepted = content.get("accepted_through_chapter", 0)
+        if not isinstance(accepted, int) or isinstance(accepted, bool) or accepted != 0:
+            raise ValueError(
+                f"operator-authored {asset_type} must stay at the pre-Chapter-1 boundary"
+            )
+        for field in (
+            "entries",
+            "active_conflicts",
+            "current_actual_conflicts",
+        ):
+            if field in content and content[field] != []:
+                raise ValueError(
+                    f"operator-authored {asset_type} cannot declare accepted {field}"
+                )
+    if asset_type == "production_profile":
+        target = content.get("target_chapter_count")
+        if not isinstance(target, int) or isinstance(target, bool) or target <= 0:
+            raise ValueError("production profile target_chapter_count must be positive")
+        if not isinstance(content.get("language_contract"), dict):
+            raise ValueError("production profile language_contract must be an object")
+    return {
+        **content,
+        "provider_generated": False,
+        "human_preference_evidence": False,
+        "ground_truth_claimed": False,
+        "narrative_truth_mutation_allowed": False,
+    }
+
+
+def _book_bootstrap_binder(
+    asset_type: str,
+    required_fields: tuple[str, ...],
+    authority_boundary: str,
+) -> Binder:
+    def bind(request: AuthorityHandlerRequest) -> dict[str, Any]:
+        return _author_book_bootstrap_input(
+            request,
+            asset_type=asset_type,
+            required_fields=required_fields,
+            authority_boundary=authority_boundary,
+        )
+
+    return bind
+
+
+def author_initial_story_state(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    if request.inputs:
+        raise ValueError("initial Story State cannot inherit narrative history")
+    payload = _payload(request)
+    book_id = str(payload.get("book_id") or "").strip()
+    campaign_identity = str(payload.get("campaign_contract_identity") or "")
+    if not book_id or not _is_sha256(campaign_identity):
+        raise ValueError(
+            "initial Story State requires Book scope and SHA-256 campaign identity"
+        )
+    snapshot: dict[str, Any] = {
+        "type": "StoryStateSnapshot",
+        "contract_version": "story-state-snapshot-v2",
+        "layer": "CURRENT_STATE",
+        "project_id": request.project_id,
+        "book_id": book_id,
+        "scope": {"project_id": request.project_id, "book_id": book_id},
+        "accepted_through_chapter": 0,
+        "chapter": 0,
+        "chapter_number": 0,
+        "state_version": 0,
+        "current_state": {},
+        "reducer_applications": [],
+        "accepted_state_only": True,
+        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
+        "campaign_contract_identity": campaign_identity,
+        "evidence_level": "OPERATOR_AUTHORED_GENESIS",
+        "actual_narrative_events": [],
+        "future_intent_promoted": False,
+        "human_preference_evidence": False,
+        "provider_evidence_claimed": False,
+    }
+    snapshot["state_hash"] = _canonical_sha256(snapshot)
+    return snapshot
+
+
+def author_initial_canon(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    story = _one(request, "story_state_snapshot")
+    payload = _payload(request)
+    book_id = str(payload.get("book_id") or "").strip()
+    campaign_identity = str(payload.get("campaign_contract_identity") or "")
+    state = dict(story.content)
+    state_without_hash = {
+        key: value for key, value in state.items() if key != "state_hash"
+    }
+    if (
+        not book_id
+        or not _is_sha256(campaign_identity)
+        or state.get("contract_version") != "story-state-snapshot-v2"
+        or state.get("project_id") != request.project_id
+        or state.get("book_id") != book_id
+        or state.get("accepted_through_chapter") != 0
+        or state.get("current_state") != {}
+        or state.get("actual_narrative_events") != []
+        or state.get("campaign_contract_identity") != campaign_identity
+        or state.get("state_hash") != _canonical_sha256(state_without_hash)
+    ):
+        raise ValueError("initial Canon requires the exact empty Story State genesis")
+    snapshot: dict[str, Any] = {
+        "type": "CanonSnapshot",
+        "contract_version": "canon-snapshot-v2",
+        "layer": "TRUTH",
+        "project_id": request.project_id,
+        "book_id": book_id,
+        "scope": {"project_id": request.project_id, "book_id": book_id},
+        "accepted_through_chapter": 0,
+        "chapter": 0,
+        "chapter_number": 0,
+        "current_facts": [],
+        "story_state_hash": str(state["state_hash"]),
+        "accepted_state_only": True,
+        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
+        "campaign_contract_identity": campaign_identity,
+        "evidence_level": "OPERATOR_AUTHORED_GENESIS",
+        "future_intent_promoted": False,
+        "human_preference_evidence": False,
+        "provider_evidence_claimed": False,
+    }
+    snapshot["canon_hash"] = _canonical_sha256(snapshot)
+    return snapshot
+
+
+def _contains_prohibited_bootstrap_claim(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if (
+                str(key)
+                in {
+                    "human_verified",
+                    "ground_truth_claimed",
+                    "provider_generated",
+                    "real_provider_proven",
+                    "production_verified",
+                    "accepted_actual",
+                }
+                and item is True
+            ):
+                return True
+            if _contains_prohibited_bootstrap_claim(item):
+                return True
+    elif isinstance(value, list):
+        return any(_contains_prohibited_bootstrap_claim(item) for item in value)
+    return False
+
+
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _is_sha256(value: str) -> bool:
+    digest = value.removeprefix("sha256:")
+    return (
+        value.startswith("sha256:")
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    )
+
+
 def author_chapter_plan(request: AuthorityHandlerRequest) -> dict[str, Any]:
     return _operator_authored_input(
         request,
@@ -688,6 +962,123 @@ def author_operator_checklist(request: AuthorityHandlerRequest) -> dict[str, Any
             {"key": "contract_version", "value": content["contract_version"]},
         ],
     }
+
+
+def author_story_design_candidate(
+    request: AuthorityHandlerRequest,
+) -> dict[str, Any]:
+    """Materialize one operator-authored Story Design candidate.
+
+    Content Authority owns only the immutable AssetVersion. Story Design
+    Authority still owns structural/semantic qualification, approval and
+    activation. The operation cannot be used as a raw-source import or as
+    Provider evidence.
+    """
+
+    from novel_forge.modules.story_design_authority.validators import (
+        validate_story_design_candidate,
+    )
+
+    payload = _payload(request)
+    content = payload.get("content")
+    if not isinstance(content, dict):
+        raise ValueError("operator-authored Story Design content must be an object")
+    if content.get("operator_authored") is not True:
+        raise ValueError("Story Design candidate must declare operator_authored=true")
+    if content.get("provider_generated") is not False:
+        raise ValueError(
+            "operator-authored Story Design cannot claim Provider generation"
+        )
+    if _contains_forbidden_source_marker(content):
+        raise ValueError("operator-authored Story Design cannot contain raw source")
+    project_id = str(content.get("project_id") or "")
+    generator = str(content.get("generator_operation_name") or "")
+    planning_scope = str(content.get("planning_scope") or "")
+    logical_key = str(content.get("logical_key") or "")
+    if project_id != request.project_id:
+        raise ValueError("operator-authored Story Design belongs to another Project")
+    candidate_payload = content.get("candidate_payload")
+    if not isinstance(candidate_payload, dict):
+        raise ValueError("operator-authored Story Design requires candidate_payload")
+    bindings = candidate_payload.get("foundation_parent_bindings") or {}
+    if not isinstance(bindings, dict):
+        raise ValueError("Foundation parent bindings must be an object")
+    declared_parents = {
+        (
+            str(item.get("asset_version_id") or ""),
+            str(item.get("content_hash") or ""),
+        )
+        for item in bindings.values()
+        if isinstance(item, dict)
+    }
+    frozen_parents = {
+        (item.asset_version_id, item.content_hash) for item in request.inputs
+    }
+    if declared_parents != frozen_parents or any(
+        not all(item) for item in declared_parents
+    ):
+        raise ValueError(
+            "Foundation parent bindings must equal the exact frozen input AssetVersions"
+        )
+    validate_story_design_candidate(
+        content=content,
+        project_id=request.project_id,
+        generator_operation_name=generator,
+        planning_scope=planning_scope,
+        logical_key=logical_key,
+    )
+    return dict(content)
+
+
+def author_story_design_review(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    candidate = _one(
+        request,
+        "story_design_candidate",
+        "book_design",
+        "planning_generation_candidate",
+    )
+    payload = _payload(request)
+    evaluation = payload.get("evaluation")
+    if not isinstance(evaluation, dict) or not evaluation:
+        raise ValueError("operator Story Design review requires an evaluation")
+    if (
+        str(payload.get("candidate_asset_version_id") or "")
+        != candidate.asset_version_id
+    ):
+        raise ValueError("operator Story Design review targets another candidate")
+    if str(payload.get("candidate_content_hash") or "") != candidate.content_hash:
+        raise ValueError("operator Story Design review candidate hash drifted")
+    rationale = str(payload.get("review_rationale") or "").strip()
+    if not rationale:
+        raise ValueError("operator Story Design review requires a rationale")
+    return {
+        "type": "NarrativeDesignOperatorReviewEvidence",
+        "contract_version": "narrative-design-operator-review.v1",
+        "project_id": request.project_id,
+        "candidate_asset_version_id": candidate.asset_version_id,
+        "candidate_content_hash": candidate.content_hash,
+        "evaluation": dict(evaluation),
+        "review_rationale": rationale,
+        "evaluator_execution_class": "OPERATOR_REVIEW",
+        "human_preference_evidence": False,
+        "ground_truth_claimed": False,
+        "provider_evidence_claimed": False,
+    }
+
+
+def _contains_forbidden_source_marker(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if (
+                str(key) in {"raw_source", "source_expression_included"}
+                and item is True
+            ):
+                return True
+            if _contains_forbidden_source_marker(item):
+                return True
+    elif isinstance(value, list):
+        return any(_contains_forbidden_source_marker(item) for item in value)
+    return False
 
 
 def _quality_profile_v2_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
@@ -1233,6 +1624,43 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
             author_operator_checklist,
         ),
         (
+            "story_design.candidate.author",
+            "story_design_candidate",
+            "story_design.candidate",
+            author_story_design_candidate,
+        ),
+        (
+            "story_design.review.author",
+            "narrative_design_operator_review",
+            "story_design.operator_review",
+            author_story_design_review,
+        ),
+        *(
+            (
+                name,
+                asset_type,
+                f"book.bootstrap.{asset_type}",
+                _book_bootstrap_binder(asset_type, required_fields, boundary),
+            )
+            for name, (
+                asset_type,
+                required_fields,
+                boundary,
+            ) in _BOOK_BOOTSTRAP_INPUT_SPECS.items()
+        ),
+        (
+            "book.initial_story_state.author",
+            "story_state_snapshot",
+            "book.bootstrap.initial_story_state",
+            author_initial_story_state,
+        ),
+        (
+            "book.initial_canon.author",
+            "canon_snapshot",
+            "book.bootstrap.initial_canon",
+            author_initial_canon,
+        ),
+        (
             "creative.candidates.generate",
             "creative_candidate_pool",
             "creative.candidates.pool",
@@ -1244,9 +1672,13 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
 __all__ = [
     "CONTENT_CODECS",
     "ContentHandlerCodec",
+    "author_initial_canon",
+    "author_initial_story_state",
     "author_chapter_plan",
     "author_platform_profile",
     "author_operator_checklist",
     "author_quality_rubric",
+    "author_story_design_candidate",
+    "author_story_design_review",
     "author_style_policy",
 ]
