@@ -13,6 +13,16 @@ FORWARD_FIX = (
 
 UPGRADE_STATEMENTS = [
     """
+    UPDATE authority_operation_definition
+       SET enabled=FALSE
+     WHERE name IN (
+       'agent.chapter_binding.register',
+       'agent.chapter_binding.activate',
+       'agent.candidate.execute'
+     )
+        OR (name='agent.session.execute' AND definition_version='2.0.0')
+    """,
+    """
     CREATE TABLE authority_quality_qualification_campaign (
         campaign_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL REFERENCES authority_project(project_id),
@@ -427,6 +437,116 @@ UPGRADE_STATEMENTS = [
     CREATE INDEX human_preference_pair_pack_idx
     ON human_preference_pair(pack_id, pair_ordinal)
     WHERE pack_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX authority_quality_campaign_workspace_fk_idx
+    ON authority_quality_qualification_campaign(workspace_id)
+    """,
+    """
+    CREATE INDEX authority_quality_campaign_project_book_fk_idx
+    ON authority_quality_qualification_campaign(project_id, book_id)
+    """,
+    """
+    CREATE INDEX authority_quality_subject_project_fk_idx
+    ON authority_quality_qualification_subject(project_id)
+    """,
+    """
+    CREATE INDEX authority_quality_subject_canonical_asset_fk_idx
+    ON authority_quality_qualification_subject(canonical_asset_version_id)
+    """,
+    """
+    CREATE INDEX authority_quality_subject_baseline_asset_fk_idx
+    ON authority_quality_qualification_subject(baseline_asset_version_id)
+    """,
+    """
+    CREATE INDEX authority_quality_subject_chapter_plan_fk_idx
+    ON authority_quality_qualification_subject(chapter_plan_asset_version_id)
+    WHERE chapter_plan_asset_version_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX authority_quality_subject_realization_fk_idx
+    ON authority_quality_qualification_subject(
+        narrative_realization_asset_version_id
+    )
+    WHERE narrative_realization_asset_version_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX authority_quality_subject_operation_fk_idx
+    ON authority_quality_qualification_subject(created_by_operation_id)
+    """,
+    """
+    CREATE INDEX authority_quality_evidence_subject_fk_idx
+    ON authority_quality_qualification_evidence(subject_id)
+    WHERE subject_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX authority_quality_evidence_project_fk_idx
+    ON authority_quality_qualification_evidence(project_id)
+    """,
+    """
+    CREATE INDEX authority_quality_evidence_operation_fk_idx
+    ON authority_quality_qualification_evidence(created_by_operation_id)
+    """,
+    """
+    CREATE INDEX authority_quality_decision_project_fk_idx
+    ON authority_quality_qualification_decision(project_id)
+    """,
+    """
+    CREATE INDEX human_preference_task_campaign_fk_idx
+    ON human_preference_task(campaign_id)
+    WHERE campaign_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX human_preference_pack_project_fk_idx
+    ON human_preference_evaluation_pack(project_id)
+    """,
+    """
+    CREATE INDEX human_preference_pair_subject_fk_idx
+    ON human_preference_pair(subject_id)
+    WHERE subject_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX human_preference_pair_asset_a_fk_idx
+    ON human_preference_pair(asset_a_version_id)
+    """,
+    """
+    CREATE INDEX human_preference_pair_asset_b_fk_idx
+    ON human_preference_pair(asset_b_version_id)
+    """,
+    """
+    CREATE INDEX human_preference_pair_left_asset_fk_idx
+    ON human_preference_pair(left_asset_version_id)
+    """,
+    """
+    CREATE INDEX human_preference_pair_right_asset_fk_idx
+    ON human_preference_pair(right_asset_version_id)
+    """,
+    """
+    CREATE INDEX human_preference_pair_reversal_fk_idx
+    ON human_preference_pair(reversal_of_pair_id)
+    WHERE reversal_of_pair_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX human_preference_pair_operation_fk_idx
+    ON human_preference_pair(created_by_operation_id)
+    """,
+    """
+    CREATE INDEX human_preference_decision_pack_fk_idx
+    ON human_preference_decision(pack_id)
+    WHERE pack_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX human_preference_decision_preferred_asset_fk_idx
+    ON human_preference_decision(preferred_asset_version_id)
+    WHERE preferred_asset_version_id IS NOT NULL
+    """,
+    """
+    CREATE INDEX human_preference_adjudication_campaign_fk_idx
+    ON human_preference_adjudication(campaign_id)
+    """,
+    """
+    CREATE INDEX human_preference_adjudication_project_fk_idx
+    ON human_preference_adjudication(project_id)
     """,
 ]
 
