@@ -107,6 +107,12 @@ generation/import operation, candidate hash, independent qualification
 AssetVersion/hash, Story Design activation operation and exact parent bindings.
 Curated or operator-authored Foundation input is allowed only when honestly
 classified and governed; it is frozen input, not provider quality evidence.
+Because BookDesign v5 is reference-only, its independent semantic evaluator
+resolves the six exact Foundation AssetVersions and qualification bindings from
+the candidate itself. It validates those Authority versions before dispatch and
+projects the Foundation source content, but not prior evaluation verdicts, into
+the evaluator context. Generator prompts, mutable projections and unbound
+context remain excluded.
 
 Relevant public surfaces are:
 

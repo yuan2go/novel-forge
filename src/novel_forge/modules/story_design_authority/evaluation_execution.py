@@ -44,6 +44,15 @@ from .qualification import (
 NARRATIVE_EVALUATION_STAGE = "narrative_semantic_evaluation"
 NARRATIVE_EVALUATION_WORKFLOW_REF = "story_design_semantic_evaluation@1.0.0"
 
+_FOUNDATION_DEPENDENCY_ASSET_TYPES = {
+    "CREATIVE_FOUNDATION": "creative_foundation",
+    "THEME_CONTRACT": "theme_contract",
+    "ENDING_INTENT": "ending_intent",
+    "READER_PROMISE": "reader_promise",
+    "WORLD_BIBLE": "world_bible",
+    "CHARACTER_CAST": "character_cast",
+}
+
 
 def _canonical_hash(value: Any) -> str:
     encoded = json.dumps(
@@ -298,6 +307,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 "NARRATIVE_EVALUATION_TARGET_DRIFT",
                 "Narrative evaluation candidate differs from its Authority version",
             )
+        dependencies = self._canonical_dependencies(document)
         logical_ref = (
             f"narrative_evaluation/context_bundles/{operation_id}-{attempt_id}.json"
         )
@@ -307,19 +317,53 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             "content_hash": document.content_hash,
             "candidate": document.content,
         }
+        selected_inputs = [
+            selected,
+            *(
+                {
+                    "asset_version_id": item[1].asset_version_id,
+                    "asset_type": item[1].asset_type,
+                    "content_hash": item[1].content_hash,
+                    "dependency_role": item[0],
+                    "candidate": item[1].content,
+                }
+                for item in dependencies
+            ),
+        ]
         content = {
             "schema_version": "novelos.narrative_evaluation_context_bundle.v1",
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
-            "source_isolation": "EXACT_CANDIDATE_ONLY",
+            "source_isolation": (
+                "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES"
+                if dependencies
+                else "EXACT_CANDIDATE_ONLY"
+            ),
+            "dependency_resolution": (
+                "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE"
+                if dependencies
+                else "NOT_APPLICABLE"
+            ),
             "generation_operation_id": str(
                 metadata.get("generation_operation_id") or ""
             ),
             "generator_operation_name": str(
                 metadata.get("generator_operation_name") or ""
             ),
-            "selected_inputs": [selected],
+            "selected_inputs": selected_inputs,
+            "dependency_lineage": [
+                {
+                    "role": role,
+                    "asset_version_id": source.asset_version_id,
+                    "content_hash": source.content_hash,
+                    "qualification_evidence_asset_version_id": (
+                        qualification.asset_version_id
+                    ),
+                    "qualification_hash": qualification.content_hash,
+                }
+                for role, source, qualification in dependencies
+            ],
         }
         try:
             existing = self.evaluation_query.require(
@@ -350,9 +394,115 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 qualification_policy="narrative-evaluation-context-source-isolation-v1",
                 trace_id=trace_id,
                 correlation_id=correlation_id,
-                reference_asset_ids=(document.asset_id,),
+                reference_asset_ids=(
+                    document.asset_id,
+                    *(
+                        asset_id
+                        for _, source, qualification in dependencies
+                        for asset_id in (source.asset_id, qualification.asset_id)
+                    ),
+                ),
             )
         )
+
+    def _canonical_dependencies(
+        self, document: Any
+    ) -> tuple[tuple[str, Any, Any], ...]:
+        """Resolve only immutable dependencies named by a BookDesign v5 candidate.
+
+        The evaluator, rather than its caller, resolves these versions.  This keeps
+        generator prompts and mutable projections out of the evaluation while
+        making the reference-only BookDesign contract semantically reviewable.
+        Qualification assets are verified for lineage but are intentionally not
+        exposed as selected inputs, so a prior verdict cannot prime the evaluator.
+        """
+
+        if (
+            document.asset_type != "book_design"
+            or document.content.get("schema_version") != "book-design.v5"
+        ):
+            return ()
+        foundation = document.content.get("foundation_set")
+        if not isinstance(foundation, Mapping):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DEPENDENCY_INVALID",
+                "BookDesign v5 has no exact Foundation Set",
+            )
+        bindings = foundation.get("bindings")
+        if (
+            set(foundation) != {"schema_version", "bindings", "set_digest"}
+            or foundation.get("schema_version") != "qualified-foundation-set.v1"
+            or not isinstance(bindings, list)
+            or len(bindings) != len(_FOUNDATION_DEPENDENCY_ASSET_TYPES)
+            or foundation.get("set_digest") != _canonical_hash(bindings)
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DEPENDENCY_INVALID",
+                "BookDesign v5 Foundation Set is incomplete or digest-drifted",
+            )
+        by_role: dict[str, Mapping[str, Any]] = {}
+        for item in bindings:
+            if not isinstance(item, Mapping):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_DEPENDENCY_INVALID",
+                    "BookDesign v5 Foundation binding is not an object",
+                )
+            role = str(item.get("role") or "")
+            if role not in _FOUNDATION_DEPENDENCY_ASSET_TYPES or role in by_role:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_DEPENDENCY_INVALID",
+                    "BookDesign v5 Foundation roles are missing or duplicated",
+                )
+            by_role[role] = item
+        if set(by_role) != set(_FOUNDATION_DEPENDENCY_ASSET_TYPES):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DEPENDENCY_INVALID",
+                "BookDesign v5 does not bind all required Foundation roles",
+            )
+
+        resolved: list[tuple[str, Any, Any]] = []
+        for role, expected_asset_type in _FOUNDATION_DEPENDENCY_ASSET_TYPES.items():
+            binding = by_role[role]
+            asset_version_id = str(binding.get("asset_version_id") or "")
+            content_hash = str(binding.get("content_hash") or "")
+            qualification_id = str(
+                binding.get("qualification_evidence_asset_version_id") or ""
+            )
+            qualification_hash = str(binding.get("qualification_hash") or "")
+            source = self.evaluation_query.require(
+                project_id=document.project_id,
+                asset_version_id=asset_version_id,
+            )
+            qualification = self.evaluation_query.require(
+                project_id=document.project_id,
+                asset_version_id=qualification_id,
+            )
+            qualification_content = qualification.content
+            valid = (
+                source.asset_type == expected_asset_type
+                and source.content_hash == content_hash
+                and source.lifecycle == "ACTIVE"
+                and source.eligibility == "ELIGIBLE"
+                and source.governance == "CLEAR"
+                and qualification.asset_type == "narrative_design_evaluation"
+                and qualification.content_hash == qualification_hash
+                and qualification.lifecycle == "ACTIVE"
+                and qualification.eligibility == "ELIGIBLE"
+                and qualification.governance == "CLEAR"
+                and qualification_content.get("candidate_asset_version_id")
+                == source.asset_version_id
+                and qualification_content.get("candidate_content_hash")
+                == source.content_hash
+                and isinstance(qualification_content.get("qualification"), Mapping)
+                and qualification_content["qualification"].get("status") == "PASS"
+            )
+            if not valid:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_DEPENDENCY_DRIFT",
+                    f"{role} no longer resolves to its exact qualified Authority versions",
+                )
+            resolved.append((role, source, qualification))
+        return tuple(resolved)
 
 
 class GatewayNarrativeSemanticEvaluationExecutionPort:
