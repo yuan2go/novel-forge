@@ -60,14 +60,14 @@ def _scripted_route_environment() -> dict[str, str]:
         "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
         "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
         "NOVEL_FORGE_PLANNING_MODEL": "scripted-quality-campaign-v1",
-        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "fixture",
+        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high",
         "NOVEL_FORGE_DRAFT_MODEL": "scripted-quality-campaign-v1",
         "NOVEL_FORGE_REVIEW_MODEL": "scripted-quality-campaign-v1",
         "NOVEL_FORGE_REVISION_MODEL": "scripted-quality-campaign-v1",
         "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "scripted_provider_v2",
         "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "scripted-quality-campaign-v1",
-        "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "fixture",
-        "NOVEL_FORGE_REASONING_EFFORT": "fixture",
+        "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
+        "NOVEL_FORGE_REASONING_EFFORT": "high",
     }
 
 
@@ -229,3 +229,25 @@ def test_runtime_state_cannot_replace_frozen_campaign_lineage() -> None:
     campaign["planning_lineage"] = {"input_snapshot_id": "snapshot:drifted"}
     with pytest.raises(RuntimeError, match="planning_lineage"):
         module._verify_frozen_campaign_binding(campaign, state)
+
+
+def test_runtime_environment_applies_profile_caps_and_real_validation_boundary() -> None:
+    module = _module()
+    profile = module.load_quality_campaign_profile(
+        module.DEFAULT_PROFILE,
+        repository_root=ROOT,
+    )
+    state = _state()
+    state["runtime_env"] = _scripted_route_environment()
+    values = module._runtime_env(state, mode="scripted", profile=profile)
+
+    assert values["NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL"] == "4.00"
+    assert values["NOVEL_FORGE_CHAPTER_PROVIDER_CAP"] == "20.00"
+    assert values["NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"] == "80.00"
+
+    state["runtime_env"] = {
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_ENVIRONMENT": "development",
+    }
+    with pytest.raises(RuntimeError, match="controlled validation"):
+        module._runtime_env(state, mode="real", profile=profile)

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from novel_forge.modules.runtime_proof import quality_campaign as campaign_module
 from novel_forge.modules.runtime_proof.quality_campaign import (
     BoundedQualityCampaignProfile,
     BoundedQualityCampaignRunner,
@@ -50,6 +51,10 @@ def test_repository_profile_is_exactly_two_by_four_and_hash_frozen() -> None:
         ({"human_protocol": {"required_evaluator_count": 1}}, "two evaluators"),
         ({"stop_policy": {"chapter_9_allowed": True}}, "Chapter 9"),
         ({"budget_policy": {"chapter_limit": 9}}, "chapter_limit"),
+        (
+            {"budget_policy": {"cost_limit_per_call_usd": "90.00"}},
+            "monotonic",
+        ),
     ],
 )
 def test_profile_rejects_scope_budget_or_human_protocol_drift(
@@ -152,6 +157,20 @@ class _Runtime:
             "volume_evaluation": {"scope": "volume:1:chapters:1-8"},
             "blind_pack_ids": ["pack:reviewer-1", "pack:reviewer-2"],
             "semantic_evidence_hash": "sha256:" + "7" * 64,
+            "provider_runtime_evidence_asset_version_id": "provider-evidence:v1",
+            "provider_runtime_evidence_content_hash": "sha256:" + "8" * 64,
+            "provider_runtime_evidence": {
+                "provider_dispatch_count": 8,
+                "real_provider_call_count": 0,
+                "provider_failure_count": 0,
+                "provider_retry_count": 0,
+                "measured_input_tokens": 0,
+                "measured_output_tokens": 0,
+                "measured_total_tokens": 0,
+                "settled_cost_amount": "0",
+                "currency": "USD",
+                "capability_pack_snapshots": [],
+            },
         }
 
 
@@ -167,6 +186,7 @@ def test_runner_executes_only_two_consecutive_groups_and_stops_at_eight() -> Non
     assert result.duplicate_provider_effect_ids == ()
     assert result.blind_pack_count == 2
     assert result.semantic_evidence_hash == "sha256:" + "7" * 64
+    assert result.provider_dispatch_count == 8
     assert result.qualification_boundary == "SCRIPTED_PROTOCOL_ONLY"
 
 
@@ -190,6 +210,19 @@ def test_runner_resumes_from_immutable_checkpoint_without_duplicate_effects() ->
     assert recovered.accepted_through_chapter == 8
     assert recovered.duplicate_provider_effect_ids == ()
     assert runtime.calls == [(1, 4), (5, 8)]
+
+
+def test_runner_fails_closed_when_wall_clock_budget_expires(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _profile_payload()
+    payload["budget_policy"]["wall_clock_seconds"] = 1
+    profile = BoundedQualityCampaignProfile.from_mapping(payload)
+    clock = iter((0.0, 0.0, 2.0))
+    monkeypatch.setattr(campaign_module, "monotonic", lambda: next(clock))
+
+    with pytest.raises(RuntimeError, match="wall-clock budget expired"):
+        BoundedQualityCampaignRunner(profile).run(_Runtime())
 
 
 def test_checkpoint_rejects_profile_drift_or_chapter_nine() -> None:

@@ -7,6 +7,7 @@ Provider effects, Reader state, Canon, plans, or human decisions.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from novel_forge.modules.authority_security import Principal
@@ -94,6 +95,7 @@ class PostgresBoundedQualityCampaignRuntime:
         quality_authority: PostgresQualityQualificationAuthority,
         reviewers: Sequence[HumanReviewerTarget],
         campaign_secret: str,
+        mode: str,
         book_worker_id: str = "bounded-quality-book-worker",
         failure_injector: Callable[[str], None] | None = None,
     ) -> None:
@@ -109,6 +111,7 @@ class PostgresBoundedQualityCampaignRuntime:
             or len(reviewers) != 2
             or len({item.reviewer_id for item in reviewers}) != 2
             or len(campaign_secret) < 8
+            or mode not in {"scripted", "real"}
         ):
             raise ValueError("bounded PostgreSQL campaign runtime is incomplete")
         self.database_url = database_url
@@ -127,9 +130,16 @@ class PostgresBoundedQualityCampaignRuntime:
         self.quality = quality_authority
         self.reviewers = tuple(reviewers)
         self.campaign_secret = campaign_secret
+        self.mode = mode
         self.book_worker_id = book_worker_id
         self.failure_injector = failure_injector
         self.runtime_jobs = RuntimeJobAuthority(database_url)
+        campaign = self.quality.require_campaign(campaign_id, principal=operator)
+        self.release_sha = str(campaign["exact_release_sha"])
+        self.frozen_pack_bindings = {
+            str(role): dict(binding)
+            for role, binding in dict(campaign["capability_pack_manifest"]).items()
+        }
         self.followup_coordinator = PostgresBookFollowupCoordinator(
             composition.authority,
             query=composition.query,
@@ -138,6 +148,7 @@ class PostgresBoundedQualityCampaignRuntime:
         self._completed_ranges: list[tuple[int, int]] = []
 
     def run_group(self, chapter_range: tuple[int, int]) -> Mapping[str, Any]:
+        self._enforce_campaign_budget()
         expected_index = len(self._completed_ranges)
         if (
             expected_index >= len(self.profile.chapter_group_ranges)
@@ -151,6 +162,7 @@ class PostgresBoundedQualityCampaignRuntime:
         group_effects = self._group_provider_effect_ids(chapter_range)
         if not group_effects:
             raise RuntimeError("Canonical ChapterGroup emitted no Provider effects")
+        self._enforce_campaign_budget()
         self._inject(f"after_receipt:{chapter_range[1]}")
         self._completed_ranges.append(chapter_range)
         return {
@@ -210,12 +222,21 @@ class PostgresBoundedQualityCampaignRuntime:
         )
         subjects = self._bind_comparison_subjects(candidates)
         self._inject("after_candidate_materialization")
-        evidence_asset_ids = self._materialize_and_bind_evidence(
-            observations=observations,
-            longitudinal=longitudinal.to_dict(),
-            arc=arc.to_dict(),
-            volume=volume.to_dict(),
-            semantic_evidence_hash=semantic_evidence_hash,
+        provider_runtime = self._provider_runtime_summary()
+        self._validate_final_provider_evidence(provider_runtime)
+        (
+            evidence_asset_ids,
+            provider_runtime_asset_id,
+            provider_runtime_content_hash,
+        ) = (
+            self._materialize_and_bind_evidence(
+                observations=observations,
+                longitudinal=longitudinal.to_dict(),
+                arc=arc.to_dict(),
+                volume=volume.to_dict(),
+                semantic_evidence_hash=semantic_evidence_hash,
+                provider_runtime=provider_runtime,
+            )
         )
         packs = self._export_blind_packs(subjects)
         self._inject("after_pack_export")
@@ -237,6 +258,13 @@ class PostgresBoundedQualityCampaignRuntime:
             "blind_pack_ids": [packs[item.reviewer_id] for item in self.reviewers],
             "semantic_evidence_hash": semantic_evidence_hash,
             "evidence_asset_version_ids": list(evidence_asset_ids),
+            "provider_runtime_evidence": provider_runtime,
+            "provider_runtime_evidence_asset_version_id": (
+                provider_runtime_asset_id
+            ),
+            "provider_runtime_evidence_content_hash": (
+                provider_runtime_content_hash
+            ),
             "qualification_decision": decision,
         }
 
@@ -301,6 +329,7 @@ class PostgresBoundedQualityCampaignRuntime:
                 project_id=self.project_id,
                 root_operation_id=root_operation_id,
             )
+            self._enforce_campaign_budget()
             if tick.saga_status == "SUCCEEDED":
                 return
         raise RuntimeError("Chapter Authority did not reach SUCCEEDED")
@@ -325,6 +354,7 @@ class PostgresBoundedQualityCampaignRuntime:
                     replayed=False,
                 )
             )
+            self._enforce_campaign_budget()
         raise RuntimeError("Reader/Recap follow-ups did not settle")
 
     def _followup_complete(self, through_chapter: int) -> bool:
@@ -421,27 +451,539 @@ class PostgresBoundedQualityCampaignRuntime:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
+                WITH scoped_operations AS (
+                    SELECT operation.operation_id
+                    FROM authority_book_chapter_acceptance AS acceptance
+                    JOIN authority_book_chapter_request AS request
+                      ON request.chapter_request_id=acceptance.chapter_request_id
+                    JOIN authority_operation AS operation
+                      ON operation.project_id=acceptance.project_id
+                     AND (
+                          operation.operation_id=request.chapter_root_operation_id
+                          OR operation.root_operation_id=
+                             request.chapter_root_operation_id
+                     )
+                    WHERE acceptance.book_run_id=%s
+                      AND acceptance.status='COMMITTED'
+                      AND acceptance.chapter_number BETWEEN %s AND %s
+                    UNION
+                    SELECT followup.operation_id
+                    FROM authority_book_chapter_acceptance AS acceptance
+                    JOIN authority_book_followup_operation AS followup
+                      ON followup.chapter_request_id=acceptance.chapter_request_id
+                     AND followup.project_id=acceptance.project_id
+                    WHERE acceptance.book_run_id=%s
+                      AND acceptance.status='COMMITTED'
+                      AND acceptance.chapter_number BETWEEN %s AND %s
+                )
                 SELECT DISTINCT effect.external_effect_id
-                FROM authority_book_chapter_acceptance AS acceptance
-                JOIN authority_book_chapter_request AS request
-                  ON request.chapter_request_id=acceptance.chapter_request_id
-                JOIN authority_operation AS operation
-                  ON operation.project_id=acceptance.project_id
-                 AND (
-                      operation.operation_id=request.chapter_root_operation_id
-                      OR operation.root_operation_id=
-                         request.chapter_root_operation_id
-                 )
+                FROM scoped_operations
                 JOIN authority_external_effect AS effect
-                  ON effect.operation_id=operation.operation_id
-                WHERE acceptance.book_run_id=%s
-                  AND acceptance.status='COMMITTED'
-                  AND acceptance.chapter_number BETWEEN %s AND %s
+                  ON effect.operation_id=scoped_operations.operation_id
+                WHERE effect.capability LIKE 'model.%%'
                 ORDER BY effect.external_effect_id
                 """,
-                [self.book_run_id, chapter_range[0], chapter_range[1]],
+                [
+                    self.book_run_id,
+                    chapter_range[0],
+                    chapter_range[1],
+                    self.book_run_id,
+                    chapter_range[0],
+                    chapter_range[1],
+                ],
             )
             return tuple(str(row[0]) for row in uow.cursor.fetchall())
+
+    @staticmethod
+    def _provider_payload(content: Mapping[str, Any]) -> dict[str, Any]:
+        nested = content.get("provider_evidence")
+        return dict(nested) if isinstance(nested, Mapping) else dict(content)
+
+    @staticmethod
+    def _route_role(definition_name: str, stage: str) -> str:
+        if definition_name == "story_planning.generate":
+            return "planning"
+        if stage in {"draft", "revision"}:
+            return "generator"
+        if stage in {
+            "review",
+            "rereview",
+            "canon_extraction",
+            "narrative_semantic_evaluation",
+        }:
+            return "reviewer"
+        if stage.startswith("quality_"):
+            return "judge"
+        if stage == "reader_outcome":
+            return "reader_proxy"
+        return ""
+
+    def _provider_runtime_summary(self) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT DISTINCT version.asset_version_id, version.content,
+                       operation.operation_id, operation.definition_name
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id=asset.asset_id
+                JOIN authority_operation_output_asset AS output
+                  ON output.asset_version_id=version.asset_version_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=output.operation_id
+                WHERE asset.project_id=%s
+                  AND asset.asset_type='model_call_log'
+                ORDER BY operation.operation_id, version.asset_version_id
+                """,
+                [self.project_id],
+            )
+            model_rows = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT DISTINCT version.asset_version_id
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id=asset.asset_id
+                WHERE asset.project_id=%s AND asset.asset_type='cost_ledger'
+                ORDER BY version.asset_version_id
+                """,
+                [self.project_id],
+            )
+            cost_asset_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            uow.cursor.execute(
+                """
+                SELECT effect.external_effect_id, effect.operation_id,
+                       effect.capability, effect.status, effect.model_id,
+                       COUNT(DISTINCT dispatch.dispatch_id),
+                       COUNT(DISTINCT receipt.receipt_id)
+                FROM authority_external_effect AS effect
+                LEFT JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
+                LEFT JOIN authority_external_receipt AS receipt
+                  ON receipt.dispatch_id=dispatch.dispatch_id
+                WHERE effect.project_id=%s
+                  AND effect.capability LIKE 'model.%%'
+                GROUP BY effect.external_effect_id, effect.operation_id,
+                         effect.capability, effect.status, effect.model_id
+                ORDER BY effect.external_effect_id
+                """,
+                [self.project_id],
+            )
+            effect_rows = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT reservation_id, operation_id, external_effect_id,
+                       provider, status, settled_amount, actual_tokens,
+                       budget_breach, evidence
+                FROM authority_budget_reservation
+                WHERE project_id=%s
+                ORDER BY reservation_id
+                """,
+                [self.project_id],
+            )
+            budget_rows = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT snapshot.snapshot_id, snapshot.operation_id,
+                       snapshot.attempt_id, snapshot.deployment_id,
+                       snapshot.pack_id, snapshot.manifest_hash,
+                       snapshot.release_sha, snapshot.snapshot_hash,
+                       snapshot.snapshot_payload
+                FROM authority_attempt_capability_pack_snapshot AS snapshot
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=snapshot.operation_id
+                WHERE operation.project_id=%s
+                ORDER BY snapshot.snapshot_id
+                """,
+                [self.project_id],
+            )
+            snapshot_rows = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT book_run_id
+                FROM authority_book_production
+                WHERE project_id=%s
+                ORDER BY book_run_id
+                """,
+                [self.project_id],
+            )
+            book_run_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            operation_ids = tuple(str(row[2]) for row in model_rows)
+            if operation_ids:
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*) FILTER (WHERE attempt_number>1),
+                           COUNT(*) FILTER (WHERE status='FAILED')
+                    FROM authority_attempt
+                    WHERE operation_id=ANY(%s)
+                    """,
+                    [list(operation_ids)],
+                )
+                attempt_row = uow.cursor.fetchone()
+            else:
+                attempt_row = (0, 0)
+
+        effects_by_operation: dict[str, list[str]] = {}
+        provider_effects: list[dict[str, Any]] = []
+        dispatch_count = 0
+        receipt_count = 0
+        for row in effect_rows:
+            effect_id = str(row[0])
+            operation_id = str(row[1])
+            effects_by_operation.setdefault(operation_id, []).append(effect_id)
+            dispatch_count += int(row[5])
+            receipt_count += int(row[6])
+            provider_effects.append(
+                {
+                    "external_effect_id": effect_id,
+                    "operation_id": operation_id,
+                    "capability": str(row[2]),
+                    "status": str(row[3]),
+                    "model_id": str(row[4]),
+                    "dispatch_count": int(row[5]),
+                    "receipt_count": int(row[6]),
+                }
+            )
+
+        calls: list[dict[str, Any]] = []
+        route_mismatches: list[str] = []
+        unclassified_calls: list[str] = []
+        successful_measurement_missing: list[str] = []
+        fixture_calls: list[str] = []
+        unique_usage: dict[str, tuple[int, int]] = {}
+        for asset_version_id, raw_content, operation_id, definition_name in model_rows:
+            content = dict(raw_content)
+            provider = self._provider_payload(content)
+            production = (
+                dict(provider["production_execution"])
+                if isinstance(provider.get("production_execution"), Mapping)
+                else {}
+            )
+            process = (
+                dict(production["process_evidence"])
+                if isinstance(production.get("process_evidence"), Mapping)
+                else {}
+            )
+            execution_request = (
+                dict(production["execution_request"])
+                if isinstance(production.get("execution_request"), Mapping)
+                else {}
+            )
+            execution_result = (
+                dict(production["execution_result"])
+                if isinstance(production.get("execution_result"), Mapping)
+                else {}
+            )
+            usage = (
+                dict(provider["usage"])
+                if isinstance(provider.get("usage"), Mapping)
+                else dict(process.get("usage") or {})
+            )
+            cost = (
+                dict(provider["cost"])
+                if isinstance(provider.get("cost"), Mapping)
+                else dict(process.get("cost") or {})
+            )
+            stage = str(content.get("stage") or execution_request.get("stage") or "")
+            external_effect_id = str(content.get("external_effect_id") or "")
+            if not external_effect_id:
+                candidates = effects_by_operation.get(str(operation_id), [])
+                if len(candidates) == 1:
+                    external_effect_id = candidates[0]
+            role = self._route_role(str(definition_name), stage)
+            expected_route = self.profile.provider_routes[self.mode].get(role, {})
+            provider_id = str(provider.get("provider_id") or "")
+            model_id = str(provider.get("model_id") or "")
+            call_ref = str(asset_version_id)
+            if not role:
+                unclassified_calls.append(call_ref)
+            if role and (
+                provider_id != str(expected_route.get("provider") or "")
+                or model_id != str(expected_route.get("model") or "")
+            ):
+                route_mismatches.append(call_ref)
+            real_model_call = provider.get("real_model_call") is True
+            fixture_protocol_only = provider.get("fixture_protocol_only") is True
+            if fixture_protocol_only or not real_model_call:
+                fixture_calls.append(call_ref)
+            post_provider_failure = content.get("post_provider_failure")
+            failure_marker = bool(
+                str(content.get("call_status") or "")
+                or (
+                    isinstance(post_provider_failure, Mapping)
+                    and post_provider_failure
+                )
+            )
+            succeeded = not failure_marker and (
+                str(execution_result.get("outcome") or "").upper() == "SUCCEEDED"
+                or (
+                    not str(content.get("call_status") or "")
+                    and isinstance(provider.get("result"), Mapping)
+                )
+            )
+            input_tokens = int(usage.get("input_tokens") or 0)
+            output_tokens = int(usage.get("output_tokens") or 0)
+            measured = (
+                usage.get("availability") == "AVAILABLE"
+                and usage.get("measurement") == "MEASURED"
+                and input_tokens + output_tokens > 0
+            )
+            if succeeded and self.mode == "real" and not measured:
+                successful_measurement_missing.append(call_ref)
+            usage_key = external_effect_id or f"{operation_id}:{stage}"
+            previous = unique_usage.get(usage_key)
+            if previous is None or sum(previous) < input_tokens + output_tokens:
+                unique_usage[usage_key] = (input_tokens, output_tokens)
+            calls.append(
+                {
+                    "model_call_asset_version_id": call_ref,
+                    "operation_id": str(operation_id),
+                    "definition_name": str(definition_name),
+                    "external_effect_id": external_effect_id,
+                    "stage": stage,
+                    "route_role": role,
+                    "provider_id": provider_id,
+                    "model_id": model_id,
+                    "real_model_call": real_model_call,
+                    "fixture_protocol_only": fixture_protocol_only,
+                    "succeeded": succeeded,
+                    "usage": {
+                        "availability": str(usage.get("availability") or ""),
+                        "measurement": str(usage.get("measurement") or ""),
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": int(usage.get("total_tokens") or 0),
+                    },
+                    "cost": {
+                        "availability": str(cost.get("availability") or ""),
+                        "measurement": str(cost.get("measurement") or ""),
+                        "amount": str(cost.get("amount") or "0"),
+                        "currency": str(cost.get("currency") or ""),
+                        "estimated": bool(cost.get("estimated", False)),
+                        "provider_billed": bool(cost.get("provider_billed", False)),
+                        "pricing_ref": str(cost.get("pricing_ref") or ""),
+                        "pricing_snapshot_hash": str(
+                            cost.get("pricing_snapshot_hash") or ""
+                        ),
+                    },
+                }
+            )
+
+        settled_cost = Decimal("0")
+        settled_tokens = 0
+        unresolved_budget_rows: list[str] = []
+        budget_breaches: list[str] = []
+        budgets: list[dict[str, Any]] = []
+        for row in budget_rows:
+            reservation_id = str(row[0])
+            status = str(row[4])
+            try:
+                amount = Decimal(str(row[5]))
+            except InvalidOperation as exc:
+                raise RuntimeError("Provider budget contains invalid cost") from exc
+            if status == "SETTLED":
+                settled_cost += amount
+                settled_tokens += int(row[6])
+            elif status not in {"RELEASED"}:
+                unresolved_budget_rows.append(reservation_id)
+            if bool(row[7]):
+                budget_breaches.append(reservation_id)
+            budgets.append(
+                {
+                    "reservation_id": reservation_id,
+                    "operation_id": str(row[1]),
+                    "external_effect_id": str(row[2] or ""),
+                    "provider": str(row[3]),
+                    "status": status,
+                    "settled_amount": str(row[5]),
+                    "actual_tokens": int(row[6]),
+                    "budget_breach": bool(row[7]),
+                    "evidence": dict(row[8] or {}),
+                }
+            )
+
+        expected_deployments = {
+            str(binding.get("deployment_id") or "")
+            for binding in self.frozen_pack_bindings.values()
+        }
+        pack_snapshots = [
+            {
+                "snapshot_id": str(row[0]),
+                "operation_id": str(row[1]),
+                "attempt_id": str(row[2]),
+                "deployment_id": str(row[3]),
+                "pack_id": str(row[4]),
+                "manifest_hash": str(row[5]),
+                "release_sha": str(row[6]),
+                "snapshot_hash": str(row[7]),
+                "prompt_bundle_hash": str(
+                    dict(row[8] or {}).get("prompt_bundle_hash") or ""
+                ),
+                "prompt_template_hash": str(
+                    dict(row[8] or {}).get("prompt_template_hash") or ""
+                ),
+                "skill_bundle_hash": str(
+                    dict(row[8] or {}).get("skill_bundle_hash") or ""
+                ),
+                "skill_content_hash": str(
+                    dict(row[8] or {}).get("skill_content_hash") or ""
+                ),
+                "route_policy_hash": str(
+                    dict(row[8] or {}).get("route_policy_hash") or ""
+                ),
+                "context_policy_hash": str(
+                    dict(row[8] or {}).get("context_policy_hash") or ""
+                ),
+                "evaluation_policy_hash": str(
+                    dict(row[8] or {}).get("evaluation_policy_hash") or ""
+                ),
+            }
+            for row in snapshot_rows
+        ]
+        pack_snapshot_drift = [
+            item["snapshot_id"]
+            for item in pack_snapshots
+            if item["deployment_id"] not in expected_deployments
+            or item["release_sha"] != self.release_sha
+        ]
+        pack_snapshot_semantic_hash_missing = [
+            item["snapshot_id"]
+            for item in pack_snapshots
+            if any(
+                not item[field]
+                for field in (
+                    "manifest_hash",
+                    "prompt_bundle_hash",
+                    "skill_bundle_hash",
+                    "route_policy_hash",
+                    "context_policy_hash",
+                    "evaluation_policy_hash",
+                )
+            )
+        ]
+        snapshot_operation_ids = {item["operation_id"] for item in pack_snapshots}
+        missing_snapshot_operations = sorted(
+            {
+                item["operation_id"]
+                for item in calls
+                if item["operation_id"] not in snapshot_operation_ids
+            }
+        )
+        measured_input_tokens = sum(item[0] for item in unique_usage.values())
+        measured_output_tokens = sum(item[1] for item in unique_usage.values())
+        provider_failures = sum(
+            1 for item in calls if not bool(item["succeeded"])
+        )
+        successful_effect_missing_receipts = sorted(
+            item["external_effect_id"]
+            for item in provider_effects
+            if item["status"] == "SUCCEEDED" and int(item["receipt_count"]) <= 0
+        )
+        return {
+            "schema_version": "novel-forge.provider-runtime-evidence.v1",
+            "mode": self.mode,
+            "project_scope_policy": "DEDICATED_CAMPAIGN_PROJECT",
+            "book_run_ids": list(book_run_ids),
+            "model_call_count": len(calls),
+            "provider_dispatch_count": dispatch_count,
+            "provider_receipt_count": receipt_count,
+            "real_provider_call_count": sum(
+                1 for item in calls if item["real_model_call"] is True
+            ),
+            "provider_failure_count": provider_failures,
+            "provider_retry_count": int(attempt_row[0]),
+            "failed_attempt_count": int(attempt_row[1]),
+            "measured_input_tokens": measured_input_tokens,
+            "measured_output_tokens": measured_output_tokens,
+            "measured_total_tokens": settled_tokens,
+            "settled_cost_amount": format(settled_cost, "f"),
+            "currency": "USD",
+            "route_mismatch_asset_version_ids": sorted(route_mismatches),
+            "unclassified_model_call_asset_version_ids": sorted(
+                unclassified_calls
+            ),
+            "fixture_call_asset_version_ids": sorted(fixture_calls),
+            "successful_measurement_missing_asset_version_ids": sorted(
+                successful_measurement_missing
+            ),
+            "unresolved_budget_reservation_ids": sorted(unresolved_budget_rows),
+            "budget_breach_reservation_ids": sorted(budget_breaches),
+            "successful_effect_missing_receipt_ids": (
+                successful_effect_missing_receipts
+            ),
+            "pack_snapshot_drift_ids": sorted(pack_snapshot_drift),
+            "pack_snapshot_semantic_hash_missing_ids": sorted(
+                pack_snapshot_semantic_hash_missing
+            ),
+            "missing_pack_snapshot_operation_ids": missing_snapshot_operations,
+            "model_calls": calls,
+            "provider_effects": provider_effects,
+            "budget_reservations": budgets,
+            "capability_pack_snapshots": pack_snapshots,
+            "model_call_asset_version_ids": [
+                str(row[0]) for row in model_rows
+            ],
+            "cost_ledger_asset_version_ids": list(cost_asset_ids),
+        }
+
+    def _enforce_campaign_budget(self) -> None:
+        summary = self._provider_runtime_summary()
+        budget = self.profile.to_dict()["budget_policy"]
+        failures: list[str] = []
+        for field, limit_field in (
+            ("provider_dispatch_count", "provider_call_limit"),
+            ("provider_retry_count", "retry_limit"),
+            ("measured_input_tokens", "input_token_limit"),
+            ("measured_output_tokens", "output_token_limit"),
+            ("measured_total_tokens", "token_limit"),
+        ):
+            if int(summary[field]) > int(budget[limit_field]):
+                failures.append(f"{field}>{limit_field}")
+        if Decimal(str(summary["settled_cost_amount"])) > Decimal(
+            str(budget["cost_limit_usd"])
+        ):
+            failures.append("settled_cost_amount>cost_limit_usd")
+        if summary["budget_breach_reservation_ids"]:
+            failures.append("budget_breach")
+        if summary["pack_snapshot_drift_ids"]:
+            failures.append("capability_pack_snapshot_drift")
+        if failures:
+            raise RuntimeError(
+                "bounded Quality campaign budget/lineage failed closed: "
+                + ", ".join(failures)
+            )
+
+    def _validate_final_provider_evidence(self, summary: Mapping[str, Any]) -> None:
+        self._enforce_campaign_budget()
+        failures: list[str] = []
+        if list(summary["book_run_ids"]) != [self.book_run_id]:
+            failures.append("campaign project is not dedicated to one Book run")
+        if int(summary["model_call_count"]) <= 0:
+            failures.append("model call evidence is missing")
+        if summary["unresolved_budget_reservation_ids"]:
+            failures.append("provider budget settlement is incomplete")
+        if summary["route_mismatch_asset_version_ids"]:
+            failures.append("Provider/model route evidence drifted")
+        if summary["unclassified_model_call_asset_version_ids"]:
+            failures.append("model calls are outside the frozen role map")
+        if summary["successful_effect_missing_receipt_ids"]:
+            failures.append("successful Provider effects lack receipts")
+        if self.mode == "real":
+            if summary["fixture_call_asset_version_ids"]:
+                failures.append("fixture Provider evidence contaminated real campaign")
+            if summary["successful_measurement_missing_asset_version_ids"]:
+                failures.append("successful real calls lack measured usage")
+            if summary["missing_pack_snapshot_operation_ids"]:
+                failures.append("real Provider operations lack Pack snapshots")
+            if summary["pack_snapshot_semantic_hash_missing_ids"]:
+                failures.append("Pack snapshots lack Prompt/Skill/policy hashes")
+            if int(summary["real_provider_call_count"]) <= 0:
+                failures.append("no attributable real Provider call")
+        if failures:
+            raise RuntimeError(
+                "final Provider runtime evidence is incomplete: "
+                + "; ".join(failures)
+            )
 
     def _candidate_pairs(self) -> tuple[_CandidatePair, ...]:
         rows: list[_CandidatePair] = []
@@ -640,7 +1182,8 @@ class PostgresBoundedQualityCampaignRuntime:
         arc: dict[str, Any],
         volume: dict[str, Any],
         semantic_evidence_hash: str,
-    ) -> tuple[str, ...]:
+        provider_runtime: Mapping[str, Any],
+    ) -> tuple[tuple[str, ...], str, str]:
         accepted_ids = tuple(
             str(item["accepted_asset_version_id"]) for item in observations
         )
@@ -649,6 +1192,43 @@ class PostgresBoundedQualityCampaignRuntime:
             for item in observations
             for version_id in item.get("reader_outcome_asset_version_ids") or ()
         )
+        provider_source_ids = tuple(
+            dict.fromkeys(
+                (
+                    *(
+                        str(item)
+                        for item in provider_runtime[
+                            "model_call_asset_version_ids"
+                        ]
+                    ),
+                    *(
+                        str(item)
+                        for item in provider_runtime[
+                            "cost_ledger_asset_version_ids"
+                        ]
+                    ),
+                )
+            )
+        )
+        if not provider_source_ids:
+            raise RuntimeError("Provider runtime evidence has no source AssetVersions")
+        provider_artifact = self.quality.materialize_artifact(
+            QualityArtifactMaterializationCommand(
+                campaign_id=self.campaign_id,
+                artifact_id="evidence:provider-runtime",
+                artifact_kind="EVIDENCE_REPORT",
+                scope_type="CAMPAIGN",
+                chapter_start=1,
+                chapter_end=8,
+                content={
+                    "report_type": "BOUNDED_PROVIDER_RUNTIME_EVIDENCE",
+                    "report": dict(provider_runtime),
+                },
+                source_asset_version_ids=provider_source_ids,
+            ),
+            principal=self.operator,
+        )
+        provider_artifact_id = str(provider_artifact["asset_version_id"])
         reports = (
             (
                 "hard-correctness",
@@ -664,7 +1244,7 @@ class PostgresBoundedQualityCampaignRuntime:
                         item.get("realization_coverage") for item in observations
                     ],
                 },
-                accepted_ids,
+                (*accepted_ids, provider_artifact_id),
             ),
             (
                 "automated-editorial",
@@ -680,7 +1260,7 @@ class PostgresBoundedQualityCampaignRuntime:
                         item.get("quality_gate") for item in observations
                     ],
                 },
-                accepted_ids,
+                (*accepted_ids, provider_artifact_id),
             ),
             (
                 "longitudinal",
@@ -690,7 +1270,11 @@ class PostgresBoundedQualityCampaignRuntime:
                 EvidenceStatus.PASS_WITH_LIMITATIONS,
                 EvidenceSeverity.WARNING,
                 {"longitudinal": longitudinal, "arc": arc, "volume": volume},
-                tuple(dict.fromkeys((*accepted_ids, *reader_ids))),
+                tuple(
+                    dict.fromkeys(
+                        (*accepted_ids, *reader_ids, provider_artifact_id)
+                    )
+                ),
             ),
         )
         materialized: list[str] = []
@@ -738,14 +1322,20 @@ class PostgresBoundedQualityCampaignRuntime:
                         "human_simulation_used": False,
                     },
                     provider_lineage={
-                        "routes": self.profile.provider_routes["scripted"],
+                        "mode": self.mode,
+                        "campaign_profile_digest": self.profile.digest,
+                        "routes": self.profile.provider_routes[self.mode],
                         "independence": "DEPENDENT_SAME_MODEL",
                     },
                 ),
                 principal=self.operator,
             )
             materialized.append(artifact["asset_version_id"])
-        return tuple(materialized)
+        return (
+            tuple(materialized),
+            provider_artifact_id,
+            str(provider_artifact["content_hash"]),
+        )
 
     def _export_blind_packs(
         self, subjects: Iterable[BlindComparisonSubject]

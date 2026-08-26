@@ -28,21 +28,21 @@
       "planning": {
         "provider": "scripted_provider_v2",
         "model": "scripted-quality-campaign-v1",
-        "reasoning_effort": "fixture",
+        "reasoning_effort": "high",
         "silent_fallback": false,
         "execution_class": "SCRIPTED_FIXTURE"
       },
       "generator": {
         "provider": "scripted_provider_v2",
         "model": "scripted-quality-campaign-v1",
-        "reasoning_effort": "fixture",
+        "reasoning_effort": "high",
         "silent_fallback": false,
         "execution_class": "SCRIPTED_FIXTURE"
       },
       "reviewer": {
         "provider": "scripted_provider_v2",
         "model": "scripted-quality-campaign-v1",
-        "reasoning_effort": "fixture",
+        "reasoning_effort": "high",
         "silent_fallback": false,
         "execution_class": "SCRIPTED_FIXTURE",
         "independence_relationship": "DEPENDENT_SAME_MODEL"
@@ -50,7 +50,7 @@
       "judge": {
         "provider": "scripted_provider_v2",
         "model": "scripted-quality-campaign-v1",
-        "reasoning_effort": "fixture",
+        "reasoning_effort": "high",
         "silent_fallback": false,
         "execution_class": "SCRIPTED_FIXTURE",
         "independence_relationship": "DEPENDENT_SAME_MODEL"
@@ -58,7 +58,7 @@
       "reader_proxy": {
         "provider": "scripted_provider_v2",
         "model": "scripted-quality-campaign-v1",
-        "reasoning_effort": "fixture",
+        "reasoning_effort": "high",
         "silent_fallback": false,
         "execution_class": "SCRIPTED_FIXTURE"
       }
@@ -162,6 +162,8 @@
     "input_token_limit": 800000,
     "output_token_limit": 220000,
     "token_limit": 1020000,
+    "cost_limit_per_call_usd": "4.00",
+    "cost_limit_per_chapter_usd": "20.00",
     "cost_limit_usd": "80.00",
     "wall_clock_seconds": 14400
   },

@@ -262,6 +262,21 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_PLANNING_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_DRAFT_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_REVIEW_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_REVISION_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_REREVIEW_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_CANON_EXTRACTION_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_QUALITY_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_READER_OUTCOME_MODEL": "scripted-quality-campaign-v1",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": (
+                "scripted-quality-campaign-v1"
+            ),
+            "NOVEL_FORGE_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                "high"
+            ),
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "bounded-quality-worker",
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
@@ -438,6 +453,7 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
                 quality_authority=quality,
                 reviewers=reviewers,
                 campaign_secret="bounded-quality-campaign-secret-v1",
+                mode="scripted",
                 failure_injector=failure_injector,
             )
 
@@ -466,6 +482,9 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
     assert result.chapter_group_ranges == ((1, 4), (5, 8))
     assert result.accepted_through_chapter == 8
     assert result.blind_pack_count == 2
+    assert result.provider_dispatch_count > 0
+    assert result.real_provider_call_count == 0
+    assert result.provider_runtime_evidence_content_hash.startswith("sha256:")
     assert result.semantic_evidence_hash == EXPECTED_SCRIPTED_SEMANTIC_EVIDENCE_HASH
     assert result.qualification_boundary == "SCRIPTED_PROTOCOL_ONLY"
     campaign = quality.require_campaign(campaign_id, principal=operator)
@@ -534,7 +553,7 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
         persisted_packs = uow.cursor.fetchall()
         uow.cursor.execute(
             """
-            SELECT version.content
+            SELECT version.content, evidence.provider_lineage
             FROM authority_quality_qualification_evidence AS evidence
             JOIN authority_asset_version AS version
               ON version.asset_version_id=evidence.evidence_asset_version_id
@@ -563,6 +582,8 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
         persisted_longitudinal[0]["semantic_evidence_hash"]
         == result.semantic_evidence_hash
     )
+    assert persisted_longitudinal[1]["mode"] == "scripted"
+    assert persisted_longitudinal[1]["routes"] == profile.provider_routes["scripted"]
     for reviewer_id, pack_id, _pair_count, _status in persisted_packs:
         public = quality.reader_calibration.reviewer_pack(
             pack_id=str(pack_id),

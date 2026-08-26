@@ -305,6 +305,7 @@ def _verify_freeze_lineage(
     state: Mapping[str, Any],
     *,
     mode: str,
+    values: Mapping[str, str],
 ) -> None:
     planning = dict(state["planning_lineage"])
     snapshot_id = str(planning.get("input_snapshot_id") or "")
@@ -357,11 +358,18 @@ def _verify_freeze_lineage(
             uow.cursor.execute(
                 """
                 SELECT deployment.pack_id, version.manifest_hash,
-                       deployment.deployment_status
+                       deployment.deployment_status, deployment.environment,
+                       compilation.runtime_profile,
+                       compilation.release_channel, compilation.release_sha,
+                       deployment.workflow_definition_ref,
+                       deployment.target_scope_type, deployment.project_id,
+                       deployment.workspace_id, deployment.book_id
                 FROM authority_capability_pack_deployment AS deployment
                 JOIN authority_capability_pack_version AS version
                   ON version.pack_id=deployment.pack_id
                  AND version.pack_version=deployment.pack_version
+                JOIN authority_capability_pack_compilation AS compilation
+                  ON compilation.compilation_id=deployment.compilation_id
                 WHERE deployment.deployment_id=%s
                 """,
                 [deployment_id],
@@ -377,6 +385,90 @@ def _verify_freeze_lineage(
                 or str(pack[2]) != "ACTIVE"
             ):
                 raise RuntimeError(f"Capability Pack lineage drifted for {role}")
+            if mode == "real":
+                environment = str(values.get("NOVEL_FORGE_ENVIRONMENT") or "")
+                release_channel = str(
+                    values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+                ).upper()
+                if (
+                    str(pack[3]) != environment
+                    or str(pack[4]) != environment
+                    or str(pack[5]) != release_channel
+                    or str(pack[6]) != str(state["exact_release_sha"])
+                    or (pack[9] is not None and str(pack[9]) != str(state["project_id"]))
+                    or (
+                        pack[10] is not None
+                        and str(pack[10]) != str(state["workspace_id"])
+                    )
+                    or (pack[11] is not None and str(pack[11]) != str(state["book_id"]))
+                ):
+                    raise RuntimeError(
+                        f"Capability Pack release or scope drifted for {role}"
+                    )
+                uow.cursor.execute(
+                    """
+                    SELECT activation.active_deployment_id
+                    FROM authority_capability_pack_activation AS activation
+                    WHERE activation.pack_id=%s
+                      AND activation.environment=%s
+                      AND activation.workflow_definition_ref=%s
+                      AND (
+                           activation.target_scope_type='SYSTEM'
+                           OR (
+                               activation.target_scope_type='PROJECT'
+                               AND activation.project_id=%s
+                           )
+                           OR (
+                               activation.target_scope_type='WORKSPACE'
+                               AND activation.project_id=%s
+                               AND activation.workspace_id=%s
+                           )
+                           OR (
+                               activation.target_scope_type='BOOK'
+                               AND activation.project_id=%s
+                               AND activation.workspace_id=%s
+                               AND activation.book_id=%s
+                           )
+                      )
+                    ORDER BY CASE activation.target_scope_type
+                               WHEN 'BOOK' THEN 4
+                               WHEN 'WORKSPACE' THEN 3
+                               WHEN 'PROJECT' THEN 2
+                               ELSE 1
+                             END DESC
+                    LIMIT 1
+                    """,
+                    [
+                        expected_pack_id,
+                        environment,
+                        str(pack[7]),
+                        state["project_id"],
+                        state["project_id"],
+                        state["workspace_id"],
+                        state["project_id"],
+                        state["workspace_id"],
+                        state["book_id"],
+                    ],
+                )
+                selected = uow.cursor.fetchone()
+                if selected is None or str(selected[0]) != deployment_id:
+                    raise RuntimeError(
+                        f"frozen Capability Pack is not the selected activation for {role}"
+                    )
+                uow.cursor.execute(
+                    """
+                    SELECT 1
+                    FROM authority_capability_pack_rollout
+                    WHERE baseline_deployment_id=%s
+                      AND status IN ('OFF','CANARY','PERCENTAGE','FULL','PAUSED')
+                    LIMIT 1
+                    """,
+                    [deployment_id],
+                )
+                if uow.cursor.fetchone() is not None:
+                    raise RuntimeError(
+                        f"Quality Qualification forbids Pack rollout drift for {role}"
+                    )
 
 
 def _effective_stage_binding(
@@ -514,10 +606,15 @@ def _freeze(args: argparse.Namespace) -> dict[str, Any]:
         args.profile,
         repository_root=ROOT,
     )
-    values = _runtime_env(state, mode=args.mode)
+    values = _runtime_env(state, mode=args.mode, profile=profile)
     _verify_runtime_routes(profile, values, mode=args.mode)
     _verify_runtime_pack_ids(state, values, mode=args.mode)
-    _verify_freeze_lineage(args.database_url, state, mode=args.mode)
+    _verify_freeze_lineage(
+        args.database_url,
+        state,
+        mode=args.mode,
+        values=values,
+    )
     manifest = profile.freeze_manifest(
         campaign_id=str(state["campaign_id"]),
         exact_release_sha=str(state["exact_release_sha"]),
@@ -556,7 +653,12 @@ def _freeze(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def _runtime_env(state: Mapping[str, Any], *, mode: str) -> dict[str, str]:
+def _runtime_env(
+    state: Mapping[str, Any],
+    *,
+    mode: str,
+    profile: Any,
+) -> dict[str, str]:
     values = {str(key): str(value) for key, value in os.environ.items()}
     values.update(
         {str(key): str(value) for key, value in dict(state["runtime_env"]).items()}
@@ -565,6 +667,24 @@ def _runtime_env(state: Mapping[str, Any], *, mode: str) -> dict[str, str]:
     values.setdefault(
         "NOVEL_FORGE_APPLICATION_BUILD_ID",
         "bounded-quality-qualification-cli",
+    )
+    budget = profile.to_dict()["budget_policy"]
+    values.update(
+        {
+            "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": str(
+                budget["cost_limit_per_call_usd"]
+            ),
+            "NOVEL_FORGE_OPERATION_PROVIDER_CAP": str(
+                budget["cost_limit_per_call_usd"]
+            ),
+            "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": str(
+                budget["cost_limit_per_chapter_usd"]
+            ),
+            "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": str(
+                budget["cost_limit_usd"]
+            ),
+            "NOVEL_FORGE_PROVIDER_DAILY_CAP": str(budget["cost_limit_usd"]),
+        }
     )
     if mode == "scripted":
         if values.get("NOVEL_FORGE_MODEL_PROVIDER") != "scripted_provider_v2":
@@ -576,6 +696,8 @@ def _runtime_env(state: Mapping[str, Any], *, mode: str) -> dict[str, str]:
         )
     elif values.get("NOVEL_FORGE_MODEL_PROVIDER") == "scripted_provider_v2":
         raise RuntimeError("run-real refuses a scripted Provider route")
+    elif values.get("NOVEL_FORGE_ENVIRONMENT") != "validation":
+        raise RuntimeError("run-real requires the controlled validation environment")
     return values
 
 
@@ -619,7 +741,7 @@ def _run_campaign(
         allow_dirty=bool(args.allow_dirty and mode == "scripted"),
     )
     profile = load_quality_campaign_profile(args.profile, repository_root=ROOT)
-    env = _runtime_env(state, mode=mode)
+    env = _runtime_env(state, mode=mode, profile=profile)
     _verify_runtime_routes(
         profile,
         env,
@@ -627,7 +749,12 @@ def _run_campaign(
         frozen_route_manifest=dict(campaign["provider_route_manifest"]),
     )
     _verify_runtime_pack_ids(state, env, mode=mode)
-    _verify_freeze_lineage(args.database_url, state, mode=mode)
+    _verify_freeze_lineage(
+        args.database_url,
+        state,
+        mode=mode,
+        values=env,
+    )
     settings = IndustrialSettings(
         root=ROOT,
         environment="development",
@@ -691,6 +818,7 @@ def _run_campaign(
             quality_authority=quality,
             reviewers=reviewers,
             campaign_secret=_campaign_secret(mode),
+            mode=mode,
         )
         result = BoundedQualityCampaignRunner(profile, mode=mode).run(runtime)
         current = quality.require_campaign(
@@ -719,7 +847,7 @@ def _pack_rows(database_url: str, campaign_id: str) -> list[dict[str, Any]]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
-            SELECT pack_id,reviewer_id,evaluator_identity_class,
+            SELECT pack_id,task_id,reviewer_id,evaluator_identity_class,
                    protocol_version,evaluation_profile_version,pair_count,status
             FROM human_preference_evaluation_pack
             WHERE campaign_id=%s
@@ -729,6 +857,7 @@ def _pack_rows(database_url: str, campaign_id: str) -> list[dict[str, Any]]:
         )
         fields = (
             "pack_id",
+            "task_id",
             "reviewer_id",
             "evaluator_identity_class",
             "protocol_version",

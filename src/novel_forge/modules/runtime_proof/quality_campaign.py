@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
+from time import monotonic
 from typing import Any, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
@@ -341,12 +342,23 @@ class BoundedQualityCampaignProfile:
             budget["output_token_limit"]
         ):
             raise ValueError("budget_policy.token_limit must equal input plus output")
-        try:
-            cost_limit = float(budget.get("cost_limit_usd") or 0)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("budget_policy.cost_limit_usd must be positive") from exc
-        if cost_limit <= 0:
-            raise ValueError("budget_policy.cost_limit_usd must be positive")
+        for field in (
+            "cost_limit_per_call_usd",
+            "cost_limit_per_chapter_usd",
+            "cost_limit_usd",
+        ):
+            try:
+                cost_limit = float(budget.get(field) or 0)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"budget_policy.{field} must be positive") from exc
+            if cost_limit <= 0:
+                raise ValueError(f"budget_policy.{field} must be positive")
+        if float(budget["cost_limit_per_call_usd"]) > float(
+            budget["cost_limit_per_chapter_usd"]
+        ) or float(budget["cost_limit_per_chapter_usd"]) > float(
+            budget["cost_limit_usd"]
+        ):
+            raise ValueError("budget_policy cost ceilings are not monotonic")
 
         stop = _mapping(payload["stop_policy"], "stop_policy")
         if not (
@@ -518,6 +530,18 @@ class BoundedQualityCampaignResult:
     volume_evaluation_present: bool
     blind_pack_count: int
     semantic_evidence_hash: str
+    provider_runtime_evidence_asset_version_id: str
+    provider_runtime_evidence_content_hash: str
+    provider_dispatch_count: int
+    real_provider_call_count: int
+    provider_failure_count: int
+    provider_retry_count: int
+    measured_input_tokens: int
+    measured_output_tokens: int
+    measured_total_tokens: int
+    settled_cost_amount: str
+    currency: str
+    capability_pack_snapshot_count: int
     qualification_boundary: str
 
     @property
@@ -538,6 +562,24 @@ class BoundedQualityCampaignResult:
                 "volume_evaluation_present": self.volume_evaluation_present,
                 "blind_pack_count": self.blind_pack_count,
                 "semantic_evidence_hash": self.semantic_evidence_hash,
+                "provider_runtime_evidence_asset_version_id": (
+                    self.provider_runtime_evidence_asset_version_id
+                ),
+                "provider_runtime_evidence_content_hash": (
+                    self.provider_runtime_evidence_content_hash
+                ),
+                "provider_dispatch_count": self.provider_dispatch_count,
+                "real_provider_call_count": self.real_provider_call_count,
+                "provider_failure_count": self.provider_failure_count,
+                "provider_retry_count": self.provider_retry_count,
+                "measured_input_tokens": self.measured_input_tokens,
+                "measured_output_tokens": self.measured_output_tokens,
+                "measured_total_tokens": self.measured_total_tokens,
+                "settled_cost_amount": self.settled_cost_amount,
+                "currency": self.currency,
+                "capability_pack_snapshot_count": (
+                    self.capability_pack_snapshot_count
+                ),
                 "qualification_boundary": self.qualification_boundary,
             }
         )
@@ -562,6 +604,18 @@ class BoundedQualityCampaignResult:
                 "volume_evaluation_present": self.volume_evaluation_present,
                 "blind_pack_count": self.blind_pack_count,
                 "semantic_evidence_hash": self.semantic_evidence_hash,
+                "provider_dispatch_count": self.provider_dispatch_count,
+                "real_provider_call_count": self.real_provider_call_count,
+                "provider_failure_count": self.provider_failure_count,
+                "provider_retry_count": self.provider_retry_count,
+                "measured_input_tokens": self.measured_input_tokens,
+                "measured_output_tokens": self.measured_output_tokens,
+                "measured_total_tokens": self.measured_total_tokens,
+                "settled_cost_amount": self.settled_cost_amount,
+                "currency": self.currency,
+                "capability_pack_snapshot_count": (
+                    self.capability_pack_snapshot_count
+                ),
                 "qualification_boundary": self.qualification_boundary,
             }
         )
@@ -585,6 +639,14 @@ class BoundedQualityCampaignRunner:
         *,
         checkpoint: CampaignExecutionCheckpoint | None = None,
     ) -> BoundedQualityCampaignResult:
+        deadline = monotonic() + int(
+            self.profile.to_dict()["budget_policy"]["wall_clock_seconds"]
+        )
+
+        def require_within_deadline() -> None:
+            if monotonic() > deadline:
+                raise RuntimeError("bounded Quality campaign wall-clock budget expired")
+
         checkpoint = checkpoint or CampaignExecutionCheckpoint(
             profile_digest=self.profile.digest,
             accepted_through_chapter=0,
@@ -602,9 +664,11 @@ class BoundedQualityCampaignRunner:
         reader_states: list[str] = []
         recaps: list[str] = []
         for chapter_range in self.profile.chapter_group_ranges:
+            require_within_deadline()
             if chapter_range in completed:
                 continue
             raw = dict(runtime.run_group(chapter_range))
+            require_within_deadline()
             if (
                 tuple(int(item) for item in raw.get("chapter_range") or ())
                 != chapter_range
@@ -653,7 +717,9 @@ class BoundedQualityCampaignRunner:
             reader_states.append(reader_state)
             recaps.append(recap)
 
+        require_within_deadline()
         final = dict(runtime.final_evidence())
+        require_within_deadline()
         if (
             tuple(accepted) != QUALITY_CHAPTERS
             or int(final.get("accepted_through_chapter") or 0) != 8
@@ -665,6 +731,17 @@ class BoundedQualityCampaignRunner:
         semantic_evidence_hash = _sha256(
             final.get("semantic_evidence_hash"),
             "semantic_evidence_hash",
+        )
+        provider_runtime = final.get("provider_runtime_evidence")
+        if not isinstance(provider_runtime, Mapping) or not provider_runtime:
+            raise ValueError("bounded Quality campaign lacks Provider runtime evidence")
+        provider_runtime_asset_id = _required(
+            final.get("provider_runtime_evidence_asset_version_id"),
+            "provider_runtime_evidence_asset_version_id",
+        )
+        provider_runtime_content_hash = _sha256(
+            final.get("provider_runtime_evidence_content_hash"),
+            "provider_runtime_evidence_content_hash",
         )
         if not isinstance(arcs, list) or not arcs:
             raise ValueError("bounded Quality campaign lacks Arc evaluation")
@@ -686,6 +763,36 @@ class BoundedQualityCampaignRunner:
             volume_evaluation_present=True,
             blind_pack_count=len(packs),
             semantic_evidence_hash=semantic_evidence_hash,
+            provider_runtime_evidence_asset_version_id=provider_runtime_asset_id,
+            provider_runtime_evidence_content_hash=provider_runtime_content_hash,
+            provider_dispatch_count=int(
+                provider_runtime.get("provider_dispatch_count") or 0
+            ),
+            real_provider_call_count=int(
+                provider_runtime.get("real_provider_call_count") or 0
+            ),
+            provider_failure_count=int(
+                provider_runtime.get("provider_failure_count") or 0
+            ),
+            provider_retry_count=int(
+                provider_runtime.get("provider_retry_count") or 0
+            ),
+            measured_input_tokens=int(
+                provider_runtime.get("measured_input_tokens") or 0
+            ),
+            measured_output_tokens=int(
+                provider_runtime.get("measured_output_tokens") or 0
+            ),
+            measured_total_tokens=int(
+                provider_runtime.get("measured_total_tokens") or 0
+            ),
+            settled_cost_amount=str(
+                provider_runtime.get("settled_cost_amount") or "0"
+            ),
+            currency=str(provider_runtime.get("currency") or ""),
+            capability_pack_snapshot_count=len(
+                provider_runtime.get("capability_pack_snapshots") or ()
+            ),
             qualification_boundary=(
                 "SCRIPTED_PROTOCOL_ONLY"
                 if self.mode == "scripted"
