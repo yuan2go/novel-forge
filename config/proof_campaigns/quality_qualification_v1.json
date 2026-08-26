@@ -1,0 +1,173 @@
+{
+  "schema_version": "novel-forge.bounded-quality-campaign-profile.v1",
+  "profile_id": "wp-quality-proof-01",
+  "profile_version": 1,
+  "book": {
+    "title": "The Cartographer of Witnesses",
+    "language": "zh-CN",
+    "target_chapters": 8,
+    "bounded_volume_scope": "volume:1:chapters:1-8",
+    "primary_arc_scope": "arc:witnessed-truth:chapters:1-8"
+  },
+  "chapter_group_ranges": [
+    [1, 4],
+    [5, 8]
+  ],
+  "baseline_protocol": {
+    "kind": "FIRST_DRAFT_VS_ACCEPTED_REVISION",
+    "shared_story_foundation": true,
+    "shared_chapter_goal": true,
+    "shared_accepted_boundary": true,
+    "shared_context": true,
+    "provider_model_parity": true,
+    "comparable_token_budget": true,
+    "controlled_difference": "REVIEW_REVISION_REREVIEW_QUALITY_ACCEPTANCE"
+  },
+  "provider_routes": {
+    "scripted": {
+      "planning": {
+        "provider": "scripted_provider_v2",
+        "model": "scripted-quality-campaign-v1",
+        "reasoning_effort": "fixture",
+        "silent_fallback": false,
+        "execution_class": "SCRIPTED_FIXTURE"
+      },
+      "generator": {
+        "provider": "scripted_provider_v2",
+        "model": "scripted-quality-campaign-v1",
+        "reasoning_effort": "fixture",
+        "silent_fallback": false,
+        "execution_class": "SCRIPTED_FIXTURE"
+      },
+      "reviewer": {
+        "provider": "scripted_provider_v2",
+        "model": "scripted-quality-campaign-v1",
+        "reasoning_effort": "fixture",
+        "silent_fallback": false,
+        "execution_class": "SCRIPTED_FIXTURE",
+        "independence_relationship": "DEPENDENT_SAME_MODEL"
+      },
+      "judge": {
+        "provider": "scripted_provider_v2",
+        "model": "scripted-quality-campaign-v1",
+        "reasoning_effort": "fixture",
+        "silent_fallback": false,
+        "execution_class": "SCRIPTED_FIXTURE",
+        "independence_relationship": "DEPENDENT_SAME_MODEL"
+      },
+      "reader_proxy": {
+        "provider": "scripted_provider_v2",
+        "model": "scripted-quality-campaign-v1",
+        "reasoning_effort": "fixture",
+        "silent_fallback": false,
+        "execution_class": "SCRIPTED_FIXTURE"
+      }
+    },
+    "real": {
+      "planning": {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "silent_fallback": false,
+        "execution_class": "MODEL_PROVIDER"
+      },
+      "generator": {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "silent_fallback": false,
+        "execution_class": "MODEL_PROVIDER"
+      },
+      "reviewer": {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "silent_fallback": false,
+        "execution_class": "MODEL_PROVIDER",
+        "independence_relationship": "DEPENDENT_SAME_MODEL"
+      },
+      "judge": {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "silent_fallback": false,
+        "execution_class": "MODEL_PROVIDER",
+        "independence_relationship": "DEPENDENT_SAME_MODEL"
+      },
+      "reader_proxy": {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "silent_fallback": false,
+        "execution_class": "MODEL_PROVIDER"
+      }
+    }
+  },
+  "capability_pack_requirements": {
+    "planning": "story-planning-pack-v2",
+    "chapter": "chapter-generation-pack-v2",
+    "reader_proxy": "reader-outcome-pack-v3",
+    "narrative_evaluation": "narrative-evaluation-pack-v2"
+  },
+  "prompt_skill_lineage": {
+    "skills/prose-generation/SKILL.md": "sha256:4e5ca7a08841ae4384585f1385851406fb08a92972eba0c035b985bed7c7616c",
+    "skills/quality-review/SKILL.md": "sha256:d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+    "skills/chapter-outline/SKILL.md": "sha256:fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
+    "skills/reader-feedback/SKILL.md": "sha256:4e050589d442a819970144f6b699aaf65bb306022851b840e1ac07a4594530bc",
+    "skills/context-builder-source-isolation/SKILL.md": "sha256:4dee8e12705105d94b23199a6816068a10fec22e27e5a698d201c691fce316aa",
+    "src/novel_forge/modules/chapter_authority/provider_output_contracts.py": "sha256:ff6b1e1f13dd5e04182b0b610b699bdc2336e7b09e6ea6aada684c553f1c224a",
+    "src/novel_forge/modules/story_planning_runtime/execution.py": "sha256:c1afebba907a68de97cb1af557d44c92940af7545bb284c1c3194e56c12ae236",
+    "src/novel_forge/modules/book_followup_authority/handlers.py": "sha256:86f7789bb98c9e70d8c09c0d098dde5ef27a00188efb96a2338cc98d0cd0ed62"
+  },
+  "profiles": {
+    "protocol_version": "human-blind-comparison-v1",
+    "evaluation_profile_version": "editorial-pairwise-v1",
+    "quality_profile_version": "canonical-quality-v3",
+    "reader_outcome_profile_version": "reader-outcome-v3",
+    "context_policy": {
+      "contract": "context-manifest-v3",
+      "protected_context_fail_closed": true,
+      "accepted_history_only": true
+    }
+  },
+  "human_protocol": {
+    "required_evaluator_count": 2,
+    "chapter_pairs_per_evaluator": 8,
+    "arc_pairs_per_evaluator": 1,
+    "chapter_pair_order": "STORY_SEQUENCE",
+    "candidate_order": "DETERMINISTIC_BALANCED_COMPLEMENTARY",
+    "choices": [
+      "A",
+      "B",
+      "TIE",
+      "CANNOT_JUDGE"
+    ],
+    "dimensions": [
+      "overall_preference",
+      "readability",
+      "character_credibility",
+      "scene_effectiveness",
+      "tension_momentum",
+      "emotional_impact",
+      "prose_quality",
+      "continuity",
+      "payoff_satisfaction",
+      "desire_to_continue"
+    ]
+  },
+  "budget_policy": {
+    "chapter_limit": 8,
+    "provider_call_limit": 120,
+    "retry_limit": 16,
+    "input_token_limit": 800000,
+    "output_token_limit": 220000,
+    "token_limit": 1020000,
+    "cost_limit_usd": "80.00",
+    "wall_clock_seconds": 14400
+  },
+  "stop_policy": {
+    "accepted_through_chapter": 8,
+    "chapter_9_allowed": false,
+    "background_continuation_allowed": false
+  }
+}

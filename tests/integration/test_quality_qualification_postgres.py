@@ -14,6 +14,7 @@ from novel_forge.modules.chapter_quality_authority import (
 )
 from novel_forge.modules.chapter_quality_authority.qualification_application import (
     PostgresQualityQualificationAuthority,
+    QualityArtifactMaterializationCommand,
     QualityEvidenceBindingCommand,
     QualitySubjectBindingCommand,
 )
@@ -274,6 +275,80 @@ class TestQualityQualificationPostgres:
             )
             operation_evidence = uow.cursor.fetchone()
         assert tuple(int(value) for value in operation_evidence) == (9, 0, 1)
+
+    def test_materialized_comparison_artifact_is_source_bound_and_bounded(
+        self,
+    ) -> None:
+        manifest = QualityCampaignManifest.from_mapping(
+            _manifest(self.project_id, self.workspace_id, self.book_id)
+        )
+        self.app.admit_campaign(
+            manifest,
+            stable_idempotency_key=f"{self.project_id}:materialize:v1",
+            trace_id=f"trace:{self.project_id}:materialize",
+            correlation_id=f"correlation:{self.project_id}:materialize",
+            principal=self.principal,
+        )
+        self.app.freeze_campaign(
+            manifest.campaign_id,
+            expected_version=0,
+            principal=self.principal,
+        )
+        self.app.start_campaign(
+            manifest.campaign_id,
+            expected_version=1,
+            principal=self.principal,
+        )
+        source = self._asset("draft_version", "materialize-source", {"text": "one"})
+        command = QualityArtifactMaterializationCommand(
+            campaign_id=manifest.campaign_id,
+            artifact_id="comparison:chapter:1:baseline",
+            artifact_kind="COMPARISON_CANDIDATE",
+            scope_type="CHAPTER",
+            chapter_start=1,
+            chapter_end=1,
+            content={"candidate_role": "BASELINE", "text": "one"},
+            source_asset_version_ids=(source["asset_version_id"],),
+        )
+
+        materialized = self.app.materialize_artifact(command, principal=self.principal)
+        replay = self.app.materialize_artifact(command, principal=self.principal)
+
+        assert replay == materialized
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.content, operation.input_asset_snapshot
+                FROM authority_asset_version AS version
+                JOIN authority_operation_output_asset AS binding
+                  ON binding.asset_version_id=version.asset_version_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=binding.operation_id
+                WHERE version.asset_version_id=%s
+                """,
+                [materialized["asset_version_id"]],
+            )
+            content, input_snapshot = uow.cursor.fetchone()
+        assert content["accepted_history_only"] is True
+        assert content["candidate_role"] == "BASELINE"
+        assert [item["asset_version_id"] for item in input_snapshot] == [
+            source["asset_version_id"]
+        ]
+
+        with pytest.raises(ValueError, match="scope or content"):
+            self.app.materialize_artifact(
+                QualityArtifactMaterializationCommand(
+                    campaign_id=manifest.campaign_id,
+                    artifact_id="comparison:chapter:9:baseline",
+                    artifact_kind="COMPARISON_CANDIDATE",
+                    scope_type="CHAPTER",
+                    chapter_start=9,
+                    chapter_end=9,
+                    content={"candidate_role": "BASELINE", "text": "nine"},
+                    source_asset_version_ids=(source["asset_version_id"],),
+                ),
+                principal=self.principal,
+            )
 
     def test_post_asset_failure_recovers_without_duplicate_campaign_or_output(
         self,

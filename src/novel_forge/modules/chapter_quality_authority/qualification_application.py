@@ -75,6 +75,14 @@ DEFINITIONS = {
         "quality_qualification_subject_binding",
         "quality.qualification.subject",
     ),
+    "quality.qualification.comparison.materialize": (
+        "quality_comparison_candidate",
+        "quality.qualification.comparison_candidate",
+    ),
+    "quality.qualification.evidence.materialize": (
+        "quality_qualification_evidence_report",
+        "quality.qualification.evidence_report",
+    ),
     "quality.qualification.evidence.bind": (
         "quality_qualification_evidence_binding",
         "quality.qualification.evidence",
@@ -117,6 +125,18 @@ class QualityEvidenceBindingCommand:
     source_asset_version_ids: tuple[str, ...]
     evaluator_lineage: dict[str, Any]
     provider_lineage: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class QualityArtifactMaterializationCommand:
+    campaign_id: str
+    artifact_id: str
+    artifact_kind: str
+    scope_type: str
+    chapter_start: int
+    chapter_end: int
+    content: dict[str, Any]
+    source_asset_version_ids: tuple[str, ...]
 
 
 class _Handler:
@@ -527,6 +547,69 @@ class PostgresQualityQualificationAuthority:
                 "subject replay differs from the frozen comparison",
             )
         return subject
+
+    def materialize_artifact(
+        self,
+        command: QualityArtifactMaterializationCommand,
+        *,
+        principal: Principal,
+    ) -> dict[str, str]:
+        """Materialize a bounded comparison corpus or derived evidence report.
+
+        This remains inside Quality Qualification Authority. It records a
+        derived, source-bound artifact and never mutates accepted prose,
+        Canon, Story State, plans, or human evidence.
+        """
+
+        campaign = self._require_campaign_row(command.campaign_id)
+        principal.require(MANAGE_PERMISSION, campaign["project_id"])
+        self._require_active_campaign(campaign)
+        kind = str(command.artifact_kind).upper()
+        if kind not in {"COMPARISON_CANDIDATE", "EVIDENCE_REPORT"}:
+            raise ValueError("Quality artifact kind is unsupported")
+        scope_type = str(command.scope_type).upper()
+        if (
+            scope_type not in {"CHAPTER", "ARC", "VOLUME_SLICE", "CAMPAIGN"}
+            or command.chapter_start <= 0
+            or command.chapter_end < command.chapter_start
+            or command.chapter_end > 8
+            or not command.artifact_id
+            or not isinstance(command.content, dict)
+            or not command.content
+            or not command.source_asset_version_ids
+        ):
+            raise ValueError("Quality materialization scope or content is invalid")
+        definition = (
+            "quality.qualification.comparison.materialize"
+            if kind == "COMPARISON_CANDIDATE"
+            else "quality.qualification.evidence.materialize"
+        )
+        inputs = self._resolve_assets(
+            campaign["project_id"],
+            [(version_id, "") for version_id in command.source_asset_version_ids],
+        )
+        _operation_id, output = self._execute(
+            definition=definition,
+            project_id=campaign["project_id"],
+            workspace_id=campaign["workspace_id"],
+            idempotency_key=(
+                f"{command.campaign_id}:{command.artifact_id}:materialize"
+            ),
+            trace_id=f"trace:{command.campaign_id}:{command.artifact_id}",
+            correlation_id=command.campaign_id,
+            payload={
+                "campaign_id": command.campaign_id,
+                "artifact_id": command.artifact_id,
+                "artifact_kind": kind,
+                "scope_type": scope_type,
+                "chapter_range": [command.chapter_start, command.chapter_end],
+                "accepted_history_only": True,
+                **command.content,
+            },
+            input_assets=inputs,
+            principal=principal,
+        )
+        return output
 
     def bind_evidence(
         self,
@@ -1533,6 +1616,7 @@ def _definition(
 
 __all__ = [
     "PostgresQualityQualificationAuthority",
+    "QualityArtifactMaterializationCommand",
     "QualityEvidenceBindingCommand",
     "QualitySubjectBindingCommand",
 ]

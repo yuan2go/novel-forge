@@ -174,6 +174,40 @@ def test_promise_ledger_tracks_full_lifecycle_without_inventing_memory() -> None
     assert evidence.false_promise_ids == ("promise:abandoned",)
 
 
+def test_carried_terminal_promise_keeps_first_payoff_boundary() -> None:
+    rows = [
+        _observation(
+            chapter,
+            obligation_states=[
+                {
+                    "obligation_id": "promise:carried-paid",
+                    "status": "PAID" if chapter >= 4 else "DEVELOPING",
+                    "opened_chapter": 1,
+                    "target_window": {"from_chapter": 3, "to_chapter": 4},
+                    "development_history": [
+                        {"chapter": value} for value in range(1, min(chapter, 3) + 1)
+                    ],
+                    "payoff_evidence": (
+                        {"asset_version_id": "draft:4", "event_id": "payoff:4"}
+                        if chapter >= 4
+                        else {}
+                    ),
+                    "linked_arc_ids": ["arc:primary:v1"],
+                }
+            ],
+        )
+        for chapter in range(1, 9)
+    ]
+
+    evidence = build_longitudinal_quality_evidence(rows).promise_payoff
+    timeline = evidence.timelines[0]
+
+    assert timeline.payoff_chapter == 4
+    assert timeline.payoff_latency == 3
+    assert evidence.payoff_chapters == (4,)
+    assert evidence.payoff_latencies == (3,)
+
+
 def test_semantic_repetition_dimensions_stay_separate_from_lexical_similarity() -> None:
     rows = [
         _observation(
@@ -220,7 +254,10 @@ def test_reader_proxy_trends_keep_all_dimensions_and_source_lineage() -> None:
     assert set(report.reader_trends) == set(READER_OUTCOME_DIMENSIONS)
     assert report.reader_trends["continue_intent"].trend == "IMPROVING"
     assert report.reader_trends["confusion"].trend == "IMPROVING"
-    assert report.reader_trends["continue_intent"].evidence_class == "READER_PROXY_ADVISORY"
+    assert (
+        report.reader_trends["continue_intent"].evidence_class
+        == "READER_PROXY_ADVISORY"
+    )
     assert report.source_acceptance_ids == tuple(f"acceptance:{i}" for i in range(1, 9))
     assert report.reader_source_asset_version_ids == tuple(
         f"reader-outcome:{i}:v3" for i in range(1, 9)
@@ -280,7 +317,9 @@ def test_arc_evaluation_uses_causal_progress_not_chapter_score_average() -> None
 
 
 def test_volume_slice_evaluation_does_not_average_arc_or_chapter_scores() -> None:
-    rows = [_observation(chapter, automated_editorial_score=100) for chapter in range(1, 9)]
+    rows = [
+        _observation(chapter, automated_editorial_score=100) for chapter in range(1, 9)
+    ]
     primary = build_arc_quality_evaluation(rows, arc_plan_version_id="arc:primary:v1")
     volume = build_volume_slice_quality_evaluation(
         rows,
@@ -294,4 +333,3 @@ def test_volume_slice_evaluation_does_not_average_arc_or_chapter_scores() -> Non
     assert "average_arc_score" not in payload
     assert volume.chapter_range == (1, 8)
     assert volume.ending_reachability == "IMPROVING"
-

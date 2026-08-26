@@ -46,6 +46,7 @@ from .qualification import (
 )
 from .qualification_application import (
     PostgresQualityQualificationAuthority,
+    QualityArtifactMaterializationCommand,
     QualityEvidenceBindingCommand,
     QualitySubjectBindingCommand,
 )
@@ -101,6 +102,7 @@ __all__ = [
     "decide_quality_qualification",
     "transition_campaign",
     "PostgresQualityQualificationAuthority",
+    "QualityArtifactMaterializationCommand",
     "QualityEvidenceBindingCommand",
     "QualitySubjectBindingCommand",
     "ArcQualityEvaluation",

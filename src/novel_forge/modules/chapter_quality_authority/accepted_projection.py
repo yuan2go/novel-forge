@@ -41,7 +41,12 @@ def load_accepted_quality_observations(
 ) -> list[dict[str, Any]]:
     """Read exact accepted lineage and discard prose after metric projection."""
 
-    if not database_url or not project_id or not book_id or accepted_through_chapter < 0:
+    if (
+        not database_url
+        or not project_id
+        or not book_id
+        or accepted_through_chapter < 0
+    ):
         raise ValueError("accepted Quality projection scope is invalid")
     if accepted_through_chapter == 0:
         return []
@@ -61,7 +66,9 @@ def load_accepted_quality_observations(
                    request.narrative_realization_contract_digest,
                    realization.content_asset_version_id,
                    realization.contract_digest,
-                   COALESCE(realization_coverage.rows, '[]'::jsonb)
+                   COALESCE(realization_coverage.rows, '[]'::jsonb),
+                   COALESCE(reader.reader_outcome_report_asset_version, ''),
+                   COALESCE(reader.reader_outcome_report, '{}'::jsonb)
             FROM authority_book_chapter_acceptance AS acceptance
             JOIN authority_book_production AS production
               ON production.book_run_id=acceptance.book_run_id
@@ -123,6 +130,11 @@ def load_accepted_quality_observations(
              AND realization.book_id=production.book_id
              AND acceptance.chapter_number BETWEEN
                  realization.chapter_start AND realization.chapter_end
+            LEFT JOIN authority_reader_outcome_projection AS reader
+              ON reader.book_run_id=acceptance.book_run_id
+             AND reader.chapter_request_id=acceptance.chapter_request_id
+             AND reader.project_id=acceptance.project_id
+             AND reader.status='SUCCEEDED'
             LEFT JOIN LATERAL (
                 SELECT jsonb_agg(
                     jsonb_build_object(
@@ -182,6 +194,8 @@ def load_accepted_quality_observations(
             narrative_realization_asset_version_id=str(row[15] or ""),
             narrative_realization_contract_digest=str(row[16] or ""),
             realization_coverage=tuple(dict(item) for item in (row[17] or ())),
+            reader_outcome_asset_version_id=str(row[18] or ""),
+            reader_outcome_report=dict(row[19] or {}),
         )
         for row in rows
     ]
@@ -209,6 +223,8 @@ def _observation(
     narrative_realization_asset_version_id: str,
     narrative_realization_contract_digest: str,
     realization_coverage: tuple[dict[str, Any], ...],
+    reader_outcome_asset_version_id: str,
+    reader_outcome_report: dict[str, Any],
 ) -> dict[str, Any]:
     outcome_contract = validate_chapter_outcome_contract(
         outcome.get("contract_version")
@@ -237,8 +253,7 @@ def _observation(
         canon_snapshot.get("contract_version") != "canon-snapshot-v2"
         or canon_snapshot.get("project_id") != project_id
         or canon_snapshot.get("book_id") != book_id
-        or int(canon_snapshot.get("accepted_through_chapter") or 0)
-        != chapter_number
+        or int(canon_snapshot.get("accepted_through_chapter") or 0) != chapter_number
         or canon_snapshot.get("based_on_chapter_outcome_asset_version_id")
         != accepted_asset_version_id
     ):
@@ -310,7 +325,9 @@ def _observation(
         if isinstance(effect, Mapping)
     ]
     payoff_count += sum(
-        1 for effect in effects if str(effect.get("effect_kind") or "").upper() == "PAYOFF"
+        1
+        for effect in effects
+        if str(effect.get("effect_kind") or "").upper() == "PAYOFF"
     )
     new_world_concepts = sorted(
         {
@@ -375,7 +392,7 @@ def _observation(
             and str(event.get("event_id") or "")
         }
     )
-    reader_outcome = _reader_outcome(outcome)
+    reader_outcome = _reader_outcome(outcome, reader_outcome_report)
     obligation_states = _obligation_states(story_state)
     repetition_signatures = _semantic_repetition_signatures(
         plan=plan,
@@ -415,10 +432,7 @@ def _observation(
         "activity_event_count": (
             len(state_events)
             + len(outcome.get("scene_outcomes") or ())
-            + sum(
-                item.get("observation_status") == "OBSERVED"
-                for item in arc_evidence
-            )
+            + sum(item.get("observation_status") == "OBSERVED" for item in arc_evidence)
         ),
         "causal_progress_event_ids": causal_progress_ids,
         "irreversible_state_change_ids": irreversible_ids,
@@ -429,10 +443,8 @@ def _observation(
         ),
         "obstacle_escalation": bool(antagonist_response_ids)
         or any(
-            "PRESSURE" in {
-                str(value).upper()
-                for value in item.get("effect_dimensions") or ()
-            }
+            "PRESSURE"
+            in {str(value).upper() for value in item.get("effect_dimensions") or ()}
             for item in arc_evidence
         ),
         "protagonist_decision_ids": protagonist_decision_ids,
@@ -441,11 +453,11 @@ def _observation(
         "arc_evidence": arc_evidence,
         "obligation_states": obligation_states,
         "semantic_repetition_signatures": repetition_signatures,
-        "lexical_fingerprints": _lexical_fingerprints(
-            str(draft.get("text") or "")
-        ),
+        "lexical_fingerprints": _lexical_fingerprints(str(draft.get("text") or "")),
         "reader_outcome": reader_outcome,
-        "reader_outcome_asset_version_ids": [],
+        "reader_outcome_asset_version_ids": (
+            [reader_outcome_asset_version_id] if reader_outcome_asset_version_id else []
+        ),
         "volume_id": str(segment.get("volume_plan_version_id") or ""),
         "segment_ids": [str(segment.get("segment_id") or "")]
         if segment.get("segment_id")
@@ -498,8 +510,7 @@ def _arc_evidence(outcome: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [
         {key: item.get(key) for key in fields}
         for item in outcome.get("arc_evidence") or ()
-        if isinstance(item, Mapping)
-        and str(item.get("arc_plan_version_id") or "")
+        if isinstance(item, Mapping) and str(item.get("arc_plan_version_id") or "")
     ]
 
 
@@ -519,8 +530,7 @@ def _irreversible_event(event: Mapping[str, Any]) -> bool:
             "CANCELLED",
             "ABANDONED",
         }
-        or str(event.get("state_kind") or "")
-        in {"payoff_event", "consequence_state"}
+        or str(event.get("state_kind") or "") in {"payoff_event", "consequence_state"}
     )
 
 
@@ -531,9 +541,7 @@ def _obligation_states(story_state: Mapping[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(raw, Mapping):
             continue
         state = dict(raw.get("state") or {})
-        obligation_id = str(
-            state.get("obligation_id") or raw.get("entity_key") or ""
-        )
+        obligation_id = str(state.get("obligation_id") or raw.get("entity_key") or "")
         if obligation_id.startswith("obligation_id="):
             obligation_id = obligation_id.removeprefix("obligation_id=")
         if not obligation_id:
@@ -563,7 +571,9 @@ def _obligation_states(story_state: Mapping[str, Any]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda item: item["obligation_id"])
 
 
-def _reader_outcome(outcome: Mapping[str, Any]) -> dict[str, float]:
+def _reader_outcome(
+    outcome: Mapping[str, Any], reader_outcome_report: Mapping[str, Any]
+) -> dict[str, float]:
     result: dict[str, float] = {}
     for raw in outcome.get("reader_state_observations") or ():
         if not isinstance(raw, Mapping):
@@ -582,6 +592,24 @@ def _reader_outcome(outcome: Mapping[str, Any]) -> dict[str, float]:
             "repetition_fatigue",
         ):
             value = raw.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                result[key] = float(value)
+    advisory_state = reader_outcome_report.get("reader_state")
+    if isinstance(advisory_state, Mapping):
+        for key in (
+            "continue_intent",
+            "curiosity",
+            "satisfaction",
+            "confusion",
+            "trust",
+            "character_attachment",
+            "antagonist_pressure",
+            "promise_expectation",
+            "payoff_satisfaction",
+            "drop_risk",
+            "repetition_fatigue",
+        ):
+            value = advisory_state.get(key)
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 result[key] = float(value)
     return result
@@ -637,12 +665,12 @@ def _semantic_repetition_signatures(
         "conflict_solution": [
             str(item.get("conflict_solution") or item.get("resolution_pattern") or "")
             for item in scenes
-            if str(item.get("conflict_solution") or item.get("resolution_pattern") or "")
+            if str(
+                item.get("conflict_solution") or item.get("resolution_pattern") or ""
+            )
         ],
         "scene_function": scene_functions,
-        "chapter_structure": [
-            _digest("|".join((*opening, *scene_functions, *ending)))
-        ]
+        "chapter_structure": [_digest("|".join((*opening, *scene_functions, *ending)))]
         if opening or scene_functions or ending
         else [],
         "emotional_beat": [
@@ -688,7 +716,7 @@ def _text_structure_signature(text: str) -> dict[str, str]:
     paragraphs = [item.strip() for item in re.split(r"\n+", text) if item.strip()]
     average = round(sum(len(item) for item in sentences) / max(len(sentences), 1))
     dialogue_turns = sum(
-        item.count(mark) for item in paragraphs for mark in ('“', '”', '"')
+        item.count(mark) for item in paragraphs for mark in ("“", "”", '"')
     )
     return {
         "dialogue": f"dialogue:{min(dialogue_turns, 8)}:paragraphs:{min(len(paragraphs), 8)}",
@@ -702,14 +730,18 @@ def _lexical_fingerprints(text: str) -> list[str]:
         return []
     width = 4 if len(normalized) >= 4 else len(normalized)
     hashes = {
-        hashlib.sha256(normalized[index : index + width].encode("utf-8")).hexdigest()[:16]
+        hashlib.sha256(normalized[index : index + width].encode("utf-8")).hexdigest()[
+            :16
+        ]
         for index in range(max(1, len(normalized) - width + 1))
     }
     return [f"sha256:{value}" for value in sorted(hashes)[:64]]
 
 
 def _average_sentence_length(text: str) -> float | None:
-    sentences = [item.strip() for item in re.split(r"[。！？!?\.]+", text) if item.strip()]
+    sentences = [
+        item.strip() for item in re.split(r"[。！？!?\.]+", text) if item.strip()
+    ]
     if not sentences:
         return None
     lengths = [len(item.split()) if " " in item else len(item) for item in sentences]
@@ -717,9 +749,12 @@ def _average_sentence_length(text: str) -> float | None:
 
 
 def _digest(value: str) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
 
 
 __all__ = [

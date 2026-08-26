@@ -126,27 +126,29 @@ class LongitudinalQualityEvidence:
     contract_version: str = "accepted-longitudinal-quality-v1"
 
     def to_dict(self) -> dict[str, Any]:
-        return _json_ready({
-            "observation_status": self.observation_status,
-            "chapter_range": list(self.chapter_range),
-            "momentum": asdict(self.momentum),
-            "promise_payoff": asdict(self.promise_payoff),
-            "repetition": {
-                key: asdict(value) for key, value in self.repetition.items()
-            },
-            "reader_trends": {
-                key: asdict(value) for key, value in self.reader_trends.items()
-            },
-            "source_acceptance_ids": list(self.source_acceptance_ids),
-            "source_accepted_asset_version_ids": list(
-                self.source_accepted_asset_version_ids
-            ),
-            "reader_source_asset_version_ids": list(
-                self.reader_source_asset_version_ids
-            ),
-            "accepted_history_only": True,
-            "contract_version": self.contract_version,
-        })
+        return _json_ready(
+            {
+                "observation_status": self.observation_status,
+                "chapter_range": list(self.chapter_range),
+                "momentum": asdict(self.momentum),
+                "promise_payoff": asdict(self.promise_payoff),
+                "repetition": {
+                    key: asdict(value) for key, value in self.repetition.items()
+                },
+                "reader_trends": {
+                    key: asdict(value) for key, value in self.reader_trends.items()
+                },
+                "source_acceptance_ids": list(self.source_acceptance_ids),
+                "source_accepted_asset_version_ids": list(
+                    self.source_accepted_asset_version_ids
+                ),
+                "reader_source_asset_version_ids": list(
+                    self.reader_source_asset_version_ids
+                ),
+                "accepted_history_only": True,
+                "contract_version": self.contract_version,
+            }
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -284,7 +286,12 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
         decisions = _items(row.get("protagonist_decision_ids")) or ()
         responses = _items(row.get("antagonist_response_ids")) or ()
         has_activity = bool((event_count or 0) > 0 or causal or decisions or responses)
-        has_progress = bool(causal or irreversible_ids or (goal or 0) > 0 or _arc_progress_units(row) > 0)
+        has_progress = bool(
+            causal
+            or irreversible_ids
+            or (goal or 0) > 0
+            or _arc_progress_units(row) > 0
+        )
         if has_activity:
             activity.append(chapter)
         if has_progress:
@@ -396,20 +403,35 @@ def _promise_payoff(rows: Sequence[Mapping[str, Any]]) -> PromisePayoffEvidence:
             target = dict(state.get("target_window") or {})
             due_from = int(target.get("from_chapter") or 0)
             due_to = int(target.get("to_chapter") or 0)
-            overdue = status not in {"FULFILLED", "PAID", "CANCELLED", "ABANDONED"} and due_to > 0 and chapter > due_to
-            due = status not in {"FULFILLED", "PAID", "CANCELLED", "ABANDONED"} and due_from > 0 and due_from <= chapter <= max(due_to, due_from)
+            overdue = (
+                status not in {"FULFILLED", "PAID", "CANCELLED", "ABANDONED"}
+                and due_to > 0
+                and chapter > due_to
+            )
+            due = (
+                status not in {"FULFILLED", "PAID", "CANCELLED", "ABANDONED"}
+                and due_from > 0
+                and due_from <= chapter <= max(due_to, due_from)
+            )
             payoff = dict(state.get("payoff_evidence") or {})
             actual_payoff = dict(state.get("actual_payoff") or {})
             if status in {"FULFILLED", "PAID"}:
                 partial = actual_payoff.get("complete") is False
                 primary = "PARTIALLY_PAID" if partial else "PAID"
-                payoff_chapter = chapter
-                payoff_latency = max(0, chapter - opened)
+                # Accepted Story State carries terminal obligations forward.
+                # Setup-to-payoff latency binds the first observed payment,
+                # never the latest snapshot that still contains PAID.
+                if payoff_chapter is None:
+                    payoff_chapter = chapter
+                    payoff_latency = max(0, chapter - opened)
             elif status in {"CANCELLED", "ABANDONED"}:
                 primary = "ABANDONED"
             elif ordinal == 0:
                 primary = "CREATED"
-            elif status in {"DEVELOPING", "ESCALATED"} or len(history) > previous_development_count:
+            elif (
+                status in {"DEVELOPING", "ESCALATED"}
+                or len(history) > previous_development_count
+            ):
                 primary = "ESCALATED"
             elif overdue:
                 primary = "OVERDUE"
@@ -426,7 +448,9 @@ def _promise_payoff(rows: Sequence[Mapping[str, Any]]) -> PromisePayoffEvidence:
             chapter_states.append((chapter, tuple(labels)))
             previous_development_count = max(previous_development_count, len(history))
             overdue_count += int(overdue)
-            linked_arcs.update(str(item) for item in state.get("linked_arc_ids") or () if str(item))
+            linked_arcs.update(
+                str(item) for item in state.get("linked_arc_ids") or () if str(item)
+            )
             if primary in {"PAID", "PARTIALLY_PAID"} and not payoff:
                 # A terminal state without immutable payoff evidence is not a
                 # qualified payoff; preserve it as unresolved debt.
@@ -457,18 +481,14 @@ def _promise_payoff(rows: Sequence[Mapping[str, Any]]) -> PromisePayoffEvidence:
     sorted_payoffs = tuple(sorted(payoff_chapters))
     latencies = tuple(
         sorted(
-            item.payoff_latency
-            for item in timelines
-            if item.payoff_latency is not None
+            item.payoff_latency for item in timelines if item.payoff_latency is not None
         )
     )
     cadence = tuple(
         right - left for left, right in zip(sorted_payoffs, sorted_payoffs[1:])
     )
     clustering = (
-        len(set(sorted_payoffs)) < len(sorted_payoffs)
-        if sorted_payoffs
-        else False
+        len(set(sorted_payoffs)) < len(sorted_payoffs) if sorted_payoffs else False
     )
     return PromisePayoffEvidence(
         status="MEASURED",
@@ -587,7 +607,13 @@ def _reader_trends(
             delta = after - before
             if dimension in _NEGATIVE_READER_DIMENSIONS:
                 delta = -delta
-            trend = "IMPROVING" if delta > 0.05 else "WORSENING" if delta < -0.05 else "STABLE"
+            trend = (
+                "IMPROVING"
+                if delta > 0.05
+                else "WORSENING"
+                if delta < -0.05
+                else "STABLE"
+            )
         reports[dimension] = ReaderTrendEvidence(
             dimension=dimension,
             status="MEASURED",
@@ -637,12 +663,27 @@ def build_arc_quality_evaluation(
     matched: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for row in rows:
         for raw in row.get("arc_evidence") or ():
-            if isinstance(raw, Mapping) and str(raw.get("arc_plan_version_id") or "") == arc_plan_version_id:
+            if (
+                isinstance(raw, Mapping)
+                and str(raw.get("arc_plan_version_id") or "") == arc_plan_version_id
+            ):
                 matched.append((row, dict(raw)))
     if not matched:
         return ArcQualityEvaluation(
-            arc_plan_version_id, "NOT_OBSERVED", (), (), None, None, None,
-            None, None, "NOT_OBSERVED", (), "NOT_OBSERVED", None, ()
+            arc_plan_version_id,
+            "NOT_OBSERVED",
+            (),
+            (),
+            None,
+            None,
+            None,
+            None,
+            None,
+            "NOT_OBSERVED",
+            (),
+            "NOT_OBSERVED",
+            None,
+            (),
         )
     arc_rows = [item[0] for item in matched]
     evidence = [item[1] for item in matched]
@@ -658,8 +699,12 @@ def build_arc_quality_evaluation(
         for value in item.get("actual_consequences") or ()
         if str(value)
     )
-    decisions = sum(len(_items(row.get("protagonist_decision_ids")) or ()) for row in arc_rows)
-    responses = sum(len(_items(row.get("antagonist_response_ids")) or ()) for row in arc_rows)
+    decisions = sum(
+        len(_items(row.get("protagonist_decision_ids")) or ()) for row in arc_rows
+    )
+    responses = sum(
+        len(_items(row.get("antagonist_response_ids")) or ()) for row in arc_rows
+    )
     escalation_count = sum(row.get("obstacle_escalation") is True for row in arc_rows)
     completion_ids = tuple(
         str(value)
@@ -668,9 +713,15 @@ def build_arc_quality_evaluation(
         if str(value)
     )
     phases = tuple(
-        dict.fromkeys(str(item.get("phase_to") or "") for item in evidence if str(item.get("phase_to") or ""))
+        dict.fromkeys(
+            str(item.get("phase_to") or "")
+            for item in evidence
+            if str(item.get("phase_to") or "")
+        )
     )
-    causal_ids = sum(len(_items(row.get("causal_progress_event_ids")) or ()) for row in arc_rows)
+    causal_ids = sum(
+        len(_items(row.get("causal_progress_event_ids")) or ()) for row in arc_rows
+    )
     causal = progress > 0 and bool(consequences or causal_ids)
     fake = escalation_count > 0 and not causal
     if completion_ids:
@@ -737,9 +788,17 @@ def build_volume_slice_quality_evaluation(
     arcs = tuple(arc_evaluations)
     if not rows:
         return VolumeSliceQualityEvaluation(
-            volume_scope_id, "NOT_OBSERVED", (), "NOT_OBSERVED", (),
-            "NOT_OBSERVED", "NOT_OBSERVED", "NOT_OBSERVED", "NOT_OBSERVED",
-            "NOT_OBSERVED", ()
+            volume_scope_id,
+            "NOT_OBSERVED",
+            (),
+            "NOT_OBSERVED",
+            (),
+            "NOT_OBSERVED",
+            "NOT_OBSERVED",
+            "NOT_OBSERVED",
+            "NOT_OBSERVED",
+            "NOT_OBSERVED",
+            (),
         )
     longitudinal = build_longitudinal_quality_evidence(rows)
     fatigue_count = sum(
@@ -752,7 +811,9 @@ def build_volume_slice_quality_evaluation(
         or bool(longitudinal.promise_payoff.repeated_delay_ids)
         or fatigue_count >= 3
     )
-    status = "AT_RISK" if at_risk else "PROGRESSING" if progressing_arcs else "NOT_PROVEN"
+    status = (
+        "AT_RISK" if at_risk else "PROGRESSING" if progressing_arcs else "NOT_PROVEN"
+    )
     promises = longitudinal.promise_payoff
     long_promise = (
         "NOT_OBSERVED"
@@ -772,9 +833,15 @@ def build_volume_slice_quality_evaluation(
         if promises.payoff_chapters
         else "NO_PAYOFF_OBSERVED"
     )
-    fatigue = "RISING" if fatigue_count else "NOT_OBSERVED" if not any(
-        item.observed_chapter_count for item in longitudinal.repetition.values()
-    ) else "CONTROLLED"
+    fatigue = (
+        "RISING"
+        if fatigue_count
+        else "NOT_OBSERVED"
+        if not any(
+            item.observed_chapter_count for item in longitudinal.repetition.values()
+        )
+        else "CONTROLLED"
+    )
     evolution = (
         "ACCUMULATING"
         if longitudinal.momentum.irreversible_change_chapters or progressing_arcs
