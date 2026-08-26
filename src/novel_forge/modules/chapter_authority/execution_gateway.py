@@ -1941,9 +1941,7 @@ def default_chapter_fixture_response(
             "realization_evidence": [
                 {
                     "planned_event_id": str(event.get("event_id") or ""),
-                    "observed_event_id": (
-                        f"observed:{event.get('event_id')}"
-                    ),
+                    "observed_event_id": (f"observed:{event.get('event_id')}"),
                     "observation_status": "OBSERVED",
                     "accepted_prose_evidence": [
                         {
@@ -1973,9 +1971,9 @@ def default_chapter_fixture_response(
                         and str(delta.get("entity_id") or "")
                     ],
                 }
-                for event in (
-                    expectations.get("narrative_realization") or {}
-                ).get("events")
+                for event in (expectations.get("narrative_realization") or {}).get(
+                    "events"
+                )
                 or ()
                 if isinstance(event, Mapping)
             ],
@@ -2614,6 +2612,19 @@ def _stage_semantic_contract(
                 "volume_plan_version_id. Thread -> Arc -> Arc Segment is the "
                 "cross-volume graph; Volume -> Narrative Segment remains the "
                 "Timeline plan."
+            )
+        elif stage == "chapter_group_plan.generate":
+            contract += (
+                "Copy planning_command.narrative_search_planning_horizon."
+                "chapter_range exactly into chapter_range. Produce one ordered "
+                "chapter_function_matrix row for every Chapter in that frozen range, "
+                "and make narrative_event_chain cover every Chapter without placing "
+                "an event outside the range. The frozen desired transformation, hard "
+                "constraints, and branch strategy directive are simultaneous; the "
+                "branch cannot relax the exact range or accepted boundary. Every "
+                "narrative_event_chain[].disclosures value must exactly copy a value "
+                "from the same event's knowledge_boundary.reader_may_learn and must "
+                "not occur in forbidden_disclosures."
             )
         elif stage == "chapter_plan.generate":
             contract += (

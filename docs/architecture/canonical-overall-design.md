@@ -593,6 +593,14 @@ search-created candidate cannot activate unless it is the selected member of
 the current, non-stale portfolio and the normal StoryDesign/Planning approval
 and activation gates also pass.
 
+The Search row alone is not a Provider contract. Its complete planning horizon,
+desired transformation and hard constraints must be copied into every admitted
+branch command, frozen Context Bundle and Provider request, then compared on
+retry/recovery. Consequential ChapterGroup search additionally freezes one exact
+three-to-eight Chapter range. Provider schema and structural Authority both
+require the candidate range, ordered Chapter Function Matrix and realization
+event coverage to match that range; branch strategy cannot silently resize it.
+
 Candidate projections must expose how the future changes conflict pressure,
 character agency and transformation, costly choice/consequence, reversal and
 reveal paths, setup/payoff debt, emotional/pacing variation, relationship and

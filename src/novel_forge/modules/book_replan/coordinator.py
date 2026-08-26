@@ -254,21 +254,37 @@ class BookReplanCoordinator:
         if generator == "chapter_plan.generate":
             generated = self.planning.generate(generation, principal=self.principal)
         else:
+            planning_horizon: dict[str, Any] = {
+                "level": SCOPE_CONTRACT[command.affected_scope],
+                "future_only": True,
+                "affected_scope": command.affected_scope,
+            }
+            desired_transformation: dict[str, Any] = {
+                "replan_request_asset_version_id": (
+                    command.replan_request_asset_version_id
+                ),
+                "target_asset_version_id": target["asset_version_id"],
+                "impact_scope": dict(replan_request.get("impact_scope") or {}),
+            }
+            if generator == "chapter_group_plan.generate":
+                chapter_range = target["content"].get("chapter_range")
+                if not isinstance(chapter_range, list) or len(chapter_range) != 2:
+                    raise KernelError(
+                        "BOOK_REPLAN_CHAPTER_GROUP_HORIZON_INVALID",
+                        "ChapterGroup replacement requires the exact target range",
+                    )
+                start, end = map(int, chapter_range)
+                planning_horizon.update(
+                    starts_at_chapter=start,
+                    ends_at_chapter=end,
+                    chapter_range=[start, end],
+                )
+                desired_transformation["chapter_range"] = [start, end]
             generated = self.narrative_search.explore(
                 NarrativeSearchRequest(
                     generation=generation,
-                    planning_horizon={
-                        "level": SCOPE_CONTRACT[command.affected_scope],
-                        "future_only": True,
-                        "affected_scope": command.affected_scope,
-                    },
-                    desired_transformation={
-                        "replan_request_asset_version_id": (
-                            command.replan_request_asset_version_id
-                        ),
-                        "target_asset_version_id": target["asset_version_id"],
-                        "impact_scope": dict(replan_request.get("impact_scope") or {}),
-                    },
+                    planning_horizon=planning_horizon,
+                    desired_transformation=desired_transformation,
                     hard_constraints=tuple(
                         str(item)
                         for item in replan_request.get("preserved_invariants") or ()

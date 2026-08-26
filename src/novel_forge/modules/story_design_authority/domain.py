@@ -229,9 +229,10 @@ GENERATOR_DEFINITIONS = (
         "planning.chapter_group.generate",
         "chapter_group_plan_candidate",
         risk="MEDIUM",
-        definition_version="2.0.0",
-        output_schema_version="chapter-group-plan-generate-output-v2",
-        prompt_contract_version="chapter-group-plan-generate-prompt-v2",
+        definition_version="2.1.0",
+        output_schema_version="chapter-group-plan-generate-output-v3",
+        prompt_contract_version="chapter-group-plan-generate-prompt-v3",
+        maximum_structural_regenerations=2,
     ),
     _generator(
         "chapter_plan.generate",

@@ -577,9 +577,7 @@ class BoundedQualityCampaignResult:
                 "measured_total_tokens": self.measured_total_tokens,
                 "settled_cost_amount": self.settled_cost_amount,
                 "currency": self.currency,
-                "capability_pack_snapshot_count": (
-                    self.capability_pack_snapshot_count
-                ),
+                "capability_pack_snapshot_count": (self.capability_pack_snapshot_count),
                 "qualification_boundary": self.qualification_boundary,
             }
         )
@@ -613,9 +611,7 @@ class BoundedQualityCampaignResult:
                 "measured_total_tokens": self.measured_total_tokens,
                 "settled_cost_amount": self.settled_cost_amount,
                 "currency": self.currency,
-                "capability_pack_snapshot_count": (
-                    self.capability_pack_snapshot_count
-                ),
+                "capability_pack_snapshot_count": (self.capability_pack_snapshot_count),
                 "qualification_boundary": self.qualification_boundary,
             }
         )
@@ -774,9 +770,7 @@ class BoundedQualityCampaignRunner:
             provider_failure_count=int(
                 provider_runtime.get("provider_failure_count") or 0
             ),
-            provider_retry_count=int(
-                provider_runtime.get("provider_retry_count") or 0
-            ),
+            provider_retry_count=int(provider_runtime.get("provider_retry_count") or 0),
             measured_input_tokens=int(
                 provider_runtime.get("measured_input_tokens") or 0
             ),
@@ -786,9 +780,7 @@ class BoundedQualityCampaignRunner:
             measured_total_tokens=int(
                 provider_runtime.get("measured_total_tokens") or 0
             ),
-            settled_cost_amount=str(
-                provider_runtime.get("settled_cost_amount") or "0"
-            ),
+            settled_cost_amount=str(provider_runtime.get("settled_cost_amount") or "0"),
             currency=str(provider_runtime.get("currency") or ""),
             capability_pack_snapshot_count=len(
                 provider_runtime.get("capability_pack_snapshots") or ()
@@ -922,11 +914,23 @@ def bounded_quality_planning_fixture_response(
     elif stage == "chapter_group_plan.generate":
         accepted = int(command.get("narrative_search_accepted_through_chapter") or 0)
         start = max(1, accepted + 1)
+        horizon = command.get("narrative_search_planning_horizon")
+        frozen_range = (
+            horizon.get("chapter_range") if isinstance(horizon, Mapping) else None
+        )
+        if isinstance(frozen_range, list) and len(frozen_range) == 2:
+            start, frozen_end = map(int, frozen_range)
+        else:
+            frozen_end = start + 3
         if start not in {1, 5}:
             raise ValueError(
                 "bounded Quality fixture only permits ChapterGroups 1-4 and 5-8"
             )
         end = start + 3
+        if frozen_end != end:
+            raise ValueError(
+                "bounded Quality fixture requires the exact frozen four-Chapter horizon"
+            )
         payload["logical_key"] = f"chapter-group:{start}-{end}"
         payload["contract_id"] = f"contract:chapter-group:{start}-{end}"
         payload["chapter_range"] = [start, end]

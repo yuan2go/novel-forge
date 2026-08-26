@@ -185,6 +185,16 @@ def test_arc_planning_prompt_requires_exact_authority_scope_references() -> None
     assert "Thread -> Arc -> Arc Segment" in contract
 
 
+def test_chapter_group_prompt_requires_exact_search_horizon_and_disclosures() -> None:
+    contract = _stage_semantic_contract("chapter_group_plan.generate")
+
+    assert "narrative_search_planning_horizon.chapter_range" in contract
+    assert "one ordered chapter_function_matrix row for every Chapter" in contract
+    assert "narrative_event_chain cover every Chapter" in contract
+    assert "knowledge_boundary.reader_may_learn" in contract
+    assert "must not occur in forbidden_disclosures" in contract
+
+
 def test_chapter_planning_prompt_requires_executable_narrative_plan() -> None:
     contract = _stage_semantic_contract("chapter_plan.generate")
 

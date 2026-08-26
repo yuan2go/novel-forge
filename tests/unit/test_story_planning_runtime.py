@@ -42,9 +42,12 @@ from novel_forge.modules.story_planning_runtime.execution import (
 from novel_forge.modules.story_planning_runtime.application import (
     _AUTHORITY_INPUT_ASSET_TYPES,
     _validate_frozen_arc_references,
+    _validate_narrative_search_horizon,
     StoryPlanningGenerationApplication,
 )
-from novel_forge.modules.story_planning_runtime import application as planning_application
+from novel_forge.modules.story_planning_runtime import (
+    application as planning_application,
+)
 
 
 HASH = "sha256:" + "a" * 64
@@ -530,6 +533,39 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in chapter["required"]
 
     assert "narrative_qualification" not in chapter["properties"]
+
+
+def test_chapter_group_search_schema_freezes_exact_horizon() -> None:
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER_GROUP,
+        parent_version_id="volume:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_search=True,
+        narrative_search_horizon={
+            "level": "CHAPTER_GROUP",
+            "starts_at_chapter": 5,
+            "ends_at_chapter": 8,
+            "chapter_range": [5, 8],
+        },
+    )
+
+    assert schema["properties"]["chapter_range"]["const"] == [5, 8]
+    matrix = schema["properties"]["chapter_function_matrix"]
+    assert matrix["minItems"] == matrix["maxItems"] == 4
+    assert matrix["items"]["properties"]["chapter_number"]["enum"] == [
+        5,
+        6,
+        7,
+        8,
+    ]
+    events = schema["properties"]["narrative_event_chain"]
+    assert events["minItems"] == 4
+    assert events["items"]["properties"]["chapter_number"]["enum"] == [
+        5,
+        6,
+        7,
+        8,
+    ]
 
 
 def test_arc_provider_allows_relations_only_with_distinct_frozen_arc_refs() -> None:
@@ -1611,9 +1647,86 @@ def test_future_chapter_group_search_begins_after_accepted_boundary() -> None:
 
     assert replacement["chapter_range"] == [2, 4]
     assert {
-        int(item["chapter_number"])
-        for item in replacement["narrative_event_chain"]
+        int(item["chapter_number"]) for item in replacement["narrative_event_chain"]
     } == {2, 3, 4}
+
+
+def test_chapter_group_search_command_freezes_complete_request_and_exact_range() -> (
+    None
+):
+    base = _command("chapter_group_plan.generate")
+    horizon = {
+        "level": "CHAPTER_GROUP",
+        "starts_at_chapter": 1,
+        "ends_at_chapter": 4,
+        "chapter_range": [1, 4],
+    }
+    command = StoryPlanningGenerationCommand(
+        project_id=base.project_id,
+        workspace_id=base.workspace_id,
+        book_id=base.book_id,
+        actor_id=base.actor_id,
+        generator_operation_name=base.generator_operation_name,
+        logical_key=base.logical_key,
+        input_versions=base.input_versions,
+        idempotency_key=base.idempotency_key,
+        trace_id=base.trace_id,
+        correlation_id=base.correlation_id,
+        narrative_search_id="search:v1",
+        narrative_search_branch_key="future-1",
+        narrative_search_strategy_directive="advance costly agency",
+        narrative_search_planning_horizon=horizon,
+        narrative_search_desired_transformation={"goal": "advance the Arc"},
+        narrative_search_hard_constraints=("accepted reality is immutable",),
+    )
+    horizon["chapter_range"] = [1, 3]
+
+    assert command.narrative_search_chapter_range == (1, 4)
+    assert command.narrative_search_snapshot["planning_horizon"]["chapter_range"] == [
+        1,
+        4,
+    ]
+    content = planning_fixture_response(
+        "chapter_group_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": command.logical_key,
+                "parent_version_id": "volume:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+                "narrative_search_planning_horizon": dict(
+                    command.narrative_search_planning_horizon or {}
+                ),
+            }
+        },
+    )
+    _validate_narrative_search_horizon(command, content)
+
+    content["chapter_range"] = [1, 3]
+    with pytest.raises(
+        KernelError, match="NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH"
+    ):
+        _validate_narrative_search_horizon(command, content)
+
+
+def test_chapter_group_search_command_rejects_identity_without_frozen_request() -> None:
+    base = _command("chapter_group_plan.generate")
+
+    with pytest.raises(ValueError, match="complete frozen request"):
+        StoryPlanningGenerationCommand(
+            project_id=base.project_id,
+            workspace_id=base.workspace_id,
+            book_id=base.book_id,
+            actor_id=base.actor_id,
+            generator_operation_name=base.generator_operation_name,
+            logical_key=base.logical_key,
+            input_versions=base.input_versions,
+            idempotency_key=base.idempotency_key,
+            trace_id=base.trace_id,
+            correlation_id=base.correlation_id,
+            narrative_search_id="search:v1",
+            narrative_search_branch_key="future-1",
+            narrative_search_strategy_directive="advance costly agency",
+        )
 
 
 def _command(generator: str) -> StoryPlanningGenerationCommand:
@@ -1631,9 +1744,7 @@ def _command(generator: str) -> StoryPlanningGenerationCommand:
         trace_id="trace-1",
         correlation_id="correlation-1",
         narrative_realization=(
-            _realization_slice(
-                parent_version_id="asset:chapter_group_plan:v1"
-            )
+            _realization_slice(parent_version_id="asset:chapter_group_plan:v1")
             if generator == "chapter_plan.generate"
             else None
         ),

@@ -614,6 +614,21 @@ def _planning_contract(
                     "narrative_search_branch_key": (
                         command.narrative_search_branch_key
                     ),
+                    "narrative_search_accepted_through_chapter": (
+                        command.narrative_search_accepted_through_chapter
+                    ),
+                    "narrative_search_strategy_directive": (
+                        command.narrative_search_strategy_directive
+                    ),
+                    "narrative_search_planning_horizon": dict(
+                        command.narrative_search_planning_horizon or {}
+                    ),
+                    "narrative_search_desired_transformation": dict(
+                        command.narrative_search_desired_transformation or {}
+                    ),
+                    "narrative_search_hard_constraints": list(
+                        command.narrative_search_hard_constraints
+                    ),
                 },
                 "frozen_inputs": [
                     {

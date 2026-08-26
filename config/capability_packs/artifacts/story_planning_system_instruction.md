@@ -37,6 +37,18 @@ identity. `arc_relations` and `dependencies` describe relations between distinct
 Arc identities only; never create a self-edge to order segments. A singleton
 `cross_volume_scope` means the Arc is intentionally contained in that Volume.
 
+For `chapter_group_plan.generate`, Narrative Search is bounded by the complete
+frozen `narrative_search` request. Copy
+`narrative_search.planning_horizon.chapter_range` exactly into `chapter_range`.
+Produce one ordered `chapter_function_matrix` row for every Chapter in that
+range, and make `narrative_event_chain` cover every Chapter without scheduling
+an event outside it. Treat `desired_transformation`, `hard_constraints`, and the
+branch `strategy_directive` as simultaneous requirements; the branch directive
+cannot relax the frozen range or accepted boundary. In every realization event,
+each `disclosures` string must be copied exactly from that same event's
+`knowledge_boundary.reader_may_learn` list and must not appear in its
+`forbidden_disclosures` list.
+
 For `chapter_plan.generate`, `title` and `premise` are publish-metadata inputs,
 not planning notes. `title` must be a concise reader-facing chapter title.
 `premise` must be a concise reader-facing synopsis of the chapter. Neither may

@@ -562,6 +562,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             chapter_number,
             int(command.get("narrative_search_accepted_through_chapter") or 0) + 1,
         )
+    group_start = chapter_number
+    group_end = chapter_number + 2
+    search_horizon = command.get("narrative_search_planning_horizon")
+    if stage == "chapter_group_plan.generate" and isinstance(search_horizon, Mapping):
+        frozen_range = search_horizon.get("chapter_range")
+        if isinstance(frozen_range, list) and len(frozen_range) == 2:
+            group_start, group_end = map(int, frozen_range)
+            chapter_number = group_start
     arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
@@ -923,9 +931,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     *_fixture_chapter_shape(group_chapter),
                     arc_plan_ids,
                 )
-                for group_chapter in range(chapter_number, chapter_number + 3)
+                for group_chapter in range(group_start, group_end + 1)
             ],
-            "chapter_range": [chapter_number, chapter_number + 2],
+            "chapter_range": [group_start, group_end],
             "cost_range": ["social", "material"],
             "primary_arc_ids": [(arc_plan_ids or ("arc:primary",))[0]],
             "secondary_arc_ids": list((arc_plan_ids or ())[1:]),
@@ -938,7 +946,8 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 for arc_id in arc_plan_ids or ("arc:primary",)
             ],
             "narrative_event_chain": _fixture_narrative_event_chain(
-                chapter_number=chapter_number,
+                chapter_start=group_start,
+                chapter_end=group_end,
                 arc_plan_ids=arc_plan_ids or ("arc:primary",),
             ),
             "narrative_architecture_version": "canonical-narrative-v1",
@@ -1108,15 +1117,15 @@ def _fixture_character_arc_stage(boundary: int) -> str:
 
 
 def _fixture_narrative_event_chain(
-    *, chapter_number: int, arc_plan_ids: tuple[str, ...]
+    *, chapter_start: int, chapter_end: int, arc_plan_ids: tuple[str, ...]
 ) -> list[dict[str, Any]]:
     event_ids = [
-        f"realization:chapter-group:{chapter_number}:event:{offset}"
-        for offset in range(1, 4)
+        f"realization:chapter-group:{chapter_start}:event:{offset}"
+        for offset in range(1, chapter_end - chapter_start + 2)
     ]
     result: list[dict[str, Any]] = []
     for offset, event_id in enumerate(event_ids):
-        chapter = chapter_number + offset
+        chapter = chapter_start + offset
         result.append(
             {
                 "event_id": event_id,
@@ -1742,6 +1751,7 @@ def planning_provider_output_schema(
     dependent_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
     narrative_search: bool = False,
+    narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
@@ -1762,6 +1772,31 @@ def planning_provider_output_schema(
             if item
         )
     )
+    exact_group_range: tuple[int, int] | None = None
+    exact_group_chapters: list[int] = []
+    if contract_type is PlanContractType.CHAPTER_GROUP and narrative_search:
+        horizon = dict(narrative_search_horizon or {})
+        raw_range = horizon.get("chapter_range")
+        if (
+            horizon.get("level") != "CHAPTER_GROUP"
+            or not isinstance(raw_range, list)
+            or len(raw_range) != 2
+            or any(
+                not isinstance(item, int) or isinstance(item, bool)
+                for item in raw_range
+            )
+        ):
+            raise ValueError(
+                "ChapterGroup Search provider schema requires an exact frozen horizon"
+            )
+        exact_group_range = (raw_range[0], raw_range[1])
+        if not 3 <= exact_group_range[1] - exact_group_range[0] + 1 <= 8:
+            raise ValueError(
+                "ChapterGroup Search provider schema requires three to eight Chapters"
+            )
+        exact_group_chapters = list(
+            range(exact_group_range[0], exact_group_range[1] + 1)
+        )
     canon_dependencies: dict[str, Any] = {
         "type": "array",
         "items": dependency_items,
@@ -1916,12 +1951,16 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": 3,
+                "minItems": len(exact_group_chapters) or 3,
                 "items": _strict_object(
                     {
                         "event_id": string,
                         "slice_id": string,
-                        "chapter_number": {"type": "integer", "minimum": 1},
+                        "chapter_number": (
+                            {"type": "integer", "enum": exact_group_chapters}
+                            if exact_group_chapters
+                            else {"type": "integer", "minimum": 1}
+                        ),
                         "causes": {"type": "array", "items": string},
                         "actor_ref": string,
                         "motivation": string,
@@ -1993,17 +2032,23 @@ def planning_provider_output_schema(
             }
             if field == "chapter_range":
                 properties[field].update({"minItems": 2, "maxItems": 2})
+                if exact_group_range is not None:
+                    properties[field]["const"] = list(exact_group_range)
         elif field == "chapter_number":
             properties[field] = {"type": "integer", "minimum": 1}
         elif field == "chapter_function_matrix":
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": 3,
-                "maxItems": 8,
+                "minItems": len(exact_group_chapters) or 3,
+                "maxItems": len(exact_group_chapters) or 8,
                 "items": _strict_object(
                     {
-                        "chapter_number": {"type": "integer", "minimum": 1},
+                        "chapter_number": (
+                            {"type": "integer", "enum": exact_group_chapters}
+                            if exact_group_chapters
+                            else {"type": "integer", "minimum": 1}
+                        ),
                         "primary_function": string,
                         "secondary_functions": string_array,
                         "required_state_delta": _strict_object({"summary": string}),
@@ -2657,6 +2702,7 @@ class PostgresPlanningExecutionPreparer:
                 *command.dependent_arc_plan_version_ids,
             ),
             narrative_search=bool(command.narrative_search_id),
+            narrative_search_horizon=(command.narrative_search_planning_horizon),
             narrative_realization=command.narrative_realization,
         )
         output_schema_ref = (
@@ -2665,7 +2711,7 @@ class PostgresPlanningExecutionPreparer:
             + (
                 ":v4"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
-                else ":v2"
+                else ":v3"
                 if command.planning_scope.value == PlanContractType.CHAPTER_GROUP.value
                 else ":v1"
             )
@@ -2797,9 +2843,16 @@ class PostgresPlanningExecutionPreparer:
                     "narrative_search_strategy_directive": (
                         command.narrative_search_strategy_directive
                     ),
-                    "narrative_realization": dict(
-                        command.narrative_realization or {}
+                    "narrative_search_planning_horizon": dict(
+                        command.narrative_search_planning_horizon or {}
                     ),
+                    "narrative_search_desired_transformation": dict(
+                        command.narrative_search_desired_transformation or {}
+                    ),
+                    "narrative_search_hard_constraints": list(
+                        command.narrative_search_hard_constraints
+                    ),
+                    "narrative_realization": dict(command.narrative_realization or {}),
                 },
                 "frozen_inputs": [
                     {
@@ -2822,23 +2875,7 @@ class PostgresPlanningExecutionPreparer:
                     ],
                 },
                 "arc_working_set": dict(command.arc_working_set or {}),
-                "narrative_search": (
-                    {
-                        "search_id": command.narrative_search_id,
-                        "branch_key": command.narrative_search_branch_key,
-                        "parent_state_asset_version_id": (
-                            command.narrative_search_parent_state_asset_version_id
-                        ),
-                        "accepted_through_chapter": (
-                            command.narrative_search_accepted_through_chapter
-                        ),
-                        "strategy_directive": (
-                            command.narrative_search_strategy_directive
-                        ),
-                    }
-                    if command.narrative_search_id
-                    else {}
-                ),
+                "narrative_search": command.narrative_search_snapshot,
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -3447,21 +3484,7 @@ class PostgresPlanningExecutionPreparer:
             "logical_key": command.logical_key,
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
-            "narrative_search": (
-                {
-                    "search_id": command.narrative_search_id,
-                    "branch_key": command.narrative_search_branch_key,
-                    "parent_state_asset_version_id": (
-                        command.narrative_search_parent_state_asset_version_id
-                    ),
-                    "accepted_through_chapter": (
-                        command.narrative_search_accepted_through_chapter
-                    ),
-                    "strategy_directive": (command.narrative_search_strategy_directive),
-                }
-                if command.narrative_search_id
-                else {}
-            ),
+            "narrative_search": command.narrative_search_snapshot,
             "narrative_intelligence": narrative_intelligence,
             "realization_reference_contract": _realization_reference_contract(
                 project_id=command.project_id,
@@ -3594,6 +3617,7 @@ class PostgresPlanningExecutionPreparer:
             or content.get("planning_scope") != command.planning_scope.value
             or content.get("logical_key") != command.logical_key
             or content.get("arc_working_set") != dict(command.arc_working_set or {})
+            or content.get("narrative_search") != command.narrative_search_snapshot
             or not isinstance(frozen_inputs, list)
             or frozen_inputs[: len(selected_inputs)] != selected_inputs
         ):

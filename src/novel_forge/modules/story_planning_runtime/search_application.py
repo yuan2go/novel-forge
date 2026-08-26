@@ -73,6 +73,34 @@ class NarrativeSearchRequest:
             raise ValueError("approved search replacement requires decision evidence")
         if not self.planning_horizon or not self.desired_transformation:
             raise ValueError("search horizon and desired transformation are required")
+        if (
+            not self.hard_constraints
+            or any(not str(item).strip() for item in self.hard_constraints)
+            or len(set(self.hard_constraints)) != len(self.hard_constraints)
+        ):
+            raise ValueError("search hard constraints must be non-empty and distinct")
+        if self.generation.generator_operation_name == "chapter_group_plan.generate":
+            chapter_range = self.planning_horizon.get("chapter_range")
+            if (
+                self.planning_horizon.get("level") != "CHAPTER_GROUP"
+                or not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in chapter_range
+                )
+            ):
+                raise ValueError(
+                    "ChapterGroup search requires an exact frozen chapter range"
+                )
+            start, end = chapter_range
+            if (
+                start <= self.accepted_through_chapter
+                or not 3 <= end - start + 1 <= 8
+                or self.planning_horizon.get("starts_at_chapter") != start
+                or self.planning_horizon.get("ends_at_chapter") != end
+            ):
+                raise ValueError("ChapterGroup search horizon is inconsistent")
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +215,11 @@ class PostgresNarrativeSearchApplication:
                             request.accepted_through_chapter
                         ),
                         narrative_search_strategy_directive=directive,
+                        narrative_search_planning_horizon=(request.planning_horizon),
+                        narrative_search_desired_transformation=(
+                            request.desired_transformation
+                        ),
+                        narrative_search_hard_constraints=(request.hard_constraints),
                         auto_approve_low_risk=False,
                     ),
                     principal=principal,
