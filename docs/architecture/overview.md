@@ -114,6 +114,58 @@ activation permission, not new narrative Authorities.
 
 The target hierarchy is four-dimensional: optional organization/IP scopes, narrative containment, cross-cutting Arc Graph and ChapterGroup production coordination. The current runtime has no independent Narrative Segment consumer, shared-Universe Canon Authority or reason to add empty persistence roots.
 
+## Current Quality Qualification runtime
+
+Migration `20260826_0101_quality_qualification` adds one bounded evidence plane
+adjacent to the existing Chapter Quality and Reader Calibration Authorities. It
+does not add a second Chapter, Canon, Narrative State, Planning, Reader or
+long-term-memory owner. The current composition root exposes:
+
+- immutable exact-SHA campaign manifests and lifecycle;
+- Chapter/Arc baseline-versus-Canonical subject bindings;
+- source-bound L1 Hard Correctness, L2 Editorial and L3
+  Reader/Longitudinal evidence;
+- append-only qualification decisions with severe-correctness precedence and
+  `NOT_PROVEN` for missing evidence;
+- two independently addressed reviewer packs with balanced A/B order, no
+  private mapping in reviewer export, A/B/Tie/Cannot Judge, dimension scores,
+  confidence, disagreement and adjudication;
+- Calibration v2 comparison between attributable Judge, human, adjudicated,
+  blind-preference and Reader evidence without registering calibration-v1
+  operations;
+- accepted-history momentum, promise/payoff and semantic repetition evidence,
+  plus causal Arc and non-averaged bounded Volume-slice evaluation.
+
+`chapter-outcome-v3` is the canonical Chapter Quality projection boundary.
+Post-acceptance Reader reports from the existing Book Followup Authority are
+joined into that accepted sequence and remain `READER_PROXY_ADVISORY` evidence.
+They can enter recap/trend/future recommendation but cannot mutate accepted
+truth or activate a plan.
+
+The bounded campaign harness permits only ChapterGroups 1–4 and 5–8 and stops
+at eight acceptances. Its comparison uses the first draft and the accepted
+revision from the same Chapter attempt, Story Foundation, goal, Context,
+Provider/model and comparable budget; the controlled difference is the normal
+review/revision/re-review/acceptance path. The scripted PostgreSQL campaign is
+fixture/recovery evidence only. Real-provider and human conclusions belong
+only to the exact-SHA report under `docs/qualification/`; documentation and a
+high Judge score cannot establish them.
+
+Real execution additionally materializes one source-bound Provider Runtime
+artifact containing ModelCallLog and cost-ledger AssetVersions, external
+effects/dispatches/receipts, failures/retries, measured usage, settled budget
+reservations, Pack attempt snapshots and Prompt/Skill/route/context/evaluation
+policy hashes. The campaign Project is dedicated to one BookRun; fixture calls,
+unclassified routes, missing receipts/measurement, Pack drift, unresolved
+budgets or another BookRun fail the final evidence gate. The state descriptor
+is captured read-only from Authority and contains no credentials or narrative
+truth.
+
+The former 300-Chapter proof contract, score-only Quality helper, tracked
+119-Chapter generated corpus and dead Admin proof consoles are retired from the
+current tree. Git history preserves them as historical implementation context;
+they are not current qualification evidence.
+
 ## Current liveness implementation and evidence boundary
 
 WP-LIVE-01 removes the code-proven structural coupling identified at the 2026-08-20 baseline:
@@ -173,14 +225,18 @@ The repository contains substantial implementation/runtime/test evidence for:
   reranking and layered-memory contracts;
 - ChapterExecutionIntent/ChapterMemo and Best Candidate selection;
 - accepted Arc/Obligation projection sets and semantic invalidation;
-- quality/reader surfaces;
-- qualification infrastructure.
+- Quality Outcome v3, Calibration v2, Reader Proxy and accepted longitudinal
+  evidence surfaces;
+- exact-SHA bounded Quality Qualification Authority and campaign
+  infrastructure.
 
 Current documentation does **not** establish by itself:
 
 - sustained real-provider Book production;
 - long-running real-provider Chapter-to-Chapter liveness;
-- 30/100/300-chapter correctness/quality;
+- sustained long-form correctness/editorial/reader quality beyond the bounded
+  campaign;
+- statistically calibrated Judge-human agreement;
 - independent PostgreSQL vector candidate retrieval at production scale;
 - sustained or production-qualified real-provider Agent Harness operation (the
   exact-SHA bounded qualification proves one real Agent Session only);

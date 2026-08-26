@@ -56,6 +56,12 @@ Current repair runbook:
 
 - [`operations/post-0094-projection-repair.md`](operations/post-0094-projection-repair.md)
 
+Current qualification runbook:
+
+- [`operations/quality-qualification.md`](operations/quality-qualification.md) —
+  exact 4+4 scripted/real-provider campaign, frozen state, blind human packs,
+  recovery and fail-closed interpretation.
+
 ## ADRs
 
 `adr/` contains only durable decisions still constraining the system. It is not a project diary. ADR 0007 preserves Arc as an orthogonal planning dimension, establishes the qualified Foundation hierarchy, and places causal Narrative Realization inside Hierarchical Planning without adding a Plan scale or Authority. ADR 0003 is retained only to explain the superseded monolithic BookDesign decision.
@@ -88,7 +94,7 @@ CONSUMED
 UNIT/SMOKE_TESTED
 ```
 
-Qualification remains separate: `REAL_PROVIDER_PROVEN`, `LONGFORM_PROVEN`, `MULTIBOOK_PROVEN`, and `PRODUCTION_QUALIFIED` are never implied by implementation evidence.
+Qualification remains separate: `REAL_PROVIDER_PROVEN`, `LONGFORM_PROVEN`, `MULTIBOOK_PROVEN`, and `PRODUCTION_QUALIFIED` are never implied by implementation evidence. Quality decisions use `PASS`, `PASS_WITH_LIMITATIONS`, `FAIL` or `NOT_PROVEN`; these describe only the frozen scope and do not replace the maturity ladder.
 
 Repository maturity ladder where used:
 
@@ -104,4 +110,8 @@ MULTIBOOK_PROVEN
 PRODUCTION_PROVEN
 ```
 
-No lower evidence class implies a higher one. In particular, one successful Chapter does not establish Chapter-to-Chapter liveness or `LONGFORM_PROVEN`.
+No lower evidence class implies a higher one. In particular, one successful Chapter does not establish Chapter-to-Chapter liveness or `LONGFORM_PROVEN`. A scripted campaign proves protocol/runtime wiring only. A real-provider campaign without completed human review remains `WAITING_HUMAN_EVIDENCE / NOT_PROVEN`; one valid reviewer is `HUMAN_EVIDENCE_LIMITED`, and two bounded reviewers do not establish statistical Judge calibration.
+
+Historical qualification reports are immutable exact-SHA records. They remain
+valid for the SHA and scope they name but must never be presented as current
+proof after release, migration, Provider, Pack, Prompt/Skill or lineage drift.

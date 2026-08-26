@@ -232,9 +232,60 @@ or Reader-learning Authority.
 
 ## 10. Feedback
 
-Reader Outcome, quality analytics and long-form retrospective create evidence/proposals. They can affect future scheduling, MKAOS effectiveness evidence or PlanChange/Replan. They cannot directly mutate accepted Canon.
+Reader Outcome, quality analytics and long-form retrospective create
+evidence/proposals. Reader Outcome v3 carries continue intent, curiosity,
+satisfaction, confusion, trust, character attachment, antagonist pressure,
+promise expectation, payoff satisfaction, drop risk and repetition fatigue.
+The accepted Chapter sequence, not an LLM summary, is the lineage root.
 
-## 11. Proof boundary
+The reachable advisory path is:
+
+```text
+Accepted Chapter
+→ Reader Outcome
+→ longitudinal Reader State
+→ Recap / trend evidence
+→ bounded future recommendation or Replan proposal
+```
+
+It may affect future scheduling, MKAOS effectiveness evidence or a governed
+PlanChange/Replan. It cannot directly mutate accepted Canon/Narrative State,
+rewrite executed plans or turn a proposal into actual story state.
+
+## 11. Quality Qualification
+
+Internal Chapter acceptance and campaign-level Quality Qualification are
+different decisions. Qualification persists three non-collapsible evidence
+layers:
+
+```text
+L1 Hard Narrative Correctness
+L2 Editorial / Literary Quality
+L3 Reader / Longitudinal Outcome
+```
+
+A severe L1 failure cannot be averaged away. Chapter evidence answers whether
+one Chapter is correct/effective/continue-worthy. Arc evidence measures causal
+progress, interaction, escalation, setup/payoff and transformation. A bounded
+Volume-slice report interprets multi-Arc rhythm, long promises, payoff
+distribution, fatigue, cumulative evolution and ending reachability; it never
+averages Chapter scores into a Volume score.
+
+The canonical bounded comparison uses each Chapter's first draft as a
+comparable baseline and its accepted revision as the Canonical candidate. Human
+reviewers receive balanced blinded A/B pairs and cannot see Candidate identity,
+Provider/model, Prompt, branch, Judge or system score. Two reviewers over eight
+Chapter pairs plus the same Arc sequence provide bounded human preference
+evidence only. One valid reviewer is `HUMAN_EVIDENCE_LIMITED`; incomplete human
+work remains `WAITING_HUMAN_EVIDENCE / NOT_PROVEN`. A model must not fill a
+human evidence gap.
+
+Reader Outcome is advisory evidence, and automated Judge evidence records its
+independence relationship. Same-model generation and judging cannot by itself
+prove literary quality. Final statuses are `PASS`, `PASS_WITH_LIMITATIONS`,
+`FAIL` and `NOT_PROVEN`.
+
+## 12. Proof boundary
 
 Always distinguish:
 
@@ -247,4 +298,8 @@ LONGFORM_PROVEN
 PRODUCTION_QUALIFIED
 ```
 
-One successful Chapter is not long-form proof. `LONGFORM_PROVEN` requires bounded autonomous forward progress, accepted-state propagation, context correctness, recovery, and sustained narrative evidence.
+One successful Chapter is not long-form proof. Eight accepted Chapters are
+bounded Arc/Volume-slice evidence, not proof of autonomous million-word quality,
+commercial success or Production Admission. `LONGFORM_PROVEN` requires bounded
+autonomous forward progress, accepted-state propagation, context correctness,
+recovery and sustained narrative evidence at the exact scope claimed.

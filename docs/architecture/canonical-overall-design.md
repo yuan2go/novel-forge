@@ -1051,23 +1051,86 @@ World/Character/Arc changes may invalidate future plans, Intent/Memo, Context an
 
 ## 19. Quality and Evaluation
 
-Keep three quality classes separate:
+Engineering correctness, narrative correctness, Judge score, editorial quality,
+human preference, Reader Outcome, long-form quality and commercial success are
+different claims. Likewise, code existence, wiring, integration proof,
+real-provider proof, human comparison, long-form proof and production proof are
+different evidence levels. A campaign must not collapse either distinction into
+one score or status.
 
-1. **Narrative Correctness:** Canon/state/time/knowledge/resource/world-rule/obligation legality.
-2. **Narrative Quality:** structure, character depth, conflict, pacing, mystery, theme, prose, voice, scene effectiveness.
-3. **Reader/Commercial Quality:** reader promise, hook/reward cadence, serialization, readability, fatigue and platform fit.
+### 19.1 Non-collapsible evidence layers
 
-Generator output cannot mint its own PASS. Semantic evaluation must be independently attributable and candidate-hash/version bound.
+Quality Qualification uses three separately persisted layers:
 
-Avoid Judge monoculture and Goodhart loops. Quality qualification should progressively combine deterministic invariants, calibrated model judges, human editorial evidence, and eventually real reader evidence. Keep `JudgeEvaluation`, `HumanEvaluation`, blind pair preference, adjudicated evaluation, reader-outcome evidence, calibration run/result and versioned Quality Profile distinct. A single subjective human literary opinion is not `GroundTruth`; that term is reserved for objectively decidable facts. Subjective calibration compares a Judge to an explicit adjudication over independently attributable human evidence, while reader outcomes remain advisory evidence and cannot mutate narrative truth.
+1. **L1 Hard Narrative Correctness:** Canon, identity, timeline, world rule,
+   knowledge boundary, causal continuity, Narrative Realization, required state
+   transition, obligation/payoff, forbidden-change and accepted-history
+   immutability evidence.
+2. **L2 Editorial/Literary Quality:** prose clarity, scene effectiveness,
+   character agency, dialogue differentiation, emotional movement, conflict,
+   pacing, hook, information release, payoff strength, originality, repetition,
+   narrative economy and reader-promise delivery.
+3. **L3 Reader/Longitudinal Outcome:** momentum, conflict/agency/antagonist
+   trends, promise aging/payoff cadence, setup-to-payoff latency, unresolved
+   debt, semantic repetition/fatigue, Arc evolution, long-span continuity and
+   Reader Proxy trends.
 
-Do not add more Judges until existing Judges have evidence for calibration, disagreement handling, stability and independence.
+A severe or blocking L1 failure cannot be offset by L2 prose or L3 preference.
+Missing evidence is `NOT_PROVEN`, never a zero that can be averaged with known
+evidence. All evidence binds exact accepted Chapter/version boundaries, source
+AssetVersions, release SHA, Provider/model route, Capability Pack, Prompt/Skill
+hashes and evaluation/profile versions.
+
+### 19.2 Evaluation roles and independence
+
+Generator output cannot mint its own PASS. Keep `JudgeEvaluation`,
+`HumanEvaluation`, blind pair preference, adjudication, Reader Outcome,
+calibration result and versioned Quality Profile distinct. Record the
+generator/reviewer/Judge Provider and model plus their independence
+relationship. A same-model Judge is dependent evidence, even when its score is
+high.
+
+Human comparison is blinded to Canonical/Baseline identity, Provider/model,
+Prompt/branch and system/Judge scores. Candidate ordering is balanced across
+reviewers. Raw choices include A, B, Tie and Cannot Judge; dimension scores,
+confidence, rationale, scope, protocol/evaluation version, disagreement and
+adjudication remain append-only. Two independent reviewers over one bounded
+sequence provide bounded human preference evidence, not statistical Judge
+calibration. One valid reviewer is `HUMAN_EVIDENCE_LIMITED`; no completed human
+review leaves the campaign `WAITING_HUMAN_EVIDENCE / NOT_PROVEN`. An LLM must
+never be recorded as a human reviewer.
+
+A single subjective literary opinion is not `GroundTruth`; that term is
+reserved for objectively decidable facts. Do not add more Judges until the
+current Judge has evidence for agreement, false positives/negatives,
+confidence, position bias, preference stability and independence. Insufficient
+samples remain `UNCALIBRATED / BOUNDED_EVIDENCE`.
+
+### 19.3 Chapter, Arc and Volume interpretation
+
+Chapter evaluation asks whether the Chapter is correct, effective and worth
+continuing. Arc evaluation uses accepted causal progression, protagonist/
+antagonist interaction, escalation, setup/payoff and credible transformation;
+it distinguishes activity from progress and identifies stagnation, repetition
+and fake escalation. A bounded Volume-slice evaluation interprets Arc rhythm,
+long-promise progress, payoff distribution, fatigue, cumulative world/
+character/conflict evolution and ending reachability. It is not an average of
+Chapter or Arc scores.
+
+Final campaign decisions are `PASS`, `PASS_WITH_LIMITATIONS`, `FAIL` or
+`NOT_PROVEN`. Severe correctness failure, incomplete lineage/provider evidence
+or material evidence contamination fails closed. `PASS` is never inferred from
+one model score, one reviewer or an incomplete campaign.
 
 ---
 
 ## 20. Publish / Observe / Learn / Adapt
 
-Reader Outcome and analytics are observations. They may influence:
+Reader Outcome and analytics are Reader Proxy/advisory observations. Outcome v3
+keeps all dimensions explicit: continue intent, curiosity, satisfaction,
+confusion, trust, character attachment, antagonist pressure, promise
+expectation, payoff satisfaction, drop risk and repetition fatigue. They may
+influence:
 
 - future Arc scheduling;
 - story/reader strategy proposals;
@@ -1077,7 +1140,12 @@ Reader Outcome and analytics are observations. They may influence:
 
 They may not directly mutate accepted Canon/Narrative State.
 
-Real reader learning is a future qualification layer. Simulated Reader Outcome remains advisory/shadow until calibrated against human outcomes.
+The governed path is Chapter → Reader Outcome → longitudinal Reader State →
+Recap/trend evidence → bounded future recommendation or Replan proposal. Reader
+evidence cannot directly mutate Canon, executed plans, accepted Narrative
+State, or turn future intent into actual state. Real reader learning is a future
+qualification layer. Simulated Reader Outcome remains advisory/shadow until
+calibrated against human outcomes.
 
 ---
 
@@ -1140,11 +1208,11 @@ Every waiting production state must expose why it waits, since when, expected ne
 ```text
 L0  one chapter completes
 L1  Chapter 1 → 2 advances automatically within bounded time
-L2  10 chapters unattended
+L2  one explicitly bounded multi-Chapter slice advances unattended
 L3  worker/API crash resumes without manual state repair
 L4  provider timeout/retry ends in progress or explicit terminal/wait state, never silent stall
-L5  30-chapter Arc/Segment campaign
-L6  100+ chapter sustained progression
+L5  one complete Arc-level campaign at an explicitly frozen scope
+L6  separately authorized sustained long-form progression
 L7  multiple Books maintain isolated forward progress
 ```
 
@@ -1246,7 +1314,8 @@ According to changed risk, qualification should include:
 - context correctness/bounded growth;
 - accepted-only state propagation/rebuild;
 - human editorial/quality evaluation;
-- 10/30/100/300 chapter campaigns;
+- scope-specific bounded campaigns followed only by separately authorized
+  sustained campaigns;
 - multi-book isolation/scale only after single-book proof;
 - backup/restore and security/operations drills.
 
@@ -1317,16 +1386,27 @@ Session, document/query embeddings and one Memo→Retrieval→Draft slice. This 
 bounded `PROVIDER_PROVEN` evidence only. None of these capabilities is
 `LONGFORM_PROVEN` or `PRODUCTION_QUALIFIED`.
 
-### P1 — Long-form qualification
+### P1 — Bounded quality qualification
 
-The bounded current-SHA real-provider Chapter proof is complete. Further gates
-remain separate, explicitly authorized runs:
+The current runtime contains an exact two-by-four Quality Qualification
+contract: one Book, two consecutive four-Chapter ChapterGroups, eight accepted
+Chapters, one bounded Volume slice, at least one Arc evaluation, a comparable
+first-draft-versus-accepted-revision baseline, Reader Outcome v3 longitudinal
+evidence and two reviewer-specific blind packs. The campaign freezes exact
+release/migration/Provider/model/Pack/Prompt/Skill/Foundation/Planning/
+Realization/Context/profile/budget lineage and forbids Chapter 9 or background
+continuation.
 
-- independent judge/calibration qualification;
-- 10 → 30 → 100 → 300 chapter campaigns with failure injection;
-- human editorial comparison;
-- bounded-context and long-distance obligation proof;
-- million-word retrieval quality and growth-slope evidence.
+Implementation and scripted PostgreSQL recovery proof do not establish the
+real-provider or human result. The exact-SHA qualification artifact owns that
+claim. Until the bounded real-provider run and required human evidence are
+recorded, the correct status is `NOT_PROVEN`; incomplete human work remains
+`WAITING_HUMAN_EVIDENCE`.
+
+Larger sustained campaigns, real-reader outcomes, statistical Judge
+calibration, million-word retrieval quality and growth-slope evidence remain
+separate future qualifications. They are not prerequisites for this bounded
+campaign and must not be started implicitly.
 
 ### P1 — Canonical hierarchy closure (implemented; bounded integration proven)
 
