@@ -753,9 +753,21 @@ class PostgresBookProductionSupervisor:
         )
         if generator == "chapter_group_plan.generate":
             accepted_through = int(book["accepted_through_chapter"])
+            volume_range = tuple(
+                int(item) for item in cursor_projection["volume_chapter_range"]
+            )
+            if len(volume_range) != 2 or not (
+                volume_range[0] <= chapter_number <= volume_range[1]
+            ):
+                raise KernelError(
+                    "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+                    "ChapterGroup cursor must belong to the projected Volume",
+                )
             group_start, group_end = _bounded_chapter_group_range(
                 start_chapter=chapter_number,
-                target_chapter_count=int(book["target_chapter_count"]),
+                target_chapter_count=min(
+                    int(book["target_chapter_count"]), volume_range[1]
+                ),
                 preferred_size=int(book["light_recap_cadence"]),
             )
             parent_state = str(book.get("active_story_state_version_id") or "")

@@ -62,6 +62,10 @@ also frozen in each admitted generation command, Context Bundle and Provider
 request and is rechecked on retry/recovery. A ChapterGroup Provider schema uses
 the exact frozen range; structural validation requires the candidate range,
 ordered Chapter Function Matrix and realization-event coverage to match it.
+The range is also bounded by the current VolumePlan. Input resolution may retain
+multiple non-overlapping historical/current ChapterGroupPlans, but binds only
+the unique group covering the current Narrative cursor; overlap or a group that
+crosses its parent Volume fails closed.
 
 The current PostgreSQL fixture establishes the closed Foundation hierarchy and
 durable process/replay semantics. It does not establish literary quality,
@@ -157,10 +161,11 @@ only to the exact-SHA report under `docs/qualification/`; documentation and a
 high Judge score cannot establish them.
 
 For production-generated ChapterGroups, the Supervisor deterministically turns
-the Book target and preferred light-recap cadence into a legal three-to-eight
-Chapter window without leaving a one- or two-Chapter terminal fragment. For the
-bounded Quality profile this yields exactly `[1,4]` and `[5,8]`; all search
-branches receive and must obey the same frozen window.
+the Book target, current Volume boundary and preferred light-recap cadence into
+a legal three-to-eight Chapter window without leaving a one- or two-Chapter
+fragment inside that Volume. For the bounded Quality profile this yields exactly
+`[1,4]` and `[5,8]`; all search branches receive and must obey the same frozen
+window.
 
 Real execution additionally materializes one source-bound Provider Runtime
 artifact containing ModelCallLog and cost-ledger AssetVersions, external

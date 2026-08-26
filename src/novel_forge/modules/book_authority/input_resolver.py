@@ -569,7 +569,15 @@ class BookProductionInputResolver:
         current_volume = self._select_current_volume(
             plans["VOLUME"], chapter_cursor=command.narrative_chapter_cursor
         )
-        self._validate_plan_hierarchy(plans, current_volume=current_volume)
+        current_chapter_group = self._select_current_chapter_group(
+            plans["CHAPTER_GROUP"],
+            chapter_cursor=command.narrative_chapter_cursor,
+        )
+        self._validate_plan_hierarchy(
+            plans,
+            current_volume=current_volume,
+            current_chapter_group=current_chapter_group,
+        )
         current_relevant_arcs = self._select_current_relevant_arcs(
             plans["ARC"], current_volume=current_volume
         )
@@ -625,8 +633,8 @@ class BookProductionInputResolver:
             "current_relevant_arc_plan_versions": list(current_relevant_arcs),
             "active_arc_plan_versions": list(current_relevant_arcs),
             "current_chapter_group_plan_version": (
-                plans["CHAPTER_GROUP"][0]["asset_version_id"]
-                if plans["CHAPTER_GROUP"]
+                current_chapter_group["asset_version_id"]
+                if current_chapter_group is not None
                 else ""
             ),
             **{role: item["asset_version_id"] for role, item in roles.items()},
@@ -914,11 +922,6 @@ class BookProductionInputResolver:
                 "BOOK_PRODUCTION_PLAN_SET_INCOMPLETE",
                 "Book Production requires one BookPlan, a Volume Portfolio, and active ArcPlans",
             )
-        if len(result["CHAPTER_GROUP"]) > 1:
-            raise KernelError(
-                "BOOK_PRODUCTION_GROUP_AMBIGUOUS",
-                "Book Production has multiple active ChapterGroupPlans",
-            )
         return result
 
     @staticmethod
@@ -930,10 +933,40 @@ class BookProductionInputResolver:
         )
 
     @staticmethod
+    def _select_current_chapter_group(
+        groups: list[dict[str, Any]], *, chapter_cursor: int
+    ) -> dict[str, Any] | None:
+        matches: list[dict[str, Any]] = []
+        for group in groups:
+            chapter_range = group["content"].get("chapter_range")
+            if (
+                not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in chapter_range
+                )
+                or chapter_range[1] < chapter_range[0]
+            ):
+                raise KernelError(
+                    "BOOK_PRODUCTION_GROUP_RANGE_INVALID",
+                    "every active ChapterGroupPlan requires an ordered integer range",
+                )
+            if chapter_range[0] <= chapter_cursor <= chapter_range[1]:
+                matches.append(group)
+        if len(matches) > 1:
+            raise KernelError(
+                "BOOK_PRODUCTION_GROUP_AMBIGUOUS",
+                "multiple active ChapterGroupPlans cover the Narrative cursor",
+            )
+        return matches[0] if matches else None
+
+    @staticmethod
     def _validate_plan_hierarchy(
         plans: dict[str, list[dict[str, Any]]],
         *,
         current_volume: dict[str, Any],
+        current_chapter_group: dict[str, Any] | None,
     ) -> None:
         book = plans["BOOK"][0]["asset_version_id"]
         if any(volume["parent_version_id"] != book for volume in plans["VOLUME"]):
@@ -941,8 +974,52 @@ class BookProductionInputResolver:
                 "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
                 "every Volume Portfolio member must be a child of the active BookPlan",
             )
-        if plans["CHAPTER_GROUP"] and (
-            plans["CHAPTER_GROUP"][0]["parent_version_id"]
+        volume_ranges = {
+            str(volume["asset_version_id"]): tuple(
+                int(item) for item in volume["content"]["chapter_range"]
+            )
+            for volume in plans["VOLUME"]
+        }
+        group_ranges: list[tuple[int, int]] = []
+        for group in plans["CHAPTER_GROUP"]:
+            chapter_range = group["content"].get("chapter_range")
+            if (
+                not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in chapter_range
+                )
+            ):
+                raise KernelError(
+                    "BOOK_PRODUCTION_GROUP_RANGE_INVALID",
+                    "every active ChapterGroupPlan requires an integer chapter range",
+                )
+            start, end = chapter_range
+            parent_range = volume_ranges.get(str(group["parent_version_id"]))
+            if (
+                end < start
+                or parent_range is None
+                or not (parent_range[0] <= start <= end <= parent_range[1])
+            ):
+                raise KernelError(
+                    "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
+                    "every ChapterGroupPlan must remain inside its parent VolumePlan",
+                )
+            group_ranges.append((start, end))
+        ordered_ranges = sorted(group_ranges)
+        if any(
+            current[0] <= previous[1]
+            for previous, current in zip(
+                ordered_ranges, ordered_ranges[1:], strict=False
+            )
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_GROUP_AMBIGUOUS",
+                "active ChapterGroupPlan ranges cannot overlap",
+            )
+        if current_chapter_group is not None and (
+            current_chapter_group["parent_version_id"]
             != current_volume["asset_version_id"]
         ):
             raise KernelError(

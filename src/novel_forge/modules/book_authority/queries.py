@@ -1112,6 +1112,9 @@ class PostgresBookProductionQuery:
         return {
             "chapter_cursor": chapter_cursor,
             "volume_plan_version": str(volume["asset_version_id"]),
+            "volume_chapter_range": tuple(
+                int(item) for item in volume["content"]["chapter_range"]
+            ),
             "arc_plan_versions": relevant_arcs,
         }
 
@@ -1695,9 +1698,7 @@ class PostgresBookProductionQuery:
             "chapter_plan_version_id": chapter_plan_version_id,
             "narrative_realization_id": realization["realization_id"],
             "narrative_realization_slice_id": realization["slice_id"],
-            "narrative_realization_contract_digest": realization[
-                "contract_digest"
-            ],
+            "narrative_realization_contract_digest": realization["contract_digest"],
             "narrative_realization_event_ids": list(realization["event_ids"]),
             "receipts": sorted(
                 receipts,

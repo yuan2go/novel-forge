@@ -3094,6 +3094,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert next_volume_projection == {
         "chapter_cursor": 4,
         "volume_plan_version": activated["volume_plan.generate:secondary"],
+        "volume_chapter_range": (4, 6),
         "arc_plan_versions": (
             activated["arc_plan.generate"],
             activated["arc_plan.generate:future"],
@@ -3342,6 +3343,18 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         assert int(uow.cursor.fetchone()[0]) == 1
         uow.cursor.execute(
             """
+            SELECT content->'narrative_event_chain'
+            FROM authority_asset_version
+            WHERE asset_version_id=%s
+            """,
+            [str(checkpoint_payload["parent_group_version_id"])],
+        )
+        frozen_realization_events = tuple(
+            dict(item) for item in (uow.cursor.fetchone()[0] or ())
+        )
+        assert frozen_realization_events
+        uow.cursor.execute(
+            """
             SELECT realization.realization_id, realization.lifecycle,
                    COUNT(event.event_id),
                    COUNT(consumption.planned_event_id) FILTER (
@@ -3371,7 +3384,12 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         partial_realization = uow.cursor.fetchone()
         assert partial_realization is not None
         original_realization_id = str(partial_realization[0])
-        assert tuple(partial_realization[1:]) == ("FROZEN", 3, 1, "EXECUTED")
+        assert tuple(partial_realization[1:]) == (
+            "FROZEN",
+            len(frozen_realization_events),
+            1,
+            "EXECUTED",
+        )
     chapter_admission = dict(
         checkpoint_payload["preparation_report"]["chapter_production_admission"]
     )
@@ -3610,12 +3628,74 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 """,
                 [original_realization_id],
             )
-            assert uow.cursor.fetchone() == ("EXECUTED", 3, 3)
+            accepted_event_count = sum(
+                int(item["chapter_number"]) <= 4 for item in frozen_realization_events
+            )
+            expected_realization_lifecycle = (
+                "EXECUTED"
+                if accepted_event_count == len(frozen_realization_events)
+                else "FROZEN"
+            )
+            assert uow.cursor.fetchone() == (
+                expected_realization_lifecycle,
+                len(frozen_realization_events),
+                accepted_event_count,
+            )
         production_execution.close()
         for worker_execution in worker_production_executions:
             worker_execution.close()
         object_store.cleanup()
         return
+
+    replan_target_group_version = ""
+    replan_target_realization_id = ""
+    for _ in range(128):
+        future_tick = worker_tick(worker_composition)
+        future_action = str(future_tick["action"])
+        if future_action == SupervisorAction.DISPATCH_CHAPTER.value:
+            run_chapter(
+                worker_chapter_application,
+                str(future_tick["operation_id"]),
+            )
+        accepted_through = int(
+            book_authority.require(book.book_run_id)["accepted_through_chapter"]
+        )
+        if (
+            accepted_through == 3
+            and future_action == SupervisorAction.QUALIFY_NARRATIVE_REALIZATION.value
+        ):
+            future_group = composition.query.active_plan_covering_chapter(
+                project_id=project_id,
+                book_id=book_id,
+                contract_type="CHAPTER_GROUP",
+                chapter_number=4,
+            )
+            assert future_group is not None
+            assert future_group["content"]["chapter_range"] == [4, 6]
+            replan_target_group_version = str(future_group["asset_version_id"])
+            replan_target_realization_id = str(future_tick["evidence_ref"])
+        if (
+            accepted_through == 3
+            and replan_target_realization_id
+            and future_action == SupervisorAction.GENERATE_CHAPTER_PLAN.value
+        ):
+            break
+    else:
+        raise AssertionError(
+            "Canonical Worker did not freeze the future-only ChapterGroup 4-6"
+        )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT request.chapter_request_id
+            FROM authority_book_chapter_acceptance AS acceptance
+            JOIN authority_book_chapter_request AS request
+              ON request.chapter_request_id=acceptance.chapter_request_id
+            WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=3
+            """,
+            [book.book_run_id],
+        )
+        checkpoint_request_id = str(uow.cursor.fetchone()[0])
 
     for _ in range(8):
         if _followup_output_exists(
@@ -3752,7 +3832,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             SELECT freshness FROM story_plan_binding
             WHERE asset_version_id=%s
             """,
-            [activated["chapter_group_plan.generate"]],
+            [replan_target_group_version],
         )
         old_group_freshness = str(uow.cursor.fetchone()[0])
         uow.cursor.execute(
@@ -3772,7 +3852,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             FROM authority_narrative_realization
             WHERE realization_id=%s
             """,
-            [original_realization_id],
+            [replan_target_realization_id],
         )
         assert uow.cursor.fetchone() == ("STALE",)
 
@@ -3807,7 +3887,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             [book.book_run_id],
         )
         group_run_count = int(uow.cursor.fetchone()[0])
-    assert group_run_count == 2
+    assert group_run_count == 3
     resumed_book = book_authority.resume(
         book.book_run_id, reason="restart recovery complete", principal=principal
     )
@@ -3822,16 +3902,16 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             run_chapter(restarted_after_pause_chapter, str(tick["operation_id"]))
         if (
             int(book_authority.require(book.book_run_id)["accepted_through_chapter"])
-            >= 2
+            >= 4
         ):
             break
     else:
-        raise AssertionError("Canonical Worker did not resume through Chapter 2")
+        raise AssertionError("Canonical Worker did not resume through Chapter 4")
     assert SupervisorAction.GENERATE_CHAPTER_PLAN.value in after_replan_actions
     assert SupervisorAction.FREEZE_CHAPTER_PLAN.value in after_replan_actions
     assert SupervisorAction.DISPATCH_CHAPTER.value in after_replan_actions
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
-    assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
+    assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 4
 
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
@@ -3840,33 +3920,33 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             FROM authority_book_chapter_acceptance AS acceptance
             JOIN authority_book_chapter_request AS request
               ON request.chapter_request_id=acceptance.chapter_request_id
-            WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=2
+            WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=4
             """,
             [book.book_run_id],
         )
-        chapter_two_request_id = str(uow.cursor.fetchone()[0])
+        chapter_four_request_id = str(uow.cursor.fetchone()[0])
     for _ in range(8):
         if _followup_output_exists(
             project_id=project_id,
-            chapter_request_id=chapter_two_request_id,
+            chapter_request_id=chapter_four_request_id,
             output_key="reader_outcome.report",
         ):
             break
         followup_worker_tick()
     else:
-        raise AssertionError("Book Followup worker did not complete Chapter 2 Reader")
-    chapter_two_snapshot = composition.query.require_accepted_followup_snapshot(
-        chapter_request_id=chapter_two_request_id
+        raise AssertionError("Book Followup worker did not complete Chapter 4 Reader")
+    chapter_four_snapshot = composition.query.require_accepted_followup_snapshot(
+        chapter_request_id=chapter_four_request_id
     )
     reader = _followup_output(
         project_id=project_id,
-        chapter_request_id=chapter_two_request_id,
+        chapter_request_id=chapter_four_request_id,
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
     previous_reader_state = composition.query.previous_reader_state(
         book_run_id=book.book_run_id,
-        chapter_number=2,
+        chapter_number=4,
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
@@ -3877,20 +3957,20 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             """,
             [reader["operation_id"]],
         )
-        chapter_two_reader_inputs = list(uow.cursor.fetchone()[0])
+        chapter_four_reader_inputs = list(uow.cursor.fetchone()[0])
     assert previous_reader_state != "NONE"
     assert previous_reader_state in {
-        str(item["asset_version_id"]) for item in chapter_two_reader_inputs
+        str(item["asset_version_id"]) for item in chapter_four_reader_inputs
     }
     reader_longitudinal = BookFollowupProjectionQuery(
         DATABASE_URL
     ).reader_recap_evidence(
         project_id=project_id,
         book_run_id=book.book_run_id,
-        through_chapter=2,
+        through_chapter=4,
         current_report_asset_version_id=str(reader["asset_version_id"]),
     )
-    assert len(reader_longitudinal["recent_reports"]) == 2
+    assert len(reader_longitudinal["recent_reports"]) == 4
     assert reader_longitudinal["evidence_class"] == "READER_PROXY_ADVISORY"
     assert reader_longitudinal["qualification"]["disagreement"] is True
     assert reader_longitudinal["qualification"]["position_bias"] is True
@@ -3898,43 +3978,45 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     authority_inputs = book_authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
-            str(chapter_two_snapshot["book_design_version"]),
-            str(chapter_two_snapshot["book_plan_version"]),
-            str(chapter_two_snapshot["volume_plan_version"]),
-            *(str(item) for item in chapter_two_snapshot["arc_plan_versions"]),
-            str(chapter_two_snapshot["quality_trend_version"]),
-            str(chapter_two_snapshot["accepted_chapter_outcome_version"]),
-            str(chapter_two_snapshot["accepted_story_state_version"]),
-            str(chapter_two_snapshot["accepted_canon_snapshot_version"]),
+            str(chapter_four_snapshot["book_design_version"]),
+            str(chapter_four_snapshot["book_plan_version"]),
+            str(chapter_four_snapshot["volume_plan_version"]),
+            *(str(item) for item in chapter_four_snapshot["arc_plan_versions"]),
+            str(chapter_four_snapshot["quality_trend_version"]),
+            str(chapter_four_snapshot["accepted_chapter_outcome_version"]),
+            str(chapter_four_snapshot["accepted_story_state_version"]),
+            str(chapter_four_snapshot["accepted_canon_snapshot_version"]),
         ),
     )
     later_admission = book_authority.schedule_longform_recap(
-        chapter_two_request_id,
+        chapter_four_request_id,
         principal=principal,
         payload={
-            "book_id": chapter_two_snapshot["book_id"],
+            "book_id": chapter_four_snapshot["book_id"],
             "checkpoint_type": LongformCheckpointType.ARC_CHECKPOINT.value,
-            "chapter_range": [1, 2],
+            "chapter_range": [1, 4],
             "observed_through_chapter": int(
-                chapter_two_snapshot["observed_through_chapter"]
+                chapter_four_snapshot["observed_through_chapter"]
             ),
-            "acceptance_operation_id": chapter_two_snapshot["acceptance_operation_id"],
-            "book_production_input_snapshot_id": chapter_two_snapshot[
+            "acceptance_operation_id": chapter_four_snapshot["acceptance_operation_id"],
+            "book_production_input_snapshot_id": chapter_four_snapshot[
                 "book_production_input_snapshot_id"
             ],
-            "book_design_version": chapter_two_snapshot["book_design_version"],
-            "book_plan_version": chapter_two_snapshot["book_plan_version"],
-            "volume_plan_version": chapter_two_snapshot["volume_plan_version"],
-            "arc_plan_versions": list(chapter_two_snapshot["arc_plan_versions"]),
-            "canon_snapshot_version": chapter_two_snapshot[
+            "book_design_version": chapter_four_snapshot["book_design_version"],
+            "book_plan_version": chapter_four_snapshot["book_plan_version"],
+            "volume_plan_version": chapter_four_snapshot["volume_plan_version"],
+            "arc_plan_versions": list(chapter_four_snapshot["arc_plan_versions"]),
+            "canon_snapshot_version": chapter_four_snapshot[
                 "accepted_canon_snapshot_version"
             ],
             "reader_state_version": reader["asset_version_id"],
-            "quality_trend_version": chapter_two_snapshot["quality_trend_version"],
+            "quality_trend_version": chapter_four_snapshot["quality_trend_version"],
             "chapter_outcome_versions": [
-                chapter_two_snapshot["accepted_chapter_outcome_version"]
+                chapter_four_snapshot["accepted_chapter_outcome_version"]
             ],
-            "story_state_version": chapter_two_snapshot["accepted_story_state_version"],
+            "story_state_version": chapter_four_snapshot[
+                "accepted_story_state_version"
+            ],
             "observations": {
                 "evidence_level": "CONTROLLED_FIXTURE",
                 "fixture_only": True,
@@ -3967,20 +4049,20 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     )
     later_recap = _followup_output(
         project_id=project_id,
-        chapter_request_id=chapter_two_request_id,
+        chapter_request_id=chapter_four_request_id,
         followup_type="LONGFORM_RECAP",
         output_key="longform.recap.report",
     )
     later_deviation = _followup_output(
         project_id=project_id,
-        chapter_request_id=chapter_two_request_id,
+        chapter_request_id=chapter_four_request_id,
         followup_type="LONGFORM_RECAP",
         output_key="longform.recap.deviation_report",
     )
     reevaluation_payload = {
         "source_recap_asset_version_id": str(later_recap["asset_version_id"]),
         "deviation_report_asset_version_id": str(later_deviation["asset_version_id"]),
-        "idempotency_key": f"{pending['replan_id']}:reevaluation:chapter:2",
+        "idempotency_key": f"{pending['replan_id']}:reevaluation:chapter:4",
         "trace_id": f"trace:{pending['replan_id']}:reevaluation",
         "correlation_id": str(later_admission.operation_id),
         "actor_id": "untrusted-caller",

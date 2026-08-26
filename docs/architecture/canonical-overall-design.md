@@ -600,6 +600,11 @@ retry/recovery. Consequential ChapterGroup search additionally freezes one exact
 three-to-eight Chapter range. Provider schema and structural Authority both
 require the candidate range, ordered Chapter Function Matrix and realization
 event coverage to match that range; branch strategy cannot silently resize it.
+The Supervisor intersects that range with the current VolumePlan boundary.
+Input resolution preserves non-overlapping executed ChapterGroups as immutable
+history while selecting only the unique group that covers the Narrative cursor;
+overlap, cross-Volume containment or multiple cursor matches is an Authority
+failure.
 
 Candidate projections must expose how the future changes conflict pressure,
 character agency and transformation, costly choice/consequence, reversal and

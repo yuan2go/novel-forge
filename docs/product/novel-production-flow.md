@@ -91,14 +91,16 @@ Arc Scheduler decides **what needs progression now**. Narrative Composer decides
 
 In the current runtime the Book Supervisor asks a deterministic domain service
 for this working set at the exact accepted boundary. Static ChapterGroup cadence
-is a preferred bounded window and is corrected when necessary to preserve the
-legal three-to-eight Chapter contract without leaving a one- or two-Chapter
-terminal fragment. The resulting exact range, desired transformation and hard
-constraints are copied from Search Authority into every branch's admitted
-generation command, Context Bundle, Provider request and retry snapshot. The
-candidate range, Chapter Function Matrix and realization-event coverage must
-match that frozen range. Chapter planning must cover the selected Arcs in its
-schedule, required contributions and Scene event graph; production admission
+is a preferred bounded window and is corrected against the current VolumePlan
+boundary when necessary to preserve the legal three-to-eight Chapter contract
+without leaving a one- or two-Chapter fragment. The resulting exact range,
+desired transformation and hard constraints are copied from Search Authority
+into every branch's admitted generation command, Context Bundle, Provider
+request and retry snapshot. The candidate range, Chapter Function Matrix and
+realization-event coverage must match that frozen range. Historical executed
+groups may remain current immutable records, but only one non-overlapping group
+may cover the active cursor. Chapter planning must cover the selected Arcs in
+its schedule, required contributions and Scene event graph; production admission
 recomputes the same working set and fails closed on drift.
 
 ## 4. ChapterExecutionIntent and ChapterMemo
