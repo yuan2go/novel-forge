@@ -11,7 +11,7 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
         definitions = content_operation_definitions(
             application_build_id="test", commit_sha="a" * 40
         )
-        self.assertEqual(len(definitions), 44)
+        self.assertEqual(len(definitions), 39)
         self.assertEqual(
             {item["name"] for item in definitions}, set(CONTENT_DOMAIN_HANDLERS)
         )

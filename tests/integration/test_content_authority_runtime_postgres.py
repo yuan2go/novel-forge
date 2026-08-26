@@ -9,7 +9,7 @@ from novel_forge.modules.content_authority.application import (
     ContentAuthorityApplication,
     ContentOperationRequest,
 )
-from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.reader_calibration import BLIND_EVALUATION_DIMENSIONS
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -622,106 +622,6 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         )
         self.assertTrue(verification_content["evidence_refs"])
 
-        calibration_profile = self.seed(
-            "quality_calibration_profile",
-            {
-                "profile_id": "readability-golden-v1",
-                "dimension": "readability",
-                "dataset_version": "golden-v1",
-                "threshold_policy_version_id": "quality-policy-v1",
-                "status": "UNCALIBRATED",
-                "revoked": False,
-                "stale": False,
-            },
-            "calibration-profile",
-        )
-        golden_samples = []
-        provider_decisions = []
-        for index in range(5):
-            target = self.seed(
-                "draft_version",
-                {"text": f"Deterministic golden sample {index}."},
-                f"golden-target-{index}",
-            )
-            sample_id = f"sample-{index}"
-            golden = self.run_op(
-                "quality.golden_sample.create",
-                [target],
-                {
-                    "sample": {
-                        "sample_id": sample_id,
-                        "dimension": "readability",
-                        "input_asset_version_ids": [target["asset_version_id"]],
-                        "expected_status": "PASSED",
-                        "expected_score_range": [75, 90],
-                        "human_evidence": [{"span": [0, 10]}],
-                        "annotator": "fixture-adjudicator",
-                        "adjudication_status": "ADJUDICATED",
-                        "dataset_version": "golden-v1",
-                    }
-                },
-            )
-            golden_samples.append(golden)
-            provider_decisions.append(
-                self.seed(
-                    "quality_provider_decision",
-                    {
-                        "sample_id": sample_id,
-                        "dimension": "readability",
-                        "status": "PASSED",
-                        "score": 82,
-                        "confidence": 0.9,
-                        "fixture_protocol_only": True,
-                        "real_model_call": False,
-                        "production_verified": False,
-                    },
-                    f"provider-decision-{index}",
-                )
-            )
-        self.run_op(
-            "quality.human_decision.record",
-            [golden_samples[0]],
-            {
-                "decision": {
-                    "sample_id": "sample-0",
-                    "dimension": "readability",
-                    "status": "PASSED",
-                    "score": 82,
-                    "evidence": [{"span": [0, 10]}],
-                    "annotator": "fixture-human",
-                }
-            },
-        )
-        calibration_report = self.run_op(
-            "quality.calibration.run",
-            [calibration_profile, *golden_samples, *provider_decisions],
-            {
-                "run_id": "calibration-run-v1",
-                "fixture_protocol_only": True,
-                "policy": {
-                    "policy_version": "fixture-calibration-policy-v1",
-                    "minimum_sample_count": 5,
-                    "minimum_coverage": 1.0,
-                    "minimum_status_accuracy": 1.0,
-                    "minimum_score_in_range_rate": 1.0,
-                    "minimum_per_status_precision": 1.0,
-                    "minimum_per_status_recall": 1.0,
-                    "minimum_inter_annotator_agreement": 1.0,
-                    "maximum_unresolved_adjudication": 0,
-                    "confidence_interval_policy": "deterministic-fixture-exact",
-                },
-            },
-        )
-        with self.assertRaisesRegex(KernelError, "QUALITY_FIXTURE_PROMOTION_FORBIDDEN"):
-            self.run_op(
-                "quality.calibration.profile.promote",
-                [calibration_profile, calibration_report],
-            )
-        self.run_op(
-            "quality.calibration.profile.revoke",
-            [calibration_profile],
-            {"reason": "fixture lifecycle proof"},
-        )
         quality_subject = self.seed(
             "draft_version",
             {"text": "A bounded subjective quality calibration subject."},
@@ -751,8 +651,10 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                         "minimum_status_accuracy": 1.0,
                         "maximum_false_pass_count": 0,
                     },
-                    "judge_profile_ref": "judge-profile:readability:v2",
+                    "judge_profile_ref": "quality-judge:readability",
                     "judge_profile_hash": "sha256:" + "a" * 64,
+                    "judge_provider_id": "fixture-judge-provider",
+                    "judge_model_id": "fixture-judge-model",
                     "status": "CANDIDATE",
                 }
             },
@@ -769,7 +671,12 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                     "score": 82,
                     "confidence": 0.9,
                     "evaluator_id": "quality-judge:readability",
-                    "model_id": "fixture-model",
+                    "provider_id": "fixture-judge-provider",
+                    "model_id": "fixture-judge-model",
+                    "generator_provider_id": "fixture-generator-provider",
+                    "generator_model_id": "fixture-generator-model",
+                    "reviewer_provider_id": "fixture-reviewer-provider",
+                    "reviewer_model_id": "fixture-reviewer-model",
                     "prompt_version": "quality-prompt:v2",
                     "prompt_hash": "sha256:" + "b" * 64,
                     "provider_result_asset_version_id": judge_provider_result[
@@ -795,6 +702,17 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                             "score": 82 + ordinal - 1,
                             "evaluator_id": f"human-evaluator:{ordinal}",
                             "evaluator_group": "blind-literary-panel",
+                            "evaluator_identity_class": (
+                                "PROFESSIONAL_EDITOR"
+                                if ordinal == 1
+                                else "EXPERIENCED_READER"
+                            ),
+                            "protocol_version": "human-blind-comparison-v1",
+                            "evaluation_version": "editorial-pairwise-v1",
+                            "scope_type": "CHAPTER",
+                            "chapter_start": 1,
+                            "chapter_end": 1,
+                            "confidence": 0.8,
                             "evidence": [{"reason": "clear causal prose"}],
                             "blind": True,
                         }
@@ -815,22 +733,70 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                         item["asset_version_id"] for item in human_v2
                     ],
                     "adjudicator_id": "adjudicator:readability",
+                    "adjudicator_identity_class": "PROFESSIONAL_EDITOR",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
                     "rationale": "two blind evaluations converge",
                 }
             },
         )
-        blind_pair = self.run_op(
+        blind_pair_human = self.run_op(
             "quality.blind_pair_preference.record",
             [quality_subject, draft],
             {
                 "preference": {
                     "preference_id": "blind-preference:1",
-                    "pair_id": "pair:quality-v2:1",
+                    "pair_id": "pair:quality-v2:human",
+                    "subject_id": "quality-subject:chapter:1",
+                    "candidate_a_asset_version_id": draft["asset_version_id"],
+                    "candidate_b_asset_version_id": quality_subject["asset_version_id"],
+                    "choice": "B",
+                    "evaluator_id": "human-evaluator:3",
+                    "evaluator_role": "HUMAN",
+                    "evaluator_identity_class": "EXPERIENCED_READER",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
+                    "presentation_order": "BA",
+                    "dimension_scores": {
+                        dimension: {"a": 3, "b": 4}
+                        for dimension in BLIND_EVALUATION_DIMENSIONS
+                    },
+                    "confidence": 0.8,
+                    "rationale": "the causal chain is clearer",
+                }
+            },
+        )
+        blind_pair_judge = self.run_op(
+            "quality.blind_pair_preference.record",
+            [quality_subject, draft],
+            {
+                "preference": {
+                    "preference_id": "blind-preference:judge:1",
+                    "pair_id": "pair:quality-v2:judge",
+                    "subject_id": "quality-subject:chapter:1",
                     "candidate_a_asset_version_id": quality_subject["asset_version_id"],
                     "candidate_b_asset_version_id": draft["asset_version_id"],
-                    "preferred_asset_version_id": quality_subject["asset_version_id"],
-                    "evaluator_id": "human-evaluator:3",
-                    "presentation_order": "BA",
+                    "choice": "A",
+                    "evaluator_id": "quality-judge:readability",
+                    "evaluator_role": "AUTOMATED_JUDGE",
+                    "evaluator_identity_class": "MODEL_JUDGE",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
+                    "presentation_order": "AB",
+                    "dimension_scores": {
+                        dimension: {"a": 4, "b": 3}
+                        for dimension in BLIND_EVALUATION_DIMENSIONS
+                    },
+                    "confidence": 0.75,
                     "rationale": "the causal chain is clearer",
                 }
             },
@@ -857,18 +823,36 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 judge_v2,
                 *human_v2,
                 adjudication_v2,
-                blind_pair,
+                blind_pair_human,
+                blind_pair_judge,
                 reader_outcome,
             ],
-            {"run_id": "calibration-run-v2", "fixture_protocol_only": True},
+            {
+                "run_id": "calibration-run-v2",
+                "protocol_version": "human-blind-comparison-v1",
+                "evaluation_version": "editorial-pairwise-v1",
+                "evidence_scope": "BOUNDED_EVIDENCE",
+                "fixture_protocol_only": True,
+            },
         )
         calibration_v2_content = self.read_content(calibration_v2["asset_version_id"])
         self.assertEqual(calibration_v2_content["calibration_status"], "UNCALIBRATED")
+        self.assertEqual(calibration_v2_content["evidence_status"], "BOUNDED_EVIDENCE")
         self.assertFalse(calibration_v2_content["activation_allowed"])
         self.assertFalse(calibration_v2_content["production_verified"])
         self.assertEqual(
+            calibration_v2_content["independence_status"],
+            "CROSS_PROVIDER_DISTINCT_MODEL",
+        )
+        self.assertEqual(
+            calibration_v2_content["diagnostics"]["pairwise_agreement"][
+                "agreement_rate"
+            ],
+            1.0,
+        )
+        self.assertEqual(
             calibration_v2_content["diagnostics"]["subjective_reference_source"],
-            "ADJUDICATED_EVALUATION",
+            "ADJUDICATED_SUBJECTIVE_EVIDENCE",
         )
         self.assertFalse(
             calibration_v2_content["diagnostics"][
@@ -961,7 +945,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         self.assertEqual({name for name, _ in operations}, set(CONTENT_CODECS))
         self.assertEqual(
             {name: status for name, status in operations if status != "SUCCEEDED"},
-            {"quality.calibration.profile.promote": "FAILED_FINAL"},
+            {},
         )
         succeeded = sum(status == "SUCCEEDED" for _, status in operations)
         self.assertEqual(audits, succeeded)

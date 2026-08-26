@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import importlib.util
 
 import pytest
 
@@ -15,23 +16,94 @@ from novel_forge.modules.chapter_quality_authority import (
     evaluate_quality_calibration_v2,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
+from novel_forge.modules.content_authority.handlers import CONTENT_DOMAIN_HANDLERS
+from novel_forge.modules.reader_calibration import BLIND_EVALUATION_DIMENSIONS
+
+
+PROTOCOL_VERSION = "human-blind-comparison-v1"
+EVALUATION_VERSION = "editorial-pairwise-v1"
+
+
+def _scores(a: int | None = 4, b: int | None = 3):
+    return {dimension: {"a": a, "b": b} for dimension in BLIND_EVALUATION_DIMENSIONS}
+
+
+def _preference(
+    *,
+    ordinal: int,
+    evaluator_id: str,
+    evaluator_role: str,
+    evaluator_identity_class: str,
+    choice: str,
+    candidate_a: str = "draft:v1",
+    candidate_b: str = "draft:v2",
+    presentation_order: str = "AB",
+    scores=None,
+) -> BlindPairPreference:
+    return BlindPairPreference(
+        preference_id=f"preference:{ordinal}:{evaluator_id}",
+        pair_id=f"pair:{ordinal}:{evaluator_id}",
+        subject_id=f"subject:{ordinal}",
+        candidate_a_asset_version_id=candidate_a,
+        candidate_b_asset_version_id=candidate_b,
+        choice=choice,
+        evaluator_id=evaluator_id,
+        evaluator_role=evaluator_role,
+        evaluator_identity_class=evaluator_identity_class,
+        protocol_version=PROTOCOL_VERSION,
+        evaluation_version=EVALUATION_VERSION,
+        scope_type="CHAPTER",
+        chapter_start=ordinal,
+        chapter_end=ordinal,
+        presentation_order=presentation_order,
+        dimension_scores=scores or _scores(),
+        confidence=0.8,
+        rationale="The chosen version has clearer causal progression.",
+        preference_asset_version_id=f"preference-asset:{ordinal}:{evaluator_id}",
+    )
 
 
 def _fixture(*, fixture_protocol_only: bool = False):
-    humans = tuple(
+    humans = (
         HumanEvaluation(
-            evaluation_id=f"human:{number}",
+            evaluation_id="human:1",
             subject_asset_version_id="draft:v1",
             dimension="readability",
             status="PASSED",
             score=82,
-            evaluator_id=f"editor:{number}",
-            evaluator_group="EDITOR",
+            evaluator_id="editor:1",
+            evaluator_group="EDITORIAL_PANEL",
+            evaluator_identity_class="PROFESSIONAL_EDITOR",
+            protocol_version=PROTOCOL_VERSION,
+            evaluation_version=EVALUATION_VERSION,
+            scope_type="CHAPTER",
+            chapter_start=1,
+            chapter_end=1,
+            confidence=0.8,
             evidence=({"span": [0, 10]},),
             blind=True,
-            evaluation_asset_version_id=f"human-evaluation:v{number}",
-        )
-        for number in (1, 2)
+            evaluation_asset_version_id="human-evaluation:v1",
+        ),
+        HumanEvaluation(
+            evaluation_id="human:2",
+            subject_asset_version_id="draft:v1",
+            dimension="readability",
+            status="PASSED",
+            score=84,
+            evaluator_id="reader:2",
+            evaluator_group="EDITORIAL_PANEL",
+            evaluator_identity_class="EXPERIENCED_READER",
+            protocol_version=PROTOCOL_VERSION,
+            evaluation_version=EVALUATION_VERSION,
+            scope_type="CHAPTER",
+            chapter_start=1,
+            chapter_end=1,
+            confidence=0.7,
+            evidence=({"span": [12, 24]},),
+            blind=True,
+            evaluation_asset_version_id="human-evaluation:v2",
+        ),
     )
     adjudication = AdjudicatedEvaluation(
         adjudication_id="adjudication:1",
@@ -43,7 +115,13 @@ def _fixture(*, fixture_protocol_only: bool = False):
             item.evaluation_asset_version_id for item in humans
         ),
         adjudicator_id="chief-editor:1",
-        rationale="independent readers agree and cite supporting spans",
+        adjudicator_identity_class="PROFESSIONAL_EDITOR",
+        protocol_version=PROTOCOL_VERSION,
+        evaluation_version=EVALUATION_VERSION,
+        scope_type="CHAPTER",
+        chapter_start=1,
+        chapter_end=1,
+        rationale="Two independent subjective evaluations were preserved.",
         adjudication_asset_version_id="adjudication:v1",
     )
     judge = JudgeEvaluation(
@@ -54,21 +132,42 @@ def _fixture(*, fixture_protocol_only: bool = False):
         score=84,
         confidence=0.91,
         evaluator_id="judge-profile:1",
-        model_id="model:1",
+        provider_id="provider:judge",
+        model_id="model:judge",
+        generator_provider_id="provider:generator",
+        generator_model_id="model:generator",
+        reviewer_provider_id="provider:reviewer",
+        reviewer_model_id="model:reviewer",
         prompt_version="prompt:quality:v3",
         prompt_hash="sha256:" + "1" * 64,
         result_asset_version_id="judge-evaluation:v1",
     )
-    blind = BlindPairPreference(
-        preference_id="preference:1",
-        pair_id="pair:1",
-        candidate_a_asset_version_id="draft:v1",
-        candidate_b_asset_version_id="draft:v2",
-        preferred_asset_version_id="draft:v1",
-        evaluator_id="reader:1",
-        presentation_order="BA",
-        rationale="clearer causal progression",
-        preference_asset_version_id="preference:v1",
+    blind = (
+        _preference(
+            ordinal=1,
+            evaluator_id="editor:1",
+            evaluator_role="HUMAN",
+            evaluator_identity_class="PROFESSIONAL_EDITOR",
+            choice="A",
+        ),
+        _preference(
+            ordinal=1,
+            evaluator_id="reader:2",
+            evaluator_role="HUMAN",
+            evaluator_identity_class="EXPERIENCED_READER",
+            choice="B",
+            candidate_a="draft:v2",
+            candidate_b="draft:v1",
+            presentation_order="BA",
+            scores=_scores(3, 4),
+        ),
+        _preference(
+            ordinal=1,
+            evaluator_id="judge-profile:1",
+            evaluator_role="AUTOMATED_JUDGE",
+            evaluator_identity_class="MODEL_JUDGE",
+            choice="A",
+        ),
     )
     reader = ReaderOutcomeEvidence(
         evidence_id="reader-outcome:1",
@@ -93,11 +192,16 @@ def _fixture(*, fixture_protocol_only: bool = False):
         },
         judge_profile_ref="judge-profile:1",
         judge_profile_hash="sha256:" + "2" * 64,
+        judge_provider_id="provider:judge",
+        judge_model_id="model:judge",
     )
     run = CalibrationRun(
         run_id="calibration-run:v2",
         profile_version_id=profile.profile_version_id,
         dimension=profile.dimension,
+        protocol_version=PROTOCOL_VERSION,
+        evaluation_version=EVALUATION_VERSION,
+        evidence_scope="BOUNDED_EVIDENCE",
         judge_evaluation_asset_version_ids=(judge.result_asset_version_id,),
         adjudicated_evaluation_asset_version_ids=(
             adjudication.adjudication_asset_version_id,
@@ -105,64 +209,149 @@ def _fixture(*, fixture_protocol_only: bool = False):
         human_evaluation_asset_version_ids=tuple(
             item.evaluation_asset_version_id for item in humans
         ),
-        blind_pair_preference_asset_version_ids=(blind.preference_asset_version_id,),
+        blind_pair_preference_asset_version_ids=tuple(
+            item.preference_asset_version_id for item in blind
+        ),
         reader_outcome_evidence_asset_version_ids=(reader.evidence_asset_version_id,),
         fixture_protocol_only=fixture_protocol_only,
     )
     return profile, run, humans, adjudication, judge, blind, reader
 
 
-def test_v2_separates_all_evidence_roles_and_profile_lineage() -> None:
-    profile, run, humans, adjudication, judge, blind, reader = _fixture()
-    result = evaluate_quality_calibration_v2(
+def _evaluate(fixture):
+    profile, run, humans, adjudication, judge, blind, reader = fixture
+    return evaluate_quality_calibration_v2(
         run=run,
         profile=profile,
         judge_evaluations=(judge,),
         human_evaluations=humans,
         adjudicated_evaluations=(adjudication,),
-        blind_preferences=(blind,),
+        blind_preferences=blind,
         reader_outcomes=(reader,),
     )
+
+
+def test_bounded_v2_separates_roles_but_never_activates_profile() -> None:
+    result = _evaluate(_fixture())
+
     assert result.contract_version == "quality-calibration-result-v2"
-    assert result.calibration_status == "CALIBRATION_CANDIDATE"
-    assert result.activation_allowed is True
+    assert result.calibration_status == "UNCALIBRATED"
+    assert result.evidence_status == "BOUNDED_EVIDENCE"
+    assert result.activation_allowed is False
+    assert result.status_accuracy == 1
     assert result.false_pass_count == 0
-    assert result.blind_pair_evidence_count == 1
+    assert result.blind_pair_evidence_count == 3
     assert result.reader_outcome_evidence_count == 1
+    assert result.independence_status == "CROSS_PROVIDER_DISTINCT_MODEL"
+    assert result.diagnostics["pairwise_agreement"]["agreement_rate"] == 1
+    assert result.diagnostics["weighted_ordinal_agreement"]["agreement"] == 1
+    assert result.diagnostics["position_bias"]["HUMAN"]["a_choice_rate"] == 0.5
     assert result.diagnostics["single_human_evaluation_is_ground_truth"] is False
     assert result.diagnostics["reader_outcome_can_mutate_narrative_truth"] is False
     assert result.production_verified is False
 
 
-def test_subjective_adjudication_requires_two_independent_humans() -> None:
-    with pytest.raises(ValueError, match="two independent"):
-        AdjudicatedEvaluation(
-            "adjudication:single",
-            "draft:v1",
-            "readability",
-            "PASSED",
-            (70, 90),
-            ("human:v1",),
-            "chief-editor",
-            "one opinion is not ground truth",
-            "adjudication:single:v1",
-        )
-
-
-def test_fixture_cannot_activate_and_lineage_drift_fails_closed() -> None:
-    profile, run, humans, adjudication, judge, blind, reader = _fixture(
-        fixture_protocol_only=True
+@pytest.mark.parametrize("choice", ["A", "B", "TIE", "CANNOT_JUDGE"])
+def test_pair_protocol_supports_all_frozen_choices(choice: str) -> None:
+    scores = _scores(None, None) if choice == "CANNOT_JUDGE" else _scores()
+    preference = _preference(
+        ordinal=1,
+        evaluator_id="editor:1",
+        evaluator_role="HUMAN",
+        evaluator_identity_class="PROFESSIONAL_EDITOR",
+        choice=choice,
+        scores=scores,
     )
+    assert preference.choice == choice
+
+
+def test_pair_protocol_rejects_dimension_scope_confidence_and_identity_drift() -> None:
+    base = _preference(
+        ordinal=1,
+        evaluator_id="editor:1",
+        evaluator_role="HUMAN",
+        evaluator_identity_class="PROFESSIONAL_EDITOR",
+        choice="A",
+    )
+    with pytest.raises(ValueError, match="frozen dimensions"):
+        replace(base, dimension_scores={"readability": {"a": 4, "b": 3}})
+    with pytest.raises(ValueError, match="Chapter scope"):
+        replace(base, chapter_end=2)
+    with pytest.raises(ValueError, match="confidence"):
+        replace(base, confidence=1.1)
+    with pytest.raises(ValueError, match="evaluator identity"):
+        replace(base, evaluator_identity_class="")
+
+
+def test_subjective_adjudication_requires_two_distinct_blind_humans() -> None:
+    profile, run, humans, adjudication, judge, blind, reader = _fixture()
+    duplicate_identity = replace(humans[1], evaluator_id=humans[0].evaluator_id)
+    with pytest.raises(KernelError) as raised:
+        evaluate_quality_calibration_v2(
+            run=run,
+            profile=profile,
+            judge_evaluations=(judge,),
+            human_evaluations=(humans[0], duplicate_identity),
+            adjudicated_evaluations=(adjudication,),
+            blind_preferences=blind,
+            reader_outcomes=(reader,),
+        )
+    assert raised.value.code == "QUALITY_ADJUDICATION_INDEPENDENCE_REQUIRED"
+
+
+@pytest.mark.parametrize(
+    ("judge", "expected"),
+    [
+        (
+            {
+                "generator_provider_id": "provider:judge",
+                "generator_model_id": "model:judge",
+            },
+            "SAME_MODEL",
+        ),
+        (
+            {
+                "generator_provider_id": "provider:judge",
+                "generator_model_id": "model:other",
+            },
+            "SAME_PROVIDER",
+        ),
+    ],
+)
+def test_same_model_or_provider_is_explicit_and_cannot_activate(
+    judge: dict[str, str], expected: str
+) -> None:
+    profile, run, humans, adjudication, current, blind, reader = _fixture()
     result = evaluate_quality_calibration_v2(
         run=run,
         profile=profile,
-        judge_evaluations=(judge,),
+        judge_evaluations=(replace(current, **judge),),
         human_evaluations=humans,
         adjudicated_evaluations=(adjudication,),
-        blind_preferences=(blind,),
+        blind_preferences=blind,
         reader_outcomes=(reader,),
     )
+    assert result.independence_status == expected
+    assert result.diagnostics["independent_activation_eligible"] is False
     assert result.activation_allowed is False
+
+
+def test_diagnostics_report_small_sample_limits_without_threshold_games() -> None:
+    result = _evaluate(_fixture(fixture_protocol_only=True))
+
+    assert result.calibration_status == "UNCALIBRATED"
+    assert result.evidence_status == "BOUNDED_EVIDENCE"
+    assert result.diagnostics["rank_correlation"]["status"] == "NOT_ESTIMABLE"
+    assert result.diagnostics["preference_stability"]["status"] == "NOT_ESTIMABLE"
+    assert result.diagnostics["confidence_calibration"]["bins"]
+    assert result.diagnostics["false_positive_negative"] == {
+        "false_positive_count": 0,
+        "false_negative_count": 0,
+    }
+
+
+def test_lineage_drift_fails_closed() -> None:
+    profile, run, humans, adjudication, judge, blind, reader = _fixture()
     with pytest.raises(KernelError) as raised:
         evaluate_quality_calibration_v2(
             run=replace(run, judge_evaluation_asset_version_ids=("drift:v1",)),
@@ -170,7 +359,25 @@ def test_fixture_cannot_activate_and_lineage_drift_fails_closed() -> None:
             judge_evaluations=(judge,),
             human_evaluations=humans,
             adjudicated_evaluations=(adjudication,),
-            blind_preferences=(blind,),
+            blind_preferences=blind,
             reader_outcomes=(reader,),
         )
     assert raised.value.code == "QUALITY_CALIBRATION_V2_INPUT_SET_CONFLICT"
+
+
+def test_v1_calibration_is_not_a_current_content_authority() -> None:
+    legacy_operations = {
+        "quality.golden_sample.create",
+        "quality.human_decision.record",
+        "quality.calibration.run",
+        "quality.calibration.profile.promote",
+        "quality.calibration.profile.revoke",
+    }
+    assert legacy_operations.isdisjoint(CONTENT_CODECS)
+    assert legacy_operations.isdisjoint(CONTENT_DOMAIN_HANDLERS)
+    assert (
+        importlib.util.find_spec(
+            "novel_forge.modules.chapter_quality_authority.calibration"
+        )
+        is None
+    )

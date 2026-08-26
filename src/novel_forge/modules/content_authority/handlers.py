@@ -34,12 +34,6 @@ from novel_forge.modules.worldbuilding.domain import (
     build_world_bible,
     validate_world_rules,
 )
-from novel_forge.modules.chapter_quality_authority.calibration import (
-    QualityGoldenSample,
-    QualityHumanDecision,
-    evaluate_calibration_run,
-    promote_calibration_profile,
-)
 from novel_forge.modules.chapter_quality_authority.calibration_v2 import (
     AdjudicatedEvaluation,
     BlindPairPreference,
@@ -91,11 +85,6 @@ CONTENT_DOMAIN_HANDLERS = {
     "longform.recap.enhance": build_enhanced_recap,
     "fact.claim.register": dict,
     "fact.verify": verify_claim,
-    "quality.golden_sample.create": QualityGoldenSample,
-    "quality.human_decision.record": QualityHumanDecision,
-    "quality.calibration.run": evaluate_calibration_run,
-    "quality.calibration.profile.promote": promote_calibration_profile,
-    "quality.calibration.profile.revoke": promote_calibration_profile,
     "quality.profile.v2.create": QualityProfileVersion,
     "quality.judge_evaluation.record": JudgeEvaluation,
     "quality.human_evaluation.record": HumanEvaluation,

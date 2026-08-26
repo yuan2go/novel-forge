@@ -20,17 +20,6 @@ from novel_forge.modules.characters.domain import (
     build_character,
     build_relationship_state,
 )
-from novel_forge.modules.chapter_quality_authority.calibration import (
-    QualityCalibrationPolicy,
-    QualityCalibrationProfile,
-    QualityCalibrationRun,
-    QualityCalibrationStatus,
-    QualityGoldenSample,
-    QualityHumanDecision,
-    QualityProviderDecision,
-    evaluate_calibration_run,
-    promote_calibration_profile,
-)
 from novel_forge.modules.chapter_quality_authority.calibration_v2 import (
     AdjudicatedEvaluation,
     BlindPairPreference,
@@ -563,28 +552,6 @@ def _recap(request: AuthorityHandlerRequest) -> dict[str, Any]:
     return build_enhanced_recap(project_id=request.project_id, reports=reports)
 
 
-def _golden_sample_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
-    payload = dict(_payload(request)["sample"])
-    payload["project_scope"] = request.project_id
-    if tuple(payload["input_asset_version_ids"]) != tuple(
-        item.asset_version_id for item in request.inputs
-    ):
-        raise ValueError("golden sample targets must equal its frozen input assets")
-    sample = QualityGoldenSample(
-        sample_id=str(payload["sample_id"]),
-        project_scope=request.project_id,
-        dimension=str(payload["dimension"]),
-        input_asset_version_ids=tuple(payload["input_asset_version_ids"]),
-        expected_status=str(payload["expected_status"]),
-        expected_score_range=tuple(payload["expected_score_range"]),
-        human_evidence=tuple(payload["human_evidence"]),
-        annotator=str(payload["annotator"]),
-        adjudication_status=str(payload["adjudication_status"]),
-        dataset_version=str(payload["dataset_version"]),
-    )
-    return {"project_id": request.project_id, **asdict(sample)}
-
-
 def _creative_candidates_generate(request: AuthorityHandlerRequest) -> dict[str, Any]:
     brief = _one(request, "creative_brief")
     receipt = _one(request, "creative_candidate_generation_receipt")
@@ -723,26 +690,6 @@ def author_operator_checklist(request: AuthorityHandlerRequest) -> dict[str, Any
     }
 
 
-def _human_decision_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
-    sample = _one(request, "quality_golden_sample")
-    payload = dict(_payload(request)["decision"])
-    if str(payload.get("sample_id") or "") != str(
-        sample.content.get("sample_id") or ""
-    ):
-        raise ValueError("human decision targets another golden sample")
-    decision = QualityHumanDecision(
-        sample_id=str(payload["sample_id"]),
-        dimension=str(payload["dimension"]),
-        status=str(payload["status"]),
-        score=payload.get("score"),
-        evidence=tuple(payload.get("evidence") or ()),
-        annotator=str(payload["annotator"]),
-    )
-    if decision.dimension != sample.content.get("dimension"):
-        raise ValueError("human decision dimension differs from its sample")
-    return {"project_id": request.project_id, **asdict(decision)}
-
-
 def _quality_profile_v2_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
     payload = dict(_payload(request)["profile"])
     profile = QualityProfileVersion(
@@ -754,6 +701,8 @@ def _quality_profile_v2_create(request: AuthorityHandlerRequest) -> dict[str, An
         thresholds=dict(payload["thresholds"]),
         judge_profile_ref=str(payload["judge_profile_ref"]),
         judge_profile_hash=str(payload["judge_profile_hash"]),
+        judge_provider_id=str(payload["judge_provider_id"]),
+        judge_model_id=str(payload["judge_model_id"]),
         previous_profile_version_id=str(
             payload.get("previous_profile_version_id") or ""
         ),
@@ -783,7 +732,12 @@ def _judge_evaluation_v2_record(request: AuthorityHandlerRequest) -> dict[str, A
         score=payload.get("score"),
         confidence=float(payload["confidence"]),
         evaluator_id=str(payload["evaluator_id"]),
+        provider_id=str(payload["provider_id"]),
         model_id=str(payload["model_id"]),
+        generator_provider_id=str(payload["generator_provider_id"]),
+        generator_model_id=str(payload["generator_model_id"]),
+        reviewer_provider_id=str(payload["reviewer_provider_id"]),
+        reviewer_model_id=str(payload["reviewer_model_id"]),
         prompt_version=str(payload["prompt_version"]),
         prompt_hash=str(payload["prompt_hash"]),
         result_asset_version_id=provider_result_id,
@@ -802,28 +756,34 @@ def _human_evaluation_v2_record(request: AuthorityHandlerRequest) -> dict[str, A
     payload = dict(_payload(request)["evaluation"])
     subject_id = str(payload["subject_asset_version_id"])
     _require_frozen_version(request, subject_id)
-    required = (
-        "evaluation_id",
-        "dimension",
-        "status",
-        "evaluator_id",
-        "evaluator_group",
+    evaluation = HumanEvaluation(
+        evaluation_id=str(payload["evaluation_id"]),
+        subject_asset_version_id=subject_id,
+        dimension=str(payload["dimension"]),
+        status=str(payload["status"]),
+        score=payload.get("score"),
+        evaluator_id=str(payload["evaluator_id"]),
+        evaluator_group=str(payload["evaluator_group"]),
+        evaluator_identity_class=str(payload["evaluator_identity_class"]),
+        protocol_version=str(payload["protocol_version"]),
+        evaluation_version=str(payload["evaluation_version"]),
+        scope_type=str(payload["scope_type"]),
+        chapter_start=int(payload["chapter_start"]),
+        chapter_end=int(payload["chapter_end"]),
+        confidence=float(payload["confidence"]),
+        evidence=tuple(payload.get("evidence") or ()),
+        blind=bool(payload.get("blind", False)),
+        evaluation_asset_version_id=str(payload["evaluation_id"]),
     )
-    if any(not str(payload.get(key) or "") for key in required):
-        raise ValueError("HumanEvaluation lineage is incomplete")
     return {
         "type": "HumanEvaluation",
         "contract_version": "human-evaluation-v2",
         "project_id": request.project_id,
-        "evaluation_id": str(payload["evaluation_id"]),
-        "subject_asset_version_id": subject_id,
-        "dimension": str(payload["dimension"]),
-        "status": str(payload["status"]),
-        "score": payload.get("score"),
-        "evaluator_id": str(payload["evaluator_id"]),
-        "evaluator_group": str(payload["evaluator_group"]),
-        "evidence": list(payload.get("evidence") or ()),
-        "blind": bool(payload.get("blind", False)),
+        **{
+            key: value
+            for key, value in asdict(evaluation).items()
+            if key != "evaluation_asset_version_id"
+        },
         "ground_truth": False,
         "subjective_evaluation_requires_adjudication": True,
     }
@@ -846,6 +806,12 @@ def _adjudication_v2_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
         score_range=tuple(payload["score_range"]),
         source_human_evaluation_asset_version_ids=human_ids,
         adjudicator_id=str(payload["adjudicator_id"]),
+        adjudicator_identity_class=str(payload["adjudicator_identity_class"]),
+        protocol_version=str(payload["protocol_version"]),
+        evaluation_version=str(payload["evaluation_version"]),
+        scope_type=str(payload["scope_type"]),
+        chapter_start=int(payload["chapter_start"]),
+        chapter_end=int(payload["chapter_end"]),
         rationale=str(payload["rationale"]),
         adjudication_asset_version_id=str(payload["adjudication_id"]),
     )
@@ -873,11 +839,21 @@ def _blind_pair_preference_v2_record(
     preference = BlindPairPreference(
         preference_id=str(payload["preference_id"]),
         pair_id=str(payload["pair_id"]),
+        subject_id=str(payload["subject_id"]),
         candidate_a_asset_version_id=candidate_a_id,
         candidate_b_asset_version_id=candidate_b_id,
-        preferred_asset_version_id=str(payload["preferred_asset_version_id"]),
+        choice=str(payload["choice"]),
         evaluator_id=str(payload["evaluator_id"]),
+        evaluator_role=str(payload["evaluator_role"]),
+        evaluator_identity_class=str(payload["evaluator_identity_class"]),
+        protocol_version=str(payload["protocol_version"]),
+        evaluation_version=str(payload["evaluation_version"]),
+        scope_type=str(payload["scope_type"]),
+        chapter_start=int(payload["chapter_start"]),
+        chapter_end=int(payload["chapter_end"]),
         presentation_order=str(payload["presentation_order"]),
+        dimension_scores=dict(payload["dimension_scores"]),
+        confidence=float(payload["confidence"]),
         rationale=str(payload["rationale"]),
         preference_asset_version_id=str(payload["preference_id"]),
     )
@@ -944,6 +920,9 @@ def _calibration_v2_run(request: AuthorityHandlerRequest) -> dict[str, Any]:
         run_id=str(payload["run_id"]),
         profile_version_id=profile_asset.asset_version_id,
         dimension=profile.dimension,
+        protocol_version=str(payload["protocol_version"]),
+        evaluation_version=str(payload["evaluation_version"]),
+        evidence_scope=str(payload.get("evidence_scope") or "BOUNDED_EVIDENCE"),
         judge_evaluation_asset_version_ids=tuple(
             item.asset_version_id for item in judge_assets
         ),
@@ -1072,132 +1051,6 @@ def _adjudication_from_asset(item: AuthorityInputAsset) -> AdjudicatedEvaluation
     )
 
 
-def _calibration_run(request: AuthorityHandlerRequest) -> dict[str, Any]:
-    profile_asset = _one(request, "quality_calibration_profile")
-    sample_assets = _many(request, "quality_golden_sample")
-    decision_assets = _many(request, "quality_provider_decision")
-    profile = _calibration_profile(profile_asset.content)
-    payload = _payload(request)
-    run = QualityCalibrationRun(
-        run_id=str(payload["run_id"]),
-        profile_id=profile.profile_id,
-        dimension=profile.dimension,
-        dataset_version=profile.dataset_version,
-        provider_decision_asset_version_ids=tuple(
-            item.asset_version_id for item in decision_assets
-        ),
-        sample_ids=tuple(str(item.content["sample_id"]) for item in sample_assets),
-    )
-    policy_payload = dict(payload["policy"])
-    policy = QualityCalibrationPolicy(**policy_payload)
-    report = evaluate_calibration_run(
-        run=run,
-        profile=profile,
-        samples=tuple(_golden_sample(item.content) for item in sample_assets),
-        decisions=tuple(
-            QualityProviderDecision(
-                sample_id=str(item.content["sample_id"]),
-                dimension=str(item.content["dimension"]),
-                status=str(item.content["status"]),
-                score=item.content.get("score"),
-                confidence=float(item.content["confidence"]),
-                provider_evidence_asset_version_id=item.asset_version_id,
-            )
-            for item in decision_assets
-        ),
-        policy=policy,
-    )
-    return {
-        "project_id": request.project_id,
-        "profile_asset_version_id": profile_asset.asset_version_id,
-        "sample_asset_version_ids": [item.asset_version_id for item in sample_assets],
-        "provider_decision_asset_version_ids": [
-            item.asset_version_id for item in decision_assets
-        ],
-        **asdict(report),
-        "calibration_status": report.calibration_status.value,
-        "fixture_protocol_only": bool(payload.get("fixture_protocol_only", False)),
-        "real_model_call": False,
-        "production_verified": False,
-    }
-
-
-def _calibration_profile_promote(request: AuthorityHandlerRequest) -> dict[str, Any]:
-    profile_asset = _one(request, "quality_calibration_profile")
-    report_asset = _one(request, "quality_calibration_report")
-    report_content = report_asset.content
-    from novel_forge.modules.chapter_quality_authority.calibration import (
-        QualityCalibrationReport,
-    )
-
-    report = QualityCalibrationReport(
-        **{
-            key: value
-            for key, value in report_content.items()
-            if key in QualityCalibrationReport.__dataclass_fields__
-            and key != "calibration_status"
-        },
-        calibration_status=QualityCalibrationStatus(
-            str(report_content["calibration_status"])
-        ),
-    )
-    promoted = promote_calibration_profile(
-        profile=_calibration_profile(profile_asset.content), report=report
-    )
-    return {
-        "project_id": request.project_id,
-        **asdict(promoted),
-        "status": promoted.status.value,
-        "promoted_from_asset_version_id": profile_asset.asset_version_id,
-        "calibration_report_asset_version_id": report_asset.asset_version_id,
-        "production_verified": False,
-    }
-
-
-def _calibration_profile_revoke(request: AuthorityHandlerRequest) -> dict[str, Any]:
-    profile_asset = _one(request, "quality_calibration_profile")
-    profile = _calibration_profile(profile_asset.content)
-    reason = str(_payload(request).get("reason") or "").strip()
-    if not reason:
-        raise ValueError("calibration revocation reason is required")
-    return {
-        "project_id": request.project_id,
-        **asdict(profile),
-        "status": QualityCalibrationStatus.CALIBRATION_REVOKED.value,
-        "revoked": True,
-        "revocation_reason": reason,
-        "revoked_asset_version_id": profile_asset.asset_version_id,
-        "production_verified": False,
-    }
-
-
-def _calibration_profile(content: dict[str, Any]) -> QualityCalibrationProfile:
-    return QualityCalibrationProfile(
-        profile_id=str(content["profile_id"]),
-        dimension=str(content["dimension"]),
-        dataset_version=str(content["dataset_version"]),
-        threshold_policy_version_id=str(content["threshold_policy_version_id"]),
-        status=QualityCalibrationStatus(str(content.get("status") or "UNCALIBRATED")),
-        revoked=bool(content.get("revoked")),
-        stale=bool(content.get("stale")),
-    )
-
-
-def _golden_sample(content: dict[str, Any]) -> QualityGoldenSample:
-    return QualityGoldenSample(
-        sample_id=str(content["sample_id"]),
-        project_scope=str(content["project_scope"]),
-        dimension=str(content["dimension"]),
-        input_asset_version_ids=tuple(content["input_asset_version_ids"]),
-        expected_status=str(content["expected_status"]),
-        expected_score_range=tuple(content["expected_score_range"]),
-        human_evidence=tuple(content["human_evidence"]),
-        annotator=str(content["annotator"]),
-        adjudication_status=str(content["adjudication_status"]),
-        dataset_version=str(content["dataset_version"]),
-    )
-
-
 CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
     name: ContentHandlerCodec(name, asset_type, output_key, binder)
     for name, asset_type, output_key, binder in (
@@ -1306,36 +1159,6 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("longform.recap.enhance", "longform_recap_report", "longform.recap", _recap),
         ("fact.claim.register", "fact_claim", "fact.claim", _fact_claim_register),
         ("fact.verify", "fact_verification_report", "fact.verification", _fact_verify),
-        (
-            "quality.golden_sample.create",
-            "quality_golden_sample",
-            "quality.golden_sample",
-            _golden_sample_create,
-        ),
-        (
-            "quality.human_decision.record",
-            "quality_human_decision",
-            "quality.human_decision",
-            _human_decision_record,
-        ),
-        (
-            "quality.calibration.run",
-            "quality_calibration_report",
-            "quality.calibration_report",
-            _calibration_run,
-        ),
-        (
-            "quality.calibration.profile.promote",
-            "quality_calibration_profile",
-            "quality.calibration.profile",
-            _calibration_profile_promote,
-        ),
-        (
-            "quality.calibration.profile.revoke",
-            "quality_calibration_profile",
-            "quality.calibration.profile_revocation",
-            _calibration_profile_revoke,
-        ),
         (
             "quality.profile.v2.create",
             "quality_profile_version",
