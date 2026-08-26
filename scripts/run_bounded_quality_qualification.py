@@ -28,6 +28,7 @@ from novel_forge.modules.chapter_quality_authority import (
     PostgresQualityQualificationAuthority,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.provider_control import normalize_provider_id
 from novel_forge.modules.reader_calibration import (
     BlindScope,
     EvaluatorIdentityClass,
@@ -89,6 +90,61 @@ _BASE_PERMISSIONS = frozenset(
         "quality.qualification.query",
     }
 )
+_RUNTIME_ROLE_STAGES = {
+    "generator": ("draft", "revision"),
+    "reviewer": (
+        "review",
+        "rereview",
+        "canon_extraction",
+        "narrative_semantic_evaluation",
+    ),
+    "judge": (
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform",
+    ),
+    "reader_proxy": ("reader_outcome",),
+}
+_PACK_RUNTIME_BINDINGS = {
+    "planning": ("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "story_planning_pack"),
+    "chapter": ("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", "chapter_generation_pack"),
+    "reader_proxy": (
+        "NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID",
+        "reader_outcome_pack",
+    ),
+    "narrative_evaluation": (
+        "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID",
+        "narrative_semantic_evaluation_pack",
+    ),
+}
+_STAGE_ROUTE_ENVIRONMENT_KEYS = {
+    "draft": ("NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
+    "review": ("NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
+    "revision": ("NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
+    "rereview": ("NOVEL_FORGE_REREVIEW_PROVIDER", "NOVEL_FORGE_REREVIEW_MODEL"),
+    "canon_extraction": (
+        "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER",
+        "NOVEL_FORGE_CANON_EXTRACTION_MODEL",
+    ),
+    "quality_structural": ("NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+    "quality_commercial": ("NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+    "quality_source_originality": (
+        "NOVEL_FORGE_QUALITY_PROVIDER",
+        "NOVEL_FORGE_QUALITY_MODEL",
+    ),
+    "quality_longform": ("NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+    "quality_platform": ("NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+    "reader_outcome": (
+        "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
+        "NOVEL_FORGE_READER_OUTCOME_MODEL",
+    ),
+    "narrative_semantic_evaluation": (
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
+    ),
+}
 
 
 def _json_file(path: str | Path) -> dict[str, Any]:
@@ -300,7 +356,8 @@ def _verify_freeze_lineage(
                 continue
             uow.cursor.execute(
                 """
-                SELECT version.manifest_hash
+                SELECT deployment.pack_id, version.manifest_hash,
+                       deployment.deployment_status
                 FROM authority_capability_pack_deployment AS deployment
                 JOIN authority_capability_pack_version AS version
                   ON version.pack_id=deployment.pack_id
@@ -310,8 +367,140 @@ def _verify_freeze_lineage(
                 [deployment_id],
             )
             pack = uow.cursor.fetchone()
-            if pack is None or str(pack[0]) != expected_hash:
+            expected_pack_id = str(binding.get("pack_id") or "")
+            if mode == "real" and not expected_pack_id:
+                raise ValueError(f"real Capability Pack {role} lacks pack_id")
+            if (
+                pack is None
+                or (expected_pack_id and str(pack[0]) != expected_pack_id)
+                or str(pack[1]) != expected_hash
+                or str(pack[2]) != "ACTIVE"
+            ):
                 raise RuntimeError(f"Capability Pack lineage drifted for {role}")
+
+
+def _effective_stage_binding(
+    values: Mapping[str, str], stage: str
+) -> tuple[str, str, str]:
+    provider_key, model_key = _STAGE_ROUTE_ENVIRONMENT_KEYS[stage]
+    provider_fallback = ""
+    model_fallback = ""
+    if stage == "rereview":
+        provider_fallback = str(values.get("NOVEL_FORGE_REVIEW_PROVIDER") or "")
+        model_fallback = str(values.get("NOVEL_FORGE_REVIEW_MODEL") or "")
+    elif stage == "canon_extraction":
+        provider_fallback = str(values.get("NOVEL_FORGE_REVISION_PROVIDER") or "")
+        model_fallback = str(values.get("NOVEL_FORGE_REVISION_MODEL") or "")
+    elif stage.startswith("quality_") or stage in {
+        "reader_outcome",
+        "narrative_semantic_evaluation",
+    }:
+        provider_fallback = str(values.get("NOVEL_FORGE_REVIEW_PROVIDER") or "")
+        model_fallback = str(values.get("NOVEL_FORGE_REVIEW_MODEL") or "")
+    provider = normalize_provider_id(
+        str(
+            values.get(provider_key)
+            or provider_fallback
+            or values.get("NOVEL_FORGE_MODEL_PROVIDER")
+            or ""
+        )
+    )
+    model = str(values.get(model_key) or model_fallback or "").strip()
+    reasoning = str(
+        values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+        or values.get("NOVEL_FORGE_REASONING_EFFORT")
+        or "high"
+    ).strip().lower()
+    return provider, model, reasoning
+
+
+def _verify_frozen_campaign_binding(
+    campaign: Mapping[str, Any], state: Mapping[str, Any]
+) -> None:
+    scalar_fields = (
+        "project_id",
+        "workspace_id",
+        "book_id",
+        "exact_release_sha",
+        "migration_head",
+    )
+    for field in scalar_fields:
+        if str(campaign[field]) != str(state[field]):
+            raise RuntimeError(f"frozen campaign {field} differs from runtime state")
+    for field in (
+        "capability_pack_manifest",
+        "foundation_lineage",
+        "planning_lineage",
+        "realization_lineage",
+    ):
+        if dict(campaign[field]) != dict(state[field]):
+            raise RuntimeError(f"frozen campaign {field} differs from runtime state")
+
+
+def _verify_runtime_routes(
+    profile: Any,
+    values: Mapping[str, str],
+    *,
+    mode: str,
+    frozen_route_manifest: Mapping[str, Any] | None = None,
+) -> None:
+    expected = profile.provider_routes[mode]
+    if frozen_route_manifest is not None:
+        frozen = dict(frozen_route_manifest)
+        if (
+            frozen.get("mode") != mode
+            or frozen.get("campaign_profile_digest") != profile.digest
+        ):
+            raise RuntimeError("frozen campaign profile or Provider mode drifted")
+        for role, binding in expected.items():
+            if dict(frozen.get(role) or {}) != dict(binding):
+                raise RuntimeError(f"frozen Provider route drifted for {role}")
+
+    planning = expected["planning"]
+    actual_planning = (
+        normalize_provider_id(str(values.get("NOVEL_FORGE_PLANNING_PROVIDER") or "")),
+        str(values.get("NOVEL_FORGE_PLANNING_MODEL") or "").strip(),
+        str(values.get("NOVEL_FORGE_PLANNING_REASONING_EFFORT") or "")
+        .strip()
+        .lower(),
+    )
+    expected_planning = (
+        normalize_provider_id(str(planning["provider"])),
+        str(planning["model"]),
+        str(planning["reasoning_effort"]).lower(),
+    )
+    if actual_planning != expected_planning:
+        raise RuntimeError("actual Planning Provider route differs from frozen profile")
+
+    for role, stages in _RUNTIME_ROLE_STAGES.items():
+        binding = expected[role]
+        expected_stage = (
+            normalize_provider_id(str(binding["provider"])),
+            str(binding["model"]),
+            str(binding["reasoning_effort"]).lower(),
+        )
+        for stage in stages:
+            if _effective_stage_binding(values, stage) != expected_stage:
+                raise RuntimeError(
+                    f"actual {stage} Provider route differs from frozen {role} profile"
+                )
+
+
+def _verify_runtime_pack_ids(
+    state: Mapping[str, Any], values: Mapping[str, str], *, mode: str
+) -> None:
+    manifest = dict(state["capability_pack_manifest"])
+    for role, (environment_key, default_pack_id) in _PACK_RUNTIME_BINDINGS.items():
+        binding = dict(manifest.get(role) or {})
+        deployment_id = str(binding.get("deployment_id") or "")
+        if mode == "scripted" and deployment_id.startswith("scripted-unpacked:"):
+            continue
+        expected_pack_id = str(binding.get("pack_id") or "")
+        if not expected_pack_id:
+            raise ValueError(f"Capability Pack {role} lacks pack_id")
+        actual_pack_id = str(values.get(environment_key) or default_pack_id)
+        if actual_pack_id != expected_pack_id:
+            raise RuntimeError(f"runtime Capability Pack id drifted for {role}")
 
 
 def _freeze(args: argparse.Namespace) -> dict[str, Any]:
@@ -325,6 +514,9 @@ def _freeze(args: argparse.Namespace) -> dict[str, Any]:
         args.profile,
         repository_root=ROOT,
     )
+    values = _runtime_env(state, mode=args.mode)
+    _verify_runtime_routes(profile, values, mode=args.mode)
+    _verify_runtime_pack_ids(state, values, mode=args.mode)
     _verify_freeze_lineage(args.database_url, state, mode=args.mode)
     manifest = profile.freeze_manifest(
         campaign_id=str(state["campaign_id"]),
@@ -417,6 +609,7 @@ def _run_campaign(
         str(state["campaign_id"]),
         principal=operator,
     )
+    _verify_frozen_campaign_binding(campaign, state)
     mode = _campaign_mode(campaign)
     if requested_mode is not None and mode != requested_mode:
         raise RuntimeError(f"command requires a frozen {requested_mode} campaign")
@@ -427,6 +620,14 @@ def _run_campaign(
     )
     profile = load_quality_campaign_profile(args.profile, repository_root=ROOT)
     env = _runtime_env(state, mode=mode)
+    _verify_runtime_routes(
+        profile,
+        env,
+        mode=mode,
+        frozen_route_manifest=dict(campaign["provider_route_manifest"]),
+    )
+    _verify_runtime_pack_ids(state, env, mode=mode)
+    _verify_freeze_lineage(args.database_url, state, mode=mode)
     settings = IndustrialSettings(
         root=ROOT,
         environment="development",

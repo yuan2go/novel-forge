@@ -55,6 +55,22 @@ def _state() -> dict[str, object]:
     }
 
 
+def _scripted_route_environment() -> dict[str, str]:
+    return {
+        "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_PLANNING_MODEL": "scripted-quality-campaign-v1",
+        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "fixture",
+        "NOVEL_FORGE_DRAFT_MODEL": "scripted-quality-campaign-v1",
+        "NOVEL_FORGE_REVIEW_MODEL": "scripted-quality-campaign-v1",
+        "NOVEL_FORGE_REVISION_MODEL": "scripted-quality-campaign-v1",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "scripted-quality-campaign-v1",
+        "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "fixture",
+        "NOVEL_FORGE_REASONING_EFFORT": "fixture",
+    }
+
+
 def test_cli_exposes_only_bounded_quality_operations() -> None:
     parser = _module()._parser()
     subparsers = next(
@@ -123,3 +139,93 @@ def test_result_export_is_atomic_and_datetime_safe(tmp_path: Path) -> None:
         "created_at": "2026-08-26T00:00:00+00:00",
         "status": "NOT_PROVEN",
     }
+
+
+def test_runtime_routes_must_match_profile_and_frozen_manifest() -> None:
+    module = _module()
+    profile = module.load_quality_campaign_profile(
+        module.DEFAULT_PROFILE,
+        repository_root=ROOT,
+    )
+    values = _scripted_route_environment()
+    frozen = {
+        **profile.provider_routes["scripted"],
+        "mode": "scripted",
+        "campaign_profile_digest": profile.digest,
+    }
+
+    module._verify_runtime_routes(
+        profile,
+        values,
+        mode="scripted",
+        frozen_route_manifest=frozen,
+    )
+
+    drifted_values = {**values, "NOVEL_FORGE_QUALITY_MODEL": "drifted-model"}
+    with pytest.raises(RuntimeError, match="quality_structural Provider route"):
+        module._verify_runtime_routes(
+            profile,
+            drifted_values,
+            mode="scripted",
+            frozen_route_manifest=frozen,
+        )
+
+    drifted_frozen = {**frozen, "campaign_profile_digest": "sha256:" + "0" * 64}
+    with pytest.raises(RuntimeError, match="profile or Provider mode drifted"):
+        module._verify_runtime_routes(
+            profile,
+            values,
+            mode="scripted",
+            frozen_route_manifest=drifted_frozen,
+        )
+
+
+def test_runtime_pack_ids_must_match_frozen_bindings() -> None:
+    module = _module()
+    state = _state()
+    bindings = {
+        role: {
+            "pack_id": pack_id,
+            "deployment_id": f"deployment:{role}",
+            "hash": "sha256:" + "1" * 64,
+        }
+        for role, (_environment_key, pack_id) in module._PACK_RUNTIME_BINDINGS.items()
+    }
+    state["capability_pack_manifest"] = bindings
+    values = {
+        environment_key: pack_id
+        for _role, (
+            environment_key,
+            pack_id,
+        ) in module._PACK_RUNTIME_BINDINGS.items()
+    }
+
+    module._verify_runtime_pack_ids(state, values, mode="real")
+
+    values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"] = "drifted-pack"
+    with pytest.raises(RuntimeError, match="Pack id drifted for chapter"):
+        module._verify_runtime_pack_ids(state, values, mode="real")
+
+
+def test_runtime_state_cannot_replace_frozen_campaign_lineage() -> None:
+    module = _module()
+    state = _state()
+    campaign = {
+        field: state[field]
+        for field in (
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "exact_release_sha",
+            "migration_head",
+            "capability_pack_manifest",
+            "foundation_lineage",
+            "planning_lineage",
+            "realization_lineage",
+        )
+    }
+    module._verify_frozen_campaign_binding(campaign, state)
+
+    campaign["planning_lineage"] = {"input_snapshot_id": "snapshot:drifted"}
+    with pytest.raises(RuntimeError, match="planning_lineage"):
+        module._verify_frozen_campaign_binding(campaign, state)
