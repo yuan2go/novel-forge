@@ -87,7 +87,6 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
-from novel_forge.modules.narrative_state import NarrativeStateKind
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
@@ -349,255 +348,6 @@ def _proof_platform_profile_content() -> dict[str, Any]:
     }
 
 
-def _campaign_chapter_matrix(
-    campaign_contract: Mapping[str, Any],
-) -> tuple[dict[str, Any], ...]:
-    book = dict(campaign_contract["book"])
-    rows: list[dict[str, Any]] = []
-    for volume in book["volumes"]:
-        volume_row = dict(volume)
-        for beat in book["chapter_pattern"]:
-            beat_row = dict(beat)
-            offset = int(beat_row.pop("offset"))
-            rows.append(
-                {
-                    "chapter": (int(volume_row["volume"]) - 1) * 30 + offset,
-                    "offset": offset,
-                    "volume": int(volume_row["volume"]),
-                    "volume_title": volume_row["title"],
-                    "volume_goal": volume_row["goal"],
-                    "volume_pressure": volume_row["pressure"],
-                    "volume_reward": volume_row["reward"],
-                    "volume_cost": volume_row["cost"],
-                    "volume_ending_escalation": volume_row["ending_escalation"],
-                    **beat_row,
-                }
-            )
-    if [int(item["chapter"]) for item in rows] != list(range(1, 301)):
-        raise ValueError("Campaign chapter matrix must be contiguous 1..300")
-    return tuple(rows)
-
-
-def _campaign_initial_narrative_snapshots(
-    *,
-    project_id: str,
-    book_id: str,
-    campaign_contract: Mapping[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Compile frozen pre-Chapter-1 truth into one integrity-bound v2 pair."""
-
-    contract_identity = str(campaign_contract.get("contract_identity") or "")
-    if not project_id or not book_id or not contract_identity.startswith("sha256:"):
-        raise ValueError("initial Narrative State requires frozen Campaign identity")
-    ground_truth = dict(campaign_contract["ground_truth"])
-    current: dict[str, list[dict[str, Any]]] = {
-        kind.value: [] for kind in NarrativeStateKind
-    }
-
-    def add(
-        kind: NarrativeStateKind,
-        *,
-        components: tuple[tuple[str, str], ...],
-        state: Mapping[str, Any],
-    ) -> None:
-        if any(not key or not value for key, value in components):
-            raise ValueError(f"initial {kind.value} identity is incomplete")
-        entity_key = "|".join(f"{key}={value}" for key, value in components)
-        evidence = {
-            "mode": "FROZEN_PROOF_CONTRACT_INITIAL_STATE",
-            "campaign_contract_identity": contract_identity,
-        }
-        source_event_id = (
-            "narrative-initial-state:sha256:"
-            + hashlib.sha256(
-                json.dumps(
-                    {
-                        "kind": kind.value,
-                        "entity_key": entity_key,
-                        "state": dict(state),
-                        "campaign_contract_identity": contract_identity,
-                    },
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                    sort_keys=True,
-                ).encode()
-            ).hexdigest()
-        )
-        current[kind.value].append(
-            {
-                "identity": {
-                    "identity_kind": kind.value,
-                    "entity_key": entity_key,
-                    "components": dict(components),
-                },
-                "entity_key": entity_key,
-                "entity_version": 1,
-                "state": dict(state),
-                "source_event_id": source_event_id,
-                "source_chapter": 0,
-                "effective_from_chapter": 0,
-                "effective_to_chapter": 0,
-                "narrative_position": {"chapter": 0},
-                "supersedes_event_id": "",
-                "provenance": evidence,
-                "confidence": 1.0,
-                "coverage": "FROZEN_INITIAL_STATE",
-                "evidence": evidence,
-                "canon_status": "ACTIVE_STORY_DESIGN_INITIAL_STATE",
-            }
-        )
-
-    for character in ground_truth.get("characters") or ():
-        raw = dict(character)
-        character_id = (
-            f"character:{str(raw['character_id']).removeprefix('character:')}"
-        )
-        add(
-            NarrativeStateKind.CHARACTER_STATE,
-            components=(("character_id", character_id),),
-            state={**raw, "character_id": character_id, "status": "ACTIVE"},
-        )
-    for relationship in ground_truth.get("relationships") or ():
-        raw = dict(relationship)
-        participants = list(raw.get("participants") or ())
-        if len(participants) != 2:
-            raise ValueError("initial relationship requires exactly two participants")
-        source_id, target_id = (
-            f"character:{str(item).removeprefix('character:')}" for item in participants
-        )
-        add(
-            NarrativeStateKind.RELATIONSHIP_STATE,
-            components=(("source_id", source_id), ("target_id", target_id)),
-            state={
-                **raw,
-                "source_id": source_id,
-                "target_id": target_id,
-                "status": str(raw.get("chapter_1") or "INITIAL"),
-            },
-        )
-    for rule in ground_truth.get("world_rules") or ():
-        raw = dict(rule)
-        rule_id = str(raw["fact_id"])
-        add(
-            NarrativeStateKind.WORLD_RULE,
-            components=(("rule_id", rule_id),),
-            state={**raw, "rule_id": rule_id, "status": "ENFORCED"},
-        )
-        add(
-            NarrativeStateKind.CANON_FACT,
-            components=(("subject", rule_id), ("predicate", "definition")),
-            state={
-                "subject": rule_id,
-                "predicate": "definition",
-                "object": str(raw["statement"]),
-                "status": "ACTIVE",
-            },
-        )
-    for faction in ground_truth.get("factions") or ():
-        raw = dict(faction)
-        faction_id = str(raw["faction_id"])
-        add(
-            NarrativeStateKind.FACTION_STATE,
-            components=(("faction_id", faction_id),),
-            state={**raw, "faction_id": faction_id, "status": "ACTIVE"},
-        )
-    for resource in ground_truth.get("resources") or ():
-        raw = dict(resource)
-        resource_id = str(raw["resource_id"])
-        balance = raw.get("initial")
-        if isinstance(balance, bool) or not isinstance(balance, (int, float)):
-            raise ValueError(f"initial Resource balance is invalid: {resource_id}")
-        add(
-            NarrativeStateKind.RESOURCE_STATE,
-            components=(("entity_id", resource_id), ("resource_id", resource_id)),
-            state={
-                **raw,
-                "entity_id": resource_id,
-                "resource_id": resource_id,
-                "balance": balance,
-                "status": "AVAILABLE",
-            },
-        )
-    for entries in current.values():
-        entries.sort(key=lambda item: str(item["entity_key"]))
-
-    story_state: dict[str, Any] = {
-        "type": "StoryStateSnapshot",
-        "contract_version": "story-state-snapshot-v2",
-        "layer": "CURRENT_STATE",
-        "project_id": project_id,
-        "book_id": book_id,
-        "scope": {"project_id": project_id, "book_id": book_id},
-        "accepted_through_chapter": 0,
-        "chapter": 0,
-        "chapter_number": 0,
-        "state_version": 0,
-        "based_on_chapter_outcome_asset_version_id": "",
-        "based_on_chapter_outcome_id": "",
-        "previous_story_state_asset_version_id": "",
-        "current_state": current,
-        "reducer_applications": [],
-        "accepted_state_only": True,
-        "replayable_from": (
-            "FROZEN_BOOK_PRODUCTION_INPUT_PLUS_COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
-        ),
-        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
-        "campaign_contract_identity": contract_identity,
-        "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
-        "runtime_result": False,
-    }
-    story_state["state_hash"] = (
-        "sha256:"
-        + hashlib.sha256(
-            json.dumps(
-                story_state,
-                ensure_ascii=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            ).encode()
-        ).hexdigest()
-    )
-    canon: dict[str, Any] = {
-        "type": "CanonSnapshot",
-        "contract_version": "canon-snapshot-v2",
-        "layer": "TRUTH",
-        "authority": {
-            "status": "FROZEN_BOOK_PRODUCTION_INPUT",
-            "required_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
-        },
-        "project_id": project_id,
-        "book_id": book_id,
-        "scope": {"project_id": project_id, "book_id": book_id},
-        "accepted_through_chapter": 0,
-        "chapter": 0,
-        "chapter_number": 0,
-        "current_facts": deepcopy(current[NarrativeStateKind.CANON_FACT.value]),
-        "based_on_chapter_outcome_asset_version_id": "",
-        "previous_canon_asset_version_id": "",
-        "story_state_hash": story_state["state_hash"],
-        "accepted_state_only": True,
-        "rebuildable_from": (
-            "FROZEN_BOOK_PRODUCTION_INPUT_PLUS_COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
-        ),
-        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
-        "campaign_contract_identity": contract_identity,
-        "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
-        "runtime_result": False,
-    }
-    canon["canon_hash"] = (
-        "sha256:"
-        + hashlib.sha256(
-            json.dumps(
-                canon,
-                ensure_ascii=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            ).encode()
-        ).hexdigest()
-    )
-    return story_state, canon
-
-
 def _bootstrap_assets(
     database_url: str,
     *,
@@ -607,7 +357,6 @@ def _bootstrap_assets(
     build_id: str,
     commit_sha: str,
     principal: Principal,
-    campaign_contract: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     rows: dict[str, tuple[str, dict[str, Any]]] = {
         "world_bible": (
@@ -712,166 +461,6 @@ def _bootstrap_assets(
             {"chapter_number": 3, "function": "payoff", "hook": "the public cost"},
         ),
     }
-    if campaign_contract is not None:
-        book = dict(campaign_contract["book"])
-        ground_truth = dict(campaign_contract["ground_truth"])
-        initial_story_state, initial_canon = _campaign_initial_narrative_snapshots(
-            project_id=project_id,
-            book_id=book_id,
-            campaign_contract=campaign_contract,
-        )
-        target_chapters = int(book["target_chapters"])
-        language_contract = {
-            "required_language": str(book["language"]),
-            "reader_facing_prose": "REQUIRED",
-            "proof_gate": "PRIMARILY_REQUIRED_LANGUAGE",
-        }
-        world_bible = _proof_world_bible_content()
-        world_bible["safe_summary"] = (
-            "Frozen world rules and institutional constraints from the long-form "
-            "Proof Campaign contract."
-        )
-        world_bible["structured_facts"] = [
-            {"key": "world_rules", "value": ground_truth["world_rules"]},
-            {
-                "key": "factions",
-                "value": ground_truth.get("factions", []),
-            },
-            {
-                "key": "locations",
-                "value": ground_truth.get("locations", []),
-            },
-            {
-                "key": "resources",
-                "value": ground_truth.get("resources", []),
-            },
-            {
-                "key": "campaign_contract_identity",
-                "value": campaign_contract.get("contract_identity"),
-            },
-        ]
-        rows.update(
-            {
-                "world_bible": ("world_bible", world_bible),
-                "character_cast": (
-                    "character_cast",
-                    {
-                        "characters": ground_truth["characters"],
-                        "relationships": ground_truth.get("relationships", []),
-                        "knowledge_matrix": ground_truth["knowledge_matrix"],
-                    },
-                ),
-                "theme_contract": (
-                    "theme_contract",
-                    {"question": book["theme"]},
-                ),
-                "ending_intent": (
-                    "ending_intent",
-                    {"ending": book["ending_intent"]},
-                ),
-                "reader_promise": (
-                    "reader_promise",
-                    {"promise": book["reader_promise"]},
-                ),
-                "platform_profile": (
-                    "platform_profile",
-                    {
-                        **_proof_platform_profile_content(),
-                        "language_contract": language_contract,
-                        "structured_facts": [
-                            *_proof_platform_profile_content()["structured_facts"],
-                            {
-                                "key": "language_contract",
-                                "value": language_contract,
-                            },
-                        ],
-                    },
-                ),
-                "production_profile": (
-                    "production_profile",
-                    {
-                        "profile_id": "production:longform-narrative-proof:v1",
-                        "target_chapter_count": target_chapters,
-                        "campaign_id": campaign_contract["campaign_id"],
-                        "campaign_version": campaign_contract["campaign_version"],
-                        "language_contract": language_contract,
-                    },
-                ),
-                "story_state": (
-                    "story_state_snapshot",
-                    initial_story_state,
-                ),
-                "canon_snapshot": (
-                    "canon_snapshot",
-                    initial_canon,
-                ),
-                "arc_portfolio": (
-                    "arc_portfolio",
-                    {"arcs": ground_truth.get("character_arcs", [])},
-                ),
-                "ending_reachability": (
-                    "ending_reachability",
-                    {"status": "REACHABLE", "target_chapter": target_chapters},
-                ),
-                "character_arc_portfolio": (
-                    "character_arc_portfolio",
-                    {"arcs": ground_truth.get("character_arcs", [])},
-                ),
-                "conflict_state": (
-                    "conflict_state",
-                    {"volumes": book["volumes"]},
-                ),
-                "promise_ledger": (
-                    "promise_ledger",
-                    {"open": ground_truth["obligations"], "paid": []},
-                ),
-                "foreshadowing_ledger": (
-                    "foreshadowing_ledger",
-                    {"open": ground_truth["obligations"], "paid": []},
-                ),
-                "foreshadowing_state": (
-                    "foreshadowing_state",
-                    {"open": ground_truth["obligations"], "paid": []},
-                ),
-                "character_state": (
-                    "character_state",
-                    {
-                        "chapter_number": 0,
-                        "characters": ground_truth["characters"],
-                        "relationships": ground_truth.get("relationships", []),
-                    },
-                ),
-                "reward_ledger": (
-                    "reward_ledger",
-                    {"open": ground_truth["obligations"], "paid": []},
-                ),
-            }
-        )
-        rows = {
-            key: value
-            for key, value in rows.items()
-            if not key.startswith("chapter_row_")
-        }
-        for chapter in _campaign_chapter_matrix(campaign_contract):
-            number = int(chapter["chapter"])
-            rows[f"chapter_row_{number}"] = (
-                "chapter_function_matrix_row",
-                {
-                    "chapter_number": number,
-                    "function": chapter["function"],
-                    "goal": chapter["volume_goal"],
-                    "conflict": chapter["volume_pressure"],
-                    "pressure_delta": chapter["pressure_delta"],
-                    "information_gain": chapter["information_gain"],
-                    "hook": chapter["hook"],
-                    "volume": chapter["volume"],
-                    "volume_title": chapter["volume_title"],
-                    "required_payoff": chapter["volume_reward"],
-                    "cost": chapter["volume_cost"],
-                    "prohibited_outcomes": ["silent reset", "future knowledge leak"],
-                    "language_contract": language_contract,
-                },
-            )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(
             _bootstrap_definition(build_id, commit_sha)
@@ -1124,77 +713,36 @@ def _bootstrap_chapter_profiles(
     return {key: str(value) for key, value in result.items() if key in rows}
 
 
-def _book_design_foundation(
-    campaign_contract: Mapping[str, Any] | None,
-) -> dict[str, list[Any]]:
-    if campaign_contract is None:
-        return {
-            "world_rules": [
-                "official records carry revision traces",
-                "public correction imposes a named civic debt",
-            ],
-            "core_characters": [
-                {
-                    "character_id": "lin-qiao",
-                    "role": "protagonist and archive witness",
-                    "long_term_goal": "make erased evidence publicly accountable",
-                    "causal_arc": "procedural avoidance becomes accountable agency",
-                    "conflict_function": "her protected status competes with disclosure",
-                },
-                {
-                    "character_id": "mei-an",
-                    "role": "engineering ally and independent constraint owner",
-                    "long_term_goal": "keep the city alive without secret custody",
-                    "causal_arc": "conditional cooperation becomes costly public trust",
-                    "conflict_function": "material safety challenges evidentiary urgency",
-                },
-            ],
-            "opposition_forces": [
-                {
-                    "force_id": "quiet-office",
-                    "goal": "contain crises by controlling their public record",
-                    "leverage": "institutional access and revision authority",
-                    "escalation_pattern": "procedural denial becomes physical erasure",
-                    "limit": "every revision leaves an auditable trace",
-                }
-            ],
-        }
-    ground_truth = campaign_contract.get("ground_truth")
-    if not isinstance(ground_truth, Mapping):
-        raise RuntimeError("Proof Campaign omits governed ground truth")
-    characters = ground_truth.get("characters")
-    factions = ground_truth.get("factions")
-    rules = ground_truth.get("world_rules")
-    if not all(
-        isinstance(items, list) and items for items in (characters, factions, rules)
-    ):
-        raise RuntimeError("Proof Campaign ground truth lacks longform foundation inputs")
+def _book_design_foundation() -> dict[str, list[Any]]:
     return {
+        "world_rules": [
+            "official records carry revision traces",
+            "public correction imposes a named civic debt",
+        ],
         "core_characters": [
             {
-                "character_id": str(item["character_id"]),
-                "role": str(item["role"]),
-                "long_term_goal": str(item["external_goal"]),
-                "causal_arc": f"{item['opening_belief']} -> {item['final_change']}",
-                "conflict_function": (
-                    f"Fear: {item['fear']}; flaw under pressure: {item['flaw']}"
-                ),
-            }
-            for item in characters
+                "character_id": "lin-qiao",
+                "role": "protagonist and archive witness",
+                "long_term_goal": "make erased evidence publicly accountable",
+                "causal_arc": "procedural avoidance becomes accountable agency",
+                "conflict_function": "her protected status competes with disclosure",
+            },
+            {
+                "character_id": "mei-an",
+                "role": "engineering ally and independent constraint owner",
+                "long_term_goal": "keep the city alive without secret custody",
+                "causal_arc": "conditional cooperation becomes costly public trust",
+                "conflict_function": "material safety challenges evidentiary urgency",
+            },
         ],
         "opposition_forces": [
             {
-                "force_id": str(item["faction_id"]),
-                "goal": str(item["conflict"]),
-                "leverage": str(item["legitimacy"]),
-                "escalation_pattern": f"Pressure escalates through {item['conflict']}",
-                "limit": f"Depends on {item['maintenance_cost']}",
+                "force_id": "quiet-office",
+                "goal": "contain crises by controlling their public record",
+                "leverage": "institutional access and revision authority",
+                "escalation_pattern": "procedural denial becomes physical erasure",
+                "limit": "every revision leaves an auditable trace",
             }
-            for item in factions
-        ],
-        "world_rules": [
-            f"{item['statement']} Narrative function: {item['function']}"
-            for item in rules
         ],
     }
 
@@ -1208,33 +756,19 @@ def _seed_project_and_active_design(
     build_id: str,
     commit_sha: str,
     principal: Principal,
-    campaign_contract: Mapping[str, Any] | None = None,
     application: BookDesignAuthorityApplication | None = None,
     before_design_proposal: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
-    campaign_book = (
-        dict(campaign_contract["book"])
-        if campaign_contract is not None
-        else {
-            "title": "The Ledger Under Rain",
-            "genre": "original civic fantasy mystery",
-            "premise": "An archive clerk finds a living witness recorded as dead.",
-            "theme": "truth becomes accountable only when someone pays its cost",
-            "reader_promise": "three escalating choices with auditable consequences",
-            "ending_intent": "the evidence becomes public and creates a new obligation",
-            "target_chapters": 3,
-        }
-    )
-    language_contract = (
-        {
-            "required_language": str(campaign_book["language"]),
-            "reader_facing_prose": "REQUIRED",
-            "proof_gate": "PRIMARILY_REQUIRED_LANGUAGE",
-        }
-        if campaign_contract is not None
-        else None
-    )
-    foundation = _book_design_foundation(campaign_contract)
+    campaign_book = {
+        "title": "The Ledger Under Rain",
+        "genre": "original civic fantasy mystery",
+        "premise": "An archive clerk finds a living witness recorded as dead.",
+        "theme": "truth becomes accountable only when someone pays its cost",
+        "reader_promise": "three escalating choices with auditable consequences",
+        "ending_intent": "the evidence becomes public and creates a new obligation",
+        "target_chapters": 3,
+    }
+    foundation = _book_design_foundation()
     ProjectAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     ).execute(
@@ -1269,14 +803,7 @@ def _seed_project_and_active_design(
             payload={
                 "schema_version": "book-authority.v1",
                 "title": campaign_book["title"],
-                "production_profile": {
-                    "environment": "validation",
-                    **(
-                        {"language_contract": language_contract}
-                        if language_contract is not None
-                        else {}
-                    ),
-                },
+                "production_profile": {"environment": "validation"},
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": f"{build_id}@{commit_sha}",
             },
@@ -1329,9 +856,7 @@ def _seed_project_and_active_design(
     )
     candidate = next(
         item
-        for item in query.list_design_versions(
-            project_id=project_id, book_id=book_id
-        )
+        for item in query.list_design_versions(project_id=project_id, book_id=book_id)
         if item["asset_version_id"] == str(proposed["asset_version_id"])
     )
     if candidate["status"] != "VALIDATED":
@@ -2386,8 +1911,7 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
         and second["candidate_accepted"] is True
         and second["provider_execution_attempt_id"] == first["attempt_id"]
         and second["external_effect_id"] == first["external_effect_id"]
-        and second["local_execution_receipt_id"]
-        == first["local_execution_receipt_id"]
+        and second["local_execution_receipt_id"] == first["local_execution_receipt_id"]
     )
     identity_keys = (
         "snapshot_hash",
@@ -3320,9 +2844,7 @@ def _start_followup_worker(
     """
 
     runtime_root.mkdir(parents=True, exist_ok=True)
-    log_handle = (runtime_root / "book-followup-worker.log").open(
-        "a", encoding="utf-8"
-    )
+    log_handle = (runtime_root / "book-followup-worker.log").open("a", encoding="utf-8")
     worker_env = {
         **os.environ,
         **dict(env),
@@ -3591,14 +3113,10 @@ def _controlled_recap(
             "book_plan_version": snapshot["book_plan_version"],
             "volume_plan_version": snapshot["volume_plan_version"],
             "arc_plan_versions": list(snapshot["arc_plan_versions"]),
-            "canon_snapshot_version": snapshot[
-                "accepted_canon_snapshot_version"
-            ],
+            "canon_snapshot_version": snapshot["accepted_canon_snapshot_version"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": snapshot["quality_trend_version"],
-            "chapter_outcome_versions": [
-                snapshot["accepted_chapter_outcome_version"]
-            ],
+            "chapter_outcome_versions": [snapshot["accepted_chapter_outcome_version"]],
             "story_state_version": snapshot["accepted_story_state_version"],
             "observations": {
                 "evidence_level": "CONTROLLED_PROOF",
