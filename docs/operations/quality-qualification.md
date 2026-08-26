@@ -118,6 +118,12 @@ governed `candidate_payload` is then exposed only in this closure as
 channel. Generator prompts, mutable projections and unbound context remain
 excluded.
 
+BookPlan generation has two bounded structural regeneration opportunities. The
+second is recovery capacity for independent first-error failures in the dense
+typed contract; it does not waive validation. Each repair receives the exact
+failed candidate and validation report, and every regenerated candidate must
+still pass the full structural and independent semantic gates.
+
 Relevant public surfaces are:
 
 - Book/BookDesign Authority under `/authority/books`;

@@ -2590,7 +2590,18 @@ def _stage_semantic_contract(
             "newly invented identifier. Keep Timeline containers and cross-cutting "
             "Narrative Arcs orthogonal. "
         )
-        if stage == "arc_plan.generate":
+        if stage == "book_plan.generate":
+            contract += (
+                "For world_realization and character_realization, every CURRENT "
+                "entity's realization_level must be at least the top-level "
+                "realization_level using ANCHOR < DEFINED < DETAILED < ACTIVE. "
+                "Every knowledge_disclosure_obligations.obligation_windows[]."
+                "obligation_id must copy one exact identity declared in story_truth_ids, "
+                "mystery_ids, promise_ids, or foreshadow_ids, and each window must "
+                "satisfy setup_chapter <= payoff_not_before <= payoff_due_by inside "
+                "the bounded Book. "
+            )
+        elif stage == "arc_plan.generate":
             contract += (
                 "Set cross_volume_scope to exactly the ordered VolumePlan Authority "
                 "version identifiers supplied by planning_command.input_versions."

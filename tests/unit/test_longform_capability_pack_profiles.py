@@ -93,6 +93,12 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     )
     assert planning_instruction["version"] == STORY_PLANNING_PROMPT_VERSION
     assert "publish-metadata inputs" in planning_instruction["content"]["text"]
+    assert "ANCHOR < DEFINED < DETAILED < ACTIVE" in planning_instruction[
+        "content"
+    ]["text"]
+    assert "obligation_windows[].obligation_id" in planning_instruction["content"][
+        "text"
+    ]
     assert {
         node["node_id"] for node in profile.manifest["workflow_template"]["nodes"]
     } == {

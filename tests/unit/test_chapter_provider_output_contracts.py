@@ -108,6 +108,15 @@ def test_narrative_evaluation_contract_consumes_exact_foundation_closure() -> No
     assert "demand downstream plans" in contract
 
 
+def test_book_plan_prompt_closes_realization_and_obligation_invariants() -> None:
+    contract = _stage_semantic_contract("book_plan.generate")
+
+    assert "ANCHOR < DEFINED < DETAILED < ACTIVE" in contract
+    assert "every CURRENT entity's realization_level" in contract
+    assert "obligation_id must copy one exact identity" in contract
+    assert "setup_chapter <= payoff_not_before <= payoff_due_by" in contract
+
+
 def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() -> None:
     contract = _stage_semantic_contract(
         "retrieval",

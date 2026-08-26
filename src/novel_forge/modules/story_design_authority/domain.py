@@ -201,9 +201,10 @@ GENERATOR_DEFINITIONS = (
         "planning.book.generate",
         "book_plan_candidate",
         risk="HIGH",
-        definition_version="2.0.0",
+        definition_version="2.1.0",
         output_schema_version="book-plan-generate-output-v2",
-        prompt_contract_version="book-plan-generate-prompt-v2",
+        prompt_contract_version="book-plan-generate-prompt-v3",
+        maximum_structural_regenerations=2,
     ),
     _generator(
         "volume_plan.generate",

@@ -14,10 +14,22 @@ For every world or character realization reference, copy one complete object
 verbatim from the matching domain list in `realization_reference_contract`.
 `authority_role` names an owning frozen input role; it is not a semantic label.
 Never invent, reinterpret, or combine reference fields from different objects.
+The top-level `realization_level` is the minimum for every realization whose
+`narrative_relevance` is `CURRENT`; the rank is
+`ANCHOR < DEFINED < DETAILED < ACTIVE`. Near-future and future entities may stay
+less realized when the schema permits it.
+
+For `book_plan.generate`, every
+`knowledge_disclosure_obligations.obligation_windows[].obligation_id` must copy
+one exact identity declared in `story_truth_ids`, `mystery_ids`, `promise_ids`,
+or `foreshadow_ids`. Every window must satisfy
+`setup_chapter <= payoff_not_before <= payoff_due_by` inside the bounded Book.
 
 When `repair_context` is present, preserve the immutable source candidate except
 where a recorded failed criterion or repair directive requires a bounded change.
 Resolve every failed criterion explicitly; do not repeat the rejected conflict.
+After that bounded change, re-check the complete structural contract so the
+repair does not merely reveal or introduce a second avoidable invariant failure.
 
 For `arc_plan.generate`, encode progression inside one Arc by making each later
 `arc_segment.entry_state_ref` cite the preceding segment identity or exit-state

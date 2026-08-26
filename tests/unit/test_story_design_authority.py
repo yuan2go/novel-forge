@@ -70,7 +70,15 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
             definitions["chapter_plan.generate"].prompt_contract_version,
             "chapter-plan-generate-prompt-v8",
         )
-        self.assertEqual(definitions["book_plan.generate"].definition_version, "2.0.0")
+        self.assertEqual(definitions["book_plan.generate"].definition_version, "2.1.0")
+        self.assertEqual(
+            definitions["book_plan.generate"].prompt_contract_version,
+            "book-plan-generate-prompt-v3",
+        )
+        self.assertEqual(
+            definitions["book_plan.generate"].maximum_structural_regenerations,
+            2,
+        )
 
 
 if __name__ == "__main__":
