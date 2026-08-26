@@ -1174,6 +1174,80 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
+    """Project frozen JSON values into the Provider's strict-schema dialect.
+
+    OpenAI Structured Outputs does not accept object- or array-valued ``const``
+    nodes.  This projection freezes object shape, array cardinality, and scalar
+    vocabulary without creating a second semantic authority.  Planning
+    Authority still compares the returned value with the complete frozen value,
+    including array order and multiplicity, before activation.
+    """
+
+    if not values:
+        raise ValueError("Frozen Provider schema requires at least one value")
+
+    if all(isinstance(value, Mapping) for value in values):
+        mappings = [dict(value) for value in values]
+        keys = list(mappings[0])
+        expected_keys = set(keys)
+        if any(set(value) != expected_keys for value in mappings[1:]):
+            raise ValueError(
+                "Frozen Provider object arrays require one canonical object shape"
+            )
+        return _strict_object(
+            {
+                key: _frozen_provider_value_schema([value[key] for value in mappings])
+                for key in keys
+            }
+        )
+
+    if all(isinstance(value, list) for value in values):
+        sequences = [list(value) for value in values]
+        lengths = [len(value) for value in sequences]
+        members = [member for value in sequences for member in value]
+        return {
+            "type": "array",
+            "minItems": min(lengths),
+            "maxItems": max(lengths),
+            # ``items`` remains mandatory in the Provider dialect even when
+            # every frozen array is empty and maxItems therefore forbids data.
+            "items": (
+                _frozen_provider_value_schema(members)
+                if members
+                else {"type": "string"}
+            ),
+        }
+
+    if all(isinstance(value, bool) for value in values):
+        scalar_type = "boolean"
+    elif all(
+        isinstance(value, int) and not isinstance(value, bool) for value in values
+    ):
+        scalar_type = "integer"
+    elif all(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in values
+    ):
+        scalar_type = "number"
+    elif all(isinstance(value, str) for value in values):
+        scalar_type = "string"
+    elif all(value is None for value in values):
+        scalar_type = "null"
+    else:
+        raise ValueError("Frozen Provider schema contains mixed JSON value types")
+
+    distinct: list[Any] = []
+    for value in values:
+        if value not in distinct:
+            distinct.append(value)
+    constraint = "const" if len(distinct) == 1 else "enum"
+    return {
+        "type": scalar_type,
+        constraint: distinct[0] if constraint == "const" else distinct,
+    }
+
+
 def _realization_authority_ref_schema(domain_type: str) -> dict[str, Any]:
     """Constrain Provider references to roles that can own the target domain."""
 
@@ -2196,10 +2270,9 @@ def planning_provider_output_schema(
                 "NARRATIVE_REALIZATION_REQUIRED",
                 "Chapter provider schema requires a Frozen Narrative Realization slice",
             )
-        # ``const`` freezes the complete nested contract.  Omitting a second,
-        # redundant object schema also keeps OpenAI strict-schema validation
-        # from inventing a parallel shape for Planning-owned evidence.
-        properties["narrative_realization_slice"] = {"const": realization}
+        properties["narrative_realization_slice"] = _frozen_provider_value_schema(
+            [realization]
+        )
     if narrative_search:
         if contract_type is PlanContractType.CHAPTER:
             raise ValueError("Chapter planning is operational, not a search portfolio")

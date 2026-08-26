@@ -67,6 +67,12 @@ multiple non-overlapping historical/current ChapterGroupPlans, but binds only
 the unique group covering the current Narrative cursor; overlap or a group that
 crosses its parent Volume fails closed.
 
+For operational ChapterPlan generation, the frozen Narrative Realization is
+projected into the Provider's strict-schema dialect as exact object shape,
+array cardinality and scalar vocabulary. Planning Authority remains the only
+semantic owner and rejects any returned slice that is not byte-semantically
+equal to the frozen realization, including sequence order and multiplicity.
+
 The current PostgreSQL fixture establishes the closed Foundation hierarchy and
 durable process/replay semantics. It does not establish literary quality,
 real-provider search behavior, human preference or long-form stability; those

@@ -395,6 +395,29 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
     if contract_type is PlanContractType.CHAPTER:
+        realization_schema = schema["properties"]["narrative_realization_slice"]
+        assert realization_schema["type"] == "object"
+        assert realization_schema["additionalProperties"] is False
+        assert (
+            realization_schema["properties"]["events"]["items"]["properties"][
+                "chapter_number"
+            ]["const"]
+            == 1
+        )
+        assert realization_schema["properties"]["event_ids"]["minItems"] == 1
+        assert realization_schema["properties"]["event_ids"]["maxItems"] == 1
+
+        def assert_no_non_scalar_const(value: object) -> None:
+            if isinstance(value, dict):
+                if "const" in value:
+                    assert not isinstance(value["const"], (dict, list))
+                for child in value.values():
+                    assert_no_non_scalar_const(child)
+            elif isinstance(value, list):
+                for child in value:
+                    assert_no_non_scalar_const(child)
+
+        assert_no_non_scalar_const(realization_schema)
         assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
         assert schema["properties"]["arc_schedule"]["maxItems"] == 1
         assert (
@@ -580,6 +603,34 @@ def test_chapter_group_search_schema_freezes_exact_horizon() -> None:
         6,
         7,
         8,
+    ]
+
+
+def test_chapter_realization_schema_merges_repeated_object_scalar_vocabulary() -> None:
+    realization = _realization_slice()
+    realization["events"][0]["state_deltas"].append(
+        {
+            "state_kind": "character_state",
+            "entity_id": "character:protagonist",
+            "from_state": "hesitant",
+            "to_state": "committed",
+        }
+    )
+
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER,
+        parent_version_id="group:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_realization=realization,
+    )
+
+    state_delta = schema["properties"]["narrative_realization_slice"]["properties"][
+        "events"
+    ]["items"]["properties"]["state_deltas"]
+    assert state_delta["minItems"] == state_delta["maxItems"] == 2
+    assert state_delta["items"]["properties"]["state_kind"]["enum"] == [
+        "relationship_state",
+        "character_state",
     ]
 
 

@@ -284,6 +284,14 @@ that changes or reverses the range, repeats an endpoint, omits a Chapter, or
 emits a disclosure outside the same event's `reader_may_learn` boundary is
 rejected; repairs remain bounded and the failed candidate evidence is retained.
 
+Operational Chapter planning applies the same dialect boundary to the Frozen
+Narrative Realization slice. The Provider schema freezes its complete object
+shape, array cardinalities and scalar vocabulary without using unsupported
+object- or array-valued JSON Schema constants. Planning Authority then compares
+the returned slice with the exact frozen object, including list order and
+multiplicity. A schema-valid echo is therefore still only a candidate; any
+semantic drift fails before ChapterPlan activation.
+
 After an interruption, use the same state and frozen campaign:
 
 ```bash
