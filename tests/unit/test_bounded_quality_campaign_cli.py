@@ -79,6 +79,7 @@ def test_cli_exposes_only_bounded_quality_operations() -> None:
         if action.__class__.__name__ == "_SubParsersAction"
     )
     assert set(subparsers.choices) == {
+        "capture-real-state",
         "dry-run",
         "freeze",
         "run-real",
@@ -91,6 +92,37 @@ def test_cli_exposes_only_bounded_quality_operations() -> None:
     assert "30" not in rendered
     assert "100" not in rendered
     assert "300" not in rendered
+
+
+def test_capture_state_requires_two_distinct_typed_reviewer_targets() -> None:
+    module = _module()
+    assert module._reviewer_targets(
+        [
+            "editor:one:PROFESSIONAL_EDITOR",
+            "reader:two:EXPERIENCED_READER",
+        ]
+    ) == [
+        {
+            "reviewer_id": "editor:one",
+            "identity_class": "PROFESSIONAL_EDITOR",
+        },
+        {
+            "reviewer_id": "reader:two",
+            "identity_class": "EXPERIENCED_READER",
+        },
+    ]
+
+    with pytest.raises(ValueError, match="exactly two"):
+        module._reviewer_targets(["editor:PROFESSIONAL_EDITOR"])
+    with pytest.raises(ValueError, match="independent"):
+        module._reviewer_targets(
+            [
+                "same:PROFESSIONAL_EDITOR",
+                "same:EXPERIENCED_READER",
+            ]
+        )
+    with pytest.raises(ValueError, match="unsupported"):
+        module._reviewer_targets(["editor:MODEL", "reader:EXPERIENCED_READER"])
 
 
 def test_runtime_state_requires_two_reviewers_and_forbids_persisted_credentials(
@@ -231,7 +263,9 @@ def test_runtime_state_cannot_replace_frozen_campaign_lineage() -> None:
         module._verify_frozen_campaign_binding(campaign, state)
 
 
-def test_runtime_environment_applies_profile_caps_and_real_validation_boundary() -> None:
+def test_runtime_environment_applies_profile_caps_and_real_validation_boundary() -> (
+    None
+):
     module = _module()
     profile = module.load_quality_campaign_profile(
         module.DEFAULT_PROFILE,

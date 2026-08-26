@@ -214,7 +214,11 @@ def _repository_state(*, allow_dirty: bool) -> dict[str, Any]:
 
 
 def _state(path: str | Path) -> dict[str, Any]:
-    raw = _json_file(path)
+    return _validate_state_document(_json_file(path))
+
+
+def _validate_state_document(raw: Mapping[str, Any]) -> dict[str, Any]:
+    raw = {str(key): value for key, value in raw.items()}
     missing = sorted(_REQUIRED_STATE_FIELDS - frozenset(raw))
     if missing:
         raise ValueError("runtime state lacks: " + ", ".join(missing))
@@ -298,6 +302,284 @@ def _verify_release_and_migration(
     if not migration["ok"] or migration["current"] != state["migration_head"]:
         raise RuntimeError("database migration head differs from the frozen campaign")
     return {"repository": repository, "migration": migration}
+
+
+def _reviewer_targets(values: list[str]) -> list[dict[str, str]]:
+    if len(values) != 2:
+        raise ValueError("capture-real-state requires exactly two reviewers")
+    reviewers: list[dict[str, str]] = []
+    for value in values:
+        reviewer_id, separator, identity_class = value.rpartition(":")
+        if not separator or not reviewer_id.strip() or not identity_class.strip():
+            raise ValueError("reviewer must use REVIEWER_ID:EVALUATOR_IDENTITY_CLASS")
+        try:
+            parsed_class = EvaluatorIdentityClass(identity_class.strip())
+        except ValueError as exc:
+            raise ValueError(
+                f"unsupported evaluator identity class: {identity_class}"
+            ) from exc
+        reviewers.append(
+            {
+                "reviewer_id": reviewer_id.strip(),
+                "identity_class": parsed_class.value,
+            }
+        )
+    if len({item["reviewer_id"] for item in reviewers}) != 2:
+        raise ValueError("capture-real-state requires two independent reviewers")
+    return reviewers
+
+
+def _selected_pack_binding(
+    database_url: str,
+    *,
+    pack_id: str,
+    environment: str,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    release_sha: str,
+) -> dict[str, str]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT activation.active_deployment_id, version.manifest_hash,
+                   deployment.pack_id, deployment.deployment_status,
+                   deployment.environment, compilation.runtime_profile,
+                   compilation.release_channel, compilation.release_sha,
+                   deployment.project_id, deployment.workspace_id,
+                   deployment.book_id
+            FROM authority_capability_pack_activation AS activation
+            JOIN authority_capability_pack_deployment AS deployment
+              ON deployment.deployment_id=activation.active_deployment_id
+            JOIN authority_capability_pack_version AS version
+              ON version.pack_id=deployment.pack_id
+             AND version.pack_version=deployment.pack_version
+            JOIN authority_capability_pack_compilation AS compilation
+              ON compilation.compilation_id=deployment.compilation_id
+            WHERE activation.pack_id=%s
+              AND activation.environment=%s
+              AND (
+                   activation.target_scope_type='SYSTEM'
+                   OR (
+                       activation.target_scope_type='PROJECT'
+                       AND activation.project_id=%s
+                   )
+                   OR (
+                       activation.target_scope_type='WORKSPACE'
+                       AND activation.project_id=%s
+                       AND activation.workspace_id=%s
+                   )
+                   OR (
+                       activation.target_scope_type='BOOK'
+                       AND activation.project_id=%s
+                       AND activation.workspace_id=%s
+                       AND activation.book_id=%s
+                   )
+              )
+            ORDER BY CASE activation.target_scope_type
+                       WHEN 'BOOK' THEN 4
+                       WHEN 'WORKSPACE' THEN 3
+                       WHEN 'PROJECT' THEN 2
+                       ELSE 1
+                     END DESC
+            LIMIT 1
+            """,
+            [
+                pack_id,
+                environment,
+                project_id,
+                project_id,
+                workspace_id,
+                project_id,
+                workspace_id,
+                book_id,
+            ],
+        )
+        row = uow.cursor.fetchone()
+    if row is None:
+        raise RuntimeError(f"no selected Capability Pack activation for {pack_id}")
+    if (
+        str(row[2]) != pack_id
+        or str(row[3]) != "ACTIVE"
+        or str(row[4]) != environment
+        or str(row[5]) != environment
+        or str(row[6]) != "VALIDATION"
+        or str(row[7]) != release_sha
+        or (row[8] is not None and str(row[8]) != project_id)
+        or (row[9] is not None and str(row[9]) != workspace_id)
+        or (row[10] is not None and str(row[10]) != book_id)
+    ):
+        raise RuntimeError(f"selected Capability Pack lineage drifted for {pack_id}")
+    return {
+        "pack_id": pack_id,
+        "deployment_id": str(row[0]),
+        "hash": str(row[1]),
+    }
+
+
+def _capture_real_state(args: argparse.Namespace) -> dict[str, Any]:
+    repository = _repository_state(allow_dirty=False)
+    migration = get_migration_status(args.database_url)
+    if not migration["ok"] or migration["current"] != LATEST_MIGRATION_ID:
+        raise RuntimeError("capture-real-state requires the current migration head")
+    profile = load_quality_campaign_profile(args.profile, repository_root=ROOT)
+    raw_runtime_env = _json_file(args.runtime_env)
+    if any(isinstance(value, (dict, list)) for value in raw_runtime_env.values()):
+        raise ValueError("runtime environment values must be scalar")
+    runtime_env = {str(key): str(value) for key, value in raw_runtime_env.items()}
+    provisional = {
+        "exact_release_sha": repository["commit_sha"],
+        "runtime_env": runtime_env,
+    }
+    effective_env = _runtime_env(provisional, mode="real", profile=profile)
+    _verify_runtime_routes(profile, effective_env, mode="real")
+
+    with AuthorityUnitOfWork(args.database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT project_id,workspace_id,book_id,input_snapshot_id,
+                   target_chapter_count,accepted_through_chapter,
+                   light_recap_cadence,formal_recap_cadence,input_mode
+            FROM authority_book_production
+            WHERE book_run_id=%s
+            """,
+            [args.book_run_id],
+        )
+        book_run = uow.cursor.fetchone()
+        if book_run is None:
+            raise RuntimeError("bounded Book run is missing")
+        project_id, workspace_id, book_id = (str(item) for item in book_run[:3])
+        if (
+            int(book_run[4]) != 8
+            or int(book_run[5]) != 0
+            or int(book_run[6]) != 4
+            or int(book_run[7]) != 8
+            or str(book_run[8]) != "RESOLVED_AUTHORITY_INPUT"
+        ):
+            raise RuntimeError(
+                "bounded Book run must be an unstarted 4+4 resolved-input run"
+            )
+        uow.cursor.execute(
+            """
+            SELECT release_sha,book_design_version,book_plan_version,
+                   current_volume_plan_version,arc_portfolio_plan_versions
+            FROM authority_book_production_input_snapshot
+            WHERE snapshot_id=%s AND project_id=%s AND workspace_id=%s
+              AND book_id=%s
+            """,
+            [str(book_run[3]), project_id, workspace_id, book_id],
+        )
+        snapshot = uow.cursor.fetchone()
+        if snapshot is None or str(snapshot[0]) != repository["commit_sha"]:
+            raise RuntimeError(
+                "Book input snapshot is missing or belongs to another SHA"
+            )
+        arc_versions = tuple(str(item) for item in snapshot[4])
+        if not arc_versions:
+            raise RuntimeError("bounded campaign requires an active Arc plan")
+        primary_arc = str(args.primary_arc_plan_version_id or arc_versions[0])
+        if primary_arc not in arc_versions:
+            raise RuntimeError("primary Arc is outside the frozen Planning snapshot")
+        uow.cursor.execute(
+            """
+            SELECT binding.formation_run_id,binding.set_generation,
+                   COUNT(*),MIN(run.foundation_set_digest),
+                   MIN(run.book_design_asset_version_id),
+                   MIN(run.book_design_content_hash),MIN(run.lifecycle)
+            FROM authority_book_foundation_binding AS binding
+            JOIN authority_story_formation_run AS run
+              ON run.formation_run_id=binding.formation_run_id
+            WHERE binding.project_id=%s AND binding.book_id=%s
+              AND binding.freshness='CURRENT' AND binding.retired_at IS NULL
+            GROUP BY binding.formation_run_id,binding.set_generation
+            """,
+            [project_id, book_id],
+        )
+        foundation_rows = uow.cursor.fetchall()
+        if len(foundation_rows) != 1:
+            raise RuntimeError("Book does not have one current Foundation set")
+        foundation = foundation_rows[0]
+        if (
+            int(foundation[2]) != 6
+            or str(foundation[6]) != "READY"
+            or str(foundation[4]) != str(snapshot[1])
+        ):
+            raise RuntimeError("Foundation set is incomplete or not Formation-ready")
+        uow.cursor.execute(
+            """
+            SELECT version FROM authority_book
+            WHERE project_id=%s AND book_id=%s
+            """,
+            [project_id, book_id],
+        )
+        book_row = uow.cursor.fetchone()
+        if book_row is None:
+            raise RuntimeError("Book Authority root is missing")
+
+    pack_manifest: dict[str, dict[str, str]] = {}
+    for role, (environment_key, default_pack_id) in _PACK_RUNTIME_BINDINGS.items():
+        pack_id = str(effective_env.get(environment_key) or default_pack_id)
+        pack_manifest[role] = _selected_pack_binding(
+            args.database_url,
+            pack_id=pack_id,
+            environment="validation",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            release_sha=repository["commit_sha"],
+        )
+
+    state: dict[str, Any] = {
+        "schema_version": STATE_SCHEMA,
+        "campaign_id": args.campaign_id,
+        "project_id": project_id,
+        "workspace_id": workspace_id,
+        "book_id": book_id,
+        "book_run_id": args.book_run_id,
+        "primary_arc_plan_version_id": primary_arc,
+        "volume_scope_id": profile.to_dict()["book"]["bounded_volume_scope"],
+        "exact_release_sha": repository["commit_sha"],
+        "migration_head": LATEST_MIGRATION_ID,
+        "capability_pack_manifest": pack_manifest,
+        "foundation_lineage": {
+            "foundation_set_digest": str(foundation[3]),
+            "story_formation_run_id": str(foundation[0]),
+            "foundation_set_generation": int(foundation[1]),
+            "book_design_asset_version_id": str(foundation[4]),
+            "book_design_content_hash": str(foundation[5]),
+            "book_version": int(book_row[0]),
+            "source_classification": "FROZEN_AUTHORITY_INPUT_NOT_QUALITY_EVIDENCE",
+        },
+        "planning_lineage": {
+            "input_snapshot_id": str(book_run[3]),
+            "book_plan_asset_version_id": str(snapshot[2]),
+            "volume_plan_asset_version_id": str(snapshot[3]),
+            "arc_plan_asset_version_ids": list(arc_versions),
+        },
+        "realization_lineage": {
+            "contract": "narrative-realization-v1",
+            "expected_chapter_group_ranges": [[1, 4], [5, 8]],
+            "binding_policy": "QUALIFICATION_FROZEN_BEFORE_EXECUTION",
+        },
+        "reviewers": _reviewer_targets(args.reviewer),
+        "runtime_env": runtime_env,
+    }
+    captured = _validate_state_document(state)
+    _verify_runtime_pack_ids(captured, effective_env, mode="real")
+    _verify_freeze_lineage(
+        args.database_url,
+        captured,
+        mode="real",
+        values=effective_env,
+    )
+    state_path = _write_json(args.output, captured)
+    return {
+        "status": "CAPTURED",
+        "state_path": str(state_path),
+        "state": captured,
+        "repository": repository,
+        "migration": migration,
+    }
 
 
 def _verify_freeze_lineage(
@@ -395,7 +677,9 @@ def _verify_freeze_lineage(
                     or str(pack[4]) != environment
                     or str(pack[5]) != release_channel
                     or str(pack[6]) != str(state["exact_release_sha"])
-                    or (pack[9] is not None and str(pack[9]) != str(state["project_id"]))
+                    or (
+                        pack[9] is not None and str(pack[9]) != str(state["project_id"])
+                    )
                     or (
                         pack[10] is not None
                         and str(pack[10]) != str(state["workspace_id"])
@@ -498,11 +782,15 @@ def _effective_stage_binding(
         )
     )
     model = str(values.get(model_key) or model_fallback or "").strip()
-    reasoning = str(
-        values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
-        or values.get("NOVEL_FORGE_REASONING_EFFORT")
-        or "high"
-    ).strip().lower()
+    reasoning = (
+        str(
+            values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+            or values.get("NOVEL_FORGE_REASONING_EFFORT")
+            or "high"
+        )
+        .strip()
+        .lower()
+    )
     return provider, model, reasoning
 
 
@@ -552,9 +840,7 @@ def _verify_runtime_routes(
     actual_planning = (
         normalize_provider_id(str(values.get("NOVEL_FORGE_PLANNING_PROVIDER") or "")),
         str(values.get("NOVEL_FORGE_PLANNING_MODEL") or "").strip(),
-        str(values.get("NOVEL_FORGE_PLANNING_REASONING_EFFORT") or "")
-        .strip()
-        .lower(),
+        str(values.get("NOVEL_FORGE_PLANNING_REASONING_EFFORT") or "").strip().lower(),
     )
     expected_planning = (
         normalize_provider_id(str(planning["provider"])),
@@ -680,9 +966,7 @@ def _runtime_env(
             "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": str(
                 budget["cost_limit_per_chapter_usd"]
             ),
-            "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": str(
-                budget["cost_limit_usd"]
-            ),
+            "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": str(budget["cost_limit_usd"]),
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": str(budget["cost_limit_usd"]),
         }
     )
@@ -991,6 +1275,25 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    capture = subparsers.add_parser(
+        "capture-real-state",
+        help="capture one prepared canonical 4+4 Book as a non-authoritative state descriptor",
+    )
+    capture.add_argument("--database-url", required=True)
+    capture.add_argument("--book-run-id", required=True)
+    capture.add_argument("--campaign-id", required=True)
+    capture.add_argument(
+        "--reviewer",
+        action="append",
+        required=True,
+        metavar="ID:IDENTITY_CLASS",
+        help="repeat exactly twice for the independent human reviewer targets",
+    )
+    capture.add_argument("--runtime-env", required=True)
+    capture.add_argument("--primary-arc-plan-version-id", default="")
+    capture.add_argument("--profile", default=str(DEFAULT_PROFILE))
+    capture.add_argument("--output", required=True)
+
     freeze = subparsers.add_parser("freeze", help="admit and freeze exact lineage")
     _add_common(freeze)
     freeze.add_argument("--mode", choices=("scripted", "real"), required=True)
@@ -1031,7 +1334,9 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = _parser().parse_args()
     try:
-        if args.command == "freeze":
+        if args.command == "capture-real-state":
+            result = _capture_real_state(args)
+        elif args.command == "freeze":
             result = _freeze(args)
         elif args.command == "dry-run":
             result = _run_campaign(args, requested_mode="scripted")
