@@ -10,6 +10,16 @@ function read(relativePath) {
 }
 
 describe("Novel Forge admin feature architecture", () => {
+  it("does not expose retired score-only quality or unbounded campaign consoles", () => {
+    const navigation = read("app/shared/navigation.tsx");
+    const intelligence = read("app/features/content-intelligence/ContentIntelligencePages.tsx");
+    assert.equal(existsSync(join(root, "app/quality-eval-v2/page.tsx")), false);
+    assert.equal(existsSync(join(root, "app/long-chain-proof/page.tsx")), false);
+    for (const retired of ["/quality-eval-v2", "/long-chain-proof", "longform_100", "state_only_300"]) {
+      assert.doesNotMatch(`${navigation}\n${intelligence}`, new RegExp(retired));
+    }
+  });
+
   it("keeps V6/V7 navigation groups and local factory centers wired", () => {
     const navigation = read("app/shared/navigation.tsx");
     for (const label of ["工作区", "创作资产", "分析拆解", "生产流程", "管理工具"]) {

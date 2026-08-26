@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, BrainCircuit, CheckCircle2, FileText, GitCompare, Library, Network, Send, ShieldCheck } from "lucide-react";
+import { Boxes, BrainCircuit, CheckCircle2, FileText, GitCompare, Library, Network, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchJson, postJson } from "../../shared/api";
 import { FeatureShell } from "../../shared/feature-shell";
@@ -264,135 +264,6 @@ export function CanonGraphWorkbenchV2Page() {
   );
 }
 
-export function QualityEvalV2Page() {
-  const { busy, error, result, run } = useAction();
-  const [rubricPath, setRubricPath] = useState("");
-  const [targetPath, setTargetPath] = useState("");
-  const [reportPath, setReportPath] = useState("");
-  const [suiteType, setSuiteType] = useState("opening_3");
-  const [providerMode, setProviderMode] = useState("fixture");
-  const [providerName, setProviderName] = useState("fixture-provider");
-  const [providerModel, setProviderModel] = useState("premium-judge-fixture");
-  const [budgetCap, setBudgetCap] = useState("1.0");
-  const [requireExternalProof, setRequireExternalProof] = useState(false);
-
-  async function rubric() {
-    const payload = await postJson("/product/quality/rubric-pack", { genre_id: "mystery", platform_id: "local" }) as RunResult;
-    setRubricPath(String(payload.path || ""));
-    return payload;
-  }
-
-  async function suite() {
-    const payload = await postJson("/product/quality/suite", { suite_type: suiteType, target_paths: targetPath ? [targetPath] : [], rubric_path: rubricPath }) as RunResult;
-    setReportPath(String(payload.path || ""));
-    return payload;
-  }
-
-  async function providerJudge() {
-    const fixture = {
-      text: JSON.stringify({
-        recommendation: "ready",
-        scores: {
-          genre_promise: 88,
-          platform_rhythm: 86,
-          style_adherence: 85,
-          hook_strength: 87,
-          conflict_density: 84,
-          character_motivation: 86,
-          canon_consistency: 90,
-          ai_flavor_risk: 83
-        },
-        rationale: "fixture provider judge for local UI smoke"
-      }),
-      usage: { input_tokens: 800, output_tokens: 160, total_tokens: 960 },
-      cost: { amount: 0.01, currency: "USD", source: "ui_fixture" },
-      provider: providerName,
-      model: providerModel
-    };
-    const payload = await postJson("/product/quality/provider-judge", {
-      suite_type: suiteType,
-      target_paths: targetPath ? [targetPath] : [],
-      rubric_path: rubricPath,
-      platform_id: "local",
-      mode: providerMode,
-      provider_config: { provider: providerName, model_name: providerModel, mode: providerMode },
-      provider_route: {
-        provider: providerName,
-        model_name: providerModel,
-        approval_status: "approved",
-        approval_id: "ui-operator-approval",
-        approved_by: "operator",
-        production_provider_allowlist: [providerName]
-      },
-      operator_approval: { status: "approved", approval_id: "ui-operator-approval", approved_by: "operator", reason: "manual UI run" },
-      budget_cap: Number(budgetCap || 0),
-      allow_mock_fixture: providerMode === "fixture",
-      fixture_judge_response: providerMode === "fixture" ? fixture : {},
-      require_external_provider_proof: requireExternalProof,
-      environment: providerMode === "real" ? "production" : ""
-    }) as RunResult;
-    setReportPath(String(payload.path || ""));
-    return payload;
-  }
-
-  return (
-    <FeatureShell title="Quality Eval Console 2.0" subtitle="Run rubric packs, quality suites, and hard gates for content intelligence evidence." eyebrow="Content Intelligence">
-      {error ? <div className="errorLine">{error}</div> : null}
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="Rubric / Suite / Gate" icon={<ShieldCheck size={18} />} />
-          <select value={suiteType} onChange={(event) => setSuiteType(event.target.value)}>
-            {["opening_3", "golden_10", "volume_30", "longform_100"].map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <input value={rubricPath} onChange={(event) => setRubricPath(event.target.value)} placeholder="rubric path" />
-          <input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="target asset path" />
-          <input value={reportPath} onChange={(event) => setReportPath(event.target.value)} placeholder="quality report path" />
-          <select value={providerMode} onChange={(event) => setProviderMode(event.target.value)}>
-            <option value="fixture">fixture provider</option>
-            <option value="real">real provider</option>
-          </select>
-          <input value={providerName} onChange={(event) => setProviderName(event.target.value)} placeholder="provider, e.g. claude-code" />
-          <input value={providerModel} onChange={(event) => setProviderModel(event.target.value)} placeholder="provider model" />
-          <input value={budgetCap} onChange={(event) => setBudgetCap(event.target.value)} placeholder="budget cap" />
-          <label className="inlineCheckbox">
-            <input type="checkbox" checked={requireExternalProof} onChange={(event) => setRequireExternalProof(event.target.checked)} />
-            <span>Require external provider proof</span>
-          </label>
-          <div className="studioActions">
-            <button className="primaryButton" disabled={busy} onClick={() => run(rubric)}>Build Rubric</button>
-            <button className="secondaryButton" disabled={busy || !targetPath} onClick={() => run(suite)}>Run Suite</button>
-            <button className="secondaryButton" disabled={busy || !targetPath || !rubricPath} onClick={() => run(providerJudge)}>Run Provider Judge</button>
-            <button className="secondaryButton" disabled={busy || !reportPath} onClick={() => run(() => postJson("/product/quality/gate", { quality_report_path: reportPath }))}>Run Gate</button>
-          </div>
-        </div>
-        <ResultPanel result={result} />
-      </section>
-      <ArtifactInspector seedPath={primaryPath(result)} />
-    </FeatureShell>
-  );
-}
-
-export function LongChainProofConsolePage() {
-  const { busy, error, result, run } = useAction();
-  const [mode, setMode] = useState("deterministic_50");
-  return (
-    <FeatureShell title="Long-chain Proof Console" subtitle="Deterministic 50, mock 100, state-only 300, and opt-in provider proof runs." eyebrow="Content Intelligence">
-      {error ? <div className="errorLine">{error}</div> : null}
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="Run Proof" icon={<GitCompare size={18} />} />
-          <select value={mode} onChange={(event) => setMode(event.target.value)}>
-            {["deterministic_50", "mock_100", "state_only_300"].map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <button className="primaryButton" disabled={busy} onClick={() => run(() => postJson("/product/long-chain-proof/run", { project_id: "ui-local", mode }))}>Run Long-chain Proof</button>
-        </div>
-        <ResultPanel result={result} />
-      </section>
-      <ArtifactInspector seedPath={primaryPath(result)} />
-    </FeatureShell>
-  );
-}
-
 export function PublishingFeedbackV2Page() {
   const { busy, error, result, run } = useAction();
   const [releasePath, setReleasePath] = useState("");
@@ -474,10 +345,6 @@ export function AgentOperationCoveragePage() {
     "build-style-profile",
     "run-style-drift-gate",
     "run-canon-graph-plugin",
-    "run-quality-suite",
-    "run-provider-quality-judge",
-    "run-quality-gate",
-    "run-long-chain-proof",
     "build-platform-upload-package",
     "record-platform-receipt",
     "publish-platform-upload-package",

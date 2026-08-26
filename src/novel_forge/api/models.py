@@ -573,75 +573,6 @@ class StyleDriftGateRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
-class QualityRubricPackRequest(BaseModel):
-    genre_id: str = ""
-    platform_id: str = "local"
-    style_profile_path: str = ""
-    scope: str = "chapter"
-    environment: str = ""
-    envelope: dict[str, Any] = Field(default_factory=dict)
-
-
-class QualitySuiteRunRequest(BaseModel):
-    suite_type: str
-    target_paths: list[str]
-    rubric_path: str = ""
-    genre_strategy_pack_path: str = ""
-    style_profile_path: str = ""
-    platform_id: str = "local"
-    environment: str = ""
-    envelope: dict[str, Any] = Field(default_factory=dict)
-
-
-class QualityGateRunRequest(BaseModel):
-    quality_report_path: str
-    environment: str = ""
-    envelope: dict[str, Any] = Field(default_factory=dict)
-
-
-class ChapterEconomyRequest(BaseModel):
-    draft_path: str
-    reward_ledger_path: str = ""
-    chapter_plan_path: str = ""
-    workspace_path: str | None = None
-    persist_issues: bool = True
-
-
-class CharacterPressureRequest(BaseModel):
-    draft_path: str
-    character_state_ledger_path: str = ""
-    villain_operation_plan_path: str = ""
-    workspace_path: str | None = None
-    persist_issues: bool = True
-
-
-class MobileReadingRequest(BaseModel):
-    draft_path: str
-    platform_id: str = "local"
-    workspace_path: str | None = None
-    persist_issues: bool = True
-
-
-class ProviderQualityJudgeRequest(BaseModel):
-    suite_type: str = "opening_3"
-    target_paths: list[str]
-    rubric_path: str
-    genre_strategy_pack_path: str = ""
-    style_profile_path: str = ""
-    platform_id: str = "local"
-    provider_route: dict[str, Any] = Field(default_factory=dict)
-    provider_config: dict[str, Any] = Field(default_factory=dict)
-    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
-    operator_approval: dict[str, Any] = Field(default_factory=dict)
-    budget_cap: float = 0.0
-    mode: str = "fixture"
-    fixture_judge_response: dict[str, Any] = Field(default_factory=dict)
-    allow_mock_fixture: bool = False
-    require_external_provider_proof: bool = False
-    environment: str = ""
-    envelope: dict[str, Any] = Field(default_factory=dict)
-
-
 class CanonGraphPluginRequest(BaseModel):
     plugin: str
     target_path: str | None = None
@@ -650,23 +581,6 @@ class CanonGraphPluginRequest(BaseModel):
     workspace_path: str = ""
     persist_issues: bool = True
     persist_snapshot: bool = False
-
-
-class LongChainProofRunRequest(BaseModel):
-    project_id: str = "local-project"
-    mode: str = "deterministic_50"
-    target_chapter_count: int | None = None
-    environment: str = ""
-    envelope: dict[str, Any] = Field(default_factory=dict)
-    opt_in_slow_provider: bool = False
-    provider_route: dict[str, Any] = Field(default_factory=dict)
-    provider_config: dict[str, Any] = Field(default_factory=dict)
-    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
-    operator_approval: dict[str, Any] = Field(default_factory=dict)
-    budget_cap: float = 0.0
-    fixture_chapter_response: dict[str, Any] = Field(default_factory=dict)
-    allow_mock_fixture: bool = False
-    require_external_provider_proof: bool = False
 
 
 class V7ProviderProofRequest(BaseModel):
@@ -2461,15 +2375,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "StyleFingerprintRequest": StyleFingerprintRequest,
         "StyleProfileBuildRequest": StyleProfileBuildRequest,
         "StyleDriftGateRequest": StyleDriftGateRequest,
-        "QualityRubricPackRequest": QualityRubricPackRequest,
-        "QualitySuiteRunRequest": QualitySuiteRunRequest,
-        "QualityGateRunRequest": QualityGateRunRequest,
-        "ChapterEconomyRequest": ChapterEconomyRequest,
-        "CharacterPressureRequest": CharacterPressureRequest,
-        "MobileReadingRequest": MobileReadingRequest,
-        "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
-        "LongChainProofRunRequest": LongChainProofRunRequest,
         "V7ProviderProofRequest": V7ProviderProofRequest,
         "PlatformUploadPackageRequest": PlatformUploadPackageRequest,
         "PlatformReceiptRequest": PlatformReceiptRequest,

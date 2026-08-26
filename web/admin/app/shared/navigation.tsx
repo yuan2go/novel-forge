@@ -149,8 +149,7 @@ export const navGroups: NavGroup[] = [
       { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
       { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
       { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> },
-      { key: "longform_stability", label: "Longform Stability", description: "正典、章节状态、卷级推进和 OS 验收", href: "/longform-stability", icon: <BookOpenCheck size={17} /> },
-      { key: "long_chain_proof", label: "Long-chain Proof", description: "50/100/300 章内容智能 proof", href: "/long-chain-proof", icon: <GitPullRequest size={17} /> }
+      { key: "longform_stability", label: "Longform Stability", description: "正典、章节状态、卷级推进和 OS 验收", href: "/longform-stability", icon: <BookOpenCheck size={17} /> }
     ]
   },
   {
@@ -206,7 +205,6 @@ export const navGroups: NavGroup[] = [
       { key: "production_control", label: "生产总控", description: "运行实体观测", href: "/control", icon: <Activity size={17} /> },
       { key: "change_impact", label: "变更影响", description: "长篇变更影响分析", href: "/impact", icon: <GitPullRequest size={17} /> },
       { key: "model_evaluation", label: "模型评测", description: "Benchmark 和模型路由", href: "/evaluation", icon: <SlidersHorizontal size={17} /> },
-      { key: "quality_eval_v2", label: "Quality Eval 2.0", description: "Opening/Golden/Volume/Longform 质量套件", href: "/quality-eval-v2", icon: <ShieldCheck size={17} /> },
       { key: "publishing_feedback_v2", label: "Publish Feedback 2.0", description: "手动发布包、回执、评论聚类和回流提案", href: "/publishing-feedback-v2", icon: <Send size={17} /> },
       { key: "analytics_dashboard", label: "Analytics", description: "ClickHouse optional OLAP 离线投影", href: "/analytics", icon: <BarChart3 size={17} /> },
       { key: "data_statistics", label: "数据统计", description: "产能、质量、成本趋势", href: "/statistics", icon: <BarChart3 size={17} /> },
