@@ -37,7 +37,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
 STORY_PLANNING_PROMPT_VERSION = "v3"
-NARRATIVE_EVALUATION_PROMPT_VERSION = "v2"
+NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
 @dataclass(frozen=True, slots=True)

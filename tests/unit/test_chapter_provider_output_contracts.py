@@ -103,7 +103,7 @@ def test_narrative_evaluation_contract_consumes_exact_foundation_closure() -> No
 
     assert "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES" in contract
     assert "sole candidate under evaluation" in contract
-    assert "consume each remaining exact qualified dependency payload" in contract
+    assert "exact qualified dependency's semantic_payload" in contract
     assert "Do not consume prior qualification verdicts" in contract
     assert "demand downstream plans" in contract
 

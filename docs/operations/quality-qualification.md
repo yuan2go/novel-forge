@@ -111,8 +111,12 @@ Because BookDesign v5 is reference-only, its independent semantic evaluator
 resolves the six exact Foundation AssetVersions and qualification bindings from
 the candidate itself. It validates those Authority versions before dispatch and
 projects the Foundation source content, but not prior evaluation verdicts, into
-the evaluator context. Generator prompts, mutable projections and unbound
-context remain excluded.
+the evaluator context. The exact Authority wrapper is validated first; its
+governed `candidate_payload` is then exposed only in this closure as
+`semantic_payload`. The generic Provider projection continues to strip
+`candidate_payload`, so no other stage gains an implicit candidate-source
+channel. Generator prompts, mutable projections and unbound context remain
+excluded.
 
 Relevant public surfaces are:
 

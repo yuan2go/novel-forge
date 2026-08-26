@@ -431,7 +431,22 @@ def test_narrative_evaluator_projects_exact_canonical_foundation_closure() -> No
                 "asset_type": asset_type,
                 "content_hash": "sha256:" + str(index) * 64,
                 "dependency_role": role,
-                "candidate": {"candidate_payload": {"role": role}},
+                "candidate": {
+                    "schema_version": "story_design.authority.v1",
+                    "generator_operation_name": {
+                        "CREATIVE_FOUNDATION": "creative.candidates.generate",
+                        "THEME_CONTRACT": "theme.candidates.generate",
+                        "ENDING_INTENT": "ending.intent.generate",
+                        "READER_PROMISE": "reader.promise.generate",
+                        "WORLD_BIBLE": "world.design.generate",
+                        "CHARACTER_CAST": "character.cast.generate",
+                    }[role],
+                    "candidate_payload": {
+                        "role": role,
+                        "semantic_evidence": f"evidence-{index}",
+                    },
+                    "provider_evidence": {"must_not_leak": True},
+                },
             }
         )
         lineage.append(
@@ -457,9 +472,16 @@ def test_narrative_evaluator_projects_exact_canonical_foundation_closure() -> No
 
     assert len(view["selected_inputs"]) == 7
     assert view["selection_explanation"]["policy"] == (
-        "exact-candidate-and-canonical-foundation-closure"
+        "exact-candidate-and-canonical-foundation-semantic-closure-v2"
     )
-    assert "qualification" not in json.dumps(view, ensure_ascii=False)
+    assert view["schema_version"] == "novelos.narrative_evaluation_context_view.v2"
+    for index, item in enumerate(view["selected_inputs"][1:], start=1):
+        assert item["semantic_payload"]["semantic_evidence"] == f"evidence-{index}"
+        assert "candidate" not in item
+    serialized = json.dumps(view, ensure_ascii=False)
+    assert "candidate_payload" not in serialized
+    assert "provider_evidence" not in serialized
+    assert "qualification" not in serialized
 
 
 def test_narrative_evaluator_rejects_unbound_dependency_projection() -> None:

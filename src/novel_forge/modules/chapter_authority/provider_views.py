@@ -42,6 +42,14 @@ _NARRATIVE_FOUNDATION_DEPENDENCY_TYPES = {
     "WORLD_BIBLE": "world_bible",
     "CHARACTER_CAST": "character_cast",
 }
+_NARRATIVE_FOUNDATION_GENERATORS = {
+    "CREATIVE_FOUNDATION": "creative.candidates.generate",
+    "THEME_CONTRACT": "theme.candidates.generate",
+    "ENDING_INTENT": "ending.intent.generate",
+    "READER_PROMISE": "reader.promise.generate",
+    "WORLD_BIBLE": "world.design.generate",
+    "CHARACTER_CAST": "character.cast.generate",
+}
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
 _MAX_PLANNING_STRING_CHARACTERS = 2_000
 _MAX_PLANNING_LIST_ITEMS = 12
@@ -730,6 +738,7 @@ def _build_narrative_evaluation_context_view(
         and isinstance(candidate_content, Mapping)
         and "dependency_role" not in candidate
     )
+    projected_selected: list[dict[str, Any]] | None = None
     if isolation == "EXACT_CANDIDATE_ONLY":
         valid = (
             candidate_valid
@@ -764,6 +773,14 @@ def _build_narrative_evaluation_context_view(
             and len(lineage_by_role) == len(lineage)
         )
         if valid:
+            projected_selected = [
+                {
+                    "asset_version_id": candidate["asset_version_id"],
+                    "asset_type": candidate["asset_type"],
+                    "content_hash": candidate["content_hash"],
+                    "candidate": _compact(candidate_content),
+                }
+            ]
             for (
                 role,
                 expected_asset_type,
@@ -771,16 +788,38 @@ def _build_narrative_evaluation_context_view(
                 item = selected_by_role[role]
                 binding = lineage_by_role[role]
                 qualification_hash = str(binding.get("qualification_hash") or "")
+                source_content = item.get("candidate")
+                semantic_payload = (
+                    source_content.get("candidate_payload")
+                    if isinstance(source_content, Mapping)
+                    else None
+                )
                 valid = valid and (
                     item.get("asset_type") == expected_asset_type
-                    and isinstance(item.get("candidate"), Mapping)
+                    and isinstance(source_content, Mapping)
+                    and source_content.get("schema_version")
+                    == "story_design.authority.v1"
+                    and source_content.get("generator_operation_name")
+                    == _NARRATIVE_FOUNDATION_GENERATORS[role]
+                    and isinstance(semantic_payload, Mapping)
+                    and bool(semantic_payload)
                     and item.get("asset_version_id") == binding.get("asset_version_id")
                     and item.get("content_hash") == binding.get("content_hash")
                     and _is_exact_sha256(item.get("content_hash"))
                     and bool(binding.get("qualification_evidence_asset_version_id"))
                     and _is_exact_sha256(qualification_hash)
                 )
-        policy = "exact-candidate-and-canonical-foundation-closure"
+                if valid:
+                    projected_selected.append(
+                        {
+                            "asset_version_id": item["asset_version_id"],
+                            "asset_type": item["asset_type"],
+                            "content_hash": item["content_hash"],
+                            "dependency_role": role,
+                            "semantic_payload": _compact(semantic_payload),
+                        }
+                    )
+        policy = "exact-candidate-and-canonical-foundation-semantic-closure-v2"
     else:
         valid = False
         policy = "invalid"
@@ -789,12 +828,14 @@ def _build_narrative_evaluation_context_view(
             "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
             "Semantic Evaluation context is outside its exact source-isolation contract",
         )
+    if projected_selected is None:
+        projected_selected = _compact(selected)
     view = {
         "contract_version": "provider-context-view-v2",
-        "schema_version": "novelos.narrative_evaluation_context_view.v1",
+        "schema_version": "novelos.narrative_evaluation_context_view.v2",
         "stage": "narrative_semantic_evaluation",
         "source_isolation": isolation,
-        "selected_inputs": _compact(selected),
+        "selected_inputs": projected_selected,
         "selection_explanation": {
             "policy": policy,
             "selected_count": len(selected),

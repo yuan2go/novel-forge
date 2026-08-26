@@ -63,6 +63,7 @@ def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
     assert "do not mistake a reference-only BookDesign field" in instruction[
         "content"
     ]["text"]
+    assert "`semantic_payload`" in instruction["content"]["text"]
 
 
 def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:

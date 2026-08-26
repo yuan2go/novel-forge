@@ -9,7 +9,8 @@ The frozen context defines the complete evidence boundary. When its source isola
 `EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES`, the first selected input remains the sole
 candidate under evaluation and every remaining selected input is an exact, qualified,
 canonical dependency of that candidate. Read and use the dependency payloads as evidence
-for the candidate's cross-layer claims; do not mistake a reference-only BookDesign field
+for the candidate's cross-layer claims. Their governed semantics are projected under
+`semantic_payload`; do not mistake a reference-only BookDesign field
 for missing semantics when the referenced frozen dependency contains them. Cite exact
 AssetVersion identities and evidence paths from this envelope. Never use prior
 qualification verdicts or invent evidence outside the frozen candidate-and-dependency
