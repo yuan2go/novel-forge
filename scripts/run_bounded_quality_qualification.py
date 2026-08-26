@@ -1039,11 +1039,14 @@ def _run_campaign(
         mode=mode,
         values=env,
     )
-    settings = IndustrialSettings(
+    settings = IndustrialSettings.from_env(
+        {
+            **env,
+            "NOVEL_FORGE_ROOT": str(ROOT),
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+            "NOVEL_FORGE_DATABASE_URL": args.database_url,
+        },
         root=ROOT,
-        environment="development",
-        storage_authority="postgresql",
-        database_url=args.database_url,
     )
     execution = build_production_execution_composition(settings, env=env)
     try:
