@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from novel_forge.modules.capability_packs import (
+from novel_forge.modules.capability_packs.validation_deployment import (
     install_chapter_validation_pack,
     install_longform_validation_pack,
     register_validation_runtime_definitions,

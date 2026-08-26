@@ -36,7 +36,7 @@ from novel_forge.modules.book_design_authority import (
     StoryFormationApplication,
     StoryFormationInput,
 )
-from novel_forge.modules.capability_packs import (
+from novel_forge.modules.capability_packs.validation_deployment import (
     VALIDATION_PACK_PERMISSIONS,
     install_chapter_validation_pack,
     install_longform_validation_pack,
