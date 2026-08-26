@@ -2033,7 +2033,11 @@ def planning_provider_output_schema(
             if field == "chapter_range":
                 properties[field].update({"minItems": 2, "maxItems": 2})
                 if exact_group_range is not None:
-                    properties[field]["const"] = list(exact_group_range)
+                    # OpenAI Structured Outputs rejects non-scalar ``const``
+                    # values. Bound each member to the frozen endpoints here;
+                    # Planning Authority still validates the exact ordered pair
+                    # before the candidate can be persisted or activated.
+                    properties[field]["items"]["enum"] = list(exact_group_range)
         elif field == "chapter_number":
             properties[field] = {"type": "integer", "minimum": 1}
         elif field == "chapter_function_matrix":

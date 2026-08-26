@@ -274,12 +274,15 @@ is a hard stop, not a target.
 
 Before the first Chapter provider call, each ChapterGroup Narrative Search must
 show the complete frozen request in its generation command and Context Bundle.
-For this profile the Provider output schema fixes `chapter_range` to `[1,4]` or
-`[5,8]`, fixes matrix row Chapter identities to that same range and restricts
-realization events to it. Structural Authority also requires exact matrix and
-event coverage. A candidate that changes the range, omits a Chapter, or emits a
-disclosure outside the same event's `reader_may_learn` boundary is rejected;
-repairs remain bounded and the failed candidate evidence is retained.
+For this profile the Provider output schema bounds `chapter_range` to exactly
+two values drawn from the frozen endpoints (`1`/`4` or `5`/`8`), fixes matrix
+row Chapter identities to the complete range and restricts realization events
+to it. Planning Authority then requires the exact ordered pair `[1,4]` or
+`[5,8]` plus exact matrix and event coverage. This split avoids unsupported
+array-valued JSON Schema constants without weakening admission. A candidate
+that changes or reverses the range, repeats an endpoint, omits a Chapter, or
+emits a disclosure outside the same event's `reader_may_learn` boundary is
+rejected; repairs remain bounded and the failed candidate evidence is retained.
 
 After an interruption, use the same state and frozen campaign:
 

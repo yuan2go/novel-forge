@@ -549,7 +549,22 @@ def test_chapter_group_search_schema_freezes_exact_horizon() -> None:
         },
     )
 
-    assert schema["properties"]["chapter_range"]["const"] == [5, 8]
+    chapter_range = schema["properties"]["chapter_range"]
+    assert "const" not in chapter_range
+    assert chapter_range["minItems"] == chapter_range["maxItems"] == 2
+    assert chapter_range["items"]["enum"] == [5, 8]
+
+    def assert_no_non_scalar_const(value: object) -> None:
+        if isinstance(value, dict):
+            if "const" in value:
+                assert not isinstance(value["const"], (dict, list))
+            for child in value.values():
+                assert_no_non_scalar_const(child)
+        elif isinstance(value, list):
+            for child in value:
+                assert_no_non_scalar_const(child)
+
+    assert_no_non_scalar_const(schema)
     matrix = schema["properties"]["chapter_function_matrix"]
     assert matrix["minItems"] == matrix["maxItems"] == 4
     assert matrix["items"]["properties"]["chapter_number"]["enum"] == [
@@ -1701,11 +1716,12 @@ def test_chapter_group_search_command_freezes_complete_request_and_exact_range()
     )
     _validate_narrative_search_horizon(command, content)
 
-    content["chapter_range"] = [1, 3]
-    with pytest.raises(
-        KernelError, match="NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH"
-    ):
-        _validate_narrative_search_horizon(command, content)
+    for invalid_range in ([1, 3], [4, 1], [1, 1]):
+        content["chapter_range"] = invalid_range
+        with pytest.raises(
+            KernelError, match="NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH"
+        ):
+            _validate_narrative_search_horizon(command, content)
 
 
 def test_chapter_group_search_command_rejects_identity_without_frozen_request() -> None:
