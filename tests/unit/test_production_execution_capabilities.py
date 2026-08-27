@@ -22,6 +22,7 @@ REQUIRED_CAPABILITIES = {
     "creative.proposal.generate",
     "theme.question.generate",
     "ending.intent.generate",
+    "reader.promise.generate",
     "world.design.generate",
     "character.cast.generate",
     "planning.book.generate",

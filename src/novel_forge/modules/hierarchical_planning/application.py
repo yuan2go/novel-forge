@@ -191,7 +191,13 @@ class PostgresHierarchicalPlanningAuthority:
                 SELECT state.logical_key, state.lifecycle,
                        state.updated_by_operation_id,
                        version.content, version.content_hash,
-                       version.lifecycle, version.eligibility
+                       version.lifecycle, version.eligibility,
+                       state.source_kind,
+                       version.created_at,
+                       (
+                           SELECT applied_at FROM nf_schema_migrations
+                           WHERE migration_id='20260825_0100_hierarchy_closure'
+                       )
                 FROM authority_story_design_version_state AS state
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=state.asset_version_id
@@ -223,7 +229,7 @@ class PostgresHierarchicalPlanningAuthority:
                     operation_id=operation_id,
                     decision_evidence=decision_evidence,
                 )
-                row = (*row[:5], "CANDIDATE", "ELIGIBLE")
+                row = (*row[:5], "CANDIDATE", "ELIGIBLE", *row[7:])
         if (
             row is None
             or str(row[1]) != "ACTIVE"
@@ -235,6 +241,9 @@ class PostgresHierarchicalPlanningAuthority:
                 "planning binding requires an active, qualified Story Design candidate",
             )
         content = dict(row[3])
+        hierarchy_compatibility = str(row[7]) == "LEGACY_IMPORT" or bool(
+            row[8] is not None and row[9] is not None and row[8] < row[9]
+        )
         contract = validate_planning_contract(
             project_id=project_id,
             book_id=book_id,
@@ -243,7 +252,33 @@ class PostgresHierarchicalPlanningAuthority:
             parent_version_id=parent_version_id,
             execution_scope=execution_scope,
             content=content,
+            allow_pre_hierarchy_compatibility=hierarchy_compatibility,
         )
+        if contract_type is PlanContractType.BOOK and not hierarchy_compatibility:
+            self._require_qualified_foundation_for_book_plan(
+                uow.cursor,
+                project_id=project_id,
+                book_id=book_id,
+                content=content,
+            )
+        if contract_type is PlanContractType.CHAPTER and not hierarchy_compatibility:
+            from novel_forge.storage.narrative_realization_repositories import (
+                NarrativeRealizationRepository,
+            )
+
+            realization = NarrativeRealizationRepository(
+                uow.cursor
+            ).require_current_for_chapter(
+                project_id=project_id,
+                book_id=book_id,
+                chapter_group_plan_version_id=parent_version_id,
+                chapter_number=int(content.get("chapter_number") or 0),
+            )
+            if dict(content.get("narrative_realization_slice") or {}) != realization:
+                raise KernelError(
+                    "CHAPTER_NARRATIVE_REALIZATION_DRIFT",
+                    "ChapterPlan activation differs from the current Frozen realization",
+                )
         self._require_realization_authority_lineage(
             uow.cursor,
             project_id=project_id,
@@ -708,6 +743,96 @@ class PostgresHierarchicalPlanningAuthority:
             raise KernelError(
                 "PLANNING_MIGRATION_QUALIFICATION_CONFLICT",
                 "legacy Planning candidate changed before governed promotion",
+            )
+
+    @staticmethod
+    def _require_qualified_foundation_for_book_plan(
+        cursor: Any,
+        *,
+        project_id: str,
+        book_id: str,
+        content: dict[str, Any],
+    ) -> None:
+        from novel_forge.modules.book_design_authority.domain import (
+            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            BookDesignPayload,
+        )
+        from novel_forge.modules.book_design_authority.foundation import FoundationRole
+        from novel_forge.storage.foundation_repositories import (
+            require_current_foundation_set,
+        )
+
+        foundation = require_current_foundation_set(
+            cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
+        )
+        by_role = {
+            str(item.get("role") or ""): item
+            for item in content.get("frozen_inputs") or ()
+            if isinstance(item, dict)
+        }
+        expected_roles = {
+            FoundationRole.CREATIVE_FOUNDATION: "creative_foundation",
+            FoundationRole.THEME_CONTRACT: "theme_contract",
+            FoundationRole.ENDING_INTENT: "ending_intent",
+            FoundationRole.READER_PROMISE: "reader_promise",
+            FoundationRole.WORLD_BIBLE: "world_bible",
+            FoundationRole.CHARACTER_CAST: "character_cast",
+        }
+        for role, input_role in expected_roles.items():
+            frozen = by_role.get(input_role)
+            binding = foundation.by_role[role]
+            if frozen is None or (
+                str(frozen.get("asset_version_id") or "") != binding.asset_version_id
+                or str(frozen.get("content_hash") or "") != binding.content_hash
+            ):
+                raise KernelError(
+                    "BOOK_PLAN_FOUNDATION_INPUT_STALE",
+                    f"BookPlan does not freeze current {role.value}",
+                )
+        design_ref = by_role.get("book_design")
+        if design_ref is None:
+            raise KernelError(
+                "BOOK_PLAN_BOOK_DESIGN_REQUIRED",
+                "BookPlan requires the exact active BookDesign v5",
+            )
+        cursor.execute(
+            """
+            SELECT version.content, version.content_hash, version.schema_version,
+                   version.lifecycle, version.eligibility, version.governance,
+                   book.current_book_design_asset_version_id
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            JOIN authority_book AS book
+              ON book.project_id=asset.project_id AND book.book_id=%s
+            WHERE asset.project_id=%s AND version.asset_version_id=%s
+            """,
+            [book_id, project_id, str(design_ref.get("asset_version_id") or "")],
+        )
+        row = cursor.fetchone()
+        if (
+            row is None
+            or str(row[1]) != str(design_ref.get("content_hash") or "")
+            or tuple(str(item) for item in row[2:6])
+            != (
+                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                "ACTIVE",
+                "ELIGIBLE",
+                "CLEAR",
+            )
+            or str(row[6]) != str(design_ref.get("asset_version_id") or "")
+        ):
+            raise KernelError(
+                "BOOK_PLAN_BOOK_DESIGN_STALE",
+                "BookPlan BookDesign v5 input is no longer current",
+            )
+        design = BookDesignPayload.from_mapping(dict(row[0]))
+        if design.foundation_set != foundation:
+            raise KernelError(
+                "BOOK_PLAN_FOUNDATION_SET_DRIFT",
+                "BookPlan BookDesign v5 binds another Foundation Set",
             )
 
     @staticmethod

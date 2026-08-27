@@ -26,6 +26,7 @@ PLAN_FIELDS = (
     "arc_schedule", "setups", "payoffs", "character_participation",
     "knowledge_boundaries", "disclosures", "required_state_transitions",
     "reader_experience", "scene_plan", "expected_exit_state",
+    "narrative_realization_slice",
 )
 LIST_FIELDS = frozenset({
     "cast", "relationship_pairs", "scene_sequence", "scene_goals", "character_goals",
@@ -230,7 +231,7 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "chapter_intent", "arc_schedule", "setups", "payoffs",
             "character_participation", "knowledge_boundaries", "disclosures",
             "required_state_transitions", "reader_experience", "scene_plan",
-            "expected_exit_state",
+            "expected_exit_state", "narrative_realization_slice",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],

@@ -36,11 +36,32 @@ class DesignFreshness(StrEnum):
 
 
 class PlanningScope(StrEnum):
+    NOT_APPLICABLE = "NOT_APPLICABLE"
     BOOK = "BOOK"
     VOLUME = "VOLUME"
     ARC = "ARC"
     CHAPTER_GROUP = "CHAPTER_GROUP"
     CHAPTER = "CHAPTER"
+
+
+class DesignScope(StrEnum):
+    """Semantic ownership of a Story Design candidate.
+
+    This is deliberately separate from PlanningScope: a Creative Foundation is
+    an upstream Story Design truth candidate, not a BOOK plan in disguise.
+    """
+
+    CREATIVE_FOUNDATION = "CREATIVE_FOUNDATION"
+    THEME_CONTRACT = "THEME_CONTRACT"
+    ENDING_INTENT = "ENDING_INTENT"
+    READER_PROMISE = "READER_PROMISE"
+    WORLD_BIBLE = "WORLD_BIBLE"
+    CHARACTER_CAST = "CHARACTER_CAST"
+    BOOK_PLAN = "BOOK_PLAN"
+    VOLUME_PLAN = "VOLUME_PLAN"
+    ARC_PLAN = "ARC_PLAN"
+    CHAPTER_GROUP_PLAN = "CHAPTER_GROUP_PLAN"
+    CHAPTER_PLAN = "CHAPTER_PLAN"
 
 
 class DesignTransition(StrEnum):
@@ -158,6 +179,12 @@ GENERATOR_DEFINITIONS = (
         risk="HIGH",
     ),
     _generator(
+        "reader.promise.generate",
+        "reader.promise.generate",
+        "reader_promise_candidate",
+        risk="HIGH",
+    ),
+    _generator(
         "world.design.generate",
         "world.design.generate",
         "world_bible_candidate",
@@ -219,6 +246,20 @@ GENERATOR_DEFINITIONS = (
 
 GENERATOR_CATALOG = {item.operation_name: item for item in GENERATOR_DEFINITIONS}
 
+GENERATOR_DESIGN_SCOPE = {
+    "creative.candidates.generate": DesignScope.CREATIVE_FOUNDATION,
+    "theme.candidates.generate": DesignScope.THEME_CONTRACT,
+    "ending.intent.generate": DesignScope.ENDING_INTENT,
+    "reader.promise.generate": DesignScope.READER_PROMISE,
+    "world.design.generate": DesignScope.WORLD_BIBLE,
+    "character.cast.generate": DesignScope.CHARACTER_CAST,
+    "book_plan.generate": DesignScope.BOOK_PLAN,
+    "volume_plan.generate": DesignScope.VOLUME_PLAN,
+    "arc_plan.generate": DesignScope.ARC_PLAN,
+    "chapter_group_plan.generate": DesignScope.CHAPTER_GROUP_PLAN,
+    "chapter_plan.generate": DesignScope.CHAPTER_PLAN,
+}
+
 
 __all__ = [
     "DesignApproval",
@@ -226,7 +267,9 @@ __all__ = [
     "DesignLifecycle",
     "DesignQualification",
     "DesignTransition",
+    "DesignScope",
     "GENERATOR_CATALOG",
+    "GENERATOR_DESIGN_SCOPE",
     "GENERATOR_DEFINITIONS",
     "GeneratorDefinition",
     "PlanningScope",

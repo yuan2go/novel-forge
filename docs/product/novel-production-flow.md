@@ -8,12 +8,15 @@ This is a derived product view of [`canonical-overall-design.md`](../architectur
 Idea / Material / Reader Promise
 → Creative Exploration (several materially distinct foundations)
 → evaluation / comparison / approval
-→ active Creative Foundation + World / Character Foundations
+→ Qualified Creative Foundation + Theme / Ending / Reader Promise
+→ Qualified WorldBible
+→ Qualified CharacterCast
+→ Qualified BookDesign synthesis/reference contract
 → Narrative Threads + Transformation Maps
 → bounded Book / Volume / Arc future search
 → selected Progressive Structural Plan + Narrative Arc Network
 → Arc Working Set / ChapterArcContributions
-→ Narrative Composer
+→ qualified / approved / frozen causal Narrative Realization
 → active ChapterPlan
 → ChapterExecutionIntent
 → ChapterMemo
@@ -43,11 +46,14 @@ The critical path and observation sidecars are intentionally separate.
 
 ## 2. Design and planning
 
-A Book is ready for production only when the active BookDesign Creative
-Foundation, stable World/Character projections, qualified Book/Volume/Arc
+A Book is ready for production only when exact active qualified Creative
+Foundation, Theme Contract, Ending Intent, Reader Promise, WorldBible,
+CharacterCast and BookDesign v5 reference bindings, a qualified Book/Volume/Arc
 baseline, initial accepted boundary and required operational profiles resolve
-to one immutable Book Production input snapshot. Individually callable content
-generators are not an opening flow.
+to one immutable Book Production input snapshot. BookDesign does not copy
+World/Character truth. Individually callable content generators are not an
+opening flow, and an HTTP request may only admit/query/control the durable
+formation/opening Operation.
 
 At Book/Volume/Arc and consequential ChapterGroup decisions, Planning explores
 a small number of immutable alternatives from the same frozen parent state.
@@ -69,6 +75,13 @@ Production control:    ChapterGroup
 Arc is an orthogonal cross-time state-transformation graph. Narrative Segment is conditional: it is persisted only if a distinct contiguous dramatic interval has a real consumer independent of Volume, Arc and ChapterGroup. Planning uses lazy expansion: distant future stays strategic; current scopes are more explicit; the next several chapters are tactical; only the next Chapter becomes detailed execution intent/scene work.
 
 `ChapterGroup` is a production/checkpoint construct, not the semantic replacement for Narrative Segment.
+
+Before ChapterPlan generation, the same Hierarchical Planning Authority must
+qualify, approve and freeze a typed Narrative Realization for the relevant
+ChapterGroup/Arc intent. It is a causal correctness proof, not a new Plan scale
+and not accepted actual. ChapterPlan binds only its exact event slice; accepted
+Chapter outcomes consume that slice, while a multi-Chapter realization remains
+partially covered until all required events have accepted evidence.
 
 ## 3. Narrative Arc production
 

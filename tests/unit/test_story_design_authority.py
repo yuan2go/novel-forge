@@ -16,6 +16,7 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
             "creative.candidates.generate",
             "theme.candidates.generate",
             "ending.intent.generate",
+            "reader.promise.generate",
             "world.design.generate",
             "character.cast.generate",
             "book_plan.generate",

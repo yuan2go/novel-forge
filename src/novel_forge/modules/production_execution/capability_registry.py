@@ -206,6 +206,7 @@ def default_capability_registry() -> CapabilityRegistry:
         CapabilityId.CREATIVE_PROPOSAL_GENERATE: ExecutionDomain.CREATIVE,
         CapabilityId.THEME_QUESTION_GENERATE: ExecutionDomain.THEME,
         CapabilityId.ENDING_INTENT_GENERATE: ExecutionDomain.ENDING,
+        CapabilityId.READER_PROMISE_GENERATE: ExecutionDomain.CREATIVE,
         CapabilityId.WORLD_DESIGN_GENERATE: ExecutionDomain.WORLD,
         CapabilityId.CHARACTER_CAST_GENERATE: ExecutionDomain.CHARACTER,
         CapabilityId.PLANNING_BOOK_GENERATE: ExecutionDomain.PLANNING,

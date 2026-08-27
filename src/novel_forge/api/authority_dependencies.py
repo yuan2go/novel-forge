@@ -1561,6 +1561,15 @@ def build_book_production_composition(
     narrative_search = PostgresNarrativeSearchApplication(
         settings.database_url, planning=planning
     )
+    from novel_forge.modules.hierarchical_planning import (
+        PostgresNarrativeRealizationApplication,
+    )
+
+    realizations = PostgresNarrativeRealizationApplication(
+        settings.database_url,
+        application_build_id=authority.application_build_id,
+        commit_sha=authority.commit_sha,
+    )
     replan = BookReplanCoordinator(
         settings.database_url,
         book_authority=authority,
@@ -1578,6 +1587,7 @@ def build_book_production_composition(
         principal=principal,
         replan=replan,
         production_preparation=preparation,
+        realizations=realizations,
         narrative_search=narrative_search,
         context_token_budget=int(
             values.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET") or 16_000
@@ -1588,6 +1598,8 @@ def build_book_production_composition(
             or 16_000
         ),
     )
+    from novel_forge.modules.book_design_authority import StoryFormationApplication
+
     return BookProductionComposition(
         authority=authority,
         query=query,
@@ -1614,6 +1626,13 @@ def build_book_production_composition(
             settings.database_url,
             narrative_search=narrative_search,
             input_resolver=input_resolver,
+            application_build_id=authority.application_build_id,
+            commit_sha=authority.commit_sha,
+        ),
+        formation=StoryFormationApplication(
+            settings.database_url,
+            application_build_id=authority.application_build_id,
+            commit_sha=authority.commit_sha,
         ),
     )
 

@@ -1,0 +1,988 @@
+"""Transactional projection for the durable Story Formation coordinator."""
+
+from __future__ import annotations
+
+from typing import Any
+from uuid import uuid4
+
+from psycopg.types.json import Jsonb
+
+from novel_forge.modules.book_design_authority.domain import (
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    BookDesignPayload,
+)
+from novel_forge.modules.book_design_authority.foundation import (
+    FoundationBinding,
+    FoundationRole,
+    QualifiedFoundationSet,
+    foundation_upstream_digest,
+)
+from novel_forge.modules.book_design_authority.foundation_validation import (
+    validate_foundation_layer,
+)
+from novel_forge.modules.book_design_authority.formation_domain import (
+    FormationLayerInput,
+    StoryFormationInput,
+    StoryFormationStage,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.story_design_authority import GENERATOR_DESIGN_SCOPE
+
+
+_STAGE_ROLE = {
+    StoryFormationStage.CREATIVE_FOUNDATION: FoundationRole.CREATIVE_FOUNDATION,
+    StoryFormationStage.THEME_CONTRACT: FoundationRole.THEME_CONTRACT,
+    StoryFormationStage.ENDING_INTENT: FoundationRole.ENDING_INTENT,
+    StoryFormationStage.READER_PROMISE: FoundationRole.READER_PROMISE,
+    StoryFormationStage.WORLD_BIBLE: FoundationRole.WORLD_BIBLE,
+    StoryFormationStage.CHARACTER_CAST: FoundationRole.CHARACTER_CAST,
+}
+
+
+class StoryFormationRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def create(
+        self,
+        *,
+        formation_run_id: str,
+        project_id: str,
+        workspace_id: str,
+        book_id: str,
+        root_operation_id: str,
+        stable_idempotency_key: str,
+        expected_book_version: int,
+        formation_policy_version: str,
+        frozen_input: StoryFormationInput,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT formation_run_id, frozen_input_digest
+            FROM authority_story_formation_run
+            WHERE project_id=%s AND book_id=%s AND stable_idempotency_key=%s
+            """,
+            [project_id, book_id, stable_idempotency_key],
+        )
+        existing = self.cursor.fetchone()
+        if existing is not None:
+            if str(existing[0]) != formation_run_id or str(existing[1]) != frozen_input.digest:
+                raise KernelError(
+                    "STORY_FORMATION_IDEMPOTENCY_CONFLICT",
+                    "Formation idempotency key was reused with different frozen inputs",
+                )
+            return self.require(formation_run_id)
+        self.cursor.execute(
+            """
+            SELECT version
+            FROM authority_book
+            WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+            FOR SHARE
+            """,
+            [project_id, workspace_id, book_id],
+        )
+        book = self.cursor.fetchone()
+        if book is None or int(book[0]) != expected_book_version:
+            raise KernelError(
+                "STORY_FORMATION_BOOK_VERSION_CONFLICT",
+                "Formation must freeze the current Book version",
+            )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_story_formation_run(
+                formation_run_id, project_id, workspace_id, book_id,
+                root_operation_id, stable_idempotency_key, expected_book_version,
+                lifecycle, current_stage, formation_policy_version,
+                frozen_stage_inputs, frozen_input_digest,
+                book_design_asset_version_id, book_design_content_hash
+            ) VALUES (
+                %s,%s,%s,%s,%s,%s,%s,'ADMITTED','CREATIVE_SEARCH',%s,%s,%s,%s,%s
+            )
+            """,
+            [
+                formation_run_id,
+                project_id,
+                workspace_id,
+                book_id,
+                root_operation_id,
+                stable_idempotency_key,
+                expected_book_version,
+                formation_policy_version,
+                Jsonb(frozen_input.to_dict()),
+                frozen_input.digest,
+                frozen_input.book_design_asset_version_id or None,
+                frozen_input.book_design_content_hash or None,
+            ],
+        )
+        for role, layer in frozen_input.by_role.items():
+            stage = StoryFormationStage(role.value)
+            self.cursor.execute(
+                """
+                INSERT INTO authority_story_formation_stage(
+                    formation_stage_id, formation_run_id, stage,
+                    attempt_ordinal, status, generation_operation_id,
+                    candidate_asset_version_id, candidate_content_hash,
+                    qualification_evidence_asset_version_id, qualification_hash,
+                    activation_operation_id, binding, checkpoint
+                ) VALUES (%s,%s,%s,1,'PENDING',%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                [
+                    str(uuid4()),
+                    formation_run_id,
+                    stage.value,
+                    layer.generation_operation_id,
+                    layer.asset_version_id,
+                    layer.content_hash,
+                    layer.qualification_evidence_asset_version_id,
+                    layer.qualification_hash,
+                    layer.activation_operation_id,
+                    Jsonb({}),
+                    Jsonb(
+                        {
+                            "candidate_asset_version_ids": list(
+                                layer.candidate_asset_version_ids
+                            ),
+                            "selection_reason": list(layer.selection_reason),
+                        }
+                    ),
+                ],
+            )
+        return self.require(formation_run_id)
+
+    def advance_one(
+        self,
+        formation_run_id: str,
+        operation_id: str,
+        *,
+        expected_stage: str,
+        expected_version: int,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT project_id, book_id, lifecycle, current_stage,
+                   frozen_stage_inputs, frozen_input_digest,
+                   book_design_asset_version_id, book_design_content_hash,
+                   version
+            FROM authority_story_formation_run
+            WHERE formation_run_id=%s
+            FOR UPDATE
+            """,
+            [formation_run_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("STORY_FORMATION_NOT_FOUND", "Formation run is missing")
+        if str(row[2]) in {"READY", "ABORTED"}:
+            return self.require(formation_run_id)
+        if str(row[2]) not in {"ADMITTED", "RUNNING"}:
+            raise KernelError(
+                "STORY_FORMATION_NOT_RUNNABLE",
+                "Formation is not in a restartable lifecycle",
+            )
+        if str(row[3]) != expected_stage or int(row[8]) != expected_version:
+            raise KernelError(
+                "STORY_FORMATION_JOB_STALE",
+                "Formation RuntimeJob does not match its frozen stage/version",
+            )
+        frozen = StoryFormationInput.from_mapping(dict(row[4]))
+        if frozen.digest != str(row[5]):
+            raise KernelError(
+                "STORY_FORMATION_FROZEN_INPUT_DRIFT",
+                "persisted Formation input no longer matches its digest",
+            )
+        stage = StoryFormationStage(str(row[3]))
+        if stage is StoryFormationStage.CREATIVE_SEARCH:
+            self._record_creative_search(formation_run_id, frozen)
+            next_stage = StoryFormationStage.CREATIVE_FOUNDATION
+        elif stage in _STAGE_ROLE:
+            role = _STAGE_ROLE[stage]
+            self._bind_layer(
+                formation_run_id=formation_run_id,
+                project_id=str(row[0]),
+                book_id=str(row[1]),
+                layer=frozen.by_role[role],
+            )
+            next_stage = StoryFormationStage(
+                {
+                    FoundationRole.CREATIVE_FOUNDATION: "THEME_CONTRACT",
+                    FoundationRole.THEME_CONTRACT: "ENDING_INTENT",
+                    FoundationRole.ENDING_INTENT: "READER_PROMISE",
+                    FoundationRole.READER_PROMISE: "WORLD_BIBLE",
+                    FoundationRole.WORLD_BIBLE: "CHARACTER_CAST",
+                    FoundationRole.CHARACTER_CAST: "BOOK_DESIGN",
+                }[role]
+            )
+        elif stage is StoryFormationStage.BOOK_DESIGN:
+            if not str(row[6] or "") or not str(row[7] or ""):
+                self.cursor.execute(
+                    """
+                    UPDATE authority_story_formation_run
+                    SET lifecycle='WAITING_APPROVAL', version=version+1,
+                        updated_at=NOW()
+                    WHERE formation_run_id=%s AND version=%s
+                    """,
+                    [formation_run_id, int(row[8])],
+                )
+                if self.cursor.rowcount != 1:
+                    raise KernelError(
+                        "STORY_FORMATION_VERSION_CONFLICT",
+                        "Formation changed before its BookDesign approval wait",
+                    )
+                return self.require(formation_run_id)
+            foundation = self._require_book_design(
+                project_id=str(row[0]),
+                book_id=str(row[1]),
+                asset_version_id=str(row[6]),
+                content_hash=str(row[7]),
+            )
+            self.cursor.execute(
+                """
+                UPDATE authority_story_formation_run
+                SET lifecycle='READY', current_stage='COMPLETE',
+                    foundation_set_digest=%s, version=version+1, updated_at=NOW()
+                WHERE formation_run_id=%s AND version=%s
+                """,
+                [foundation.set_digest, formation_run_id, int(row[8])],
+            )
+            return self.require(formation_run_id)
+        else:
+            return self.require(formation_run_id)
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='RUNNING', current_stage=%s,
+                version=version+1, updated_at=NOW()
+            WHERE formation_run_id=%s AND version=%s
+            """,
+            [next_stage.value, formation_run_id, int(row[8])],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_VERSION_CONFLICT",
+                "Formation stage changed concurrently",
+            )
+        return self.require(formation_run_id)
+
+    def bind_book_design(
+        self,
+        formation_run_id: str,
+        *,
+        expected_version: int,
+        asset_version_id: str,
+        content_hash: str,
+        operation_id: str,
+    ) -> dict[str, Any]:
+        """Close Formation with an independently approved BookDesign v5.
+
+        Foundation layers must already be current. The BookDesign remains
+        owned and activated by Book Design Authority; this method only freezes
+        that exact Authority version into coordinator lineage.
+        """
+
+        self.cursor.execute(
+            """
+            SELECT project_id, book_id, lifecycle, current_stage, version
+            FROM authority_story_formation_run
+            WHERE formation_run_id=%s
+            FOR UPDATE
+            """,
+            [formation_run_id],
+        )
+        row = self.cursor.fetchone()
+        if (
+            row is None
+            or str(row[2]) != "WAITING_APPROVAL"
+            or str(row[3]) != StoryFormationStage.BOOK_DESIGN.value
+            or int(row[4]) != expected_version
+        ):
+            raise KernelError(
+                "STORY_FORMATION_BOOK_DESIGN_APPROVAL_CONFLICT",
+                "Formation is not waiting for BookDesign at the expected version",
+            )
+        foundation = self._require_book_design(
+            project_id=str(row[0]),
+            book_id=str(row[1]),
+            asset_version_id=asset_version_id,
+            content_hash=content_hash,
+        )
+        self.cursor.execute(
+            """
+            SELECT last_operation_id
+            FROM authority_book
+            WHERE project_id=%s AND book_id=%s
+              AND current_book_design_asset_version_id=%s
+            """,
+            [str(row[0]), str(row[1]), asset_version_id],
+        )
+        design_activation = self.cursor.fetchone()
+        if design_activation is None or not str(design_activation[0] or ""):
+            raise KernelError(
+                "STORY_FORMATION_BOOK_DESIGN_ACTIVATION_MISSING",
+                "BookDesign has no authoritative activation operation lineage",
+            )
+        design_activation_operation_id = str(design_activation[0])
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='READY', current_stage='COMPLETE',
+                book_design_asset_version_id=%s,
+                book_design_content_hash=%s,
+                foundation_set_digest=%s,
+                version=version+1, updated_at=NOW()
+            WHERE formation_run_id=%s AND version=%s
+              AND lifecycle='WAITING_APPROVAL'
+              AND current_stage='BOOK_DESIGN'
+            """,
+            [
+                asset_version_id,
+                content_hash,
+                foundation.set_digest,
+                formation_run_id,
+                expected_version,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_BOOK_DESIGN_APPROVAL_CONFLICT",
+                "BookDesign approval raced with another Formation transition",
+            )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_story_formation_stage(
+                formation_stage_id, formation_run_id, stage, attempt_ordinal,
+                status, candidate_asset_version_id, candidate_content_hash,
+                activation_operation_id, binding, checkpoint
+            ) VALUES (%s,%s,'BOOK_DESIGN',1,'ACTIVE',%s,%s,%s,%s,%s)
+            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO UPDATE
+            SET status='ACTIVE',
+                candidate_asset_version_id=EXCLUDED.candidate_asset_version_id,
+                candidate_content_hash=EXCLUDED.candidate_content_hash,
+                activation_operation_id=EXCLUDED.activation_operation_id,
+                binding=EXCLUDED.binding,
+                checkpoint=EXCLUDED.checkpoint,
+                updated_at=NOW()
+            WHERE authority_story_formation_stage.status IN (
+                'PENDING','WAITING_APPROVAL'
+            )
+            """,
+            [
+                str(uuid4()),
+                formation_run_id,
+                asset_version_id,
+                content_hash,
+                design_activation_operation_id,
+                Jsonb(
+                    {
+                        "authority": "BOOK_DESIGN_AUTHORITY",
+                        "asset_version_id": asset_version_id,
+                        "content_hash": content_hash,
+                        "foundation_set_digest": foundation.set_digest,
+                    }
+                ),
+                Jsonb(
+                    {
+                        "book_design_activation_operation_id": (
+                            design_activation_operation_id
+                        ),
+                        "formation_binding_operation_id": operation_id,
+                    }
+                ),
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_BOOK_DESIGN_STAGE_CONFLICT",
+                "BookDesign Formation evidence was already committed differently",
+            )
+        return self.require(formation_run_id)
+
+    def fail(
+        self, formation_run_id: str, *, error: dict[str, Any], operation_id: str
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='FAILED', failure=%s,
+                recovery_instruction=%s, version=version+1, updated_at=NOW()
+            WHERE formation_run_id=%s AND lifecycle IN ('ADMITTED','RUNNING')
+            """,
+            [
+                Jsonb(error),
+                Jsonb(
+                    {
+                        "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+                        "formation_run_id": formation_run_id,
+                        "failed_operation_id": operation_id,
+                    }
+                ),
+                formation_run_id,
+            ],
+        )
+
+    def resume(self, formation_run_id: str, expected_version: int) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='RUNNING', failure='{}'::jsonb,
+                recovery_instruction='{}'::jsonb,
+                version=version+1, updated_at=NOW()
+            WHERE formation_run_id=%s AND lifecycle='FAILED' AND version=%s
+            """,
+            [formation_run_id, expected_version],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_RESUME_CONFLICT",
+                "Formation is not failed at the expected version",
+            )
+        return self.require(formation_run_id)
+
+    def abort(self, formation_run_id: str, expected_version: int) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='ABORTED', version=version+1, updated_at=NOW()
+            WHERE formation_run_id=%s
+              AND lifecycle IN ('ADMITTED','RUNNING','FAILED','WAITING_APPROVAL')
+              AND version=%s
+            """,
+            [formation_run_id, expected_version],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_ABORT_CONFLICT",
+                "Formation cannot abort at the expected version",
+            )
+        return self.require(formation_run_id)
+
+    def require(self, formation_run_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT formation_run_id, project_id, workspace_id, book_id,
+                   root_operation_id, lifecycle, current_stage,
+                   formation_policy_version, frozen_input_digest,
+                   COALESCE(foundation_set_digest, ''), version,
+                   failure, recovery_instruction, book_design_asset_version_id,
+                   book_design_content_hash
+            FROM authority_story_formation_run
+            WHERE formation_run_id=%s
+            """,
+            [formation_run_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("STORY_FORMATION_NOT_FOUND", "Formation run is missing")
+        names = (
+            "formation_run_id",
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "root_operation_id",
+            "lifecycle",
+            "current_stage",
+            "formation_policy_version",
+            "frozen_input_digest",
+            "foundation_set_digest",
+            "version",
+            "failure",
+            "recovery_instruction",
+            "book_design_asset_version_id",
+            "book_design_content_hash",
+        )
+        return dict(zip(names, row, strict=True))
+
+    def _record_creative_search(
+        self, formation_run_id: str, frozen: StoryFormationInput
+    ) -> None:
+        selected = frozen.by_role[FoundationRole.CREATIVE_FOUNDATION]
+        requested = tuple(selected.candidate_asset_version_ids)
+        self.cursor.execute(
+            """
+            SELECT state.asset_version_id, state.design_scope,
+                   state.qualification, state.freshness,
+                   version.lifecycle, version.eligibility, version.governance,
+                   active.asset_version_id
+            FROM authority_story_design_version_state AS state
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=state.asset_version_id
+            LEFT JOIN authority_story_design_active_version AS active
+              ON active.project_id=state.project_id
+             AND active.asset_version_id=state.asset_version_id
+            WHERE state.asset_version_id=ANY(%s)
+            """,
+            [list(requested)],
+        )
+        rows = {str(row[0]): row for row in self.cursor.fetchall()}
+        if set(rows) != set(requested) or any(
+            tuple(str(item) for item in row[1:7])
+            != (
+                FoundationRole.CREATIVE_FOUNDATION.value,
+                "QUALIFIED",
+                "CURRENT",
+                "ACTIVE",
+                "ELIGIBLE",
+                "CLEAR",
+            )
+            for row in rows.values()
+        ):
+            raise KernelError(
+                "CREATIVE_SEARCH_CANDIDATE_EVIDENCE_INVALID",
+                "Creative Search candidates require qualified immutable Story Design evidence",
+            )
+        if str(rows[selected.asset_version_id][7] or "") != selected.asset_version_id:
+            raise KernelError(
+                "CREATIVE_SEARCH_SELECTION_DRIFT",
+                "selected Creative Foundation is not the exact active Authority version",
+            )
+        # This is comparison lineage, not Planning scope or a Story authority.
+        self.cursor.execute(
+            """
+            INSERT INTO authority_story_formation_stage(
+                formation_stage_id, formation_run_id, stage, attempt_ordinal,
+                status, generation_operation_id, candidate_asset_version_id,
+                candidate_content_hash, qualification_evidence_asset_version_id,
+                qualification_hash, activation_operation_id, binding, checkpoint
+            ) VALUES (%s,%s,'CREATIVE_SEARCH',1,'ACTIVE',%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO NOTHING
+            """,
+            [
+                str(uuid4()),
+                formation_run_id,
+                selected.generation_operation_id,
+                selected.asset_version_id,
+                selected.content_hash,
+                selected.qualification_evidence_asset_version_id,
+                selected.qualification_hash,
+                selected.activation_operation_id,
+                Jsonb(
+                    {
+                        "candidate_asset_version_ids": list(
+                            selected.candidate_asset_version_ids
+                        ),
+                        "selected_asset_version_id": selected.asset_version_id,
+                        "selection_reason": list(selected.selection_reason),
+                    }
+                ),
+                Jsonb({"comparison": "FROZEN"}),
+            ],
+        )
+
+    def _bind_layer(
+        self,
+        *,
+        formation_run_id: str,
+        project_id: str,
+        book_id: str,
+        layer: FormationLayerInput,
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT asset.asset_type, version.content, version.content_hash,
+                   version.schema_version, version.lifecycle,
+                   version.eligibility, version.governance,
+                   state.generator_operation_name, state.design_scope,
+                   state.lifecycle, state.qualification, state.approval,
+                   state.freshness, active.activated_by_operation_id,
+                   state.execution_evidence
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            JOIN authority_story_design_version_state AS state
+              ON state.project_id=asset.project_id
+             AND state.asset_version_id=version.asset_version_id
+            JOIN authority_story_design_active_version AS active
+              ON active.project_id=state.project_id
+             AND active.asset_version_id=state.asset_version_id
+            WHERE asset.project_id=%s AND version.asset_version_id=%s
+            FOR SHARE
+            """,
+            [project_id, layer.asset_version_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "FOUNDATION_ACTIVE_DESIGN_REQUIRED",
+                f"{layer.role.value} is not an active Story Design version",
+            )
+        generator = str(row[7])
+        expected_scope = GENERATOR_DESIGN_SCOPE.get(generator)
+        if (
+            str(row[2]) != layer.content_hash
+            or str(row[3]) != layer.schema_version
+            or tuple(str(item) for item in row[4:7])
+            != ("ACTIVE", "ELIGIBLE", "CLEAR")
+            or expected_scope is None
+            or expected_scope.value != layer.role.value
+            or str(row[8]) != layer.role.value
+            or tuple(str(item) for item in row[9:13])
+            != ("ACTIVE", "QUALIFIED", "APPROVED", "CURRENT")
+            or str(row[13]) != layer.activation_operation_id
+            or str(dict(row[14]).get("operation_id") or "")
+            != layer.generation_operation_id
+        ):
+            raise KernelError(
+                "FOUNDATION_ACTIVE_DESIGN_DRIFT",
+                f"{layer.role.value} active/qualification/generation lineage drifted",
+            )
+        self._require_qualification(project_id, layer)
+        parents = self._current_parent_bindings(
+            project_id=project_id, book_id=book_id, role=layer.role
+        )
+        self._require_generation_parent_inputs(layer, parents)
+        parent_contents = self._parent_contents(project_id, parents)
+        content = dict(row[1])
+        layer_payload = content.get("candidate_payload")
+        if not isinstance(layer_payload, dict) or not layer_payload:
+            raise KernelError(
+                "FOUNDATION_AUTHORITY_ENVELOPE_INVALID",
+                f"{layer.role.value} is not a schema-backed Story Design candidate",
+            )
+        validation = validate_foundation_layer(
+            role=layer.role,
+            content=layer_payload,
+            parent_bindings=parents,
+            parent_contents=parent_contents,
+        )
+        upstream_digest = foundation_upstream_digest(parents) if parents else ""
+        self._mark_impacted_descendants(
+            project_id=project_id,
+            book_id=book_id,
+            changed_role=layer.role,
+            replacement_asset_version_id=layer.asset_version_id,
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_book_foundation_binding
+            SET freshness='STALE', retired_at=NOW()
+            WHERE project_id=%s AND book_id=%s AND foundation_role=%s
+              AND freshness='CURRENT' AND retired_at IS NULL
+            """,
+            [project_id, book_id, layer.role.value],
+        )
+        self.cursor.execute(
+            """
+            SELECT COALESCE(MAX(set_generation) FILTER (
+                       WHERE formation_run_id=%s
+                   ), 0),
+                   COALESCE(MAX(set_generation), 0)
+            FROM authority_book_foundation_binding
+            WHERE project_id=%s AND book_id=%s
+            """,
+            [formation_run_id, project_id, book_id],
+        )
+        run_generation, book_generation = (
+            int(item) for item in self.cursor.fetchone()
+        )
+        generation = run_generation or book_generation + 1
+        self.cursor.execute(
+            """
+            INSERT INTO authority_book_foundation_binding(
+                foundation_binding_id, formation_run_id, project_id, book_id,
+                set_generation, foundation_role, authority_name,
+                asset_version_id, content_hash, schema_version,
+                qualification_evidence_asset_version_id, qualification_hash,
+                activation_operation_id, upstream_digest, freshness
+            ) VALUES (%s,%s,%s,%s,%s,%s,'STORY_DESIGN_AUTHORITY',%s,%s,%s,%s,%s,%s,
+                      NULLIF(%s,''),'CURRENT')
+            """,
+            [
+                str(uuid4()),
+                formation_run_id,
+                project_id,
+                book_id,
+                generation,
+                layer.role.value,
+                layer.asset_version_id,
+                layer.content_hash,
+                layer.schema_version,
+                layer.qualification_evidence_asset_version_id,
+                layer.qualification_hash,
+                layer.activation_operation_id,
+                upstream_digest,
+            ],
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_stage
+            SET status='ACTIVE', upstream_digest=NULLIF(%s,''),
+                binding=%s, checkpoint=%s, updated_at=NOW()
+            WHERE formation_run_id=%s AND stage=%s AND attempt_ordinal=1
+              AND status='PENDING'
+            """,
+            [
+                upstream_digest,
+                Jsonb(
+                    FoundationBinding(
+                        role=layer.role,
+                        authority="STORY_DESIGN_AUTHORITY",
+                        asset_version_id=layer.asset_version_id,
+                        content_hash=layer.content_hash,
+                        schema_version=layer.schema_version,
+                        qualification_evidence_asset_version_id=(
+                            layer.qualification_evidence_asset_version_id
+                        ),
+                        qualification_hash=layer.qualification_hash,
+                        activation_id=layer.activation_operation_id,
+                        upstream_digest=upstream_digest,
+                    ).to_dict()
+                ),
+                Jsonb(validation),
+                formation_run_id,
+                layer.role.value,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_STAGE_CONFLICT",
+                f"{layer.role.value} Formation stage already changed",
+            )
+
+    def _mark_impacted_descendants(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        changed_role: FoundationRole,
+        replacement_asset_version_id: str,
+    ) -> None:
+        """Invalidate only future bindings that depend on a replaced parent.
+
+        Immutable AssetVersions and accepted history remain untouched.  A
+        repeated Formation using the same version is harmless; a changed
+        parent makes every current descendant unusable until rebound through
+        the governed sequence.
+        """
+
+        self.cursor.execute(
+            """
+            SELECT asset_version_id
+            FROM authority_book_foundation_binding
+            WHERE project_id=%s AND book_id=%s AND foundation_role=%s
+              AND freshness='CURRENT' AND retired_at IS NULL
+            """,
+            [project_id, book_id, changed_role.value],
+        )
+        existing = self.cursor.fetchone()
+        if existing is None or str(existing[0]) == replacement_asset_version_id:
+            return
+        descendants = [
+            role.value
+            for role in FoundationRole
+            if changed_role in role.required_parents
+        ]
+        if not descendants:
+            return
+        self.cursor.execute(
+            """
+            UPDATE authority_book_foundation_binding
+            SET freshness='IMPACTED', retired_at=NOW()
+            WHERE project_id=%s AND book_id=%s
+              AND foundation_role=ANY(%s)
+              AND freshness='CURRENT' AND retired_at IS NULL
+            """,
+            [project_id, book_id, descendants],
+        )
+
+    def _require_qualification(
+        self, project_id: str, layer: FormationLayerInput
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT version.content_hash, version.lifecycle, version.eligibility,
+                   version.governance, version.content,
+                   output.operation_id, operation.status
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            LEFT JOIN authority_operation_output_asset AS output
+              ON output.asset_version_id=version.asset_version_id
+            LEFT JOIN authority_operation AS operation
+              ON operation.operation_id=output.operation_id
+            WHERE asset.project_id=%s AND version.asset_version_id=%s
+            """,
+            [project_id, layer.qualification_evidence_asset_version_id],
+        )
+        row = self.cursor.fetchone()
+        evidence = dict(row[4]) if row is not None else {}
+        qualification = evidence.get("qualification")
+        if (
+            row is None
+            or tuple(str(item) for item in row[:4])
+            != (layer.qualification_hash, "ACTIVE", "ELIGIBLE", "CLEAR")
+            or evidence.get("schema_version") != "narrative-design-evaluation.v1"
+            or evidence.get("candidate_asset_version_id") != layer.asset_version_id
+            or evidence.get("candidate_content_hash") != layer.content_hash
+            or evidence.get("generation_operation_id")
+            != layer.generation_operation_id
+            or str(evidence.get("evaluation_operation_id") or "") != str(row[5] or "")
+            or str(row[6] or "") != "SUCCEEDED"
+            or str(row[5] or "") == layer.generation_operation_id
+            or not isinstance(qualification, dict)
+            or qualification.get("status") != "PASS"
+        ):
+            raise KernelError(
+                "FOUNDATION_QUALIFICATION_DRIFT",
+                f"{layer.role.value} independent qualification evidence drifted",
+            )
+
+    def _current_parent_bindings(
+        self, *, project_id: str, book_id: str, role: FoundationRole
+    ) -> tuple[FoundationBinding, ...]:
+        if not role.required_parents:
+            return ()
+        self.cursor.execute(
+            """
+            SELECT foundation_role, authority_name, asset_version_id, content_hash,
+                   schema_version, qualification_evidence_asset_version_id,
+                   qualification_hash, activation_operation_id,
+                   COALESCE(upstream_digest, '')
+            FROM authority_book_foundation_binding
+            WHERE project_id=%s AND book_id=%s
+              AND foundation_role=ANY(%s)
+              AND freshness='CURRENT' AND retired_at IS NULL
+            """,
+            [project_id, book_id, [item.value for item in role.required_parents]],
+        )
+        by_role = {
+            FoundationRole(str(row[0])): FoundationBinding(
+                role=FoundationRole(str(row[0])),
+                authority=str(row[1]),
+                asset_version_id=str(row[2]),
+                content_hash=str(row[3]),
+                schema_version=str(row[4]),
+                qualification_evidence_asset_version_id=str(row[5]),
+                qualification_hash=str(row[6]),
+                activation_id=str(row[7]),
+                upstream_digest=str(row[8]),
+            )
+            for row in self.cursor.fetchall()
+        }
+        if set(by_role) != set(role.required_parents):
+            raise KernelError(
+                "FOUNDATION_PARENT_SET_INCOMPLETE",
+                f"{role.value} cannot activate before its exact parents",
+            )
+        return tuple(by_role[item] for item in role.required_parents)
+
+    def _require_generation_parent_inputs(
+        self,
+        layer: FormationLayerInput,
+        parents: tuple[FoundationBinding, ...],
+    ) -> None:
+        if not parents:
+            return
+        self.cursor.execute(
+            """
+            SELECT input_asset_snapshot
+            FROM authority_operation
+            WHERE operation_id=%s
+            """,
+            [layer.generation_operation_id],
+        )
+        row = self.cursor.fetchone()
+        snapshot = row[0] if row is not None else None
+        if not isinstance(snapshot, list):
+            raise KernelError(
+                "FOUNDATION_GENERATION_LINEAGE_MISSING",
+                f"{layer.role.value} generation has no frozen parent inputs",
+            )
+        frozen = {
+            (str(item.get("asset_version_id") or ""), str(item.get("content_hash") or ""))
+            for item in snapshot
+            if isinstance(item, dict)
+        }
+        expected = {(item.asset_version_id, item.content_hash) for item in parents}
+        if not expected.issubset(frozen):
+            raise KernelError(
+                "FOUNDATION_GENERATION_LINEAGE_DRIFT",
+                f"{layer.role.value} was not generated against its current exact parents",
+            )
+
+    def _parent_contents(
+        self, project_id: str, parents: tuple[FoundationBinding, ...]
+    ) -> dict[FoundationRole, dict[str, Any]]:
+        result: dict[FoundationRole, dict[str, Any]] = {}
+        for parent in parents:
+            self.cursor.execute(
+                """
+                SELECT version.content, version.content_hash
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s AND version.asset_version_id=%s
+                """,
+                [project_id, parent.asset_version_id],
+            )
+            row = self.cursor.fetchone()
+            if row is None or str(row[1]) != parent.content_hash:
+                raise KernelError(
+                    "FOUNDATION_PARENT_CONTENT_DRIFT",
+                    f"{parent.role.value} content no longer matches its binding",
+                )
+            content = dict(row[0])
+            payload = content.get("candidate_payload")
+            if not isinstance(payload, dict) or not payload:
+                raise KernelError(
+                    "FOUNDATION_AUTHORITY_ENVELOPE_INVALID",
+                    f"{parent.role.value} is not a schema-backed Story Design candidate",
+                )
+            result[parent.role] = {
+                **payload,
+                "asset_version_id": parent.asset_version_id,
+                "content_hash": parent.content_hash,
+            }
+        return result
+
+    def _require_book_design(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        asset_version_id: str,
+        content_hash: str,
+    ) -> QualifiedFoundationSet:
+        from novel_forge.storage.foundation_repositories import (
+            require_current_foundation_set,
+        )
+
+        foundation = require_current_foundation_set(
+            self.cursor, project_id=project_id, book_id=book_id
+        )
+        self.cursor.execute(
+            """
+            SELECT version.content, version.content_hash, version.schema_version,
+                   version.lifecycle, version.eligibility, version.governance,
+                   book.current_book_design_asset_version_id
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            JOIN authority_book AS book
+              ON book.project_id=asset.project_id AND book.book_id=%s
+            WHERE asset.project_id=%s AND asset.asset_type='book_design'
+              AND version.asset_version_id=%s
+            """,
+            [book_id, project_id, asset_version_id],
+        )
+        row = self.cursor.fetchone()
+        if (
+            row is None
+            or tuple(str(item) for item in row[1:6])
+            != (
+                content_hash,
+                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                "ACTIVE",
+                "ELIGIBLE",
+                "CLEAR",
+            )
+            or str(row[6]) != asset_version_id
+        ):
+            raise KernelError(
+                "STORY_FORMATION_BOOK_DESIGN_REQUIRED",
+                "Formation requires the exact active qualified BookDesign v5",
+            )
+        design = BookDesignPayload.from_mapping(dict(row[0]))
+        if design.foundation_set != foundation:
+            raise KernelError(
+                "BOOK_DESIGN_FOUNDATION_SET_STALE",
+                "BookDesign v5 does not bind the current qualified Foundation Set",
+            )
+        return foundation
+
+
+__all__ = ["StoryFormationRepository"]

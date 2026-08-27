@@ -21,6 +21,9 @@ from novel_forge.modules.longform_narrative import (
     reduce_accepted_obligations,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1510,6 +1513,22 @@ class PostgresBookProductionQuery:
                     "Narrative Scheduling must contain one row for the target Chapter",
                 )
             schedule_row = matrix_rows[0]
+            realization = NarrativeRealizationRepository(
+                uow.cursor
+            ).require_current_for_chapter(
+                project_id=str(snapshot[0]),
+                book_id=str(snapshot[1]),
+                chapter_group_plan_version_id=chapter_group_plan_version_id,
+                chapter_number=chapter_number,
+            )
+            declared_realization = dict(
+                chapter_content.get("narrative_realization_slice") or {}
+            )
+            if declared_realization != realization:
+                raise KernelError(
+                    "CHAPTER_NARRATIVE_REALIZATION_DRIFT",
+                    "ChapterPlan does not bind the current Frozen realization slice",
+                )
             scheduled_fields = (
                 "primary_function",
                 "secondary_functions",
@@ -1674,6 +1693,12 @@ class PostgresBookProductionQuery:
             ),
             "chapter_group_plan_version_id": chapter_group_plan_version_id,
             "chapter_plan_version_id": chapter_plan_version_id,
+            "narrative_realization_id": realization["realization_id"],
+            "narrative_realization_slice_id": realization["slice_id"],
+            "narrative_realization_contract_digest": realization[
+                "contract_digest"
+            ],
+            "narrative_realization_event_ids": list(realization["event_ids"]),
             "receipts": sorted(
                 receipts,
                 key=lambda item: item["design_layer"],

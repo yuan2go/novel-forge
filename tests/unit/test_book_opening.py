@@ -36,9 +36,11 @@ def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None
                 or SimpleNamespace(snapshot_id="snapshot:ready")
             )
         ),
+        application_build_id="book-opening-unit",
+        commit_sha="a" * 40,
     )
-    opening._require_evolution_foundation = (  # type: ignore[method-assign]
-        lambda _request: "foundation:v4"
+    opening._require_qualified_foundation = (  # type: ignore[method-assign]
+        lambda _request: "foundation:v5"
     )
     opening_roles = {
         role
@@ -51,7 +53,7 @@ def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None
         if role not in {"book_plan", "volume_plan"}
     }
     generic = {
-        role: "foundation:v4" if role == "book_design" else f"asset:{role}"
+        role: "foundation:v5" if role == "book_design" else f"asset:{role}"
         for role in opening_roles
     }
     request = OpenBookProductionRequest(
@@ -71,7 +73,7 @@ def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None
     )
     principal = SimpleNamespace(require=lambda _permission, _project_id: None)
 
-    result = opening.open(request, principal=principal)
+    result = opening._open_frozen(request, principal=principal)
 
     assert [item.generation.generator_operation_name for item in search_requests] == [
         "book_plan.generate",
@@ -102,7 +104,7 @@ def test_book_opening_rejects_missing_initial_accepted_boundary() -> None:
             actor_id="operator:1",
             expected_book_version=1,
             production_profile="opening-profile",
-            planning_input_versions={"book_design": "foundation:v4"},
+            planning_input_versions={"book_design": "foundation:v5"},
             arc_logical_keys=("arc:plot",),
             idempotency_key="book:1:opening",
             trace_id="trace:opening",

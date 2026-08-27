@@ -1,12 +1,12 @@
 # ADR 0003: BookDesign and Planning Authority Convergence
 
-- Status: Accepted
+- Status: Superseded by ADR 0007
 - Date: 2026-08-04
 - Updated: 2026-08-20
 
 ## Context
 
-The repository already contains BookDesign Authority, Story Design candidate/qualification lifecycle, hierarchical planning, PlanChange/Replan, Book production, active plan bindings, planning horizon and production cursor. Creating another BookPlan/StoryDesign/Arc Authority would establish competing roots and execution state machines.
+The repository already contains BookDesign Authority, Story Design candidate/qualification lifecycle, hierarchical planning, PlanChange/Replan, Book production, active plan bindings, planning horizon and production cursor. Creating another BookPlan/StoryDesign/Arc Authority would establish competing roots and execution state machines. ADR 0007 retains those conclusions but supersedes the monolithic BookDesign-root decision and adds the causal Narrative Realization boundary.
 
 The target Canonical Design now also distinguishes the **semantic structural hierarchy** from production scheduling and makes Narrative Arc an orthogonal state-transformation graph.
 

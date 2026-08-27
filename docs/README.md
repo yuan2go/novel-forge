@@ -43,6 +43,7 @@ Keep operational and development guides focused on executable procedures. Approv
 Completed exact-SHA evidence:
 
 - [Creative Engineering Convergence bounded qualification](qualification/2026-08-25-creative-engineering-convergence.md)
+- [Canonical Hierarchy Closure bounded qualification](qualification/2026-08-26-hierarchy-closure.md)
 - [Narrative Orchestration bounded qualification](qualification/2026-08-24-narrative-orchestration-qualification.md)
 - [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 
@@ -57,7 +58,7 @@ Current repair runbook:
 
 ## ADRs
 
-`adr/` contains only durable decisions still constraining the system. It is not a project diary. ADR 0003 explicitly distinguishes the target semantic hierarchy from current production `ChapterGroup` usage and preserves Arc as an orthogonal planning dimension.
+`adr/` contains only durable decisions still constraining the system. It is not a project diary. ADR 0007 preserves Arc as an orthogonal planning dimension, establishes the qualified Foundation hierarchy, and places causal Narrative Realization inside Hierarchical Planning without adding a Plan scale or Authority. ADR 0003 is retained only to explain the superseded monolithic BookDesign decision.
 
 ## Documentation lifecycle labels
 

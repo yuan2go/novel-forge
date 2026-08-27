@@ -5,6 +5,7 @@ from novel_forge.storage.migrations.versions import (
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage,
     v20260825_0098_narrative_evolution_engine as evolution,
     v20260825_0099_creative_engineering_convergence as convergence,
+    v20260825_0100_hierarchy_closure as hierarchy_closure,
 )
 
 
@@ -16,7 +17,8 @@ def test_0096_is_forward_only_and_expands_runtime_terminal_evidence() -> None:
     assert codex_lineage.DOWN_REVISION == migration.MIGRATION_ID
     assert evolution.DOWN_REVISION == codex_lineage.MIGRATION_ID
     assert convergence.DOWN_REVISION == evolution.MIGRATION_ID
-    assert convergence.MIGRATION_ID == LATEST_MIGRATION_ID
+    assert hierarchy_closure.DOWN_REVISION == convergence.MIGRATION_ID
+    assert hierarchy_closure.MIGRATION_ID == LATEST_MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     for status in (
         "FAILED_RETRYABLE",

@@ -19,6 +19,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
     PlanExecutionScope,
+    PostgresNarrativeRealizationApplication,
 )
 from novel_forge.modules.production_preparation import (
     ProductionPreparationRequest,
@@ -66,6 +67,7 @@ class PostgresBookProductionSupervisor:
         principal: Principal,
         replan: Any,
         production_preparation: ProductionPreparationService,
+        realizations: PostgresNarrativeRealizationApplication,
         narrative_search: PostgresNarrativeSearchApplication | None = None,
         context_token_budget: int = 16_000,
         quality_context_token_budget: int | None = None,
@@ -88,6 +90,7 @@ class PostgresBookProductionSupervisor:
             quality_context_token_budget or context_token_budget
         )
         self.production_preparation = production_preparation
+        self.realizations = realizations
         self.narrative_search = narrative_search or PostgresNarrativeSearchApplication(
             authority.database_url, planning=planning
         )
@@ -351,6 +354,40 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_GROUP_PLAN_NOT_EXECUTABLE",
                 "ChapterGroupPlan must be Frozen before group production starts",
             )
+        try:
+            realization = self.realizations.require_current_for_chapter(
+                project_id=str(book["project_id"]),
+                book_id=str(book["book_id"]),
+                chapter_group_plan_version_id=str(group["asset_version_id"]),
+                chapter_number=next_chapter,
+            )
+        except KernelError as exc:
+            if exc.code != "NARRATIVE_REALIZATION_REQUIRED":
+                raise
+            working_set = self._generation_arc_working_set(
+                book=book,
+                generator="chapter_group_plan.generate",
+                chapter_number=next_chapter,
+            )
+            frozen = self.realizations.qualify_and_freeze_for_group(
+                book_run_id=str(book["book_run_id"]),
+                chapter_group_plan_version_id=str(group["asset_version_id"]),
+                arc_working_set=working_set,
+                principal=self.principal,
+                idempotency_key=(
+                    f"{book['stable_idempotency_key']}:narrative-realization:"
+                    f"{group['asset_version_id']}:{working_set['working_set_digest']}"
+                ),
+                trace_id=f"{book['root_operation_id']}:narrative-realization",
+                correlation_id=str(book["root_operation_id"]),
+            )
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.QUALIFY_NARRATIVE_REALIZATION,
+                str(frozen["operation_id"]),
+                str(frozen["realization_id"]),
+            )
         group_run = self._active_group_run(book, str(group["asset_version_id"]))
         if group_run is None:
             started = self.chapter_groups.start(
@@ -551,6 +588,11 @@ class PostgresBookProductionSupervisor:
                 ),
                 execution_chapter_plan_content_hash=str(execution_plan["content_hash"]),
                 parent_group_version_id=str(group["asset_version_id"]),
+                narrative_realization_id=str(realization["realization_id"]),
+                narrative_realization_slice_id=str(realization["slice_id"]),
+                narrative_realization_contract_digest=str(
+                    realization["contract_digest"]
+                ),
                 context_version_refs=context_version_refs,
                 context_token_budget=prepared.context_token_budget,
                 preparation_report=preparation_report,
@@ -668,6 +710,16 @@ class PostgresBookProductionSupervisor:
                 generator != "chapter_group_plan.generate" and replacement_plan is None
             ),
             arc_working_set=arc_working_set,
+            narrative_realization=(
+                self.realizations.require_current_for_chapter(
+                    project_id=str(book["project_id"]),
+                    book_id=str(book["book_id"]),
+                    chapter_group_plan_version_id=parent,
+                    chapter_number=chapter_number,
+                )
+                if generator == "chapter_plan.generate"
+                else None
+            ),
         )
         if generator == "chapter_group_plan.generate":
             accepted_through = int(book["accepted_through_chapter"])

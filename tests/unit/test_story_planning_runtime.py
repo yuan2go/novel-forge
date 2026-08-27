@@ -44,9 +44,64 @@ from novel_forge.modules.story_planning_runtime.application import (
     _validate_frozen_arc_references,
     StoryPlanningGenerationApplication,
 )
+from novel_forge.modules.story_planning_runtime import application as planning_application
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def _realization_slice(
+    *, chapter_number: int = 1, parent_version_id: str = "chapter-group:v1"
+) -> dict[str, object]:
+    event_id = f"realization:event:{chapter_number}"
+    arc_id = "arc:v1"
+    event = {
+        "event_id": event_id,
+        "slice_id": f"realization:slice:{chapter_number}",
+        "chapter_number": chapter_number,
+        "causes": [],
+        "actor_ref": "character:protagonist",
+        "motivation": "protect the last viable promise",
+        "preconditions": ["the accepted boundary leaves one costly choice"],
+        "knowledge_boundary": {
+            "actor_knows": ["fact:pressure"],
+            "reader_may_learn": ["fact:cost"],
+            "forbidden_disclosures": ["fact:future"],
+        },
+        "action": "make the witnessed choice",
+        "decision": "accept the immediate cost",
+        "resistance": "the antagonist closes the safe alternative",
+        "consequence": "the alliance becomes publicly conditional",
+        "state_deltas": [
+            {
+                "state_kind": "relationship_state",
+                "entity_id": "relationship:alliance",
+                "from_state": "private",
+                "to_state": "publicly conditional",
+            }
+        ],
+        "disclosures": ["fact:cost"],
+        "obligation_actions": ["promise:alliance:ADVANCE"],
+        "arc_contributions": [arc_id],
+        "irreversible_change": "the choice is witnessed",
+        "next_event_ids": [],
+        "required": True,
+    }
+    return {
+        "realization_id": "narrative-realization:test",
+        "contract_digest": HASH,
+        "chapter_group_plan_version_id": parent_version_id,
+        "chapter_group_content_hash": HASH,
+        "slice_id": f"realization:slice:{chapter_number}",
+        "chapter_number": chapter_number,
+        "event_ids": [event_id],
+        "events": [event],
+        "foundation_set_digest": HASH,
+        "accepted_through_chapter": chapter_number - 1,
+        "arc_working_set_digest": HASH,
+        "proof_asset_version_id": "realization-proof:v1",
+        "proof_hash": HASH,
+    }
 
 
 def test_repetition_debt_ignores_unselected_search_branches() -> None:
@@ -105,6 +160,21 @@ def planning_fixture_response(
 ) -> dict[str, object]:
     """Build an explicitly test-only fixture with exact frozen reference lineage."""
 
+    inputs = deepcopy(inputs)
+    planning_command = dict(inputs.get("planning_command") or {})
+    if stage == "chapter_plan.generate" and not planning_command.get(
+        "narrative_realization"
+    ):
+        logical_key = str(planning_command.get("logical_key") or "chapter:1")
+        suffix = logical_key.rsplit(":", 1)[-1]
+        chapter_number = int(suffix) if suffix.isdigit() else 1
+        planning_command["narrative_realization"] = _realization_slice(
+            chapter_number=chapter_number,
+            parent_version_id=str(
+                planning_command.get("parent_version_id") or "chapter-group:v1"
+            ),
+        )
+        inputs["planning_command"] = planning_command
     content = _planning_fixture_response(stage, inputs)
     command = dict(inputs.get("planning_command") or {})
     operation_id = str(
@@ -271,6 +341,11 @@ def test_planning_provider_schema_is_codex_strict(
         parent_version_id="parent:v1",
         arc_plan_version_id="arc:v1",
         dependency_version_ids=("input:a", "input:b"),
+        narrative_realization=(
+            _realization_slice(parent_version_id="parent:v1")
+            if contract_type is PlanContractType.CHAPTER
+            else None
+        ),
     )
 
     def assert_strict(value: object) -> None:
@@ -405,6 +480,7 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         PlanContractType.CHAPTER,
         parent_version_id="group:v1",
         arc_plan_version_id="arc:v1",
+        narrative_realization=_realization_slice(parent_version_id="group:v1"),
     )
 
     assert volume["properties"]["narrative_segments"]["minItems"] == 1
@@ -778,6 +854,7 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         parent_version_id="group:v1",
         arc_plan_version_id="arc:v1",
         related_arc_plan_version_ids=("arc:v2", "arc:v3"),
+        narrative_realization=_realization_slice(parent_version_id="group:v1"),
     )
 
     assert schema["properties"]["arc_schedule"]["maxItems"] == 3
@@ -1519,6 +1596,26 @@ def test_planning_fixture_applies_frozen_change_evidence() -> None:
     assert "governed change evidence" in replacement["objective"]
 
 
+def test_future_chapter_group_search_begins_after_accepted_boundary() -> None:
+    replacement = planning_fixture_response(
+        "chapter_group_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter-group:1-3",
+                "parent_version_id": "volume:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+                "narrative_search_accepted_through_chapter": 1,
+            }
+        },
+    )
+
+    assert replacement["chapter_range"] == [2, 4]
+    assert {
+        int(item["chapter_number"])
+        for item in replacement["narrative_event_chain"]
+    } == {2, 3, 4}
+
+
 def _command(generator: str) -> StoryPlanningGenerationCommand:
     return StoryPlanningGenerationCommand(
         project_id="project-1",
@@ -1533,6 +1630,13 @@ def _command(generator: str) -> StoryPlanningGenerationCommand:
         idempotency_key=f"generate:{generator}",
         trace_id="trace-1",
         correlation_id="correlation-1",
+        narrative_realization=(
+            _realization_slice(
+                parent_version_id="asset:chapter_group_plan:v1"
+            )
+            if generator == "chapter_plan.generate"
+            else None
+        ),
     )
 
 
@@ -1569,6 +1673,7 @@ def test_five_planning_generators_require_exact_authority_input_roles(
             idempotency_key="incomplete",
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
+            narrative_realization=command.narrative_realization,
         )
 
 
@@ -1589,6 +1694,59 @@ def test_planning_change_evidence_cannot_alias_generator_input() -> None:
             correlation_id=command.correlation_id,
             change_evidence_version_ids=(next(iter(command.input_versions.values())),),
         )
+
+
+def test_chapter_plan_rejects_caller_shaped_realization_slice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = _realization_slice(parent_version_id="asset:chapter_group_plan:v1")
+
+    class FakeUow:
+        cursor = object()
+
+        def __init__(self, _database_url: str) -> None:
+            pass
+
+        def __enter__(self) -> "FakeUow":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    class FakeRepository:
+        def __init__(self, _cursor: object) -> None:
+            pass
+
+        def require_current_for_chapter(self, **_values: object) -> dict[str, object]:
+            return current
+
+    monkeypatch.setattr(planning_application, "AuthorityUnitOfWork", FakeUow)
+    monkeypatch.setattr(
+        planning_application, "NarrativeRealizationRepository", FakeRepository
+    )
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.database_url = "postgresql://unused"
+    command = _command("chapter_plan.generate")
+
+    assert application._require_frozen_realization_slice(command) == current
+
+    forged = dict(current)
+    forged["events"] = [{**current["events"][0], "action": "forged action"}]
+    forged_command = StoryPlanningGenerationCommand(
+        project_id=command.project_id,
+        workspace_id=command.workspace_id,
+        book_id=command.book_id,
+        actor_id=command.actor_id,
+        generator_operation_name=command.generator_operation_name,
+        logical_key=command.logical_key,
+        input_versions=command.input_versions,
+        idempotency_key="generate:forged-realization",
+        trace_id=command.trace_id,
+        correlation_id=command.correlation_id,
+        narrative_realization=forged,
+    )
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_SLICE_DRIFT"):
+        application._require_frozen_realization_slice(forged_command)
 
 
 def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:

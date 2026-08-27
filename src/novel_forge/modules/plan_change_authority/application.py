@@ -40,6 +40,9 @@ from novel_forge.modules.story_design_authority import (
     StoryDesignTransitionCommand,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
 
 from .domain import (
     PlanChangeSource,
@@ -448,6 +451,13 @@ class PostgresPlanChangeAuthority:
                 source_asset_version_id=proposal["target_asset_version_id"],
                 operation_id=operation_id,
             )
+            invalidated_realization_ids = NarrativeRealizationRepository(
+                uow.cursor
+            ).stale_for_noncurrent_plan_inputs(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                operation_id=operation_id,
+            )
             uow.repositories.plan_change.mark_active(proposal_id)
             event_id = str(uuid4())
             uow.repositories.operation_graph.record_event(
@@ -465,6 +475,9 @@ class PostgresPlanChangeAuthority:
                     "payload": {
                         "proposal_id": proposal_id,
                         "new_plan_version_id": proposal["proposed_asset_version_id"],
+                        "invalidated_narrative_realization_ids": list(
+                            invalidated_realization_ids
+                        ),
                     },
                 }
             )

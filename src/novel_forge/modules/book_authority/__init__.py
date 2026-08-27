@@ -33,6 +33,7 @@ from .projection_repair import (
     ProjectionRepairBatchResult,
 )
 from .opening import (
+    BookOpeningAdmission,
     BookOpeningResult,
     OpenBookProductionRequest,
     PostgresBookOpeningApplication,
@@ -63,6 +64,7 @@ __all__ = [
     "BookProgressProjection",
     "PostgresBookProductionQuery",
     "PostgresBookProjectionRepairAuthority",
+    "BookOpeningAdmission",
     "BookOpeningResult",
     "OpenBookProductionRequest",
     "PostgresBookOpeningApplication",

@@ -81,6 +81,7 @@ GENERATOR_SCOPE: Mapping[str, PlanningScope] = MappingProxyType(
 GENERATOR_INPUT_ROLES: Mapping[str, tuple[str, ...]] = MappingProxyType(
     {
         "book_plan.generate": (
+            "creative_foundation",
             "book_design",
             "world_bible",
             "character_cast",
@@ -178,6 +179,7 @@ class StoryPlanningGenerationCommand:
     narrative_search_parent_state_asset_version_id: str = ""
     narrative_search_accepted_through_chapter: int = 0
     narrative_search_strategy_directive: str = ""
+    narrative_realization: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -195,6 +197,57 @@ class StoryPlanningGenerationCommand:
             raise ValueError("Planning Generation command is incomplete")
         if self.generator_operation_name not in GENERATOR_SCOPE:
             raise ValueError("Planning Generator is not supported")
+        realization = dict(self.narrative_realization or {})
+        if self.generator_operation_name == "chapter_plan.generate":
+            expected_realization_fields = {
+                "realization_id",
+                "contract_digest",
+                "chapter_group_plan_version_id",
+                "chapter_group_content_hash",
+                "slice_id",
+                "chapter_number",
+                "event_ids",
+                "events",
+                "foundation_set_digest",
+                "accepted_through_chapter",
+                "arc_working_set_digest",
+                "proof_asset_version_id",
+                "proof_hash",
+            }
+            if (
+                set(realization) != expected_realization_fields
+                or int(realization.get("chapter_number") or 0) <= 0
+                or (
+                    not isinstance(
+                        realization.get("accepted_through_chapter"), int
+                    )
+                    or isinstance(
+                        realization.get("accepted_through_chapter"), bool
+                    )
+                    or int(realization["accepted_through_chapter"]) < 0
+                )
+                or any(
+                    not str(realization.get(field) or "").startswith("sha256:")
+                    for field in (
+                        "contract_digest",
+                        "chapter_group_content_hash",
+                        "foundation_set_digest",
+                        "arc_working_set_digest",
+                        "proof_hash",
+                    )
+                )
+                or not isinstance(realization.get("event_ids"), list)
+                or not realization.get("event_ids")
+                or not isinstance(realization.get("events"), list)
+                or len(realization["events"]) != len(realization["event_ids"])
+            ):
+                raise ValueError(
+                    "ChapterPlan Generation requires one exact Frozen Narrative Realization slice"
+                )
+        elif realization:
+            raise ValueError(
+                "Narrative Realization is a Chapter elaboration contract, not a Planning scale"
+            )
         normalized = {
             str(role): str(version)
             for role, version in dict(self.input_versions).items()

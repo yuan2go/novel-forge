@@ -97,6 +97,8 @@ The target architecture does not require:
 18. Every nonterminal production state must be claimable, explainable, recoverable, or explicitly waiting on a durable external/human condition.
 19. Long-form planning evolves future-only; accepted history is never rewritten to make a plan look correct.
 20. Scale follows proof: single-book liveness/correctness/quality before multi-book optimization.
+21. Story formation coordinates qualified design Authorities; it never becomes Story Truth.
+22. Narrative Realization is a causal/correctness contract inside Hierarchical Planning Authority, not another narrative scale and never Accepted Actual.
 
 ---
 
@@ -109,19 +111,25 @@ Novel Forge is organized around six connected loops.
 ```text
 Human Intent / Material / Question
 → divergent Creative Exploration
-→ evaluated and approved Creative Foundation / Book Design
-→ World + Character Foundations as narrative engines
+→ evaluated and approved Creative Foundation
+→ qualified Theme Contract + Ending Intent + Reader Promise
+→ qualified WorldBible
+→ qualified CharacterCast
+→ BookDesign synthesis/reference contract
 → Narrative Threads / transformation directions
 → strategic future design
 ```
 
 The production-grade opening boundary is `Book Ready for Production`, not the
-existence of disconnected DTOs. A complete opening freezes an approved
-Creative Foundation, its stable World/Character design projections, a
-qualified Book/Volume/Arc planning baseline, initial accepted-boundary
-projections, and the operational profiles required to resolve one immutable
-Book Production input snapshot. Candidate generation, semantic qualification,
-comparison, approval and activation remain separate evidence-bearing steps.
+existence of disconnected DTOs. A complete opening freezes exact qualified
+versions and content hashes for Creative Foundation, Theme Contract, Ending
+Intent, Reader Promise, WorldBible, CharacterCast and a BookDesign
+synthesis/reference contract, plus a qualified Book/Volume/Arc planning
+baseline, initial accepted-boundary projections, and the operational profiles
+required to resolve one immutable Book Production input snapshot. Platform and
+production profiles are constraints, not Story Truth. Candidate generation,
+semantic qualification, comparison, approval and activation remain separate
+evidence-bearing steps.
 
 ### 5.2 Progressive long-form planning
 
@@ -131,6 +139,7 @@ Book Design + Current Accepted State
 → Narrative Arc Network
 → active Arc working set
 → Chapter Arc Contributions
+→ qualified / approved / frozen causal Narrative Realization
 → Chapter Mission
 → Scene architecture
 ```
@@ -616,6 +625,117 @@ One accepted Chapter never rewrites accepted history or automatically discards
 the Book strategy. It may invalidate the smallest future closure, trigger a new
 search portfolio at that scope, and then regenerate affected descendants.
 
+### 12.3 Qualified Foundation hierarchy
+
+The complete Foundation Set is an exact, immutable binding set:
+
+```text
+Qualified Creative Foundation
+  ├→ Qualified Theme Contract
+  ├→ Qualified Ending Intent
+  └→ Qualified Reader Promise
+            ↓
+Qualified WorldBible
+            ↓
+Qualified CharacterCast
+            ↓
+Qualified BookDesign synthesis/reference contract
+            ↓
+BookPlan
+```
+
+Each layer owns only its design truth. WorldBible owns stable world rules and
+their narrative consequences. CharacterCast owns stable character foundations
+and relationship seeds. BookDesign owns cross-layer synthesis, Book invariants,
+architecture and exact references; it does not copy World/Character truth.
+Any denormalized convenience view is a derived snapshot bound to each source
+AssetVersion and content hash.
+
+Every transition freezes parent versions and hashes, performs layer-specific
+structural validation, independent semantic evaluation and cross-layer
+coherence validation, then follows qualification, approval and activation.
+Parent replacement makes affected future descendants stale; it never modifies
+executed history. BookPlan generation fails closed unless the complete current
+Foundation Set and BookDesign reference contract agree exactly.
+
+Story Formation is a durable, idempotent, restartable coordinator using the
+existing Command Kernel, Operation/Attempt execution, checkpoints, receipts and
+workers. It owns process progress and output bindings only. It cannot directly
+change StoryDesign or BookDesign truth, and an API request only admits or
+controls the durable run; it never owns the Provider chain.
+
+Every child candidate declares the exact parent role → AssetVersion/content-hash
+map, and its generation Operation must contain those same frozen parent assets.
+A RuntimeJob freezes the Formation stage and version it may advance; a stale
+technical retry cannot advance a later semantic stage. Resume cancels a pending
+stale job and schedules a new job for the current persisted stage/version.
+
+Book opening follows the same durable boundary: API admission persists the
+frozen request and schedules `BOOK_OPENING_EXECUTE`; the worker runs existing
+Narrative Search/Planning/Input Resolver applications. Query/resume/abort are
+commands over the persisted run, and post-commit worker failure reconciles the
+stored result without another semantic search.
+
+Creative Search may reuse immutable candidate/evaluation/comparison/selection
+primitives with Narrative Search, but Creative is not forced into a Planning
+scope. Search selection is evidence for normal design qualification and
+approval; it grants no activation authority.
+
+### 12.4 Narrative Realization contract
+
+Between ChapterGroup/Arc intent and ChapterPlan, Hierarchical Planning owns an
+independent typed `NarrativeRealizationContract`:
+
+```text
+frozen ChapterGroup + relevant Arc intent + current Accepted Boundary
+→ executable causal event chain
+→ structural and semantic realization proof
+→ Qualified → Approved → Frozen Narrative Realization
+→ ChapterPlan slice
+```
+
+Narrative Realization is not a new `PlanContractType`, a new narrative scale, a
+parallel Authority, or accepted reality. It reuses Planning's immutable
+artifact, lifecycle, binding, qualification and evidence infrastructure while
+retaining a distinct causal-proof contract. Its event chain records stable
+event identity, causes, actor/motivation, preconditions, knowledge boundary,
+action/decision, resistance, consequences, typed state deltas, disclosures,
+obligation/promise/payoff/foreshadowing actions, Arc contributions,
+irreversible changes and next-event causality. The proof binds the exact
+Foundation Set, Book/Volume/Arc/ChapterGroup versions, Accepted Boundary and
+Working Set and establishes goal coverage, Canon/state/world/knowledge legality,
+motivation, causal escalation, state-transition coverage, obligation/Arc
+coverage, load bounds and legal Chapter decomposition.
+
+The proof is not projected from scheduling success. ChapterGroup qualification
+records a separate versioned `NARRATIVE_REALIZATION_PROOF` receipt with exact
+criterion evidence for Canon/state legality, character motivation, world rules,
+knowledge boundaries, causal escalation, state transitions, obligation and Arc
+coverage, Narrative Load and Chapter decomposition. Every criterion must be an
+independent PASS with rationale and evidence references. Planned disclosures
+must be permitted by the frozen reader knowledge boundary.
+
+No current Qualified/Approved/Frozen realization means no ChapterPlan. A
+ChapterPlan keeps ChapterGroup as its structural parent and binds the exact
+realization slice and planned event identities. Production admission recomputes
+all parent, boundary, Working Set, proof and content digests and fails closed on
+stale or mixed lineage.
+
+Consumption records this one-way evidence relation:
+
+```text
+Planned Event → Observed Event → Accepted Chapter Outcome → Accepted Actual
+```
+
+A ChapterPlan becomes `EXECUTED` atomically with its accepted Chapter. A
+multi-Chapter realization advances only the accepted event/slice coverage and
+becomes `EXECUTED` only after every required event is accepted and every
+optional event is either accepted or explicitly not observed. Unobserved
+planned events never advance Canon, Narrative State, Arc Actual or obligation
+state. Missing, additional, causal, state-delta or disclosure drift creates
+immutable deviation/replan evidence and stale only affected future intent.
+They never rewrite accepted history or silently alter the frozen realization.
+
 ---
 
 ## 13. World and Character architecture
@@ -630,9 +750,10 @@ Stable identity may define desire, fear, values, voice, core contradictions, lon
 
 Character Arc planning expresses desired transformations; only accepted behavioral/state evidence advances reality.
 
-The active Creative Foundation projects stable Character Foundations with at
-least desire, need, fear, wound, false belief, values, moral boundary, agency,
-capability/cost, weakness, voice, secret, relationships and Arc direction.
+The qualified CharacterCast owns stable Character Foundations with at least
+desire, need, fear, wound, false belief, values, moral boundary, agency,
+capability/cost, weakness, voice, secret, relationships and Arc direction. It
+binds the exact qualified Creative/Theme/Ending/Promise and WorldBible inputs.
 Planning/Context consume these stable definitions together with the exact
 accepted dynamic Character/Relationship state; neither substitutes for the
 other.
@@ -659,8 +780,9 @@ Action → Consequence → World State Change → Future Constraint
 
 Professional/history/economics/politics/military knowledge from MKAOS may supply causal mechanisms; it never becomes world Canon merely because it was retrieved.
 
-The active Creative Foundation projects World rules as
+The qualified WorldBible owns World rules as
 `Rule → Cost → Exception → Consequence → Conflict Potential → Narrative Function`.
+It binds the exact qualified Creative/Theme/Ending/Promise inputs.
 Planning/Context combine those stable constraints with accepted Faction,
 Resource, Power, Location and Knowledge state. Accepted actions alone advance
 the temporal side of that model.
@@ -1206,29 +1328,21 @@ remain separate, explicitly authorized runs:
 - bounded-context and long-distance obligation proof;
 - million-word retrieval quality and growth-slope evidence.
 
-### P1 — Narrative Evolution Engine convergence (current runtime)
+### P1 — Canonical hierarchy closure (implemented; bounded integration proven)
 
-The governed creative and production surfaces are now connected by one
-reachable opening and rolling-wave path:
+The current runtime uses separately qualified Foundation contracts,
+reference-only BookDesign v5, durable Formation/Opening coordination and the
+Planning-owned Narrative Realization contract. Book/Chapter production rejects
+missing, stale or mixed lineage; accepted outcome evidence consumes planned
+event coverage and future-only Replan invalidates affected intent. PostgreSQL
+integration proves bounded formation, planning, 1–4 Chapter execution,
+acceptance, partial/full coverage, deviation/staleness, retry/recovery/replay
+and fresh/upgrade migration behavior.
 
-- activate a complete Creative Foundation and its stable World/Character
-  projections through BookDesign Authority;
-- explore and compare persistent Book/Volume/Arc/ChapterGroup futures through
-  Story Planning rather than accepting one sample by default;
-- carry selected-future projection and creative-intelligence evidence into
-  downstream Planning Context;
-- reopen only affected future space after accepted-state or governed Replan
-  evidence changes the parent boundary;
-- preserve existing Chapter Mission, Working Set, Accepted Outcome and
-  PlanChange Authorities.
-
-The current runtime implements these boundaries through `book-design.v4`,
-`BookProductionComposition.open_book`, Planning-owned Narrative Search,
-ChapterGroup search in Book Supervisor, and search-backed future replacement in
-Replan. Engineering completion for this convergence does not establish
-sustained literary quality. PostgreSQL execution evidence is environment-bound;
-bounded real-provider Arc/Volume campaigns, human blind comparison and reader
-evidence remain later independent qualifications.
+This evidence is engineering qualification, not sustained literary quality or
+production proof. Real-provider Arc/Volume campaigns, human blind comparison,
+reader evidence, long-form stability and multi-book operation remain later
+independent qualifications.
 
 ### P2 — Creative collaboration and author IDE
 

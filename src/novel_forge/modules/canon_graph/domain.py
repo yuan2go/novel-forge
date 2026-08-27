@@ -116,6 +116,15 @@ def extract_canon_candidates(
         )
         if isinstance(item, dict)
     ]
+    raw_realization_evidence = [
+        dict(item)
+        for item in (
+            (provider_extraction or {}).get("realization_evidence")
+            or revision.get("realization_evidence")
+            or ()
+        )
+        if isinstance(item, dict)
+    ]
     assertions = list(revision.get("canon_assertions", []))
     # Every accepted chapter has a deterministic event assertion, so a real-provider
     # path never silently produces an empty Canon update when optional structured
@@ -234,6 +243,7 @@ def extract_canon_candidates(
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
         "arc_evidence": raw_arc_evidence,
+        "realization_evidence": raw_realization_evidence,
         "canon_extraction_contract_version": "canon-semantic-extraction-v5",
     }
 
@@ -279,6 +289,27 @@ def build_canon_update(
         extraction=extraction,
         planned_execution=planned_execution,
     )
+    expected_realization_ids = {
+        str(item.get("event_id") or "")
+        for item in (
+            (planned_execution or {}).get("narrative_realization") or {}
+        ).get("events")
+        or ()
+        if isinstance(item, dict) and str(item.get("event_id") or "")
+    }
+    actual_realization_ids = [
+        str(item.get("planned_event_id") or "")
+        for item in extraction.get("realization_evidence") or ()
+        if isinstance(item, dict)
+    ]
+    if (
+        len(actual_realization_ids) != len(set(actual_realization_ids))
+        or any(item not in expected_realization_ids for item in actual_realization_ids)
+    ):
+        raise KernelError(
+            "CANON_REALIZATION_EVIDENCE_INVALID",
+            "Canon extraction realization evidence is outside the Frozen Chapter slice",
+        )
     conflicts = _fact_conflicts(previous, facts)
     conflicts.extend(deterministic_validation["violations"])
     if (
@@ -318,6 +349,11 @@ def build_canon_update(
         "arc_evidence": [
             dict(item)
             for item in extraction.get("arc_evidence") or ()
+            if isinstance(item, dict)
+        ],
+        "realization_evidence": [
+            dict(item)
+            for item in extraction.get("realization_evidence") or ()
             if isinstance(item, dict)
         ],
         "rebuildable": True,

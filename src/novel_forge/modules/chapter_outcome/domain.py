@@ -101,6 +101,14 @@ def build_chapter_outcome(
             "CHAPTER_OUTCOME_SCENE_EVIDENCE_INVALID",
             "Scene outcomes must be typed objects",
         )
+    realization_evidence = canon_patch.get("realization_evidence") or ()
+    if not isinstance(realization_evidence, (list, tuple)) or any(
+        not isinstance(item, dict) for item in realization_evidence
+    ):
+        raise KernelError(
+            "CHAPTER_OUTCOME_REALIZATION_EVIDENCE_INVALID",
+            "Narrative Realization evidence must be typed objects",
+        )
     return {
         "type": "ChapterOutcome",
         "contract_version": "chapter-outcome-v3",
@@ -130,6 +138,7 @@ def build_chapter_outcome(
             if event.get("state_kind") == "narrative_obligation"
         ],
         "scene_outcomes": [dict(item) for item in scene_outcomes],
+        "realization_evidence": [dict(item) for item in realization_evidence],
         "reader_state_observations": list(
             canon_patch.get("reader_state_signals") or []
         ),

@@ -1208,7 +1208,6 @@ class BookReplanCoordinator:
         if replan["affected_scope"] == "CHAPTER":
             return ""
         book = self.book.require(replan["book_run_id"])
-        chapter = int(book["accepted_through_chapter"]) + 1
         snapshot = self._snapshot(book["input_snapshot_id"])
         approved_scope = replan["affected_scope"]
         replacement_id = str(proposal["proposed_asset_version_id"])
@@ -1414,42 +1413,12 @@ class BookReplanCoordinator:
         elif approved_scope == "CHAPTER_GROUP":
             group_plan_id = replacement_id
 
-        chapter_arc_ids = self._scheduled_arc_versions(
-            group_content=self._plan_by_asset(
-                replan["project_id"], replan["book_id"], group_plan_id
-            )["content"],
-            chapter=chapter,
-            active_arc_plan_ids=current_relevant_arc_ids,
-        )
-        chapter_target = self._active_plan_for_position(
-            project_id=replan["project_id"],
-            book_id=replan["book_id"],
-            contract_type="CHAPTER",
-            chapter=chapter,
-        )
-        return self._generate_approved_replacement(
-            replan=replan,
-            proposal=proposal,
-            book=book,
-            generator="chapter_plan.generate",
-            logical_key=(
-                chapter_target["logical_key"]
-                if chapter_target is not None
-                else f"chapter:{chapter}:after:{replan['replan_id']}"
-            ),
-            parent_version_id=group_plan_id,
-            overrides={
-                "book_plan": book_plan_id,
-                "volume_plan": volume_plan_id,
-                "arc_plans": chapter_arc_ids[0],
-                "chapter_group_plan": group_plan_id,
-                "chapter_function_matrix_row": group_plan_id,
-            },
-            expected_active_asset_version_id=(
-                chapter_target["asset_version_id"] if chapter_target is not None else ""
-            ),
-            related_arc_plan_version_ids=tuple(chapter_arc_ids[1:]),
-        )
+        # A Replan may replace only future Intent.  ChapterPlan is operational
+        # and cannot be regenerated until the replacement ChapterGroup has
+        # produced a newly qualified and frozen causal realization against the
+        # latest accepted boundary.  The Book Supervisor owns that existing
+        # just-in-time path after the replacement snapshot is bound.
+        return group_plan_id
 
     def _transitive_arc_relation_dependents(
         self,

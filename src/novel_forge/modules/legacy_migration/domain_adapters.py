@@ -483,6 +483,7 @@ class HierarchicalPlanningMigrationAdapter:
             parent_version_id=parent_version_id,
             execution_scope=execution_scope,
             content=content,
+            allow_pre_hierarchy_compatibility=True,
         )
         evidence = {
             "status": "PASS",

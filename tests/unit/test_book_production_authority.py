@@ -73,6 +73,9 @@ class BookProductionAuthorityTests(unittest.TestCase):
             execution_chapter_plan_asset_version_id="execution-plan:substituted",
             execution_chapter_plan_content_hash="sha256:execution",
             parent_group_version_id="chapter-group:1",
+            narrative_realization_id="realization:1",
+            narrative_realization_slice_id="realization-slice:1",
+            narrative_realization_contract_digest="sha256:realization",
             context_candidates=(),
         )
 

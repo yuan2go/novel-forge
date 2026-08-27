@@ -39,6 +39,13 @@ def _plan() -> dict:
         },
         "expected_exit_state": {"summary": "trust is conditional and exposed"},
         "ending_hook": "the clue identifies a hidden observer",
+        "narrative_realization_slice": {
+            "realization_id": "realization:v5",
+            "contract_digest": "sha256:" + "b" * 64,
+            "chapter_group_plan_version_id": "chapter-group:v2",
+            "chapter_number": 5,
+            "events": [{"event_id": "realization:event:5"}],
+        },
         "required_arc_contributions": [
             {"arc_plan_version_id": "arc-v2", "contribution_kind": "ESCALATE"}
         ],

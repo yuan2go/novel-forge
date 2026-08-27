@@ -29,6 +29,7 @@ class NarrativeDesignLayer(StrEnum):
     CHARACTER_DEVELOPMENT = "CHARACTER_DEVELOPMENT"
     DISCLOSURE_OBLIGATION = "DISCLOSURE_OBLIGATION"
     NARRATIVE_SCHEDULING = "NARRATIVE_SCHEDULING"
+    NARRATIVE_REALIZATION_PROOF = "NARRATIVE_REALIZATION_PROOF"
     CHAPTER_EXECUTION_PLAN = "CHAPTER_EXECUTION_PLAN"
     SCENE_ARCHITECTURE = "SCENE_ARCHITECTURE"
 
@@ -287,6 +288,22 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
                 "NARRATIVE_DENSITY_BALANCE",
                 "DORMANCY_REACTIVATION",
                 "OBLIGATION_CONGESTION",
+            ),
+            _profile(
+                NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF,
+                "narrative-realization-proof-semantic-v1",
+                GENERATOR_CATALOG["chapter_group_plan.generate"].capability,
+                "narrative-beat-design",
+                "CANON_STATE_LEGAL",
+                "CHARACTER_MOTIVATION_LEGAL",
+                "WORLD_RULES_LEGAL",
+                "KNOWLEDGE_BOUNDARIES_LEGAL",
+                "CAUSAL_ESCALATION",
+                "STATE_TRANSITION_COVERAGE",
+                "OBLIGATION_LIFECYCLE",
+                "ARC_CONTRIBUTION_COVERAGE",
+                "NARRATIVE_LOAD_LEGAL",
+                "CHAPTER_DECOMPOSITION_LEGAL",
             ),
         ),
         "chapter_plan.generate": (

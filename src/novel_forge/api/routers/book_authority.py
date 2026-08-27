@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 from uuid import uuid4
 
@@ -16,6 +17,12 @@ from novel_forge.modules.book_authority.production import (
 from novel_forge.modules.book_authority.input_resolver import (
     ResolveBookProductionInputCommand,
 )
+from novel_forge.modules.book_authority.opening import OpenBookProductionRequest
+from novel_forge.modules.book_design_authority import (
+    FormationLayerInput,
+    StartStoryFormationCommand,
+    StoryFormationInput,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
 
@@ -24,6 +31,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(ctx.models)
     BookAuthorityStartRequest = ctx.models["BookAuthorityStartRequest"]
     BookProductionInputResolveRequest = ctx.models["BookProductionInputResolveRequest"]
+    StoryFormationStartRequest = ctx.models["StoryFormationStartRequest"]
+    StoryFormationControlRequest = ctx.models["StoryFormationControlRequest"]
+    StoryFormationBookDesignApprovalRequest = ctx.models[
+        "StoryFormationBookDesignApprovalRequest"
+    ]
+    BookOpeningStartRequest = ctx.models["BookOpeningStartRequest"]
+    BookOpeningControlRequest = ctx.models["BookOpeningControlRequest"]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
     BookReplanApprovalRequest = ctx.models["BookReplanApprovalRequest"]
@@ -32,6 +46,253 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
     )
+
+    @router.post("/books/{book_id}/opening-runs", status_code=202)
+    def start_book_opening(
+        book_id: str, request: BookOpeningStartRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED",
+                    "Book opening is unavailable in this partial composition",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            admission = composition.opening.admit(
+                OpenBookProductionRequest(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    book_id=book_id,
+                    actor_id=principal.principal_id,
+                    expected_book_version=request.expected_book_version,
+                    production_profile=request.production_profile,
+                    planning_input_versions=dict(request.planning_input_versions),
+                    arc_logical_keys=tuple(request.arc_logical_keys),
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id
+                    or f"correlation:{uuid4()}",
+                    initial_story_state_version=request.initial_story_state_version,
+                    initial_canon_snapshot_version=request.initial_canon_snapshot_version,
+                ),
+                principal=principal,
+            )
+            return asdict(admission)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/opening-runs/{opening_run_id}")
+    def book_opening_detail(opening_run_id: str) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            run = composition.opening.require(opening_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", str(run["project_id"]))
+            return run
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/resume", status_code=202)
+    def resume_book_opening(
+        opening_run_id: str, request: BookOpeningControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.opening.resume(
+                opening_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/abort")
+    def abort_book_opening(
+        opening_run_id: str, request: BookOpeningControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.opening.abort(
+                opening_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/formation-runs", status_code=202)
+    def start_story_formation(
+        book_id: str, request: StoryFormationStartRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError(
+                    "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
+                    "Story Formation is unavailable in this partial composition",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            frozen = StoryFormationInput(
+                layers=tuple(
+                    FormationLayerInput.from_mapping(layer.model_dump())
+                    for layer in request.layers
+                ),
+                book_design_asset_version_id=request.book_design_asset_version_id,
+                book_design_content_hash=request.book_design_content_hash,
+            )
+            admission = composition.formation.admit(
+                StartStoryFormationCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    book_id=book_id,
+                    actor_id=principal.principal_id,
+                    expected_book_version=request.expected_book_version,
+                    stable_idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id
+                    or f"correlation:{uuid4()}",
+                    frozen_input=frozen,
+                ),
+                principal=principal,
+            )
+            return {
+                "formation_run_id": admission.formation_run_id,
+                "root_operation_id": admission.root_operation_id,
+                "runtime_job_id": admission.runtime_job_id,
+                "lifecycle": admission.lifecycle,
+                "replayed": admission.replayed,
+            }
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/formation-runs/{formation_run_id}")
+    def story_formation_detail(formation_run_id: str) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError(
+                    "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
+                    "Story Formation is unavailable",
+                )
+            result = composition.formation.require(formation_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", str(result["project_id"]))
+            return result
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/formation-runs/{formation_run_id}/resume", status_code=202)
+    def resume_story_formation(
+        formation_run_id: str, request: StoryFormationControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError(
+                    "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
+                    "Story Formation is unavailable",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.formation.resume(
+                formation_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/formation-runs/{formation_run_id}/approve-book-design",
+        status_code=202,
+    )
+    def approve_story_formation_book_design(
+        formation_run_id: str,
+        request: StoryFormationBookDesignApprovalRequest,
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError(
+                    "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
+                    "Story Formation is unavailable",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.formation.approve_book_design(
+                formation_run_id,
+                expected_version=request.expected_version,
+                asset_version_id=request.book_design_asset_version_id,
+                content_hash=request.book_design_content_hash,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/formation-runs/{formation_run_id}/abort")
+    def abort_story_formation(
+        formation_run_id: str, request: StoryFormationControlRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError(
+                    "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
+                    "Story Formation is unavailable",
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return composition.formation.abort(
+                formation_run_id,
+                expected_version=request.expected_version,
+                principal=principal,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/books/{book_id}/production-inputs/resolve")
     def resolve_production_inputs(

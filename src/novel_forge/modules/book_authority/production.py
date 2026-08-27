@@ -76,6 +76,9 @@ from novel_forge.modules.book_authority.longform_projection import (
     project_accepted_longform,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
 
 
 BOOK_COORDINATE_DEFINITION = "book.production.coordinate"
@@ -342,6 +345,9 @@ class SubmitBookChapterCommand:
     execution_chapter_plan_asset_version_id: str = ""
     execution_chapter_plan_content_hash: str = ""
     parent_group_version_id: str = ""
+    narrative_realization_id: str = ""
+    narrative_realization_slice_id: str = ""
+    narrative_realization_contract_digest: str = ""
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 16_000
     preparation_report: dict[str, Any] | None = None
@@ -766,6 +772,13 @@ class PostgresBookAuthority:
                         "chapter_plan_version": command.chapter_plan_asset_version_id,
                         "chapter_plan_content_hash": command.chapter_plan_content_hash,
                         "parent_group_version_id": command.parent_group_version_id,
+                        "narrative_realization_id": command.narrative_realization_id,
+                        "narrative_realization_slice_id": (
+                            command.narrative_realization_slice_id
+                        ),
+                        "narrative_realization_contract_digest": (
+                            command.narrative_realization_contract_digest
+                        ),
                         "production_profile_version": book[
                             "production_profile_version"
                         ],
@@ -921,6 +934,17 @@ class PostgresBookAuthority:
                 "CHAPTER_PRODUCTION_ADMISSION_REQUIRED",
                 "resolved Book production requires a frozen ChapterGroup plan",
             )
+        if not all(
+            (
+                command.narrative_realization_id,
+                command.narrative_realization_slice_id,
+                command.narrative_realization_contract_digest,
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_REQUIRED",
+                "resolved Chapter production requires exact Frozen realization lineage",
+            )
         from .queries import PostgresBookProductionQuery
 
         query = PostgresBookProductionQuery(self.database_url)
@@ -965,6 +989,18 @@ class PostgresBookAuthority:
             raise KernelError(
                 "CHAPTER_PRODUCTION_ADMISSION_MISMATCH",
                 "Chapter command differs from authoritative design admission",
+            )
+        if (
+            command.narrative_realization_id
+            != authoritative["narrative_realization_id"]
+            or command.narrative_realization_slice_id
+            != authoritative["narrative_realization_slice_id"]
+            or command.narrative_realization_contract_digest
+            != authoritative["narrative_realization_contract_digest"]
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ADMISSION_MISMATCH",
+                "Chapter command changed its governed realization identity",
             )
 
     def _require_accepted_projection_boundary(self, book: dict[str, Any]) -> None:
@@ -1166,7 +1202,7 @@ class PostgresBookAuthority:
 
         def commit_acceptance(
             uow: AuthorityUnitOfWork,
-            _operation_id: str,
+            operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
             uow.cursor.execute(
@@ -1350,6 +1386,71 @@ class PostgresBookAuthority:
                 ),
                 expected_book_version=int(current["version"]),
             )
+            command_payload = dict(request.get("command_payload") or {})
+            realization_id = str(
+                command_payload.get("narrative_realization_id") or ""
+            )
+            if book["input_mode"] == "RESOLVED_AUTHORITY_INPUT" and not realization_id:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_REQUIRED",
+                    "resolved Chapter acceptance lost its Frozen realization lineage",
+                )
+            realization_coverage: dict[str, Any] = {}
+            if realization_id:
+                realization_coverage = NarrativeRealizationRepository(
+                    uow.cursor
+                ).consume_accepted_chapter(
+                    project_id=request["project_id"],
+                    book_id=book["book_id"],
+                    realization_id=realization_id,
+                    chapter_number=int(request["chapter_number"]),
+                    chapter_plan_asset_version_id=str(
+                        request["chapter_plan_version"]
+                    ),
+                    acceptance_id=acceptance_id,
+                    chapter_outcome_asset_version_id=outcome.asset_version_id,
+                    realization_evidence=[
+                        dict(item)
+                        for item in outcome_content.get("realization_evidence") or ()
+                        if isinstance(item, dict)
+                    ],
+                    operation_id=operation_id,
+                )
+                uow.cursor.execute(
+                    """
+                    UPDATE story_plan_binding
+                    SET execution_scope='EXECUTED', version=version+1
+                    WHERE project_id=%s AND book_id=%s
+                      AND asset_version_id=%s AND contract_type='CHAPTER'
+                      AND execution_scope='FROZEN' AND freshness='CURRENT'
+                    """,
+                    [
+                        request["project_id"],
+                        book["book_id"],
+                        request["chapter_plan_version"],
+                    ],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "CHAPTER_PLAN_EXECUTION_SCOPE_CONFLICT",
+                        "accepted Chapter requires one current Frozen ChapterPlan",
+                    )
+                if realization_coverage["deviations"]:
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_book_production
+                        SET state='REPLAN_REQUIRED', version=version+1,
+                            updated_at=NOW()
+                        WHERE book_run_id=%s AND accepted_through_chapter=%s
+                          AND state IN ('READY','CHECKPOINT_PENDING')
+                        """,
+                        [request["book_run_id"], int(request["chapter_number"])],
+                    )
+                    if uow.cursor.rowcount != 1:
+                        raise KernelError(
+                            "BOOK_REALIZATION_DEVIATION_REPLAN_CONFLICT",
+                            "realization deviation could not request future-only replan",
+                        )
             checkpoint("after_chapter_acceptance")
             return {
                 "acceptance_id": acceptance_id,
@@ -1361,6 +1462,7 @@ class PostgresBookAuthority:
                 "longform_projection_set_id": longform_projection_set[
                     "projection_set_id"
                 ],
+                "narrative_realization_coverage": realization_coverage,
             }
 
         self._execute_mutation(

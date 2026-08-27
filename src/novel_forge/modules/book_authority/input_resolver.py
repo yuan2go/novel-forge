@@ -10,6 +10,10 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.book_design_authority import (
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    BookDesignPayload,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
@@ -26,6 +30,7 @@ from novel_forge.modules.story_planning_runtime import (
     canonical_hash,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.foundation_repositories import require_current_foundation_set
 
 
 BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
@@ -122,6 +127,9 @@ class BookProductionInputSnapshot:
     narrative_chapter_cursor: int
     book_record_version: str
     book_design_version: str
+    book_design_schema_version: str
+    foundation_set: dict[str, Any]
+    foundation_set_digest: str
     book_plan_version: str
     current_volume_plan_version: str
     volume_portfolio_plan_versions: tuple[str, ...]
@@ -308,7 +316,9 @@ class BookProductionInputResolver:
                 SELECT snapshot_id, project_id, workspace_id, book_id,
                        expected_book_version, narrative_chapter_cursor,
                        book_record_version,
-                       book_design_version, book_plan_version,
+                       book_design_version, book_design_schema_version,
+                       foundation_set, foundation_set_digest,
+                       book_plan_version,
                        current_volume_plan_version,
                        volume_portfolio_plan_versions,
                        arc_portfolio_plan_versions,
@@ -404,7 +414,8 @@ class BookProductionInputResolver:
                 snapshot_id, project_id, workspace_id, book_id,
                 expected_book_version, narrative_chapter_cursor,
                 book_record_version,
-                book_design_version, book_plan_version,
+                book_design_version, book_design_schema_version,
+                foundation_set, foundation_set_digest, book_plan_version,
                 current_volume_plan_version, volume_portfolio_plan_versions,
                 arc_portfolio_plan_versions,
                 current_relevant_arc_plan_versions,
@@ -421,7 +432,8 @@ class BookProductionInputResolver:
                 release_sha, snapshot_hash, resolved_by_operation_id
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s,
+                %s, %s,
                 NULLIF(%s, ''),
                 NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s
             ) ON CONFLICT (snapshot_hash) DO NOTHING
@@ -435,6 +447,9 @@ class BookProductionInputResolver:
                 resolved["narrative_chapter_cursor"],
                 resolved["book_record_version"],
                 resolved["book_design_version"],
+                resolved["book_design_schema_version"],
+                Jsonb(resolved["foundation_set"]),
+                resolved["foundation_set_digest"],
                 resolved["book_plan_version"],
                 resolved["current_volume_plan_version"],
                 Jsonb(resolved["volume_portfolio_plan_versions"]),
@@ -559,6 +574,21 @@ class BookProductionInputResolver:
             plans["ARC"], current_volume=current_volume
         )
         book_design = self._asset_content(cursor, str(book[1]), command.project_id)
+        foundation = require_current_foundation_set(
+            cursor,
+            project_id=command.project_id,
+            book_id=command.book_id,
+            require_ready=True,
+        )
+        typed_design = BookDesignPayload.from_mapping(book_design)
+        if (
+            typed_design.schema_version != FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+            or typed_design.foundation_set != foundation
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_FOUNDATION_REQUIRED",
+                "Book Production requires BookDesign v5 bound to the current qualified Foundation Set",
+            )
         book_plan = plans["BOOK"][0]
         self._validate_design_plan_compatibility(
             book_design=book_design,
@@ -581,6 +611,9 @@ class BookProductionInputResolver:
             "narrative_chapter_cursor": command.narrative_chapter_cursor,
             "book_record_version": str(book[0]),
             "book_design_version": str(book[1]),
+            "book_design_schema_version": typed_design.schema_version,
+            "foundation_set": foundation.to_dict(),
+            "foundation_set_digest": foundation.set_digest,
             "book_plan_version": book_plan["asset_version_id"],
             "current_volume_plan_version": current_volume["asset_version_id"],
             "volume_portfolio_plan_versions": [
@@ -1170,6 +1203,14 @@ class BookProductionInputResolver:
         values = [str(snapshot[key]) for key in scalar if snapshot.get(key)]
         values.extend(str(item) for item in snapshot["volume_portfolio_plan_versions"])
         values.extend(str(item) for item in snapshot["arc_portfolio_plan_versions"])
+        values.extend(
+            str(item["asset_version_id"])
+            for item in snapshot["foundation_set"]["bindings"]
+        )
+        values.extend(
+            str(item["qualification_evidence_asset_version_id"])
+            for item in snapshot["foundation_set"]["bindings"]
+        )
         return tuple(dict.fromkeys(values))
 
     def _input_assets(
