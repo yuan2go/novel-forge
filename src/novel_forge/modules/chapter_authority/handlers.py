@@ -1246,7 +1246,10 @@ class _CanonHandler:
             ),
             evidence={
                 "authority_family": "chapter",
-                "validator": "deterministic-continuity-v2",
+                "validator": str(
+                    content["deterministic_validation"].get("contract_version")
+                    or "deterministic-continuity-v3"
+                ),
                 "semantic_judge_used": False,
             },
         )
