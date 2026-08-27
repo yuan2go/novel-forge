@@ -101,6 +101,7 @@ from . import (
     v20260825_0098_narrative_evolution_engine,
     v20260825_0099_creative_engineering_convergence,
     v20260825_0100_hierarchy_closure,
+    v20260826_0101_quality_qualification,
 )
 
 VERSION_MODULES = [
@@ -204,6 +205,7 @@ VERSION_MODULES = [
     v20260825_0098_narrative_evolution_engine,
     v20260825_0099_creative_engineering_convergence,
     v20260825_0100_hierarchy_closure,
+    v20260826_0101_quality_qualification,
 ]
 
 __all__ = ["VERSION_MODULES"]

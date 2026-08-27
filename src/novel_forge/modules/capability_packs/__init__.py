@@ -68,8 +68,6 @@ from .versioning import (
     ReadOnlyPackCatalog,
     ResolvedPackSet,
 )
-
-
 __all__ = [
     "CAPABILITY_PACK_SCHEMA_VERSION",
     "COMPILED_CAPABILITY_PACK_SCHEMA_VERSION",

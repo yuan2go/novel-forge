@@ -83,12 +83,15 @@ from novel_forge.storage.database_runtime import get_database_runtime
 
 from .binder import PreparedPlanningExecution
 from .domain import (
+    CHAPTER_READER_SCHEDULE_FIELDS,
+    CHAPTER_SCHEDULE_FIELDS,
     FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
+    require_chapter_schedule_row,
 )
 from .narrative_search import (
     CREATIVE_INTELLIGENCE_DIMENSIONS,
@@ -562,6 +565,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             chapter_number,
             int(command.get("narrative_search_accepted_through_chapter") or 0) + 1,
         )
+    group_start = chapter_number
+    group_end = chapter_number + 2
+    search_horizon = command.get("narrative_search_planning_horizon")
+    if stage == "chapter_group_plan.generate" and isinstance(search_horizon, Mapping):
+        frozen_range = search_horizon.get("chapter_range")
+        if isinstance(frozen_range, list) and len(frozen_range) == 2:
+            group_start, group_end = map(int, frozen_range)
+            chapter_number = group_start
     arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
@@ -923,9 +934,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     *_fixture_chapter_shape(group_chapter),
                     arc_plan_ids,
                 )
-                for group_chapter in range(chapter_number, chapter_number + 3)
+                for group_chapter in range(group_start, group_end + 1)
             ],
-            "chapter_range": [chapter_number, chapter_number + 2],
+            "chapter_range": [group_start, group_end],
             "cost_range": ["social", "material"],
             "primary_arc_ids": [(arc_plan_ids or ("arc:primary",))[0]],
             "secondary_arc_ids": list((arc_plan_ids or ())[1:]),
@@ -938,7 +949,8 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 for arc_id in arc_plan_ids or ("arc:primary",)
             ],
             "narrative_event_chain": _fixture_narrative_event_chain(
-                chapter_number=chapter_number,
+                chapter_start=group_start,
+                chapter_end=group_end,
                 arc_plan_ids=arc_plan_ids or ("arc:primary",),
             ),
             "narrative_architecture_version": "canonical-narrative-v1",
@@ -1108,15 +1120,15 @@ def _fixture_character_arc_stage(boundary: int) -> str:
 
 
 def _fixture_narrative_event_chain(
-    *, chapter_number: int, arc_plan_ids: tuple[str, ...]
+    *, chapter_start: int, chapter_end: int, arc_plan_ids: tuple[str, ...]
 ) -> list[dict[str, Any]]:
     event_ids = [
-        f"realization:chapter-group:{chapter_number}:event:{offset}"
-        for offset in range(1, 4)
+        f"realization:chapter-group:{chapter_start}:event:{offset}"
+        for offset in range(1, chapter_end - chapter_start + 2)
     ]
     result: list[dict[str, Any]] = []
     for offset, event_id in enumerate(event_ids):
-        chapter = chapter_number + offset
+        chapter = chapter_start + offset
         result.append(
             {
                 "event_id": event_id,
@@ -1162,6 +1174,80 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
         "properties": properties,
         "required": list(properties),
         "additionalProperties": False,
+    }
+
+
+def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
+    """Project frozen JSON values into the Provider's strict-schema dialect.
+
+    OpenAI Structured Outputs does not accept object- or array-valued ``const``
+    nodes.  This projection freezes object shape, array cardinality, and scalar
+    vocabulary without creating a second semantic authority.  Planning
+    Authority still compares the returned value with the complete frozen value,
+    including array order and multiplicity, before activation.
+    """
+
+    if not values:
+        raise ValueError("Frozen Provider schema requires at least one value")
+
+    if all(isinstance(value, Mapping) for value in values):
+        mappings = [dict(value) for value in values]
+        keys = list(mappings[0])
+        expected_keys = set(keys)
+        if any(set(value) != expected_keys for value in mappings[1:]):
+            raise ValueError(
+                "Frozen Provider object arrays require one canonical object shape"
+            )
+        return _strict_object(
+            {
+                key: _frozen_provider_value_schema([value[key] for value in mappings])
+                for key in keys
+            }
+        )
+
+    if all(isinstance(value, list) for value in values):
+        sequences = [list(value) for value in values]
+        lengths = [len(value) for value in sequences]
+        members = [member for value in sequences for member in value]
+        return {
+            "type": "array",
+            "minItems": min(lengths),
+            "maxItems": max(lengths),
+            # ``items`` remains mandatory in the Provider dialect even when
+            # every frozen array is empty and maxItems therefore forbids data.
+            "items": (
+                _frozen_provider_value_schema(members)
+                if members
+                else {"type": "string"}
+            ),
+        }
+
+    if all(isinstance(value, bool) for value in values):
+        scalar_type = "boolean"
+    elif all(
+        isinstance(value, int) and not isinstance(value, bool) for value in values
+    ):
+        scalar_type = "integer"
+    elif all(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in values
+    ):
+        scalar_type = "number"
+    elif all(isinstance(value, str) for value in values):
+        scalar_type = "string"
+    elif all(value is None for value in values):
+        scalar_type = "null"
+    else:
+        raise ValueError("Frozen Provider schema contains mixed JSON value types")
+
+    distinct: list[Any] = []
+    for value in values:
+        if value not in distinct:
+            distinct.append(value)
+    constraint = "const" if len(distinct) == 1 else "enum"
+    return {
+        "type": scalar_type,
+        constraint: distinct[0] if constraint == "const" else distinct,
     }
 
 
@@ -1742,7 +1828,9 @@ def planning_provider_output_schema(
     dependent_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
     narrative_search: bool = False,
+    narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
+    chapter_schedule_row: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
 
@@ -1762,6 +1850,31 @@ def planning_provider_output_schema(
             if item
         )
     )
+    exact_group_range: tuple[int, int] | None = None
+    exact_group_chapters: list[int] = []
+    if contract_type is PlanContractType.CHAPTER_GROUP and narrative_search:
+        horizon = dict(narrative_search_horizon or {})
+        raw_range = horizon.get("chapter_range")
+        if (
+            horizon.get("level") != "CHAPTER_GROUP"
+            or not isinstance(raw_range, list)
+            or len(raw_range) != 2
+            or any(
+                not isinstance(item, int) or isinstance(item, bool)
+                for item in raw_range
+            )
+        ):
+            raise ValueError(
+                "ChapterGroup Search provider schema requires an exact frozen horizon"
+            )
+        exact_group_range = (raw_range[0], raw_range[1])
+        if not 3 <= exact_group_range[1] - exact_group_range[0] + 1 <= 8:
+            raise ValueError(
+                "ChapterGroup Search provider schema requires three to eight Chapters"
+            )
+        exact_group_chapters = list(
+            range(exact_group_range[0], exact_group_range[1] + 1)
+        )
     canon_dependencies: dict[str, Any] = {
         "type": "array",
         "items": dependency_items,
@@ -1916,12 +2029,16 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": 3,
+                "minItems": len(exact_group_chapters) or 3,
                 "items": _strict_object(
                     {
                         "event_id": string,
                         "slice_id": string,
-                        "chapter_number": {"type": "integer", "minimum": 1},
+                        "chapter_number": (
+                            {"type": "integer", "enum": exact_group_chapters}
+                            if exact_group_chapters
+                            else {"type": "integer", "minimum": 1}
+                        ),
                         "causes": {"type": "array", "items": string},
                         "actor_ref": string,
                         "motivation": string,
@@ -1993,17 +2110,27 @@ def planning_provider_output_schema(
             }
             if field == "chapter_range":
                 properties[field].update({"minItems": 2, "maxItems": 2})
+                if exact_group_range is not None:
+                    # OpenAI Structured Outputs rejects non-scalar ``const``
+                    # values. Bound each member to the frozen endpoints here;
+                    # Planning Authority still validates the exact ordered pair
+                    # before the candidate can be persisted or activated.
+                    properties[field]["items"]["enum"] = list(exact_group_range)
         elif field == "chapter_number":
             properties[field] = {"type": "integer", "minimum": 1}
         elif field == "chapter_function_matrix":
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": 3,
-                "maxItems": 8,
+                "minItems": len(exact_group_chapters) or 3,
+                "maxItems": len(exact_group_chapters) or 8,
                 "items": _strict_object(
                     {
-                        "chapter_number": {"type": "integer", "minimum": 1},
+                        "chapter_number": (
+                            {"type": "integer", "enum": exact_group_chapters}
+                            if exact_group_chapters
+                            else {"type": "integer", "minimum": 1}
+                        ),
                         "primary_function": string,
                         "secondary_functions": string_array,
                         "required_state_delta": _strict_object({"summary": string}),
@@ -2147,10 +2274,30 @@ def planning_provider_output_schema(
                 "NARRATIVE_REALIZATION_REQUIRED",
                 "Chapter provider schema requires a Frozen Narrative Realization slice",
             )
-        # ``const`` freezes the complete nested contract.  Omitting a second,
-        # redundant object schema also keeps OpenAI strict-schema validation
-        # from inventing a parallel shape for Planning-owned evidence.
-        properties["narrative_realization_slice"] = {"const": realization}
+        try:
+            schedule_row = require_chapter_schedule_row(
+                dict(chapter_schedule_row or {}),
+                chapter_number=int(realization.get("chapter_number") or 0),
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "CHAPTER_SCHEDULE_BINDING_REQUIRED",
+                "Chapter provider schema requires one complete frozen Scheduling row",
+            ) from exc
+        for field in CHAPTER_SCHEDULE_FIELDS:
+            properties[field] = _frozen_provider_value_schema([schedule_row[field]])
+        scheduled_reader = dict(schedule_row["reader_experience"])
+        reader_schema = dict(properties["reader_experience"])
+        reader_properties = dict(reader_schema["properties"])
+        for field in CHAPTER_READER_SCHEDULE_FIELDS:
+            reader_properties[field] = _frozen_provider_value_schema(
+                [scheduled_reader[field]]
+            )
+        reader_schema["properties"] = reader_properties
+        properties["reader_experience"] = reader_schema
+        properties["narrative_realization_slice"] = _frozen_provider_value_schema(
+            [realization]
+        )
     if narrative_search:
         if contract_type is PlanContractType.CHAPTER:
             raise ValueError("Chapter planning is operational, not a search portfolio")
@@ -2634,6 +2781,33 @@ class PostgresPlanningExecutionPreparer:
             command=command,
             inputs=inputs,
         )
+        chapter_schedule_row: dict[str, Any] | None = None
+        if command.planning_scope.value == PlanContractType.CHAPTER.value:
+            by_role = {
+                item.role: document
+                for item, document in zip(
+                    inputs, input_documents[: len(inputs)], strict=True
+                )
+            }
+            schedule_source = by_role.get("chapter_function_matrix_row")
+            if schedule_source is None:
+                raise KernelError(
+                    "CHAPTER_SCHEDULE_BINDING_REQUIRED",
+                    "Chapter generation lacks its frozen Scheduling input",
+                )
+            try:
+                chapter_schedule_row = require_chapter_schedule_row(
+                    schedule_source.content,
+                    chapter_number=int(
+                        (command.narrative_realization or {}).get("chapter_number")
+                        or 0
+                    ),
+                )
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "CHAPTER_SCHEDULE_BINDING_INVALID",
+                    "Frozen Scheduling input does not contain one complete Chapter row",
+                ) from exc
         pack_materialization = self.pack_runtime.materialize_attempt_artifacts(
             attempt_snapshot
         )
@@ -2657,15 +2831,17 @@ class PostgresPlanningExecutionPreparer:
                 *command.dependent_arc_plan_version_ids,
             ),
             narrative_search=bool(command.narrative_search_id),
+            narrative_search_horizon=(command.narrative_search_planning_horizon),
             narrative_realization=command.narrative_realization,
+            chapter_schedule_row=chapter_schedule_row,
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
             + (
-                ":v4"
+                ":v5"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
-                else ":v2"
+                else ":v3"
                 if command.planning_scope.value == PlanContractType.CHAPTER_GROUP.value
                 else ":v1"
             )
@@ -2797,9 +2973,16 @@ class PostgresPlanningExecutionPreparer:
                     "narrative_search_strategy_directive": (
                         command.narrative_search_strategy_directive
                     ),
-                    "narrative_realization": dict(
-                        command.narrative_realization or {}
+                    "narrative_search_planning_horizon": dict(
+                        command.narrative_search_planning_horizon or {}
                     ),
+                    "narrative_search_desired_transformation": dict(
+                        command.narrative_search_desired_transformation or {}
+                    ),
+                    "narrative_search_hard_constraints": list(
+                        command.narrative_search_hard_constraints
+                    ),
+                    "narrative_realization": dict(command.narrative_realization or {}),
                 },
                 "frozen_inputs": [
                     {
@@ -2822,23 +3005,7 @@ class PostgresPlanningExecutionPreparer:
                     ],
                 },
                 "arc_working_set": dict(command.arc_working_set or {}),
-                "narrative_search": (
-                    {
-                        "search_id": command.narrative_search_id,
-                        "branch_key": command.narrative_search_branch_key,
-                        "parent_state_asset_version_id": (
-                            command.narrative_search_parent_state_asset_version_id
-                        ),
-                        "accepted_through_chapter": (
-                            command.narrative_search_accepted_through_chapter
-                        ),
-                        "strategy_directive": (
-                            command.narrative_search_strategy_directive
-                        ),
-                    }
-                    if command.narrative_search_id
-                    else {}
-                ),
+                "narrative_search": command.narrative_search_snapshot,
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -3447,21 +3614,7 @@ class PostgresPlanningExecutionPreparer:
             "logical_key": command.logical_key,
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
-            "narrative_search": (
-                {
-                    "search_id": command.narrative_search_id,
-                    "branch_key": command.narrative_search_branch_key,
-                    "parent_state_asset_version_id": (
-                        command.narrative_search_parent_state_asset_version_id
-                    ),
-                    "accepted_through_chapter": (
-                        command.narrative_search_accepted_through_chapter
-                    ),
-                    "strategy_directive": (command.narrative_search_strategy_directive),
-                }
-                if command.narrative_search_id
-                else {}
-            ),
+            "narrative_search": command.narrative_search_snapshot,
             "narrative_intelligence": narrative_intelligence,
             "realization_reference_contract": _realization_reference_contract(
                 project_id=command.project_id,
@@ -3594,6 +3747,7 @@ class PostgresPlanningExecutionPreparer:
             or content.get("planning_scope") != command.planning_scope.value
             or content.get("logical_key") != command.logical_key
             or content.get("arc_working_set") != dict(command.arc_working_set or {})
+            or content.get("narrative_search") != command.narrative_search_snapshot
             or not isinstance(frozen_inputs, list)
             or frozen_inputs[: len(selected_inputs)] != selected_inputs
         ):

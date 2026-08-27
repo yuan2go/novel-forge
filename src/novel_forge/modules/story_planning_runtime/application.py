@@ -67,6 +67,8 @@ from novel_forge.storage.narrative_realization_repositories import (
 
 from .binder import PlanningExecutionBinder
 from .domain import (
+    CHAPTER_READER_SCHEDULE_FIELDS,
+    CHAPTER_SCHEDULE_FIELDS,
     FrozenPlanningInput,
     PlanningGenerationResult,
     PlanningGenerationStatus,
@@ -77,6 +79,7 @@ from .domain import (
     StoryPlanningEvaluationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
+    require_chapter_schedule_row,
 )
 
 
@@ -1358,6 +1361,30 @@ class StoryPlanningGenerationApplication:
                 asset_version_id=candidate_asset_version_id,
             )["content"]
             try:
+                _validate_narrative_search_horizon(command, content)
+                if command.generator_operation_name == "chapter_plan.generate":
+                    schedule_source = self._require_asset(
+                        project_id=command.project_id,
+                        asset_version_id=command.input_versions[
+                            "chapter_function_matrix_row"
+                        ],
+                    )["content"]
+                    try:
+                        schedule_row = require_chapter_schedule_row(
+                            schedule_source,
+                            chapter_number=int(
+                                (command.narrative_realization or {}).get(
+                                    "chapter_number"
+                                )
+                                or 0
+                            ),
+                        )
+                    except (TypeError, ValueError) as exc:
+                        raise KernelError(
+                            "CHAPTER_SCHEDULE_BINDING_INVALID",
+                            "Frozen Scheduling input does not contain one complete Chapter row",
+                        ) from exc
+                    _validate_chapter_schedule_binding(content, schedule_row)
                 validation = validate_story_design_candidate(
                     content=content,
                     project_id=command.project_id,
@@ -1632,6 +1659,16 @@ class StoryPlanningGenerationApplication:
             narrative_search_strategy_directive=(
                 command.narrative_search_strategy_directive
             ),
+            narrative_search_planning_horizon=(
+                command.narrative_search_planning_horizon
+            ),
+            narrative_search_desired_transformation=(
+                command.narrative_search_desired_transformation
+            ),
+            narrative_search_hard_constraints=(
+                command.narrative_search_hard_constraints
+            ),
+            narrative_realization=command.narrative_realization,
         )
         return self.generate(repaired, principal=principal)
 
@@ -2597,6 +2634,15 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "narrative_search_strategy_directive": (
             command.narrative_search_strategy_directive
         ),
+        "narrative_search_planning_horizon": dict(
+            command.narrative_search_planning_horizon or {}
+        ),
+        "narrative_search_desired_transformation": dict(
+            command.narrative_search_desired_transformation or {}
+        ),
+        "narrative_search_hard_constraints": list(
+            command.narrative_search_hard_constraints
+        ),
         "narrative_realization": dict(command.narrative_realization or {}),
     }
 
@@ -2650,6 +2696,15 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         narrative_search_strategy_directive=str(
             payload.get("narrative_search_strategy_directive") or ""
         ),
+        narrative_search_planning_horizon=(
+            dict(payload.get("narrative_search_planning_horizon") or {}) or None
+        ),
+        narrative_search_desired_transformation=(
+            dict(payload.get("narrative_search_desired_transformation") or {}) or None
+        ),
+        narrative_search_hard_constraints=tuple(
+            str(item) for item in payload.get("narrative_search_hard_constraints") or ()
+        ),
         narrative_realization=(
             dict(payload.get("narrative_realization") or {}) or None
         ),
@@ -2690,6 +2745,74 @@ def _authority_role_versions(
     if parent_state and parent_state not in roles.values():
         roles["narrative_search_parent_state"] = parent_state
     return roles
+
+
+def _validate_narrative_search_horizon(
+    command: StoryPlanningGenerationCommand, content: dict[str, Any]
+) -> None:
+    chapter_range = command.narrative_search_chapter_range
+    if chapter_range is None:
+        return
+    start, end = chapter_range
+    expected = list(range(start, end + 1))
+    candidate_range = content.get("chapter_range")
+    matrix = content.get("chapter_function_matrix")
+    events = content.get("narrative_event_chain")
+    matrix_chapters = (
+        [item.get("chapter_number") for item in matrix if isinstance(item, dict)]
+        if isinstance(matrix, list)
+        else []
+    )
+    event_chapters = (
+        [item.get("chapter_number") for item in events if isinstance(item, dict)]
+        if isinstance(events, list)
+        else []
+    )
+    if (
+        candidate_range != [start, end]
+        or matrix_chapters != expected
+        or any(
+            not isinstance(item, int) or isinstance(item, bool)
+            for item in event_chapters
+        )
+        or set(event_chapters) != set(expected)
+    ):
+        raise KernelError(
+            "NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH",
+            "ChapterGroup candidate, function matrix, and event chain must exactly cover the frozen Search window",
+        )
+
+
+def _validate_chapter_schedule_binding(
+    content: dict[str, Any], schedule_row: dict[str, Any]
+) -> None:
+    if any(
+        canonical_hash(schedule_row.get(field))
+        != canonical_hash(content.get(field))
+        for field in CHAPTER_SCHEDULE_FIELDS
+    ):
+        raise KernelError(
+            "CHAPTER_SCHEDULE_BINDING_DRIFT",
+            "ChapterPlan scheduling fields must exactly match the frozen ChapterGroup row",
+        )
+    scheduled_reader = schedule_row.get("reader_experience")
+    chapter_reader = content.get("reader_experience")
+    if not isinstance(scheduled_reader, dict) or not isinstance(
+        chapter_reader, dict
+    ):
+        raise KernelError(
+            "CHAPTER_SCHEDULE_BINDING_DRIFT",
+            "ChapterPlan and Scheduling require typed Reader Experience targets",
+        )
+    if any(
+        canonical_hash(scheduled_reader.get(field))
+        != canonical_hash(chapter_reader.get(field))
+        for field in CHAPTER_READER_SCHEDULE_FIELDS
+    ):
+        raise KernelError(
+            "CHAPTER_SCHEDULE_BINDING_DRIFT",
+            "ChapterPlan Reader Experience must preserve its frozen scheduled targets",
+        )
 
 
 def _validate_frozen_arc_references(
@@ -2740,13 +2863,10 @@ def _validate_frozen_arc_references(
     if command.generator_operation_name == "chapter_group_plan.generate":
         chapter_range = content.get("chapter_range")
         accepted_through = command.narrative_search_accepted_through_chapter
-        if (
-            accepted_through > 0
-            and (
-                not isinstance(chapter_range, list)
-                or len(chapter_range) != 2
-                or int(chapter_range[0]) <= accepted_through
-            )
+        if accepted_through > 0 and (
+            not isinstance(chapter_range, list)
+            or len(chapter_range) != 2
+            or int(chapter_range[0]) <= accepted_through
         ):
             raise KernelError(
                 "NARRATIVE_SEARCH_HISTORY_REWRITE_FORBIDDEN",

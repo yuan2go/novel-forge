@@ -7,6 +7,7 @@ import pytest
 from novel_forge.modules.book_authority.production import BookProductionState
 from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
+    _bounded_chapter_group_range,
 )
 from novel_forge.modules.book_replan import CoordinateBookReplanCommand
 from novel_forge.modules.book_replan.coordinator import (
@@ -17,6 +18,37 @@ from novel_forge.modules.book_replan.coordinator import (
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.hierarchical_planning import PlanExecutionScope
 from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
+
+
+def test_supervisor_derives_two_exact_four_chapter_horizons() -> None:
+    assert _bounded_chapter_group_range(
+        start_chapter=1, target_chapter_count=8, preferred_size=4
+    ) == (1, 4)
+    assert _bounded_chapter_group_range(
+        start_chapter=5, target_chapter_count=8, preferred_size=4
+    ) == (5, 8)
+
+
+@pytest.mark.parametrize(
+    ("target", "preferred", "expected"),
+    (
+        (6, 4, (1, 6)),
+        (9, 8, (1, 6)),
+        (10, 8, (1, 7)),
+        (11, 8, (1, 8)),
+    ),
+)
+def test_supervisor_chapter_group_horizon_avoids_terminal_fragments(
+    target: int, preferred: int, expected: tuple[int, int]
+) -> None:
+    assert (
+        _bounded_chapter_group_range(
+            start_chapter=1,
+            target_chapter_count=target,
+            preferred_size=preferred,
+        )
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -166,6 +198,49 @@ def test_replan_chapter_context_uses_only_scheduled_nondormant_arcs() -> None:
         chapter=4,
         active_arc_plan_ids=["arc:v1", "arc:v2", "arc:v3"],
     ) == ["arc:v1", "arc:v3"]
+
+
+def test_chapter_plan_inputs_bind_matrix_row_to_active_chapter_group() -> None:
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    snapshot = {
+        "book_plan_version": "book-plan:v1",
+        "character_state_version": "character-state:v1",
+        "foreshadowing_state_version": "foreshadowing-state:v1",
+        "quality_trend_version": "quality-trend:v1",
+        "reward_ledger_version": "reward-ledger:v1",
+        "promise_ledger_version": "promise-ledger:v1",
+    }
+    latest = {
+        "previous_chapter_outcome": "chapter-outcome:v0",
+        "story_state": "story-state:v0",
+        "canon_snapshot": "canon:v0",
+        "reader_state": "reader-state:v0",
+    }
+    looked_up_roles: list[str] = []
+    supervisor.query = SimpleNamespace(
+        require_input_snapshot=lambda _snapshot_id: dict(snapshot)
+    )
+    supervisor._active_plan = lambda *_args: {"asset_version_id": "chapter-group:v1"}
+
+    def latest_role_asset(_book, role):
+        looked_up_roles.append(role)
+        return latest.get(role, "")
+
+    supervisor._latest_role_asset = latest_role_asset
+
+    resolved = supervisor._resolve_generation_inputs(
+        {
+            "input_snapshot_id": "snapshot:1",
+            "accepted_through_chapter": 0,
+        },
+        "chapter_plan.generate",
+        primary_arc_version="arc:v1",
+        volume_plan_version="volume:v1",
+    )
+
+    assert resolved["chapter_group_plan"] == "chapter-group:v1"
+    assert resolved["chapter_function_matrix_row"] == "chapter-group:v1"
+    assert "chapter_function_matrix_row" not in looked_up_roles
 
 
 def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:

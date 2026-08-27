@@ -39,6 +39,9 @@ def main() -> int:
         "test_postgresql_only_chapter_slice.py",
         "test_core_functional_loops_postgres.py",
         "test_hierarchy_*_postgres.py",
+        "test_quality_*_postgres.py",
+        "test_reader_calibration_postgres.py",
+        "test_bounded_quality_campaign_postgres.py",
     ):
         paths.update((root / "tests" / "integration").glob(pattern))
     plugin = _NoSkipPlugin()

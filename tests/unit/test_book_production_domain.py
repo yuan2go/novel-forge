@@ -86,7 +86,11 @@ def test_volume_portfolio_rejects_a_strategic_gap() -> None:
 
 def test_global_arc_portfolio_projects_only_arcs_relevant_to_current_volume() -> None:
     volumes = [
-        {"asset_version_id": f"volume-{number}", "parent_version_id": "book-1"}
+        {
+            "asset_version_id": f"volume-{number}",
+            "parent_version_id": "book-1",
+            "content": {"chapter_range": [(number - 1) * 30 + 1, number * 30]},
+        }
         for number in range(1, 6)
     ]
     arcs = [
@@ -114,6 +118,7 @@ def test_global_arc_portfolio_projects_only_arcs_relevant_to_current_volume() ->
     BookProductionInputResolver._validate_plan_hierarchy(
         plans,
         current_volume=volumes[0],
+        current_chapter_group=None,
     )
     assert {
         volume["asset_version_id"]: (
@@ -130,3 +135,45 @@ def test_global_arc_portfolio_projects_only_arcs_relevant_to_current_volume() ->
         "volume-4": ("arc-b", "arc-c"),
         "volume-5": ("arc-c",),
     }
+
+
+def test_chapter_group_portfolio_selects_cursor_without_rewriting_history() -> None:
+    groups = [
+        {
+            "asset_version_id": "group-1",
+            "parent_version_id": "volume-1",
+            "content": {"chapter_range": [1, 4]},
+            "execution_scope": "EXECUTED",
+        },
+        {
+            "asset_version_id": "group-2",
+            "parent_version_id": "volume-2",
+            "content": {"chapter_range": [5, 8]},
+            "execution_scope": "FROZEN",
+        },
+    ]
+
+    current = BookProductionInputResolver._select_current_chapter_group(
+        groups, chapter_cursor=5
+    )
+
+    assert current is not None
+    assert current["asset_version_id"] == "group-2"
+
+
+def test_chapter_group_portfolio_rejects_overlapping_ranges() -> None:
+    groups = [
+        {
+            "asset_version_id": "group-1",
+            "content": {"chapter_range": [1, 4]},
+        },
+        {
+            "asset_version_id": "group-2",
+            "content": {"chapter_range": [4, 7]},
+        },
+    ]
+
+    with pytest.raises(KernelError, match="BOOK_PRODUCTION_GROUP_AMBIGUOUS"):
+        BookProductionInputResolver._select_current_chapter_group(
+            groups, chapter_cursor=4
+        )

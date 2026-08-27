@@ -4,12 +4,13 @@ import hashlib
 import json
 import unittest
 
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from novel_forge.modules.content_authority import CONTENT_CODECS
 from novel_forge.modules.content_authority.application import (
     ContentAuthorityApplication,
     ContentOperationRequest,
 )
-from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.reader_calibration import BLIND_EVALUATION_DIMENSIONS
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -622,106 +623,6 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         )
         self.assertTrue(verification_content["evidence_refs"])
 
-        calibration_profile = self.seed(
-            "quality_calibration_profile",
-            {
-                "profile_id": "readability-golden-v1",
-                "dimension": "readability",
-                "dataset_version": "golden-v1",
-                "threshold_policy_version_id": "quality-policy-v1",
-                "status": "UNCALIBRATED",
-                "revoked": False,
-                "stale": False,
-            },
-            "calibration-profile",
-        )
-        golden_samples = []
-        provider_decisions = []
-        for index in range(5):
-            target = self.seed(
-                "draft_version",
-                {"text": f"Deterministic golden sample {index}."},
-                f"golden-target-{index}",
-            )
-            sample_id = f"sample-{index}"
-            golden = self.run_op(
-                "quality.golden_sample.create",
-                [target],
-                {
-                    "sample": {
-                        "sample_id": sample_id,
-                        "dimension": "readability",
-                        "input_asset_version_ids": [target["asset_version_id"]],
-                        "expected_status": "PASSED",
-                        "expected_score_range": [75, 90],
-                        "human_evidence": [{"span": [0, 10]}],
-                        "annotator": "fixture-adjudicator",
-                        "adjudication_status": "ADJUDICATED",
-                        "dataset_version": "golden-v1",
-                    }
-                },
-            )
-            golden_samples.append(golden)
-            provider_decisions.append(
-                self.seed(
-                    "quality_provider_decision",
-                    {
-                        "sample_id": sample_id,
-                        "dimension": "readability",
-                        "status": "PASSED",
-                        "score": 82,
-                        "confidence": 0.9,
-                        "fixture_protocol_only": True,
-                        "real_model_call": False,
-                        "production_verified": False,
-                    },
-                    f"provider-decision-{index}",
-                )
-            )
-        self.run_op(
-            "quality.human_decision.record",
-            [golden_samples[0]],
-            {
-                "decision": {
-                    "sample_id": "sample-0",
-                    "dimension": "readability",
-                    "status": "PASSED",
-                    "score": 82,
-                    "evidence": [{"span": [0, 10]}],
-                    "annotator": "fixture-human",
-                }
-            },
-        )
-        calibration_report = self.run_op(
-            "quality.calibration.run",
-            [calibration_profile, *golden_samples, *provider_decisions],
-            {
-                "run_id": "calibration-run-v1",
-                "fixture_protocol_only": True,
-                "policy": {
-                    "policy_version": "fixture-calibration-policy-v1",
-                    "minimum_sample_count": 5,
-                    "minimum_coverage": 1.0,
-                    "minimum_status_accuracy": 1.0,
-                    "minimum_score_in_range_rate": 1.0,
-                    "minimum_per_status_precision": 1.0,
-                    "minimum_per_status_recall": 1.0,
-                    "minimum_inter_annotator_agreement": 1.0,
-                    "maximum_unresolved_adjudication": 0,
-                    "confidence_interval_policy": "deterministic-fixture-exact",
-                },
-            },
-        )
-        with self.assertRaisesRegex(KernelError, "QUALITY_FIXTURE_PROMOTION_FORBIDDEN"):
-            self.run_op(
-                "quality.calibration.profile.promote",
-                [calibration_profile, calibration_report],
-            )
-        self.run_op(
-            "quality.calibration.profile.revoke",
-            [calibration_profile],
-            {"reason": "fixture lifecycle proof"},
-        )
         quality_subject = self.seed(
             "draft_version",
             {"text": "A bounded subjective quality calibration subject."},
@@ -751,8 +652,10 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                         "minimum_status_accuracy": 1.0,
                         "maximum_false_pass_count": 0,
                     },
-                    "judge_profile_ref": "judge-profile:readability:v2",
+                    "judge_profile_ref": "quality-judge:readability",
                     "judge_profile_hash": "sha256:" + "a" * 64,
+                    "judge_provider_id": "fixture-judge-provider",
+                    "judge_model_id": "fixture-judge-model",
                     "status": "CANDIDATE",
                 }
             },
@@ -769,7 +672,12 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                     "score": 82,
                     "confidence": 0.9,
                     "evaluator_id": "quality-judge:readability",
-                    "model_id": "fixture-model",
+                    "provider_id": "fixture-judge-provider",
+                    "model_id": "fixture-judge-model",
+                    "generator_provider_id": "fixture-generator-provider",
+                    "generator_model_id": "fixture-generator-model",
+                    "reviewer_provider_id": "fixture-reviewer-provider",
+                    "reviewer_model_id": "fixture-reviewer-model",
                     "prompt_version": "quality-prompt:v2",
                     "prompt_hash": "sha256:" + "b" * 64,
                     "provider_result_asset_version_id": judge_provider_result[
@@ -795,6 +703,17 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                             "score": 82 + ordinal - 1,
                             "evaluator_id": f"human-evaluator:{ordinal}",
                             "evaluator_group": "blind-literary-panel",
+                            "evaluator_identity_class": (
+                                "PROFESSIONAL_EDITOR"
+                                if ordinal == 1
+                                else "EXPERIENCED_READER"
+                            ),
+                            "protocol_version": "human-blind-comparison-v1",
+                            "evaluation_version": "editorial-pairwise-v1",
+                            "scope_type": "CHAPTER",
+                            "chapter_start": 1,
+                            "chapter_end": 1,
+                            "confidence": 0.8,
                             "evidence": [{"reason": "clear causal prose"}],
                             "blind": True,
                         }
@@ -815,22 +734,70 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                         item["asset_version_id"] for item in human_v2
                     ],
                     "adjudicator_id": "adjudicator:readability",
+                    "adjudicator_identity_class": "PROFESSIONAL_EDITOR",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
                     "rationale": "two blind evaluations converge",
                 }
             },
         )
-        blind_pair = self.run_op(
+        blind_pair_human = self.run_op(
             "quality.blind_pair_preference.record",
             [quality_subject, draft],
             {
                 "preference": {
                     "preference_id": "blind-preference:1",
-                    "pair_id": "pair:quality-v2:1",
+                    "pair_id": "pair:quality-v2:human",
+                    "subject_id": "quality-subject:chapter:1",
+                    "candidate_a_asset_version_id": draft["asset_version_id"],
+                    "candidate_b_asset_version_id": quality_subject["asset_version_id"],
+                    "choice": "B",
+                    "evaluator_id": "human-evaluator:3",
+                    "evaluator_role": "HUMAN",
+                    "evaluator_identity_class": "EXPERIENCED_READER",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
+                    "presentation_order": "BA",
+                    "dimension_scores": {
+                        dimension: {"a": 3, "b": 4}
+                        for dimension in BLIND_EVALUATION_DIMENSIONS
+                    },
+                    "confidence": 0.8,
+                    "rationale": "the causal chain is clearer",
+                }
+            },
+        )
+        blind_pair_judge = self.run_op(
+            "quality.blind_pair_preference.record",
+            [quality_subject, draft],
+            {
+                "preference": {
+                    "preference_id": "blind-preference:judge:1",
+                    "pair_id": "pair:quality-v2:judge",
+                    "subject_id": "quality-subject:chapter:1",
                     "candidate_a_asset_version_id": quality_subject["asset_version_id"],
                     "candidate_b_asset_version_id": draft["asset_version_id"],
-                    "preferred_asset_version_id": quality_subject["asset_version_id"],
-                    "evaluator_id": "human-evaluator:3",
-                    "presentation_order": "BA",
+                    "choice": "A",
+                    "evaluator_id": "quality-judge:readability",
+                    "evaluator_role": "AUTOMATED_JUDGE",
+                    "evaluator_identity_class": "MODEL_JUDGE",
+                    "protocol_version": "human-blind-comparison-v1",
+                    "evaluation_version": "editorial-pairwise-v1",
+                    "scope_type": "CHAPTER",
+                    "chapter_start": 1,
+                    "chapter_end": 1,
+                    "presentation_order": "AB",
+                    "dimension_scores": {
+                        dimension: {"a": 4, "b": 3}
+                        for dimension in BLIND_EVALUATION_DIMENSIONS
+                    },
+                    "confidence": 0.75,
                     "rationale": "the causal chain is clearer",
                 }
             },
@@ -857,18 +824,36 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 judge_v2,
                 *human_v2,
                 adjudication_v2,
-                blind_pair,
+                blind_pair_human,
+                blind_pair_judge,
                 reader_outcome,
             ],
-            {"run_id": "calibration-run-v2", "fixture_protocol_only": True},
+            {
+                "run_id": "calibration-run-v2",
+                "protocol_version": "human-blind-comparison-v1",
+                "evaluation_version": "editorial-pairwise-v1",
+                "evidence_scope": "BOUNDED_EVIDENCE",
+                "fixture_protocol_only": True,
+            },
         )
         calibration_v2_content = self.read_content(calibration_v2["asset_version_id"])
         self.assertEqual(calibration_v2_content["calibration_status"], "UNCALIBRATED")
+        self.assertEqual(calibration_v2_content["evidence_status"], "BOUNDED_EVIDENCE")
         self.assertFalse(calibration_v2_content["activation_allowed"])
         self.assertFalse(calibration_v2_content["production_verified"])
         self.assertEqual(
+            calibration_v2_content["independence_status"],
+            "CROSS_PROVIDER_DISTINCT_MODEL",
+        )
+        self.assertEqual(
+            calibration_v2_content["diagnostics"]["pairwise_agreement"][
+                "agreement_rate"
+            ],
+            1.0,
+        )
+        self.assertEqual(
             calibration_v2_content["diagnostics"]["subjective_reference_source"],
-            "ADJUDICATED_EVALUATION",
+            "ADJUDICATED_SUBJECTIVE_EVIDENCE",
         )
         self.assertFalse(
             calibration_v2_content["diagnostics"][
@@ -927,6 +912,23 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "completed": True,
                 "contract_version": "internal-release-checklist-v1",
             },
+            "chapter.fixture_waiver_approval.author": {
+                "type": "operator_approval",
+                "book_id": f"book:{self.project_id}",
+                "decision": "APPROVED",
+                "contract_version": "fixture-waiver-approval-v1",
+                "fixture_protocol_only": True,
+                "production_verified": False,
+                "human_preference_evidence": False,
+                "waiver_reason": "Exercise fixture-only Quality gate wiring.",
+                "waived_dimensions": list(QUALITY_DIMENSIONS),
+                "scope": {
+                    "project_id": self.project_id,
+                    "scope_type": "PROJECT_FIXTURE",
+                    "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                },
+                "expiry": "2099-12-31T23:59:59Z",
+            },
         }
         for name, content in authored_inputs.items():
             self.run_op(
@@ -941,6 +943,328 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                     }
                 },
             )
+
+        def author_foundation(
+            name: str,
+            generator: str,
+            logical_role: str,
+            candidate_payload: dict,
+            parents: dict[str, dict] | None = None,
+        ) -> dict:
+            frozen_parents = parents or {}
+            return self.run_op(
+                name,
+                list(frozen_parents.values()),
+                {
+                    "content": {
+                        "schema_version": "story_design.authority.v1",
+                        "project_id": self.project_id,
+                        "generator_operation_name": generator,
+                        "planning_scope": "NOT_APPLICABLE",
+                        "logical_key": (
+                            f"foundation:{logical_role}:content-runtime-v1"
+                        ),
+                        "operator_authored": True,
+                        "provider_generated": False,
+                        "candidate_payload": {
+                            **candidate_payload,
+                            **(
+                                {
+                                    "foundation_parent_bindings": {
+                                        role: {
+                                            "asset_version_id": item[
+                                                "asset_version_id"
+                                            ],
+                                            "content_hash": item["content_hash"],
+                                        }
+                                        for role, item in frozen_parents.items()
+                                    }
+                                }
+                                if frozen_parents
+                                else {}
+                            ),
+                        },
+                    }
+                },
+            )
+
+        creative = author_foundation(
+            "story_design.creative_foundation.author",
+            "creative.candidates.generate",
+            "creative",
+            {
+                "objective": "Establish a costly public-truth mystery engine.",
+                "target_reader": "adult speculative mystery readers",
+                "why_worth_writing": "Public truth creates responsibility.",
+                "genre": "speculative mystery",
+                "subgenre": "institutional mystery",
+                "core_desire": "restore erased belonging",
+                "core_fear": "truth will expose protected people",
+                "core_conflict": "witnesses challenge a self-editing archive",
+                "narrative_engine": "each anomaly forces disclosure or concealment",
+                "differentiation": "geography changes through accountable choices",
+                "emotional_contract": "wonder becomes costly shared responsibility",
+                "serialization_potential": "each district exposes a distinct bargain",
+            },
+        )
+        creative_parent = {"CREATIVE_FOUNDATION": creative}
+        theme = author_foundation(
+            "story_design.theme_contract.author",
+            "theme.candidates.generate",
+            "theme",
+            {
+                "objective": "Bind truth to humane public choice.",
+                "thematic_question": "Can public truth remain humane under pressure?",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        ending = author_foundation(
+            "story_design.ending_intent.author",
+            "ending.intent.generate",
+            "ending",
+            {
+                "objective": "Make collective custody an earned ending direction.",
+                "ending_direction": "collective custody replaces solitary control",
+                "protagonist_cost": "Mara surrenders exclusive certainty",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        promise = author_foundation(
+            "story_design.reader_promise.author",
+            "reader.promise.generate",
+            "reader-promise",
+            {
+                "objective": "Promise discovery through costly public choices.",
+                "reader_promise": "Every discovery forces a costly public choice",
+                "genre": "speculative mystery",
+            },
+            creative_parent,
+        )
+        creative_contracts = {
+            "CREATIVE_FOUNDATION": creative,
+            "THEME_CONTRACT": theme,
+            "ENDING_INTENT": ending,
+            "READER_PROMISE": promise,
+        }
+        world = author_foundation(
+            "story_design.world_bible.author",
+            "world.design.generate",
+            "world",
+            {
+                "objective": "Turn witnessed truth into bounded world causality.",
+                "rules": [
+                    {
+                        "rule": "A witnessed place resists erasure for seven days",
+                        "cost": "the witness becomes publicly exposed",
+                        "exception": "a witness may formally recant",
+                        "consequence": "access remains open while testimony stands",
+                        "narrative_function": "turn knowledge into costly agency",
+                    }
+                ],
+            },
+            creative_contracts,
+        )
+        author_foundation(
+            "story_design.character_cast.author",
+            "character.cast.generate",
+            "characters",
+            {
+                "objective": "Give the witness mystery an agentic cast.",
+                "characters": [
+                    {
+                        "character_id": "mara",
+                        "desire": "restore the erased district",
+                        "need": "share uncertain evidence",
+                        "fear": "causing another erasure",
+                        "wound": "a failed solitary proof",
+                        "false_belief": "only certainty protects people",
+                        "values": ["truth", "care"],
+                        "moral_boundary": "never fabricate a witness",
+                        "agency": "chooses when evidence becomes public",
+                        "capability": "reads archival topology",
+                        "weakness": "withholds uncertainty",
+                        "voice": "precise until emotionally cornered",
+                        "secret": "her first map caused harm",
+                        "relationship_function": "learn accountable trust",
+                        "arc_direction": "certainty becomes shared responsibility",
+                    }
+                ],
+            },
+            {**creative_contracts, "WORLD_BIBLE": world},
+        )
+        self.run_op(
+            "story_design.review.author",
+            [creative],
+            {
+                "candidate_asset_version_id": creative["asset_version_id"],
+                "candidate_content_hash": creative["content_hash"],
+                "evaluation": {
+                    "schema_version": "progressive-narrative-qualification.v1",
+                    "evaluations": [],
+                    "fixture_protocol_only": True,
+                },
+                "review_rationale": (
+                    "Independent fixture operator binds review evidence to the exact "
+                    "candidate; this is not human preference or Provider evidence."
+                ),
+            },
+        )
+
+        book_id = f"book:{self.project_id}"
+        bootstrap_inputs = {
+            "book.production_profile.author": {
+                "type": "production_profile",
+                "profile_id": "bounded-quality-v1",
+                "target_chapter_count": 8,
+                "language_contract": {
+                    "language": "zh-CN",
+                    "script": "Hans",
+                },
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.previous_volume_outcome.author": {
+                "type": "previous_volume_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_VOLUME",
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.previous_chapter_group_outcome.author": {
+                "type": "previous_chapter_group_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_CHAPTER_GROUP",
+                "actual_outcomes": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.previous_chapter_outcome.author": {
+                "type": "previous_chapter_outcome",
+                "contract_version": "v1",
+                "status": "NO_PREVIOUS_CHAPTER",
+                "actual_outcomes": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.arc_portfolio.author": {
+                "type": "arc_portfolio",
+                "portfolio_id": "arc-portfolio:bounded",
+                "contract_version": "v1",
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.ending_reachability.author": {
+                "type": "ending_reachability",
+                "contract_version": "v1",
+                "status": "PLANNED_NOT_ACTUAL",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.character_arc_portfolio.author": {
+                "type": "character_arc_portfolio",
+                "portfolio_id": "character-arc-portfolio:bounded",
+                "contract_version": "v1",
+                "authority_boundary": "FUTURE_INTENT",
+            },
+            "book.conflict_state.author": {
+                "type": "conflict_state",
+                "contract_version": "v1",
+                "active_conflicts": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.foreshadowing_ledger.author": {
+                "type": "foreshadowing_ledger",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.reader_segment.author": {
+                "type": "reader_segment_profile",
+                "profile_id": "reader:bounded",
+                "profile_version": "reader-outcome-v3",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reader_contract.author": {
+                "type": "reader_contract",
+                "profile_id": "reader:bounded",
+                "profile_version": "reader-outcome-v3",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reader_state.author": {
+                "type": "reader_state",
+                "contract_version": "reader-state-genesis-v1",
+                "profile_version": "reader-outcome-v3",
+                "status": "NOT_OBSERVED",
+                "accepted_through_chapter": 0,
+                "observations": [],
+                "evidence_class": "READER_PROXY_ADVISORY",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.character_state.author": {
+                "type": "character_state_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.foreshadowing_state.author": {
+                "type": "foreshadow_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.quality_trend.author": {
+                "type": "quality_trend",
+                "contract_version": "v1",
+                "status": "NO_ACCEPTED_CHAPTERS",
+                "authority_boundary": "ADVISORY",
+            },
+            "book.reward_ledger.author": {
+                "type": "reward_ledger_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+            "book.promise_ledger.author": {
+                "type": "promise_ledger_snapshot",
+                "contract_version": "v1",
+                "entries": [],
+                "authority_boundary": "PRE_CHAPTER_0",
+            },
+        }
+        for name, content in bootstrap_inputs.items():
+            self.run_op(
+                name,
+                payload={
+                    "content": {
+                        **content,
+                        "book_id": book_id,
+                        "safe_summary": f"Bounded {content['type']} bootstrap.",
+                        "structured_facts": [
+                            {
+                                "key": "authority_boundary",
+                                "value": content["authority_boundary"],
+                            }
+                        ],
+                    }
+                },
+            )
+        campaign_identity = (
+            "sha256:"
+            + hashlib.sha256(
+                f"{self.project_id}\x00{book_id}\x00bounded-quality-v1".encode()
+            ).hexdigest()
+        )
+        initial_story_state = self.run_op(
+            "book.initial_story_state.author",
+            payload={
+                "book_id": book_id,
+                "campaign_contract_identity": campaign_identity,
+            },
+        )
+        self.run_op(
+            "book.initial_canon.author",
+            [initial_story_state],
+            {
+                "book_id": book_id,
+                "campaign_contract_identity": campaign_identity,
+            },
+        )
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -961,7 +1285,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         self.assertEqual({name for name, _ in operations}, set(CONTENT_CODECS))
         self.assertEqual(
             {name: status for name, status in operations if status != "SUCCEEDED"},
-            {"quality.calibration.profile.promote": "FAILED_FINAL"},
+            {},
         )
         succeeded = sum(status == "SUCCEEDED" for _, status in operations)
         self.assertEqual(audits, succeeded)

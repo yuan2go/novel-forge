@@ -34,12 +34,6 @@ from novel_forge.modules.worldbuilding.domain import (
     build_world_bible,
     validate_world_rules,
 )
-from novel_forge.modules.chapter_quality_authority.calibration import (
-    QualityGoldenSample,
-    QualityHumanDecision,
-    evaluate_calibration_run,
-    promote_calibration_profile,
-)
 from novel_forge.modules.chapter_quality_authority.calibration_v2 import (
     AdjudicatedEvaluation,
     BlindPairPreference,
@@ -58,10 +52,13 @@ from novel_forge.modules.content_intelligence import (
     verify_claim,
 )
 from novel_forge.modules.content_authority.codecs import (
+    CONTENT_CODECS,
     author_chapter_plan,
+    author_fixture_waiver_approval,
     author_operator_checklist,
     author_platform_profile,
     author_quality_rubric,
+    author_story_design_review,
     author_style_policy,
 )
 
@@ -91,11 +88,6 @@ CONTENT_DOMAIN_HANDLERS = {
     "longform.recap.enhance": build_enhanced_recap,
     "fact.claim.register": dict,
     "fact.verify": verify_claim,
-    "quality.golden_sample.create": QualityGoldenSample,
-    "quality.human_decision.record": QualityHumanDecision,
-    "quality.calibration.run": evaluate_calibration_run,
-    "quality.calibration.profile.promote": promote_calibration_profile,
-    "quality.calibration.profile.revoke": promote_calibration_profile,
     "quality.profile.v2.create": QualityProfileVersion,
     "quality.judge_evaluation.record": JudgeEvaluation,
     "quality.human_evaluation.record": HumanEvaluation,
@@ -109,5 +101,14 @@ CONTENT_DOMAIN_HANDLERS = {
     "chapter.quality_rubric.author": author_quality_rubric,
     "chapter.platform_profile.author": author_platform_profile,
     "chapter.operator_checklist.author": author_operator_checklist,
+    "chapter.fixture_waiver_approval.author": author_fixture_waiver_approval,
+    "story_design.review.author": author_story_design_review,
     "creative.candidates.generate": build_candidate_pool,
 }
+CONTENT_DOMAIN_HANDLERS.update(
+    {
+        name: codec.bind_and_execute
+        for name, codec in CONTENT_CODECS.items()
+        if name not in CONTENT_DOMAIN_HANDLERS
+    }
+)

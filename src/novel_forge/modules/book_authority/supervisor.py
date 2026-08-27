@@ -54,6 +54,36 @@ class BookProductionSupervisorTick:
     evidence_ref: str = ""
 
 
+def _bounded_chapter_group_range(
+    *, start_chapter: int, target_chapter_count: int, preferred_size: int
+) -> tuple[int, int]:
+    if start_chapter <= 0 or target_chapter_count < start_chapter:
+        raise KernelError(
+            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+            "ChapterGroup horizon must begin inside the bounded Book",
+        )
+    remaining = target_chapter_count - start_chapter + 1
+    if remaining < 3:
+        raise KernelError(
+            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+            "ChapterGroup horizon cannot leave a one- or two-Chapter terminal fragment",
+        )
+    bounded_preference = min(8, max(3, preferred_size))
+    size = min(bounded_preference, remaining)
+    remainder = remaining - size
+    if remainder in {1, 2}:
+        if remaining <= 8:
+            size = remaining
+        else:
+            size -= 3 - remainder
+    if not 3 <= size <= 8 or remaining - size in {1, 2}:
+        raise KernelError(
+            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+            "ChapterGroup horizon cannot satisfy the governed three-to-eight Chapter boundary",
+        )
+    return start_chapter, start_chapter + size - 1
+
+
 class PostgresBookProductionSupervisor:
     """Chooses one business action per Tick; it owns no child Attempt or Provider."""
 
@@ -723,6 +753,23 @@ class PostgresBookProductionSupervisor:
         )
         if generator == "chapter_group_plan.generate":
             accepted_through = int(book["accepted_through_chapter"])
+            volume_range = tuple(
+                int(item) for item in cursor_projection["volume_chapter_range"]
+            )
+            if len(volume_range) != 2 or not (
+                volume_range[0] <= chapter_number <= volume_range[1]
+            ):
+                raise KernelError(
+                    "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+                    "ChapterGroup cursor must belong to the projected Volume",
+                )
+            group_start, group_end = _bounded_chapter_group_range(
+                start_chapter=chapter_number,
+                target_chapter_count=min(
+                    int(book["target_chapter_count"]), volume_range[1]
+                ),
+                preferred_size=int(book["light_recap_cadence"]),
+            )
             parent_state = str(book.get("active_story_state_version_id") or "")
             if accepted_through == 0:
                 parent_state = str(
@@ -736,10 +783,13 @@ class PostgresBookProductionSupervisor:
                     generation=generation,
                     planning_horizon={
                         "level": "CHAPTER_GROUP",
-                        "starts_at_chapter": chapter_number,
+                        "starts_at_chapter": group_start,
+                        "ends_at_chapter": group_end,
+                        "chapter_range": [group_start, group_end],
                         "near_future": True,
                     },
                     desired_transformation={
+                        "chapter_range": [group_start, group_end],
                         "arc_working_set_digest": arc_working_set["working_set_digest"],
                         "selected_arc_contributions": list(
                             arc_working_set["selected_contributions"]
@@ -747,6 +797,7 @@ class PostgresBookProductionSupervisor:
                     },
                     hard_constraints=(
                         "accepted reality is immutable",
+                        "candidate scheduling and realization must exactly cover the frozen ChapterGroup range",
                         "only selected working-set arcs may receive contributions",
                         "preserve POV knowledge and forbidden-change boundaries",
                     ),
@@ -896,6 +947,11 @@ class PostgresBookProductionSupervisor:
         )
         if group:
             fixed["chapter_group_plan"] = group["asset_version_id"]
+            # Planning Authority accepts the frozen ChapterGroupPlan itself as
+            # the source for this role and validates/extracts the unique row
+            # for the requested Chapter.  Reuse that exact Active version so a
+            # stale standalone matrix asset can never outrank the current plan.
+            fixed["chapter_function_matrix_row"] = group["asset_version_id"]
         result: dict[str, str] = {}
         for role in GENERATOR_INPUT_ROLES[generator]:
             value = fixed.get(role) or self._latest_role_asset(book, role)

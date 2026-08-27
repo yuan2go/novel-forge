@@ -42,9 +42,12 @@ from novel_forge.modules.story_planning_runtime.execution import (
 from novel_forge.modules.story_planning_runtime.application import (
     _AUTHORITY_INPUT_ASSET_TYPES,
     _validate_frozen_arc_references,
+    _validate_narrative_search_horizon,
     StoryPlanningGenerationApplication,
 )
-from novel_forge.modules.story_planning_runtime import application as planning_application
+from novel_forge.modules.story_planning_runtime import (
+    application as planning_application,
+)
 
 
 HASH = "sha256:" + "a" * 64
@@ -101,6 +104,40 @@ def _realization_slice(
         "arc_working_set_digest": HASH,
         "proof_asset_version_id": "realization-proof:v1",
         "proof_hash": HASH,
+    }
+
+
+def _chapter_schedule_row(*, chapter_number: int = 1) -> dict[str, object]:
+    return {
+        "chapter_number": chapter_number,
+        "primary_function": "force a witnessed choice",
+        "secondary_functions": ["escalate institutional pressure", "advance trust"],
+        "required_state_delta": {
+            "summary": "the protagonist loses anonymity after choosing publicly"
+        },
+        "required_arc_contributions": [
+            {"arc_plan_version_id": "arc:v1", "contribution": "advance"}
+        ],
+        "promise_action": "advance the promise of accountable agency",
+        "foreshadow_action": "plant the institution's visible response",
+        "reward_action": "deliver one costly discovery",
+        "ending_hook": "the antagonist answers the public choice",
+        "prohibited_outcomes": ["silent reset", "off-page resolution"],
+        "narrative_density": "HIGH",
+        "reader_experience": {
+            "target_emotion": "costly resolve",
+            "reward_mode": "DISCOVERY",
+        },
+        "arc_cadence": [
+            {"arc_plan_version_id": "arc:v1", "action": "ADVANCE"}
+        ],
+        "obligation_actions": [
+            {
+                "obligation_id": "promise:choice",
+                "action": "ADVANCE",
+                "due_chapter": chapter_number + 2,
+            }
+        ],
     }
 
 
@@ -346,6 +383,11 @@ def test_planning_provider_schema_is_codex_strict(
             if contract_type is PlanContractType.CHAPTER
             else None
         ),
+        chapter_schedule_row=(
+            _chapter_schedule_row()
+            if contract_type is PlanContractType.CHAPTER
+            else None
+        ),
     )
 
     def assert_strict(value: object) -> None:
@@ -392,6 +434,29 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
     if contract_type is PlanContractType.CHAPTER:
+        realization_schema = schema["properties"]["narrative_realization_slice"]
+        assert realization_schema["type"] == "object"
+        assert realization_schema["additionalProperties"] is False
+        assert (
+            realization_schema["properties"]["events"]["items"]["properties"][
+                "chapter_number"
+            ]["const"]
+            == 1
+        )
+        assert realization_schema["properties"]["event_ids"]["minItems"] == 1
+        assert realization_schema["properties"]["event_ids"]["maxItems"] == 1
+
+        def assert_no_non_scalar_const(value: object) -> None:
+            if isinstance(value, dict):
+                if "const" in value:
+                    assert not isinstance(value["const"], (dict, list))
+                for child in value.values():
+                    assert_no_non_scalar_const(child)
+            elif isinstance(value, list):
+                for child in value:
+                    assert_no_non_scalar_const(child)
+
+        assert_no_non_scalar_const(realization_schema)
         assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
         assert schema["properties"]["arc_schedule"]["maxItems"] == 1
         assert (
@@ -481,6 +546,7 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         parent_version_id="group:v1",
         arc_plan_version_id="arc:v1",
         narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=_chapter_schedule_row(),
     )
 
     assert volume["properties"]["narrative_segments"]["minItems"] == 1
@@ -530,6 +596,145 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in chapter["required"]
 
     assert "narrative_qualification" not in chapter["properties"]
+
+
+def test_chapter_provider_schema_freezes_active_schedule_row() -> None:
+    schedule = _chapter_schedule_row()
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER,
+        parent_version_id="group:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=schedule,
+    )
+    properties = schema["properties"]
+
+    assert properties["primary_function"]["const"] == schedule["primary_function"]
+    assert properties["secondary_functions"]["minItems"] == 2
+    assert properties["secondary_functions"]["maxItems"] == 2
+    assert properties["secondary_functions"]["items"]["enum"] == (
+        schedule["secondary_functions"]
+    )
+    assert properties["required_state_delta"]["properties"]["summary"][
+        "const"
+    ] == schedule["required_state_delta"]["summary"]
+    assert properties["promise_action"]["const"] == schedule["promise_action"]
+    assert properties["narrative_density"]["const"] == "HIGH"
+    reader = properties["reader_experience"]["properties"]
+    assert reader["target_emotion"]["const"] == "costly resolve"
+    assert reader["reward_mode"]["const"] == "DISCOVERY"
+    assert "const" not in reader["entry_question"]
+    assert "const" not in reader["exit_question"]
+
+
+def test_chapter_schedule_binding_rejects_reworded_scheduling() -> None:
+    schedule = _chapter_schedule_row()
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:1",
+                "parent_version_id": "group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    for field in (
+        "primary_function",
+        "secondary_functions",
+        "required_state_delta",
+        "promise_action",
+        "foreshadow_action",
+        "reward_action",
+        "ending_hook",
+        "prohibited_outcomes",
+        "narrative_density",
+    ):
+        content[field] = deepcopy(schedule[field])
+    content["reader_experience"].update(schedule["reader_experience"])
+
+    planning_application._validate_chapter_schedule_binding(content, schedule)
+    content["promise_action"] = "a plausible paraphrase that changes the schedule"
+
+    with pytest.raises(KernelError, match="CHAPTER_SCHEDULE_BINDING_DRIFT"):
+        planning_application._validate_chapter_schedule_binding(content, schedule)
+
+
+def test_chapter_group_search_schema_freezes_exact_horizon() -> None:
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER_GROUP,
+        parent_version_id="volume:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_search=True,
+        narrative_search_horizon={
+            "level": "CHAPTER_GROUP",
+            "starts_at_chapter": 5,
+            "ends_at_chapter": 8,
+            "chapter_range": [5, 8],
+        },
+    )
+
+    chapter_range = schema["properties"]["chapter_range"]
+    assert "const" not in chapter_range
+    assert chapter_range["minItems"] == chapter_range["maxItems"] == 2
+    assert chapter_range["items"]["enum"] == [5, 8]
+
+    def assert_no_non_scalar_const(value: object) -> None:
+        if isinstance(value, dict):
+            if "const" in value:
+                assert not isinstance(value["const"], (dict, list))
+            for child in value.values():
+                assert_no_non_scalar_const(child)
+        elif isinstance(value, list):
+            for child in value:
+                assert_no_non_scalar_const(child)
+
+    assert_no_non_scalar_const(schema)
+    matrix = schema["properties"]["chapter_function_matrix"]
+    assert matrix["minItems"] == matrix["maxItems"] == 4
+    assert matrix["items"]["properties"]["chapter_number"]["enum"] == [
+        5,
+        6,
+        7,
+        8,
+    ]
+    events = schema["properties"]["narrative_event_chain"]
+    assert events["minItems"] == 4
+    assert events["items"]["properties"]["chapter_number"]["enum"] == [
+        5,
+        6,
+        7,
+        8,
+    ]
+
+
+def test_chapter_realization_schema_merges_repeated_object_scalar_vocabulary() -> None:
+    realization = _realization_slice()
+    realization["events"][0]["state_deltas"].append(
+        {
+            "state_kind": "character_state",
+            "entity_id": "character:protagonist",
+            "from_state": "hesitant",
+            "to_state": "committed",
+        }
+    )
+
+    schema = planning_provider_output_schema(
+        PlanContractType.CHAPTER,
+        parent_version_id="group:v1",
+        arc_plan_version_id="arc:v1",
+        narrative_realization=realization,
+        chapter_schedule_row=_chapter_schedule_row(),
+    )
+
+    state_delta = schema["properties"]["narrative_realization_slice"]["properties"][
+        "events"
+    ]["items"]["properties"]["state_deltas"]
+    assert state_delta["minItems"] == state_delta["maxItems"] == 2
+    assert state_delta["items"]["properties"]["state_kind"]["enum"] == [
+        "relationship_state",
+        "character_state",
+    ]
 
 
 def test_arc_provider_allows_relations_only_with_distinct_frozen_arc_refs() -> None:
@@ -855,6 +1060,7 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         arc_plan_version_id="arc:v1",
         related_arc_plan_version_ids=("arc:v2", "arc:v3"),
         narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=_chapter_schedule_row(),
     )
 
     assert schema["properties"]["arc_schedule"]["maxItems"] == 3
@@ -1611,9 +1817,87 @@ def test_future_chapter_group_search_begins_after_accepted_boundary() -> None:
 
     assert replacement["chapter_range"] == [2, 4]
     assert {
-        int(item["chapter_number"])
-        for item in replacement["narrative_event_chain"]
+        int(item["chapter_number"]) for item in replacement["narrative_event_chain"]
     } == {2, 3, 4}
+
+
+def test_chapter_group_search_command_freezes_complete_request_and_exact_range() -> (
+    None
+):
+    base = _command("chapter_group_plan.generate")
+    horizon = {
+        "level": "CHAPTER_GROUP",
+        "starts_at_chapter": 1,
+        "ends_at_chapter": 4,
+        "chapter_range": [1, 4],
+    }
+    command = StoryPlanningGenerationCommand(
+        project_id=base.project_id,
+        workspace_id=base.workspace_id,
+        book_id=base.book_id,
+        actor_id=base.actor_id,
+        generator_operation_name=base.generator_operation_name,
+        logical_key=base.logical_key,
+        input_versions=base.input_versions,
+        idempotency_key=base.idempotency_key,
+        trace_id=base.trace_id,
+        correlation_id=base.correlation_id,
+        narrative_search_id="search:v1",
+        narrative_search_branch_key="future-1",
+        narrative_search_strategy_directive="advance costly agency",
+        narrative_search_planning_horizon=horizon,
+        narrative_search_desired_transformation={"goal": "advance the Arc"},
+        narrative_search_hard_constraints=("accepted reality is immutable",),
+    )
+    horizon["chapter_range"] = [1, 3]
+
+    assert command.narrative_search_chapter_range == (1, 4)
+    assert command.narrative_search_snapshot["planning_horizon"]["chapter_range"] == [
+        1,
+        4,
+    ]
+    content = planning_fixture_response(
+        "chapter_group_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": command.logical_key,
+                "parent_version_id": "volume:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+                "narrative_search_planning_horizon": dict(
+                    command.narrative_search_planning_horizon or {}
+                ),
+            }
+        },
+    )
+    _validate_narrative_search_horizon(command, content)
+
+    for invalid_range in ([1, 3], [4, 1], [1, 1]):
+        content["chapter_range"] = invalid_range
+        with pytest.raises(
+            KernelError, match="NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH"
+        ):
+            _validate_narrative_search_horizon(command, content)
+
+
+def test_chapter_group_search_command_rejects_identity_without_frozen_request() -> None:
+    base = _command("chapter_group_plan.generate")
+
+    with pytest.raises(ValueError, match="complete frozen request"):
+        StoryPlanningGenerationCommand(
+            project_id=base.project_id,
+            workspace_id=base.workspace_id,
+            book_id=base.book_id,
+            actor_id=base.actor_id,
+            generator_operation_name=base.generator_operation_name,
+            logical_key=base.logical_key,
+            input_versions=base.input_versions,
+            idempotency_key=base.idempotency_key,
+            trace_id=base.trace_id,
+            correlation_id=base.correlation_id,
+            narrative_search_id="search:v1",
+            narrative_search_branch_key="future-1",
+            narrative_search_strategy_directive="advance costly agency",
+        )
 
 
 def _command(generator: str) -> StoryPlanningGenerationCommand:
@@ -1631,9 +1915,7 @@ def _command(generator: str) -> StoryPlanningGenerationCommand:
         trace_id="trace-1",
         correlation_id="correlation-1",
         narrative_realization=(
-            _realization_slice(
-                parent_version_id="asset:chapter_group_plan:v1"
-            )
+            _realization_slice(parent_version_id="asset:chapter_group_plan:v1")
             if generator == "chapter_plan.generate"
             else None
         ),

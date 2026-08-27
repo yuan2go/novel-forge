@@ -156,6 +156,22 @@ class _RetryableMeasuredAdapter(_ModelAdapter):
         )
 
 
+class _RetryOnceMeasuredAdapter(_RetryableMeasuredAdapter):
+    def execute(self, *, stable_idempotency_key, capability, request_payload):  # type: ignore[no-untyped-def]
+        if self.calls == 0:
+            return super().execute(
+                stable_idempotency_key=stable_idempotency_key,
+                capability=capability,
+                request_payload=request_payload,
+            )
+        return _ModelAdapter.execute(
+            self,
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+        )
+
+
 class ChapterModelEffectsPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -509,6 +525,50 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 )
         return tuple(candidates)
 
+    def _seed_intrinsic_semantic_commit_policy(self, project_id: str) -> None:
+        """Reproduce the policy identity frozen by planning semantic review."""
+
+        contract = {
+            "policy_id": "commit:quality-intrinsic-judge:v1",
+            "policy_version": "v1",
+            "candidate_asset_type": "narrative_semantic_evaluation_candidate",
+            "requires_validation_manifest": True,
+            "requires_approval": True,
+            "activation_mode": "DOMAIN_AUTHORITY_ONLY",
+        }
+        content = {"contract": contract}
+        content_hash = "sha256:" + hashlib.sha256(
+            json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        asset_id = f"{project_id}:intrinsic-semantic-commit-policy"
+        asset_version_id = f"{asset_id}:v1"
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO authority_asset(asset_id, project_id, asset_type) "
+                "VALUES (%s, %s, 'execution_commit_policy')",
+                [asset_id, project_id],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                  asset_version_id, asset_id, version_number, lifecycle,
+                  eligibility, governance, content, content_hash, schema_version
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s,
+                          'production-execution-contract.v1')
+                """,
+                [asset_version_id, asset_id, json.dumps(content), content_hash],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_locator(
+                  project_id, logical_ref, category, asset_id,
+                  current_asset_version_id
+                ) VALUES (%s, 'commit:quality-intrinsic-judge:v1',
+                          'production_execution_contracts', %s, %s)
+                """,
+                [project_id, asset_id, asset_version_id],
+            )
+
     def test_success_records_effect_receipt_model_call_and_cost_once(self) -> None:
         request = self._request()
         adapter = _ModelAdapter()
@@ -682,6 +742,52 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(actual_tokens, 160)
             self.assertEqual(str(settled_amount), "0.00420000")
 
+    def test_measured_retry_uses_frozen_operation_envelope_and_settles_both_calls(
+        self,
+    ) -> None:
+        base = self._request()
+        adapter = _RetryOnceMeasuredAdapter()
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=adapter,
+            worker_id="model-retry-budget-worker",
+            max_cost_per_call="0.01",
+            budget_caps={"operation_total": "0.02"},
+        )
+
+        with self.assertRaisesRegex(
+            KernelError,
+            "MODEL_EFFECT_RETRYABLE_OUTPUT_SEMANTIC_FAILURE",
+        ):
+            port.invoke(
+                replace(base, attempt_id="attempt:1"),
+                stage="draft",
+                payload={"prompt": "write"},
+            )
+        result = port.invoke(
+            replace(base, attempt_id="attempt:2"),
+            stage="draft",
+            payload={"prompt": "write"},
+        )
+
+        self.assertEqual(adapter.calls, 2)
+        self.assertIn("promise is public", result.output["text"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*), BOOL_AND(status='SETTLED'),
+                       SUM(settled_amount), SUM(actual_tokens)
+                FROM authority_budget_reservation
+                WHERE operation_id=%s
+                """,
+                [base.operation_id],
+            )
+            count, all_settled, amount, tokens = cursor.fetchone()
+        self.assertEqual(count, 2)
+        self.assertTrue(all_settled)
+        self.assertEqual(str(amount), "0.00840000")
+        self.assertEqual(tokens, 320)
+
     def test_exception_after_send_is_unknown_and_not_blindly_retried(self) -> None:
         request = self._request()
         adapter = _ModelAdapter(fail_after_send=True)
@@ -792,6 +898,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             application = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
+            context_candidates = self._release_evidence(
+                project_id, with_mkaos=True
+            )
+            self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
@@ -803,7 +913,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 correlation_id=identifier("correlation"),
                 application_build_id="chapter-gateway-test",
                 commit_sha="e" * 40,
-                context_candidates=self._release_evidence(project_id, with_mkaos=True),
+                context_candidates=context_candidates,
             )
             result = application.run(chapter_request)
 
@@ -856,7 +966,34 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(counts["execution_context_policy"], 10)
             self.assertEqual(counts["execution_source_policy"], 7)
             self.assertEqual(counts["execution_validation_policy"], 10)
-            self.assertEqual(counts["execution_commit_policy"], 7)
+            # Ten stage-local immutable snapshots coexist with the governing
+            # policy already frozen by planning semantic evaluation.
+            self.assertEqual(counts["execution_commit_policy"], 11)
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_asset_locator
+                WHERE project_id = %s
+                  AND logical_ref LIKE 'production_execution/commit_policies/%%'
+                """,
+                [project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 10)
+            cursor.execute(
+                """
+                SELECT version.content -> 'contract' ->> 'candidate_asset_type'
+                FROM authority_asset_locator AS locator
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id = locator.current_asset_version_id
+                WHERE locator.project_id = %s
+                  AND locator.logical_ref = 'commit:quality-intrinsic-judge:v1'
+                """,
+                [project_id],
+            )
+            self.assertEqual(
+                cursor.fetchone()[0],
+                "narrative_semantic_evaluation_candidate",
+            )
             cursor.execute(
                 """
                 SELECT BOOL_AND(

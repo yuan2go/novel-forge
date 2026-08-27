@@ -339,7 +339,14 @@ def _canon_schema() -> dict[str, Any]:
                 "milestone_ids": {"type": "array", "items": {"type": "string"}},
                 "actual_consequences": {"type": "array", "items": {"type": "string"}},
                 "obligation_ids": {"type": "array", "items": {"type": "string"}},
-                "resolution_evidence": {"type": "array", "items": {"type": "string"}},
+                "resolution_evidence": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "For OBSERVED only: accepted_revision character-span references "
+                        "encoded as chars:<start>-<end>:<summary>; empty otherwise."
+                    ),
+                },
                 "completion_criterion_ids": {
                     "type": "array",
                     "items": {"type": "string"},
@@ -745,7 +752,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v12"
+        "v13"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES

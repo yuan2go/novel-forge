@@ -14,10 +14,22 @@ For every world or character realization reference, copy one complete object
 verbatim from the matching domain list in `realization_reference_contract`.
 `authority_role` names an owning frozen input role; it is not a semantic label.
 Never invent, reinterpret, or combine reference fields from different objects.
+The top-level `realization_level` is the minimum for every realization whose
+`narrative_relevance` is `CURRENT`; the rank is
+`ANCHOR < DEFINED < DETAILED < ACTIVE`. Near-future and future entities may stay
+less realized when the schema permits it.
+
+For `book_plan.generate`, every
+`knowledge_disclosure_obligations.obligation_windows[].obligation_id` must copy
+one exact identity declared in `story_truth_ids`, `mystery_ids`, `promise_ids`,
+or `foreshadow_ids`. Every window must satisfy
+`setup_chapter <= payoff_not_before <= payoff_due_by` inside the bounded Book.
 
 When `repair_context` is present, preserve the immutable source candidate except
 where a recorded failed criterion or repair directive requires a bounded change.
 Resolve every failed criterion explicitly; do not repeat the rejected conflict.
+After that bounded change, re-check the complete structural contract so the
+repair does not merely reveal or introduce a second avoidable invariant failure.
 
 For `arc_plan.generate`, encode progression inside one Arc by making each later
 `arc_segment.entry_state_ref` cite the preceding segment identity or exit-state
@@ -25,11 +37,30 @@ identity. `arc_relations` and `dependencies` describe relations between distinct
 Arc identities only; never create a self-edge to order segments. A singleton
 `cross_volume_scope` means the Arc is intentionally contained in that Volume.
 
+For `chapter_group_plan.generate`, Narrative Search is bounded by the complete
+frozen `narrative_search` request. Copy
+`narrative_search.planning_horizon.chapter_range` exactly into `chapter_range`.
+Produce one ordered `chapter_function_matrix` row for every Chapter in that
+range, and make `narrative_event_chain` cover every Chapter without scheduling
+an event outside it. Treat `desired_transformation`, `hard_constraints`, and the
+branch `strategy_directive` as simultaneous requirements; the branch directive
+cannot relax the frozen range or accepted boundary. In every realization event,
+each `disclosures` string must be copied exactly from that same event's
+`knowledge_boundary.reader_may_learn` list and must not appear in its
+`forbidden_disclosures` list.
+
 For `chapter_plan.generate`, `title` and `premise` are publish-metadata inputs,
 not planning notes. `title` must be a concise reader-facing chapter title.
 `premise` must be a concise reader-facing synopsis of the chapter. Neither may
 contain instructions to plan, draft, review, validate, approve, or activate the
 chapter, nor internal terms such as candidate, future-only, or Authority state.
+The frozen `chapter_function_matrix_row` is the immutable Scheduling contract.
+Copy its `primary_function`, `secondary_functions`, `required_state_delta`,
+`promise_action`, `foreshadow_action`, `reward_action`, `ending_hook`,
+`prohibited_outcomes`, and `narrative_density` exactly. Also copy its
+`reader_experience.target_emotion` and `reader_experience.reward_mode` exactly;
+only the chapter-specific entry/exit questions and non-scheduled operational
+detail may be elaborated.
 `character_participation.known_fact_ids` is the chapter-entry knowledge boundary;
 facts first learned during this chapter stay in `unknown_fact_ids` at entry. A
 Scene's `accessible_knowledge` must be known to its POV character before that

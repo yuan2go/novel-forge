@@ -209,10 +209,93 @@ _BOOK_DESIGN_PROFILES = (
 )
 
 
+_FOUNDATION_QUALIFICATION_PROFILES = {
+    "creative.candidates.generate": (
+        _profile(
+            NarrativeDesignLayer.STORY_INTENT,
+            "creative-foundation-semantic-v1",
+            GENERATOR_CATALOG["creative.candidates.generate"].capability,
+            "topic-development",
+            "CORE_CONFLICT_CLARITY",
+            "READER_FIT",
+            "DIFFERENTIATION",
+            "SERIALIZATION_CAPACITY",
+            "EMOTIONAL_CONTRACT",
+        ),
+    ),
+    "theme.candidates.generate": (
+        _profile(
+            NarrativeDesignLayer.STORY_INTENT,
+            "theme-contract-semantic-v1",
+            GENERATOR_CATALOG["theme.candidates.generate"].capability,
+            "narrative-beat-design",
+            "THEMATIC_QUESTION_CLARITY",
+            "CONFLICT_PRESSURE",
+            "CHARACTER_CHOICE_RELEVANCE",
+            "ENDING_ALIGNMENT",
+            "ANTI_PREACHING_CAPACITY",
+        ),
+    ),
+    "ending.intent.generate": (
+        _profile(
+            NarrativeDesignLayer.STORY_INTENT,
+            "ending-intent-semantic-v1",
+            GENERATOR_CATALOG["ending.intent.generate"].capability,
+            "long-outline",
+            "ENDING_DIRECTION_CLARITY",
+            "PROTAGONIST_COST",
+            "TRANSFORMATION_REACHABILITY",
+            "THEME_CLOSURE_ALIGNMENT",
+            "LONGFORM_REACHABILITY",
+        ),
+    ),
+    "reader.promise.generate": (
+        _profile(
+            NarrativeDesignLayer.STORY_INTENT,
+            "reader-promise-semantic-v1",
+            GENERATOR_CATALOG["reader.promise.generate"].capability,
+            "hot-novel-business-deconstruction",
+            "PROMISE_SPECIFICITY",
+            "GENRE_ALIGNMENT",
+            "REWARD_REACHABILITY",
+            "PAYOFF_EXPECTATION_CLARITY",
+            "SUSTAINABLE_CADENCE",
+        ),
+    ),
+    "world.design.generate": (
+        _profile(
+            NarrativeDesignLayer.STORY_FOUNDATION,
+            "world-foundation-semantic-v1",
+            GENERATOR_CATALOG["world.design.generate"].capability,
+            "worldbuilding",
+            "WORLD_RULE_COHERENCE",
+            "RULE_COST_AND_LIMIT",
+            "CONFLICT_GENERATION_CAPACITY",
+            "CHARACTER_AGENCY_SUPPORT",
+            "LONGFORM_EVOLUTION_CAPACITY",
+        ),
+    ),
+    "character.cast.generate": (
+        _profile(
+            NarrativeDesignLayer.CHARACTER_DEVELOPMENT,
+            "character-cast-semantic-v1",
+            GENERATOR_CATALOG["character.cast.generate"].capability,
+            "character-design",
+            "CHARACTER_AGENCY",
+            "DESIRE_NEED_CONFLICT",
+            "VOICE_DIFFERENTIATION",
+            "RELATIONSHIP_FUNCTION",
+            "ARC_REACHABILITY",
+        ),
+    ),
+}
+
+
 GENERATOR_QUALIFICATION_PROFILES: Mapping[
     str, tuple[NarrativeQualificationProfile, ...]
 ] = MappingProxyType(
     {
+        **_FOUNDATION_QUALIFICATION_PROFILES,
         "book_design.propose": _BOOK_DESIGN_PROFILES,
         "book_plan.generate": (
             _profile(

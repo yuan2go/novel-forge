@@ -134,6 +134,9 @@ from novel_forge.modules.capability_pack_authority.application import (
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
+from novel_forge.modules.chapter_quality_authority.qualification_application import (
+    PostgresQualityQualificationAuthority,
+)
 from novel_forge.modules.authority_security import Principal, TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
@@ -318,6 +321,12 @@ def build_production_execution_composition(
     *,
     env: Mapping[str, str] | None = None,
     provider_registry: ProviderAdapterRegistry | None = None,
+    planning_fixture_factory: (
+        Callable[[str, Mapping[str, object]], dict[str, object]] | None
+    ) = None,
+    chapter_fixture_factory: (
+        Callable[[str, Mapping[str, object]], dict[str, object]] | None
+    ) = None,
 ) -> ProductionExecutionComposition:
     values = os.environ if env is None else env
     if not settings.database_url:
@@ -885,8 +894,10 @@ def build_production_execution_composition(
             "chapter_group_plan.generate",
             "chapter_plan.generate",
         }:
-            return planning_fixture_response(stage, inputs)
-        return default_chapter_fixture_response(stage, inputs)
+            fixture = planning_fixture_factory or planning_fixture_response
+            return fixture(stage, inputs)
+        fixture = chapter_fixture_factory or default_chapter_fixture_response
+        return fixture(stage, inputs)
 
     def execution_session(project_id: str) -> ChapterExecutionGatewaySession:
         contracts = PostgresExecutionContractSource(
@@ -1176,6 +1187,21 @@ def build_capability_pack_authority_query(
         current_release_channel=str(
             values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
         ),
+    )
+
+
+def build_quality_qualification_authority(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> PostgresQualityQualificationAuthority:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Quality Qualification requires PostgreSQL authority")
+    build_id, commit_sha = authority_release_identity(env=env)
+    return PostgresQualityQualificationAuthority(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
     )
 
 
@@ -1902,4 +1928,5 @@ __all__ = [
     "build_story_planning_generation_application",
     "build_capability_pack_authority_application",
     "build_capability_pack_authority_query",
+    "build_quality_qualification_authority",
 ]

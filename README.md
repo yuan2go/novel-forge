@@ -25,6 +25,7 @@ Interactive Legacy API, CLI, Celery, workflow, Agent scheduler, production kerne
 - [Novel production flow](docs/product/novel-production-flow.md)
 - [Local development](docs/operations/local-development.md)
 - [Testing and proof levels](docs/development/testing.md)
+- [Bounded Quality Qualification](docs/operations/quality-qualification.md)
 - [Legacy snapshot migration](docs/operations/legacy-migration.md)
 
 ## Local verification

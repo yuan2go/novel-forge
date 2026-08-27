@@ -23,10 +23,23 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.9.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.8.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.11.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.10.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
+
+CHAPTER_SCHEDULE_FIELDS = (
+    "primary_function",
+    "secondary_functions",
+    "required_state_delta",
+    "promise_action",
+    "foreshadow_action",
+    "reward_action",
+    "ending_hook",
+    "prohibited_outcomes",
+    "narrative_density",
+)
+CHAPTER_READER_SCHEDULE_FIELDS = ("target_emotion", "reward_mode")
 
 NARRATIVE_LOAD_LIMIT_FIELDS = (
     "max_active_arcs",
@@ -133,6 +146,27 @@ GENERATOR_INPUT_ROLES: Mapping[str, tuple[str, ...]] = MappingProxyType(
 )
 
 
+def _json_object_snapshot(
+    value: Mapping[str, Any] | None, label: str
+) -> dict[str, Any]:
+    if value is None:
+        return {}
+    try:
+        encoded = json.dumps(
+            dict(value),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        snapshot = json.loads(encoded)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be a JSON object") from exc
+    if not isinstance(snapshot, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return snapshot
+
+
 @dataclass(frozen=True, slots=True)
 class FrozenPlanningInput:
     role: str
@@ -179,6 +213,9 @@ class StoryPlanningGenerationCommand:
     narrative_search_parent_state_asset_version_id: str = ""
     narrative_search_accepted_through_chapter: int = 0
     narrative_search_strategy_directive: str = ""
+    narrative_search_planning_horizon: Mapping[str, Any] | None = None
+    narrative_search_desired_transformation: Mapping[str, Any] | None = None
+    narrative_search_hard_constraints: tuple[str, ...] = ()
     narrative_realization: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
@@ -218,12 +255,8 @@ class StoryPlanningGenerationCommand:
                 set(realization) != expected_realization_fields
                 or int(realization.get("chapter_number") or 0) <= 0
                 or (
-                    not isinstance(
-                        realization.get("accepted_through_chapter"), int
-                    )
-                    or isinstance(
-                        realization.get("accepted_through_chapter"), bool
-                    )
+                    not isinstance(realization.get("accepted_through_chapter"), int)
+                    or isinstance(realization.get("accepted_through_chapter"), bool)
                     or int(realization["accepted_through_chapter"]) < 0
                 )
                 or any(
@@ -387,6 +420,21 @@ class StoryPlanningGenerationCommand:
             self.narrative_search_branch_key,
             self.narrative_search_strategy_directive,
         )
+        search_horizon = _json_object_snapshot(
+            self.narrative_search_planning_horizon,
+            "Narrative Search planning horizon",
+        )
+        desired_transformation = _json_object_snapshot(
+            self.narrative_search_desired_transformation,
+            "Narrative Search desired transformation",
+        )
+        hard_constraints = tuple(
+            str(item).strip() for item in self.narrative_search_hard_constraints
+        )
+        if any(not item for item in hard_constraints) or len(
+            set(hard_constraints)
+        ) != len(hard_constraints):
+            raise ValueError("Narrative Search hard constraints are invalid")
         if any(search_values) and not all(str(item).strip() for item in search_values):
             raise ValueError("Narrative Search identity and strategy must be complete")
         if self.narrative_search_id:
@@ -407,15 +455,94 @@ class StoryPlanningGenerationCommand:
                 raise ValueError(
                     "continuing Narrative Search requires exact accepted parent state"
                 )
+            if not search_horizon or not desired_transformation or not hard_constraints:
+                raise ValueError(
+                    "Narrative Search command requires its complete frozen request"
+                )
+            if self.generator_operation_name == "chapter_group_plan.generate":
+                chapter_range = search_horizon.get("chapter_range")
+                if (
+                    search_horizon.get("level") != "CHAPTER_GROUP"
+                    or not isinstance(chapter_range, list)
+                    or len(chapter_range) != 2
+                    or any(
+                        not isinstance(item, int) or isinstance(item, bool)
+                        for item in chapter_range
+                    )
+                ):
+                    raise ValueError(
+                        "ChapterGroup Narrative Search requires an exact frozen chapter range"
+                    )
+                start, end = chapter_range
+                if (
+                    start <= self.narrative_search_accepted_through_chapter
+                    or not 3 <= end - start + 1 <= 8
+                    or search_horizon.get("starts_at_chapter") != start
+                    or search_horizon.get("ends_at_chapter") != end
+                ):
+                    raise ValueError(
+                        "ChapterGroup Narrative Search horizon is inconsistent"
+                    )
         elif (
             self.narrative_search_parent_state_asset_version_id
             or self.narrative_search_accepted_through_chapter
+            or search_horizon
+            or desired_transformation
+            or hard_constraints
         ):
-            raise ValueError("Narrative Search parent state cannot be supplied alone")
+            raise ValueError(
+                "Narrative Search request cannot be supplied without identity"
+            )
+        object.__setattr__(
+            self,
+            "narrative_search_planning_horizon",
+            MappingProxyType(search_horizon) if search_horizon else None,
+        )
+        object.__setattr__(
+            self,
+            "narrative_search_desired_transformation",
+            MappingProxyType(desired_transformation)
+            if desired_transformation
+            else None,
+        )
+        object.__setattr__(self, "narrative_search_hard_constraints", hard_constraints)
 
     @property
     def planning_scope(self) -> PlanningScope:
         return GENERATOR_SCOPE[self.generator_operation_name]
+
+    @property
+    def narrative_search_snapshot(self) -> dict[str, Any]:
+        if not self.narrative_search_id:
+            return {}
+        return {
+            "search_id": self.narrative_search_id,
+            "branch_key": self.narrative_search_branch_key,
+            "parent_state_asset_version_id": (
+                self.narrative_search_parent_state_asset_version_id
+            ),
+            "accepted_through_chapter": (
+                self.narrative_search_accepted_through_chapter
+            ),
+            "strategy_directive": self.narrative_search_strategy_directive,
+            "planning_horizon": dict(self.narrative_search_planning_horizon or {}),
+            "desired_transformation": dict(
+                self.narrative_search_desired_transformation or {}
+            ),
+            "hard_constraints": list(self.narrative_search_hard_constraints),
+        }
+
+    @property
+    def narrative_search_chapter_range(self) -> tuple[int, int] | None:
+        if (
+            self.generator_operation_name != "chapter_group_plan.generate"
+            or not self.narrative_search_id
+        ):
+            return None
+        chapter_range = dict(self.narrative_search_planning_horizon or {})[
+            "chapter_range"
+        ]
+        return int(chapter_range[0]), int(chapter_range[1])
 
 
 @dataclass(frozen=True, slots=True)
@@ -989,6 +1116,53 @@ def canonical_hash(value: Any) -> str:
     return _hash(value)
 
 
+def require_chapter_schedule_row(
+    source_content: Mapping[str, Any], *, chapter_number: int
+) -> dict[str, Any]:
+    """Extract one immutable Chapter row from its frozen Scheduling source."""
+
+    if chapter_number <= 0:
+        raise ValueError("Chapter schedule binding requires a positive Chapter number")
+    matrix = source_content.get("chapter_function_matrix")
+    if isinstance(matrix, list):
+        candidates = [
+            item
+            for item in matrix
+            if isinstance(item, Mapping)
+            and item.get("chapter_number") == chapter_number
+            and not isinstance(item.get("chapter_number"), bool)
+        ]
+    else:
+        nested = source_content.get("chapter_function_matrix_row")
+        candidate = nested if isinstance(nested, Mapping) else source_content
+        candidates = (
+            [candidate]
+            if candidate.get("chapter_number") == chapter_number
+            and not isinstance(candidate.get("chapter_number"), bool)
+            else []
+        )
+    if len(candidates) != 1:
+        raise ValueError(
+            "Scheduling source must contain exactly one row for the requested Chapter"
+        )
+    row = dict(candidates[0])
+    missing = [field for field in CHAPTER_SCHEDULE_FIELDS if field not in row]
+    reader = row.get("reader_experience")
+    if not isinstance(reader, Mapping):
+        missing.append("reader_experience")
+    else:
+        missing.extend(
+            f"reader_experience.{field}"
+            for field in CHAPTER_READER_SCHEDULE_FIELDS
+            if field not in reader
+        )
+    if missing:
+        raise ValueError(
+            "Chapter schedule row is incomplete: " + ", ".join(sorted(missing))
+        )
+    return row
+
+
 def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
     planning_roles = {
         role
@@ -1022,6 +1196,8 @@ def _hash(value: Any) -> str:
 
 
 __all__ = [
+    "CHAPTER_READER_SCHEDULE_FIELDS",
+    "CHAPTER_SCHEDULE_FIELDS",
     "GENERATOR_INPUT_ROLES",
     "GENERATOR_SCOPE",
     "FrozenPlanningInput",
@@ -1035,4 +1211,5 @@ __all__ = [
     "StoryPlanningGenerationCommand",
     "build_planning_constraint_envelope",
     "canonical_hash",
+    "require_chapter_schedule_row",
 ]

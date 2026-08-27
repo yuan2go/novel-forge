@@ -1,4 +1,5 @@
 """Transactional repository for semantic Story Design asset authority."""
+
 from __future__ import annotations
 
 import hashlib
@@ -296,6 +297,18 @@ class StoryDesignRepository:
                 raise KernelError(
                     "STORY_DESIGN_LEGACY_IMPORT_OPERATION_REQUIRED",
                     "legacy imports require an Authority Operation reference",
+                )
+        elif source_kind == "OPERATOR_AUTHORED":
+            operation_id = str(evidence.get("operation_id") or "")
+            if (
+                not operation_id
+                or operation_id != str(evidence.get("authoring_operation_id") or "")
+                or evidence.get("operator_authored") is not True
+                or evidence.get("provider_generated") is not False
+            ):
+                raise KernelError(
+                    "STORY_DESIGN_OPERATOR_AUTHORING_EVIDENCE_REQUIRED",
+                    "operator-authored candidates require exact non-Provider Authority lineage",
                 )
         else:
             raise KernelError(

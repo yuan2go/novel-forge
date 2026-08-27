@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
+from novel_forge.storage.migrations import validate_migration_chain
 from novel_forge.storage.migrations.versions import (
     v20260825_0100_hierarchy_closure as migration,
+    v20260826_0101_quality_qualification as successor,
 )
 
 
-def test_hierarchy_closure_extends_one_forward_head() -> None:
+def test_hierarchy_closure_extends_0099_and_has_one_forward_successor() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260825_0099_creative_engineering_convergence"
+    assert successor.DOWN_REVISION == migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert migration.DOWNGRADE_STATEMENTS == []
 

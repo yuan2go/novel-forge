@@ -36,7 +36,8 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v3"
+STORY_PLANNING_PROMPT_VERSION = "v6"
+NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -394,6 +395,7 @@ def build_narrative_evaluation_pack_profile(
         ),
         input_schema_ref="schema:narrative-semantic-evaluation-pack-input:v1",
         output_schema_ref="schema:narrative-semantic-evaluation-pack-output:v1",
+        system_version=NARRATIVE_EVALUATION_PROMPT_VERSION,
     )
     _update_policy_artifacts(manifest, artifacts)
     _append_capability_schemas(artifacts, "quality.intrinsic.judge")
@@ -644,6 +646,7 @@ def _require_hash(value: str) -> None:
 __all__ = [
     "LongformCapabilityPackProfile",
     "STORY_PLANNING_PROMPT_VERSION",
+    "NARRATIVE_EVALUATION_PROMPT_VERSION",
     "build_narrative_evaluation_pack_profile",
     "build_reader_outcome_pack_profile",
     "build_story_planning_pack_profile",

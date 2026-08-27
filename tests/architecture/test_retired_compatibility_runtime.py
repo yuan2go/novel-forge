@@ -55,3 +55,63 @@ def test_authority_api_has_one_production_composition_profile() -> None:
         "NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE",
     ):
         assert retired_marker not in combined
+
+
+def test_obsolete_quality_and_unbounded_campaign_surfaces_are_absent() -> None:
+    retired_paths = (
+        "src/novel_forge/evaluation/quality.py",
+        "src/novel_forge/modules/runtime_proof/longform_campaign.py",
+        "scripts/run_longform_narrative_campaign.py",
+        "scripts/run_long_chain_to_completion.py",
+        "config/proof_campaigns/longform_narrative_v1.json",
+        "config/proof_campaigns/longform_narrative_v2.json",
+        "tests/unit/test_longform_narrative_campaign.py",
+        "tests/unit/test_longform_narrative_campaign_runner.py",
+        "web/admin/app/quality-eval-v2/page.tsx",
+        "web/admin/app/long-chain-proof/page.tsx",
+    )
+    for relative in retired_paths:
+        assert not (ROOT / relative).exists(), relative
+    legacy_generated = ROOT / "generated/longchain-webnovel"
+    assert not legacy_generated.exists() or not any(
+        path.is_file() for path in legacy_generated.rglob("*")
+    )
+
+    current_surfaces = "\n".join(
+        (
+            _read("src/novel_forge/modules/runtime_proof/__init__.py"),
+            _read("src/novel_forge/api/models.py"),
+            _read("web/admin/app/shared/navigation.tsx"),
+            _read(
+                "web/admin/app/features/content-intelligence/"
+                "ContentIntelligencePages.tsx"
+            ),
+        )
+    )
+    for retired_marker in (
+        "LongformCampaignContract",
+        "LongChainProofRunRequest",
+        "ProviderQualityJudgeRequest",
+        "QualitySuiteRunRequest",
+        "/quality-eval-v2",
+        "/long-chain-proof",
+        "deterministic_50",
+        "mock_100",
+        "state_only_300",
+    ):
+        assert retired_marker not in current_surfaces
+
+    current_quality_authority = "\n".join(
+        (
+            _read("src/novel_forge/modules/content_authority/codecs.py"),
+            _read("src/novel_forge/modules/content_authority/handlers.py"),
+        )
+    )
+    for retired_operation in (
+        "quality.golden_sample.create",
+        "quality.human_decision.record",
+        "quality.calibration.run",
+        "quality.calibration.profile.promote",
+        "quality.calibration.profile.revoke",
+    ):
+        assert retired_operation not in current_quality_authority

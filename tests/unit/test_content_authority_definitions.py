@@ -11,9 +11,38 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
         definitions = content_operation_definitions(
             application_build_id="test", commit_sha="a" * 40
         )
-        self.assertEqual(len(definitions), 44)
-        self.assertEqual(
-            {item["name"] for item in definitions}, set(CONTENT_DOMAIN_HANDLERS)
+        names = {item["name"] for item in definitions}
+        self.assertEqual(names, set(CONTENT_DOMAIN_HANDLERS))
+        self.assertTrue(
+            {
+                "book.production_profile.author",
+                "book.previous_volume_outcome.author",
+                "book.previous_chapter_group_outcome.author",
+                "book.previous_chapter_outcome.author",
+                "book.arc_portfolio.author",
+                "book.ending_reachability.author",
+                "book.character_arc_portfolio.author",
+                "book.conflict_state.author",
+                "book.foreshadowing_ledger.author",
+                "book.reader_segment.author",
+                "book.reader_contract.author",
+                "book.reader_state.author",
+                "book.character_state.author",
+                "book.foreshadowing_state.author",
+                "book.quality_trend.author",
+                "book.reward_ledger.author",
+                "book.promise_ledger.author",
+                "book.initial_story_state.author",
+                "book.initial_canon.author",
+                "story_design.creative_foundation.author",
+                "story_design.theme_contract.author",
+                "story_design.ending_intent.author",
+                "story_design.reader_promise.author",
+                "story_design.world_bible.author",
+                "story_design.character_cast.author",
+                "story_design.review.author",
+                "chapter.fixture_waiver_approval.author",
+            }.issubset(names)
         )
         for item in definitions:
             self.assertTrue(callable(CONTENT_DOMAIN_HANDLERS[item["name"]]))

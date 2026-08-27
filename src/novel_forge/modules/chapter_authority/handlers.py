@@ -1373,6 +1373,11 @@ class _QualityGroupHandler:
                         "target_asset_version_id": revision.asset_version_id,
                         "calibration_status": "PROVIDER_UNCALIBRATED",
                         "provider_verified": True,
+                        # Scripted Provider output is useful only for exercising
+                        # the internal protocol.  Quality Authority will turn a
+                        # passing result into an explicit fixture waiver only
+                        # when a separately persisted scoped approval exists.
+                        "fixture_protocol_only": not generated.real_model_call,
                     }
                 )
             context_content["context_segments"] = [

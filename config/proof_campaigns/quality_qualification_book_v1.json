@@ -1,0 +1,475 @@
+{
+  "schema_version": "novel-forge.bounded-quality-book-contract.v1",
+  "contract_version": 1,
+  "book": {
+    "title": "The Cartographer of Witnesses",
+    "language": "zh-CN",
+    "target_chapters": 8,
+    "production_profile_id": "bounded-quality-zh-v1",
+    "arc_logical_keys": [
+      "arc:witnessed-truth"
+    ]
+  },
+  "foundation": {
+    "selection_policy": "CAUSAL_COHERENCE_UNDER_FROZEN_OPERATOR_COMPARISON",
+    "layers": [
+      {
+        "role": "CREATIVE_FOUNDATION",
+        "logical_key": "foundation:creative:selected:quality-v1",
+        "selection_reason": "The selected engine turns every discovery into a public choice with an irreversible personal cost.",
+        "candidate_payload": {
+          "objective": "建立一部以见证、地图和公共责任为因果发动机的八章原创悬疑幻想小说。",
+          "target_reader": "偏好强因果、角色选择与连续回报的成年类型小说读者",
+          "why_worth_writing": "真相只有被他人共同承担时才具有公共意义。",
+          "genre": "speculative mystery",
+          "subgenre": "civic cartographic mystery",
+          "core_desire": "让被地图抹去的人重新获得可被共同见证的位置",
+          "core_fear": "公开不完整的真相会再次伤害需要保护的人",
+          "core_conflict": "制图师必须在保护单个见证者与阻止整片街区被制度性抹除之间持续选择",
+          "narrative_engine": "每一次地图异常都要求取得新见证、承担公开代价，并引发档案署的针对性反制",
+          "differentiation": "被共同见证的道路会在城市中真实出现，撤回见证则会使道路重新消失",
+          "emotional_contract": "发现带来希望，但希望只有通过可信而昂贵的共同承担才能保留",
+          "serialization_potential": "八章内完成一条主见证弧，同时每个街区秘密形成递进案件与回报"
+        },
+        "review_assertions": {
+          "CORE_CONFLICT_CLARITY": "主角保护见证者与阻止公共抹除的目标正面冲突，选择不能同时满足双方。",
+          "READER_FIT": "因果谜题、行动选择和连续回报与目标成年类型读者的阅读预期一致。",
+          "DIFFERENTIATION": "共同见证改变道路可达性的机制同时驱动世界规则、调查和角色代价。",
+          "SERIALIZATION_CAPACITY": "每个地图异常都能生成调查、公开选择、机构反制和阶段回报的可重复因果循环。",
+          "EMOTIONAL_CONTRACT": "希望始终伴随公开责任，情绪收益与角色付出的代价绑定。"
+        }
+      },
+      {
+        "role": "THEME_CONTRACT",
+        "logical_key": "foundation:theme:selected:quality-v1",
+        "selection_reason": "The thematic question remains answerable only through character choices and the ending direction.",
+        "candidate_payload": {
+          "objective": "把公共真相与照护责任的矛盾约束到角色选择和结局，而不是说教。",
+          "thematic_question": "当公开真相会伤害具体的人时，共同见证怎样才仍然是负责任的？",
+          "genre": "speculative mystery"
+        },
+        "review_assertions": {
+          "THEMATIC_QUESTION_CLARITY": "主题问题明确包含真相公开与具体伤害之间不可回避的张力。",
+          "CONFLICT_PRESSURE": "每次是否公开见证的决定都会使主题压力进入当前冲突。",
+          "CHARACTER_CHOICE_RELEVANCE": "主题只能通过主角和见证者承担或拒绝责任的行动得到回答。",
+          "ENDING_ALIGNMENT": "共同保管取代单人控制的结局方向能够回应主题而不消除代价。",
+          "ANTI_PREACHING_CAPACITY": "不同角色拥有合理但冲突的安全观，允许行动后果而非作者陈述完成论证。"
+        }
+      },
+      {
+        "role": "ENDING_INTENT",
+        "logical_key": "foundation:ending:selected:quality-v1",
+        "selection_reason": "The ending requires accumulated witness trust and a costly transfer of control rather than a late rescue.",
+        "candidate_payload": {
+          "objective": "冻结一个由八章累积选择可达、但不提前声明为事实的结局方向。",
+          "ending_direction": "主角放弃独占的母图密钥，让分散见证者共同保管城市的可达地图",
+          "protagonist_cost": "她失去唯一能证明自身清白的私人控制权，并接受不确定性由共同程序处理",
+          "genre": "speculative mystery"
+        },
+        "review_assertions": {
+          "ENDING_DIRECTION_CLARITY": "结局方向明确为从单人地图控制转向分散见证共同保管。",
+          "PROTAGONIST_COST": "主角必须交出可保护自身的独占密钥，结局收益包含不可逆个人损失。",
+          "TRANSFORMATION_REACHABILITY": "从隐瞒不确定性到共享责任的每一阶段都可由连续章节选择推进。",
+          "THEME_CLOSURE_ALIGNMENT": "共同程序保留真相与照护之间的持续张力，并直接回应主题问题。",
+          "LONGFORM_REACHABILITY": "结局依赖见证网络、机构压力和信任累积，不依赖最后一章新增救援机制。"
+        }
+      },
+      {
+        "role": "READER_PROMISE",
+        "logical_key": "foundation:reader-promise:selected:quality-v1",
+        "selection_reason": "The promise commits to visible discoveries, costly choices, escalating counterpressure, and earned payoffs.",
+        "candidate_payload": {
+          "objective": "把八章阅读承诺约束为发现、代价、反制和回报的连续节奏。",
+          "reader_promise": "每章揭示一个可验证的地图异常，迫使主角作出有代价的公开选择，并使档案署反制升级",
+          "genre": "speculative mystery"
+        },
+        "review_assertions": {
+          "PROMISE_SPECIFICITY": "承诺明确包含每章异常、公开选择、角色代价和对手反制四个可观察结果。",
+          "GENRE_ALIGNMENT": "证据调查与规则型城市幻想共同支持悬疑和幻想类型体验。",
+          "REWARD_REACHABILITY": "线索验证、道路恢复和见证者信任可在八章内形成多层即时与阶段回报。",
+          "PAYOFF_EXPECTATION_CLARITY": "读者可预期被抹除街区、母图密钥和共同见证机制得到因果性回收。",
+          "SUSTAINABLE_CADENCE": "发现与回报不要求每章终局升级，可在调查、关系和制度冲突之间轮换。"
+        }
+      },
+      {
+        "role": "WORLD_BIBLE",
+        "logical_key": "foundation:world:selected:quality-v1",
+        "selection_reason": "The world rule converts testimony into bounded physical access and gives the antagonist procedural counterplay.",
+        "candidate_payload": {
+          "objective": "建立能持续产生调查、选择、代价与制度反制的见证地图规则。",
+          "rules": [
+            {
+              "rule": "一条道路只有在两名互不隶属的见证者对同一地点作出一致陈述后，才会在城市中保持可达七天",
+              "cost": "见证者的姓名与责任会被写入公共边注，无法匿名撤销后果",
+              "exception": "任何一名见证者可公开撤回，但道路会立即开始消失",
+              "consequence": "档案署能通过隔离、收买或制造陈述差异来阻断道路，而不能无痕改写已接受历史",
+              "narrative_function": "把知识转化为有代价的角色行动和可见世界变化"
+            },
+            {
+              "rule": "母图只能记录已经发生的共同见证，不能把计划、愿望或推测变成现实",
+              "cost": "记录者必须保留互相矛盾的陈述及其来源",
+              "exception": "法院封存可以延迟公开，但不能删除已签署的见证链",
+              "consequence": "主角无法靠绘图直接解决冲突，只能组织可信见证",
+              "narrative_function": "保护已接受历史并维持人物能动性"
+            }
+          ]
+        },
+        "review_assertions": {
+          "WORLD_RULE_COHERENCE": "两条规则都区分共同见证、记录和现实变化，并禁止计划直接成为事实。",
+          "RULE_COST_AND_LIMIT": "七天期限、实名责任、可撤回性与来源保留共同限制规则能力。",
+          "CONFLICT_GENERATION_CAPACITY": "对手可隔离、收买或制造陈述分歧，规则自然生成持续冲突。",
+          "CHARACTER_AGENCY_SUPPORT": "道路变化依赖角色组织并承担见证，而非主角无成本施法。",
+          "LONGFORM_EVOLUTION_CAPACITY": "不同街区、见证组合和制度程序可以扩展，而核心规则保持稳定。"
+        }
+      },
+      {
+        "role": "CHARACTER_CAST",
+        "logical_key": "foundation:characters:selected:quality-v1",
+        "selection_reason": "The cast assigns independent goals, leverage, voices, and relationship functions to both sides of the witness conflict.",
+        "candidate_payload": {
+          "objective": "建立能主动推动见证弧、产生可信分歧并承受变化的核心角色组。",
+          "characters": [
+            {
+              "character_id": "lin-yao",
+              "desire": "恢复被抹去的雾桥街并证明导师没有伪造地图",
+              "need": "承认不确定性并把地图控制权交给共同程序",
+              "fear": "一次不完整公开会让见证者再次被制度报复",
+              "wound": "她少年时的一次独断标注使救援队走入已消失道路",
+              "false_belief": "只有她掌握全部证据时公开才是安全的",
+              "values": ["truth", "care", "accountability"],
+              "moral_boundary": "不伪造、不替见证者签名",
+              "agency": "选择何时公开异常、邀请谁共同见证并承担签名责任",
+              "capability": "能从纸张纤维与街道回声判断地图修改顺序",
+              "weakness": "把隐瞒不确定性误认为保护",
+              "voice": "精确克制，受到质疑时会用程序术语拉开距离",
+              "secret": "她私藏着母图密钥的半枚印章",
+              "relationship_function": "在与独立见证者的冲突中学习共享责任",
+              "arc_direction": "从独占确定性走向可审计的共同保管"
+            },
+            {
+              "character_id": "qiao-sheng",
+              "desire": "让雾桥街仍然活着的居民获得法律位置",
+              "need": "把个人怨恨转化为可被他人检验的证词",
+              "fear": "再次相信制图师会让居民名单落入档案署",
+              "wound": "妹妹在道路消失时被官方记录为从未存在",
+              "false_belief": "只有拒绝一切制度记录才能保护幸存者",
+              "values": ["loyalty", "dignity", "memory"],
+              "moral_boundary": "不以无辜见证者交换街区安全",
+              "agency": "决定是否签署、撤回或公开质疑主角的地图",
+              "capability": "记得雾桥街每天的声音与行走节奏",
+              "weakness": "把所有程序合作视为背叛",
+              "voice": "具体、讽刺，拒绝抽象的善意承诺",
+              "secret": "他曾为保护居民主动撤回过一次关键见证",
+              "relationship_function": "迫使主角证明共享程序不是另一种控制",
+              "arc_direction": "从拒绝记录走向有条件的共同见证"
+            },
+            {
+              "character_id": "director-xu",
+              "desire": "维持城市道路的单一官方版本并避免大规模责任追索",
+              "need": "承认稳定若依赖删除人，就不是公共安全",
+              "fear": "多重见证会使城市在冲突地图间崩解",
+              "wound": "旧城区地图争议曾造成一次致命疏散失败",
+              "false_belief": "无争议的错误记录优于可审计的不确定性",
+              "values": ["order", "continuity", "institutional survival"],
+              "moral_boundary": "不亲自伪造签名，但允许隔离证人",
+              "agency": "调动封存令、审查程序与见证者保护名额施压",
+              "capability": "掌握档案署的道路认证和责任分配程序",
+              "weakness": "把人视为系统稳定变量",
+              "voice": "温和、完整，始终把威胁包装成风险管理",
+              "secret": "她保存着证明雾桥街曾被正式承认的旧审批链",
+              "relationship_function": "以合理安全论证持续反制主角的公开选择",
+              "arc_direction": "从程序性抹除走向被迫公开责任链"
+            }
+          ]
+        },
+        "review_assertions": {
+          "CHARACTER_AGENCY": "三名核心角色都拥有可改变见证链的独立选择、资源与拒绝权。",
+          "DESIRE_NEED_CONFLICT": "每人的即时欲望都与其必须学习的责任方式形成持续内在冲突。",
+          "VOICE_DIFFERENTIATION": "精确程序化、具体讽刺和温和风险管理形成可辨识的对话行为。",
+          "RELATIONSHIP_FUNCTION": "主角、独立见证者和档案署负责人构成互相制约的行动三角。",
+          "ARC_REACHABILITY": "角色变化可由签署、撤回、公开和交出控制权等可观察决定逐步实现。"
+        }
+      }
+    ],
+    "creative_alternate": {
+      "role": "CREATIVE_FOUNDATION",
+      "logical_key": "foundation:creative:alternate:quality-v1",
+      "selection_reason": "Retained as a qualified comparison candidate but not selected because its mystery engine has weaker antagonist counterplay.",
+      "candidate_payload": {
+        "objective": "建立一部围绕失踪道路与私人记忆修复的八章原创幻想悬疑小说。",
+        "target_reader": "偏好氛围谜题与情感记忆的成年类型小说读者",
+        "why_worth_writing": "私人记忆能够抵抗城市遗忘。",
+        "genre": "speculative mystery",
+        "subgenre": "memory cartography mystery",
+        "core_desire": "找回一条只存在于私人记忆中的道路",
+        "core_fear": "记忆被证实错误后将失去最后的归属",
+        "core_conflict": "制图师在官方地图与个人记忆之间寻找可验证证据",
+        "narrative_engine": "每个记忆碎片指向一处城市异常",
+        "differentiation": "道路由相互印证的记忆短暂显现",
+        "emotional_contract": "怀旧逐渐转化为面对错误记忆的勇气",
+        "serialization_potential": "每处异常对应一个记忆案件"
+      },
+      "review_assertions": {
+        "CORE_CONFLICT_CLARITY": "官方地图与私人记忆的证据冲突明确，并要求主角判断何者可验证。",
+        "READER_FIT": "氛围谜题和情感记忆符合目标读者，但行动压力弱于入选方案。",
+        "DIFFERENTIATION": "相互印证的记忆使道路显现，机制具有独立识别度。",
+        "SERIALIZATION_CAPACITY": "多个记忆案件可支持连续章节，但对手反制的升级空间较少。",
+        "EMOTIONAL_CONTRACT": "怀旧与承认错误记忆之间存在清晰的情绪运动。"
+      }
+    }
+  },
+  "book_design": {
+    "book_invariants": [
+      "只有 accepted Chapter evidence 能改变实际 Canon 与 Story State",
+      "计划、Reader proxy 和 future intent 不能被叙述为已经发生",
+      "每个核心发现必须引发角色选择、可见代价或对手反制",
+      "档案署不能无痕改写已接受历史"
+    ],
+    "cross_layer_synthesis": [
+      {
+        "synthesis_id": "witnessed-road-choice",
+        "source_roles": [
+          "CREATIVE_FOUNDATION",
+          "THEME_CONTRACT",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST"
+        ],
+        "narrative_function": "把地图发现转化为可审计的共同见证选择",
+        "constraint": "任何道路恢复都必须由角色承担签名、公开或撤回的代价",
+        "downstream_scope": "BOOK"
+      },
+      {
+        "synthesis_id": "shared-custody-ending",
+        "source_roles": [
+          "ENDING_INTENT",
+          "READER_PROMISE",
+          "CHARACTER_CAST"
+        ],
+        "narrative_function": "让阶段回报逐步建设共同保管结局的可达性",
+        "constraint": "结局不能依赖最后时刻新增权力或无代价和解",
+        "downstream_scope": "BOOK"
+      }
+    ],
+    "narrative_dna": {
+      "core_question": "谁有权决定一段共同见证何时成为公共真相？",
+      "recurring_choice": "独占确定性或可审计的共同承担",
+      "cost_logic": "每次保留道路都暴露一名见证者和一项具体责任",
+      "distinctive_mechanism": "相互独立的共同见证改变城市道路的物理可达性",
+      "emotional_contract": "发现带来希望，但希望必须通过可信而昂贵的信任保留"
+    }
+  },
+  "bootstrap_inputs": {
+    "book.production_profile.author": {
+      "type": "production_profile",
+      "profile_id": "bounded-quality-zh-v1",
+      "target_chapter_count": 8,
+      "language_contract": {
+        "language": "zh-CN",
+        "script": "Hans",
+        "prose_locale": "mainland-contemporary"
+      },
+      "authority_boundary": "FUTURE_INTENT",
+      "safe_summary": "八章中文 bounded validation production profile。",
+      "structured_facts": [
+        {"key": "target_chapter_count", "value": 8},
+        {"key": "chapter_length", "value": {"minimum": 1800, "target": 2600, "maximum": 3800}},
+        {"key": "release_scope", "value": "INTERNAL_BLIND_EVALUATION_ONLY"}
+      ]
+    },
+    "book.previous_volume_outcome.author": {
+      "type": "previous_volume_outcome",
+      "contract_version": "previous-volume-outcome-v1",
+      "status": "NO_PREVIOUS_VOLUME",
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "本 bounded slice 从第一卷第一章开始，没有前卷实际结果。",
+      "structured_facts": [{"key": "accepted_previous_volume", "value": false}]
+    },
+    "book.previous_chapter_group_outcome.author": {
+      "type": "previous_chapter_group_outcome",
+      "contract_version": "previous-chapter-group-outcome-v1",
+      "status": "NO_PREVIOUS_CHAPTER_GROUP",
+      "actual_outcomes": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter Group 1 前没有已接受的前序 ChapterGroup 结果。",
+      "structured_facts": [{"key": "accepted_previous_chapter_group", "value": false}]
+    },
+    "book.previous_chapter_outcome.author": {
+      "type": "previous_chapter_outcome",
+      "contract_version": "previous-chapter-outcome-v1",
+      "status": "NO_PREVIOUS_CHAPTER",
+      "actual_outcomes": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有已接受的前序 Chapter 结果。",
+      "structured_facts": [{"key": "accepted_previous_chapter", "value": false}]
+    },
+    "book.arc_portfolio.author": {
+      "type": "arc_portfolio",
+      "portfolio_id": "arc-portfolio:witnessed-truth-v1",
+      "contract_version": "arc-portfolio-v1",
+      "authority_boundary": "FUTURE_INTENT",
+      "safe_summary": "计划评估一条八章见证主弧，不声明其已经发生。",
+      "structured_facts": [{"key": "planned_primary_arc", "value": "从独占地图控制到共同见证保管"}]
+    },
+    "book.ending_reachability.author": {
+      "type": "ending_reachability",
+      "contract_version": "ending-reachability-v1",
+      "status": "PLANNED_UNPROVEN",
+      "authority_boundary": "ADVISORY",
+      "safe_summary": "共同保管结局仅是当前可达性目标。",
+      "structured_facts": [{"key": "required_progress", "value": ["建立见证信任", "公开旧审批链", "交出母图密钥"]}]
+    },
+    "book.character_arc_portfolio.author": {
+      "type": "character_arc_portfolio",
+      "portfolio_id": "character-arcs:witness-network-v1",
+      "contract_version": "character-arc-portfolio-v1",
+      "authority_boundary": "FUTURE_INTENT",
+      "safe_summary": "角色变化方向是计划约束，不是当前实际状态。",
+      "structured_facts": [{"key": "planned_arcs", "value": ["林遥：独占确定性到共同保管", "乔生：拒绝记录到有条件见证", "徐主任：稳定叙事到公开责任链"]}]
+    },
+    "book.conflict_state.author": {
+      "type": "conflict_state",
+      "contract_version": "conflict-state-v1",
+      "active_conflicts": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前不存在 accepted actual conflict。",
+      "structured_facts": [{"key": "future_conflict_seed", "value": "共同见证与档案署单一版本之间的制度冲突"}]
+    },
+    "book.foreshadowing_ledger.author": {
+      "type": "foreshadowing_ledger",
+      "contract_version": "foreshadowing-ledger-v1",
+      "entries": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有已种下的 actual foreshadowing。",
+      "structured_facts": [{"key": "planned_setup_domains", "value": ["半枚母图印章", "旧审批链", "撤回见证"]}]
+    },
+    "book.reader_segment.author": {
+      "type": "reader_segment_profile",
+      "profile_id": "reader:causal-mystery-adult-v1",
+      "profile_version": "reader-outcome-v3",
+      "authority_boundary": "ADVISORY",
+      "safe_summary": "面向重视因果推进、角色能动性和兑现的成年类型读者代理。",
+      "structured_facts": [{"key": "reader_values", "value": ["causal clarity", "credible agency", "earned payoff", "desire to continue"]}]
+    },
+    "book.reader_contract.author": {
+      "type": "reader_contract",
+      "profile_id": "reader:causal-mystery-adult-v1",
+      "profile_version": "reader-outcome-v3",
+      "authority_boundary": "ADVISORY",
+      "safe_summary": "Reader proxy 仅提供 advisory outcome，不修改 Canon。",
+      "structured_facts": [{"key": "tracked_outcomes", "value": ["continue_intent", "curiosity", "satisfaction", "confusion", "trust", "character_attachment", "antagonist_pressure", "promise_expectation", "payoff_satisfaction", "drop_risk", "repetition_fatigue"]}]
+    },
+    "book.reader_state.author": {
+      "type": "reader_state",
+      "contract_version": "reader-state-genesis-v1",
+      "profile_version": "reader-outcome-v3",
+      "status": "NOT_OBSERVED",
+      "accepted_through_chapter": 0,
+      "observations": [],
+      "evidence_class": "READER_PROXY_ADVISORY",
+      "authority_boundary": "ADVISORY",
+      "safe_summary": "Chapter 1 前没有 Reader proxy observation；该状态不构成 Narrative Truth。",
+      "structured_facts": [{"key": "reader_outcome_status", "value": "NOT_YET_OBSERVED"}]
+    },
+    "book.character_state.author": {
+      "type": "character_state_snapshot",
+      "contract_version": "character-state-v1",
+      "entries": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有角色实际变化。",
+      "structured_facts": [{"key": "actual_state", "value": "EMPTY_GENESIS"}]
+    },
+    "book.foreshadowing_state.author": {
+      "type": "foreshadow_snapshot",
+      "contract_version": "foreshadow-state-v1",
+      "entries": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有 accepted foreshadow state。",
+      "structured_facts": [{"key": "actual_state", "value": "EMPTY_GENESIS"}]
+    },
+    "book.quality_trend.author": {
+      "type": "quality_trend",
+      "contract_version": "quality-trend-v1",
+      "status": "NO_ACCEPTED_CHAPTERS",
+      "authority_boundary": "ADVISORY",
+      "safe_summary": "尚无章节，因此没有可推断的质量趋势。",
+      "structured_facts": [{"key": "evidence_status", "value": "NOT_YET_OBSERVED"}]
+    },
+    "book.reward_ledger.author": {
+      "type": "reward_ledger_snapshot",
+      "contract_version": "reward-ledger-v1",
+      "entries": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有已兑现的 reader reward。",
+      "structured_facts": [{"key": "actual_rewards", "value": []}]
+    },
+    "book.promise_ledger.author": {
+      "type": "promise_ledger_snapshot",
+      "contract_version": "promise-ledger-v1",
+      "entries": [],
+      "accepted_through_chapter": 0,
+      "authority_boundary": "PRE_CHAPTER_0",
+      "safe_summary": "Chapter 1 前没有已建立的 actual promise。",
+      "structured_facts": [{"key": "actual_promises", "value": []}]
+    }
+  },
+  "chapter_profiles": {
+    "chapter.style_policy.author": {
+      "type": "style_policy",
+      "profile_id": "style:bounded-quality-zh-v1",
+      "constraints": [
+        "使用简体中文和林遥的有限第三人称",
+        "先呈现可观察动作与感官证据，再给解释",
+        "角色对话必须体现不同目标、权力和语言行为",
+        "不模仿任何具名作者、作品或受保护表达",
+        "避免空泛抒情、重复总结和同构结尾"
+      ],
+      "safe_summary": "原创中文类型小说 prose policy。",
+      "structured_facts": [{"key": "viewpoint", "value": "close third-person: lin-yao"}, {"key": "originality", "value": "no named-work imitation"}]
+    },
+    "chapter.quality_rubric.author": {
+      "type": "quality_rubric",
+      "profile_id": "canonical-quality-v3",
+      "dimensions": [
+        "hard narrative correctness",
+        "scene effectiveness",
+        "character agency",
+        "dialogue differentiation",
+        "emotional movement",
+        "conflict escalation",
+        "tension and momentum",
+        "information release",
+        "payoff strength",
+        "originality and repetition"
+      ],
+      "safe_summary": "Hard Correctness 与 Editorial Quality 分离的 bounded rubric。",
+      "structured_facts": [{"key": "severe_correctness_fail_closed", "value": true}, {"key": "aggregate_score_can_override_severe_failure", "value": false}]
+    },
+    "chapter.platform_profile.author": {
+      "type": "platform_profile",
+      "profile_id": "platform:internal-blind-evaluation-v1",
+      "constraints": [
+        "开篇尽快出现可观察异常、角色目标或压力",
+        "保持短场景压力循环但不制造虚假升级",
+        "章节结尾必须由本章因果变化产生继续阅读动力",
+        "仅用于内部 blind evaluation，不作市场发布"
+      ],
+      "safe_summary": "内部 blind evaluation 的 serial readability profile。",
+      "structured_facts": [{"key": "platform_rules", "value": {"chapter_length": {"minimum": 1800, "maximum": 3800}, "format": {"paragraph_max": 500}, "sensitive_content": ["禁止仇恨、露骨性与不必要残酷内容"], "ai_content": {"release_mode": "INTERNAL_BLIND_EVALUATION_ONLY"}, "opening": ["observable anomaly or immediate pressure"], "rhythm": ["causal progression before spectacle"], "publish_metadata": {"required": ["chapter", "title", "summary"]}}}]
+    },
+    "chapter.operator_checklist.author": {
+      "type": "operator_checklist",
+      "chapter": 1,
+      "completed": true,
+      "contract_version": "bounded-quality-internal-checklist-v1",
+      "safe_summary": "仅证明 bootstrap source isolation 与内部评审范围，不是小说质量或人类偏好证据。",
+      "structured_facts": [{"key": "source_isolation_reviewed", "value": true}, {"key": "release_scope", "value": "INTERNAL_BLIND_EVALUATION_ONLY"}, {"key": "human_preference_evidence", "value": false}]
+    }
+  }
+}

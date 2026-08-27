@@ -851,6 +851,9 @@ class PostgresChapterExecutionContractBinder:
         validation_policy_snapshot_ref = (
             f"production_execution/validation_policies/{token}"
         )
+        commit_policy_snapshot_ref = (
+            f"production_execution/commit_policies/{token}"
+        )
         context_policy = ContextPolicy(
             policy_id=context_policy_snapshot_ref,
             policy_version="v1",
@@ -1085,9 +1088,13 @@ class PostgresChapterExecutionContractBinder:
         self._ensure_contract(
             operation_id=operation_id,
             project_id=project_id,
-            logical_ref=commit_policy.policy_id,
+            logical_ref=commit_policy_snapshot_ref,
             asset_type="execution_commit_policy",
-            contract=commit_policy.to_dict(),
+            contract={
+                **commit_policy.to_dict(),
+                "runtime_snapshot_ref": commit_policy_snapshot_ref,
+                "governing_capability_policy_ref": definition.commit_policy_ref,
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
@@ -1941,9 +1948,7 @@ def default_chapter_fixture_response(
             "realization_evidence": [
                 {
                     "planned_event_id": str(event.get("event_id") or ""),
-                    "observed_event_id": (
-                        f"observed:{event.get('event_id')}"
-                    ),
+                    "observed_event_id": (f"observed:{event.get('event_id')}"),
                     "observation_status": "OBSERVED",
                     "accepted_prose_evidence": [
                         {
@@ -1973,9 +1978,9 @@ def default_chapter_fixture_response(
                         and str(delta.get("entity_id") or "")
                     ],
                 }
-                for event in (
-                    expectations.get("narrative_realization") or {}
-                ).get("events")
+                for event in (expectations.get("narrative_realization") or {}).get(
+                    "events"
+                )
                 or ()
                 if isinstance(event, Mapping)
             ],
@@ -2563,8 +2568,18 @@ def _stage_semantic_contract(
         )
     if stage == "narrative_semantic_evaluation":
         return (
-            "Independently evaluate only the immutable candidate against every frozen "
-            "qualification profile and criterion. Copy layer, profile_id, "
+            "Independently evaluate the immutable candidate against every frozen "
+            "qualification profile and criterion. The frozen Provider Context is the "
+            "complete evidence boundary. For EXACT_CANDIDATE_ONLY, use only the first "
+            "selected input. For EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES, keep the "
+            "first selected input as the sole candidate under evaluation and consume "
+            "each remaining exact qualified dependency's semantic_payload as evidence "
+            "for that "
+            "candidate's cross-layer claims. A reference-only BookDesign field is not "
+            "missing evidence when its exact referenced dependency supplies the "
+            "semantics. Do not consume prior qualification verdicts, demand downstream "
+            "plans that cannot legally exist at the candidate's stage, or infer anything "
+            "outside the frozen candidate-and-dependency envelope. Copy layer, profile_id, "
             "profile_version, profile_hash, capability_id, skill_ref, criterion, and "
             "candidate evidence identities exactly. Return one verdict per criterion. "
             "A non-PASS verdict must include a concrete repair_directive; PASS must "
@@ -2580,7 +2595,18 @@ def _stage_semantic_contract(
             "newly invented identifier. Keep Timeline containers and cross-cutting "
             "Narrative Arcs orthogonal. "
         )
-        if stage == "arc_plan.generate":
+        if stage == "book_plan.generate":
+            contract += (
+                "For world_realization and character_realization, every CURRENT "
+                "entity's realization_level must be at least the top-level "
+                "realization_level using ANCHOR < DEFINED < DETAILED < ACTIVE. "
+                "Every knowledge_disclosure_obligations.obligation_windows[]."
+                "obligation_id must copy one exact identity declared in story_truth_ids, "
+                "mystery_ids, promise_ids, or foreshadow_ids, and each window must "
+                "satisfy setup_chapter <= payoff_not_before <= payoff_due_by inside "
+                "the bounded Book. "
+            )
+        elif stage == "arc_plan.generate":
             contract += (
                 "Set cross_volume_scope to exactly the ordered VolumePlan Authority "
                 "version identifiers supplied by planning_command.input_versions."
@@ -2593,6 +2619,19 @@ def _stage_semantic_contract(
                 "volume_plan_version_id. Thread -> Arc -> Arc Segment is the "
                 "cross-volume graph; Volume -> Narrative Segment remains the "
                 "Timeline plan."
+            )
+        elif stage == "chapter_group_plan.generate":
+            contract += (
+                "Copy planning_command.narrative_search_planning_horizon."
+                "chapter_range exactly into chapter_range. Produce one ordered "
+                "chapter_function_matrix row for every Chapter in that frozen range, "
+                "and make narrative_event_chain cover every Chapter without placing "
+                "an event outside the range. The frozen desired transformation, hard "
+                "constraints, and branch strategy directive are simultaneous; the "
+                "branch cannot relax the exact range or accepted boundary. Every "
+                "narrative_event_chain[].disclosures value must exactly copy a value "
+                "from the same event's knowledge_boundary.reader_may_learn and must "
+                "not occur in forbidden_disclosures."
             )
         elif stage == "chapter_plan.generate":
             contract += (
@@ -2724,6 +2763,19 @@ def _stage_semantic_contract(
             "no accepted baseline. For every planned disclosure, copy disclosure_id, "
             "fact_id, audience, and mode exactly; do not expand the audience. Reader "
             "Knowledge will be derived after the Disclosure is accepted. "
+            "Arc and Narrative Realization evidence describes Actual accepted prose, "
+            "never Plan or Future Intent. Return exactly one arc_evidence item for "
+            "each frozen expected Arc contribution. Use observation_status OBSERVED "
+            "only when the accepted revision visibly executes that contribution. An "
+            "OBSERVED Arc item must include at least one resolution_evidence string "
+            "encoded as chars:<start>-<end>:<summary>, where start and end are valid "
+            "character offsets into accepted_revision; otherwise return zero "
+            "progress_units and an empty resolution_evidence list. Return one "
+            "realization_evidence item for every frozen Narrative Realization event. "
+            "OBSERVED realization evidence requires a non-empty "
+            "accepted_prose_evidence list with valid accepted_revision character "
+            "offsets plus the observed event identity, action, decision, consequence, "
+            "and state deltas. Planning context alone never proves observation. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "

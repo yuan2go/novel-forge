@@ -98,6 +98,25 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "Never replace the full chapter with a summary or excerpt" in contract
 
 
+def test_narrative_evaluation_contract_consumes_exact_foundation_closure() -> None:
+    contract = _stage_semantic_contract("narrative_semantic_evaluation")
+
+    assert "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES" in contract
+    assert "sole candidate under evaluation" in contract
+    assert "exact qualified dependency's semantic_payload" in contract
+    assert "Do not consume prior qualification verdicts" in contract
+    assert "demand downstream plans" in contract
+
+
+def test_book_plan_prompt_closes_realization_and_obligation_invariants() -> None:
+    contract = _stage_semantic_contract("book_plan.generate")
+
+    assert "ANCHOR < DEFINED < DETAILED < ACTIVE" in contract
+    assert "every CURRENT entity's realization_level" in contract
+    assert "obligation_id must copy one exact identity" in contract
+    assert "setup_chapter <= payoff_not_before <= payoff_due_by" in contract
+
+
 def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() -> None:
     contract = _stage_semantic_contract(
         "retrieval",
@@ -166,6 +185,16 @@ def test_arc_planning_prompt_requires_exact_authority_scope_references() -> None
     assert "Thread -> Arc -> Arc Segment" in contract
 
 
+def test_chapter_group_prompt_requires_exact_search_horizon_and_disclosures() -> None:
+    contract = _stage_semantic_contract("chapter_group_plan.generate")
+
+    assert "narrative_search_planning_horizon.chapter_range" in contract
+    assert "one ordered chapter_function_matrix row for every Chapter" in contract
+    assert "narrative_event_chain cover every Chapter" in contract
+    assert "knowledge_boundary.reader_may_learn" in contract
+    assert "must not occur in forbidden_disclosures" in contract
+
+
 def test_chapter_planning_prompt_requires_executable_narrative_plan() -> None:
     contract = _stage_semantic_contract("chapter_plan.generate")
 
@@ -196,7 +225,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v12"
+        == "schema:chapter-provider-output:canon_extraction:v13"
     )
 
 
@@ -229,6 +258,14 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "at most once" in contract
     assert "authorizes_testimony" in contract
     assert "authorizes_public_identification" in contract
+    assert "Actual accepted prose" in contract
+    assert "chars:<start>-<end>:<summary>" in contract
+    assert "Planning context alone never proves observation" in contract
+    schema = chapter_provider_output_schema("canon_extraction")
+    resolution = schema["properties"]["arc_evidence"]["items"]["properties"][
+        "resolution_evidence"
+    ]
+    assert "accepted_revision character-span" in resolution["description"]
     assert "copy disclosure_id" in contract
     assert "do not expand the audience" in contract
 

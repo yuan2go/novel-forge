@@ -252,6 +252,39 @@ class ProductionPreparationTests(unittest.TestCase):
             "version:platform_profile",
         )
 
+    def test_operator_approval_is_frozen_as_evidence_only_context(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                "operator_approval",
+            )
+        }
+
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=1,
+                idempotency_key="operator-approval-context",
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        approval = next(
+            item
+            for item in result.command.context_candidates
+            if item["asset_type"] == "operator_approval"
+        )
+        self.assertEqual(approval["allowed_use"], "evidence_only")
+        self.assertEqual(
+            result.command.context_version_refs["operator_approval_versions"],
+            "version:operator_approval",
+        )
+
     def test_wrong_chapter_plan_is_blocked(self) -> None:
         assets = {
             kind: _asset(kind)

@@ -1,11 +1,13 @@
 """Pure contracts for human preference and reader behavior calibration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
 import hashlib
 import math
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -15,6 +17,186 @@ class PreferenceChoice(StrEnum):
     B = "B"
     TIE = "TIE"
     REJECT_BOTH = "REJECT_BOTH"
+    CANNOT_JUDGE = "CANNOT_JUDGE"
+
+
+class BlindScope(StrEnum):
+    CHAPTER = "CHAPTER"
+    ARC = "ARC"
+
+
+class EvaluatorIdentityClass(StrEnum):
+    PROFESSIONAL_EDITOR = "PROFESSIONAL_EDITOR"
+    AUTHOR_EDITOR = "AUTHOR_EDITOR"
+    EXPERIENCED_READER = "EXPERIENCED_READER"
+    GENERAL_READER = "GENERAL_READER"
+
+
+BLIND_EVALUATION_DIMENSIONS = (
+    "overall_preference",
+    "readability",
+    "character_credibility",
+    "scene_effectiveness",
+    "tension_momentum",
+    "emotional_impact",
+    "prose_quality",
+    "continuity",
+    "payoff_satisfaction",
+    "desire_to_continue",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class HumanBlindDecision:
+    """One immutable subjective observation, never editorial Ground Truth."""
+
+    decision_id: str
+    pair_token: str
+    reviewer_id: str
+    evaluator_identity_class: EvaluatorIdentityClass
+    protocol_version: str
+    evaluation_version: str
+    scope_type: BlindScope
+    chapter_start: int
+    chapter_end: int
+    choice: PreferenceChoice
+    dimension_scores: Mapping[str, Mapping[str, int | None]]
+    confidence: float
+    rationale: str
+    evidence_spans: tuple[dict[str, Any], ...]
+
+    def __post_init__(self) -> None:
+        for name in (
+            "decision_id",
+            "pair_token",
+            "reviewer_id",
+            "protocol_version",
+            "evaluation_version",
+        ):
+            if not str(getattr(self, name) or "").strip():
+                raise ValueError(f"{name} is required")
+        try:
+            identity_class = EvaluatorIdentityClass(self.evaluator_identity_class)
+        except ValueError as exc:
+            raise ValueError("evaluator identity class is invalid") from exc
+        try:
+            scope = BlindScope(self.scope_type)
+        except ValueError as exc:
+            raise ValueError("blind evaluation scope is invalid") from exc
+        try:
+            choice = PreferenceChoice(self.choice)
+        except ValueError as exc:
+            raise ValueError("blind preference choice is invalid") from exc
+        if choice is PreferenceChoice.REJECT_BOTH:
+            raise ValueError("REJECT_BOTH is historical-only in the blind protocol")
+        if self.chapter_start <= 0 or self.chapter_end < self.chapter_start:
+            raise ValueError("blind evaluation chapter scope is invalid")
+        if scope is BlindScope.CHAPTER and self.chapter_start != self.chapter_end:
+            raise ValueError("Chapter scope must cover exactly one chapter")
+        if not 0 <= self.confidence <= 1:
+            raise ValueError("blind evaluation confidence must be between 0 and 1")
+        if set(self.dimension_scores) != set(BLIND_EVALUATION_DIMENSIONS):
+            raise ValueError(
+                "dimension_scores must contain the exact frozen dimensions"
+            )
+        frozen_scores: dict[str, Mapping[str, int | None]] = {}
+        for dimension in BLIND_EVALUATION_DIMENSIONS:
+            raw = self.dimension_scores[dimension]
+            if not isinstance(raw, Mapping) or set(raw) != {"a", "b"}:
+                raise ValueError(f"{dimension} must score candidate a and b")
+            a, b = raw["a"], raw["b"]
+            if choice is PreferenceChoice.CANNOT_JUDGE and a is None and b is None:
+                frozen_scores[dimension] = MappingProxyType({"a": None, "b": None})
+                continue
+            if (
+                not isinstance(a, int)
+                or isinstance(a, bool)
+                or not isinstance(b, int)
+                or isinstance(b, bool)
+                or not 1 <= a <= 5
+                or not 1 <= b <= 5
+            ):
+                raise ValueError("dimension scores must be between 1 and 5")
+            frozen_scores[dimension] = MappingProxyType({"a": a, "b": b})
+        for span in self.evidence_spans:
+            if not isinstance(span, dict):
+                raise ValueError("evidence spans must be typed objects")
+            candidate = str(span.get("candidate") or "")
+            start, end = span.get("start"), span.get("end")
+            if (
+                candidate not in {"A", "B"}
+                or not isinstance(start, int)
+                or isinstance(start, bool)
+                or not isinstance(end, int)
+                or isinstance(end, bool)
+                or start < 0
+                or end <= start
+            ):
+                raise ValueError("evidence span is outside a blinded candidate")
+        object.__setattr__(self, "evaluator_identity_class", identity_class)
+        object.__setattr__(self, "scope_type", scope)
+        object.__setattr__(self, "choice", choice)
+        object.__setattr__(self, "dimension_scores", MappingProxyType(frozen_scores))
+
+    @property
+    def preferred_candidate(self) -> str | None:
+        return (
+            self.choice.value
+            if self.choice in {PreferenceChoice.A, PreferenceChoice.B}
+            else None
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class BlindAdjudication:
+    status: str
+    adjudicator_id: str
+    resolved_choice: PreferenceChoice | None
+    rationale: str
+    raw_decisions: tuple[HumanBlindDecision, ...]
+    evidence_class: str = "SUBJECTIVE_ADJUDICATION_NOT_GROUND_TRUTH"
+
+
+def reviewer_visible_decisions(
+    decisions: Iterable[HumanBlindDecision], reviewer_id: str
+) -> tuple[HumanBlindDecision, ...]:
+    """Do not reveal another evaluator's decisions before pack completion."""
+
+    return tuple(item for item in decisions if item.reviewer_id == reviewer_id)
+
+
+def adjudicate_blind_decisions(
+    decisions: Iterable[HumanBlindDecision],
+    *,
+    adjudicator_id: str,
+    resolved_choice: PreferenceChoice | None,
+    rationale: str,
+) -> BlindAdjudication:
+    rows = tuple(decisions)
+    if (
+        len(rows) < 2
+        or len({item.reviewer_id for item in rows}) < 2
+        or len({item.pair_token for item in rows}) != 1
+        or not adjudicator_id
+        or not rationale.strip()
+    ):
+        raise ValueError("adjudication requires two independent scoped decisions")
+    if resolved_choice is not None:
+        resolved_choice = PreferenceChoice(resolved_choice)
+        if resolved_choice is PreferenceChoice.REJECT_BOTH:
+            raise ValueError("REJECT_BOTH cannot adjudicate the current protocol")
+        status = "ADJUDICATED"
+    elif len({item.choice for item in rows}) == 1:
+        status = "AGREED"
+    else:
+        status = "DISAGREED"
+    return BlindAdjudication(
+        status=status,
+        adjudicator_id=adjudicator_id,
+        resolved_choice=resolved_choice,
+        rationale=rationale,
+        raw_decisions=rows,
+    )
 
 
 class CalibrationStatus(StrEnum):
@@ -156,33 +338,22 @@ def blind_pair_order(
 def preference_bias_report(
     decisions: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    decisive = [
-        item for item in decisions if item.get("choice") in {"A", "B"}
-    ]
+    decisive = [item for item in decisions if item.get("choice") in {"A", "B"}]
     left_choices = sum(
         1
         for item in decisive
-        if (
-            item["choice"] == "A"
-            and item.get("asset_a_position") == "LEFT"
-        )
-        or (
-            item["choice"] == "B"
-            and item.get("asset_b_position") == "LEFT"
-        )
+        if (item["choice"] == "A" and item.get("asset_a_position") == "LEFT")
+        or (item["choice"] == "B" and item.get("asset_b_position") == "LEFT")
     )
     left_rate = left_choices / len(decisive) if decisive else 0.0
     position_bias = bool(decisive) and abs(left_rate - 0.5) >= 0.25
     by_pair: dict[str, list[dict[str, Any]]] = {}
     for item in decisive:
-        by_pair.setdefault(str(item.get("canonical_pair_key") or ""), []).append(
-            item
-        )
+        by_pair.setdefault(str(item.get("canonical_pair_key") or ""), []).append(item)
     reversals = [
         pair
         for pair in by_pair.values()
-        if {item.get("presentation_order") for item in pair}
-        >= {"AB", "BA"}
+        if {item.get("presentation_order") for item in pair} >= {"AB", "BA"}
     ]
     consistent = sum(
         1
@@ -194,9 +365,7 @@ def preference_bias_report(
         "left_choice_rate": left_rate,
         "position_bias_detected": position_bias,
         "reversal_pair_count": len(reversals),
-        "reversal_consistency": (
-            consistent / len(reversals) if reversals else None
-        ),
+        "reversal_consistency": (consistent / len(reversals) if reversals else None),
     }
 
 
@@ -205,9 +374,7 @@ def human_agreement_report(
 ) -> dict[str, Any]:
     by_pair: dict[str, list[str]] = {}
     for item in decisions:
-        by_pair.setdefault(str(item["pair_id"]), []).append(
-            str(item["choice"])
-        )
+        by_pair.setdefault(str(item["pair_id"]), []).append(str(item["choice"]))
     comparable = [items for items in by_pair.values() if len(items) >= 2]
     agreements = 0
     comparisons = 0
@@ -271,11 +438,13 @@ def calibration_metrics(
         }
     epsilon = 1e-12
     brier = sum((p - y) ** 2 for p, y in observations) / count
-    log_loss = -sum(
-        y * math.log(max(p, epsilon))
-        + (1 - y) * math.log(max(1 - p, epsilon))
-        for p, y in observations
-    ) / count
+    log_loss = (
+        -sum(
+            y * math.log(max(p, epsilon)) + (1 - y) * math.log(max(1 - p, epsilon))
+            for p, y in observations
+        )
+        / count
+    )
     predicted = sum(p for p, _ in observations) / count
     observed = sum(y for _, y in observations) / count
     return {
@@ -312,9 +481,7 @@ def calibrated_probability(
     return max(0.0, min(1.0, raw_score))
 
 
-def mode_after_drift(
-    current_mode: JudgeMode, *, severe_drift: bool
-) -> JudgeMode:
+def mode_after_drift(current_mode: JudgeMode, *, severe_drift: bool) -> JudgeMode:
     return JudgeMode.SHADOW if severe_drift else current_mode
 
 
@@ -395,59 +562,72 @@ def evaluate_reader_outcome_consumption(
     policy: ReaderOutcomeDecisionPolicy = DEFAULT_READER_OUTCOME_DECISION_POLICY,
 ) -> dict[str, Any]:
     status = ReaderJudgeQualificationStatus(qualification_status)
-    reasons: list[str] = []
+    activation_blockers: list[str] = []
     if status is not ReaderJudgeQualificationStatus.QUALIFIED:
-        reasons.append("JUDGE_NOT_QUALIFIED")
+        activation_blockers.append("JUDGE_NOT_QUALIFIED")
     if sample_size < policy.minimum_sample_size:
-        reasons.append("MINIMUM_SAMPLE_NOT_MET")
+        activation_blockers.append("MINIMUM_SAMPLE_NOT_MET")
     if confidence < policy.minimum_confidence:
-        reasons.append("CONFIDENCE_BELOW_POLICY")
+        activation_blockers.append("CONFIDENCE_BELOW_POLICY")
     if disagreement:
-        reasons.append("JUDGE_DISAGREEMENT")
+        activation_blockers.append("JUDGE_DISAGREEMENT")
     if position_bias:
-        reasons.append("POSITION_BIAS")
+        activation_blockers.append("POSITION_BIAS")
     if ood:
-        reasons.append("OOD")
+        activation_blockers.append("OOD")
     if drift_detected or status is ReaderJudgeQualificationStatus.DRIFTED:
-        reasons.append("DRIFT")
+        activation_blockers.append("DRIFT")
     if current_chapter <= 0:
         raise ValueError("Reader Outcome consumption requires a positive chapter")
     if (
         last_adjustment_chapter is not None
         and current_chapter - last_adjustment_chapter < policy.cooldown_chapters
     ):
-        reasons.append("COOLDOWN_ACTIVE")
+        activation_blockers.append("COOLDOWN_ACTIVE")
+    trend_blockers: list[str] = []
     usable_reports = recent_reports[-policy.minimum_consecutive_chapters :]
     if len(usable_reports) < policy.minimum_consecutive_chapters:
-        reasons.append("TREND_WINDOW_INSUFFICIENT")
+        trend_blockers.append("TREND_WINDOW_INSUFFICIENT")
     elif not all(bool(item.get("declining")) for item in usable_reports):
-        reasons.append("NO_CONSECUTIVE_DECLINE")
-    allowed = not reasons
+        trend_blockers.append("NO_CONSECUTIVE_DECLINE")
+    advisory_allowed = not trend_blockers
+    activation_eligible = advisory_allowed and not activation_blockers
+    if activation_eligible:
+        decision = "PLAN_ADJUSTMENT_CANDIDATE"
+    elif advisory_allowed:
+        decision = "ADVISORY_RECOMMENDATION"
+    else:
+        decision = "SHADOW_ONLY"
     return {
-        "contract_version": "reader-outcome-consumption-decision-v1",
+        "contract_version": "reader-outcome-consumption-decision-v2",
         "policy_version": policy.policy_version,
-        "decision": "PLAN_ADJUSTMENT_CANDIDATE" if allowed else "SHADOW_ONLY",
-        "future_production_influence_allowed": allowed,
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "decision": decision,
+        "advisory_recommendation_allowed": advisory_allowed,
+        "activation_eligible": activation_eligible,
+        # Compatibility field: influence means eligibility to enter the
+        # governed future-plan change path, never direct mutation.
+        "future_production_influence_allowed": activation_eligible,
         "direct_plan_activation_allowed": False,
         "direct_body_mutation_allowed": False,
+        "direct_canon_mutation_allowed": False,
+        "future_intent_actualization_allowed": False,
         "human_approval_required": policy.human_approval_required,
         "maximum_adjustment_chapters": policy.maximum_adjustment_chapters,
-        "reasons": reasons,
+        "activation_blockers": activation_blockers,
+        "trend_blockers": trend_blockers,
+        "reasons": [*activation_blockers, *trend_blockers],
     }
 
 
-def _scope_matches(
-    requested: CalibrationScope, candidate: CalibrationScope
-) -> bool:
+def _scope_matches(requested: CalibrationScope, candidate: CalibrationScope) -> bool:
     return all(
         getattr(candidate, field) in {"*", getattr(requested, field)}
         for field in CalibrationScope.__dataclass_fields__
     )
 
 
-def _specificity(
-    requested: CalibrationScope, candidate: CalibrationScope
-) -> int:
+def _specificity(requested: CalibrationScope, candidate: CalibrationScope) -> int:
     return sum(
         getattr(candidate, field) == getattr(requested, field)
         for field in CalibrationScope.__dataclass_fields__
@@ -455,15 +635,21 @@ def _specificity(
 
 
 __all__ = [
+    "BLIND_EVALUATION_DIMENSIONS",
+    "BlindAdjudication",
+    "BlindScope",
     "CalibrationCandidate",
     "CalibrationScope",
     "CalibrationStatus",
     "JudgeMode",
+    "EvaluatorIdentityClass",
+    "HumanBlindDecision",
     "ReaderJudgeQualificationStatus",
     "ReaderOutcomeDecisionPolicy",
     "DEFAULT_READER_OUTCOME_DECISION_POLICY",
     "PreferenceChoice",
     "blind_pair_order",
+    "adjudicate_blind_decisions",
     "calibrated_probability",
     "calibration_metrics",
     "human_agreement_report",
@@ -473,5 +659,6 @@ __all__ = [
     "evaluate_reader_outcome_consumption",
     "require_exposure_denominator",
     "resolve_calibration_profile",
+    "reviewer_visible_decisions",
     "transition_reader_judge_qualification",
 ]
