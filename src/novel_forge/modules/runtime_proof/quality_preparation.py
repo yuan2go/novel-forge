@@ -58,6 +58,9 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
+from novel_forge.modules.production_preparation.foundation_context import (
+    project_character_foundation_context,
+)
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.story_design_authority import (
     NARRATIVE_QUALIFICATION_SCHEMA_VERSION,
@@ -359,6 +362,17 @@ class BoundedQualityBookContract:
         candidate = _mapping(
             layer["candidate_payload"], f"{role.value}.candidate_payload"
         )
+        if role is FoundationRole.CHARACTER_CAST:
+            try:
+                project_character_foundation_context(
+                    asset_type="character_cast",
+                    content=candidate,
+                    source_asset_version_id="bounded-quality-book-contract",
+                )
+            except KernelError as exc:
+                raise ValueError(
+                    "CHARACTER_CAST requires executable canonical names, aliases, and pronouns"
+                ) from exc
         if _contains_forbidden_claim(candidate):
             raise ValueError("Foundation candidate cannot claim external evidence")
         generator = _FOUNDATION_AUTHORING[role][1]

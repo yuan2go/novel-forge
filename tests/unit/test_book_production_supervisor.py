@@ -16,6 +16,7 @@ from novel_forge.modules.book_replan.coordinator import (
     SCOPE_GENERATOR,
 )
 from novel_forge.modules.book_production import SupervisorAction
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.hierarchical_planning import PlanExecutionScope
 from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
 
@@ -281,6 +282,35 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
         "decision": "READY",
         "stage_context_token_budgets": {"draft": 16_000, "quality": 28_000},
     }
+
+
+def test_supervisor_freezes_exact_character_and_reader_promise_foundation() -> None:
+    snapshot = {
+        "foundation_set": {
+            "bindings": [
+                {
+                    "role": "CHARACTER_CAST",
+                    "asset_version_id": "character-cast:v7",
+                    "content_hash": "sha256:" + "1" * 64,
+                },
+                {
+                    "role": "READER_PROMISE",
+                    "asset_version_id": "reader-promise:v4",
+                    "content_hash": "sha256:" + "2" * 64,
+                },
+            ]
+        }
+    }
+
+    assert PostgresBookProductionSupervisor._chapter_foundation_overrides(snapshot) == {
+        "character_cast": "character-cast:v7",
+        "reader_promise": "reader-promise:v4",
+    }
+
+    with pytest.raises(KernelError, match="BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING"):
+        PostgresBookProductionSupervisor._chapter_foundation_overrides(
+            {"foundation_set": {"bindings": snapshot["foundation_set"]["bindings"][:1]}}
+        )
 
 
 def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> None:

@@ -521,6 +521,8 @@ class PostgresBookProductionSupervisor:
         explicit_overrides: dict[str, str | list[str]] = {
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
+        snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
+        explicit_overrides.update(self._chapter_foundation_overrides(snapshot))
         execution_envelope = (execution_plan.get("content") or {}).get(
             "constraint_envelope"
         )
@@ -559,7 +561,6 @@ class PostgresBookProductionSupervisor:
                 }
             )
         else:
-            snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
             initial_story_state = str(snapshot.get("initial_story_state_version") or "")
             initial_canon = str(snapshot.get("initial_canon_snapshot_version") or "")
             if bool(initial_story_state) != bool(initial_canon):
@@ -656,8 +657,62 @@ class PostgresBookProductionSupervisor:
                 f"{book['stable_idempotency_key']}:chapter:{next_chapter}"
             ),
             explicit_asset_version_overrides=explicit_overrides,
+            capability_required_asset_types=("character_cast", "reader_promise"),
             context_token_budget=self.context_token_budget,
         )
+
+    @staticmethod
+    def _chapter_foundation_overrides(
+        snapshot: dict[str, Any],
+    ) -> dict[str, str]:
+        foundation = snapshot.get("foundation_set")
+        bindings = (
+            foundation.get("bindings") if isinstance(foundation, dict) else None
+        )
+        if not isinstance(bindings, list):
+            raise KernelError(
+                "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
+                "Chapter preparation requires the frozen qualified Foundation Set",
+            )
+        expected = {
+            "CHARACTER_CAST": "character_cast",
+            "READER_PROMISE": "reader_promise",
+        }
+        by_role: dict[str, dict[str, Any]] = {}
+        for raw in bindings:
+            if not isinstance(raw, dict):
+                continue
+            role = str(raw.get("role") or "")
+            if role in expected:
+                if role in by_role:
+                    raise KernelError(
+                        "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
+                        f"duplicate {role} Foundation binding",
+                    )
+                by_role[role] = raw
+        if set(by_role) != set(expected):
+            raise KernelError(
+                "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
+                "Chapter preparation requires exact CHARACTER_CAST and READER_PROMISE bindings",
+            )
+        result: dict[str, str] = {}
+        for role, asset_type in expected.items():
+            binding = by_role[role]
+            version = str(binding.get("asset_version_id") or "")
+            content_hash = str(binding.get("content_hash") or "")
+            digest = content_hash.removeprefix("sha256:")
+            if (
+                not version
+                or not content_hash.startswith("sha256:")
+                or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)
+            ):
+                raise KernelError(
+                    "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
+                    f"{role} Foundation binding lacks exact version/hash lineage",
+                )
+            result[asset_type] = version
+        return result
 
     def _stage_budgeted_preparation_report(self, prepared: Any) -> dict[str, Any]:
         report = dict(prepared.preparation_report)
