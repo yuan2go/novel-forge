@@ -72,9 +72,7 @@ def _plan() -> dict:
         "premise": "林遥必须决定是否公开异常。",
         "chapter_objective": "用有代价的选择推进首个异常。",
         "scene_sequence": [{"scene_id": "scene:1", "goal": "公开或撤回"}],
-        "character_participation": [
-            {"character_id": "林遥", "goal": "保存可复核证据"}
-        ],
+        "character_participation": [{"character_id": "林遥", "goal": "保存可复核证据"}],
     }
 
 
@@ -160,9 +158,7 @@ def test_character_and_reader_promise_are_protected_in_draft_and_review() -> Non
     review = build_provider_context_view(
         "review",
         bundle,
-        build_provider_task_view(
-            "review", {"draft": {"chapter": 1, "text": "正文"}}
-        ),
+        build_provider_task_view("review", {"draft": {"chapter": 1, "text": "正文"}}),
     )
     for view in (draft, review):
         serialized = json.dumps(view, ensure_ascii=False, sort_keys=True)
