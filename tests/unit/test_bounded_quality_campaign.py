@@ -14,6 +14,7 @@ from novel_forge.modules.runtime_proof.quality_campaign import (
     QualityCampaignTerminalError,
     bounded_quality_chapter_fixture_response,
     bounded_quality_planning_fixture_response,
+    classify_campaign_recovery_exhaustion,
     load_quality_campaign_profile,
     semantic_quality_evidence_identity,
 )
@@ -45,6 +46,9 @@ def test_repository_profile_is_exactly_two_by_four_and_hash_frozen() -> None:
     )
     budget = profile.to_dict()["budget_policy"]
     assert budget["token_limit"] == 6_600_000
+    assert budget["cost_limit_per_call_usd"] == "4.00"
+    assert budget["cost_limit_per_operation_usd"] == "8.00"
+    assert budget["cost_limit_per_chapter_usd"] == "20.00"
     assert budget["freeze_headroom_policy"] == {
         "minimum_remaining_provider_calls": 80,
         "minimum_remaining_tokens": 4_800_000,
@@ -61,6 +65,10 @@ def test_repository_profile_is_exactly_two_by_four_and_hash_frozen() -> None:
         ({"budget_policy": {"chapter_limit": 9}}, "chapter_limit"),
         (
             {"budget_policy": {"cost_limit_per_call_usd": "90.00"}},
+            "monotonic",
+        ),
+        (
+            {"budget_policy": {"cost_limit_per_operation_usd": "3.00"}},
             "monotonic",
         ),
         (
@@ -245,6 +253,41 @@ def test_runner_fails_closed_when_wall_clock_budget_expires(
     ) as raised:
         BoundedQualityCampaignRunner(profile).run(_Runtime())
     assert raised.value.failure_code == "CAMPAIGN_WALL_CLOCK_BUDGET_EXPIRED"
+
+
+def test_runtime_recovery_becomes_terminal_only_after_attempts_are_exhausted() -> (
+    None
+):
+    retryable = {
+        "operation_id": "operation:canon",
+        "status": "FAILED_RETRYABLE",
+        "attempt_count": 1,
+        "max_attempts": 2,
+    }
+    assert (
+        classify_campaign_recovery_exhaustion(
+            [retryable],
+            root_operation_id="operation:chapter-root",
+            error_code="CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+        )
+        is None
+    )
+
+    terminal = classify_campaign_recovery_exhaustion(
+        [{**retryable, "attempt_count": 2}],
+        root_operation_id="operation:chapter-root",
+        error_code="BUDGET_CAP_EXCEEDED",
+    )
+
+    assert terminal is not None
+    assert terminal.failure_code == "CAMPAIGN_RUNTIME_RECOVERY_EXHAUSTED"
+    assert terminal.measurements["kernel_error_code"] == "BUDGET_CAP_EXCEEDED"
+    assert terminal.measurements["exhausted_operations"] == [
+        {
+            **retryable,
+            "attempt_count": 2,
+        }
+    ]
 
 
 def test_checkpoint_rejects_profile_drift_or_chapter_nine() -> None:

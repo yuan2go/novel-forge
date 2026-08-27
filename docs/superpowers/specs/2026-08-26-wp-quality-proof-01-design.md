@@ -299,10 +299,22 @@ real campaign freezes:
 - one primary Arc completion target and optional secondary Arc progress target;
 - per-stage token limits, total input/output token ceiling, estimated cost
   ceiling, provider-call ceiling, retry ceiling and wall-clock deadline;
+- distinct USD 4 call, USD 8 two-Attempt Operation, USD 20 Chapter and USD 80
+  campaign cost ceilings, so measured failed calls remain charged while the one
+  frozen recovery Attempt is actually reachable;
 - a pre-freeze execution-headroom floor derived from settled Budget Authority
   reservations, with every `model.invoke` dispatch counted independently of
   capability naming;
 - stop boundary `accepted_through_chapter == 8`.
+
+Provider structural validity does not replace Actual-evidence validity. Canon
+extraction's frozen semantic contract requires accepted-revision character-span
+references for every `OBSERVED` Arc contribution and accepted-prose spans plus
+observed action/decision/consequence/state deltas for every `OBSERVED`
+Narrative Realization event. Plan and Future Intent cannot satisfy these fields.
+When a Chapter subtree reaches a final/dead-letter state or exhausts the
+Operation's frozen Attempts, the campaign persists terminal engineering failure
+evidence instead of remaining falsely resumable.
 
 Budget exhaustion, route drift, pack drift, dirty checkout, migration drift or
 attempting Chapter 9 fails closed. Cost is reported as measured usage and

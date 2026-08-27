@@ -277,6 +277,7 @@ def test_runtime_environment_applies_profile_caps_and_real_validation_boundary()
     values = module._runtime_env(state, mode="scripted", profile=profile)
 
     assert values["NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL"] == "4.00"
+    assert values["NOVEL_FORGE_OPERATION_PROVIDER_CAP"] == "8.00"
     assert values["NOVEL_FORGE_CHAPTER_PROVIDER_CAP"] == "20.00"
     assert values["NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"] == "80.00"
 

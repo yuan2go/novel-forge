@@ -156,6 +156,22 @@ class _RetryableMeasuredAdapter(_ModelAdapter):
         )
 
 
+class _RetryOnceMeasuredAdapter(_RetryableMeasuredAdapter):
+    def execute(self, *, stable_idempotency_key, capability, request_payload):  # type: ignore[no-untyped-def]
+        if self.calls == 0:
+            return super().execute(
+                stable_idempotency_key=stable_idempotency_key,
+                capability=capability,
+                request_payload=request_payload,
+            )
+        return _ModelAdapter.execute(
+            self,
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+        )
+
+
 class ChapterModelEffectsPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -725,6 +741,52 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(status, "SETTLED")
             self.assertEqual(actual_tokens, 160)
             self.assertEqual(str(settled_amount), "0.00420000")
+
+    def test_measured_retry_uses_frozen_operation_envelope_and_settles_both_calls(
+        self,
+    ) -> None:
+        base = self._request()
+        adapter = _RetryOnceMeasuredAdapter()
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=adapter,
+            worker_id="model-retry-budget-worker",
+            max_cost_per_call="0.01",
+            budget_caps={"operation_total": "0.02"},
+        )
+
+        with self.assertRaisesRegex(
+            KernelError,
+            "MODEL_EFFECT_RETRYABLE_OUTPUT_SEMANTIC_FAILURE",
+        ):
+            port.invoke(
+                replace(base, attempt_id="attempt:1"),
+                stage="draft",
+                payload={"prompt": "write"},
+            )
+        result = port.invoke(
+            replace(base, attempt_id="attempt:2"),
+            stage="draft",
+            payload={"prompt": "write"},
+        )
+
+        self.assertEqual(adapter.calls, 2)
+        self.assertIn("promise is public", result.output["text"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*), BOOL_AND(status='SETTLED'),
+                       SUM(settled_amount), SUM(actual_tokens)
+                FROM authority_budget_reservation
+                WHERE operation_id=%s
+                """,
+                [base.operation_id],
+            )
+            count, all_settled, amount, tokens = cursor.fetchone()
+        self.assertEqual(count, 2)
+        self.assertTrue(all_settled)
+        self.assertEqual(str(amount), "0.00840000")
+        self.assertEqual(tokens, 320)
 
     def test_exception_after_send_is_unknown_and_not_blindly_retried(self) -> None:
         request = self._request()

@@ -1182,7 +1182,7 @@ def _runtime_env(
                 budget["cost_limit_per_call_usd"]
             ),
             "NOVEL_FORGE_OPERATION_PROVIDER_CAP": str(
-                budget["cost_limit_per_call_usd"]
+                budget["cost_limit_per_operation_usd"]
             ),
             "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": str(
                 budget["cost_limit_per_chapter_usd"]
@@ -1341,6 +1341,14 @@ def _run_campaign(
             result = BoundedQualityCampaignRunner(profile, mode=mode).run(runtime)
         except QualityCampaignTerminalError as exc:
             runtime.record_terminal_failure(exc)
+            raise
+        except KernelError as exc:
+            terminal = runtime.terminal_failure_for_runtime_error(
+                error_code=exc.code,
+            )
+            if terminal is not None:
+                runtime.record_terminal_failure(terminal)
+                raise terminal from exc
             raise
         current = quality.require_campaign(
             str(state["campaign_id"]),

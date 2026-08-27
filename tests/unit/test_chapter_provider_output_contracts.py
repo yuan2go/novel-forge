@@ -225,7 +225,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v12"
+        == "schema:chapter-provider-output:canon_extraction:v13"
     )
 
 
@@ -258,6 +258,14 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "at most once" in contract
     assert "authorizes_testimony" in contract
     assert "authorizes_public_identification" in contract
+    assert "Actual accepted prose" in contract
+    assert "chars:<start>-<end>:<summary>" in contract
+    assert "Planning context alone never proves observation" in contract
+    schema = chapter_provider_output_schema("canon_extraction")
+    resolution = schema["properties"]["arc_evidence"]["items"]["properties"][
+        "resolution_evidence"
+    ]
+    assert "accepted_revision character-span" in resolution["description"]
     assert "copy disclosure_id" in contract
     assert "do not expand the audience" in contract
 

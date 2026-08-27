@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 from time import monotonic
-from typing import Any, Mapping, Protocol
+from typing import Any, Iterable, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
     default_chapter_fixture_response,
@@ -103,6 +103,54 @@ class QualityCampaignTerminalError(RuntimeError):
         self.failure_code = failure_code
         self.reasons = reasons
         self.measurements = dict(measurements or {})
+
+
+def classify_campaign_recovery_exhaustion(
+    operations: Iterable[Mapping[str, Any]],
+    *,
+    root_operation_id: str,
+    error_code: str,
+) -> QualityCampaignTerminalError | None:
+    """Turn an unrecoverable Chapter subtree into terminal campaign evidence."""
+
+    exhausted: list[dict[str, Any]] = []
+    for raw in operations:
+        operation_id = str(raw.get("operation_id") or "")
+        status = str(raw.get("status") or "")
+        attempt_count = int(raw.get("attempt_count") or 0)
+        max_attempts = int(raw.get("max_attempts") or 0)
+        if not operation_id or max_attempts <= 0:
+            continue
+        if status in {"FAILED_FINAL", "DEAD_LETTER"} or (
+            status == "FAILED_RETRYABLE" and attempt_count >= max_attempts
+        ):
+            exhausted.append(
+                {
+                    "operation_id": operation_id,
+                    "status": status,
+                    "attempt_count": attempt_count,
+                    "max_attempts": max_attempts,
+                }
+            )
+    if not exhausted:
+        return None
+    exhausted.sort(key=lambda item: str(item["operation_id"]))
+    reasons = tuple(
+        "runtime_recovery_exhausted:"
+        f"{item['operation_id']}:{item['status']}:"
+        f"{item['attempt_count']}/{item['max_attempts']}"
+        for item in exhausted
+    )
+    return QualityCampaignTerminalError(
+        "CAMPAIGN_RUNTIME_RECOVERY_EXHAUSTED",
+        "bounded Quality campaign exhausted Chapter Runtime recovery",
+        reasons=reasons,
+        measurements={
+            "root_operation_id": root_operation_id,
+            "kernel_error_code": error_code,
+            "exhausted_operations": exhausted,
+        },
+    )
 
 
 _SEMANTIC_IDENTITY_SUFFIXES = (
@@ -363,6 +411,7 @@ class BoundedQualityCampaignProfile:
             raise ValueError("budget_policy.token_limit must equal input plus output")
         for field in (
             "cost_limit_per_call_usd",
+            "cost_limit_per_operation_usd",
             "cost_limit_per_chapter_usd",
             "cost_limit_usd",
         ):
@@ -372,10 +421,11 @@ class BoundedQualityCampaignProfile:
                 raise ValueError(f"budget_policy.{field} must be positive") from exc
             if cost_limit <= 0:
                 raise ValueError(f"budget_policy.{field} must be positive")
-        if float(budget["cost_limit_per_call_usd"]) > float(
-            budget["cost_limit_per_chapter_usd"]
-        ) or float(budget["cost_limit_per_chapter_usd"]) > float(
-            budget["cost_limit_usd"]
+        if not (
+            float(budget["cost_limit_per_call_usd"])
+            <= float(budget["cost_limit_per_operation_usd"])
+            <= float(budget["cost_limit_per_chapter_usd"])
+            <= float(budget["cost_limit_usd"])
         ):
             raise ValueError("budget_policy cost ceilings are not monotonic")
         freeze_headroom = _mapping(
@@ -1145,6 +1195,7 @@ __all__ = [
     "QUALITY_CHAPTERS",
     "bounded_quality_chapter_fixture_response",
     "bounded_quality_planning_fixture_response",
+    "classify_campaign_recovery_exhaustion",
     "load_quality_campaign_profile",
     "semantic_quality_evidence_identity",
 ]

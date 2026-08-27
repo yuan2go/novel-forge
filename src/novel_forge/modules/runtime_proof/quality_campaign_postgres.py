@@ -49,6 +49,7 @@ from .quality_campaign import (
     BoundedQualityCampaignProfile,
     QUALITY_CHAPTERS,
     QualityCampaignTerminalError,
+    classify_campaign_recovery_exhaustion,
     semantic_quality_evidence_identity,
 )
 
@@ -218,6 +219,51 @@ class PostgresBoundedQualityCampaignRuntime:
             measurements=measurements,
             source_asset_version_ids=source_ids,
             principal=self.operator,
+        )
+
+    def terminal_failure_for_runtime_error(
+        self,
+        *,
+        error_code: str,
+    ) -> QualityCampaignTerminalError | None:
+        """Classify only exhausted/final Chapter failures as terminal evidence."""
+
+        try:
+            root_operation_id = self._active_chapter_root_operation_id()
+        except RuntimeError:
+            return None
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation.operation_id, operation.status,
+                       COUNT(attempt.attempt_id) AS attempt_count,
+                       COALESCE(MAX(attempt.max_attempts), 1) AS max_attempts
+                FROM authority_operation AS operation
+                LEFT JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                WHERE operation.project_id=%s
+                  AND (
+                    operation.operation_id=%s
+                    OR operation.root_operation_id=%s
+                  )
+                GROUP BY operation.operation_id, operation.status
+                ORDER BY operation.operation_id
+                """,
+                [self.project_id, root_operation_id, root_operation_id],
+            )
+            rows = [
+                {
+                    "operation_id": str(row[0]),
+                    "status": str(row[1]),
+                    "attempt_count": int(row[2]),
+                    "max_attempts": int(row[3]),
+                }
+                for row in uow.cursor.fetchall()
+            ]
+        return classify_campaign_recovery_exhaustion(
+            rows,
+            root_operation_id=root_operation_id,
+            error_code=error_code,
         )
 
     def final_evidence(self) -> Mapping[str, Any]:

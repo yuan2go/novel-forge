@@ -276,9 +276,14 @@ The runner executes Group 1-4, drains Reader/Recap evidence, then executes
 Group 5-8. It checks budget after every Chapter and follow-up tick. Frozen
 ceilings are eight Chapters, 120 Provider dispatches, 16 retries, 5,400,000
 input tokens, 1,200,000 output tokens, 6,600,000 total tokens, USD 4 per call,
-USD 20 per Chapter, USD 80 per campaign Project and four hours per invocation.
-These empirically bounded ceilings include canonical preparation, search and
-repair calls. A ceiling is a hard stop, not a target.
+USD 8 per model Operation, USD 20 per Chapter, USD 80 per campaign Project and
+four hours per invocation. The Operation envelope is deliberately two times the
+per-call ceiling because the frozen Chapter operation contract permits two
+Attempts; a first failed call with measured usage must not make its one legal
+retry structurally unreachable. Both attempts still settle independently and
+remain subject to the Chapter and campaign ceilings. These empirically bounded
+ceilings include canonical preparation, search and repair calls. A ceiling is a
+hard stop, not a target.
 
 Before the first Chapter provider call, each ChapterGroup Narrative Search must
 show the complete frozen request in its generation command and Context Bundle.
@@ -300,6 +305,14 @@ the returned slice with the exact frozen object, including list order and
 multiplicity. A schema-valid echo is therefore still only a candidate; any
 semantic drift fails before ChapterPlan activation.
 
+Canon extraction similarly receives an explicit Actual-evidence contract. Every
+frozen Arc contribution has one observation; `OBSERVED` requires at least one
+accepted-revision character-span reference in `resolution_evidence`. Every
+frozen Narrative Realization event has one observation; `OBSERVED` requires
+accepted-prose spans plus observed identity, action, decision, consequence and
+state deltas. Planning context or Future Intent is never location evidence and
+cannot become Actual merely by matching the output schema.
+
 After an interruption, use the same state and frozen campaign:
 
 ```bash
@@ -313,6 +326,13 @@ PYTHONPATH=src python scripts/run_bounded_quality_qualification.py \
 Resume reconciles durable Attempts, receipts, Chapter acceptance and Group
 state. Do not delete failures, release unresolved budgets manually, or create a
 second BookRun to hide a failed attempt.
+
+A measured retryable Provider failure may consume the next Attempt only inside
+the frozen USD 8 Operation envelope. If the operation reaches `FAILED_FINAL`,
+`DEAD_LETTER`, or has used all frozen Attempts while still
+`FAILED_RETRYABLE`, the campaign records
+`CAMPAIGN_RUNTIME_RECOVERY_EXHAUSTED`; it cannot remain indefinitely `RUNNING`
+or be rescued by editing its manifest.
 
 A terminal budget, wall-clock, route, Pack or Provider-evidence violation is
 persisted as an `ENGINEERING_QUALIFICATION_FAILURE` and moves the campaign to

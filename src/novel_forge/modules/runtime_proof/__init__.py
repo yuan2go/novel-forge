@@ -19,6 +19,7 @@ from .quality_campaign import (
     QualityCampaignTerminalError,
     bounded_quality_chapter_fixture_response,
     bounded_quality_planning_fixture_response,
+    classify_campaign_recovery_exhaustion,
     load_quality_campaign_profile,
     semantic_quality_evidence_identity,
 )
@@ -51,6 +52,7 @@ __all__ = [
     "QualityCampaignTerminalError",
     "bounded_quality_chapter_fixture_response",
     "bounded_quality_planning_fixture_response",
+    "classify_campaign_recovery_exhaustion",
     "load_quality_campaign_profile",
     "semantic_quality_evidence_identity",
     "HumanReviewerTarget",

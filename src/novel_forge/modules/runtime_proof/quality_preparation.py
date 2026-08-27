@@ -507,7 +507,7 @@ def build_quality_preparation_environment(
                 budget["cost_limit_per_call_usd"]
             ),
             "NOVEL_FORGE_OPERATION_PROVIDER_CAP": str(
-                budget["cost_limit_per_call_usd"]
+                budget["cost_limit_per_operation_usd"]
             ),
             "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": str(
                 budget["cost_limit_per_chapter_usd"]
