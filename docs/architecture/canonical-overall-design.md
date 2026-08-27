@@ -771,6 +771,15 @@ Planning/Context consume these stable definitions together with the exact
 accepted dynamic Character/Relationship state; neither substitutes for the
 other.
 
+An executable Character identity also requires a stable `character_id`,
+canonical name, explicit aliases and explicit pronoun vocabulary. Chapter
+production projects the exact qualified CharacterCast, or an explicitly
+selected authoritative CharacterCard, into protected Context for Draft and
+Review. Runtime never infers these identity facts from prose, slugs or a model
+response. The deterministic Canon gate may reject an exact, locally
+unambiguous surface-identity contradiction; uncertain coreference remains a
+semantic review concern rather than a deterministic guess.
+
 ### 13.2 World
 
 Separate:
@@ -841,7 +850,7 @@ ChapterPlan
 
 The Context classes are operational invariants, not labels:
 
-- **PROTECTED** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If protected tokens alone exceed the safe provider budget, compilation fails before provider execution; none is silently dropped, compressed or semantically weakened.
+- **PROTECTED** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, qualified CharacterCast or explicitly selected authoritative CharacterCards, the qualified Reader Promise contract, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Character and Reader Promise entries retain exact source AssetVersion/content-hash lineage and use governed semantic projections. Protected entries are typed, never filename-classified. If protected tokens alone exceed the safe provider budget, compilation fails before provider execution; none is silently dropped, compressed or semantically weakened.
 - **RETRIEVABLE** is rebuildable accepted-history or governed-knowledge evidence selected from the frozen retrieval candidate set.
 - **COMPRESSIBLE** may be rendered through a governed compact projection only when its exact source AssetVersion and compression provenance remain in the manifest.
 - **EPHEMERAL** is excluded from long-lived Memory/Search. If sent to a provider, its exact content/identity is still frozen in Attempt evidence for replay and audit.
@@ -866,7 +875,7 @@ Context Manifest v3 records accepted boundary, selected/rejected artifact versio
 
 ### 14.3 Three-stage context compilation
 
-1. **Protected correctness context:** Mission/Intent/Memo constraints, current state, accepted predecessor, knowledge boundaries, due obligations, relevant Arc state and hard plan constraints.
+1. **Protected correctness context:** Mission/Intent/Memo constraints, executable Character identity/foundation contracts, Reader Promise, current state, accepted predecessor, knowledge boundaries, due obligations, relevant Arc state and hard plan constraints.
 2. **Task-specific evidence:** e.g. combat skills/weapons/injuries/environment; romance relationship/history/secrets; investigation clues/known/unknown/beliefs.
 3. **Creative enrichment:** sensory, culture, architecture, professional knowledge, narrative mechanisms.
 

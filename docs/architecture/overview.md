@@ -120,6 +120,16 @@ lexical-first (`ts_rank`, not BM25) plus exact structured channels; compatible
 semantic similarity may only rerank that frozen bounded set and deterministically
 falls back when unavailable.
 
+Chapter production now also resolves the exact frozen Foundation bindings for
+CharacterCast and Reader Promise. CharacterCast (or an explicitly selected
+authoritative CharacterCard) is projected as protected executable identity and
+stable-character semantics; Reader Promise is projected as a protected future
+editorial contract, not Canon or Accepted Actual. Both projections are visible
+to Draft and Review with exact version/hash lineage. Missing identity name,
+aliases or pronouns blocks before Provider dispatch. Canon deterministic
+continuity v3 rejects only source-bound, locally unambiguous surface-identity
+contradictions and does not ask a Judge to infer identity.
+
 Committed Chapter acceptance rebuilds two writer-facing projections in the
 existing retrieval store: Recent Trail from typed accepted outcomes and Hook
 Debt from accepted Narrative Obligations. The Chapter Transaction Workspace API
