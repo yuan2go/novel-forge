@@ -889,7 +889,13 @@ class PostgresQualityQualificationAuthority:
                     ],
                 )
             uow.commit()
-        return self._decision_by_asset(output["asset_version_id"])
+        recorded = self._decision_by_asset(output["asset_version_id"])
+        return {
+            **recorded,
+            "human_evaluator_ids": list(evaluator_ids),
+            "human_subjectivity_is_ground_truth": False,
+            "bounded_evidence_only": True,
+        }
 
     def record_terminal_failure(
         self,

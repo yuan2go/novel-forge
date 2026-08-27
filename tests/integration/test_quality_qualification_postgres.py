@@ -233,6 +233,9 @@ class TestQualityQualificationPostgres:
         assert decision["qualification_status"] == "NOT_PROVEN"
         assert decision["campaign_lifecycle"] == "WAITING_HUMAN_EVIDENCE"
         assert decision["human_evidence_status"] == "WAITING_HUMAN_EVIDENCE"
+        assert decision["human_evaluator_ids"] == []
+        assert decision["human_subjectivity_is_ground_truth"] is False
+        assert decision["bounded_evidence_only"] is True
         assert decision["decision_version"] == 1
 
         campaign = self.app.require_campaign(

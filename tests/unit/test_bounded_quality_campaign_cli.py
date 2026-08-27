@@ -289,6 +289,35 @@ def test_runtime_environment_applies_profile_caps_and_real_validation_boundary()
         module._runtime_env(state, mode="real", profile=profile)
 
 
+def test_zero_human_evaluation_remains_not_proven(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _module()
+    state = _state()
+
+    class _Quality:
+        def evaluate_campaign(self, *args: object, **kwargs: object) -> dict[str, object]:
+            return {
+                "qualification_status": "NOT_PROVEN",
+                "campaign_lifecycle": "WAITING_HUMAN_EVIDENCE",
+                "human_evidence_status": "WAITING_HUMAN_EVIDENCE",
+                "human_evaluator_ids": [],
+            }
+
+    monkeypatch.setattr(module, "_state", lambda path: state)
+    monkeypatch.setattr(module, "_principal", lambda project_id: object())
+    monkeypatch.setattr(module, "_quality", lambda database_url, raw: _Quality())
+
+    decision = module._evaluate(
+        module.argparse.Namespace(
+            state="state.json",
+            database_url="postgresql:///quality",
+            human_collection_closed=False,
+        )
+    )
+
+    assert decision["qualification_status"] == "NOT_PROVEN"
+    assert decision["human_evaluator_ids"] == []
+
+
 def test_freeze_budget_headroom_uses_settled_authority_usage() -> None:
     module = _module()
     profile = module.load_quality_campaign_profile(
