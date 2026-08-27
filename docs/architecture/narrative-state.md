@@ -122,6 +122,13 @@ The 22-node Chapter composition consumes the resulting Manifest/Bundle after
 ExecutionIntent and Memo. Missing or over-budget protected context fails closed
 before Provider execution.
 
+The frozen qualified CharacterCast (or an explicitly selected authoritative
+CharacterCard) and Reader Promise are protected Chapter Context as well. The
+Character projection supplies executable identity/stable-character facts; the
+Reader Promise remains future editorial intent. Neither projection mutates
+Narrative State, and the Reader Promise cannot become Canon or Actual merely by
+being sent to Draft/Review.
+
 ## Arc observation defect at the audit baseline
 
 At baseline `4fdf6adaa25ef085e4e6abab1f5b6ac71d86607a`, the post-acceptance Arc

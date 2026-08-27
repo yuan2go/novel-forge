@@ -136,6 +136,9 @@ def _payload(
         "characters": [
             {
                 "character_id": "mara",
+                "name": "Mara",
+                "aliases": ["Mara"],
+                "pronouns": ["she"],
                 "desire": "restore the erased district",
                 "need": "share uncertain evidence",
                 "fear": "causing another erasure",
