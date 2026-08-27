@@ -1022,6 +1022,7 @@ class PostgresBookProductionQuery:
                        reward_ledger_version, promise_ledger_version,
                        COALESCE(initial_story_state_version, ''),
                        COALESCE(initial_canon_snapshot_version, ''),
+                       foundation_set, foundation_set_digest,
                        design_admission_status, design_qualification,
                        design_qualification_hash
                 FROM authority_book_production_input_snapshot
@@ -1048,6 +1049,8 @@ class PostgresBookProductionQuery:
             "promise_ledger_version",
             "initial_story_state_version",
             "initial_canon_snapshot_version",
+            "foundation_set",
+            "foundation_set_digest",
             "design_admission_status",
             "design_qualification",
             "design_qualification_hash",

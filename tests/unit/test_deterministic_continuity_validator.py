@@ -8,6 +8,77 @@ from novel_forge.modules.canon_graph.domain import (
 
 
 class DeterministicContinuityValidatorTests(unittest.TestCase):
+    def test_real_failure_lin_yao_wrong_pronoun_is_blocking(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={},
+            extraction={},
+            revision_text=(
+                "收档钟敲过第一遍时，林遥还蹲在路沿边。\n\n"
+                "他把底图压在膝上，沿图中道路的东缘重新量了一次。"
+            ),
+            identity_profiles=(
+                {
+                    "character_id": "lin-yao",
+                    "canonical_name": "林遥",
+                    "aliases": ["林遥"],
+                    "pronouns": ["她"],
+                    "source_asset_version_id": "character-cast:93846845",
+                },
+            ),
+        )
+
+        self.assertEqual(report["gate"], "BLOCKED")
+        violation = next(
+            item
+            for item in report["violations"]
+            if item["conflict_code"]
+            == "CHARACTER_IDENTITY_PRONOUN_CONTRADICTION"
+        )
+        self.assertEqual(violation["evidence"]["candidate"]["observed_pronoun"], "他")
+        self.assertEqual(
+            violation["evidence"]["existing"]["source_asset_version_id"],
+            "character-cast:93846845",
+        )
+
+    def test_real_failure_director_xu_wrong_pronoun_is_blocking(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={},
+            extraction={},
+            revision_text=(
+                "徐主任的通话随即接入。\n\n"
+                "他没有问路长什么样，只扫了一眼材料目录。"
+            ),
+            identity_profiles=(
+                {
+                    "character_id": "director-xu",
+                    "canonical_name": "徐主任",
+                    "aliases": ["徐主任"],
+                    "pronouns": ["她"],
+                    "source_asset_version_id": "character-cast:f34db8be",
+                },
+            ),
+        )
+
+        self.assertEqual(report["gate"], "BLOCKED")
+        self.assertIn(
+            "CHARACTER_IDENTITY_PRONOUN_CONTRADICTION",
+            {item["conflict_code"] for item in report["violations"]},
+        )
+
+    def test_identity_checker_does_not_guess_without_explicit_vocabulary(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={},
+            extraction={},
+            revision_text="林遥转向乔生。他看着她，没有说话。",
+            identity_profiles=(),
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+        self.assertEqual(report["violations"], [])
+
     def test_foreshadow_transition_matches_canonical_entity_across_obligation_adapter(
         self,
     ) -> None:

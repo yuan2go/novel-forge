@@ -715,6 +715,8 @@ class _ContextHandler:
             str(item["asset_type"]) for item in governed_candidates
         }
         required_candidate_types = {
+            "character_cast",
+            "reader_promise",
             "quality_rubric",
             "platform_profile",
         }

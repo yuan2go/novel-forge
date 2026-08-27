@@ -59,3 +59,16 @@ def test_quality_book_contract_rejects_human_claim_or_missing_review_criterion()
             incomplete,
             campaign_profile=_profile(),
         )
+
+
+def test_quality_book_contract_requires_executable_character_identity() -> None:
+    payload = json.loads(BOOK.read_text(encoding="utf-8"))
+    character_layer = next(
+        item
+        for item in payload["foundation"]["layers"]
+        if item["role"] == "CHARACTER_CAST"
+    )
+    character_layer["candidate_payload"]["characters"][0].pop("pronouns")
+
+    with pytest.raises(ValueError, match="executable canonical names"):
+        BoundedQualityBookContract.from_mapping(payload, campaign_profile=_profile())

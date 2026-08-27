@@ -32,6 +32,10 @@ from .contracts import (
     ProductionPreparationRisk,
     ResolvedProductionAsset,
 )
+from .foundation_context import (
+    project_character_foundation_context,
+    project_reader_promise_context,
+)
 from .policies import (
     COLLECTION_ASSET_TYPES,
     CONTEXT_VERSION_REF_KEYS,
@@ -434,9 +438,25 @@ class ProductionPreparationService:
                 "Compact authoritative Canon truth through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."
             )
+        projection: dict[str, object] = {}
+        if item.asset_type in {"character_cast", "character_card"}:
+            projection = project_character_foundation_context(
+                asset_type=item.asset_type,
+                content=item.content,
+                source_asset_version_id=item.asset_version_id,
+            )
+        elif item.asset_type == "reader_promise":
+            projection = project_reader_promise_context(
+                content=item.content,
+                source_asset_version_id=item.asset_version_id,
+            )
+        if projection:
+            safe_summary = str(projection["safe_summary"])
+            structured_facts = list(projection["structured_facts"])
         return {
             "asset_version_id": item.asset_version_id,
             "content_hash": item.content_hash,
+            "content_digest": item.content_hash,
             "asset_type": item.asset_type,
             "physical_asset_type": str(
                 item.content.get("physical_asset_type") or item.asset_type
@@ -446,7 +466,9 @@ class ProductionPreparationService:
             "safe_summary": safe_summary,
             "structured_facts": structured_facts,
             "narrative_function": str(
-                item.content.get("narrative_function") or item.asset_type
+                projection.get("narrative_function")
+                or item.content.get("narrative_function")
+                or item.asset_type
             ),
             "estimated_tokens": int(
                 max(
@@ -466,6 +488,7 @@ class ProductionPreparationService:
                 )
                 if item.asset_type in _STATE_ASSET_TYPES
                 else item.content.get("estimated_tokens")
+                or projection.get("estimated_tokens")
                 or max(1, len(safe_summary + repr(structured_facts)) // 4)
             ),
             "allowed_use": (
@@ -479,6 +502,13 @@ class ProductionPreparationService:
             "source_use_mode": str(item.content.get("source_use_mode") or "generation"),
             "entity_id": str(item.content.get("entity_id") or ""),
             "scope": dict(item.content.get("scope") or {}),
+            "context_class": str(projection.get("context_class") or "RETRIEVABLE"),
+            "compression_method": str(
+                projection.get("compression_method") or "safe_summary"
+            ),
+            "semantic_projection": bool(
+                projection.get("semantic_projection", True)
+            ),
         }
 
     @staticmethod
@@ -711,6 +741,23 @@ class ProductionPreparationService:
                     return "CHAPTER_PLAN_TARGET_MISMATCH"
             except (TypeError, ValueError):
                 return "CHAPTER_PLAN_TARGET_MISSING"
+        if asset_type in {"character_cast", "character_card"}:
+            try:
+                project_character_foundation_context(
+                    asset_type=asset_type,
+                    content=content,
+                    source_asset_version_id=asset.asset_version_id,
+                )
+            except KernelError as exc:
+                return exc.code
+        if asset_type == "reader_promise":
+            try:
+                project_reader_promise_context(
+                    content=content,
+                    source_asset_version_id=asset.asset_version_id,
+                )
+            except KernelError as exc:
+                return exc.code
         if asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
             expected_contract = (
                 "story-state-snapshot-v2"

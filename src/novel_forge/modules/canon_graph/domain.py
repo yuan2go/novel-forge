@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -258,6 +259,7 @@ def build_canon_update(
     extraction: dict[str, Any] | None = None,
     historical_state: dict[str, list[dict[str, Any]]] | None = None,
     planned_execution: dict[str, Any] | None = None,
+    identity_profiles: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError("CANON_INPUT_INVALID", "versioned canon lineage is required")
@@ -288,6 +290,8 @@ def build_canon_update(
         historical_state=state,
         extraction=extraction,
         planned_execution=planned_execution,
+        revision_text=str((revision or {}).get("text") or ""),
+        identity_profiles=identity_profiles,
     )
     expected_realization_ids = {
         str(item.get("event_id") or "")
@@ -581,6 +585,8 @@ def validate_deterministic_continuity(
     historical_state: dict[str, list[dict[str, Any]]],
     extraction: dict[str, Any],
     planned_execution: dict[str, Any] | None = None,
+    revision_text: str = "",
+    identity_profiles: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
     """Validate only invariants supported by explicit structured Authority data."""
 
@@ -588,6 +594,13 @@ def validate_deterministic_continuity(
         raise ValueError("chapter must be positive")
     state = {kind: _state_items(values) for kind, values in historical_state.items()}
     conflicts: list[dict[str, Any]] = []
+    profiles = tuple(dict(item) for item in identity_profiles)
+    conflicts.extend(
+        _deterministic_identity_pronoun_conflicts(
+            revision_text=revision_text,
+            identity_profiles=profiles,
+        )
+    )
     _validate_transition_preconditions(
         conflicts,
         state=state,
@@ -911,16 +924,121 @@ def validate_deterministic_continuity(
     return {
         "gate": "BLOCKED" if conflicts else "PASSED",
         "violations": conflicts,
-        "deterministic_rule_count": 15,
+        "deterministic_rule_count": 15 + int(bool(profiles)),
         "used_text_heuristics": False,
+        "surface_identity_check_applied": bool(profiles and revision_text),
         "semantic_judgment_required": [
             "CHARACTER_MOTIVATION",
             "EMOTIONAL_PLAUSIBILITY",
             "OOC",
             "EXPECTED_EXIT_STATE",
         ],
-        "contract_version": "deterministic-continuity-v2",
+        "contract_version": "deterministic-continuity-v3",
     }
+
+
+_CHINESE_THIRD_PERSON_PRONOUNS = frozenset({"他", "她", "它"})
+_LEADING_PRONOUN = re.compile(
+    r"^[\s#>*\-—“”‘’\"'（(]*([他她它])(?=[\u3400-\u9fff])"
+)
+
+
+def _deterministic_identity_pronoun_conflicts(
+    *, revision_text: str, identity_profiles: tuple[dict[str, Any], ...]
+) -> list[dict[str, Any]]:
+    """Check only exact adjacent Chinese coreference backed by Authority data."""
+
+    if not revision_text or not identity_profiles:
+        return []
+    normalized: list[dict[str, Any]] = []
+    alias_owners: dict[str, str] = {}
+    for raw in identity_profiles:
+        character_id = str(raw.get("character_id") or raw.get("entity_id") or "").strip()
+        canonical_name = str(
+            raw.get("canonical_name") or raw.get("name") or ""
+        ).strip()
+        aliases = list(
+            dict.fromkeys(
+                value
+                for item in [canonical_name, *(raw.get("aliases") or [])]
+                if (value := str(item or "").strip())
+            )
+        )
+        pronouns = {
+            str(item or "").strip()
+            for item in raw.get("pronouns") or ()
+            if str(item or "").strip()
+        }
+        if not character_id or not canonical_name or not aliases or not pronouns:
+            continue
+        profile = {
+            **raw,
+            "character_id": character_id,
+            "canonical_name": canonical_name,
+            "aliases": aliases,
+            "pronouns": sorted(pronouns),
+        }
+        for alias in aliases:
+            owner = alias_owners.get(alias)
+            if owner is not None and owner != character_id:
+                # Ambiguous aliases are deliberately excluded instead of guessed.
+                alias_owners[alias] = ""
+            else:
+                alias_owners[alias] = character_id
+        normalized.append(profile)
+    profiles_by_id = {str(item["character_id"]): item for item in normalized}
+    active: dict[str, Any] | None = None
+    active_age = 0
+    conflicts: list[dict[str, Any]] = []
+    units = [
+        item.strip()
+        for item in re.split(r"(?:\r?\n)+|(?<=[。！？!?])", revision_text)
+        if item.strip()
+    ]
+    for unit in units:
+        leading = _LEADING_PRONOUN.match(unit)
+        if leading and active is not None and active_age <= 1:
+            observed = leading.group(1)
+            expected = set(active["pronouns"]) & _CHINESE_THIRD_PERSON_PRONOUNS
+            if expected and observed not in expected:
+                excerpt = unit[:160]
+                conflicts.append(
+                    _conflict(
+                        "CHARACTER_IDENTITY_PRONOUN_CONTRADICTION",
+                        {
+                            "character_id": active["character_id"],
+                            "canonical_name": active["canonical_name"],
+                            "aliases": list(active["aliases"]),
+                            "pronouns": list(active["pronouns"]),
+                            "source_asset_version_id": str(
+                                active.get("source_asset_version_id") or ""
+                            ),
+                        },
+                        {
+                            "observed_pronoun": observed,
+                            "excerpt": excerpt,
+                        },
+                        "revise the surface identity or change the governed Character identity contract",
+                        approval=False,
+                    )
+                )
+        matched_ids = {
+            owner
+            for alias, owner in alias_owners.items()
+            if owner and alias in unit
+        }
+        if len(matched_ids) == 1:
+            active = profiles_by_id[next(iter(matched_ids))]
+            active_age = 0
+        elif len(matched_ids) > 1:
+            active = None
+            active_age = 0
+        elif active is not None:
+            active_age += 1
+            if active_age > 1:
+                active = None
+                active_age = 0
+    return conflicts
 
 
 def _state_items(values: list[dict[str, Any]]) -> list[dict[str, Any]]:

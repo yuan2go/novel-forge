@@ -542,6 +542,7 @@ def build_canon_patch(
     context_bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     historical_state: dict[str, list[dict[str, Any]]] = {}
+    identity_profiles: list[dict[str, Any]] = []
     state_aliases = {
         "canon_snapshot": "canon_snapshot",
         "character_state": "character_state",
@@ -567,6 +568,14 @@ def build_canon_patch(
     for segment in (context_bundle or {}).get("context_segments", []):
         asset_type = str(segment.get("asset_type") or "")
         facts = list(segment.get("structured_facts", []))
+        if asset_type in {"character_cast", "character_card"}:
+            identity_profiles.extend(
+                dict(fact)
+                for fact in facts
+                if isinstance(fact, dict)
+                and fact.get("kind") == "character_identity_contract"
+            )
+            continue
         if asset_type == "story_state_snapshot":
             for fact in facts:
                 if not isinstance(fact, dict):
@@ -632,6 +641,7 @@ def build_canon_patch(
         planned_execution=dict(
             (context_bundle or {}).get("chapter_execution_expectations") or {}
         ),
+        identity_profiles=identity_profiles,
     )
 
 
