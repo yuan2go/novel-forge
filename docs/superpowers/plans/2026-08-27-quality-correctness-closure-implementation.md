@@ -38,7 +38,7 @@ Base: `3511efbd4d83b6716fc6b930b5f86ff16c775eb7`
 
 ## Task 5: Govern residual operation closure
 
-- Add/reuse PostgreSQL recovery tests for expired lease -> `LEASE_LOST` ->
+- Add/reuse targeted PostgreSQL recovery tests for expired lease -> `LEASE_LOST` ->
   audited recovery -> cancellation -> `CANCELLED` with no ExternalEffect.
 - Execute that sequence against the exact residual operation idempotently.
 - Persist a closure report with before/after Authority evidence.

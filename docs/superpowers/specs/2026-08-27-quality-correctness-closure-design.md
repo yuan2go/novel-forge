@@ -113,11 +113,12 @@ The residual operation
 `story_design.semantic_evaluate` attempt with an expired lease and no
 ExternalEffect. Closure must use the current Authority commands in this order:
 
-1. mark the exact expired lease `EXPIRED` through maintenance;
-2. mark the exact attempt `LEASE_LOST` through fenced attempt recovery;
-3. record an idempotent recovery command for audit visibility;
-4. request cancellation at the exact operation version;
-5. resolve as `no_external_effect` to terminal `CANCELLED`.
+1. mark the exact expired lease `EXPIRED` and the exact attempt `LEASE_LOST`
+   through fenced attempt recovery (the all-database maintenance scan is not
+   used for this targeted closure);
+2. record an idempotent recovery command for audit visibility;
+3. request cancellation at the exact operation version;
+4. resolve as `no_external_effect` to terminal `CANCELLED`.
 
 Direct SQL status mutation is forbidden. The result must retain recovery,
 cancellation, StateEvent, audit and outbox evidence and leave no live lease,
