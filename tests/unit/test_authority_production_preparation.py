@@ -202,8 +202,12 @@ class ProductionPreparationTests(unittest.TestCase):
                 "selected_asset_versions"
             ]
         }
-        self.assertEqual(selected["character_cast"]["content_hash"], "sha256:character_cast")
-        self.assertEqual(selected["reader_promise"]["content_hash"], "sha256:reader_promise")
+        self.assertEqual(
+            selected["character_cast"]["content_hash"], "sha256:character_cast"
+        )
+        self.assertEqual(
+            selected["reader_promise"]["content_hash"], "sha256:reader_promise"
+        )
         self.assertEqual(
             result.command.context_version_refs["character_cast_version"],
             "version:character_cast",
@@ -274,6 +278,7 @@ class ProductionPreparationTests(unittest.TestCase):
             result.report.blocked_assets,
         )
         self.assertIsNone(result.command)
+
     def test_project_knowledge_pack_is_optional_unless_capability_requires_it(
         self,
     ) -> None:
