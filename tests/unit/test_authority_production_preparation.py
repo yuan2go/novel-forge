@@ -144,6 +144,136 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_canonical_chapter_freezes_protected_foundation_contracts(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                "character_cast",
+                "reader_promise",
+            )
+        }
+        assets["character_cast"] = replace(
+            assets["character_cast"],
+            content={
+                "candidate_payload": {
+                    "characters": [
+                        {
+                            "character_id": "lin-yao",
+                            "name": "林遥",
+                            "aliases": ["林遥"],
+                            "pronouns": ["她"],
+                            "desire": "保存道路",
+                            "voice": "精确克制",
+                        }
+                    ]
+                }
+            },
+        )
+        assets["reader_promise"] = replace(
+            assets["reader_promise"],
+            content={
+                "candidate_payload": {
+                    "reader_promise": "每章发现都造成选择、代价和反制。"
+                }
+            },
+        )
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                book_id="book-1",
+                chapter=1,
+                idempotency_key="canonical-foundation-context",
+                capability_required_asset_types=(
+                    "character_cast",
+                    "reader_promise",
+                ),
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        selected = {
+            item["asset_type"]: item
+            for item in result.report.production_input_manifest[
+                "selected_asset_versions"
+            ]
+        }
+        self.assertEqual(selected["character_cast"]["content_hash"], "sha256:character_cast")
+        self.assertEqual(selected["reader_promise"]["content_hash"], "sha256:reader_promise")
+        self.assertEqual(
+            result.command.context_version_refs["character_cast_version"],
+            "version:character_cast",
+        )
+        self.assertEqual(
+            result.command.context_version_refs["reader_promise_versions"],
+            ["version:reader_promise"],
+        )
+        protected = {
+            item["asset_type"]: item
+            for item in result.command.context_candidates
+            if item["asset_type"] in {"character_cast", "reader_promise"}
+        }
+        self.assertEqual(
+            {item["context_class"] for item in protected.values()}, {"PROTECTED"}
+        )
+
+    def test_canonical_chapter_blocks_historical_unbound_character_cast(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                "character_cast",
+                "reader_promise",
+            )
+        }
+        assets["character_cast"] = replace(
+            assets["character_cast"],
+            content={
+                "candidate_payload": {
+                    "characters": [
+                        {
+                            "character_id": "lin-yao",
+                            "wound": "她曾因独断标注误导救援队",
+                        }
+                    ]
+                }
+            },
+        )
+        assets["reader_promise"] = replace(
+            assets["reader_promise"],
+            content={"candidate_payload": {"reader_promise": "有代价的发现。"}},
+        )
+
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                book_id="book-1",
+                chapter=1,
+                idempotency_key="historical-unbound-character",
+                capability_required_asset_types=(
+                    "character_cast",
+                    "reader_promise",
+                ),
+            )
+        )
+
+        self.assertEqual(result.report.decision, "BLOCKED")
+        self.assertIn(
+            {
+                "asset_type": "character_cast",
+                "code": "CHARACTER_IDENTITY_CONTRACT_INCOMPLETE",
+            },
+            result.report.blocked_assets,
+        )
+        self.assertIsNone(result.command)
     def test_project_knowledge_pack_is_optional_unless_capability_requires_it(
         self,
     ) -> None:

@@ -5,6 +5,7 @@ import json
 import pytest
 
 from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
+from novel_forge.modules.chapter_authority.domain_handlers import build_canon_patch
 from novel_forge.modules.chapter_authority.provider_views import (
     build_provider_context_view,
     build_provider_task_view,
@@ -171,3 +172,17 @@ def test_character_and_reader_promise_are_protected_in_draft_and_review() -> Non
         assert "每章揭示一个可验证的地图异常" in serialized
         assert "provider_generated" not in serialized
 
+    canon = build_canon_patch(
+        revision={
+            "chapter": 1,
+            "text": "收档钟敲过第一遍时，林遥还蹲在路沿边。\n\n他把底图压在膝上。",
+        },
+        revision_asset_version_id="revision:real-failure:93846845",
+        project_id="project:quality",
+        context_bundle_version_id="context:v1",
+        context_bundle=bundle,
+    )
+    assert canon["gate"] == "BLOCKED"
+    assert "CHARACTER_IDENTITY_PRONOUN_CONTRADICTION" in {
+        item["conflict_code"] for item in canon["conflicts"]
+    }
