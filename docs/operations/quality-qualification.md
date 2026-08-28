@@ -141,8 +141,32 @@ Relevant public surfaces are:
 
 Formation and Opening are RuntimeJob-backed. Run the canonical Book worker or
 claim through the same worker executor until Formation is `READY` and Opening
-is `COMPLETE`. Recovery must resume the frozen request; it must not create
-replacement lineage.
+is `COMPLETE`. A recovered Opening preserves the frozen business request and
+never creates a new candidate, Planning or qualification truth merely to
+continue execution. That rule does not mean re-opening a terminal inner
+Operation. If a semantic-evaluation Operation is terminal and authoritative
+Effect evidence proves replacement is safe, the Book Opening Recovery
+Application may admit a new semantic-evaluation execution generation with
+explicit `replacement_of` lineage. The predecessor remains immutable and the
+new Operation uses generation-aware idempotency and concurrency identity.
+
+Book Opening execution loss and recovery authorization are separate. An
+expired/lost Opening claim is first converged through the Book Opening Recovery
+Application: its exact RuntimeJob, Attempt, Lease and execution generation become
+terminal evidence and the Opening becomes `FAILED`. This loss step neither
+creates a RecoveryIntent nor calls a Provider. A subsequent operator-authorized
+`recover` requires a fresh immutable assessment, revalidates all Authority,
+checkpoint, generation, policy and ExternalEffect evidence in its transaction,
+and only then admits the next Opening execution generation.
+
+An `UNKNOWN_AMBIGUOUS` ExternalEffect blocks replacement and requires the
+existing Effect reconciliation path; operator approval cannot waive this
+boundary. Recovery, loss convergence and checkpoint reconciliation never call a
+Provider. Any admitted replacement executes later through the normal governed
+worker path. Legacy `BookOpening.resume()` must not be used: it is blocked or
+internally routed through the same assessment and recovery contract. HTTP,
+maintenance, worker and any operational CLI surface must share that Application
+path and must not contain direct repair SQL.
 
 ## Non-secret runtime environment
 
@@ -326,6 +350,10 @@ PYTHONPATH=src python scripts/run_bounded_quality_qualification.py \
 Resume reconciles durable Attempts, receipts, Chapter acceptance and Group
 state. Do not delete failures, release unresolved budgets manually, or create a
 second BookRun to hide a failed attempt.
+
+This command resumes the already admitted bounded campaign. It is not the
+legacy Book Opening `resume()` mutation and cannot bypass Book Opening execution
+loss, RecoveryAssessment, ExternalEffect reconciliation or generation checks.
 
 A measured retryable Provider failure may consume the next Attempt only inside
 the frozen USD 8 Operation envelope. If the operation reaches `FAILED_FINAL`,

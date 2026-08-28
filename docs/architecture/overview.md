@@ -43,12 +43,38 @@ AssetVersions/hashes and generation input snapshots; mixed set generation or
 an unfinished Formation fails closed. `book-design.v4` remains replay/migration
 compatibility and is not a new-production Foundation root.
 
-Book opening is an operator-reachable durable command surface. HTTP admits an
-Operation and `BOOK_OPENING_EXECUTE` RuntimeJob, while the Book worker performs
-the searched Book/Volume/Arc baseline and input-snapshot resolution. Query,
-resume and abort operate on the persisted opening run. A worker crash after the
-business commit reconciles the stored COMPLETE result on the same job retry;
-the request lifecycle never owns Provider execution.
+The following is the accepted Book Opening runtime contract; this document does
+not by itself establish its implementation or qualification status. Book
+Authority owns the operator-reachable Book Opening aggregate. Admission
+persists a frozen request and an append-only opening execution generation, then
+binds that generation to one `BOOK_OPENING_EXECUTE` RuntimeJob. When claimed,
+the opening's relational execution identity binds the exact RuntimeJob,
+Attempt, Lease and fencing token. Database constraints protect those
+relationships; each mutating runtime path separately revalidates the temporal
+lease because time-based validity is not a static database invariant. See
+[ADR 0008](../adr/0008-book-opening-recovery-authority.md).
+
+RuntimeJob is only the operational plane. An expired Book Opening lease cannot
+use generic same-job takeover. The shared Book Opening Recovery Application
+converges an objectively lost execution into terminal RuntimeJob evidence,
+`OpeningExecution.LOST` and `BookOpening.FAILED`. That convergence records an
+immutable loss assessment/receipt but does not create a `RecoveryIntent` or
+authorize successor work. Formal recovery is a separate `FAILED → ADMITTED`
+command based on a fresh immutable assessment and lock-time authoritative
+reread. Its pure database admission mutations are one short PostgreSQL unit of
+work; Provider execution remains on the normal governed worker path.
+
+Opening semantic progress is an append-only hash-bound checkpoint cursor over
+exact Narrative Search, Planning, Story Design and Input Resolver evidence. It
+does not copy those Authorities' lifecycle or qualification truth. A terminal
+semantic-evaluation Operation remains immutable; where effect classification
+permits continuation, the same immutable candidate receives a new
+generation-aware evaluation execution with explicit predecessor lineage.
+`UNKNOWN_AMBIGUOUS`, including Command Kernel `UNKNOWN_EXTERNAL_STATE`, blocks
+recovery until canonical reconciliation. Recovery, loss convergence and
+checkpoint reconciliation never call a Provider. HTTP, worker, maintenance and
+any CLI adapter all invoke the same Recovery Application; legacy `resume` is
+not an alternate mutation path.
 
 Story Planning persists each search at one exact parent/accepted boundary, its
 immutable branch candidates, structured future projections, independent
@@ -237,6 +263,18 @@ Followup workers as separate deployment executors, bind every receipt to the
 exact release SHA, and reject fixture or intermediate state as runtime proof.
 Qualification results remain external evidence attached to the candidate PR;
 this current-runtime document does not promote an evidence level by itself.
+
+The 2026-08-27 Quality Qualification is also immutable historical evidence of a
+different failure boundary: at `main@611f92264af7ca143ba365a3746e53cea5976606`,
+Book Opening could remain `RUNNING` with an expired outer RuntimeJob lease while
+its inner semantic-evaluation Operation was terminal. Earlier same-job replay
+covered a crash after the opening business commit; it did not prove loss before
+that commit or replacement after terminal evaluation. The Book Opening recovery
+contract above closes that engineering gap only when its PostgreSQL migration,
+bug reproduction, concurrency, failure-injection and full regression gates
+pass. The recorded qualification database and orphan remain read-only; their
+recovery, real Provider execution, another eight-Chapter campaign, human review,
+quality proof and Production Admission require separate user authorization.
 
 ## Evidence boundary
 

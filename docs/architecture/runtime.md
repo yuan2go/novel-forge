@@ -25,7 +25,12 @@ The manifest is authoritative for worker identity, queue, health, and recovery c
 
 An API router authenticates a principal, validates a typed request, and calls an Authority application. Admission freezes identity, scope, input assets, idempotency, definition version, trace, and causation. Atomic commands execute in one governed transaction; durable jobs create RuntimeJobs for workers; sagas coordinate child operations without copying child Attempt state.
 
-Workers claim jobs with leases and fences. Provider and object-store work is represented by `ExternalEffect`; receipts are reconciled before retry. A lost lease or late result cannot commit over a newer fence. Successful handler output is materialized as a versioned asset and linked to the operation.
+Workers claim jobs with leases and fences. Provider and object-store work is
+represented by `ExternalEffect`; receipts are reconciled before retry. A lost
+lease or late result cannot commit over a newer fence. Generic expired-lease
+takeover is available only when the owning domain's execution contract permits
+the same operational execution to continue. Successful handler output is
+materialized as a versioned asset and linked to the operation.
 
 ## Book and Chapter coordination
 
@@ -41,6 +46,67 @@ Chapter production is a 22-node explicit saga (`chapter.slice.run`), including
 ExecutionIntent, Memo, immutable RetrievalResult, and deterministic Best Candidate selection. Chapter-specific
 binders and policies turn frozen inputs into work orders. All provider and
 object-store execution comes from the shared production execution composition.
+
+## Book Opening execution and recovery
+
+This section records the accepted contract; engineering status still depends on
+the migration and test evidence described in the architecture overview. Book
+Authority owns the Book Opening aggregate's business lifecycle, execution
+generation, current execution binding, semantic checkpoint cursor and recovery
+authorization.
+RuntimeJob owns only the corresponding operational Job, Attempt, Lease, fence,
+checkpoint and result. A `RUNNING` opening binds one exact execution generation
+to one current RuntimeJob/Attempt/Lease/fencing token. PostgreSQL foreign keys,
+uniqueness and checks protect this relational identity; claim, heartbeat,
+checkpoint, complete, fail, cancel and recovery commands also verify
+`lease_expires_at` at transaction time. The complete ownership decision is
+[ADR 0008](../adr/0008-book-opening-recovery-authority.md).
+
+`BOOK_OPENING_EXECUTE` uses an Authority-convergence lease-loss policy. A
+generic claim cannot take over its expired active lease. A bounded maintenance
+scan invokes the same Book Opening Recovery Application used by operator
+surfaces to:
+
+1. assess the observed loss against frozen input, execution, checkpoint,
+   policy/configuration, Authority-version and ExternalEffect evidence;
+2. lock and reread the authoritative rows in canonical order;
+3. terminalize the lost operational execution without rewriting prior terminal
+   history;
+4. mark the opening execution `LOST` and the Book Opening `FAILED`;
+5. commit immutable convergence receipt, audit event and outbox evidence.
+
+Execution-loss convergence does not create a `RecoveryIntent`. A successor is
+authorized only by formal recovery from `FAILED` using a fresh assessment. The
+recovery admission uses one short PostgreSQL unit of work for
+`RecoveryIntent`, safe semantic-evaluation replacement generation and Operation
+admission, generation-head CAS, successor RuntimeJob, Opening transition,
+`RecoveryReceipt`, events and outbox. A commit-response loss therefore replays
+the same receipt rather than admitting duplicate work.
+
+The opening checkpoint is append-only semantic progress evidence. Entries form
+a monotonic hash chain and reference exact durable Narrative Search, Planning,
+Story Design or Input Resolver evidence and its version/hash. The current cursor
+is an idempotent projection. Reconciliation can append a missing projection
+from authoritative legacy evidence, but cannot copy or change candidate,
+search, plan-activation or qualification state.
+
+A terminal semantic-evaluation Operation is never reopened. Safe continuation
+creates a generation-aware evaluation execution whose immutable
+`replacement_of` lineage points to its predecessor. The generation owns only
+execution lineage; Story Design and Planning retain eligibility and
+qualification truth. Recovery classifies external state as
+`PROVEN_NO_EFFECT`, `PROVEN_SUCCESS`, `PROVEN_TERMINAL_FAILURE` or
+`UNKNOWN_AMBIGUOUS`. Proven success uses the existing receipt/durable output;
+proven terminal failure permits replacement only under an existing policy; and
+unknown or ambiguous state blocks until the Command Kernel's canonical
+ExternalEffect reconciliation completes. `UNKNOWN_AMBIGUOUS` includes Command
+Kernel `UNKNOWN_EXTERNAL_STATE`. Recovery, loss convergence and checkpoint
+reconciliation never invoke a Provider.
+
+All mutation adapters call this single Recovery Application. HTTP and workers
+contain no recovery SQL; a CLI, if exposed by the operational surface, is only
+a thin adapter. Legacy `resume` cannot bypass assessment, generation, effect or
+checkpoint validation.
 
 ## Agent Harness
 
@@ -97,10 +163,25 @@ durable Operations; physical schema removal requires a later migration audit.
 
 - Stable idempotency keys replay an existing admission instead of duplicating business work.
 - CAS/version checks prevent stale business transitions.
-- Attempt leases and fences prevent stale worker commits.
+- Attempt leases and fences prevent stale worker commits. Relational execution
+  identity is database-constrained; temporal lease validity is checked by every
+  mutating runtime command and bounded loss scan.
+- A Book Opening expired lease converges through its owning Authority; ordinary
+  RuntimeJob takeover cannot silently continue it.
+- Execution loss and successor recovery authorization are separate immutable
+  decisions. Only the latter creates a `RecoveryIntent`.
+- Recovery assessments are immutable snapshots. Recovery locks and rereads
+  authoritative state; any input, checkpoint, generation, policy/configuration,
+  ExternalEffect or Authority-version drift requires reassessment.
+- Terminal Operation, Attempt, Lease, RuntimeJob and opening-execution rows are
+  immutable. Continuation uses explicit append-only generation lineage.
 - ExternalEffect identity and receipts are the required mechanism preventing
   blind re-execution after uncertain outcomes. Each worker classifies
-  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; embedding
+  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; Book Opening
+  exposes that disposition as `UNKNOWN_AMBIGUOUS`. Embedding
   projection recovery is covered by the current bounded PostgreSQL suite.
+- Book Opening loss, recovery and checkpoint reconciliation never call a
+  Provider. `UNKNOWN` or ambiguous effect evidence cannot be overridden by an
+  operator approval.
 - Outbox records are committed with business state and delivered later.
 - Supervisor checkpoints and trace/correlation identities survive process restarts.
