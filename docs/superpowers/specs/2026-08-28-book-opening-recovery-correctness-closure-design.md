@@ -72,6 +72,12 @@ required rows. A bounded maintenance scan converges expired executions.
 path has just revalidated the temporal lease condition. A stale worker cannot
 checkpoint or commit after its fence is lost.
 
+Opening executions freeze a release-stable Authority contract digest, while
+each immutable Assessment freezes the exact application build/commit in a
+release-bound Authority-version digest. Compatible deployment therefore does
+not strand admitted work, but a pre-deployment Assessment cannot authorize a
+post-deployment mutation.
+
 ## State machines
 
 ```text
@@ -82,14 +88,15 @@ ADMITTED -> RUNNING -> COMPLETE
     +-> ABORTED
 
 FAILED -> ADMITTED  (only a successful Recovery admission, generation N+1)
+FAILED -> ABORTED   (operator closes the failed Opening; execution stays terminal)
 ```
 
 ```text
 OpeningExecution
 SCHEDULED -> BOUND -> RUNNING -> SUCCEEDED
-                         |-> FAILED
-                         +-> LOST
-SCHEDULED -> ABORTED
+RUNNING -> FAILED
+BOUND | RUNNING -> LOST
+SCHEDULED | BOUND -> ABORTED  (only a governed, still-valid abort)
 ```
 
 Terminal OpeningExecution, RuntimeJob, RuntimeJobAttempt, RuntimeJobLease, and
@@ -115,6 +122,12 @@ executions and calls the Book Opening Recovery Application. Loss convergence:
 Loss convergence does **not** create a `RecoveryIntent`. It does not authorize
 generation N+1 and never calls a Provider. A commit followed by response loss
 replays the existing convergence receipt by deterministic idempotency.
+
+Active abort requires the exact Lease to remain valid at transaction time. An
+expired Lease makes abort fail closed and leaves formal loss convergence as the
+only terminalization path. The automatic loss key binds a fresh authoritative
+snapshot, including release identity, so a committed-but-stale assessment is
+preserved while a later scan creates a new assessment and converges.
 
 ## Recovery protocol
 
@@ -163,6 +176,15 @@ generation and terminal predecessor Operation, binds the RecoveryIntent, and
 uses generation-aware idempotency and concurrency identities. A per-candidate
 head advances with CAS. The predecessor never changes.
 
+Replacement is allowed only for a terminal predecessor and is bounded at
+generation 3. A nonterminal semantic Operation remains the Command Kernel's
+execution truth: the successor Opening re-enters the same deterministic
+Operation and generation through normal governed replay. That includes a crash
+after a Provider receipt became durable but before output materialization or
+Operation terminalization; the proven receipt/result is consumed without a
+second Provider invocation. A terminal proven-success replacement, when
+needed, is likewise projection-only.
+
 Recovery admission may reserve and admit a replacement Operation, but it may
 not execute it. Normal Content Authority workers perform any later Provider
 work. Admission crash boundaries converge by deterministic identities and an
@@ -190,14 +212,18 @@ confirmed evidence references. Each entry binds a semantic work key, owning
 Authority, durable evidence identity/version/hash, frozen request digest,
 execution generation, and predecessor checkpoint/hash.
 
-It may confirm search admission, candidate materialization, semantic evaluation
-materialization, search selection, plan activation, input-snapshot resolution,
-and Opening completion. It does not copy another Authority's mutable status.
+The current verifier accepts exact Planning-owned Narrative Search,
+PlanningGeneration evidence and Book input-snapshot resolution. It does not
+copy another Authority's mutable status or treat a child Operation as completed
+Opening progress.
 
 Resume derives the expected work graph from the frozen request and rereads the
 owning Authorities. Evidence committed before a checkpoint is deterministically
-reprojected; an exact checkpoint safely skips completed work; drift fails
-closed. Logs are never progress evidence.
+reprojected; only a checkpoint whose exact Planning-owned Narrative Search is
+still `ACTIVATED` with the same selection decision safely skips a whole
+semantic work item. Search ID, `future-N` branch and `EVALUATION_PENDING`
+Planning-generation membership must match exactly. Drift fails closed. Logs
+are never progress evidence.
 
 ## Transaction and lock model
 
@@ -234,6 +260,18 @@ Fresh databases use the new contract. Upgraded legacy rows fail closed until
 reconciled. Contract cleanup and global non-null validation are deferred until
 a separately authorized real legacy-recovery qualification proves rollout
 safety.
+
+Legacy execution binding uses a distinct immutable
+`LEGACY_EXECUTION_RECONCILIATION` assessment/receipt fact. Where no exact
+historical RuntimeJob can be bound, reconciliation writes a deterministic,
+non-executable, attempt-less `CANCELLED` RuntimeJob / `ABORTED`
+OpeningExecution marker and fails the Opening. This is not checkpoint
+reconciliation, does not authorize recovery and creates no `RecoveryIntent`.
+
+Deferred DDL guards enforce monotonic exact Opening execution/checkpoint heads,
+frozen request and checkpoint digests, active-current execution binding,
+RecoveryAssessment/Intent/Receipt kind, cardinality and scope, semantic
+generation-head CAS/recovery lineage, and immutable terminal execution history.
 
 ## Verification and stopping boundary
 

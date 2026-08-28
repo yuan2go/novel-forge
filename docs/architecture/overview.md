@@ -48,11 +48,18 @@ not by itself establish its implementation or qualification status. Book
 Authority owns the operator-reachable Book Opening aggregate. Admission
 persists a frozen request and an append-only opening execution generation, then
 binds that generation to one `BOOK_OPENING_EXECUTE` RuntimeJob. When claimed,
-the opening's relational execution identity binds the exact RuntimeJob,
-Attempt, Lease and fencing token. Database constraints protect those
+the Book Authority coordinator creates the first Attempt/Lease and changes the
+execution from `SCHEDULED` to `BOUND` in the same short transaction; generic
+RuntimeJob claim cannot claim this policy class. The opening's relational
+execution identity then binds the exact RuntimeJob, Attempt, Lease and fencing
+token before the worker may start. Database constraints protect those
 relationships; each mutating runtime path separately revalidates the temporal
 lease because time-based validity is not a static database invariant. See
 [ADR 0008](../adr/0008-book-opening-recovery-authority.md).
+The execution Authority digest is release-stable so a compatible deployment
+does not strand admitted work; each immutable recovery/loss assessment instead
+binds the exact application build and commit and must be reassessed after
+release drift.
 
 RuntimeJob is only the operational plane. An expired Book Opening lease cannot
 use generic same-job takeover. The shared Book Opening Recovery Application
@@ -65,16 +72,33 @@ reread. Its pure database admission mutations are one short PostgreSQL unit of
 work; Provider execution remains on the normal governed worker path.
 
 Opening semantic progress is an append-only hash-bound checkpoint cursor over
-exact Narrative Search, Planning, Story Design and Input Resolver evidence. It
-does not copy those Authorities' lifecycle or qualification truth. A terminal
-semantic-evaluation Operation remains immutable; where effect classification
-permits continuation, the same immutable candidate receives a new
-generation-aware evaluation execution with explicit predecessor lineage.
+exact Narrative Search/Planning and Book input-resolution evidence. It does not
+copy those Authorities' lifecycle or qualification truth. Only an
+exact still-`ACTIVATED` Narrative Search checkpoint can skip a whole semantic
+work item; search, `future-N` branch and `EVALUATION_PENDING` Planning lineage
+are matched exactly. A terminal semantic-evaluation Operation remains
+immutable; where effect classification permits continuation, the same
+immutable candidate receives a new generation-aware evaluation execution with
+explicit predecessor lineage, bounded at generation 3. A nonterminal Operation
+continues in the same generation through normal governed command replay,
+including receipt-durable/output-not-yet-terminal convergence without a second
+Provider call.
 `UNKNOWN_AMBIGUOUS`, including Command Kernel `UNKNOWN_EXTERNAL_STATE`, blocks
 recovery until canonical reconciliation. Recovery, loss convergence and
 checkpoint reconciliation never call a Provider. HTTP, worker, maintenance and
 any CLI adapter all invoke the same Recovery Application; legacy `resume` is
 not an alternate mutation path.
+
+Expired active work cannot be converted to an ordinary abort: abort fails
+closed and formal execution-loss convergence owns that transition. Automatic
+loss assessment identity includes the fresh authoritative snapshot so a stale
+committed assessment is preserved while a later scan can record a new one.
+Legacy execution binding is recorded as the distinct immutable
+`LEGACY_EXECUTION_RECONCILIATION` fact; missing RuntimeJob lineage converges to
+an attempt-less `CANCELLED` RuntimeJob / `ABORTED` OpeningExecution marker.
+Deferred PostgreSQL guards enforce exact execution/checkpoint heads and digests,
+recovery fact and successor cardinality, semantic generation lineage and
+terminal immutability.
 
 Story Planning persists each search at one exact parent/accepted boundary, its
 immutable branch candidates, structured future projections, independent

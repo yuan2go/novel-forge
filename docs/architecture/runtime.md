@@ -55,15 +55,24 @@ Authority owns the Book Opening aggregate's business lifecycle, execution
 generation, current execution binding, semantic checkpoint cursor and recovery
 authorization.
 RuntimeJob owns only the corresponding operational Job, Attempt, Lease, fence,
-checkpoint and result. A `RUNNING` opening binds one exact execution generation
-to one current RuntimeJob/Attempt/Lease/fencing token. PostgreSQL foreign keys,
+checkpoint and result. Initial claim is a Book Authority transaction that
+creates the sole Attempt/Lease and moves the execution `SCHEDULED -> BOUND`;
+the worker start then moves `BOUND -> RUNNING`. Both `BOUND` and `RUNNING`
+identify one exact execution generation and current
+RuntimeJob/Attempt/Lease/fencing token. PostgreSQL foreign keys,
 uniqueness and checks protect this relational identity; claim, heartbeat,
 checkpoint, complete, fail, cancel and recovery commands also verify
 `lease_expires_at` at transaction time. The complete ownership decision is
 [ADR 0008](../adr/0008-book-opening-recovery-authority.md).
 
+The execution's Authority contract digest is release-stable. Immutable loss,
+reconciliation and recovery assessments separately bind the exact application
+build/commit, so a compatible rolling deployment preserves executable work but
+invalidates a pre-deployment assessment.
+
 `BOOK_OPENING_EXECUTE` uses an Authority-convergence lease-loss policy. A
-generic claim cannot take over its expired active lease. A bounded maintenance
+generic claim cannot take its initial claim or take over its expired active
+lease. A bounded maintenance
 scan invokes the same Book Opening Recovery Application used by operator
 surfaces to:
 
@@ -83,18 +92,34 @@ admission, generation-head CAS, successor RuntimeJob, Opening transition,
 `RecoveryReceipt`, events and outbox. A commit-response loss therefore replays
 the same receipt rather than admitting duplicate work.
 
+Abort of an active Opening claim also checks that the exact Lease is unexpired.
+An expired claim is left unchanged and must use formal loss convergence. The
+loss sweeper hashes the fresh authoritative runtime/checkpoint/semantic/effect,
+policy and release snapshot into its assessment identity; if a committed
+assessment becomes stale, a later scan records a new immutable assessment and
+can still converge.
+
 The opening checkpoint is append-only semantic progress evidence. Entries form
-a monotonic hash chain and reference exact durable Narrative Search, Planning,
-Story Design or Input Resolver evidence and its version/hash. The current cursor
-is an idempotent projection. Reconciliation can append a missing projection
+a monotonic hash chain and reference exact durable Narrative Search/Planning or
+Book Input Resolver evidence and its version/hash. The current cursor is an
+idempotent projection. Reconciliation can append a missing projection
 from authoritative legacy evidence, but cannot copy or change candidate,
-search, plan-activation or qualification state.
+search, plan-activation or qualification state. A whole semantic work item is
+skip-safe only when its checkpoint still names the exact `ACTIVATED` Narrative
+Search and selection decision. Search ID, `future-N` branch and
+`EVALUATION_PENDING` Planning-generation lineage are matched exactly rather
+than inferred from prefixes or newest rows.
 
 A terminal semantic-evaluation Operation is never reopened. Safe continuation
 creates a generation-aware evaluation execution whose immutable
 `replacement_of` lineage points to its predecessor. The generation owns only
 execution lineage; Story Design and Planning retain eligibility and
-qualification truth. Recovery classifies external state as
+qualification truth. Replacement is limited to terminal predecessors and at
+most generation 3. A nonterminal predecessor re-enters the same generation and
+Operation through normal governed command replay; if a Provider receipt became
+durable before output materialization or terminal convergence, that path
+replays the proven evidence without a second Provider call. Recovery classifies
+external state as
 `PROVEN_NO_EFFECT`, `PROVEN_SUCCESS`, `PROVEN_TERMINAL_FAILURE` or
 `UNKNOWN_AMBIGUOUS`. Proven success uses the existing receipt/durable output;
 proven terminal failure permits replacement only under an existing policy; and
@@ -107,6 +132,15 @@ All mutation adapters call this single Recovery Application. HTTP and workers
 contain no recovery SQL; a CLI, if exposed by the operational surface, is only
 a thin adapter. Legacy `resume` cannot bypass assessment, generation, effect or
 checkpoint validation.
+
+Legacy binding has its own immutable
+`LEGACY_EXECUTION_RECONCILIATION` assessment/receipt kind. If no exact
+historical RuntimeJob is bindable, it creates a non-executable, attempt-less
+`CANCELLED` RuntimeJob / `ABORTED` OpeningExecution marker and fails the Opening;
+it is neither checkpoint reconciliation nor recovery authorization. Deferred
+database guards enforce exact monotonic execution/checkpoint heads and digests,
+recovery-fact cardinality/scope, active-current binding, semantic
+generation-head lineage and immutable terminal history.
 
 ## Agent Harness
 

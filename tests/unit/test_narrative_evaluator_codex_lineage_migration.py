@@ -7,6 +7,7 @@ from novel_forge.storage.migrations.versions import (
     v20260825_0099_creative_engineering_convergence as convergence,
     v20260825_0100_hierarchy_closure as hierarchy_closure,
     v20260826_0101_quality_qualification as quality_qualification,
+    v20260828_0102_book_opening_recovery_closure as recovery_closure,
 )
 
 
@@ -17,7 +18,8 @@ def test_codex_lineage_forward_fix_is_the_registered_head() -> None:
     assert convergence.DOWN_REVISION == evolution.MIGRATION_ID
     assert hierarchy_closure.DOWN_REVISION == convergence.MIGRATION_ID
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == quality_qualification.MIGRATION_ID
+    assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == recovery_closure.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260821_0096_runtime_hardening"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is False

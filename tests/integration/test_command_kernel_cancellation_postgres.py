@@ -22,6 +22,14 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     submit_attempt_result,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    FakeDeterministicProvider,
+)
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    dispatch_external_effect,
+    plan_external_effect,
+)
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
@@ -36,7 +44,9 @@ from tests.integration.authority_postgres_support import (
     insert_operation,
     transaction,
 )
-from tests.integration.test_authority_attempt_lease_schema_postgres import insert_attempt
+from tests.integration.test_authority_attempt_lease_schema_postgres import (
+    insert_attempt,
+)
 from tests.integration.test_command_kernel_definition_postgres import definition_payload
 
 
@@ -45,7 +55,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_two_concurrent_cancel_commands_are_idempotent_and_signal_worker(self) -> None:
+    def test_two_concurrent_cancel_commands_are_idempotent_and_signal_worker(
+        self,
+    ) -> None:
         project_id, operation_id = self._operation("EXECUTING")
         attempt_id = identifier("attempt")
         with transaction() as connection, connection.cursor() as cursor:
@@ -66,7 +78,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(lambda _: cancel(), range(2)))
 
-        self.assertEqual(sorted(result["replayed"] for result in results), [False, True])
+        self.assertEqual(
+            sorted(result["replayed"] for result in results), [False, True]
+        )
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -104,7 +118,88 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 )
                 self.assertEqual(result["status"], target)
 
-    def test_root_cancel_prevents_unstarted_children_and_signals_active_child(self) -> None:
+    def test_no_effect_resolution_rejects_verified_external_effect(self) -> None:
+        project_id, operation_id = self._operation("EXECUTING")
+        trace_id = identifier("trace")
+        correlation_id = identifier("correlation")
+        context = EffectCommandContext(
+            operation_id=operation_id,
+            project_id=project_id,
+            actor_id="kernel.reconciler",
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        adapter = FakeDeterministicProvider("success")
+        effect = plan_external_effect(
+            DATABASE_URL,
+            context,
+            effect_type="model.invoke",
+            provider=adapter.provider,
+            capability="model.narrative_semantic_evaluation",
+            stable_idempotency_key=f"semantic-success:{operation_id}",
+            request_payload={"candidate": "immutable"},
+            max_attempts=1,
+            reversible=False,
+            reconciliation_mode=adapter.reconciliation_mode,
+            provider_capability_profile=dict(adapter.capability_profile),
+        )
+        dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=str(effect["external_effect_id"]),
+            worker_id="synthetic-provider-worker",
+            lease_seconds=30,
+            adapter=adapter,
+        )
+        request_cancellation(
+            DATABASE_URL,
+            self._cancel(operation_id, project_id, expected_version=0),
+        )
+
+        with self.assertRaisesRegex(
+            KernelError, "CANCELLATION_NO_EFFECT_EVIDENCE_CONFLICT"
+        ):
+            resolve_cancellation(
+                DATABASE_URL,
+                operation_id=operation_id,
+                project_id=project_id,
+                expected_version=1,
+                resolution="no_external_effect",
+                actor_id="kernel.reconciler",
+                reason="false no-effect classification must fail closed",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status,effect.status
+                FROM authority_operation AS operation
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s AND operation.project_id=%s
+                """,
+                [operation_id, project_id],
+            )
+            self.assertEqual(cursor.fetchone(), ("CANCELLATION_REQUESTED", "SUCCEEDED"))
+
+        reconciled = resolve_cancellation(
+            DATABASE_URL,
+            operation_id=operation_id,
+            project_id=project_id,
+            expected_version=1,
+            resolution="external_state_unknown",
+            actor_id="kernel.reconciler",
+            reason="durable success requires governed reconciliation",
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        self.assertEqual(reconciled["status"], "RECONCILIATION_REQUIRED")
+
+    def test_root_cancel_prevents_unstarted_children_and_signals_active_child(
+        self,
+    ) -> None:
         project_id, root_id = self._operation("WAITING_CHILDREN")
         ready_child = identifier("ready-child")
         running_child = identifier("running-child")
@@ -116,18 +211,29 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
             )
             definition_name = cursor.fetchone()[0]
             insert_operation(
-                cursor, operation_id=ready_child, definition_name=definition_name,
-                project_id=project_id, status="READY", root_operation_id=root_id,
+                cursor,
+                operation_id=ready_child,
+                definition_name=definition_name,
+                project_id=project_id,
+                status="READY",
+                root_operation_id=root_id,
                 parent_operation_id=root_id,
             )
             insert_operation(
-                cursor, operation_id=running_child, definition_name=definition_name,
-                project_id=project_id, status="EXECUTING", root_operation_id=root_id,
+                cursor,
+                operation_id=running_child,
+                definition_name=definition_name,
+                project_id=project_id,
+                status="EXECUTING",
+                root_operation_id=root_id,
                 parent_operation_id=root_id,
             )
             insert_attempt(
-                cursor, attempt_id=running_attempt, operation_id=running_child,
-                attempt_number=1, status="RUNNING",
+                cursor,
+                attempt_id=running_attempt,
+                operation_id=running_child,
+                attempt_number=1,
+                status="RUNNING",
             )
         request_cancellation(
             DATABASE_URL, self._cancel(root_id, project_id, expected_version=0)
@@ -146,7 +252,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], 1)
 
-    def test_compensation_child_success_and_failure_have_distinct_parent_terminals(self) -> None:
+    def test_compensation_child_success_and_failure_have_distinct_parent_terminals(
+        self,
+    ) -> None:
         for child_target, parent_target in (
             ("SUCCEEDED", "COMPENSATED"),
             ("FAILED_FINAL", "COMPENSATION_FAILED"),
@@ -190,7 +298,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                     self._transition(child_id, project_id, 1, "READY", "EXECUTING")
                     self._transition(child_id, project_id, 2, "EXECUTING", "SUCCEEDED")
                 else:
-                    self._transition(child_id, project_id, 0, "ADMITTED", "FAILED_FINAL")
+                    self._transition(
+                        child_id, project_id, 0, "ADMITTED", "FAILED_FINAL"
+                    )
 
                 result = complete_compensation_from_child(
                     DATABASE_URL,
@@ -295,7 +405,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(lambda _: create(), range(2)))
 
-        self.assertEqual(sorted(result["replayed"] for result in results), [False, True])
+        self.assertEqual(
+            sorted(result["replayed"] for result in results), [False, True]
+        )
         self.assertEqual(len({result["operation_id"] for result in results}), 1)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -740,7 +852,9 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
         }
 
     @staticmethod
-    def _cancel(operation_id: str, project_id: str, expected_version: int) -> CancelCommand:
+    def _cancel(
+        operation_id: str, project_id: str, expected_version: int
+    ) -> CancelCommand:
         return CancelCommand(
             operation_id=operation_id,
             project_id=project_id,

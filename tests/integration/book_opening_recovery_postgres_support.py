@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from contextlib import ExitStack
+from dataclasses import dataclass, replace
 from types import MethodType
+from typing import Any
 from unittest.mock import patch
+
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority import (
@@ -15,6 +19,7 @@ from novel_forge.modules.command_kernel.cancellation import (
     request_cancellation,
     resolve_cancellation,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     expire_attempt_lease,
@@ -22,11 +27,17 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
 from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobClaim
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
+    NarrativeSearchRequest,
     PostgresNarrativeSearchApplication,
     StoryPlanningEvaluationCommand,
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
+    canonical_hash,
 )
+from novel_forge.modules.story_planning_runtime.search_application import (
+    DEFAULT_SEARCH_DIRECTIVES,
+)
+from novel_forge.modules.story_design_authority import scripted_qualification
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.workers.book_authority import execute_book_opening_claim
 from tests.integration.authority_postgres_support import (
@@ -54,6 +65,17 @@ class _CrashBeforeExternalEffectPort:
 
     def evaluate(self, *_args: object, **_kwargs: object) -> object:
         raise SimulatedBookOpeningProcessLoss("semantic evaluator process disappeared")
+
+
+class _ModelBackedPlanningBinder(_ExternalEffectPepFixturePlanningBinder):
+    """Keep deterministic candidate transport while exercising model semantics."""
+
+    def execute(self, **kwargs: Any):  # type: ignore[no-untyped-def]
+        candidate = super().execute(**kwargs)
+        return replace(
+            candidate,
+            evidence=replace(candidate.evidence, fixture_protocol_only=False),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,7 +140,13 @@ class LegacyBookOpeningOrphan:
         return tuple(row)
 
 
-def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
+def create_legacy_book_opening_orphan(
+    *,
+    evaluator_execution_class: str = "MODEL_PROVIDER",
+    semantic_evaluation_execution_port: Any | None = None,
+    terminalize_evaluation: bool = True,
+    successful_search_branches_before_crash: int = 0,
+) -> LegacyBookOpeningOrphan:
     """Reproduce the pre-closure orphan through current application paths.
 
     Direct SQL is used only to advance the test database clock boundary. All
@@ -143,29 +171,94 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
         authentication_source="book-opening-recovery-regression",
     )
     generic = _seed_inputs(project_id, book_id)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        for asset_type in ("reader_segment_profile", "reader_contract"):
+            asset_id = f"fixture:{project_id}:opening:{asset_type}"
+            version_id = f"{asset_id}:v1"
+            content = {"book_id": book_id, "role": asset_type}
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset(asset_id,project_id,asset_type)
+                VALUES (%s,%s,%s)
+                """,
+                [asset_id, project_id, asset_type],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id,asset_id,version_number,lifecycle,
+                    eligibility,governance,content,content_hash,schema_version
+                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
+                """,
+                [
+                    version_id,
+                    asset_id,
+                    Jsonb(content),
+                    canonical_hash(content),
+                    f"{asset_type}.v1",
+                ],
+            )
+        uow.commit()
+    if evaluator_execution_class not in {"MODEL_PROVIDER", "SCRIPTED_FIXTURE"}:
+        raise ValueError("unsupported recovery regression evaluator class")
+    scripted = evaluator_execution_class == "SCRIPTED_FIXTURE"
+    if scripted and semantic_evaluation_execution_port is not None:
+        raise ValueError("scripted Evaluation cannot install a Provider execution port")
+    if (
+        not 0
+        <= successful_search_branches_before_crash
+        < len(DEFAULT_SEARCH_DIRECTIVES)
+    ):
+        raise ValueError("successful search branch prefix is outside the fixture")
+    if successful_search_branches_before_crash and not scripted:
+        raise ValueError("successful branch prefix requires scripted Evaluation")
     planning = StoryPlanningGenerationApplication(
         DATABASE_URL,
-        execution_binder=_ExternalEffectPepFixturePlanningBinder(),
+        execution_binder=(
+            _ExternalEffectPepFixturePlanningBinder()
+            if scripted
+            else _ModelBackedPlanningBinder()
+        ),
         application_build_id="book-opening-recovery-regression",
         commit_sha=RELEASE_SHA,
-        semantic_evaluation_execution_port=_CrashBeforeExternalEffectPort(),
+        semantic_evaluation_execution_port=(
+            None
+            if scripted
+            else semantic_evaluation_execution_port or _CrashBeforeExternalEffectPort()
+        ),
+        allow_scripted_evaluation_fixture=scripted,
         narrative_evaluator_principal=evaluator,
     )
 
-    # Materialize the exact pending BookPlan candidate without allowing the
-    # convenience generate() call to perform its semantic evaluation inline.
+    narrative_search = PostgresNarrativeSearchApplication(
+        DATABASE_URL, planning=planning
+    )
+
+    # Open the exact Planning-owned NarrativeSearch and materialize its first
+    # branch candidate without allowing the convenience generate() call to
+    # perform semantic evaluation inline.  Recovery must bind this exact
+    # search/branch lineage; a lookalike candidate-once idempotency key is not
+    # sufficient Authority evidence.
     original_evaluate_pending = planning._evaluate_pending_if_required
+    pending_candidates: list[Any] = []
+    search_branch_ordinal = 0
 
     def leave_evaluation_pending(
         _self: StoryPlanningGenerationApplication, **values: object
     ) -> object:
-        return values["advanced"]
+        nonlocal search_branch_ordinal
+        search_branch_ordinal += 1
+        if search_branch_ordinal <= successful_search_branches_before_crash:
+            return original_evaluate_pending(**values)
+        advanced = values["advanced"]
+        pending_candidates.append(advanced)
+        return advanced
 
     planning._evaluate_pending_if_required = MethodType(
         leave_evaluation_pending, planning
     )
     opening_idempotency_key = f"{project_id}:open-book"
-    generation_command = StoryPlanningGenerationCommand(
+    base_generation_command = StoryPlanningGenerationCommand(
         project_id=project_id,
         workspace_id=workspace_id,
         book_id=book_id,
@@ -173,18 +266,67 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
         generator_operation_name="book_plan.generate",
         logical_key="book:main",
         input_versions={
-            role: generic[role]
-            for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            role: generic[role] for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
         },
-        idempotency_key=(
-            f"{opening_idempotency_key}:book_plan.generate:book:main:"
-            "narrative-search:future-1"
-        ),
+        idempotency_key=(f"{opening_idempotency_key}:book_plan.generate:book:main"),
         trace_id=f"trace:{project_id}:open-book",
         correlation_id=f"correlation:{project_id}",
     )
-    candidate = planning.generate(generation_command, principal=principal)
-    planning._evaluate_pending_if_required = original_evaluate_pending
+    search_request = NarrativeSearchRequest(
+        generation=base_generation_command,
+        planning_horizon={"level": "BOOK", "stability": "HIGH", "reach": "DISTANT"},
+        desired_transformation={
+            "foundation_version": generic["book_design"],
+            "goal": "establish a sustainable Book narrative architecture",
+        },
+        hard_constraints=(
+            "preserve the approved Creative Foundation",
+            "protect reader promise and ending direction",
+            "do not convert future intent into accepted reality",
+        ),
+        accepted_through_chapter=0,
+        parent_state_asset_version_id=generic["initial_story_state"],
+    )
+    try:
+        narrative_search.explore(
+            search_request,
+            principal=principal,
+            activate_selected=True,
+        )
+    except KernelError as exc:
+        if exc.code != "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED":
+            raise
+    else:
+        raise AssertionError("pending NarrativeSearch branch unexpectedly qualified")
+    finally:
+        planning._evaluate_pending_if_required = original_evaluate_pending
+    if len(pending_candidates) != 1:
+        raise AssertionError("fixture did not freeze one pending search branch")
+    candidate = pending_candidates[0]
+    pending_branch_ordinal = successful_search_branches_before_crash + 1
+    pending_branch_key = f"future-{pending_branch_ordinal}"
+    generation = planning.require_generation(candidate.generation_operation_id)
+    search_id = str(generation["narrative_search_id"])
+    generation_command = replace(
+        base_generation_command,
+        idempotency_key=(
+            f"{base_generation_command.idempotency_key}:"
+            f"narrative-search:{pending_branch_key}"
+        ),
+        narrative_search_id=search_id,
+        narrative_search_branch_key=pending_branch_key,
+        narrative_search_parent_state_asset_version_id=(
+            search_request.parent_state_asset_version_id
+        ),
+        narrative_search_accepted_through_chapter=0,
+        narrative_search_strategy_directive=(
+            DEFAULT_SEARCH_DIRECTIVES[pending_branch_ordinal - 1]
+        ),
+        narrative_search_planning_horizon=search_request.planning_horizon,
+        narrative_search_desired_transformation=(search_request.desired_transformation),
+        narrative_search_hard_constraints=search_request.hard_constraints,
+        auto_approve_low_risk=False,
+    )
     candidate_row = planning.require_candidate(candidate.candidate_asset_version_id)
     evaluation_command = StoryPlanningEvaluationCommand(
         project_id=project_id,
@@ -195,14 +337,11 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
         generation_operation_id=candidate.generation_operation_id,
         generator_operation_name="book_plan.generate",
         candidate_content_hash=str(candidate_row["content_hash"]),
-        evaluator_execution_class="MODEL_PROVIDER",
+        evaluator_execution_class=evaluator_execution_class,
+        evaluation=(scripted_qualification("book_plan.generate") if scripted else None),
         idempotency_key=f"{generation_command.idempotency_key}:semantic-evaluation",
         trace_id=generation_command.trace_id,
         correlation_id=generation_command.correlation_id,
-    )
-
-    narrative_search = PostgresNarrativeSearchApplication(
-        DATABASE_URL, planning=planning
     )
     input_resolver = BookProductionInputResolver(
         DATABASE_URL,
@@ -244,11 +383,9 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
     )
     admission = opening.admit(request, principal=principal)
     runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
-    outer_claim = runtime_jobs.claim(
-        runtime_group="book_opening",
+    outer_claim = opening.claim_next_execution(
         worker_id="book-opening-process-that-disappears",
         lease_seconds=30,
-        job_kinds=("BOOK_OPENING_EXECUTE",),
         project_id=project_id,
     )
     assert outer_claim is not None
@@ -260,18 +397,31 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
             transition_principal=principal,
         )
 
-    with (
-        patch.object(opening, "_open_frozen", side_effect=crash_inside_opening),
-        patch.object(
-            RuntimeJobAuthority,
-            "heartbeat",
-            autospec=True,
-            side_effect=lambda _authority, claim, lease_seconds: {
-                "runtime_job_id": claim.runtime_job_id,
-                "lease_seconds": lease_seconds,
-            },
-        ),
-    ):
+    with ExitStack() as stack:
+        stack.enter_context(
+            patch.object(opening, "_open_frozen", side_effect=crash_inside_opening)
+        )
+        stack.enter_context(
+            patch.object(
+                RuntimeJobAuthority,
+                "heartbeat",
+                autospec=True,
+                side_effect=lambda _authority, claim, lease_seconds: {
+                    "runtime_job_id": claim.runtime_job_id,
+                    "lease_seconds": lease_seconds,
+                },
+            )
+        )
+        if scripted:
+            stack.enter_context(
+                patch.object(
+                    planning.semantic_evaluation.registry.item.handler,
+                    "execute",
+                    side_effect=SimulatedBookOpeningProcessLoss(
+                        "scripted evaluator process disappeared"
+                    ),
+                )
+            )
         try:
             execute_book_opening_claim(
                 runtime_jobs,
@@ -320,50 +470,67 @@ def create_legacy_book_opening_orphan() -> LegacyBookOpeningOrphan:
             """
             UPDATE authority_lease_acquisition
             SET expires_at=acquired_at+INTERVAL '1 microsecond'
-            WHERE lease_id=%s
+            WHERE lease_id=%s AND status='HELD'
             """,
             [evaluation_lease_id],
         )
         uow.commit()
 
-    expire_attempt_lease(
-        DATABASE_URL,
-        WorkerLeaseCommand(
-            attempt_id=evaluation_attempt_id,
-            project_id=project_id,
-            worker_id=evaluation_worker_id,
-            fencing_token=evaluation_fencing_token,
-            trace_id=generation_command.trace_id,
-            correlation_id=generation_command.correlation_id,
-            causation_id=evaluation_operation_id,
-        ),
-    )
-    cancellation = request_cancellation(
-        DATABASE_URL,
-        CancelCommand(
+    if terminalize_evaluation:
+        expire_attempt_lease(
+            DATABASE_URL,
+            WorkerLeaseCommand(
+                attempt_id=evaluation_attempt_id,
+                project_id=project_id,
+                worker_id=evaluation_worker_id,
+                fencing_token=evaluation_fencing_token,
+                trace_id=generation_command.trace_id,
+                correlation_id=generation_command.correlation_id,
+                causation_id=evaluation_operation_id,
+            ),
+        )
+        cancellation = request_cancellation(
+            DATABASE_URL,
+            CancelCommand(
+                operation_id=evaluation_operation_id,
+                project_id=project_id,
+                actor_id="book-opening-recovery-regression",
+                reason="process disappeared before durable semantic convergence",
+                expected_version=2,
+                idempotency_key=f"cancel:{evaluation_operation_id}",
+                trace_id=generation_command.trace_id,
+                correlation_id=generation_command.correlation_id,
+            ),
+        )
+        assert cancellation["status"] == "CANCELLATION_REQUESTED"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM authority_external_effect
+                    WHERE operation_id=%s AND project_id=%s
+                )
+                """,
+                [evaluation_operation_id, project_id],
+            )
+            has_external_effect = bool(uow.cursor.fetchone()[0])
+        cancellation_resolution = (
+            "external_state_unknown" if has_external_effect else "no_external_effect"
+        )
+        resolved = resolve_cancellation(
+            DATABASE_URL,
             operation_id=evaluation_operation_id,
             project_id=project_id,
+            expected_version=3,
+            resolution=cancellation_resolution,
             actor_id="book-opening-recovery-regression",
-            reason="process disappeared before any ExternalEffect",
-            expected_version=2,
-            idempotency_key=f"cancel:{evaluation_operation_id}",
+            reason="legacy path classified the interrupted semantic execution",
             trace_id=generation_command.trace_id,
             correlation_id=generation_command.correlation_id,
-        ),
-    )
-    assert cancellation["status"] == "CANCELLATION_REQUESTED"
-    resolved = resolve_cancellation(
-        DATABASE_URL,
-        operation_id=evaluation_operation_id,
-        project_id=project_id,
-        expected_version=3,
-        resolution="no_external_effect",
-        actor_id="book-opening-recovery-regression",
-        reason="durable evidence proves no Provider effect exists",
-        trace_id=generation_command.trace_id,
-        correlation_id=generation_command.correlation_id,
-    )
-    assert resolved["status"] == "CANCELLED"
+        )
+        assert resolved["status"] == (
+            "RECONCILIATION_REQUIRED" if has_external_effect else "CANCELLED"
+        )
 
     return LegacyBookOpeningOrphan(
         opening=opening,

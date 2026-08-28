@@ -93,6 +93,11 @@ class MaintenanceWorkerPostgresTests(unittest.TestCase):
             batch_limit=10_000,
             schedule_bucket=time.time_ns(),
         )
+        self.assertEqual(len(scheduled), len(MAINTENANCE_RUNTIME_JOB_KINDS))
+        self.assertEqual(
+            len({str(item["runtime_job_id"]) for item in scheduled}),
+            len(MAINTENANCE_RUNTIME_JOB_KINDS),
+        )
         results: dict[str, dict[str, object]] = {}
         claims = []
         for _ in MAINTENANCE_RUNTIME_JOB_KINDS:
@@ -111,6 +116,11 @@ class MaintenanceWorkerPostgresTests(unittest.TestCase):
                 claim,
                 actor_id="maintenance-integration-worker",
             )
+        self.assertEqual(set(results), set(MAINTENANCE_RUNTIME_JOB_KINDS))
+        self.assertEqual(
+            len({claim.runtime_job_id for claim in claims}),
+            len(MAINTENANCE_RUNTIME_JOB_KINDS),
+        )
         self.assertIn(
             lease_id,
             [
@@ -132,15 +142,21 @@ class MaintenanceWorkerPostgresTests(unittest.TestCase):
             results["OPERATION_DEADLINE_SCAN"]["cancellation_issued"],
         )
         self.assertEqual(
-            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"][
-                "external_effects_replayed"
-            ],
+            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"]["external_effects_replayed"],
             0,
         )
         self.assertFalse(
-            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"][
-                "provider_query_proven"
-            ]
+            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"]["provider_query_proven"]
+        )
+        self.assertEqual(
+            results["BOOK_OPENING_EXECUTION_LOSS_SCAN"][
+                "book_opening_execution_losses"
+            ],
+            [],
+        )
+        self.assertEqual(
+            results["BOOK_OPENING_EXECUTION_LOSS_SCAN"]["provider_invocations"],
+            0,
         )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -164,7 +180,11 @@ class MaintenanceWorkerPostgresTests(unittest.TestCase):
                 [[item["runtime_job_id"] for item in scheduled]],
             )
             runtime_evidence = uow.cursor.fetchone()
-        self.assertEqual(tuple(int(value) for value in runtime_evidence), (4, 4, 4))
+        expected_runtime_job_count = len(MAINTENANCE_RUNTIME_JOB_KINDS)
+        self.assertEqual(
+            tuple(int(value) for value in runtime_evidence),
+            (expected_runtime_job_count,) * 3,
+        )
 
 
 if __name__ == "__main__":

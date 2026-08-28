@@ -75,7 +75,7 @@ The execution path is:
 
 ```text
 ADMITTED generation N
-→ exact RuntimeJob claim and execution binding
+→ Book Authority exact RuntimeJob claim and BOUND execution binding
 → RUNNING
 → append-only semantic progress/evidence checkpoints
 → COMPLETE
@@ -101,19 +101,26 @@ work, if newly authorized, occurs only afterward through the normal governed
 worker path.
 
 Book Opening checkpoints are an append-only, hash/version-bound cursor over
-exact durable evidence owned by Search, Planning and Story Design Authorities.
+exact durable Narrative Search/Planning and Book input-resolution evidence.
 They identify the deterministic resume point and can be reprojected after a
 crash, but they do not copy candidate eligibility, search status, Planning
-activation or qualification truth.
+activation or qualification truth. A whole semantic work item is skipped only
+when its checkpoint still names the exact `ACTIVATED` Narrative Search and
+selection decision; search ID, `future-N` branch and `EVALUATION_PENDING`
+Planning-generation lineage must match the frozen Opening graph.
 
 A terminal semantic-evaluation Operation is never reopened. Where its
 ExternalEffect is `PROVEN_NO_EFFECT` or otherwise conclusively safe under the
 governed retry policy, recovery may append evaluation generation N+1 with
 explicit predecessor lineage and a generation-aware Operation identity. A
-verified successful Effect is consumed through durable output replay; an
-`UNKNOWN_AMBIGUOUS` Effect blocks recovery pending reconciliation. Evaluation
-generation owns execution lineage only; Story Design and Planning remain the
-qualification and activation Authorities.
+replacement is terminal-only and the bounded Opening policy permits at most
+generation 3. A nonterminal predecessor continues as the same generation and
+Operation through normal governed replay, including recovery from a durable
+Provider receipt before output materialization/terminalization without a
+second Provider call. A verified successful Effect is consumed through durable
+output replay; an `UNKNOWN_AMBIGUOUS` Effect blocks recovery pending
+reconciliation. Evaluation generation owns execution lineage only; Story
+Design and Planning remain the qualification and activation Authorities.
 
 The four structures are:
 

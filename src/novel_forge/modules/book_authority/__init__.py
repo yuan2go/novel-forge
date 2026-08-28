@@ -38,6 +38,11 @@ from .opening import (
     OpenBookProductionRequest,
     PostgresBookOpeningApplication,
 )
+from .recovery import (
+    PostgresBookOpeningRecoveryApplication,
+    RecoveryAssessment,
+    RecoveryReceipt,
+)
 
 __all__ = [
     "BookProductionState",
@@ -68,5 +73,8 @@ __all__ = [
     "BookOpeningResult",
     "OpenBookProductionRequest",
     "PostgresBookOpeningApplication",
+    "PostgresBookOpeningRecoveryApplication",
+    "RecoveryAssessment",
+    "RecoveryReceipt",
     "ProjectionRepairBatchResult",
 ]

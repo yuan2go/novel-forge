@@ -691,9 +691,14 @@ another opening generation is authorized. Each opening execution is an
 append-only generation with one exact binding to its RuntimeJob, current
 Attempt, Lease and fencing token. PostgreSQL constraints protect the relational
 binding; claim, heartbeat, checkpoint, completion, failure, cancellation and
-recovery paths revalidate temporal lease validity. `RUNNING` is therefore a
-verifiable execution identity, not an unqualified lifecycle label. The durable
-decision is recorded in
+recovery paths revalidate temporal lease validity. Book Authority atomically
+creates the only initial Attempt/Lease and changes the execution from
+`SCHEDULED` to `BOUND`; generic RuntimeJob claim cannot claim or take over this
+policy class. `BOUND` and `RUNNING` are therefore verifiable execution
+identities, not unqualified lifecycle labels. Its execution Authority digest is
+stable across compatible releases; immutable assessments additionally bind the
+exact application build and commit so release drift requires reassessment. The
+durable decision is recorded in
 [ADR 0008](../adr/0008-book-opening-recovery-authority.md).
 
 An expired or irrecoverably lost Book Opening executor cannot use ordinary
@@ -702,6 +707,10 @@ converges the lost operational execution to terminal RuntimeJob history, marks
 the opening execution `LOST`, moves the Book Opening to `FAILED`, and records
 immutable loss assessment and convergence evidence. Loss convergence does not
 create a `RecoveryIntent` and does not authorize a successor generation.
+An expired active Lease also makes ordinary abort fail closed. The bounded loss
+sweeper includes the fresh authoritative snapshot in assessment identity, so
+post-assessment release or evidence drift produces a new immutable assessment
+instead of pinning convergence to stale evidence.
 
 Recovery is a separate `FAILED → ADMITTED` command. It consumes an immutable
 assessment, locks and rereads all referenced Authority state, and fails closed
@@ -714,22 +723,38 @@ Provider execution and durable-result replay remain outside that transaction on
 the normal governed worker path.
 
 Book Opening semantic checkpoints are an append-only, monotonic hash chain of
-exact durable evidence owned by Planning, Narrative Search, Story Design and
-Input Resolution. The current cursor is an idempotent projection and never
+exact durable evidence owned by Planning/Narrative Search and Book Input
+Resolution. The current cursor is an idempotent projection and never
 copies their candidate, selection, activation, generation or qualification
 truth. Recovery may reconcile missing legacy checkpoints from authoritative
-durable evidence; it must not guess progress from logs.
+durable evidence; it must not guess progress from logs. Only a checkpoint that
+still names the exact `ACTIVATED` Narrative Search and selection decision may
+skip a whole semantic work item. Search identity, `future-N` branch and
+`EVALUATION_PENDING` Planning-generation membership are matched exactly.
 
 A terminal semantic-evaluation Operation remains immutable. The same immutable
 candidate may continue only through an append-only evaluation execution
 generation with explicit `replacement_of` lineage and generation-aware
 idempotency/concurrency identity. This lineage owns execution only; Story Design
-and Planning continue to own eligibility and qualification. `PROVEN_NO_EFFECT`
-may authorize a replacement, `PROVEN_SUCCESS` replays its durable result, and a
-proven terminal non-success follows only an already-governed replacement
-policy. `UNKNOWN_AMBIGUOUS`—including the Command Kernel's
-`UNKNOWN_EXTERNAL_STATE`—blocks recovery pending canonical reconciliation.
-Loss, recovery and reconciliation commands never call a Provider.
+and Planning continue to own eligibility and qualification. Replacement is
+terminal-only and bounded at generation 3. A nonterminal predecessor continues
+as the same evaluation generation and Operation through governed command
+replay, including the receipt-durable/output-before-terminal crash window.
+`PROVEN_NO_EFFECT` may authorize a replacement, `PROVEN_SUCCESS` replays its
+durable result without Provider redispatch, and a proven terminal non-success
+follows only an already-governed replacement policy.
+`UNKNOWN_AMBIGUOUS`—including the Command Kernel's `UNKNOWN_EXTERNAL_STATE`—
+blocks recovery pending canonical reconciliation. Loss, recovery and
+reconciliation commands never call a Provider.
+
+Legacy execution binding is a distinct immutable
+`LEGACY_EXECUTION_RECONCILIATION` fact. Missing RuntimeJob lineage is represented
+by a deterministic attempt-less `CANCELLED` RuntimeJob / `ABORTED`
+OpeningExecution marker, never by invented progress or a RecoveryIntent.
+Deferred PostgreSQL guards enforce exact monotonic execution/checkpoint heads,
+frozen digests, active-current binding, RecoveryAssessment/Intent/Receipt
+cardinality and scope, semantic generation-head lineage, and terminal-history
+immutability.
 
 Creative Search may reuse immutable candidate/evaluation/comparison/selection
 primitives with Narrative Search, but Creative is not forced into a Planning

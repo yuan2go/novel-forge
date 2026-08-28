@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict
 from typing import Any
 from uuid import uuid4
@@ -315,12 +316,14 @@ class StoryPlanningGenerationApplication:
         command: StoryPlanningGenerationCommand,
         *,
         principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
     ) -> PlanningGenerationResult:
         principal.require("story_planning.authority.execute", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError(
                 "Planning Generation actor must be the trusted Principal"
             )
+        self._probe(execution_probe)
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions()
         frozen_inputs = self._resolve_inputs(command)
@@ -382,6 +385,7 @@ class StoryPlanningGenerationApplication:
                 }
             )
         payload = _command_payload(command)
+        self._probe(execution_probe)
         admitted = admit_command(
             self.database_url,
             {
@@ -477,12 +481,15 @@ class StoryPlanningGenerationApplication:
                 advanced=advanced,
                 generation_command=command,
                 principal=principal,
+                execution_probe=execution_probe,
             )
+        self._probe(execution_probe)
         scheduled = ContentAuthorityScheduler(
             self.database_url,
             registry=self.registry,
             worker_id=self.worker_id,
         ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+        self._probe(execution_probe)
         candidate_id = scheduled.output.asset_version_id
         self._record_candidate(
             operation_id=operation_id,
@@ -504,6 +511,7 @@ class StoryPlanningGenerationApplication:
             advanced=advanced,
             generation_command=command,
             principal=principal,
+            execution_probe=execution_probe,
         )
 
     def evaluate_candidate(
@@ -512,6 +520,7 @@ class StoryPlanningGenerationApplication:
         *,
         principal: Principal,
         transition_principal: Principal | None = None,
+        execution_probe: Callable[[], object] | None = None,
     ) -> PlanningGenerationResult:
         principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
@@ -545,6 +554,7 @@ class StoryPlanningGenerationApplication:
                 "NARRATIVE_EVALUATION_CANDIDATE_NOT_READY",
                 "Narrative Evaluation requires a structurally valid immutable candidate",
             )
+        self._probe(execution_probe)
         evaluated = self.semantic_evaluation.execute(
             NarrativeSemanticEvaluationCommand(
                 project_id=command.project_id,
@@ -567,6 +577,7 @@ class StoryPlanningGenerationApplication:
             principal=principal,
             caller_permission="story_planning.authority.execute",
         )
+        self._probe(execution_probe)
         generation_command = self._generation_command(command.generation_operation_id)
         if evaluated.qualification.status != "PASS":
             return self._repair_or_reject(
@@ -597,6 +608,7 @@ class StoryPlanningGenerationApplication:
         advanced: PlanningGenerationResult,
         generation_command: StoryPlanningGenerationCommand,
         principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
     ) -> PlanningGenerationResult:
         if advanced.status is not PlanningGenerationStatus.EVALUATION_PENDING:
             return advanced
@@ -614,6 +626,7 @@ class StoryPlanningGenerationApplication:
                 "NARRATIVE_EVALUATION_PRINCIPAL_REQUIRED",
                 "production Planning evaluation has no independent trusted Principal",
             )
+        self._probe(execution_probe)
         return self.evaluate_candidate(
             StoryPlanningEvaluationCommand(
                 project_id=generation_command.project_id,
@@ -640,7 +653,13 @@ class StoryPlanningGenerationApplication:
             ),
             principal=evaluator_principal,
             transition_principal=principal,
+            execution_probe=execution_probe,
         )
+
+    @staticmethod
+    def _probe(execution_probe: Callable[[], object] | None) -> None:
+        if execution_probe is not None:
+            execution_probe()
 
     def approve_candidate(
         self,
@@ -2787,8 +2806,7 @@ def _validate_chapter_schedule_binding(
     content: dict[str, Any], schedule_row: dict[str, Any]
 ) -> None:
     if any(
-        canonical_hash(schedule_row.get(field))
-        != canonical_hash(content.get(field))
+        canonical_hash(schedule_row.get(field)) != canonical_hash(content.get(field))
         for field in CHAPTER_SCHEDULE_FIELDS
     ):
         raise KernelError(
@@ -2797,9 +2815,7 @@ def _validate_chapter_schedule_binding(
         )
     scheduled_reader = schedule_row.get("reader_experience")
     chapter_reader = content.get("reader_experience")
-    if not isinstance(scheduled_reader, dict) or not isinstance(
-        chapter_reader, dict
-    ):
+    if not isinstance(scheduled_reader, dict) or not isinstance(chapter_reader, dict):
         raise KernelError(
             "CHAPTER_SCHEDULE_BINDING_DRIFT",
             "ChapterPlan and Scheduling require typed Reader Experience targets",

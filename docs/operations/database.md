@@ -31,6 +31,12 @@ nested commits or a database-only recovery saga. Provider execution and durable
 result replay remain outside this admission transaction and continue through
 the governed worker/ExternalEffect path.
 
+An admitted Opening execution freezes a release-stable Authority contract
+digest so rolling-compatible code can execute it. Every immutable loss,
+reconciliation or recovery assessment separately freezes the exact
+application build/commit; release drift therefore requires reassessment rather
+than rewriting or stranding the execution.
+
 ## Concurrency and uncertainty
 
 - Aggregate CAS/version checks reject stale state transitions.
@@ -42,6 +48,9 @@ the governed worker/ExternalEffect path.
   time, and the bounded execution-loss scan converges expired claims.
 - Book Opening uses `AUTHORITY_CONVERGENCE_REQUIRED`; an expired lease is not
   eligible for generic RuntimeJob takeover.
+- Active abort revalidates `lease_expires_at > transaction_timestamp()` under
+  the exact RuntimeJob/Attempt/Lease locks. Expiry makes abort fail closed and
+  leaves execution-loss convergence as the only terminalization path.
 - Terminal RuntimeJob, Attempt, Lease, Book Opening execution and Command
   Operation history is immutable. Replacement work is append-only and carries
   explicit predecessor/generation lineage.
@@ -53,11 +62,17 @@ the governed worker/ExternalEffect path.
 - Connection loss with uncertain commit outcome requires reconciliation.
 - External effects are reconciled by receipt rather than repeated blindly.
 
-Recovery classifies external work as `PROVEN_NO_EFFECT`, `PROVEN_SUCCESS`, or
-`UNKNOWN_AMBIGUOUS` from authoritative Effect/Dispatch/Receipt evidence.
+Recovery classifies external work as `PROVEN_NO_EFFECT`, `PROVEN_SUCCESS`,
+`PROVEN_TERMINAL_FAILURE`, or `UNKNOWN_AMBIGUOUS` from authoritative
+Effect/Dispatch/Receipt evidence.
 `UNKNOWN_AMBIGUOUS` fails closed and cannot be overridden by operator approval.
 Assessment, loss convergence, checkpoint reconciliation and recovery admission
 never call a Provider.
+
+The bounded loss scan hashes the fresh authoritative runtime, checkpoint,
+semantic/effect, policy and release snapshot into its assessment idempotency
+identity. A stale immutable assessment remains evidence while a later scan can
+record a fresh assessment and converge.
 
 ## Migration rollout
 
@@ -70,6 +85,18 @@ generation one; legacy Book Opening progress is reconstructed only by a formal
 reconciliation Application from durable Authority evidence. Contract removal of
 legacy candidate-once or resume behavior waits until upgraded-state and recovery
 proof demonstrate that no supported deployment depends on it.
+
+Legacy Opening execution binding uses the distinct immutable
+`LEGACY_EXECUTION_RECONCILIATION` assessment/receipt kind. If no exact
+historical RuntimeJob can be bound, it creates a deterministic attempt-less
+`CANCELLED` RuntimeJob / `ABORTED` OpeningExecution marker and fails the
+Opening; this is not checkpoint reconciliation and creates no RecoveryIntent.
+
+The expand migration's database guards enforce monotonic exact
+execution/checkpoint heads, frozen request/checkpoint digests, active-current
+binding, RecoveryAssessment/Intent/Receipt kind, scope and cardinality,
+semantic generation-head/recovery lineage and immutable terminal history.
+These relational facts do not substitute for temporal Lease checks.
 
 ## Integration validation
 

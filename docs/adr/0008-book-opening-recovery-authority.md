@@ -62,6 +62,13 @@ BookOpening
   -> fencing token
 ```
 
+Admission leaves the pair at `BookOpening.ADMITTED` /
+`OpeningExecution.SCHEDULED`. Book Authority, not the generic RuntimeJob
+claimer, creates the first Attempt/Lease and changes the execution to `BOUND`
+in the same transaction. Worker start changes the exact bound pair to
+`RUNNING`; a process loss from either `BOUND` or `RUNNING` uses the same formal
+loss convergence.
+
 Foreign keys, uniqueness, checks and optimistic versions protect this
 relational identity. Lease expiry is temporal and cannot be guaranteed by a
 static check constraint. Claim, heartbeat, checkpoint, completion, failure,
@@ -69,8 +76,17 @@ cancellation and recovery therefore reread `lease_expires_at` and the exact
 fence inside their transaction. A time-bounded loss scan converges expired
 bindings.
 
-`RUNNING` without a matching current execution, Job, Attempt, Lease and fence is
-invalid. A late executor cannot checkpoint or commit after the binding changes.
+`BOUND` or `RUNNING` without a matching current execution, Job, Attempt, Lease
+and fence is invalid. A late executor cannot checkpoint or commit after the
+binding changes.
+
+The execution row freezes a release-stable Authority contract digest derived
+from the Authority and execution-contract versions, not the current build or
+commit. This lets an already-admitted generation remain executable across a
+rolling-compatible deployment. Each immutable assessment separately freezes a
+release-bound Authority-version digest containing the exact application build
+and commit; a deployment therefore makes an older assessment stale without
+stranding the admitted execution.
 
 ### 3. Execution-loss convergence is not recovery authorization
 
@@ -92,6 +108,14 @@ The command locks and rereads the current binding before mutation. Completion,
 heartbeat or another loss convergence can win only through the same version and
 fence checks. Duplicate calls return the same durable result; stale calls fail
 closed. Existing terminal rows are never reopened or rewritten.
+
+An active abort is authorized only while its exact held Lease is still valid at
+transaction time. If that Lease has expired, abort fails closed without changing
+history and the formal loss path must converge it. The bounded sweeper derives
+its assessment idempotency identity from the fresh authoritative snapshot,
+including runtime, checkpoint, semantic/effect, policy and release evidence. If
+an assessment commits and any of those facts later drift, the next scan creates
+a new immutable assessment instead of replaying the stale one forever.
 
 Loss convergence creates no `RecoveryIntent`. It records that the old execution
 is no longer valid; it does not authorize a successor.
@@ -141,10 +165,19 @@ The Opening checkpoint ledger is append-only and monotonic. Each entry binds:
 - the resulting checkpoint hash.
 
 The Book Opening's current checkpoint is an idempotent projection of that
-ledger. Entries may acknowledge search admission, candidate/evaluation
-materialization, selection, plan activation or input-snapshot resolution, but
-the ledger does not own those states. Recovery queries their owning Authority
-before skipping work.
+ledger. The current verifier accepts exact Planning-owned Narrative Search,
+PlanningGeneration evidence and Book input-snapshot resolution; the ledger does
+not own those states. Recovery queries their owning Authority before skipping
+work.
+
+The current Opening implementation treats a semantic work item as stage-skip
+safe only when its checkpoint names the exact Planning-owned Narrative Search
+and that search is still `ACTIVATED` with the same durable selection decision.
+`SELECTED`, partially materialized branches and Planning membership by
+themselves are not skip authority. Search identity is derived from the frozen
+Opening request, generator and logical key; semantic inspection then follows
+the exact search, `future-N` branch and `EVALUATION_PENDING` Planning generation
+lineage. Prefix or latest-row inference is forbidden.
 
 If durable evidence committed before its outer checkpoint, reconciliation may
 append the missing checkpoint deterministically. Legacy evidence is handled by
@@ -168,7 +201,18 @@ Candidate C
 Candidate plus generation is unique. The generation head advances by CAS, and
 idempotency/concurrency identity includes the generation. The predecessor link
 and recovery intent are immutable. A concurrent recovery can admit at most one
-successor; replay finds that same generation and Operation.
+successor; replay finds that same generation and Operation. The bounded Opening
+policy admits at most generation 3.
+
+Replacement is terminal-only. If the predecessor Operation is nonterminal, the
+successor Opening re-enters the same deterministic command, evaluation
+generation and Operation through the normal governed worker path. That path
+also closes the crash window in which a Provider receipt is durable but output
+materialization or Operation terminalization is not: it consumes the proven
+receipt/output evidence without another Provider invocation. A terminal
+`SUCCEEDED` predecessor may receive a projection-only successor generation
+when the exact durable-success bundle must be replayed; that successor is still
+forbidden from calling the Provider.
 
 Evaluation execution does not decide candidate eligibility or qualification.
 Story Design and Planning continue to validate those facts and own any
@@ -243,6 +287,21 @@ database and its current orphan remain read-only for this engineering work
 package. Real orphan loss convergence/recovery, real Provider execution, a new
 eight-Chapter campaign, human/quality validation and Production Admission are
 separate user-authorized work.
+
+Legacy execution binding is its own immutable
+`LEGACY_EXECUTION_RECONCILIATION` assessment/receipt fact, not a recovery
+authorization or semantic-checkpoint fact. If no exact historical RuntimeJob
+can be bound, reconciliation creates a deterministic, non-executable,
+attempt-less `CANCELLED` RuntimeJob / `ABORTED` OpeningExecution marker and
+moves the Opening to `FAILED`; it neither invents progress nor creates a
+`RecoveryIntent`.
+
+Database guards enforce the exact execution and checkpoint heads, monotonic
+successor/predecessor links, frozen-request digest binding, current-active
+execution binding, RecoveryAssessment/Intent/Receipt fact cardinality and
+scope, semantic generation-head CAS and recovery-intent lineage, and immutable
+terminal history. These relational guards complement rather than replace the
+transaction-time Lease-validity checks.
 
 ## Consequences
 

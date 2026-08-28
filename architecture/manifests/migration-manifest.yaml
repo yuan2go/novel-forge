@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260826_0101_quality_qualification",
+  "head": "20260828_0102_book_opening_recovery_closure",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -103,6 +103,7 @@
     "20260825_0098_narrative_evolution_engine",
     "20260825_0099_creative_engineering_convergence",
     "20260825_0100_hierarchy_closure",
-    "20260826_0101_quality_qualification"
+    "20260826_0101_quality_qualification",
+    "20260828_0102_book_opening_recovery_closure"
   ]
 }

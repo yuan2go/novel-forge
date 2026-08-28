@@ -3,7 +3,10 @@
 Runtime Jobs own execution coordination only. Business state remains in the
 domain Authority, Command Kernel Operation, Outbox, or ExternalEffect tables.
 """
+
 from .application import (
+    AUTHORITY_CONVERGENCE_REQUIRED,
+    SAME_JOB_TAKEOVER,
     RuntimeJobAuthority,
     RuntimeJobClaim,
     RuntimeJobSpec,
@@ -13,6 +16,8 @@ from .application import (
 )
 
 __all__ = [
+    "AUTHORITY_CONVERGENCE_REQUIRED",
+    "SAME_JOB_TAKEOVER",
     "RuntimeJobAuthority",
     "RuntimeJobClaim",
     "RuntimeJobSpec",

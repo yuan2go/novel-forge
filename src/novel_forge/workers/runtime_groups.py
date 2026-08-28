@@ -3,6 +3,7 @@
 Groups follow execution characteristics. They do not create one deployment per
 domain, and delivery queues never become the source of task state.
 """
+
 from __future__ import annotations
 
 import os
@@ -10,6 +11,7 @@ import signal
 import time
 from collections.abc import Callable
 
+from novel_forge.api.authority_dependencies import authority_release_identity
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.deadline_runtime import (
     scan_expired_operation_deadlines,
@@ -24,6 +26,10 @@ from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerProgrammingError,
     WorkerSupervisor,
+)
+from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.book_authority.recovery import (
+    PostgresBookOpeningRecoveryApplication,
 )
 from novel_forge.modules.runtime_job import (
     RuntimeJobAuthority,
@@ -40,6 +46,7 @@ MAINTENANCE_RUNTIME_JOB_KINDS = (
     "ATTEMPT_LEASE_EXPIRY_SCAN",
     "OUTBOX_RECOVERY_SCAN",
     "EXTERNAL_EFFECT_RECONCILIATION_SCAN",
+    "BOOK_OPENING_EXECUTION_LOSS_SCAN",
 )
 
 
@@ -80,6 +87,8 @@ def execute_maintenance_runtime_claim(
     *,
     actor_id: str,
     lease_seconds: int = 30,
+    application_build_id: str = "authority-maintenance-runtime",
+    commit_sha: str = "0" * 40,
 ) -> dict[str, object]:
     if claim.job_kind not in MAINTENANCE_RUNTIME_JOB_KINDS:
         raise RuntimeError("Maintenance worker received an unsupported Runtime Job")
@@ -114,13 +123,34 @@ def execute_maintenance_runtime_claim(
                         database_url, actor_id=actor_id, limit=limit
                     )
                 }
-            else:
+            elif claim.job_kind == "EXTERNAL_EFFECT_RECONCILIATION_SCAN":
                 result = {
                     "reconciliation_required": scan_external_effect_reconciliation(
                         database_url, actor_id=actor_id, limit=limit
                     ),
                     "external_effects_replayed": 0,
                     "provider_query_proven": False,
+                }
+            else:
+                recovery = PostgresBookOpeningRecoveryApplication(
+                    database_url,
+                    application_build_id=application_build_id,
+                    commit_sha=commit_sha,
+                )
+                scheduler_principal = Principal(
+                    principal_id=actor_id,
+                    principal_type=PrincipalType.SYSTEM_SCHEDULER,
+                    permissions=frozenset({"book.authority.execute"}),
+                    project_scope=frozenset({"*"}),
+                    authentication_source="trusted-maintenance-worker",
+                )
+                result = {
+                    "book_opening_execution_losses": list(
+                        recovery.scan_expired_executions(
+                            principal=scheduler_principal, limit=limit
+                        )
+                    ),
+                    "provider_invocations": 0,
                 }
         runtime_jobs.checkpoint(
             claim,
@@ -147,10 +177,10 @@ def _maintenance_loop() -> int:
     migration = get_migration_status(settings.database_url)
     if not migration["ok"]:
         raise RuntimeError("Authority-only worker requires the current migration head")
+    application_build_id, commit_sha = authority_release_identity()
 
     worker_id = str(
-        os.environ.get("NOVEL_FORGE_RUNTIME_GROUP_WORKER_ID")
-        or "maintenance-worker"
+        os.environ.get("NOVEL_FORGE_RUNTIME_GROUP_WORKER_ID") or "maintenance-worker"
     ).strip()
     poll_seconds = max(
         0.1, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
@@ -208,6 +238,8 @@ def _maintenance_loop() -> int:
                     claim,
                     actor_id=worker_id,
                     lease_seconds=lease_seconds,
+                    application_build_id=application_build_id,
+                    commit_sha=commit_sha,
                 ),
                 on_task_start=supervisor.operation_started,
                 on_task_finish=lambda job_id, succeeded: supervisor.operation_finished(

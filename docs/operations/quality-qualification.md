@@ -149,6 +149,12 @@ Effect evidence proves replacement is safe, the Book Opening Recovery
 Application may admit a new semantic-evaluation execution generation with
 explicit `replacement_of` lineage. The predecessor remains immutable and the
 new Operation uses generation-aware idempotency and concurrency identity.
+Replacement is terminal-only and bounded at generation 3. If the current
+semantic Operation is nonterminal, a recovered Opening must re-enter that same
+generation/Operation through the normal governed worker. In particular, a
+durable Provider receipt followed by a crash before output materialization or
+Operation terminalization must replay the proven result without another
+Provider invocation.
 
 Book Opening execution loss and recovery authorization are separate. An
 expired/lost Opening claim is first converged through the Book Opening Recovery
@@ -159,6 +165,11 @@ creates a RecoveryIntent nor calls a Provider. A subsequent operator-authorized
 checkpoint, generation, policy and ExternalEffect evidence in its transaction,
 and only then admits the next Opening execution generation.
 
+An expired active Lease cannot be converted into an abort; abort must fail
+closed and the formal loss path must terminalize it. Automatic loss assessment
+identity is bound to the fresh authoritative snapshot, so release or evidence
+drift after assessment requires a new immutable assessment.
+
 An `UNKNOWN_AMBIGUOUS` ExternalEffect blocks replacement and requires the
 existing Effect reconciliation path; operator approval cannot waive this
 boundary. Recovery, loss convergence and checkpoint reconciliation never call a
@@ -167,6 +178,14 @@ worker path. Legacy `BookOpening.resume()` must not be used: it is blocked or
 internally routed through the same assessment and recovery contract. HTTP,
 maintenance, worker and any operational CLI surface must share that Application
 path and must not contain direct repair SQL.
+
+Checkpoint-based resume may skip a whole semantic work item only when the
+cursor names the exact still-`ACTIVATED` Narrative Search and selection
+decision, with exact search, `future-N` branch and `EVALUATION_PENDING`
+Planning-generation lineage. Legacy binding uses the distinct
+`LEGACY_EXECUTION_RECONCILIATION` fact; a missing RuntimeJob becomes an
+attempt-less `CANCELLED` RuntimeJob / `ABORTED` OpeningExecution marker, not an
+inferred checkpoint or RecoveryIntent.
 
 ## Non-secret runtime environment
 

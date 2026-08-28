@@ -234,7 +234,7 @@ def _seed_candidate_and_evaluation(
             operation_id=generation_operation_id,
             definition_name=generation_definition,
             project_id=project_id,
-            status="SUCCEEDED",
+            status="ADMITTED",
         )
         cursor.execute(
             """
@@ -257,6 +257,10 @@ def _seed_candidate_and_evaluation(
                 ),
                 generation_operation_id,
             ],
+        )
+        cursor.execute(
+            "UPDATE authority_operation SET status='SUCCEEDED' WHERE operation_id=%s",
+            [generation_operation_id],
         )
         insert_definition(cursor, evaluation_definition)
         insert_operation(
@@ -711,9 +715,7 @@ def seed_ready_story_foundation(
         principal_id=principal.principal_id,
         principal_type=principal.principal_type,
         permissions=principal.permissions
-        | frozenset(
-            {"book_design.authority.execute", "book_design.authority.query"}
-        ),
+        | frozenset({"book_design.authority.execute", "book_design.authority.query"}),
         project_scope=principal.project_scope,
         authentication_source=principal.authentication_source,
     )
@@ -735,9 +737,7 @@ def seed_ready_story_foundation(
             idempotency_key=f"{book_id}:book-design-v5:propose",
             trace_id=f"trace:{project_id}:book-design-v5",
             correlation_id=f"correlation:{project_id}:formation",
-            payload=_book_design_payload(
-                foundation, target_chapters=target_chapters
-            ),
+            payload=_book_design_payload(foundation, target_chapters=target_chapters),
             expected_book_version=int(book["version"]),
             expected_current_design_asset_version_id=str(
                 book["active_book_design_version_id"]
@@ -845,7 +845,10 @@ def seed_ready_story_foundation(
         "book_version": int(final_book["version"]),
         "formation_replayed": replayed_admission.replayed,
         "formation_recovery_exercised": recovery_attempted,
-        "asset_versions": {**role_assets, "book_design": str(proposed["asset_version_id"])},
+        "asset_versions": {
+            **role_assets,
+            "book_design": str(proposed["asset_version_id"]),
+        },
     }
 
 

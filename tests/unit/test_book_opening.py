@@ -14,7 +14,11 @@ from novel_forge.modules.story_planning_runtime import GENERATOR_INPUT_ROLES
 def test_book_opening_drives_foundation_through_searched_plan_baseline() -> None:
     search_requests: list[object] = []
 
-    def explore(request, *, principal, activate_selected):  # type: ignore[no-untyped-def]
+    def explore(  # type: ignore[no-untyped-def]
+        request, *, principal, activate_selected, execution_probe=None
+    ):
+        if execution_probe is not None:
+            execution_probe()
         search_requests.append(request)
         generation = request.generation
         return SimpleNamespace(
