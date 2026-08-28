@@ -970,6 +970,30 @@ class BookOpeningControlRequest(BaseModel):
     actor_id: str = ""
 
 
+class BookOpeningAssessmentRequest(BaseModel):
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+
+
+class BookOpeningConvergenceRequest(BaseModel):
+    recovery_assessment_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+
+
+class BookOpeningRecoveryRequest(BookOpeningConvergenceRequest):
+    reason: str = Field(min_length=1)
+
+
+class BookOpeningCheckpointAssessmentRequest(BookOpeningAssessmentRequest):
+    semantic_work_key: str = Field(min_length=1)
+    owning_authority: str = Field(min_length=1)
+    evidence_type: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+    evidence_version: int = Field(ge=0)
+    evidence_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
 class StoryFormationLayerRequest(BaseModel):
     role: Literal[
         "CREATIVE_FOUNDATION",
@@ -2416,6 +2440,12 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "BookProductionInputResolveRequest": BookProductionInputResolveRequest,
         "BookOpeningStartRequest": BookOpeningStartRequest,
         "BookOpeningControlRequest": BookOpeningControlRequest,
+        "BookOpeningAssessmentRequest": BookOpeningAssessmentRequest,
+        "BookOpeningConvergenceRequest": BookOpeningConvergenceRequest,
+        "BookOpeningRecoveryRequest": BookOpeningRecoveryRequest,
+        "BookOpeningCheckpointAssessmentRequest": (
+            BookOpeningCheckpointAssessmentRequest
+        ),
         "StoryFormationLayerRequest": StoryFormationLayerRequest,
         "StoryFormationStartRequest": StoryFormationStartRequest,
         "StoryFormationControlRequest": StoryFormationControlRequest,

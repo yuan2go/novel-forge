@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
+from enum import StrEnum
 import hashlib
 import json
 from typing import Any, Protocol
@@ -17,6 +20,9 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.cancellation import (
+    cancel_unstarted_operation_in_uow,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     start_saga,
@@ -24,8 +30,12 @@ from novel_forge.modules.command_kernel.operation_graph import (
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
+    transition_operation_in_uow,
 )
-from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    admit_command_in_uow,
+)
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -45,6 +55,104 @@ NARRATIVE_EVALUATION_HANDLER = "novel_forge.story_design.semantic_evaluate"
 NARRATIVE_EVALUATION_APPLICATION_BUILD_ID = (
     "canonical-narrative-semantic-evaluation-runtime"
 )
+NARRATIVE_EVALUATION_DURABLE_REPLAY_VERSION = (
+    "narrative-evaluation-durable-success-replay.v1"
+)
+
+
+class NarrativeEvaluationExternalEffectDisposition(StrEnum):
+    PROVEN_NO_EFFECT = "PROVEN_NO_EFFECT"
+    PROVEN_SUCCESS = "PROVEN_SUCCESS"
+    PROVEN_TERMINAL_FAILURE = "PROVEN_TERMINAL_FAILURE"
+    UNKNOWN_AMBIGUOUS = "UNKNOWN_AMBIGUOUS"
+
+
+def classify_narrative_evaluation_external_effects(
+    rows: Iterable[Mapping[str, object]],
+) -> NarrativeEvaluationExternalEffectDisposition:
+    """Classify only durable Effect/Dispatch/Receipt evidence.
+
+    Absence of an Effect is the sole no-effect proof. Once an Effect exists,
+    missing dispatch/receipt evidence or any in-flight/unknown state is
+    ambiguous and must be reconciled by the existing ExternalEffect runtime.
+    """
+
+    evidence = tuple(dict(row) for row in rows)
+    if not evidence:
+        return NarrativeEvaluationExternalEffectDisposition.PROVEN_NO_EFFECT
+    effect_ids = {str(row.get("external_effect_id") or "") for row in evidence}
+    if "" in effect_ids or len(effect_ids) != 1:
+        return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
+    effect_statuses = {str(row.get("effect_status") or "") for row in evidence}
+    dispatch_statuses = {
+        str(row.get("dispatch_status") or "")
+        for row in evidence
+        if row.get("dispatch_id") is not None
+    }
+    dispatch_ids = [
+        str(row.get("dispatch_id") or "")
+        for row in evidence
+        if row.get("dispatch_id") is not None
+    ]
+    if "" in dispatch_ids or len(dispatch_ids) != len(set(dispatch_ids)):
+        # One classifier row per dispatch is the cardinality contract.  A
+        # repeated dispatch means multiple receipts (or otherwise duplicated
+        # durable evidence) and must never be collapsed into apparent success.
+        return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
+    if len(effect_statuses) != 1 or "" in effect_statuses:
+        return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
+    effect_status = next(iter(effect_statuses))
+    ambiguous_effects = {
+        "READY",
+        "DISPATCHING",
+        "DISPATCHED",
+        "FAILED_RETRYABLE",
+        "UNKNOWN",
+        "RECONCILIATION_REQUIRED",
+        "CANCELLATION_REQUESTED",
+        "COMPENSATION_REQUIRED",
+        "COMPENSATING",
+    }
+    ambiguous_dispatches = {
+        "CREATED",
+        "DISPATCHING",
+        "ACKNOWLEDGED",
+        "FAILED_RETRYABLE",
+        "UNKNOWN",
+        "CANCEL_REQUESTED",
+    }
+    if (
+        effect_status in ambiguous_effects
+        or not dispatch_statuses
+        or dispatch_statuses & ambiguous_dispatches
+    ):
+        return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
+    if effect_status == "SUCCEEDED":
+        succeeded = sum(
+            1
+            for row in evidence
+            if row.get("dispatch_status") == "SUCCEEDED"
+            and row.get("receipt_status") == "VERIFIED"
+        )
+        if succeeded == 1 and dispatch_statuses <= {
+            "SUCCEEDED",
+            "FAILED_FINAL",
+            "CANCELLED",
+            "SUPERSEDED",
+            "DEAD_LETTER",
+        }:
+            return NarrativeEvaluationExternalEffectDisposition.PROVEN_SUCCESS
+        return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
+    if effect_status in {
+        "FAILED_FINAL",
+        "CANCELLED",
+        "COMPENSATED",
+        "DEAD_LETTER",
+    } and (
+        dispatch_statuses <= {"FAILED_FINAL", "CANCELLED", "SUPERSEDED", "DEAD_LETTER"}
+    ):
+        return NarrativeEvaluationExternalEffectDisposition.PROVEN_TERMINAL_FAILURE
+    return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
 
 
 def _canonical_hash(value: Any) -> str:
@@ -56,6 +164,76 @@ def _canonical_hash(value: Any) -> str:
         allow_nan=False,
     ).encode()
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _stable_id(prefix: str, *parts: object) -> str:
+    identity = "\x1f".join(str(item) for item in parts)
+    return f"{prefix}:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+
+def _evaluation_command_payload_matches(
+    stored: Mapping[str, Any], expected: Mapping[str, Any]
+) -> bool:
+    """Compare a caller command with a generation-aware frozen command.
+
+    A successful-effect replacement carries three additional immutable evidence
+    inputs and a replay bundle.  Those fields authorize projection of the old
+    durable result; they do not change the original candidate evaluation
+    request that callers replay after recovery.
+    """
+
+    if dict(stored) == dict(expected):
+        return True
+    stored_payload = dict(stored.get("payload") or {})
+    replay = stored_payload.pop("durable_success_replay", None)
+    if not isinstance(replay, Mapping):
+        return False
+    expected_payload = dict(expected.get("payload") or {})
+    if stored_payload != expected_payload:
+        return False
+    expected_inputs = list(expected.get("input_asset_version_ids") or [])
+    replay_inputs = [
+        str(replay.get("model_call_asset_version_id") or ""),
+        str(replay.get("cost_ledger_asset_version_id") or ""),
+        str(replay.get("source_evaluation_asset_version_id") or ""),
+    ]
+    if any(not item for item in replay_inputs):
+        return False
+    return str(stored.get("project_id") or "") == str(
+        expected.get("project_id") or ""
+    ) and list(stored.get("input_asset_version_ids") or []) == [
+        *expected_inputs,
+        *replay_inputs,
+    ]
+
+
+def _evaluation_lifecycle(operation_status: str) -> str:
+    if operation_status == "SUCCEEDED":
+        return "SUCCEEDED"
+    if operation_status == "CANCELLED":
+        return "CANCELLED"
+    if operation_status == "DEAD_LETTER":
+        return "DEAD_LETTER"
+    if operation_status in {
+        "FAILED_FINAL",
+        "COMPENSATED",
+        "COMPENSATION_FAILED",
+    }:
+        return "FAILED"
+    if operation_status == "RECONCILIATION_REQUIRED":
+        return "RECONCILIATION_REQUIRED"
+    if operation_status in {
+        "EXECUTING",
+        "WAITING_CHILDREN",
+        "WAITING_EXTERNAL_RESULT",
+        "WAITING_GATE",
+        "FAILED_RETRYABLE",
+        "CANCELLATION_REQUESTED",
+        "COMPENSATION_REQUIRED",
+        "COMPENSATING",
+    }:
+        return "RUNNING"
+    return "ADMITTED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +295,34 @@ class NarrativeSemanticEvaluationCommand:
             raise ValueError(
                 "fixture or operator Narrative Evaluation requires an explicit result"
             )
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeSemanticEvaluationReplacementCommand:
+    predecessor_operation_id: str
+    expected_head_generation: int
+    expected_head_version: int
+    recovery_intent_id: str
+    actor_id: str
+    trace_id: str
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        required = (
+            self.predecessor_operation_id,
+            self.recovery_intent_id,
+            self.actor_id,
+            self.trace_id,
+            self.correlation_id,
+        )
+        if any(not value.strip() for value in required):
+            raise ValueError("Narrative Evaluation replacement identity is incomplete")
+        if self.expected_head_generation <= 0 or self.expected_head_version < 0:
+            raise ValueError("Narrative Evaluation replacement generation is invalid")
+
+    @property
+    def successor_generation(self) -> int:
+        return self.expected_head_generation + 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +446,14 @@ class NarrativeSemanticEvaluationHandler:
         provider_result: NarrativeProviderEvaluation | None = None
         evaluation = payload.get("evaluation")
         if execution_class == "MODEL_PROVIDER":
+            durable_replay = payload.get("durable_success_replay")
+            if durable_replay is not None:
+                return self._replay_durable_success(
+                    request,
+                    candidate=candidate,
+                    evidence_inputs=evidence_inputs,
+                    replay=durable_replay,
+                )
             if evidence_inputs or evaluation is not None:
                 raise KernelError(
                     "NARRATIVE_EVALUATION_PROVIDER_INPUT_INVALID",
@@ -373,6 +587,168 @@ class NarrativeSemanticEvaluationHandler:
                 "independent_from_generation": True,
                 "evaluation_attempt_id": request.attempt_id,
                 "evaluation_evidence_hash": evidence_hash,
+            },
+        )
+
+    @staticmethod
+    def _replay_durable_success(
+        request: AuthorityHandlerRequest,
+        *,
+        candidate: Any,
+        evidence_inputs: tuple[Any, ...],
+        replay: object,
+    ) -> AuthorityHandlerOutput:
+        """Project an exactly frozen predecessor result without a Provider call."""
+
+        if not isinstance(replay, Mapping):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay metadata must be an object",
+            )
+        frozen = dict(replay)
+        bundle_hash = str(frozen.pop("bundle_hash", ""))
+        if (
+            frozen.get("schema_version") != NARRATIVE_EVALUATION_DURABLE_REPLAY_VERSION
+            or not bundle_hash
+            or _canonical_hash(frozen) != bundle_hash
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay metadata hash is invalid",
+            )
+        by_id = {item.asset_version_id: item for item in evidence_inputs}
+        expected_ids = {
+            str(frozen.get("model_call_asset_version_id") or ""),
+            str(frozen.get("cost_ledger_asset_version_id") or ""),
+            str(frozen.get("source_evaluation_asset_version_id") or ""),
+        }
+        if "" in expected_ids or set(by_id) != expected_ids:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay inputs differ from the admitted bundle",
+            )
+        model = by_id[str(frozen["model_call_asset_version_id"])]
+        cost = by_id[str(frozen["cost_ledger_asset_version_id"])]
+        source = by_id[str(frozen["source_evaluation_asset_version_id"])]
+        if (
+            model.asset_type != "model_call_log"
+            or cost.asset_type != "cost_ledger"
+            or source.asset_type != "narrative_design_evaluation"
+            or model.content_hash != frozen.get("model_call_content_hash")
+            or cost.content_hash != frozen.get("cost_ledger_content_hash")
+            or source.content_hash != frozen.get("source_evaluation_content_hash")
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay assets no longer match their frozen hashes",
+            )
+        source_content = dict(source.content)
+        model_content = dict(model.content)
+        cost_content = dict(cost.content)
+        source_operation_id = str(frozen.get("source_operation_id") or "")
+        source_attempt_id = str(frozen.get("source_attempt_id") or "")
+        external_effect_id = str(frozen.get("external_effect_id") or "")
+        provider_evidence = model_content.get("provider_evidence")
+        provider_execution = source_content.get("provider_execution")
+        model_target = model_content.get("target_lineage")
+        expected_target = {
+            "target_asset_version_id": candidate.asset_version_id,
+            "target_content_hash": candidate.content_hash,
+            "generation_operation_id": str(
+                request.command["payload"].get("generation_operation_id") or ""
+            ),
+            "generator_operation_name": str(
+                request.command["payload"].get("generator_operation_name") or ""
+            ),
+        }
+        valid = (
+            source_operation_id
+            and source_attempt_id
+            and external_effect_id
+            and model_content.get("operation_id") == source_operation_id
+            and model_content.get("attempt_id") == source_attempt_id
+            and model_content.get("external_effect_id") == external_effect_id
+            and model_content.get("stage") == "narrative_semantic_evaluation"
+            and model_target == expected_target
+            and cost_content.get("operation_id") == source_operation_id
+            and cost_content.get("attempt_id") == source_attempt_id
+            and cost_content.get("external_effect_id") == external_effect_id
+            and cost_content.get("stage") == "narrative_semantic_evaluation"
+            and source_content.get("candidate_asset_version_id")
+            == candidate.asset_version_id
+            and source_content.get("candidate_content_hash") == candidate.content_hash
+            and source_content.get("generation_operation_id")
+            == expected_target["generation_operation_id"]
+            and source_content.get("evaluation_operation_id") == source_operation_id
+            and source_content.get("evaluation_attempt_id") == source_attempt_id
+            and source_content.get("evaluator_execution_class") == "MODEL_PROVIDER"
+            and source_content.get("provider_evidence_asset_version_ids")
+            == [model.asset_version_id]
+            and source_content.get("provider_evidence")
+            == [
+                {
+                    "asset_version_id": model.asset_version_id,
+                    "content_hash": model.content_hash,
+                }
+            ]
+            and isinstance(provider_evidence, Mapping)
+            and provider_evidence.get("real_model_call") is True
+            and source_content.get("evaluation") == provider_evidence.get("result")
+            and isinstance(provider_execution, Mapping)
+            and provider_execution.get("provider_evidence_hash")
+            == frozen.get("provider_evidence_hash")
+            and provider_execution.get("provider_result_hash")
+            == frozen.get("provider_result_hash")
+            and provider_execution.get("route_snapshot_id")
+            == frozen.get("provider_route_snapshot_id")
+            and _canonical_hash(dict(provider_evidence))
+            == frozen.get("provider_evidence_hash")
+            and _canonical_hash(provider_evidence.get("result"))
+            == frozen.get("provider_result_hash")
+        )
+        if not valid:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay lineage no longer matches exact Provider evidence",
+            )
+        qualification = validate_narrative_qualification(
+            generator_operation_name=expected_target["generator_operation_name"],
+            value=source_content.get("evaluation"),
+            require_pass=False,
+        )
+        if source_content.get("qualification") != qualification.to_evidence():
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                "durable-success replay qualification evidence is inconsistent",
+            )
+        projected = dict(source_content)
+        projected["durable_success_replay"] = {
+            "schema_version": NARRATIVE_EVALUATION_DURABLE_REPLAY_VERSION,
+            "bundle_hash": bundle_hash,
+            "source_evaluation_asset_version_id": source.asset_version_id,
+            "source_operation_id": source_operation_id,
+            "source_attempt_id": source_attempt_id,
+            "replacement_operation_id": request.operation_id,
+            "replacement_attempt_id": request.attempt_id,
+            "external_effect_id": external_effect_id,
+        }
+        return AuthorityHandlerOutput(
+            asset_type="narrative_design_evaluation",
+            output_key="story_design.semantic_evaluation",
+            role="qualification_evidence",
+            content=projected,
+            qualification_policy="independent-narrative-evaluation-v1",
+            reference_asset_version_ids=(
+                candidate.asset_version_id,
+                model.asset_version_id,
+                cost.asset_version_id,
+                source.asset_version_id,
+            ),
+            evidence={
+                "independent_from_generation": True,
+                "durable_success_replay": True,
+                "source_evaluation_asset_version_id": source.asset_version_id,
+                "bundle_hash": bundle_hash,
             },
         )
 
@@ -616,6 +992,7 @@ class NarrativeSemanticEvaluationApplication:
             operation = uow.repositories.attempt_runtime.operation_state(
                 operation_id, command.project_id
             )
+        operation_was_unstarted = operation["status"] in {"ADMITTED", "READY"}
         if operation["status"] == "ADMITTED":
             transition_operation(
                 self.database_url,
@@ -632,6 +1009,7 @@ class NarrativeSemanticEvaluationApplication:
                     causation_id=command.generation_operation_id,
                 ),
             )
+        if operation_was_unstarted:
             start_saga(
                 self.database_url,
                 GraphCommandContext(
@@ -642,11 +1020,23 @@ class NarrativeSemanticEvaluationApplication:
                 ),
                 root_operation_id=operation_id,
             )
-        scheduled = ContentAuthorityScheduler(
-            self.database_url,
-            registry=self.registry,
-            worker_id=self.worker_id,
-        ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+        self._mark_execution_running(
+            operation_id=operation_id, project_id=command.project_id
+        )
+        try:
+            scheduled = ContentAuthorityScheduler(
+                self.database_url,
+                registry=self.registry,
+                worker_id=self.worker_id,
+            ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+        except Exception:
+            self._synchronize_execution_for_operation(
+                operation_id=operation_id, project_id=command.project_id
+            )
+            raise
+        self._synchronize_execution_for_operation(
+            operation_id=operation_id, project_id=command.project_id
+        )
         evaluation_asset = self._require_asset(
             command.project_id, scheduled.output.asset_version_id
         )
@@ -656,10 +1046,37 @@ class NarrativeSemanticEvaluationApplication:
             value=content.get("evaluation"),
             require_pass=False,
         )
+        evaluation_operation_id = operation_id
+        evaluation_attempt_id = scheduled.attempt_id
+        durable_replay = content.get("durable_success_replay")
+        if durable_replay is not None:
+            if not isinstance(durable_replay, Mapping):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                    "materialized durable-success projection metadata is invalid",
+                )
+            evaluation_operation_id = str(
+                durable_replay.get("source_operation_id") or ""
+            )
+            evaluation_attempt_id = str(durable_replay.get("source_attempt_id") or "")
+            if (
+                durable_replay.get("schema_version")
+                != NARRATIVE_EVALUATION_DURABLE_REPLAY_VERSION
+                or durable_replay.get("replacement_operation_id") != operation_id
+                or durable_replay.get("replacement_attempt_id") != scheduled.attempt_id
+                or content.get("evaluation_operation_id") != evaluation_operation_id
+                or content.get("evaluation_attempt_id") != evaluation_attempt_id
+                or not evaluation_operation_id
+                or not evaluation_attempt_id
+            ):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_DURABLE_REPLAY_INVALID",
+                    "materialized projection differs from its predecessor execution lineage",
+                )
         lineage = NarrativeEvaluationLineage(
             generation_operation_id=command.generation_operation_id,
-            evaluation_operation_id=operation_id,
-            evaluation_attempt_id=scheduled.attempt_id,
+            evaluation_operation_id=evaluation_operation_id,
+            evaluation_attempt_id=evaluation_attempt_id,
             evaluation_asset_version_id=scheduled.output.asset_version_id,
             candidate_asset_version_id=command.candidate_asset_version_id,
             candidate_content_hash=command.candidate_content_hash,
@@ -700,72 +1117,1560 @@ class NarrativeSemanticEvaluationApplication:
         command: NarrativeSemanticEvaluationCommand,
         admission_command: dict[str, Any],
     ) -> dict[str, Any]:
-        concurrency_key = (
-            f"book:{command.book_id}:evaluation:{command.candidate_asset_version_id}"
-        )
         with AuthorityUnitOfWork(self.database_url) as claim_uow:
-            claim_uow.cursor.execute(
-                "SELECT pg_advisory_lock(hashtextextended(%s, 0))",
-                [f"narrative-evaluation:{command.project_id}:{concurrency_key}"],
+            self._lock_candidate(
+                claim_uow,
+                project_id=command.project_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
             )
-            try:
-                claim_uow.cursor.execute(
+            current = self._current_execution_in_uow(
+                claim_uow,
+                project_id=command.project_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                lock=True,
+            )
+            if current is not None:
+                self._synchronize_execution_in_uow(claim_uow, current)
+                if not _evaluation_command_payload_matches(
+                    dict(current["command_payload"]), admission_command["input"]
+                ):
+                    raise KernelError(
+                        "NARRATIVE_EVALUATION_CLAIM_CONFLICT",
+                        "candidate Evaluation head is bound to different immutable inputs",
+                    )
+                claim_uow.commit()
+                return {
+                    "operation_id": str(current["operation_id"]),
+                    "operation_actor_id": str(current["operation_actor_id"]),
+                    "evaluation_execution_id": str(current["evaluation_execution_id"]),
+                    "generation": int(current["generation"]),
+                    "replayed": True,
+                }
+
+            # Re-read candidate eligibility while holding the per-candidate
+            # transaction lock. Operation admission and the generation-1 head
+            # are one commit boundary, so no operation-only orphan is created.
+            self._require_candidate_in_uow(claim_uow, command)
+            admitted = admit_command_in_uow(
+                claim_uow,
+                admission_command,
+                context=self._admission_context(command.actor_id),
+            )
+            operation = self._operation_for_lineage_in_uow(
+                claim_uow,
+                operation_id=str(admitted["operation_id"]),
+                project_id=command.project_id,
+                lock=True,
+            )
+            if dict(operation["command_payload"]) != admission_command["input"]:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_CLAIM_CONFLICT",
+                    "generation-1 Operation has different immutable inputs",
+                )
+            execution_id = _stable_id(
+                "narrative-evaluation-execution",
+                command.project_id,
+                command.candidate_asset_version_id,
+                1,
+            )
+            lifecycle = _evaluation_lifecycle(str(operation["status"]))
+            terminal = lifecycle in {
+                "SUCCEEDED",
+                "FAILED",
+                "CANCELLED",
+                "DEAD_LETTER",
+            }
+            claim_uow.cursor.execute(
+                """
+                INSERT INTO authority_narrative_evaluation_execution(
+                    evaluation_execution_id,project_id,book_id,
+                    candidate_asset_version_id,candidate_content_hash,generation,
+                    operation_id,idempotency_scope,idempotency_key,
+                    concurrency_key,lifecycle,terminal_reason,started_at,
+                    terminal_at
+                ) VALUES (
+                    %s,%s,%s,%s,%s,1,%s,%s,%s,%s,%s,%s,
+                    CASE WHEN %s IN ('RUNNING','SUCCEEDED','FAILED','CANCELLED',
+                                     'DEAD_LETTER','RECONCILIATION_REQUIRED')
+                         THEN transaction_timestamp() END,
+                    CASE WHEN %s THEN transaction_timestamp() END
+                )
+                """,
+                [
+                    execution_id,
+                    command.project_id,
+                    command.book_id,
+                    command.candidate_asset_version_id,
+                    command.candidate_content_hash,
+                    operation["operation_id"],
+                    operation["idempotency_scope"],
+                    operation["idempotency_key"],
+                    operation["concurrency_key"],
+                    lifecycle,
+                    Jsonb(
+                        {"operation_status": operation["status"]} if terminal else {}
+                    ),
+                    lifecycle,
+                    terminal,
+                ],
+            )
+            claim_uow.cursor.execute(
+                """
+                INSERT INTO authority_narrative_evaluation_execution_head(
+                    project_id,candidate_asset_version_id,current_execution_id,
+                    current_generation
+                ) VALUES (%s,%s,%s,1)
+                """,
+                [
+                    command.project_id,
+                    command.candidate_asset_version_id,
+                    execution_id,
+                ],
+            )
+            claim_uow.commit()
+            return {
+                **admitted,
+                "operation_actor_id": str(operation["operation_actor_id"]),
+                "evaluation_execution_id": execution_id,
+                "generation": 1,
+            }
+
+    def admit_replacement_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        predecessor_operation_id: str,
+        recovery_intent_id: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        expected_head_generation: int,
+        expected_head_version: int,
+    ) -> dict[str, Any]:
+        """Admit generation N+1 without starting an Attempt or Provider call.
+
+        The Book Opening Recovery Application owns the surrounding transaction.
+        This primitive independently verifies its immutable RecoveryAssessment,
+        semantic head, predecessor terminal state, and ExternalEffect evidence.
+        """
+
+        replacement = NarrativeSemanticEvaluationReplacementCommand(
+            predecessor_operation_id=predecessor_operation_id,
+            expected_head_generation=expected_head_generation,
+            expected_head_version=expected_head_version,
+            recovery_intent_id=recovery_intent_id,
+            actor_id=actor_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        predecessor = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=predecessor_operation_id, lock=False
+        )
+        if predecessor is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PREDECESSOR_NOT_FOUND",
+                "replacement predecessor is not a semantic Evaluation execution",
+            )
+        project_id = str(predecessor["project_id"])
+        candidate_id = str(predecessor["candidate_asset_version_id"])
+        self._lock_candidate(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+        )
+        predecessor = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=predecessor_operation_id, lock=True
+        )
+        assert predecessor is not None
+        if actor_id != str(predecessor["operation_actor_id"]):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_EVALUATOR_DRIFT",
+                "replacement must preserve the predecessor trusted evaluator identity",
+            )
+        current = self._current_execution_in_uow(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+            lock=True,
+        )
+        if current is None:
+            self._replacement_stale("semantic Evaluation generation head is missing")
+
+        assessment = self._recovery_assessment_in_uow(
+            uow, recovery_intent_id=recovery_intent_id
+        )
+        if assessment is None or assessment["assessment_kind"] != "RECOVERY":
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_ASSESSMENT_INVALID",
+                "replacement requires a RecoveryIntent bound to a RECOVERY assessment",
+            )
+        if (
+            str(assessment["project_id"]) != project_id
+            or str(assessment["book_id"]) != str(predecessor["book_id"])
+            or str(assessment["workspace_id"]) != str(predecessor["workspace_id"])
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_SCOPE_INVALID",
+                "RecoveryIntent Opening and semantic Evaluation scopes differ",
+            )
+        disposition = str(assessment["disposition"])
+        allowed = {
+            NarrativeEvaluationExternalEffectDisposition.PROVEN_NO_EFFECT.value,
+            NarrativeEvaluationExternalEffectDisposition.PROVEN_SUCCESS.value,
+            NarrativeEvaluationExternalEffectDisposition.PROVEN_TERMINAL_FAILURE.value,
+        }
+        if disposition not in allowed:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXTERNAL_EFFECT_RECONCILIATION_REQUIRED",
+                "semantic Evaluation replacement is forbidden for ambiguous Provider evidence",
+            )
+        snapshot = dict(assessment["snapshot"])
+        if _canonical_hash(snapshot) != str(assessment["snapshot_hash"]):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_ASSESSMENT_INVALID",
+                "RecoveryAssessment snapshot hash is invalid",
+            )
+        opening_snapshot = dict(snapshot.get("opening") or {})
+        if str(opening_snapshot.get("opening_run_id") or "") != str(
+            assessment["opening_run_id"]
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_ASSESSMENT_INVALID",
+                "RecoveryAssessment Opening identity is invalid",
+            )
+        semantic_snapshot = dict(snapshot.get("semantic_evaluation") or {})
+        expected_semantic_snapshot = {
+            "evaluation_execution_id": str(predecessor["evaluation_execution_id"]),
+            "generation": int(predecessor["generation"]),
+            "operation_id": str(predecessor["operation_id"]),
+            "lifecycle": str(predecessor["lifecycle"]),
+            "execution_version": int(predecessor["execution_version"]),
+            "candidate_asset_version_id": candidate_id,
+            "candidate_content_hash": str(predecessor["candidate_content_hash"]),
+            "operation_status": str(predecessor["operation_status"]),
+            "evaluator_actor_id": str(predecessor["operation_actor_id"]),
+            "head_version": replacement.expected_head_version,
+        }
+        if not self._semantic_snapshot_matches_execution(
+            semantic_snapshot,
+            expected_semantic_snapshot,
+            predecessor=predecessor,
+        ):
+            self._replacement_stale(
+                "RecoveryAssessment semantic Evaluation snapshot drifted"
+            )
+        if replacement.expected_head_generation != int(
+            predecessor["generation"]
+        ) or replacement.expected_head_generation != int(
+            semantic_snapshot["generation"]
+        ):
+            self._replacement_stale("semantic Evaluation generation drifted")
+        expected_head_digest = _canonical_hash(
+            {
+                "evaluation_execution_id": semantic_snapshot["evaluation_execution_id"],
+                "generation": semantic_snapshot["generation"],
+                "head_version": semantic_snapshot["head_version"],
+            }
+        )
+        if expected_head_digest != str(assessment["evaluation_head_digest"]):
+            self._replacement_stale("semantic Evaluation head digest drifted")
+
+        external = self._external_effect_evidence_in_uow(
+            uow, operation_id=predecessor_operation_id
+        )
+        snapshot_external = dict(snapshot.get("external_effect") or {})
+        if (
+            external != snapshot_external
+            or str(external["digest"]) != str(assessment["external_effect_digest"])
+            or str(external["classification"]) != disposition
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXTERNAL_EFFECT_RECONCILIATION_REQUIRED",
+                "semantic Evaluation ExternalEffect evidence drifted or is ambiguous",
+            )
+        durable_success_replay: dict[str, Any] | None = None
+        if (
+            disposition
+            == NarrativeEvaluationExternalEffectDisposition.PROVEN_SUCCESS.value
+        ):
+            durable_success_replay = self._durable_success_replay_bundle_in_uow(
+                uow,
+                predecessor=predecessor,
+                external_evidence=external,
+            )
+            allowed_terminal_statuses = {"SUCCEEDED"}
+            allowed_terminal_lifecycles = {"SUCCEEDED"}
+        else:
+            allowed_terminal_statuses = {
+                "CANCELLED",
+                "FAILED_FINAL",
+                "DEAD_LETTER",
+                "COMPENSATED",
+                "COMPENSATION_FAILED",
+            }
+            allowed_terminal_lifecycles = {
+                "CANCELLED",
+                "FAILED",
+                "DEAD_LETTER",
+            }
+        if str(predecessor["operation_status"]) not in allowed_terminal_statuses:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PREDECESSOR_NOT_TERMINAL",
+                "replacement predecessor is not the immutable terminal execution required by its evidence classification",
+            )
+        self._synchronize_execution_in_uow(uow, predecessor)
+        predecessor = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=predecessor_operation_id, lock=True
+        )
+        assert predecessor is not None
+        if str(predecessor["lifecycle"]) not in allowed_terminal_lifecycles:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PREDECESSOR_NOT_TERMINAL",
+                "replacement predecessor execution did not converge terminal",
+            )
+
+        uow.cursor.execute(
+            """
+            SELECT evaluation_execution_id,operation_id,
+                   candidate_asset_version_id,generation,
+                   predecessor_operation_id
+            FROM authority_narrative_evaluation_execution
+            WHERE recovery_intent_id=%s
+            ORDER BY created_at,evaluation_execution_id
+            """,
+            [recovery_intent_id],
+        )
+        intent_bindings = [tuple(row) for row in uow.cursor.fetchall()]
+        if len(intent_bindings) > 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_INTENT_CONFLICT",
+                "RecoveryIntent is bound to multiple semantic Evaluation executions",
+            )
+        if intent_bindings and (
+            str(intent_bindings[0][0]) != str(current["evaluation_execution_id"])
+            or str(intent_bindings[0][1]) != str(current["operation_id"])
+            or str(intent_bindings[0][2]) != candidate_id
+            or int(intent_bindings[0][3]) != replacement.successor_generation
+            or str(intent_bindings[0][4]) != predecessor_operation_id
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_RECOVERY_INTENT_CONFLICT",
+                "RecoveryIntent is already bound outside the exact current generation head",
+            )
+
+        is_intent_replay = (
+            int(current["generation"]) == replacement.successor_generation
+            and str(current["predecessor_operation_id"] or "")
+            == predecessor_operation_id
+            and str(current["recovery_intent_id"] or "") == recovery_intent_id
+        )
+        if is_intent_replay:
+            return {
+                "evaluation_execution_id": str(current["evaluation_execution_id"]),
+                "generation": int(current["generation"]),
+                "operation_id": str(current["operation_id"]),
+                "external_effect_disposition": disposition,
+                "durable_result_replay": durable_success_replay is not None,
+                "replayed": True,
+            }
+        if (
+            str(current["evaluation_execution_id"])
+            != str(predecessor["evaluation_execution_id"])
+            or str(current["operation_id"]) != predecessor_operation_id
+            or int(current["generation"]) != replacement.expected_head_generation
+            or int(current["head_version"]) != replacement.expected_head_version
+        ):
+            self._replacement_stale("semantic Evaluation generation head changed")
+
+        uow.repositories.definitions.register(
+            narrative_semantic_evaluation_definition(
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            )
+        )
+        uow.cursor.execute(
+            """
+            SELECT idempotency_key
+            FROM authority_narrative_evaluation_execution
+            WHERE project_id=%s AND candidate_asset_version_id=%s
+              AND generation=1
+            """,
+            [project_id, candidate_id],
+        )
+        generation_one = uow.cursor.fetchone()
+        if generation_one is None:
+            self._replacement_stale("generation-1 semantic Evaluation is missing")
+        successor_generation = replacement.successor_generation
+        generation_idempotency_key = (
+            f"{generation_one[0]}:evaluation-generation:{successor_generation}"
+        )
+        successor_input = json.loads(json.dumps(predecessor["command_payload"]))
+        successor_input_assets = [
+            {
+                "asset_version_id": str(item["asset_version_id"]),
+                "content_hash": str(item["content_hash"]),
+            }
+            for item in predecessor["input_asset_snapshot"]
+        ]
+        if durable_success_replay is not None:
+            successor_input["payload"]["durable_success_replay"] = dict(
+                durable_success_replay
+            )
+            replay_assets = [
+                {
+                    "asset_version_id": str(
+                        durable_success_replay["model_call_asset_version_id"]
+                    ),
+                    "content_hash": str(
+                        durable_success_replay["model_call_content_hash"]
+                    ),
+                },
+                {
+                    "asset_version_id": str(
+                        durable_success_replay["cost_ledger_asset_version_id"]
+                    ),
+                    "content_hash": str(
+                        durable_success_replay["cost_ledger_content_hash"]
+                    ),
+                },
+                {
+                    "asset_version_id": str(
+                        durable_success_replay["source_evaluation_asset_version_id"]
+                    ),
+                    "content_hash": str(
+                        durable_success_replay["source_evaluation_content_hash"]
+                    ),
+                },
+            ]
+            successor_input["input_asset_version_ids"] = [
+                *successor_input["input_asset_version_ids"],
+                *(item["asset_version_id"] for item in replay_assets),
+            ]
+            successor_input_assets.extend(replay_assets)
+        successor_command = {
+            "definition_name": NARRATIVE_EVALUATION_DEFINITION,
+            "definition_version": NARRATIVE_EVALUATION_VERSION,
+            "project_id": project_id,
+            "workspace_id": str(predecessor["workspace_id"]),
+            "book_id": str(predecessor["book_id"]),
+            "logical_key": (
+                f"{candidate_id}:evaluation-generation:{successor_generation}"
+            ),
+            "actor_id": actor_id,
+            "idempotency_scope": str(predecessor["idempotency_scope"]),
+            "idempotency_key": generation_idempotency_key,
+            "trace_id": trace_id,
+            "span_id": str(uuid4()),
+            "correlation_id": correlation_id,
+            "causation_id": predecessor_operation_id,
+            "causation_operation_id": predecessor_operation_id,
+            "input": successor_input,
+            "input_assets": successor_input_assets,
+        }
+        admitted = admit_command_in_uow(
+            uow,
+            successor_command,
+            context=self._admission_context(actor_id),
+        )
+        if admitted["replayed"]:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_IDEMPOTENCY_CONFLICT",
+                "generation-aware replacement Operation exists without its exact lineage head",
+            )
+        operation = self._operation_for_lineage_in_uow(
+            uow,
+            operation_id=str(admitted["operation_id"]),
+            project_id=project_id,
+            lock=True,
+        )
+        ready = transition_operation_in_uow(
+            uow,
+            OperationTransitionCommand(
+                operation_id=str(operation["operation_id"]),
+                project_id=project_id,
+                expected_version=int(operation["version"]),
+                expected_status="ADMITTED",
+                target_status="READY",
+                actor_id=actor_id,
+                reason="recovery admitted semantic Evaluation replacement",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                causation_id=predecessor_operation_id,
+            ),
+        )
+        if str(ready["status"]) != "READY":
+            self._replacement_stale(
+                "replacement Operation did not reach the unstarted READY state"
+            )
+        successor_execution_id = _stable_id(
+            "narrative-evaluation-execution",
+            project_id,
+            candidate_id,
+            successor_generation,
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_narrative_evaluation_execution(
+                evaluation_execution_id,project_id,book_id,
+                candidate_asset_version_id,candidate_content_hash,generation,
+                predecessor_execution_id,predecessor_generation,
+                predecessor_operation_id,recovery_intent_id,operation_id,
+                idempotency_scope,idempotency_key,concurrency_key,lifecycle
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'ADMITTED')
+            """,
+            [
+                successor_execution_id,
+                project_id,
+                predecessor["book_id"],
+                candidate_id,
+                predecessor["candidate_content_hash"],
+                successor_generation,
+                predecessor["evaluation_execution_id"],
+                predecessor["generation"],
+                predecessor_operation_id,
+                recovery_intent_id,
+                operation["operation_id"],
+                operation["idempotency_scope"],
+                operation["idempotency_key"],
+                operation["concurrency_key"],
+            ],
+        )
+        uow.cursor.execute(
+            """
+            UPDATE authority_narrative_evaluation_execution_head
+            SET current_execution_id=%s,current_generation=%s,
+                version=version+1,updated_at=transaction_timestamp()
+            WHERE project_id=%s AND candidate_asset_version_id=%s
+              AND current_execution_id=%s AND current_generation=%s
+              AND version=%s
+            """,
+            [
+                successor_execution_id,
+                successor_generation,
+                project_id,
+                candidate_id,
+                predecessor["evaluation_execution_id"],
+                replacement.expected_head_generation,
+                replacement.expected_head_version,
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            self._replacement_stale("semantic Evaluation generation head CAS failed")
+        return {
+            "evaluation_execution_id": successor_execution_id,
+            "generation": successor_generation,
+            "operation_id": str(operation["operation_id"]),
+            "external_effect_disposition": disposition,
+            "durable_result_replay": durable_success_replay is not None,
+            "replayed": False,
+        }
+
+    def cancel_unstarted_replacement_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        """Cancel only a current replacement proven never to have started."""
+
+        if any(
+            not value.strip()
+            for value in (operation_id, actor_id, trace_id, correlation_id, reason)
+        ):
+            raise ValueError("unstarted replacement cancellation is incomplete")
+        execution = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=False
+        )
+        if execution is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_NOT_FOUND",
+                "semantic Evaluation replacement does not exist",
+            )
+        project_id = str(execution["project_id"])
+        candidate_id = str(execution["candidate_asset_version_id"])
+        self._lock_candidate(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+        )
+        execution = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=True
+        )
+        assert execution is not None
+        current = self._current_execution_in_uow(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+            lock=True,
+        )
+        if (
+            current is None
+            or str(current["evaluation_execution_id"])
+            != str(execution["evaluation_execution_id"])
+            or str(current["operation_id"]) != operation_id
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_STALE",
+                "only the current semantic Evaluation generation may be cancelled",
+            )
+        if (
+            int(execution["generation"]) <= 1
+            or not str(execution["predecessor_operation_id"] or "")
+            or not str(execution["recovery_intent_id"] or "")
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_IDENTITY_INVALID",
+                "unstarted cancellation requires formal replacement lineage",
+            )
+        terminal_lifecycles = {"SUCCEEDED", "FAILED", "CANCELLED", "DEAD_LETTER"}
+        if str(execution["lifecycle"]) in terminal_lifecycles:
+            expected_operation_statuses = {
+                "SUCCEEDED": {"SUCCEEDED"},
+                "FAILED": {
+                    "FAILED_FINAL",
+                    "COMPENSATED",
+                    "COMPENSATION_FAILED",
+                },
+                "CANCELLED": {"CANCELLED"},
+                "DEAD_LETTER": {"DEAD_LETTER"},
+            }
+            if (
+                str(execution["operation_status"])
+                not in expected_operation_statuses[str(execution["lifecycle"])]
+            ):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_TERMINAL_HISTORY_CONFLICT",
+                    "terminal replacement execution disagrees with its Operation",
+                )
+            return {
+                "evaluation_execution_id": str(execution["evaluation_execution_id"]),
+                "operation_id": operation_id,
+                "operation_status": str(execution["operation_status"]),
+                "lifecycle": str(execution["lifecycle"]),
+                "replayed": True,
+            }
+        if (
+            str(execution["lifecycle"]) != "ADMITTED"
+            or str(execution["operation_status"]) != "READY"
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_ACTIVE",
+                "active or ambiguous semantic Evaluation replacement cannot use unstarted cancellation",
+            )
+        cancellation = cancel_unstarted_operation_in_uow(
+            uow,
+            operation_id=operation_id,
+            project_id=project_id,
+            actor_id=actor_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+            reason=reason,
+            causation_id=str(execution["recovery_intent_id"]),
+        )
+        terminal_reason = {
+            "code": "NARRATIVE_EVALUATION_REPLACEMENT_CANCELLED_UNSTARTED",
+            "reason": reason,
+            "actor_id": actor_id,
+            "recovery_intent_id": str(execution["recovery_intent_id"]),
+        }
+        uow.cursor.execute(
+            """
+            UPDATE authority_narrative_evaluation_execution
+            SET lifecycle='CANCELLED',terminal_reason=%s,version=version+1,
+                terminal_at=transaction_timestamp(),
+                updated_at=transaction_timestamp()
+            WHERE evaluation_execution_id=%s AND version=%s
+              AND lifecycle='ADMITTED'
+            """,
+            [
+                Jsonb(terminal_reason),
+                execution["evaluation_execution_id"],
+                execution["execution_version"],
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXECUTION_STALE",
+                "replacement execution changed during unstarted cancellation",
+            )
+        return {
+            "evaluation_execution_id": str(execution["evaluation_execution_id"]),
+            "operation_id": operation_id,
+            "operation_status": str(cancellation["status"]),
+            "lifecycle": "CANCELLED",
+            "replayed": False,
+        }
+
+    def _admission_context(self, actor_id: str) -> AdmissionContext:
+        return AdmissionContext(
+            actor_id=actor_id,
+            permissions=frozenset({"narrative_design.evaluate"}),
+            available_handlers=self.registry.available_handler_keys,
+            application_build_id=self.application_build_id,
+            commit_sha=self.commit_sha,
+        )
+
+    @staticmethod
+    def _semantic_snapshot_matches_execution(
+        snapshot: dict[str, Any],
+        current: dict[str, Any],
+        *,
+        predecessor: dict[str, Any],
+    ) -> bool:
+        if snapshot == current:
+            return True
+        stable_fields = {
+            "evaluation_execution_id",
+            "generation",
+            "operation_id",
+            "candidate_asset_version_id",
+            "candidate_content_hash",
+            "operation_status",
+            "evaluator_actor_id",
+            "head_version",
+        }
+        if any(snapshot.get(key) != current.get(key) for key in stable_fields):
+            return False
+        return (
+            str(current.get("lifecycle") or "")
+            in {"CANCELLED", "FAILED", "DEAD_LETTER"}
+            and str(snapshot.get("lifecycle") or "")
+            in {"ADMITTED", "RUNNING", "RECONCILIATION_REQUIRED"}
+            and int(current.get("execution_version") or -1)
+            == int(snapshot.get("execution_version") or -1) + 1
+            and dict(predecessor.get("terminal_reason") or {})
+            == {"operation_status": predecessor.get("operation_status")}
+        )
+
+    @staticmethod
+    def _lock_candidate(
+        uow: AuthorityUnitOfWork,
+        *,
+        project_id: str,
+        candidate_asset_version_id: str,
+    ) -> None:
+        uow.cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+            [f"narrative-evaluation:{project_id}:{candidate_asset_version_id}"],
+        )
+
+    @staticmethod
+    def _operation_for_lineage_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        project_id: str,
+        lock: bool,
+    ) -> dict[str, Any]:
+        suffix = " FOR UPDATE" if lock else ""
+        uow.cursor.execute(
+            f"""
+            SELECT operation_id,project_id,workspace_id,actor_id,status,version,
+                   idempotency_scope,idempotency_key,concurrency_key,
+                   command_payload,input_asset_snapshot
+            FROM authority_operation
+            WHERE operation_id=%s AND project_id=%s
+              AND definition_name=%s{suffix}
+            """,
+            [operation_id, project_id, NARRATIVE_EVALUATION_DEFINITION],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_OPERATION_NOT_FOUND",
+                "semantic Evaluation Operation does not exist",
+            )
+        keys = (
+            "operation_id",
+            "project_id",
+            "workspace_id",
+            "operation_actor_id",
+            "status",
+            "version",
+            "idempotency_scope",
+            "idempotency_key",
+            "concurrency_key",
+            "command_payload",
+            "input_asset_snapshot",
+        )
+        return dict(zip(keys, row, strict=True))
+
+    @staticmethod
+    def _current_execution_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        project_id: str,
+        candidate_asset_version_id: str,
+        lock: bool,
+    ) -> dict[str, Any] | None:
+        suffix = " FOR UPDATE OF head,execution,operation" if lock else ""
+        uow.cursor.execute(
+            f"""
+            SELECT execution.evaluation_execution_id,execution.project_id,
+                   execution.book_id,execution.candidate_asset_version_id,
+                   execution.candidate_content_hash,execution.generation,
+                   execution.predecessor_execution_id,
+                   execution.predecessor_generation,
+                   execution.predecessor_operation_id,
+                   execution.recovery_intent_id,execution.operation_id,
+                   execution.idempotency_scope,execution.idempotency_key,
+                   execution.concurrency_key,execution.lifecycle,
+                   execution.terminal_reason,execution.version,head.version,
+                   operation.command_payload,
+                   operation.input_asset_snapshot,operation.workspace_id,
+                   operation.actor_id,operation.status
+            FROM authority_narrative_evaluation_execution_head AS head
+            JOIN authority_narrative_evaluation_execution AS execution
+              ON execution.project_id=head.project_id
+             AND execution.candidate_asset_version_id=
+                 head.candidate_asset_version_id
+             AND execution.evaluation_execution_id=head.current_execution_id
+             AND execution.generation=head.current_generation
+            JOIN authority_operation AS operation
+              ON operation.operation_id=execution.operation_id
+             AND operation.project_id=execution.project_id
+            WHERE head.project_id=%s
+              AND head.candidate_asset_version_id=%s{suffix}
+            """,
+            [project_id, candidate_asset_version_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        keys = (
+            "evaluation_execution_id",
+            "project_id",
+            "book_id",
+            "candidate_asset_version_id",
+            "candidate_content_hash",
+            "generation",
+            "predecessor_execution_id",
+            "predecessor_generation",
+            "predecessor_operation_id",
+            "recovery_intent_id",
+            "operation_id",
+            "idempotency_scope",
+            "idempotency_key",
+            "concurrency_key",
+            "lifecycle",
+            "terminal_reason",
+            "execution_version",
+            "head_version",
+            "command_payload",
+            "input_asset_snapshot",
+            "workspace_id",
+            "operation_actor_id",
+            "operation_status",
+        )
+        return dict(zip(keys, row, strict=True))
+
+    @staticmethod
+    def _execution_by_operation_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        predecessor_operation_id: str,
+        lock: bool,
+    ) -> dict[str, Any] | None:
+        suffix = " FOR UPDATE OF execution,operation" if lock else ""
+        uow.cursor.execute(
+            f"""
+            SELECT execution.evaluation_execution_id,execution.project_id,
+                   execution.book_id,execution.candidate_asset_version_id,
+                   execution.candidate_content_hash,execution.generation,
+                   execution.predecessor_execution_id,
+                   execution.predecessor_generation,
+                   execution.predecessor_operation_id,
+                   execution.recovery_intent_id,execution.operation_id,
+                   execution.idempotency_scope,execution.idempotency_key,
+                   execution.concurrency_key,execution.lifecycle,
+                   execution.terminal_reason,execution.version,
+                   operation.status,operation.command_payload,
+                   operation.input_asset_snapshot,operation.workspace_id,
+                   operation.actor_id
+            FROM authority_narrative_evaluation_execution AS execution
+            JOIN authority_operation AS operation
+              ON operation.operation_id=execution.operation_id
+             AND operation.project_id=execution.project_id
+            WHERE execution.operation_id=%s{suffix}
+            """,
+            [predecessor_operation_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        keys = (
+            "evaluation_execution_id",
+            "project_id",
+            "book_id",
+            "candidate_asset_version_id",
+            "candidate_content_hash",
+            "generation",
+            "predecessor_execution_id",
+            "predecessor_generation",
+            "predecessor_operation_id",
+            "recovery_intent_id",
+            "operation_id",
+            "idempotency_scope",
+            "idempotency_key",
+            "concurrency_key",
+            "lifecycle",
+            "terminal_reason",
+            "execution_version",
+            "operation_status",
+            "command_payload",
+            "input_asset_snapshot",
+            "workspace_id",
+            "operation_actor_id",
+        )
+        return dict(zip(keys, row, strict=True))
+
+    @staticmethod
+    def _synchronize_execution_in_uow(
+        uow: AuthorityUnitOfWork, execution: dict[str, Any]
+    ) -> None:
+        current = str(execution["lifecycle"])
+        target = _evaluation_lifecycle(str(execution["operation_status"]))
+        if current == target:
+            return
+        terminal = {"SUCCEEDED", "FAILED", "CANCELLED", "DEAD_LETTER"}
+        if current in terminal:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_TERMINAL_HISTORY_CONFLICT",
+                "terminal semantic Evaluation execution disagrees with its Operation",
+            )
+        if current in {"RUNNING", "RECONCILIATION_REQUIRED"} and target == "ADMITTED":
+            return
+        uow.cursor.execute(
+            """
+            UPDATE authority_narrative_evaluation_execution
+            SET lifecycle=%s,terminal_reason=%s,version=version+1,
+                started_at=CASE
+                    WHEN %s <> 'ADMITTED' THEN COALESCE(
+                        started_at,transaction_timestamp()
+                    ) ELSE started_at END,
+                terminal_at=CASE
+                    WHEN %s THEN transaction_timestamp() ELSE NULL END,
+                updated_at=transaction_timestamp()
+            WHERE evaluation_execution_id=%s AND version=%s
+              AND lifecycle=%s
+            """,
+            [
+                target,
+                Jsonb(
+                    {"operation_status": execution["operation_status"]}
+                    if target in terminal
+                    else {}
+                ),
+                target,
+                target in terminal,
+                execution["evaluation_execution_id"],
+                execution["execution_version"],
+                current,
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXECUTION_STALE",
+                "semantic Evaluation execution changed during projection",
+            )
+
+    def _mark_execution_running(self, *, operation_id: str, project_id: str) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            execution = self._execution_by_operation_in_uow(
+                uow, predecessor_operation_id=operation_id, lock=True
+            )
+            if execution is None or str(execution["project_id"]) != project_id:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_EXECUTION_NOT_FOUND",
+                    "semantic Evaluation Operation has no execution lineage",
+                )
+            if str(execution["lifecycle"]) == "ADMITTED":
+                uow.cursor.execute(
                     """
-                    SELECT operation_id, command_payload, actor_id
-                    FROM authority_operation
-                    WHERE project_id=%s
-                      AND definition_name=%s
-                      AND concurrency_key=%s
-                    ORDER BY created_at, operation_id
+                    UPDATE authority_narrative_evaluation_execution
+                    SET lifecycle='RUNNING',version=version+1,
+                        started_at=COALESCE(started_at,transaction_timestamp()),
+                        updated_at=transaction_timestamp()
+                    WHERE evaluation_execution_id=%s AND version=%s
+                      AND lifecycle='ADMITTED'
                     """,
                     [
-                        command.project_id,
-                        NARRATIVE_EVALUATION_DEFINITION,
-                        concurrency_key,
+                        execution["evaluation_execution_id"],
+                        execution["execution_version"],
                     ],
                 )
-                rows = claim_uow.cursor.fetchall()
-                if len(rows) > 1:
+                if uow.cursor.rowcount != 1:
                     raise KernelError(
-                        "NARRATIVE_EVALUATION_DUPLICATE_CLAIM",
-                        "candidate has more than one Evaluation Operation",
+                        "NARRATIVE_EVALUATION_EXECUTION_STALE",
+                        "semantic Evaluation execution changed before scheduling",
                     )
-                if rows:
-                    existing_payload = dict(rows[0][1])
-                    if existing_payload != admission_command["input"]:
-                        raise KernelError(
-                            "NARRATIVE_EVALUATION_CLAIM_CONFLICT",
-                            "candidate Evaluation is already claimed by different immutable inputs",
-                        )
-                    return {
-                        "operation_id": str(rows[0][0]),
-                        "operation_actor_id": str(rows[0][2]),
-                        "replayed": True,
-                    }
-                # The stale-domain preflight is repeated while holding the
-                # cross-process candidate claim lock. This closes the gap
-                # between the initial read and immutable Operation admission.
-                self._require_candidate(command)
-                admitted = admit_command(
-                    self.database_url,
-                    admission_command,
-                    context=AdmissionContext(
-                        actor_id=command.actor_id,
-                        permissions=frozenset({"narrative_design.evaluate"}),
-                        available_handlers=self.registry.available_handler_keys,
-                        application_build_id=self.application_build_id,
-                        commit_sha=self.commit_sha,
-                    ),
+            uow.commit()
+
+    def _synchronize_execution_for_operation(
+        self, *, operation_id: str, project_id: str
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            execution = self._execution_by_operation_in_uow(
+                uow, predecessor_operation_id=operation_id, lock=True
+            )
+            if execution is None or str(execution["project_id"]) != project_id:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_EXECUTION_NOT_FOUND",
+                    "semantic Evaluation Operation has no execution lineage",
                 )
-                return {
-                    **admitted,
-                    "operation_actor_id": command.actor_id,
+            self._synchronize_execution_in_uow(uow, execution)
+            uow.commit()
+
+    @staticmethod
+    def _recovery_assessment_in_uow(
+        uow: AuthorityUnitOfWork, *, recovery_intent_id: str
+    ) -> dict[str, Any] | None:
+        uow.cursor.execute(
+            """
+            SELECT intent.opening_run_id,opening.project_id,opening.workspace_id,
+                   opening.book_id,
+                   intent.recovery_assessment_id,assessment.assessment_kind,
+                   assessment.disposition,assessment.snapshot,
+                   assessment.snapshot_hash,assessment.evaluation_head_digest,
+                   assessment.external_effect_digest
+            FROM authority_book_opening_recovery_intent AS intent
+            JOIN authority_book_opening_recovery_assessment AS assessment
+              ON assessment.opening_run_id=intent.opening_run_id
+             AND assessment.recovery_assessment_id=
+                 intent.recovery_assessment_id
+            JOIN authority_book_opening_run AS opening
+              ON opening.opening_run_id=intent.opening_run_id
+            WHERE intent.recovery_intent_id=%s
+            """,
+            [recovery_intent_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        keys = (
+            "opening_run_id",
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "recovery_assessment_id",
+            "assessment_kind",
+            "disposition",
+            "snapshot",
+            "snapshot_hash",
+            "evaluation_head_digest",
+            "external_effect_digest",
+        )
+        return dict(zip(keys, row, strict=True))
+
+    @staticmethod
+    def _durable_success_replay_bundle_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        predecessor: dict[str, Any],
+        external_evidence: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Freeze one complete Provider result bundle for cross-generation replay.
+
+        A VERIFIED receipt alone is insufficient.  Admission requires the
+        successful Attempt, settled budget, ModelCallLog, CostLedger, and
+        semantic evaluation output to agree on the exact immutable execution.
+        The surrounding Recovery UoW rolls back its Intent and every successor
+        admission when any part is absent or inconsistent.
+        """
+
+        operation_id = str(predecessor["operation_id"])
+        project_id = str(predecessor["project_id"])
+        candidate_id = str(predecessor["candidate_asset_version_id"])
+        candidate_hash = str(predecessor["candidate_content_hash"])
+
+        def invalid(message: str) -> None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_DURABLE_OUTPUT_RECONCILIATION_REQUIRED",
+                message,
+            )
+
+        uow.cursor.execute(
+            """
+            SELECT attempt_id,status
+            FROM authority_attempt
+            WHERE operation_id=%s
+            ORDER BY attempt_number,attempt_id
+            FOR UPDATE
+            """,
+            [operation_id],
+        )
+        attempts = [tuple(row) for row in uow.cursor.fetchall()]
+        succeeded_attempts = [row for row in attempts if str(row[1]) == "SUCCEEDED"]
+        if len(succeeded_attempts) != 1 or any(
+            str(row[1]) not in {"SUCCEEDED", "FAILED", "CANCELLED", "LEASE_LOST"}
+            for row in attempts
+        ):
+            invalid("successful semantic evaluation has no unique terminal Attempt")
+        source_attempt_id = str(succeeded_attempts[0][0])
+
+        uow.cursor.execute(
+            """
+            SELECT effect.external_effect_id,effect.request_hash,
+                   effect.request_payload,effect.provider,effect.model_id,
+                   dispatch.dispatch_id,dispatch.generation,
+                   dispatch.payload_hash,dispatch.evidence,dispatch.provider,
+                   dispatch.receipt_id,
+                   receipt.external_receipt_id,receipt.provider,
+                   receipt.receipt_id,receipt.payload_hash,receipt.payload,
+                   budget.reservation_id,budget.status,budget.provider,
+                   budget.settled_amount,budget.currency,budget.actual_tokens,
+                   budget.evidence
+            FROM authority_external_effect AS effect
+            JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+             AND dispatch.status='SUCCEEDED'
+            JOIN authority_external_receipt AS receipt
+              ON receipt.dispatch_id=dispatch.dispatch_id
+             AND receipt.status='VERIFIED'
+            JOIN authority_budget_reservation AS budget
+              ON budget.external_effect_id=effect.external_effect_id
+             AND budget.operation_id=effect.operation_id
+            WHERE effect.operation_id=%s AND effect.project_id=%s
+              AND effect.status='SUCCEEDED'
+            ORDER BY dispatch.generation,dispatch.dispatch_id,
+                     receipt.external_receipt_id,budget.reservation_id
+            FOR UPDATE OF effect,dispatch,receipt,budget
+            """,
+            [operation_id, project_id],
+        )
+        durable_rows = [tuple(row) for row in uow.cursor.fetchall()]
+        if len(durable_rows) != 1:
+            invalid(
+                "successful semantic evaluation has no unique Effect/Dispatch/Receipt/budget bundle"
+            )
+        durable = durable_rows[0]
+        (
+            external_effect_id,
+            effect_request_hash,
+            effect_request_payload,
+            effect_provider,
+            effect_model_id,
+            dispatch_id,
+            dispatch_generation,
+            dispatch_payload_hash,
+            dispatch_evidence,
+            dispatch_provider,
+            dispatch_receipt_id,
+            external_receipt_id,
+            receipt_provider,
+            receipt_id,
+            receipt_payload_hash,
+            receipt_payload,
+            reservation_id,
+            budget_status,
+            budget_provider,
+            settled_amount,
+            budget_currency,
+            actual_tokens,
+            budget_evidence,
+        ) = durable
+        effect_request = dict(effect_request_payload or {})
+        receipt = dict(receipt_payload or {})
+        provider_evidence = receipt.get("evidence")
+        production = effect_request.get("_production_execution")
+        if (
+            str(budget_status) != "SETTLED"
+            or not isinstance(provider_evidence, Mapping)
+            or receipt.get("outcome") != "success"
+            or not isinstance(production, Mapping)
+            or production.get("operation_id") != operation_id
+            or production.get("attempt_id") != source_attempt_id
+            or str(effect_request_hash) != _canonical_hash(effect_request)
+            or str(dispatch_payload_hash) != str(effect_request_hash)
+        ):
+            invalid(
+                "successful Provider receipt is incomplete or execution-bound incorrectly"
+            )
+        provider_evidence = dict(provider_evidence)
+        provider_result = provider_evidence.get("result")
+        provider_usage = provider_evidence.get("usage")
+        provider_cost = provider_evidence.get("cost")
+        provider_execution = provider_evidence.get("production_execution")
+        execution_request = (
+            provider_execution.get("execution_request")
+            if isinstance(provider_execution, Mapping)
+            else None
+        )
+        route_snapshot = (
+            provider_execution.get("route_snapshot")
+            if isinstance(provider_execution, Mapping)
+            else None
+        )
+        if (
+            provider_evidence.get("real_model_call") is not True
+            or not isinstance(provider_result, Mapping)
+            or not isinstance(provider_usage, Mapping)
+            or not isinstance(provider_cost, Mapping)
+            or not isinstance(execution_request, Mapping)
+            or execution_request.get("external_effect_id") != str(external_effect_id)
+            or not isinstance(route_snapshot, Mapping)
+            or not str(route_snapshot.get("route_snapshot_id") or "")
+            or str(receipt_payload_hash) != _canonical_hash(provider_evidence)
+            or dict(dispatch_evidence or {}) != provider_evidence
+            or int(receipt.get("generation") or 0) != int(dispatch_generation)
+            or str(dispatch_provider) != str(effect_provider)
+            or str(receipt_provider) != str(effect_provider)
+            or str(dispatch_receipt_id) != str(receipt_id)
+            or str(effect_provider) != str(provider_evidence.get("provider_id") or "")
+            or (
+                bool(str(effect_model_id or ""))
+                and str(effect_model_id) != str(provider_evidence.get("model_id") or "")
+            )
+            or str(budget_provider) != str(effect_provider)
+            or dict(budget_evidence or {}).get("provider_id") != str(effect_provider)
+            or dict(budget_evidence or {}).get("model_id")
+            != str(provider_evidence.get("model_id") or "")
+        ):
+            invalid("Provider receipt/result identity is incomplete or inconsistent")
+        uow.cursor.execute(
+            """
+            SELECT dispatch.dispatch_id,dispatch.status,
+                   COUNT(receipt.external_receipt_id),
+                   COUNT(receipt.external_receipt_id)
+                     FILTER (WHERE receipt.status='VERIFIED')
+            FROM authority_external_effect_dispatch AS dispatch
+            LEFT JOIN authority_external_receipt AS receipt
+              ON receipt.dispatch_id=dispatch.dispatch_id
+            WHERE dispatch.external_effect_id=%s
+            GROUP BY dispatch.dispatch_id,dispatch.status
+            ORDER BY dispatch.dispatch_id
+            """,
+            [external_effect_id],
+        )
+        dispatch_receipt_cardinality = [tuple(row) for row in uow.cursor.fetchall()]
+        if (
+            sum(1 for row in dispatch_receipt_cardinality if row[1] == "SUCCEEDED") != 1
+            or any(int(row[2]) > 1 for row in dispatch_receipt_cardinality)
+            or sum(int(row[3]) for row in dispatch_receipt_cardinality) != 1
+            or any(
+                str(row[1])
+                not in {
+                    "SUCCEEDED",
+                    "FAILED_FINAL",
+                    "CANCELLED",
+                    "SUPERSEDED",
+                    "DEAD_LETTER",
                 }
-            finally:
-                claim_uow.cursor.execute(
-                    "SELECT pg_advisory_unlock(hashtextextended(%s, 0))",
-                    [f"narrative-evaluation:{command.project_id}:{concurrency_key}"],
+                for row in dispatch_receipt_cardinality
+            )
+        ):
+            invalid("Provider dispatch/receipt history is ambiguous")
+        try:
+            amounts_match = Decimal(str(settled_amount)) == Decimal(
+                str(provider_cost.get("amount"))
+            )
+        except (InvalidOperation, ValueError):
+            amounts_match = False
+        if (
+            not amounts_match
+            or str(budget_currency) != str(provider_cost.get("currency") or "")
+            or int(actual_tokens) != int(provider_usage.get("total_tokens") or -1)
+        ):
+            invalid("settled Provider budget differs from the verified receipt")
+
+        uow.cursor.execute(
+            """
+            SELECT binding.role,binding.output_key,asset.asset_type,
+                   version.asset_version_id,version.content_hash,version.content,
+                   version.lifecycle,version.eligibility,version.governance
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+             AND version.asset_id=binding.asset_id
+            JOIN authority_asset AS asset
+              ON asset.asset_id=version.asset_id AND asset.project_id=%s
+            WHERE binding.operation_id=%s
+              AND (
+                   binding.role IN ('model_evidence','cost_evidence')
+                   OR (
+                       binding.output_key='story_design.semantic_evaluation'
+                       AND binding.role='qualification_evidence'
+                   )
+              )
+            ORDER BY binding.role,binding.output_key,binding.asset_version_id
+            FOR UPDATE OF binding,version
+            """,
+            [project_id, operation_id],
+        )
+        outputs = [tuple(row) for row in uow.cursor.fetchall()]
+
+        def content_matches(row: tuple[Any, ...], asset_type: str) -> bool:
+            return (
+                str(row[2]) == asset_type
+                and str(row[4]) == _canonical_hash(dict(row[5] or {}))
+                and tuple(str(value) for value in row[6:9])
+                == ("ACTIVE", "ELIGIBLE", "CLEAR")
+            )
+
+        models = [
+            row
+            for row in outputs
+            if str(row[0]) == "model_evidence"
+            and content_matches(row, "model_call_log")
+            and dict(row[5] or {}).get("operation_id") == operation_id
+            and dict(row[5] or {}).get("attempt_id") == source_attempt_id
+            and dict(row[5] or {}).get("external_effect_id") == str(external_effect_id)
+        ]
+        costs = [
+            row
+            for row in outputs
+            if str(row[0]) == "cost_evidence"
+            and content_matches(row, "cost_ledger")
+            and dict(row[5] or {}).get("operation_id") == operation_id
+            and dict(row[5] or {}).get("attempt_id") == source_attempt_id
+            and dict(row[5] or {}).get("external_effect_id") == str(external_effect_id)
+        ]
+        evaluations = [
+            row
+            for row in outputs
+            if str(row[0]) == "qualification_evidence"
+            and str(row[1]) == "story_design.semantic_evaluation"
+            and content_matches(row, "narrative_design_evaluation")
+        ]
+        if len(models) != 1 or len(costs) != 1 or len(evaluations) != 1:
+            invalid(
+                "successful semantic evaluation lacks one exact model/cost/output evidence set"
+            )
+        model, cost, evaluation = models[0], costs[0], evaluations[0]
+        model_content = dict(model[5])
+        cost_content = dict(cost[5])
+        evaluation_content = dict(evaluation[5])
+        model_provider_evidence = model_content.get("provider_evidence")
+        target_lineage = model_content.get("target_lineage")
+        evaluation_provider_execution = evaluation_content.get("provider_execution")
+        evaluation_provider_evidence = evaluation_content.get("provider_evidence")
+        command_payload = dict(predecessor["command_payload"])
+        command_business_payload = dict(command_payload.get("payload") or {})
+        generator_operation_id = str(
+            command_business_payload.get("generation_operation_id") or ""
+        )
+        generator_operation_name = str(
+            command_business_payload.get("generator_operation_name") or ""
+        )
+        model_asset_id = str(model[3])
+        model_content_hash = str(model[4])
+        provider_evidence_hash = _canonical_hash(provider_evidence)
+        provider_result_hash = _canonical_hash(provider_result)
+        expected_provider_reference = [
+            {
+                "asset_version_id": model_asset_id,
+                "content_hash": model_content_hash,
+            }
+        ]
+        expected_evaluation_hash = _canonical_hash(
+            {
+                "evaluation": dict(provider_result),
+                "candidate_asset_version_id": candidate_id,
+                "candidate_content_hash": candidate_hash,
+                "generation_operation_id": generator_operation_id,
+                "evaluation_operation_id": operation_id,
+                "evaluation_attempt_id": source_attempt_id,
+                "provider_evidence": expected_provider_reference,
+                "provider_evidence_hash": provider_evidence_hash,
+            }
+        )
+        qualification = validate_narrative_qualification(
+            generator_operation_name=generator_operation_name,
+            value=dict(provider_result),
+            require_pass=False,
+        )
+        if (
+            model_content.get("stage") != "narrative_semantic_evaluation"
+            or model_provider_evidence != provider_evidence
+            or target_lineage
+            != {
+                "target_asset_version_id": candidate_id,
+                "target_content_hash": candidate_hash,
+                "generation_operation_id": generator_operation_id,
+                "generator_operation_name": generator_operation_name,
+            }
+            or cost_content.get("stage") != "narrative_semantic_evaluation"
+            or cost_content.get("provider_id") != provider_evidence.get("provider_id")
+            or cost_content.get("model_id") != provider_evidence.get("model_id")
+            or Decimal(str(cost_content.get("amount")))
+            != Decimal(str(provider_cost.get("amount")))
+            or cost_content.get("currency") != provider_cost.get("currency")
+            or int(cost_content.get("total_tokens") or -1)
+            != int(provider_usage.get("total_tokens") or -2)
+            or evaluation_content.get("candidate_asset_version_id") != candidate_id
+            or evaluation_content.get("candidate_content_hash") != candidate_hash
+            or evaluation_content.get("generation_operation_id")
+            != generator_operation_id
+            or evaluation_content.get("evaluation_operation_id") != operation_id
+            or evaluation_content.get("evaluation_attempt_id") != source_attempt_id
+            or evaluation_content.get("evaluator_execution_class") != "MODEL_PROVIDER"
+            or evaluation_content.get("evaluation") != provider_result
+            or evaluation_content.get("qualification") != qualification.to_evidence()
+            or evaluation_content.get("evaluation_evidence_hash")
+            != expected_evaluation_hash
+            or evaluation_content.get("provider_evidence_asset_version_ids")
+            != [model_asset_id]
+            or evaluation_provider_evidence != expected_provider_reference
+            or not isinstance(evaluation_provider_execution, Mapping)
+            or evaluation_provider_execution.get("provider_evidence_hash")
+            != provider_evidence_hash
+            or evaluation_provider_execution.get("provider_result_hash")
+            != provider_result_hash
+            or evaluation_provider_execution.get("route_snapshot_id")
+            != route_snapshot.get("route_snapshot_id")
+        ):
+            invalid("durable semantic output differs from its exact Provider evidence")
+
+        external_items = list(external_evidence.get("evidence") or [])
+        if not any(
+            item.get("effect_id") == str(external_effect_id)
+            and item.get("dispatch_id") == str(dispatch_id)
+            and item.get("receipt_id") == str(external_receipt_id)
+            for item in external_items
+            if isinstance(item, Mapping)
+        ):
+            invalid("durable result is outside the assessed ExternalEffect snapshot")
+        bundle = {
+            "schema_version": NARRATIVE_EVALUATION_DURABLE_REPLAY_VERSION,
+            "source_evaluation_execution_id": str(
+                predecessor["evaluation_execution_id"]
+            ),
+            "source_evaluation_generation": int(predecessor["generation"]),
+            "source_operation_id": operation_id,
+            "source_attempt_id": source_attempt_id,
+            "external_effect_id": str(external_effect_id),
+            "external_effect_request_hash": str(effect_request_hash),
+            "external_effect_evidence_digest": str(external_evidence["digest"]),
+            "dispatch_id": str(dispatch_id),
+            "dispatch_generation": int(dispatch_generation),
+            "dispatch_payload_hash": str(dispatch_payload_hash),
+            "external_receipt_id": str(external_receipt_id),
+            "receipt_payload_hash": str(receipt_payload_hash),
+            "budget_reservation_id": str(reservation_id),
+            "model_call_asset_version_id": model_asset_id,
+            "model_call_content_hash": model_content_hash,
+            "cost_ledger_asset_version_id": str(cost[3]),
+            "cost_ledger_content_hash": str(cost[4]),
+            "source_evaluation_asset_version_id": str(evaluation[3]),
+            "source_evaluation_content_hash": str(evaluation[4]),
+            "evaluation_evidence_hash": expected_evaluation_hash,
+            "qualification_hash": qualification.qualification_hash,
+            "provider_evidence_hash": provider_evidence_hash,
+            "provider_result_hash": provider_result_hash,
+            "provider_route_snapshot_id": str(route_snapshot.get("route_snapshot_id")),
+        }
+        return {**bundle, "bundle_hash": _canonical_hash(bundle)}
+
+    @staticmethod
+    def _external_effect_evidence_in_uow(
+        uow: AuthorityUnitOfWork, *, operation_id: str
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT external_effect_id,status,request_hash
+            FROM authority_external_effect
+            WHERE operation_id=%s
+            ORDER BY external_effect_id
+            FOR UPDATE
+            """,
+            [operation_id],
+        )
+        effects = [tuple(row) for row in uow.cursor.fetchall()]
+        if not effects:
+            empty_hash = _canonical_hash([])
+            return {
+                "classification": (
+                    NarrativeEvaluationExternalEffectDisposition.PROVEN_NO_EFFECT.value
+                ),
+                "evidence": [],
+                "digest": empty_hash,
+            }
+        effect_ids = [str(row[0]) for row in effects]
+        uow.cursor.execute(
+            """
+            SELECT dispatch_id,external_effect_id,generation,status,payload_hash
+            FROM authority_external_effect_dispatch
+            WHERE external_effect_id=ANY(%s)
+            ORDER BY external_effect_id,generation,dispatch_id
+            FOR UPDATE
+            """,
+            [effect_ids],
+        )
+        dispatches = [tuple(row) for row in uow.cursor.fetchall()]
+        dispatch_ids = [str(row[0]) for row in dispatches]
+        receipts: list[tuple[Any, ...]] = []
+        if dispatch_ids:
+            uow.cursor.execute(
+                """
+                SELECT external_receipt_id,dispatch_id,status,payload_hash
+                FROM authority_external_receipt
+                WHERE dispatch_id=ANY(%s)
+                ORDER BY dispatch_id,external_receipt_id
+                FOR UPDATE
+                """,
+                [dispatch_ids],
+            )
+            receipts = [tuple(row) for row in uow.cursor.fetchall()]
+        dispatch_by_effect: dict[str, list[tuple[Any, ...]]] = {}
+        for dispatch in dispatches:
+            dispatch_by_effect.setdefault(str(dispatch[1]), []).append(dispatch)
+        receipts_by_dispatch: dict[str, list[tuple[Any, ...]]] = {}
+        for receipt in receipts:
+            receipts_by_dispatch.setdefault(str(receipt[1]), []).append(receipt)
+        evidence: list[dict[str, Any]] = []
+        classifier_rows: list[dict[str, object]] = []
+        for effect in effects:
+            items: Iterable[tuple[Any, ...] | None] = dispatch_by_effect.get(
+                str(effect[0])
+            ) or (None,)
+            for dispatch in items:
+                dispatch_receipts: Iterable[tuple[Any, ...] | None] = (
+                    (None,)
+                    if dispatch is None
+                    else receipts_by_dispatch.get(str(dispatch[0])) or (None,)
                 )
+                for receipt in dispatch_receipts:
+                    item = {
+                        "effect_id": str(effect[0]),
+                        "effect_status": str(effect[1]),
+                        "request_hash": str(effect[2]),
+                        "dispatch_id": str(dispatch[0]) if dispatch else "",
+                        "dispatch_status": str(dispatch[3]) if dispatch else "",
+                        "dispatch_payload_hash": (
+                            str(dispatch[4] or "") if dispatch else ""
+                        ),
+                        "receipt_id": str(receipt[0]) if receipt else "",
+                        "receipt_status": str(receipt[2]) if receipt else "",
+                        "receipt_payload_hash": (
+                            str(receipt[3] or "") if receipt else ""
+                        ),
+                    }
+                    evidence.append(item)
+                    classifier_rows.append(
+                        {
+                            "external_effect_id": item["effect_id"],
+                            "effect_status": item["effect_status"],
+                            "dispatch_id": item["dispatch_id"] or None,
+                            "dispatch_status": item["dispatch_status"] or None,
+                            "receipt_status": item["receipt_status"] or None,
+                        }
+                    )
+        classification = classify_narrative_evaluation_external_effects(
+            classifier_rows
+        ).value
+        return {
+            "classification": classification,
+            "evidence": evidence,
+            "digest": _canonical_hash(evidence),
+        }
+
+    @staticmethod
+    def _replacement_stale(message: str) -> None:
+        raise KernelError("NARRATIVE_EVALUATION_REPLACEMENT_STALE", message)
 
     def _register_definition(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -781,63 +2686,107 @@ class NarrativeSemanticEvaluationApplication:
         self, command: NarrativeSemanticEvaluationCommand
     ) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT version.asset_version_id, version.content_hash,
-                       version.content, asset.asset_type, operation.actor_id,
-                       book_candidate.status,
-                       book_candidate.created_by_operation_id,
-                       planning_generation.status,
-                       planning_generation.operation_id,
-                       planning_generation.generator_operation_name,
-                       planning_generation.candidate_asset_version_id,
-                       design_state.lifecycle,
-                       design_state.qualification,
-                       design_state.generator_operation_name,
-                       design_state.execution_evidence->>'operation_id',
-                       replay.operation_id
-                FROM authority_operation_output_asset AS output
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=output.operation_id
-                 AND operation.project_id=%s
-                 AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=output.asset_version_id
-                JOIN authority_asset AS asset
-                  ON asset.asset_id=version.asset_id
-                 AND asset.project_id=operation.project_id
-                LEFT JOIN authority_book_design_candidate AS book_candidate
-                  ON book_candidate.asset_version_id=version.asset_version_id
-                LEFT JOIN authority_story_planning_generation AS planning_generation
-                  ON planning_generation.operation_id=operation.operation_id
-                 AND planning_generation.candidate_asset_version_id=
-                     version.asset_version_id
-                LEFT JOIN authority_story_design_version_state AS design_state
-                  ON design_state.project_id=operation.project_id
-                 AND design_state.asset_version_id=version.asset_version_id
-                LEFT JOIN authority_operation AS replay
-                  ON replay.project_id=operation.project_id
-                 AND replay.idempotency_scope='book:narrative-semantic-evaluation'
-                 AND replay.idempotency_key=%s
-                WHERE output.operation_id=%s
-                  AND output.asset_version_id=%s
-                  AND output.content_hash=%s
-                """,
-                [
-                    command.project_id,
-                    command.idempotency_key,
-                    command.generation_operation_id,
-                    command.candidate_asset_version_id,
-                    command.candidate_content_hash,
-                ],
-            )
-            row = uow.cursor.fetchone()
+            return self._require_candidate_in_uow(uow, command)
+
+    @staticmethod
+    def _require_candidate_in_uow(
+        uow: AuthorityUnitOfWork,
+        command: NarrativeSemanticEvaluationCommand,
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT version.asset_version_id, version.content_hash,
+                   version.content, asset.asset_type, operation.actor_id,
+                   book_candidate.status,
+                   book_candidate.created_by_operation_id,
+                   planning_generation.status,
+                   planning_generation.operation_id,
+                   planning_generation.generator_operation_name,
+                   planning_generation.candidate_asset_version_id,
+                   design_state.lifecycle,
+                   design_state.qualification,
+                   design_state.generator_operation_name,
+                   design_state.execution_evidence->>'operation_id',
+                   current_operation.command_payload,
+                   current_operation.idempotency_key,
+                   generation_one.idempotency_key
+            FROM authority_operation_output_asset AS output
+            JOIN authority_operation AS operation
+              ON operation.operation_id=output.operation_id
+             AND operation.project_id=%s
+             AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            JOIN authority_asset AS asset
+              ON asset.asset_id=version.asset_id
+             AND asset.project_id=operation.project_id
+            LEFT JOIN authority_book_design_candidate AS book_candidate
+              ON book_candidate.asset_version_id=version.asset_version_id
+            LEFT JOIN authority_story_planning_generation AS planning_generation
+              ON planning_generation.operation_id=operation.operation_id
+             AND planning_generation.candidate_asset_version_id=
+                 version.asset_version_id
+            LEFT JOIN authority_story_design_version_state AS design_state
+              ON design_state.project_id=operation.project_id
+             AND design_state.asset_version_id=version.asset_version_id
+            LEFT JOIN authority_narrative_evaluation_execution_head AS head
+              ON head.project_id=operation.project_id
+             AND head.candidate_asset_version_id=version.asset_version_id
+            LEFT JOIN authority_narrative_evaluation_execution AS current_execution
+              ON current_execution.project_id=head.project_id
+             AND current_execution.candidate_asset_version_id=
+                 head.candidate_asset_version_id
+             AND current_execution.evaluation_execution_id=
+                 head.current_execution_id
+             AND current_execution.generation=head.current_generation
+            LEFT JOIN authority_operation AS current_operation
+              ON current_operation.operation_id=current_execution.operation_id
+             AND current_operation.project_id=current_execution.project_id
+            LEFT JOIN authority_narrative_evaluation_execution AS generation_one
+              ON generation_one.project_id=operation.project_id
+             AND generation_one.candidate_asset_version_id=version.asset_version_id
+             AND generation_one.generation=1
+            WHERE output.operation_id=%s
+              AND output.asset_version_id=%s
+              AND output.content_hash=%s
+            """,
+            [
+                command.project_id,
+                command.generation_operation_id,
+                command.candidate_asset_version_id,
+                command.candidate_content_hash,
+            ],
+        )
+        row = uow.cursor.fetchone()
         if row is None:
             raise KernelError(
                 "NARRATIVE_EVALUATION_GENERATION_LINEAGE_INVALID",
                 "candidate is not an exact gated or successful output of the generation Operation",
             )
-        replay_exists = bool(row[15])
+        expected_payload = {
+            "project_id": command.project_id,
+            "input_asset_version_ids": [
+                command.candidate_asset_version_id,
+                *command.evidence_asset_version_ids,
+            ],
+            "payload": {
+                "candidate_asset_version_id": command.candidate_asset_version_id,
+                "candidate_content_hash": command.candidate_content_hash,
+                "generation_operation_id": command.generation_operation_id,
+                "generation_actor_id": str(row[4]),
+                "generator_operation_name": command.generator_operation_name,
+                "book_id": command.book_id,
+                "evaluator_execution_class": command.evaluator_execution_class,
+                "evaluation": (
+                    None if command.evaluation is None else dict(command.evaluation)
+                ),
+            },
+        }
+        lineage_exists = (
+            row[15] is not None
+            and _evaluation_command_payload_matches(dict(row[15]), expected_payload)
+            and command.idempotency_key in {str(row[16]), str(row[17])}
+        )
         if command.generator_operation_name == "book_design.propose":
             pending = (
                 str(row[3]) == "book_design"
@@ -863,7 +2812,7 @@ class NarrativeSemanticEvaluationApplication:
                 and str(row[13] or "") == command.generator_operation_name
                 and str(row[14] or "") == command.generation_operation_id
             )
-        if not pending and not replay_exists:
+        if not pending and not lineage_exists:
             raise KernelError(
                 "NARRATIVE_EVALUATION_CANDIDATE_NOT_PENDING",
                 "Narrative Evaluation requires the exact domain candidate to be EVALUATION_PENDING before Provider dispatch",
@@ -996,12 +2945,15 @@ __all__ = [
     "NARRATIVE_EVALUATION_HANDLER",
     "NARRATIVE_EVALUATION_APPLICATION_BUILD_ID",
     "NARRATIVE_EVALUATION_VERSION",
+    "NarrativeEvaluationExternalEffectDisposition",
     "NarrativeProviderEvaluation",
     "NarrativeSemanticEvaluationApplication",
     "NarrativeSemanticEvaluationCommand",
+    "NarrativeSemanticEvaluationReplacementCommand",
     "NarrativeSemanticEvaluationHandler",
     "NarrativeSemanticEvaluationExecutionPort",
     "NarrativeSemanticEvaluationRegistry",
     "NarrativeSemanticEvaluationResult",
+    "classify_narrative_evaluation_external_effects",
     "narrative_semantic_evaluation_definition",
 ]

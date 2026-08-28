@@ -1,4 +1,5 @@
 """Bounded background renewal for an already-fenced Authority lease."""
+
 from __future__ import annotations
 
 import threading
@@ -18,6 +19,7 @@ class LeaseHeartbeatGuard:
         lease_seconds: int,
         label: str,
         probe: Callable[[], object] | None = None,
+        probe_on_exit: bool = True,
     ) -> None:
         if lease_seconds <= 0 or not label:
             raise ValueError("positive lease_seconds and label are required")
@@ -25,6 +27,7 @@ class LeaseHeartbeatGuard:
         self._interval = max(0.05, min(float(lease_seconds) / 3.0, 10.0))
         self._label = label
         self._probe = probe
+        self._probe_on_exit = probe_on_exit
         self._stop = threading.Event()
         self._failure: BaseException | None = None
         self._thread = threading.Thread(
@@ -46,14 +49,25 @@ class LeaseHeartbeatGuard:
         del exc_type, traceback
         self._stop.set()
         self._thread.join(timeout=self._interval + 1.0)
-        if exc is None and self._failure is None and self._probe is not None:
+        if exc is None:
+            self._assert_background_healthy()
+            if self._probe_on_exit and self._probe is not None:
+                self._probe()
+        return False
+
+    def assert_healthy(self) -> None:
+        """Fail the owning thread before it admits more work after lease loss."""
+
+        self._assert_background_healthy()
+        if self._probe is not None:
             self._probe()
-        if exc is None and self._failure is not None:
+
+    def _assert_background_healthy(self) -> None:
+        if self._failure is not None:
             raise KernelError(
                 "AUTHORITY_LEASE_HEARTBEAT_FAILED",
                 f"{self._label} lease heartbeat failed: {self._failure}",
             ) from self._failure
-        return False
 
     def _run(self) -> None:
         while not self._stop.wait(self._interval):

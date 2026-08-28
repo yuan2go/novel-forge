@@ -19,6 +19,7 @@ from novel_forge.storage.migrations.versions import (
     v20260825_0099_creative_engineering_convergence as convergence,
     v20260825_0100_hierarchy_closure as hierarchy_closure,
     v20260826_0101_quality_qualification as quality_qualification,
+    v20260828_0102_book_opening_recovery_closure as recovery_closure,
 )
 
 
@@ -41,7 +42,8 @@ def test_terminal_lineage_is_a_forward_only_projection_fix() -> None:
     assert convergence.DOWN_REVISION == evolution.MIGRATION_ID
     assert hierarchy_closure.DOWN_REVISION == convergence.MIGRATION_ID
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == quality_qualification.MIGRATION_ID
+    assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == recovery_closure.MIGRATION_ID
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert "MIGRATION_ONLY base projection" in sql

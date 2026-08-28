@@ -63,6 +63,65 @@ Only independently qualified candidates enter deterministic comparison. Search
 selection is evidence for the normal approval/activation gates; it does not
 replace them.
 
+### Book Opening execution and recovery
+
+Book Opening is the business/recovery Authority for the bounded Book/Volume/Arc
+search that establishes the production input snapshot. RuntimeJob remains its
+operational plane. An Opening is not meaningfully `RUNNING` unless its current
+execution generation is durably bound to the exact RuntimeJob, Attempt, Lease
+and fencing token used by the worker.
+
+The execution path is:
+
+```text
+ADMITTED generation N
+→ Book Authority exact RuntimeJob claim and BOUND execution binding
+→ RUNNING
+→ append-only semantic progress/evidence checkpoints
+→ COMPLETE
+```
+
+An expired lease, lost fence or disappeared executor cannot be continued by
+ordinary RuntimeJob takeover. The formal loss path is:
+
+```text
+active execution N
+→ immutable loss assessment
+→ Attempt / Lease / RuntimeJob / execution N terminal convergence
+→ BookOpening FAILED
+→ loss convergence receipt
+```
+
+Loss convergence only explains and terminalizes the failed execution; it does
+not authorize replacement. A later `recover` uses a fresh immutable assessment
+and one database admission transaction to create its RecoveryIntent, any safe
+semantic-evaluation replacement generation, the next RuntimeJob, the
+`FAILED -> ADMITTED` transition, events/outbox and RecoveryReceipt. Provider
+work, if newly authorized, occurs only afterward through the normal governed
+worker path.
+
+Book Opening checkpoints are an append-only, hash/version-bound cursor over
+exact durable Narrative Search/Planning and Book input-resolution evidence.
+They identify the deterministic resume point and can be reprojected after a
+crash, but they do not copy candidate eligibility, search status, Planning
+activation or qualification truth. A whole semantic work item is skipped only
+when its checkpoint still names the exact `ACTIVATED` Narrative Search and
+selection decision; search ID, `future-N` branch and `EVALUATION_PENDING`
+Planning-generation lineage must match the frozen Opening graph.
+
+A terminal semantic-evaluation Operation is never reopened. Where its
+ExternalEffect is `PROVEN_NO_EFFECT` or otherwise conclusively safe under the
+governed retry policy, recovery may append evaluation generation N+1 with
+explicit predecessor lineage and a generation-aware Operation identity. A
+replacement is terminal-only and the bounded Opening policy permits at most
+generation 3. A nonterminal predecessor continues as the same generation and
+Operation through normal governed replay, including recovery from a durable
+Provider receipt before output materialization/terminalization without a
+second Provider call. A verified successful Effect is consumed through durable
+output replay; an `UNKNOWN_AMBIGUOUS` Effect blocks recovery pending
+reconciliation. Evaluation generation owns execution lineage only; Story
+Design and Planning remain the qualification and activation Authorities.
+
 The four structures are:
 
 ```text

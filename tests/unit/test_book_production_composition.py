@@ -10,6 +10,165 @@ from novel_forge.modules.authority_security import Principal, PrincipalType
 
 
 class BookProductionCompositionTests(unittest.TestCase):
+    def test_book_opening_recovery_http_surfaces_share_one_application(self) -> None:
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from novel_forge.api.models import product_model_map
+        from novel_forge.api.routers.book_authority import create_router
+        from novel_forge.api.routers.context import ProductRouterContext
+        from novel_forge.modules.book_authority import (
+            RecoveryAssessment,
+            RecoveryReceipt,
+        )
+
+        calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+
+        class RecoveryApplication:
+            @staticmethod
+            def _assessment(kind: str) -> RecoveryAssessment:
+                return RecoveryAssessment(
+                    recovery_assessment_id=f"assessment:{kind}",
+                    assessment_kind=kind,
+                    opening_run_id="opening:1",
+                    disposition="PROVEN_NO_EFFECT",
+                    snapshot_hash="sha256:" + "1" * 64,
+                    snapshot={},
+                    replayed=False,
+                )
+
+            @staticmethod
+            def _receipt(kind: str) -> RecoveryReceipt:
+                return RecoveryReceipt(
+                    recovery_receipt_id=f"receipt:{kind}",
+                    receipt_kind=kind,
+                    opening_run_id="opening:1",
+                    recovery_assessment_id="assessment:1",
+                    recovery_intent_id=(
+                        "intent:1" if kind == "RECOVERY_ADMISSION" else ""
+                    ),
+                    result_hash="sha256:" + "2" * 64,
+                    result={"provider_invoked": False},
+                    replayed=False,
+                )
+
+            def reconcile_legacy_execution(self, *args: object, **kwargs: object):
+                calls.append(("reconcile_legacy_execution", args, kwargs))
+                return self._receipt("CHECKPOINT_RECONCILIATION")
+
+            def assess_execution_loss(self, *args: object, **kwargs: object):
+                calls.append(("assess_execution_loss", args, kwargs))
+                return self._assessment("EXECUTION_LOSS")
+
+            def converge_execution_loss(self, *args: object, **kwargs: object):
+                calls.append(("converge_execution_loss", args, kwargs))
+                return self._receipt("EXECUTION_LOSS_CONVERGENCE")
+
+            def assess_recovery(self, *args: object, **kwargs: object):
+                calls.append(("assess_recovery", args, kwargs))
+                return self._assessment("RECOVERY")
+
+            def recover(self, *args: object, **kwargs: object):
+                calls.append(("recover", args, kwargs))
+                return self._receipt("RECOVERY_ADMISSION")
+
+            def assess_checkpoint_reconciliation(self, *args: object, **kwargs: object):
+                calls.append(("assess_checkpoint_reconciliation", args, kwargs))
+                return self._assessment("CHECKPOINT_RECONCILIATION")
+
+            def reconcile_checkpoint(self, *args: object, **kwargs: object):
+                calls.append(("reconcile_checkpoint", args, kwargs))
+                return self._receipt("CHECKPOINT_RECONCILIATION")
+
+        principal = Principal(
+            principal_id="trusted-operator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"book.authority.execute"}),
+            project_scope=frozenset({"project:1"}),
+            authentication_source="test",
+        )
+        composition = SimpleNamespace(
+            opening=SimpleNamespace(recovery=RecoveryApplication())
+        )
+        app = FastAPI()
+        app.include_router(
+            create_router(
+                ProductRouterContext(
+                    app_settings=SimpleNamespace(),
+                    models=product_model_map(),
+                    services=SimpleNamespace(book_production=composition),
+                )
+            )
+        )
+        resolver = SimpleNamespace(resolve_api_principal=lambda **_values: principal)
+        prefix = "/product/production/book-authority/opening-runs/opening:1"
+        requests = (
+            (
+                "reconcile_legacy_execution",
+                "reconcile-legacy-execution",
+                {"idempotency_key": "legacy"},
+            ),
+            (
+                "assess_execution_loss",
+                "assess-execution-loss",
+                {"idempotency_key": "loss"},
+            ),
+            (
+                "converge_execution_loss",
+                "converge-execution-loss",
+                {
+                    "recovery_assessment_id": "assessment:loss",
+                    "idempotency_key": "loss",
+                },
+            ),
+            ("assess_recovery", "assess-recovery", {"idempotency_key": "recovery"}),
+            (
+                "recover",
+                "recover",
+                {
+                    "recovery_assessment_id": "assessment:recovery",
+                    "idempotency_key": "recovery",
+                    "reason": "operator authorized recovery",
+                },
+            ),
+            (
+                "assess_checkpoint_reconciliation",
+                "assess-checkpoint-reconciliation",
+                {
+                    "idempotency_key": "checkpoint-assessment",
+                    "semantic_work_key": "planning-generation:1",
+                    "owning_authority": "STORY_PLANNING",
+                    "evidence_type": "PLANNING_GENERATION",
+                    "evidence_id": "generation:1",
+                    "evidence_version": 1,
+                    "evidence_hash": "sha256:" + "3" * 64,
+                },
+            ),
+            (
+                "reconcile_checkpoint",
+                "reconcile-checkpoint",
+                {
+                    "recovery_assessment_id": "assessment:checkpoint",
+                    "idempotency_key": "checkpoint-reconcile",
+                },
+            ),
+        )
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+            TestClient(app) as client,
+        ):
+            for expected_call, path, payload in requests:
+                response = client.post(
+                    f"{prefix}/{path}",
+                    json={**payload, "actor_id": "untrusted-caller"},
+                )
+                self.assertEqual(response.status_code, 202, response.text)
+                self.assertEqual(calls[-1][0], expected_call)
+                self.assertIs(calls[-1][2]["principal"], principal)
+
     def test_builder_reuses_one_dependency_graph(self) -> None:
         from novel_forge.api.authority_dependencies import (
             build_book_production_composition,

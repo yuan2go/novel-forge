@@ -231,10 +231,15 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 definition_name=definition_name,
                 project_id=project_id,
                 status="SUCCEEDED",
-            )
-            cursor.execute(
-                "UPDATE authority_operation SET workspace_id=%s WHERE operation_id=%s",
-                [workspace_id, operation_id],
+                workspace_id=workspace_id,
+                command_payload={
+                    "project_id": project_id,
+                    "input_asset_version_ids": [],
+                    "payload": {
+                        "book_id": book_id,
+                        "source_asset_version_id": source_version_id,
+                    },
+                },
             )
             cursor.execute(
                 "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
@@ -753,10 +758,15 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 definition_name=definition_name,
                 project_id=project_id,
                 status="SUCCEEDED",
-            )
-            cursor.execute(
-                "UPDATE authority_operation SET workspace_id=%s WHERE operation_id=%s",
-                [workspace_id, operation_id],
+                workspace_id=workspace_id,
+                command_payload={
+                    "project_id": project_id,
+                    "input_asset_version_ids": [],
+                    "payload": {
+                        "book_id": book_id,
+                        "source_asset_version_id": source_version_id,
+                    },
+                },
             )
             cursor.execute(
                 "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",

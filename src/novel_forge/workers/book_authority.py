@@ -215,9 +215,7 @@ def execute_book_projection_repair_claim(
             runtime_jobs.fail(
                 claim,
                 {
-                    "code": exc.code
-                    if hasattr(exc, "code")
-                    else type(exc).__name__,
+                    "code": exc.code if hasattr(exc, "code") else type(exc).__name__,
                     "message": str(exc),
                     "repair_id": claim.input_snapshot.get("repair_id", ""),
                 },
@@ -258,9 +256,7 @@ def execute_story_formation_claim(
             result = formation.advance_expected(
                 claim.subject_id,
                 expected_stage=str(claim.input_snapshot.get("observed_stage") or ""),
-                expected_version=int(
-                    claim.input_snapshot.get("observed_version", -1)
-                ),
+                expected_version=int(claim.input_snapshot.get("observed_version", -1)),
                 principal=principal,
             )
         business_committed = True
@@ -308,52 +304,53 @@ def execute_book_opening_claim(
         or claim.subject_kind != "BOOK_OPENING_RUN"
     ):
         raise RuntimeError("Book worker received an invalid Book opening job")
-    runtime_jobs.start(claim)
     expected_version = int(claim.input_snapshot.get("observed_version", -1))
-    runtime_jobs.checkpoint(
-        claim,
-        {
-            "stage": "BOOK_OPENING_STARTED",
-            "opening_run_id": claim.subject_id,
-            "observed_version": expected_version,
-        },
-    )
-    business_committed = False
     try:
+        runtime_jobs.start(claim)
+        runtime_jobs.checkpoint(
+            claim,
+            {
+                "stage": "BOOK_OPENING_STARTED",
+                "opening_run_id": claim.subject_id,
+                "observed_version": expected_version,
+            },
+        )
         with LeaseHeartbeatGuard(
             lambda: runtime_jobs.heartbeat(claim, lease_seconds=lease_seconds),
             lease_seconds=lease_seconds,
             label=f"runtime-job:{claim.attempt_id}",
-        ):
+            probe=lambda: runtime_jobs.assert_live(claim),
+            # execute_run terminalizes the exact claim in its completion UoW.
+            # Re-probing an already RELEASED lease on context exit would turn
+            # every successful completion into a false response-loss path.
+            probe_on_exit=False,
+        ) as guard:
             result = opening.execute_run(
                 claim.subject_id,
                 expected_version=expected_version,
+                runtime_claim=claim,
                 principal=principal,
+                execution_probe=guard.assert_healthy,
             )
-        business_committed = True
-        runtime_jobs.checkpoint(
-            claim,
-            {
-                "stage": "BOOK_OPENING_COMMITTED",
-                "opening_run_id": claim.subject_id,
-                "input_snapshot_id": result["input_snapshot_id"],
-            },
-        )
-        runtime_jobs.complete(claim, result)
         return result
     except Exception as exc:
+        durable = opening.require(claim.subject_id)
+        if str(durable["lifecycle"]) == "COMPLETE":
+            # The Authority completion UoW committed and only its response (or
+            # a racing heartbeat response) was lost.  Return durable truth;
+            # never rewrite the terminal execution or RuntimeJob history.
+            return dict(durable["result"])
         failure = {
             "code": getattr(exc, "code", type(exc).__name__),
             "message": str(exc),
             "opening_run_id": claim.subject_id,
         }
-        if not business_committed:
-            opening.record_failure(
-                claim.subject_id,
-                expected_version=expected_version,
-                error=failure,
-            )
-        runtime_jobs.fail(claim, failure)
+        opening.record_failure(
+            claim.subject_id,
+            expected_version=expected_version,
+            runtime_claim=claim,
+            error=failure,
+        )
         raise
 
 
@@ -437,11 +434,9 @@ def main() -> int:
                         return WorkerSupervisor.FATAL_EXIT_CODE
                     continue
             if composition.opening is not None:
-                opening_claim = runtime_jobs.claim(
-                    runtime_group="book_opening",
+                opening_claim = composition.opening.claim_next_execution(
                     worker_id=worker_id,
                     lease_seconds=lease_seconds,
-                    job_kinds=("BOOK_OPENING_EXECUTE",),
                 )
                 if opening_claim is not None:
                     supervisor.polled(idle=False)

@@ -680,14 +680,81 @@ controls the durable run; it never owns the Provider chain.
 Every child candidate declares the exact parent role → AssetVersion/content-hash
 map, and its generation Operation must contain those same frozen parent assets.
 A RuntimeJob freezes the Formation stage and version it may advance; a stale
-technical retry cannot advance a later semantic stage. Resume cancels a pending
-stale job and schedules a new job for the current persisted stage/version.
+technical retry cannot advance a later semantic stage. Process recovery must
+follow the owning coordinator's persisted execution contract; it cannot reopen
+a terminal child Operation or infer semantic progress from worker logs.
 
-Book opening follows the same durable boundary: API admission persists the
-frozen request and schedules `BOOK_OPENING_EXECUTE`; the worker runs existing
-Narrative Search/Planning/Input Resolver applications. Query/resume/abort are
-commands over the persisted run, and post-commit worker failure reconciles the
-stored result without another semantic search.
+Book Authority, through the Book Opening aggregate, is the business and
+recovery Authority for opening execution.
+`RuntimeJob` remains its operational execution plane and never decides whether
+another opening generation is authorized. Each opening execution is an
+append-only generation with one exact binding to its RuntimeJob, current
+Attempt, Lease and fencing token. PostgreSQL constraints protect the relational
+binding; claim, heartbeat, checkpoint, completion, failure, cancellation and
+recovery paths revalidate temporal lease validity. Book Authority atomically
+creates the only initial Attempt/Lease and changes the execution from
+`SCHEDULED` to `BOUND`; generic RuntimeJob claim cannot claim or take over this
+policy class. `BOUND` and `RUNNING` are therefore verifiable execution
+identities, not unqualified lifecycle labels. Its execution Authority digest is
+stable across compatible releases; immutable assessments additionally bind the
+exact application build and commit so release drift requires reassessment. The
+durable decision is recorded in
+[ADR 0008](../adr/0008-book-opening-recovery-authority.md).
+
+An expired or irrecoverably lost Book Opening executor cannot use ordinary
+RuntimeJob lease takeover. The unified Book Opening Recovery Application first
+converges the lost operational execution to terminal RuntimeJob history, marks
+the opening execution `LOST`, moves the Book Opening to `FAILED`, and records
+immutable loss assessment and convergence evidence. Loss convergence does not
+create a `RecoveryIntent` and does not authorize a successor generation.
+An expired active Lease also makes ordinary abort fail closed. The bounded loss
+sweeper includes the fresh authoritative snapshot in assessment identity, so
+post-assessment release or evidence drift produces a new immutable assessment
+instead of pinning convergence to stale evidence.
+
+Recovery is a separate `FAILED → ADMITTED` command. It consumes an immutable
+assessment, locks and rereads all referenced Authority state, and fails closed
+on input, checkpoint, generation, policy/configuration, ExternalEffect or
+Authority-version drift. Pure database admission should commit the
+`RecoveryIntent`, any safe semantic-evaluation replacement generation and
+Operation admission, generation-head CAS, successor RuntimeJob, opening
+transition, receipt, events and outbox in one short PostgreSQL unit of work.
+Provider execution and durable-result replay remain outside that transaction on
+the normal governed worker path.
+
+Book Opening semantic checkpoints are an append-only, monotonic hash chain of
+exact durable evidence owned by Planning/Narrative Search and Book Input
+Resolution. The current cursor is an idempotent projection and never
+copies their candidate, selection, activation, generation or qualification
+truth. Recovery may reconcile missing legacy checkpoints from authoritative
+durable evidence; it must not guess progress from logs. Only a checkpoint that
+still names the exact `ACTIVATED` Narrative Search and selection decision may
+skip a whole semantic work item. Search identity, `future-N` branch and
+`EVALUATION_PENDING` Planning-generation membership are matched exactly.
+
+A terminal semantic-evaluation Operation remains immutable. The same immutable
+candidate may continue only through an append-only evaluation execution
+generation with explicit `replacement_of` lineage and generation-aware
+idempotency/concurrency identity. This lineage owns execution only; Story Design
+and Planning continue to own eligibility and qualification. Replacement is
+terminal-only and bounded at generation 3. A nonterminal predecessor continues
+as the same evaluation generation and Operation through governed command
+replay, including the receipt-durable/output-before-terminal crash window.
+`PROVEN_NO_EFFECT` may authorize a replacement, `PROVEN_SUCCESS` replays its
+durable result without Provider redispatch, and a proven terminal non-success
+follows only an already-governed replacement policy.
+`UNKNOWN_AMBIGUOUS`—including the Command Kernel's `UNKNOWN_EXTERNAL_STATE`—
+blocks recovery pending canonical reconciliation. Loss, recovery and
+reconciliation commands never call a Provider.
+
+Legacy execution binding is a distinct immutable
+`LEGACY_EXECUTION_RECONCILIATION` fact. Missing RuntimeJob lineage is represented
+by a deterministic attempt-less `CANCELLED` RuntimeJob / `ABORTED`
+OpeningExecution marker, never by invented progress or a RecoveryIntent.
+Deferred PostgreSQL guards enforce exact monotonic execution/checkpoint heads,
+frozen digests, active-current binding, RecoveryAssessment/Intent/Receipt
+cardinality and scope, semantic generation-head lineage, and terminal-history
+immutability.
 
 Creative Search may reuse immutable candidate/evaluation/comparison/selection
 primitives with Narrative Search, but Creative is not forced into a Planning
@@ -1186,7 +1253,14 @@ Command
 → Domain Commit
 ```
 
-`RuntimeJob` is the durable scheduling/execution primitive where existing runtime uses it. A new WorkOrder/Workflow Engine/Agent Kernel must not be created in parallel without demonstrated inability of the existing execution plane.
+`RuntimeJob` is the durable scheduling/execution primitive where existing
+runtime uses it. It owns operational scheduling, Attempts, Leases, fences and
+bounded retry, but never owns a domain's recovery authorization. Generic
+expired-lease takeover is valid only where the owning domain contract permits
+the same operational execution to continue. Book Opening explicitly requires
+Authority loss convergence and a separately authorized successor execution. A
+new WorkOrder/Workflow Engine/Agent Kernel must not be created in parallel
+without demonstrated inability of the existing execution plane.
 
 Provider adapters do not own retry policy or business acceptance. Exact provider route/model/config/input identity and usage/cost evidence should be preserved to the level supported by the provider; unsupported exact cost must not be fabricated.
 
@@ -1249,11 +1323,19 @@ Implement only mechanisms justified by real failure semantics, but preserve the 
 - stable idempotency for provider/tool effects, acceptance, state transitions, plan activation and publication;
 - technical retry using the same frozen logical task;
 - semantic revision as a new business candidate, not retry disguise;
+- terminal execution history is append-only; replacement is an explicit new
+  generation with predecessor/supersession lineage;
 - lease/fence protection against stale worker commits;
+- relational execution bindings are database-constrained while temporal lease
+  validity is rechecked by every mutating runtime path and bounded loss scan;
 - CAS/optimistic version checks on mutable Authority state;
 - recover/resume from PostgreSQL, not reconstructed in-memory workflow state;
+- immutable recovery assessment plus lock-time authoritative reread; drift
+  requires reassessment rather than force recovery;
 - explicit `UNKNOWN` handling for uncertain non-idempotent external effects;
 - exact evidence replay where recorded effect reuse is allowed, and logical replay where provider re-invocation is required;
+- one owning Recovery Application for HTTP, CLI, worker and maintenance
+  adapters; no adapter-specific SQL repair or bypass path;
 - forward migrations and fresh/upgrade migration proof;
 - backup/restore proof before production admission.
 
@@ -1407,6 +1489,24 @@ qualification additionally proves the real Provider wiring for one Agent
 Session, document/query embeddings and one Memo→Retrieval→Draft slice. This is
 bounded `PROVIDER_PROVEN` evidence only. None of these capabilities is
 `LONGFORM_PROVEN` or `PRODUCTION_QUALIFIED`.
+
+### P0 — Book Opening recovery correctness closure
+
+The 2026-08-27 Quality Qualification exposed a cross-plane orphan: a Book
+Opening could remain `RUNNING` after its outer RuntimeJob lease expired while a
+child semantic-evaluation Operation was terminal. That exact-SHA record remains
+immutable historical evidence of the defect; the earlier post-business-commit
+same-job replay proves only that narrower crash boundary.
+
+The canonical closure is the Book Opening execution-generation, loss,
+assessment/recovery, semantic checkpoint and evaluation-replacement contract in
+sections 12.3, 21 and 23. Engineering qualification requires fresh/upgrade
+migration, PostgreSQL reproduction, concurrency, failure-injection and full
+regression evidence. The existing qualification database and orphan remain
+read-only during this work package. Its mutation, real Provider execution,
+eight-Chapter rerun, human review, literary-quality proof and Production
+Admission are separately authorized future validation, never implied by an
+engineering pass.
 
 ### P1 — Bounded quality qualification
 

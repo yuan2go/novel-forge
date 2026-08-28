@@ -17,6 +17,10 @@ from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
     admit_command_in_uow,
 )
+from novel_forge.modules.command_kernel.runtime import (
+    OperationTransitionCommand,
+    transition_operation_in_uow,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -94,7 +98,9 @@ def request_cancellation(database_url: str, command: CancelCommand) -> dict[str,
             correlation_id=command.correlation_id,
             causation_id=command.causation_id,
         )
-        active_attempt = uow.repositories.cancellations.active_attempt(command.operation_id)
+        active_attempt = uow.repositories.cancellations.active_attempt(
+            command.operation_id
+        )
         if active_attempt is not None:
             uow.repositories.cancellations.signal_worker_cancel(
                 str(uuid4()),
@@ -122,7 +128,108 @@ def request_cancellation(database_url: str, command: CancelCommand) -> dict[str,
     }
 
 
-def _propagate_root_cancellation(uow: AuthorityUnitOfWork, command: CancelCommand) -> None:
+def cancel_unstarted_operation_in_uow(
+    uow: AuthorityUnitOfWork,
+    *,
+    operation_id: str,
+    project_id: str,
+    actor_id: str,
+    trace_id: str,
+    correlation_id: str,
+    reason: str,
+    causation_id: str = "",
+) -> dict[str, Any]:
+    """Cancel a READY Operation proven to have no Attempt or ExternalEffect."""
+
+    if any(
+        not value.strip()
+        for value in (
+            operation_id,
+            project_id,
+            actor_id,
+            trace_id,
+            correlation_id,
+            reason,
+        )
+    ):
+        raise KernelError(
+            "KERNEL_COMMAND_INVALID",
+            "unstarted cancellation identity and reason are required",
+        )
+    operation = uow.repositories.attempt_runtime.operation_state(
+        operation_id, project_id
+    )
+    if str(operation["status"]) == "CANCELLED":
+        return {
+            "operation_id": operation_id,
+            "status": "CANCELLED",
+            "version": int(operation["version"]),
+            "replayed": True,
+        }
+    if str(operation["status"]) != "READY":
+        raise KernelError(
+            "OPERATION_STATUS_CONFLICT",
+            "only an unstarted READY Operation can be cancelled atomically",
+        )
+    uow.cursor.execute(
+        """
+        SELECT EXISTS(
+                   SELECT 1 FROM authority_attempt WHERE operation_id=%s
+               ),
+               EXISTS(
+                   SELECT 1 FROM authority_external_effect
+                   WHERE operation_id=%s AND project_id=%s
+               )
+        """,
+        [operation_id, operation_id, project_id],
+    )
+    attempt_exists, effect_exists = uow.cursor.fetchone()
+    if bool(attempt_exists) or bool(effect_exists):
+        raise KernelError(
+            "UNSTARTED_CANCELLATION_EVIDENCE_CONFLICT",
+            "Operation has Attempt or ExternalEffect evidence and cannot use unstarted cancellation",
+        )
+    requested = transition_operation_in_uow(
+        uow,
+        OperationTransitionCommand(
+            operation_id=operation_id,
+            project_id=project_id,
+            expected_version=int(operation["version"]),
+            expected_status="READY",
+            target_status="CANCELLATION_REQUESTED",
+            actor_id=actor_id,
+            reason=reason,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+        ),
+    )
+    cancelled = transition_operation_in_uow(
+        uow,
+        OperationTransitionCommand(
+            operation_id=operation_id,
+            project_id=project_id,
+            expected_version=int(requested["version"]),
+            expected_status="CANCELLATION_REQUESTED",
+            target_status="CANCELLED",
+            actor_id=actor_id,
+            reason=reason,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+        ),
+    )
+    return {
+        "operation_id": operation_id,
+        "status": "CANCELLED",
+        "version": int(cancelled["version"]),
+        "replayed": False,
+    }
+
+
+def _propagate_root_cancellation(
+    uow: AuthorityUnitOfWork, command: CancelCommand
+) -> None:
     """Cancel unstarted children and signal active children in the root graph."""
     uow.cursor.execute(
         """
@@ -154,8 +261,15 @@ def _propagate_root_cancellation(uow: AuthorityUnitOfWork, command: CancelComman
         active_attempt = uow.repositories.cancellations.active_attempt(operation_id)
         if active_attempt is not None:
             uow.repositories.cancellations.signal_worker_cancel(
-                str(uuid4()), operation_id, active_attempt[0], active_attempt[1],
-                {"actor_id": command.actor_id, "reason": command.reason, "trace_id": command.trace_id},
+                str(uuid4()),
+                operation_id,
+                active_attempt[0],
+                active_attempt[1],
+                {
+                    "actor_id": command.actor_id,
+                    "reason": command.reason,
+                    "trace_id": command.trace_id,
+                },
             )
             continue
         uow.cursor.execute(
@@ -202,8 +316,43 @@ def resolve_cancellation(
         "compensation_required": "COMPENSATION_REQUIRED",
     }.get(resolution)
     if target is None:
-        raise KernelError("CANCELLATION_RESOLUTION_INVALID", "unknown cancel resolution")
+        raise KernelError(
+            "CANCELLATION_RESOLUTION_INVALID", "unknown cancel resolution"
+        )
     with AuthorityUnitOfWork(database_url) as uow:
+        # ExternalEffect planning takes this same Operation row lock and
+        # requires EXECUTING.  Locking it before inspecting evidence makes the
+        # no-effect proof stable through the terminal CAS: a concurrent plan
+        # either committed first and is observed here, or resumes after this
+        # transaction and rejects the now-terminal Operation.
+        uow.cursor.execute(
+            """
+            SELECT status,version
+            FROM authority_operation
+            WHERE operation_id=%s AND project_id=%s
+            FOR UPDATE
+            """,
+            [operation_id, project_id],
+        )
+        operation = uow.cursor.fetchone()
+        if operation is None:
+            raise KernelError("OPERATION_NOT_FOUND", "operation does not exist")
+        if resolution == "no_external_effect":
+            uow.cursor.execute(
+                """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM authority_external_effect
+                    WHERE operation_id=%s AND project_id=%s
+                )
+                """,
+                [operation_id, project_id],
+            )
+            if bool(uow.cursor.fetchone()[0]):
+                raise KernelError(
+                    "CANCELLATION_NO_EFFECT_EVIDENCE_CONFLICT",
+                    "no_external_effect resolution requires zero durable ExternalEffects",
+                )
         result = _cas_operation(
             uow,
             operation_id=operation_id,
@@ -452,7 +601,9 @@ def complete_compensation_from_child(
 
 def _validate_cancel(command: CancelCommand) -> None:
     if command.command_version != 1 or command.expected_version < 0:
-        raise KernelError("CANCEL_COMMAND_INVALID", "unsupported cancel command version")
+        raise KernelError(
+            "CANCEL_COMMAND_INVALID", "unsupported cancel command version"
+        )
     required = (
         command.operation_id,
         command.project_id,

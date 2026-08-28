@@ -26,21 +26,31 @@ def transition_operation(
     database_url: str,
     command: OperationTransitionCommand,
 ) -> dict[str, int | str]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        result = transition_operation_in_uow(uow, command)
+        uow.commit()
+    return result
+
+
+def transition_operation_in_uow(
+    uow: AuthorityUnitOfWork,
+    command: OperationTransitionCommand,
+) -> dict[str, int | str]:
+    """Apply one governed Operation CAS inside an owning Authority UoW."""
+
     _validate_transition_command(command)
     require_operation_transition(command.expected_status, command.target_status)
     row = asdict(command)
-    with AuthorityUnitOfWork(database_url) as uow:
-        result = uow.repositories.operation_lifecycle.compare_and_set(row)
-        uow.repositories.runtime_evidence.record_operation_transition(
-            {
-                **row,
-                "version": result["version"],
-                "event_id": str(uuid4()),
-                "audit_id": str(uuid4()),
-                "outbox_id": str(uuid4()),
-            }
-        )
-        uow.commit()
+    result = uow.repositories.operation_lifecycle.compare_and_set(row)
+    uow.repositories.runtime_evidence.record_operation_transition(
+        {
+            **row,
+            "version": result["version"],
+            "event_id": str(uuid4()),
+            "audit_id": str(uuid4()),
+            "outbox_id": str(uuid4()),
+        }
+    )
     return result
 
 

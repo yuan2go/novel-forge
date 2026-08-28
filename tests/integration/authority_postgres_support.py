@@ -13,8 +13,7 @@ from novel_forge.storage.migrations import run_migrations
 
 DATABASE_URL = os.environ.get(
     "NOVEL_FORGE_DATABASE_URL",
-    "postgresql://novel_forge:novel_forge@127.0.0.1:55432/"
-    "novel_forge_authority_test",
+    "postgresql://novel_forge:novel_forge@127.0.0.1:55432/novel_forge_authority_test",
 )
 
 
@@ -71,6 +70,8 @@ def insert_operation(
     definition_name: str,
     project_id: str,
     status: str = "ADMITTED",
+    workspace_id: str = "legacy-unknown",
+    command_payload: dict[str, object] | None = None,
     root_operation_id: str | None = None,
     parent_operation_id: str | None = None,
     causation_operation_id: str | None = None,
@@ -82,6 +83,7 @@ def insert_operation(
             definition_name,
             definition_version,
             project_id,
+            workspace_id,
             status,
             parent_operation_id,
             root_operation_id,
@@ -89,19 +91,21 @@ def insert_operation(
             idempotency_scope,
             idempotency_key,
             request_digest,
+            command_payload,
             definition_snapshot,
             completion_contract_snapshot,
             policy_snapshot
         )
         VALUES (
-            %s, %s, '1.0.0', %s, %s, %s, %s, %s,
-            %s, %s, %s, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+            %s, %s, '1.0.0', %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
         )
         """,
         [
             operation_id,
             definition_name,
             project_id,
+            workspace_id,
             status,
             parent_operation_id,
             root_operation_id or operation_id,
@@ -109,6 +113,7 @@ def insert_operation(
             f"project:{project_id}",
             operation_id,
             f"digest:{operation_id}",
+            Jsonb(command_payload or {}),
         ],
     )
 
@@ -152,9 +157,11 @@ def seed_authority_project_book(
                 ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, %s)
                 """,
                 [
-                    f"{asset_id}:v1", asset_id,
+                    f"{asset_id}:v1",
+                    asset_id,
                     Jsonb({"project_id": project_id, "book_id": book_id}),
-                    f"sha256:{asset_id}", f"{asset_type}-authority.v1",
+                    f"sha256:{asset_id}",
+                    f"{asset_type}-authority.v1",
                 ],
             )
         cursor.execute(
@@ -164,7 +171,14 @@ def seed_authority_project_book(
                 current_asset_version_id, created_by_operation_id, last_operation_id
             ) VALUES (%s, %s, %s, 'ACTIVE', 'PLANNING', 'HEALTHY', %s, %s, %s)
             """,
-            [project_id, workspace_id, project_id, f"{project_asset_id}:v1", operation_id, operation_id],
+            [
+                project_id,
+                workspace_id,
+                project_id,
+                f"{project_asset_id}:v1",
+                operation_id,
+                operation_id,
+            ],
         )
         cursor.execute(
             """
@@ -173,7 +187,14 @@ def seed_authority_project_book(
                 created_by_operation_id, last_operation_id
             ) VALUES (%s, %s, %s, 'ACTIVE', %s, %s, %s)
             """,
-            [workspace_id, project_id, book_id, f"{workspace_asset_id}:v1", operation_id, operation_id],
+            [
+                workspace_id,
+                project_id,
+                book_id,
+                f"{workspace_asset_id}:v1",
+                operation_id,
+                operation_id,
+            ],
         )
         cursor.execute(
             """
@@ -186,6 +207,13 @@ def seed_authority_project_book(
                       %s, '{}'::jsonb, '{}'::jsonb, 'integration-release',
                       'DESIGN_PENDING', %s, %s, %s)
             """,
-            [book_id, project_id, workspace_id, Jsonb({"book_id": book_id}),
-             f"{book_asset_id}:v1", operation_id, operation_id],
+            [
+                book_id,
+                project_id,
+                workspace_id,
+                Jsonb({"book_id": book_id}),
+                f"{book_asset_id}:v1",
+                operation_id,
+                operation_id,
+            ],
         )

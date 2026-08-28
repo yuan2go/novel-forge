@@ -3,13 +3,15 @@ from __future__ import annotations
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
 from novel_forge.storage.migrations.versions import (
     v20260826_0101_quality_qualification as migration,
+    v20260828_0102_book_opening_recovery_closure as successor,
 )
 
 
 def test_quality_qualification_extends_one_forward_head() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert successor.DOWN_REVISION == migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == successor.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260825_0100_hierarchy_closure"
     assert migration.FORWARD_ONLY is True
     assert migration.DOWNGRADE_STATEMENTS == []
@@ -94,7 +96,9 @@ def test_migration_preserves_historical_rows_and_is_non_destructive() -> None:
     assert "historical" in migration.FORWARD_FIX.lower()
 
 
-def test_operator_authored_foundation_source_is_explicit_not_provider_evidence() -> None:
+def test_operator_authored_foundation_source_is_explicit_not_provider_evidence() -> (
+    None
+):
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
 
     assert "OPERATOR_AUTHORED" in sql

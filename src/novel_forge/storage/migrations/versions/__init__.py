@@ -102,6 +102,7 @@ from . import (
     v20260825_0099_creative_engineering_convergence,
     v20260825_0100_hierarchy_closure,
     v20260826_0101_quality_qualification,
+    v20260828_0102_book_opening_recovery_closure,
 )
 
 VERSION_MODULES = [
@@ -206,6 +207,7 @@ VERSION_MODULES = [
     v20260825_0099_creative_engineering_convergence,
     v20260825_0100_hierarchy_closure,
     v20260826_0101_quality_qualification,
+    v20260828_0102_book_opening_recovery_closure,
 ]
 
 __all__ = ["VERSION_MODULES"]

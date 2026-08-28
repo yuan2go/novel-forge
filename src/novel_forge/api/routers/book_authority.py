@@ -38,6 +38,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ]
     BookOpeningStartRequest = ctx.models["BookOpeningStartRequest"]
     BookOpeningControlRequest = ctx.models["BookOpeningControlRequest"]
+    BookOpeningAssessmentRequest = ctx.models["BookOpeningAssessmentRequest"]
+    BookOpeningConvergenceRequest = ctx.models["BookOpeningConvergenceRequest"]
+    BookOpeningRecoveryRequest = ctx.models["BookOpeningRecoveryRequest"]
+    BookOpeningCheckpointAssessmentRequest = ctx.models[
+        "BookOpeningCheckpointAssessmentRequest"
+    ]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
     BookReplanApprovalRequest = ctx.models["BookReplanApprovalRequest"]
@@ -73,8 +79,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     arc_logical_keys=tuple(request.arc_logical_keys),
                     idempotency_key=request.idempotency_key,
                     trace_id=request.trace_id or f"trace:{uuid4()}",
-                    correlation_id=request.correlation_id
-                    or f"correlation:{uuid4()}",
+                    correlation_id=request.correlation_id or f"correlation:{uuid4()}",
                     initial_story_state_version=request.initial_story_state_version,
                     initial_canon_snapshot_version=request.initial_canon_snapshot_version,
                 ),
@@ -121,6 +126,213 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 expected_version=request.expected_version,
                 principal=principal,
             )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/reconcile-legacy-execution",
+        status_code=202,
+    )
+    def reconcile_legacy_book_opening_execution(
+        opening_run_id: str, request: BookOpeningAssessmentRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return asdict(
+                composition.opening.recovery.reconcile_legacy_execution(
+                    opening_run_id,
+                    idempotency_key=request.idempotency_key,
+                    principal=principal,
+                )
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/assess-execution-loss",
+        status_code=202,
+    )
+    def assess_book_opening_execution_loss(
+        opening_run_id: str, request: BookOpeningAssessmentRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return asdict(
+                composition.opening.recovery.assess_execution_loss(
+                    opening_run_id,
+                    idempotency_key=request.idempotency_key,
+                    principal=principal,
+                )
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/converge-execution-loss",
+        status_code=202,
+    )
+    def converge_book_opening_execution_loss(
+        opening_run_id: str, request: BookOpeningConvergenceRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            receipt = composition.opening.recovery.converge_execution_loss(
+                request.recovery_assessment_id,
+                idempotency_key=request.idempotency_key,
+                principal=principal,
+                expected_opening_run_id=opening_run_id,
+            )
+            if receipt.opening_run_id != opening_run_id:
+                raise KernelError(
+                    "BOOK_OPENING_RECOVERY_SCOPE_MISMATCH",
+                    "loss assessment belongs to another Book Opening",
+                )
+            return asdict(receipt)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/assess-recovery", status_code=202)
+    def assess_book_opening_recovery(
+        opening_run_id: str, request: BookOpeningAssessmentRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return asdict(
+                composition.opening.recovery.assess_recovery(
+                    opening_run_id,
+                    idempotency_key=request.idempotency_key,
+                    principal=principal,
+                )
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/recover", status_code=202)
+    def recover_book_opening(
+        opening_run_id: str, request: BookOpeningRecoveryRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            receipt = composition.opening.recovery.recover(
+                request.recovery_assessment_id,
+                idempotency_key=request.idempotency_key,
+                reason=request.reason,
+                principal=principal,
+                expected_opening_run_id=opening_run_id,
+            )
+            if receipt.opening_run_id != opening_run_id:
+                raise KernelError(
+                    "BOOK_OPENING_RECOVERY_SCOPE_MISMATCH",
+                    "recovery assessment belongs to another Book Opening",
+                )
+            return asdict(receipt)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/assess-checkpoint-reconciliation",
+        status_code=202,
+    )
+    def assess_book_opening_checkpoint_reconciliation(
+        opening_run_id: str, request: BookOpeningCheckpointAssessmentRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return asdict(
+                composition.opening.recovery.assess_checkpoint_reconciliation(
+                    opening_run_id,
+                    semantic_work_key=request.semantic_work_key,
+                    owning_authority=request.owning_authority,
+                    evidence_type=request.evidence_type,
+                    evidence_id=request.evidence_id,
+                    evidence_version=request.evidence_version,
+                    evidence_hash=request.evidence_hash,
+                    idempotency_key=request.idempotency_key,
+                    principal=principal,
+                )
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/reconcile-checkpoint",
+        status_code=202,
+    )
+    def reconcile_book_opening_checkpoint(
+        opening_run_id: str, request: BookOpeningConvergenceRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            receipt = composition.opening.recovery.reconcile_checkpoint(
+                request.recovery_assessment_id,
+                idempotency_key=request.idempotency_key,
+                principal=principal,
+                expected_opening_run_id=opening_run_id,
+            )
+            return asdict(receipt)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:
@@ -180,8 +392,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     expected_book_version=request.expected_book_version,
                     stable_idempotency_key=request.idempotency_key,
                     trace_id=request.trace_id or f"trace:{uuid4()}",
-                    correlation_id=request.correlation_id
-                    or f"correlation:{uuid4()}",
+                    correlation_id=request.correlation_id or f"correlation:{uuid4()}",
                     frozen_input=frozen,
                 ),
                 principal=principal,
@@ -544,9 +755,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             book = _application(ctx).require(book_run_id)
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.query", book["project_id"])
-            return _composition(ctx).query.progress(
-                book_run_id=book_run_id
-            ).to_dict()
+            return _composition(ctx).query.progress(book_run_id=book_run_id).to_dict()
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

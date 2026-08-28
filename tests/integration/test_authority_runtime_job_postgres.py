@@ -94,6 +94,30 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.assertTrue(str(evidence[4]).startswith("sha256:"))
         self.assertGreaterEqual(int(evidence[5]), 5)
 
+    def test_completion_replays_after_commit_response_loss(self) -> None:
+        self.authority.schedule(
+            self.spec(
+                dedupe_key="book:completion-response-loss",
+                subject_id="subject:completion-response-loss",
+            )
+        )
+        claim = self.claim(
+            subject_id="subject:completion-response-loss",
+            worker_id="book-worker-response-loss",
+        )
+        assert claim is not None
+        self.authority.start(claim)
+        result = {"action": "ACCEPT_CHAPTER", "state": "READY"}
+
+        committed = self.authority.complete(claim, result)
+        replayed = self.authority.complete(claim, result)
+
+        self.assertEqual(replayed["result_id"], committed["result_id"])
+        self.assertEqual(replayed["result_hash"], committed["result_hash"])
+        self.assertTrue(replayed["replayed"])
+        with self.assertRaisesRegex(KernelError, "completion.*different result"):
+            self.authority.complete(claim, {"action": "DIFFERENT"})
+
     def test_same_logical_job_is_isolated_between_projects(self) -> None:
         first_spec = self.spec(
             dedupe_key="book:shared:version:3", subject_id="subject:shared"
@@ -229,13 +253,13 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 8)
 
-    def test_expired_lease_takeover_increments_fence_and_rejects_stale_worker(self) -> None:
+    def test_expired_lease_takeover_increments_fence_and_rejects_stale_worker(
+        self,
+    ) -> None:
         scheduled = self.authority.schedule(
             self.spec(dedupe_key="book:2:version:3", subject_id="subject:2")
         )
-        stale = self.claim(
-            subject_id="subject:2", worker_id="book-worker-stale"
-        )
+        stale = self.claim(subject_id="subject:2", worker_id="book-worker-stale")
         assert stale is not None
         self.authority.start(stale)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -280,15 +304,11 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         scheduled = self.authority.schedule(
             self.spec(dedupe_key="book:final-expiry", subject_id="subject:final-expiry")
         )
-        first = self.claim(
-            subject_id="subject:final-expiry", worker_id="book-worker-a"
-        )
+        first = self.claim(subject_id="subject:final-expiry", worker_id="book-worker-a")
         assert first is not None
         self.authority.start(first)
         self.authority.fail(first, {"code": "TRANSIENT"})
-        final = self.claim(
-            subject_id="subject:final-expiry", worker_id="book-worker-b"
-        )
+        final = self.claim(subject_id="subject:final-expiry", worker_id="book-worker-b")
         assert final is not None
         self.authority.start(final)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -334,7 +354,9 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
 
     def test_database_clock_rejects_expired_heartbeat(self) -> None:
         self.authority.schedule(
-            self.spec(dedupe_key="book:expired-heartbeat", subject_id="subject:heartbeat")
+            self.spec(
+                dedupe_key="book:expired-heartbeat", subject_id="subject:heartbeat"
+            )
         )
         claim = self.claim(
             subject_id="subject:heartbeat", worker_id="book-worker-clock"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from collections.abc import Callable
 from typing import Any, Mapping, Sequence
 
 from psycopg.types.json import Jsonb
@@ -131,49 +132,12 @@ class PostgresNarrativeSearchApplication:
         *,
         principal: Principal,
         activate_selected: bool = False,
+        execution_probe: Callable[[], object] | None = None,
     ) -> NarrativeSearchResult:
         command = request.generation
         principal.require("story_planning.authority.execute", command.project_id)
-        search_key = f"{command.idempotency_key}:narrative-search"
-        search_id = "narrative-search:" + canonical_hash(
-            {
-                "project_id": command.project_id,
-                "book_id": command.book_id,
-                "stable_idempotency_key": search_key,
-            }
-        ).removeprefix("sha256:")
-        parent_hash = self._parent_state_hash(
-            command.project_id, request.parent_state_asset_version_id
-        )
-        input_hash = canonical_hash(
-            {
-                "generator_operation_name": command.generator_operation_name,
-                "planning_scope": command.planning_scope.value,
-                "logical_key": command.logical_key,
-                "parent_version_id": command.parent_version_id,
-                "input_versions": dict(command.input_versions),
-                "arc_scope": list(command.arc_scope_volume_plan_version_ids),
-                "related_arcs": list(command.related_arc_plan_version_ids),
-                "dependent_arcs": list(command.dependent_arc_plan_version_ids),
-                "change_evidence": list(command.change_evidence_version_ids),
-                "governance_actions": list(command.governance_action_version_ids),
-                "accepted_through_chapter": request.accepted_through_chapter,
-                "book_run_id": request.book_run_id,
-                "parent_state_asset_version_id": request.parent_state_asset_version_id,
-                "parent_state_content_hash": parent_hash,
-                "planning_horizon": dict(request.planning_horizon),
-                "desired_transformation": dict(request.desired_transformation),
-                "hard_constraints": list(request.hard_constraints),
-                "strategy_directives": list(request.strategy_directives),
-                "expected_active_asset_version_id": (
-                    request.expected_active_asset_version_id
-                ),
-                "replacement_approved": request.replacement_approved,
-                "replacement_decision_evidence": dict(
-                    request.replacement_decision_evidence
-                ),
-            }
-        )
+        self._probe(execution_probe)
+        search_key, search_id, input_hash, parent_hash = self._search_identity(request)
         replayed = self._open_search(
             search_id=search_id,
             request=request,
@@ -183,6 +147,7 @@ class PostgresNarrativeSearchApplication:
         )
         generations: dict[str, PlanningGenerationResult] = {}
         for ordinal, directive in enumerate(request.strategy_directives, start=1):
+            self._probe(execution_probe)
             branch_key = f"future-{ordinal}"
             existing = self._candidate_for_branch(search_id, branch_key)
             if existing:
@@ -223,7 +188,9 @@ class PostgresNarrativeSearchApplication:
                         auto_approve_low_risk=False,
                     ),
                     principal=principal,
+                    execution_probe=execution_probe,
                 )
+                self._probe(execution_probe)
                 if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
                     raise KernelError(
                         "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
@@ -237,6 +204,7 @@ class PostgresNarrativeSearchApplication:
                 "NARRATIVE_SEARCH_CANDIDATE_SET_INCOMPLETE",
                 "not every frozen strategy produced a qualified future",
             )
+        self._probe(execution_probe)
         comparison, decision_replayed = self._select(search_id, candidates)
         selected = generations.get(comparison.selected_candidate_asset_version_id)
         if selected is None:
@@ -258,6 +226,7 @@ class PostgresNarrativeSearchApplication:
                 replayed=True,
             )
         if activate_selected:
+            self._probe(execution_probe)
             state = selected.story_design_state
             if state["approval"] != "APPROVED" and state["lifecycle"] != "ACTIVE":
                 self.planning.approve_candidate(
@@ -299,6 +268,192 @@ class PostgresNarrativeSearchApplication:
             ),
             replayed=replayed or decision_replayed,
         )
+
+    def require_selected(
+        self,
+        request: NarrativeSearchRequest,
+        *,
+        activate_selected: bool,
+    ) -> NarrativeSearchResult:
+        """Read an exact durable selection without admitting or executing work."""
+
+        command = request.generation
+        search_key, search_id, input_hash, parent_hash = self._search_identity(request)
+        self._require_current_accepted_boundary(request)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT search.status,search.input_snapshot_hash,
+                       search.parent_state_content_hash,
+                       search.selected_candidate_asset_version_id,
+                       search.generator_operation_name,search.planning_scope,
+                       search.logical_key,search.stable_idempotency_key,
+                       decision.selected_candidate_asset_version_id,
+                       decision.candidate_set_hash,decision.comparison,
+                       decision.comparison_hash
+                FROM authority_story_narrative_search AS search
+                JOIN authority_story_narrative_search_decision AS decision
+                  ON decision.search_id=search.search_id
+                WHERE search.search_id=%s AND search.project_id=%s
+                  AND search.workspace_id=%s AND search.book_id=%s
+                """,
+                [
+                    search_id,
+                    command.project_id,
+                    command.workspace_id,
+                    command.book_id,
+                ],
+            )
+            row = uow.cursor.fetchone()
+        expected_statuses = (
+            {"ACTIVATED"} if activate_selected else {"SELECTED", "ACTIVATED"}
+        )
+        if (
+            row is None
+            or str(row[0]) not in expected_statuses
+            or str(row[1]) != input_hash
+            or str(row[2] or "") != parent_hash
+            or str(row[3]) != str(row[8])
+            or str(row[4]) != command.generator_operation_name
+            or str(row[5]) != command.planning_scope.value
+            or str(row[6]) != command.logical_key
+            or str(row[7]) != search_key
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT",
+                "durable Narrative Search does not match the exact frozen request",
+            )
+        candidates = self._load_candidates(search_id)
+        comparison = compare_narrative_futures(candidates)
+        comparison_payload = comparison.to_dict()
+        candidate_set_hash = canonical_hash(
+            [
+                {
+                    "candidate_asset_version_id": item.candidate_asset_version_id,
+                    "projection": item.projection.to_dict(),
+                    "qualification_hash": item.qualification_hash,
+                }
+                for item in candidates
+            ]
+        )
+        if (
+            comparison.selected_candidate_asset_version_id != str(row[3])
+            or candidate_set_hash != str(row[9])
+            or comparison_payload != dict(row[10])
+            or canonical_hash(comparison_payload) != str(row[11])
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT",
+                "Narrative Search selection evidence no longer verifies",
+            )
+        selected_member = next(
+            (
+                item
+                for item in candidates
+                if item.candidate_asset_version_id
+                == comparison.selected_candidate_asset_version_id
+            ),
+            None,
+        )
+        if selected_member is None:
+            raise KernelError(
+                "NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT",
+                "Narrative Search selected candidate membership is missing",
+            )
+        generation = self.planning.require_generation(
+            selected_member.generation_operation_id
+        )
+        expected_generation_status = (
+            "ACTIVE" if activate_selected else str(generation["status"])
+        )
+        if (
+            str(generation["project_id"]) != command.project_id
+            or str(generation["workspace_id"]) != command.workspace_id
+            or str(generation["book_id"]) != command.book_id
+            or str(generation["narrative_search_id"]) != search_id
+            or str(generation["candidate_asset_version_id"])
+            != comparison.selected_candidate_asset_version_id
+            or (activate_selected and str(generation["status"]) != "ACTIVE")
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT",
+                "selected Planning Generation no longer matches the search Authority",
+            )
+        selected = PlanningGenerationResult(
+            generation_operation_id=selected_member.generation_operation_id,
+            candidate_asset_version_id=comparison.selected_candidate_asset_version_id,
+            status=PlanningGenerationStatus(expected_generation_status),
+            story_design_state=self.planning.story_design.require(
+                project_id=command.project_id,
+                asset_version_id=comparison.selected_candidate_asset_version_id,
+            ),
+            replayed=True,
+        )
+        return NarrativeSearchResult(
+            search_id=search_id,
+            status=(
+                NarrativeSearchStatus.ACTIVATED
+                if activate_selected
+                else NarrativeSearchStatus.SELECTED
+            ),
+            selected_generation=selected,
+            comparison=comparison,
+            candidate_asset_version_ids=tuple(
+                item.candidate_asset_version_id for item in candidates
+            ),
+            replayed=True,
+        )
+
+    def _search_identity(
+        self, request: NarrativeSearchRequest
+    ) -> tuple[str, str, str, str]:
+        command = request.generation
+        search_key = f"{command.idempotency_key}:narrative-search"
+        search_id = "narrative-search:" + canonical_hash(
+            {
+                "project_id": command.project_id,
+                "book_id": command.book_id,
+                "stable_idempotency_key": search_key,
+            }
+        ).removeprefix("sha256:")
+        parent_hash = self._parent_state_hash(
+            command.project_id, request.parent_state_asset_version_id
+        )
+        input_hash = canonical_hash(
+            {
+                "generator_operation_name": command.generator_operation_name,
+                "planning_scope": command.planning_scope.value,
+                "logical_key": command.logical_key,
+                "parent_version_id": command.parent_version_id,
+                "input_versions": dict(command.input_versions),
+                "arc_scope": list(command.arc_scope_volume_plan_version_ids),
+                "related_arcs": list(command.related_arc_plan_version_ids),
+                "dependent_arcs": list(command.dependent_arc_plan_version_ids),
+                "change_evidence": list(command.change_evidence_version_ids),
+                "governance_actions": list(command.governance_action_version_ids),
+                "accepted_through_chapter": request.accepted_through_chapter,
+                "book_run_id": request.book_run_id,
+                "parent_state_asset_version_id": request.parent_state_asset_version_id,
+                "parent_state_content_hash": parent_hash,
+                "planning_horizon": dict(request.planning_horizon),
+                "desired_transformation": dict(request.desired_transformation),
+                "hard_constraints": list(request.hard_constraints),
+                "strategy_directives": list(request.strategy_directives),
+                "expected_active_asset_version_id": (
+                    request.expected_active_asset_version_id
+                ),
+                "replacement_approved": request.replacement_approved,
+                "replacement_decision_evidence": dict(
+                    request.replacement_decision_evidence
+                ),
+            }
+        )
+        return search_key, search_id, input_hash, parent_hash
+
+    @staticmethod
+    def _probe(execution_probe: Callable[[], object] | None) -> None:
+        if execution_probe is not None:
+            execution_probe()
 
     def _parent_state_hash(self, project_id: str, asset_version_id: str) -> str:
         if not asset_version_id:

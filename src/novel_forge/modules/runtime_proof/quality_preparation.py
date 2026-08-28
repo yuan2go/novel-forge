@@ -1717,12 +1717,10 @@ class BoundedQualityCampaignPreparer:
             raise RuntimeError(
                 "Book opening is not safely executable: " + _canonical(run)
             )
-        jobs = RuntimeJobAuthority(self.database_url)
-        claim = jobs.claim(
-            runtime_group="book_opening",
+        jobs = composition.opening.runtime_jobs
+        claim = composition.opening.claim_next_execution(
             worker_id=f"quality-opening-worker:{self.project_id}",
             lease_seconds=120,
-            job_kinds=("BOOK_OPENING_EXECUTE",),
             project_id=self.project_id,
         )
         if claim is None:

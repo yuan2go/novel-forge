@@ -1651,16 +1651,14 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
         admission = SimpleNamespace(**opening_response.json())
         assert composition.opening is not None
         runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
-        opening_claim = runtime_jobs.claim(
-            runtime_group="book_opening",
+        opening_claim = composition.opening.claim_next_execution(
             worker_id="opening-integration-worker",
             lease_seconds=30,
-            job_kinds=("BOOK_OPENING_EXECUTE",),
             project_id=project_id,
         )
         assert opening_claim is not None
 
-        class CrashAfterOpeningCommit:
+        class RejectSeparateRuntimeCompletion:
             def __init__(self, delegate: RuntimeJobAuthority) -> None:
                 self.delegate = delegate
 
@@ -1668,37 +1666,49 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
                 return getattr(self.delegate, name)
 
             def complete(self, _claim: object, _result: object) -> None:
-                raise RuntimeError("injected crash after opening commit")
+                raise AssertionError(
+                    "Book Opening and RuntimeJob completion must share one UoW"
+                )
 
-        with pytest.raises(RuntimeError, match="injected crash after opening commit"):
-            execute_book_opening_claim(
-                CrashAfterOpeningCommit(runtime_jobs),  # type: ignore[arg-type]
-                composition.opening,
-                principal,
-                opening_claim,
-                lease_seconds=30,
-            )
+        opened = execute_book_opening_claim(
+            RejectSeparateRuntimeCompletion(runtime_jobs),  # type: ignore[arg-type]
+            composition.opening,
+            principal,
+            opening_claim,
+            lease_seconds=30,
+        )
         assert (
             composition.opening.require(admission.opening_run_id)["lifecycle"]
             == "COMPLETE"
         )
-        replay_claim = runtime_jobs.claim(
-            runtime_group="book_opening",
+        replay_claim = composition.opening.claim_next_execution(
             worker_id="opening-integration-recovery-worker",
             lease_seconds=30,
-            job_kinds=("BOOK_OPENING_EXECUTE",),
             project_id=project_id,
         )
-        assert replay_claim is not None
-        assert replay_claim.runtime_job_id == opening_claim.runtime_job_id
-        assert replay_claim.attempt_number == 2
-        opened = execute_book_opening_claim(
-            runtime_jobs,
-            composition.opening,
-            principal,
-            replay_claim,
-            lease_seconds=30,
-        )
+        assert replay_claim is None
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT job.status,attempt.status,lease.status,
+                       execution.lifecycle
+                FROM authority_runtime_job AS job
+                JOIN authority_runtime_job_attempt AS attempt
+                  ON attempt.attempt_id=job.current_attempt_id
+                JOIN authority_runtime_job_lease AS lease
+                  ON lease.lease_id=attempt.lease_id
+                JOIN authority_book_opening_execution AS execution
+                  ON execution.runtime_job_id=job.runtime_job_id
+                WHERE job.runtime_job_id=%s
+                """,
+                [opening_claim.runtime_job_id],
+            )
+            assert uow.cursor.fetchone() == (
+                "SUCCEEDED",
+                "SUCCEEDED",
+                "RELEASED",
+                "SUCCEEDED",
+            )
         replay = composition.open_book(request)
         opening_run = composition.opening.require(admission.opening_run_id)
         snapshot = composition.input_resolver.require(opened["input_snapshot_id"])

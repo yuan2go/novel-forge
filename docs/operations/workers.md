@@ -21,7 +21,64 @@ The fleet publishes PostgreSQL-backed heartbeats. `/runtime/readiness` requires 
 
 ## Shutdown and recovery
 
-Workers use finite polling, bounded leases, and graceful process shutdown. Restart does not create a new business operation: stable idempotency and existing RuntimeJob/Attempt records drive resume or reconciliation. Dead-letter and reconciliation-required states remain visible to an operator.
+Workers use finite polling, bounded leases, and graceful process shutdown.
+Restart behavior is selected by the owning business Authority; a RuntimeJob is
+an operational execution record and cannot decide business recovery by itself.
+Stable idempotency, exact Attempt/Lease/fence binding, durable outputs and
+receipts drive replay or reconciliation. Dead-letter and
+reconciliation-required states remain visible to an operator.
+
+Book Opening uses Authority convergence rather than ordinary expired-lease
+takeover. The Book Authority coordinator exclusively claims the admitted
+`SCHEDULED` execution, creates its first Attempt/Lease and binds it as `BOUND`
+in one transaction; the generic RuntimeJob claimer cannot perform that initial
+claim. A `BOUND` or `RUNNING` Opening is valid only when its current execution
+generation is bound to the exact RuntimeJob, Attempt, Lease and fencing token.
+The database protects those relational bindings. Because lease validity changes
+with time, claim, heartbeat, checkpoint, complete, fail, abort, loss and
+recovery paths must also recheck `lease_expires_at` at transaction time.
+The execution contract digest remains stable across compatible releases;
+immutable assessments bind the exact running build/commit.
+
+When an Opening executor disappears or its lease/fence is lost, the generic
+RuntimeJob claimer must not continue that job. The bounded maintenance/loss scan
+calls the Book Opening Recovery Application, which rechecks the authoritative
+state and converges the old Attempt, Lease, RuntimeJob, Opening execution and
+Book Opening to immutable terminal `LOST`/`FAILED` evidence. Loss convergence
+does not authorize another execution, create a RecoveryIntent, reconcile an
+ambiguous ExternalEffect, or call a Provider.
+
+An active abort also requires the exact Lease to remain unexpired. Expired work
+is left unchanged for formal loss convergence. The maintenance scan binds its
+loss-assessment key to the current authoritative snapshot, so release or
+evidence drift after an assessment commit causes a fresh assessment instead of
+permanent replay of stale evidence.
+
+Only a later, explicitly admitted `recover` command may create the
+RecoveryIntent and the next execution generation. It must use a fresh immutable
+assessment, preserve predecessor lineage, and fail closed on input, checkpoint,
+generation, policy, Authority-version or ExternalEffect drift. The deprecated
+legacy `BookOpening.resume()` behavior is not a recovery mutation surface; it
+must be blocked or routed through this same assessment/recovery contract.
+
+HTTP, worker, maintenance and any operator CLI adapter all call the same
+Recovery Application. No adapter owns status-update SQL, force-recovery logic or
+a Provider execution path. Recovery and reconciliation only commit durable
+Authority work; any newly admitted semantic evaluation runs later through the
+normal governed worker and ExternalEffect path.
+
+Only terminal semantic-evaluation Operations may receive a replacement
+generation, bounded at generation 3. Nonterminal work re-enters the same
+generation/Operation through governed worker replay, including the
+receipt-durable/output-before-terminal crash window, without Provider
+redispatch. A whole semantic work item is skipped only from an exact
+still-`ACTIVATED` Narrative Search checkpoint and its exact branch/Planning
+lineage.
+
+Legacy execution binding is recorded as
+`LEGACY_EXECUTION_RECONCILIATION`. Missing historical RuntimeJob lineage becomes
+a non-executable attempt-less `CANCELLED` RuntimeJob / `ABORTED`
+OpeningExecution marker, not an inferred checkpoint or recovery authorization.
 
 ## Commands
 

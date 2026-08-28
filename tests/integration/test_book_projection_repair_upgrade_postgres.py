@@ -27,7 +27,7 @@ from novel_forge.modules.context_builder.production_retrieval import (
 )
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.storage.database_runtime import close_all_database_runtimes
-from novel_forge.storage.migrations import MIGRATIONS
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS
 from novel_forge.workers.book_authority import execute_book_projection_repair_claim
 from tests.integration.authority_postgres_support import DATABASE_URL
 
@@ -81,8 +81,18 @@ def _apply_through(database_url: str, revision: str) -> None:
     raise AssertionError(f"unknown migration revision: {revision}")
 
 
+def _upgrade_to_current_runtime(database_url: str) -> None:
+    """Run current application code only against its current schema contract."""
+    _apply_through(database_url, LATEST_MIGRATION_ID)
+
+
 def _insert_operation(
-    cursor: psycopg.Cursor, operation_id: str, project_id: str, workspace_id: str
+    cursor: psycopg.Cursor,
+    operation_id: str,
+    project_id: str,
+    workspace_id: str,
+    *,
+    status: str = "SUCCEEDED",
 ) -> None:
     cursor.execute(
         """
@@ -94,7 +104,7 @@ def _insert_operation(
             trace_id, span_id, correlation_id, concurrency_key
         ) VALUES (
             %s,'repair.upgrade.fixture','1.0.0',%s,%s,'upgrade-fixture',
-            'SUCCEEDED',%s,'project:repair-upgrade',%s,%s,
+            %s,%s,'project:repair-upgrade',%s,%s,
             '{}'::jsonb,'{}'::jsonb,'{}'::jsonb,%s,%s,%s,%s
         )
         """,
@@ -102,6 +112,7 @@ def _insert_operation(
             operation_id,
             project_id,
             workspace_id,
+            status,
             operation_id,
             operation_id,
             "digest:" + operation_id,
@@ -485,6 +496,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         _apply_through(self.database_url, REVISION_0093)
         scope = _seed_accepted_history(self.database_url)
         _apply_through(self.database_url, REVISION_0095)
+        _upgrade_to_current_runtime(self.database_url)
         jobs = RuntimeJobAuthority(self.database_url)
         claim = jobs.claim(
             runtime_group="book_repair",
@@ -561,6 +573,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         _apply_through(self.database_url, REVISION_0093)
         scope = _seed_accepted_history(self.database_url, chapters=5)
         _apply_through(self.database_url, REVISION_0095)
+        _upgrade_to_current_runtime(self.database_url)
         jobs = RuntimeJobAuthority(self.database_url)
         repair = PostgresBookProjectionRepairAuthority(
             self.database_url,
@@ -674,6 +687,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
             story_state_contents={2: state},
         )
         _apply_through(self.database_url, REVISION_0095)
+        _upgrade_to_current_runtime(self.database_url)
         jobs = RuntimeJobAuthority(self.database_url)
         claim = jobs.claim(
             runtime_group="book_repair",
@@ -770,6 +784,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
             story_state_contents={2: story_state},
         )
         _apply_through(self.database_url, REVISION_0096)
+        _upgrade_to_current_runtime(self.database_url)
         jobs = RuntimeJobAuthority(self.database_url)
         claim = jobs.claim(
             runtime_group="book_repair",
@@ -786,14 +801,10 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         ).run_batch(claim, actor_id="arc-followup-hardening-worker", maximum_chapters=4)
         self.assertTrue(repaired.complete)
 
-        recap_operation_id = "operation:arc-followup-hardening:recap"
-        with psycopg.connect(self.database_url) as connection, connection.cursor() as cursor:
-            _insert_operation(
-                cursor,
-                recap_operation_id,
-                scope["project_id"],
-                "workspace:repair-upgrade",
-            )
+        with (
+            psycopg.connect(self.database_url) as connection,
+            connection.cursor() as cursor,
+        ):
             revision_id = "arc-revision:hardening:v1"
             revision_hash = _insert_asset(
                 cursor,
@@ -801,24 +812,6 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                 asset_version_id=revision_id,
                 asset_type="arc_revision_candidate",
                 content={"type": "ArcRevisionCandidate", "future_only": True},
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_operation_output_asset(
-                    operation_id, asset_id, asset_version_id,
-                    output_key, role, content_hash
-                ) VALUES (%s,%s,%s,'longform.recap.replan_request',
-                          'proposal',%s)
-                """,
-                [recap_operation_id, "asset:" + revision_id, revision_id, revision_hash],
-            )
-            cursor.execute(
-                """
-                UPDATE authority_arc_checkpoint_followup
-                SET operation_id=%s,status='RUNNING',last_error='{}'::jsonb
-                WHERE book_run_id=%s
-                """,
-                [recap_operation_id, scope["book_run_id"]],
             )
             truth_before = cursor.execute(
                 """
@@ -837,39 +830,69 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
             principal=SimpleNamespace(),
         )
 
+        def bind_immutable_operation(
+            *, operation_id: str, operation_status: str, decision: str
+        ) -> None:
+            with (
+                psycopg.connect(self.database_url) as connection,
+                connection.cursor() as cursor,
+            ):
+                _insert_operation(
+                    cursor,
+                    operation_id,
+                    scope["project_id"],
+                    "workspace:repair-upgrade",
+                    status=operation_status,
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_operation_output_asset(
+                        operation_id, asset_id, asset_version_id,
+                        output_key, role, content_hash
+                    ) VALUES (%s,%s,%s,'longform.recap.replan_request',
+                              'proposal',%s)
+                    """,
+                    [operation_id, "asset:" + revision_id, revision_id, revision_hash],
+                )
+                cursor.execute(
+                    """
+                    UPDATE authority_arc_checkpoint_followup
+                    SET operation_id=%s,decision=%s,status='RUNNING',
+                        last_error='{}'::jsonb,version=version+1
+                    WHERE book_run_id=%s
+                    """,
+                    [operation_id, decision, scope["book_run_id"]],
+                )
+                cursor.execute(
+                    """
+                    UPDATE authority_book_production
+                    SET state='CHECKPOINT_PENDING',paused_reason='',failure_reason='',
+                        version=version+1 WHERE book_run_id=%s
+                    """,
+                    [scope["book_run_id"]],
+                )
+                connection.commit()
+
         for operation_status, followup_status, book_state in (
             ("FAILED_RETRYABLE", "FAILED_RETRYABLE", "CHECKPOINT_PENDING"),
-            ("RECONCILIATION_REQUIRED", "RECONCILIATION_REQUIRED", "CHECKPOINT_PENDING"),
+            (
+                "RECONCILIATION_REQUIRED",
+                "RECONCILIATION_REQUIRED",
+                "CHECKPOINT_PENDING",
+            ),
             ("FAILED_FINAL", "FAILED_FINAL", "PAUSED"),
             ("DEAD_LETTER", "DEAD_LETTER", "PAUSED"),
             ("CANCELLED", "CANCELLED", "PAUSED"),
         ):
             with self.subTest(operation_status=operation_status):
-                with psycopg.connect(self.database_url) as connection:
-                    connection.execute(
-                        """
-                        UPDATE authority_operation
-                        SET status=%s,version=version+1 WHERE operation_id=%s
-                        """,
-                        [operation_status, recap_operation_id],
-                    )
-                    connection.execute(
-                        """
-                        UPDATE authority_arc_checkpoint_followup
-                        SET status='RUNNING',last_error='{}'::jsonb,version=version+1
-                        WHERE operation_id=%s
-                        """,
-                        [recap_operation_id],
-                    )
-                    connection.execute(
-                        """
-                        UPDATE authority_book_production
-                        SET state='CHECKPOINT_PENDING',paused_reason='',failure_reason='',
-                            version=version+1 WHERE book_run_id=%s
-                        """,
-                        [scope["book_run_id"]],
-                    )
-                    connection.commit()
+                recap_operation_id = (
+                    "operation:arc-followup-hardening:" + operation_status.lower()
+                )
+                bind_immutable_operation(
+                    operation_id=recap_operation_id,
+                    operation_status=operation_status,
+                    decision="CORRECT",
+                )
                 coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
                 coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
                 with psycopg.connect(self.database_url) as connection:
@@ -887,33 +910,21 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                         """,
                         [recap_operation_id],
                     ).fetchone()
-                self.assertEqual(observed[0:3], (followup_status, operation_status, book_state))
+                self.assertEqual(
+                    observed[0:3], (followup_status, operation_status, book_state)
+                )
                 self.assertEqual(observed[3:], truth_before)
 
         for decision in ("CORRECT", "REPLAN_REQUIRED"):
             with self.subTest(decision=decision):
-                with psycopg.connect(self.database_url) as connection:
-                    connection.execute(
-                        "UPDATE authority_operation SET status='SUCCEEDED',version=version+1 WHERE operation_id=%s",
-                        [recap_operation_id],
-                    )
-                    connection.execute(
-                        """
-                        UPDATE authority_arc_checkpoint_followup
-                        SET decision=%s,status='RUNNING',last_error='{}'::jsonb,
-                            version=version+1 WHERE operation_id=%s
-                        """,
-                        [decision, recap_operation_id],
-                    )
-                    connection.execute(
-                        """
-                        UPDATE authority_book_production
-                        SET state='CHECKPOINT_PENDING',paused_reason='',failure_reason='',
-                            version=version+1 WHERE book_run_id=%s
-                        """,
-                        [scope["book_run_id"]],
-                    )
-                    connection.commit()
+                recap_operation_id = (
+                    "operation:arc-followup-hardening:success:" + decision.lower()
+                )
+                bind_immutable_operation(
+                    operation_id=recap_operation_id,
+                    operation_status="SUCCEEDED",
+                    decision=decision,
+                )
                 coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
                 coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
                 with psycopg.connect(self.database_url) as connection:
@@ -938,6 +949,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         _apply_through(self.database_url, REVISION_0093)
         scope = _seed_accepted_history(self.database_url)
         _apply_through(self.database_url, REVISION_0095)
+        _upgrade_to_current_runtime(self.database_url)
         jobs = RuntimeJobAuthority(self.database_url)
         claim = jobs.claim(
             runtime_group="book_repair",
@@ -1100,6 +1112,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                     ).fetchone()[0]
                 )
         _apply_through(self.database_url, REVISION_0095)
+        _upgrade_to_current_runtime(self.database_url)
 
         jobs = RuntimeJobAuthority(self.database_url)
         claim = jobs.claim(

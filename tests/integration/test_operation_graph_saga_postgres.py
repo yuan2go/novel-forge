@@ -45,7 +45,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_linear_branch_and_join_graph_discovers_only_satisfied_children(self) -> None:
+    def test_linear_branch_and_join_graph_discovers_only_satisfied_children(
+        self,
+    ) -> None:
         context, root, children = self._graph_fixture(4)
         a, b, c, join = children
         add_operation_dependency(DATABASE_URL, context, b, a, "ON_SUCCESS")
@@ -92,9 +94,13 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             )
         add_operation_dependency(DATABASE_URL, context, target, success, "ON_SUCCESS")
         add_operation_dependency(DATABASE_URL, context, target, failure, "ON_FAILURE")
-        add_operation_dependency(DATABASE_URL, context, target, compensated, "ON_COMPENSATED")
+        add_operation_dependency(
+            DATABASE_URL, context, target, compensated, "ON_COMPENSATED"
+        )
         add_operation_dependency(DATABASE_URL, context, target, manual, "MANUAL_GATE")
-        self.assertIn(target, operation_graph(DATABASE_URL, context.project_id, root)["blocked"])
+        self.assertIn(
+            target, operation_graph(DATABASE_URL, context.project_id, root)["blocked"]
+        )
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -104,17 +110,25 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
                 """,
                 [identifier("gate"), target, f"dependency:{manual}"],
             )
-        self.assertIn(target, operation_graph(DATABASE_URL, context.project_id, root)["ready"])
+        self.assertIn(
+            target, operation_graph(DATABASE_URL, context.project_id, root)["ready"]
+        )
         with self.assertRaises(KernelError) as cycle:
-            add_operation_dependency(DATABASE_URL, context, success, target, "ON_SUCCESS")
+            add_operation_dependency(
+                DATABASE_URL, context, success, target, "ON_SUCCESS"
+            )
         self.assertEqual(cycle.exception.code, "DEPENDENCY_CYCLE")
 
     def test_saga_forward_completion_is_idempotent_under_concurrent_ticks(self) -> None:
         context, root, children = self._graph_fixture(2, root_status="EXECUTING")
         first, second = children
         saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
-        register_saga_step(DATABASE_URL, context, saga_id, first, "first", 1, "comp.first")
-        register_saga_step(DATABASE_URL, context, saga_id, second, "second", 2, "comp.second")
+        register_saga_step(
+            DATABASE_URL, context, saga_id, first, "first", 1, "comp.first"
+        )
+        register_saga_step(
+            DATABASE_URL, context, saga_id, second, "second", 2, "comp.second"
+        )
         add_operation_dependency(DATABASE_URL, context, second, first, "ON_SUCCESS")
         tick = coordinate_saga(DATABASE_URL, context, saga_id)
         self.assertEqual(tick["ready"], [first])
@@ -133,7 +147,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             statuses = list(executor.map(lambda _: coordinate(), range(2)))
         self.assertEqual(statuses, ["SUCCEEDED", "SUCCEEDED"])
         with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT status FROM authority_operation WHERE operation_id = %s", [root])
+            cursor.execute(
+                "SELECT status FROM authority_operation WHERE operation_id = %s", [root]
+            )
             self.assertEqual(cursor.fetchone()[0], "SUCCEEDED")
 
     def test_extension_terminalization_rejects_immutable_saga_outcomes(self) -> None:
@@ -147,9 +163,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
                     1, root_status="EXECUTING"
                 )
                 extension = children[0]
-                saga_id = start_saga(
-                    DATABASE_URL, context, root_operation_id=root
-                )["saga_id"]
+                saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)[
+                    "saga_id"
+                ]
                 with transaction() as connection, connection.cursor() as cursor:
                     cursor.execute(
                         "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
@@ -175,30 +191,32 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
                 )
 
     def test_extension_terminalization_replays_only_the_same_outcome(self) -> None:
-        context, root, children = self._graph_fixture(1, root_status="EXECUTING")
-        extension = children[0]
+        context, root, children = self._graph_fixture(2, root_status="EXECUTING")
+        failed_extension, cancelled_extension = children
         saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE authority_operation SET status='FAILED_FINAL' WHERE operation_id=%s",
-                [extension],
+                """
+                UPDATE authority_operation
+                SET status=CASE
+                    WHEN operation_id=%s THEN 'FAILED_FINAL'
+                    ELSE 'CANCELLED'
+                END
+                WHERE operation_id IN (%s, %s)
+                """,
+                [failed_extension, failed_extension, cancelled_extension],
             )
         first = terminalize_saga_from_extension(
-            DATABASE_URL, context, saga_id, operation_id=extension
+            DATABASE_URL, context, saga_id, operation_id=failed_extension
         )
         replay = terminalize_saga_from_extension(
-            DATABASE_URL, context, saga_id, operation_id=extension
+            DATABASE_URL, context, saga_id, operation_id=failed_extension
         )
         self.assertFalse(first["replayed"])
         self.assertTrue(replay["replayed"])
-        with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE authority_operation SET status='CANCELLED' WHERE operation_id=%s",
-                [extension],
-            )
         with self.assertRaises(KernelError) as caught:
             terminalize_saga_from_extension(
-                DATABASE_URL, context, saga_id, operation_id=extension
+                DATABASE_URL, context, saga_id, operation_id=cancelled_extension
             )
         self.assertEqual(caught.exception.code, "SAGA_EXTENSION_TERMINAL_CONFLICT")
         with transaction() as connection, connection.cursor() as cursor:
@@ -212,11 +230,11 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
                 """,
                 [root],
             )
-            self.assertEqual(
-                cursor.fetchone(), ("FAILED_FINAL", "MANUAL_INTERVENTION")
-            )
+            self.assertEqual(cursor.fetchone(), ("FAILED_FINAL", "MANUAL_INTERVENTION"))
 
-    def test_saga_failure_plans_reverse_compensation_and_distinguishes_partial_failure(self) -> None:
+    def test_saga_failure_plans_reverse_compensation_and_distinguishes_partial_failure(
+        self,
+    ) -> None:
         context, root, children = self._graph_fixture(3, root_status="EXECUTING")
         first, second, third = children
         saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
@@ -291,7 +309,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             self.assertGreaterEqual(token, 1)
             self.assertEqual(event_count, 1)
 
-    def test_saga_child_uses_standard_admission_attempt_and_completion_path(self) -> None:
+    def test_saga_child_uses_standard_admission_attempt_and_completion_path(
+        self,
+    ) -> None:
         project_id = identifier("project")
         root_definition = definition_payload(identifier("saga-root-definition"))
         child_definition = definition_payload(identifier("saga-child-definition"))
@@ -370,7 +390,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
-        saga_id = start_saga(DATABASE_URL, graph_context, root_operation_id=root)["saga_id"]
+        saga_id = start_saga(DATABASE_URL, graph_context, root_operation_id=root)[
+            "saga_id"
+        ]
         register_saga_step(
             DATABASE_URL,
             graph_context,
@@ -380,7 +402,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             1,
             "",
         )
-        self.assertEqual(coordinate_saga(DATABASE_URL, graph_context, saga_id)["ready"], [child])
+        self.assertEqual(
+            coordinate_saga(DATABASE_URL, graph_context, saga_id)["ready"], [child]
+        )
 
         attempt_id = create_attempt(
             DATABASE_URL,
@@ -425,7 +449,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             outcome="success",
             result={"completed": True},
         )
-        self.assertEqual(coordinate_saga(DATABASE_URL, graph_context, saga_id)["status"], "SUCCEEDED")
+        self.assertEqual(
+            coordinate_saga(DATABASE_URL, graph_context, saga_id)["status"], "SUCCEEDED"
+        )
 
     def test_saga_admits_and_completes_compensation_child_through_kernel(self) -> None:
         context, root, children = self._graph_fixture(2, root_status="EXECUTING")
@@ -433,7 +459,9 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
         compensation = definition_payload(identifier("saga-compensation-definition"))
         compensation["completion_contract"] = {}
         compensation["idempotency_scope"] = "operation:compensation"
-        compensation["concurrency_key_template"] = "operation:{parent_operation_id}:compensation"
+        compensation["concurrency_key_template"] = (
+            "operation:{parent_operation_id}:compensation"
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.repositories.definitions.register(compensation)
             uow.commit()

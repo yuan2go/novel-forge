@@ -42,15 +42,17 @@ Keep operational and development guides focused on executable procedures. Approv
 
 Completed exact-SHA evidence:
 
+- [Quality Correctness Closure bounded qualification](qualification/2026-08-27-quality-correctness-closure.md)
 - [Creative Engineering Convergence bounded qualification](qualification/2026-08-25-creative-engineering-convergence.md)
 - [Canonical Hierarchy Closure bounded qualification](qualification/2026-08-26-hierarchy-closure.md)
 - [Narrative Orchestration bounded qualification](qualification/2026-08-24-narrative-orchestration-qualification.md)
 - [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 
-The completed runtime-hardening design and superseded post-merge design/plan
-were removed after review because they duplicated the Canonical Design and
-current executable contracts. The exact-SHA qualification above is retained as
-the durable evidence record.
+Completed runtime-hardening and correctness-closure implementation plans and
+superseded design specifications are removed after their durable decisions have
+converged into current architecture, ADRs, operational contracts, and immutable
+qualification records. The exact-SHA qualification records above are retained
+as `HISTORICAL_EVIDENCE`; they are not rewritten when the runtime changes.
 
 Current repair runbook:
 
@@ -64,19 +66,24 @@ Current qualification runbook:
 
 ## ADRs
 
-`adr/` contains only durable decisions still constraining the system. It is not a project diary. ADR 0007 preserves Arc as an orthogonal planning dimension, establishes the qualified Foundation hierarchy, and places causal Narrative Realization inside Hierarchical Planning without adding a Plan scale or Authority. ADR 0003 is retained only to explain the superseded monolithic BookDesign decision.
+`adr/` contains only durable decisions still constraining the system. It is not a project diary. ADR 0007 preserves Arc as an orthogonal planning dimension, establishes the qualified Foundation hierarchy, and places causal Narrative Realization inside Hierarchical Planning without adding a Plan scale or Authority. ADR 0008 assigns Book Opening execution-loss and recovery ownership without promoting RuntimeJob into business Authority. ADR 0003 is retained only to explain the superseded monolithic BookDesign decision.
 
 ## Documentation lifecycle labels
 
 Use these during future reviews:
 
-- `CURRENT` — valid current-runtime/procedure view.
-- `CANONICAL` — target architecture source of truth (only the Canonical Overall Design).
-- `SUPERSEDED` — replaced by a newer canonical decision; remove or archive when still historically useful.
-- `OUTDATED` — factual/runtime claims no longer match executable evidence; update or remove.
-- `DUPLICATED` — repeats another authoritative document without unique value; merge/remove.
-- `CONFLICTING` — disagrees with higher-authority design/evidence; resolve in the same change.
-- `HISTORICAL_ONLY` — useful evidence/history but never current design authority.
+- `CURRENT` — valid architecture, current-runtime, or procedure view.
+- `STALE` — once valid, but no longer matches executable evidence; update or remove.
+- `CONFLICTING` — disagrees with higher-authority design or executable evidence; resolve in the same change.
+- `SUPERSEDED` — replaced by a newer durable decision; retain only when its historical identity still explains a migration or decision boundary.
+- `DEAD` — no longer operationally useful and carries no unique durable evidence; remove.
+- `HISTORICAL_EVIDENCE` — immutable, scoped evidence or history; never current design authority.
+
+`CANONICAL` describes the role of the Canonical Overall Design, not a lifecycle
+label. A canonical document is still reviewed as `CURRENT`, `STALE`, or
+`CONFLICTING`. Duplication alone is not a lifecycle: merge useful content into
+its Authority document and classify the redundant document `DEAD` or
+`SUPERSEDED` as appropriate.
 
 Do not keep an obsolete document merely because it was expensive to produce.
 
@@ -112,6 +119,6 @@ PRODUCTION_PROVEN
 
 No lower evidence class implies a higher one. In particular, one successful Chapter does not establish Chapter-to-Chapter liveness or `LONGFORM_PROVEN`. A scripted campaign proves protocol/runtime wiring only. A real-provider campaign without completed human review remains `WAITING_HUMAN_EVIDENCE / NOT_PROVEN`; one valid reviewer is `HUMAN_EVIDENCE_LIMITED`, and two bounded reviewers do not establish statistical Judge calibration.
 
-Historical qualification reports are immutable exact-SHA records. They remain
+`HISTORICAL_EVIDENCE` qualification reports are immutable exact-SHA records. They remain
 valid for the SHA and scope they name but must never be presented as current
 proof after release, migration, Provider, Pack, Prompt/Skill or lineage drift.

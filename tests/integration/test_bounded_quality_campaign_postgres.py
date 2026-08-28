@@ -319,11 +319,9 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
         )
         assert composition.opening is not None
         runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
-        opening_claim = runtime_jobs.claim(
-            runtime_group="book_opening",
+        opening_claim = composition.opening.claim_next_execution(
             worker_id="bounded-quality-opening-worker",
             lease_seconds=30,
-            job_kinds=("BOOK_OPENING_EXECUTE",),
             project_id=project_id,
         )
         assert opening_claim is not None
