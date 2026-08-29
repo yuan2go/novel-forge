@@ -320,7 +320,7 @@ def test_recovery_replaces_only_failed_branch_after_successful_search_prefix() -
         "2",
         replacement_operation_id,
         orphan.evaluation_operation_id,
-        "READY",
+        "ADMITTED",
     )
     assert effect_count == 0
 

@@ -13,6 +13,10 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetAssessmentOutcome,
+    assess_budget_scope_in_uow,
+)
 from novel_forge.modules.runtime_job import (
     AUTHORITY_CONVERGENCE_REQUIRED,
     RuntimeJobAuthority,
@@ -71,6 +75,31 @@ class SemanticReplacementApplication(Protocol):
         trace_id: str,
         correlation_id: str,
         reason: str,
+    ) -> dict[str, Any]: ...
+
+    def abort_opening_owned_execution_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        evaluation_execution_id: str,
+        generation: int,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        reason: str,
+    ) -> dict[str, Any]: ...
+
+    def release_replacement_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        recovery_intent_id: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        causation_id: str,
     ) -> dict[str, Any]: ...
 
 
@@ -586,6 +615,23 @@ class PostgresBookOpeningRecoveryApplication:
                 or _canonical_hash(snapshot) != str(assessment["snapshot_hash"])
             ):
                 self._stale("RecoveryAssessment no longer matches Authority state")
+            budget = dict(snapshot.get("budget") or {})
+            budget_outcome = str(budget.get("outcome") or "")
+            if budget_outcome == BudgetAssessmentOutcome.RECONCILIATION_REQUIRED:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_REQUIRED",
+                    "Provider budget evidence must reconcile before recovery",
+                )
+            if budget_outcome == BudgetAssessmentOutcome.EXHAUSTED:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_EXHAUSTED",
+                    "Book Opening recovery has no Provider budget headroom",
+                )
+            if budget_outcome not in {
+                BudgetAssessmentOutcome.ELIGIBLE,
+                BudgetAssessmentOutcome.NOT_REQUIRED,
+            }:
+                self._stale("RecoveryAssessment has no authoritative budget outcome")
             disposition = str(assessment["disposition"])
             if disposition in {"UNKNOWN_AMBIGUOUS", "RECONCILIATION_REQUIRED"}:
                 raise KernelError(
@@ -671,6 +717,38 @@ class PostgresBookOpeningRecoveryApplication:
             successor_execution_id = _stable_id(
                 "book-opening-execution", opening_run_id, successor_generation
             )
+            semantic_binding = {
+                "semantic_evaluation_operation_id": "",
+                "semantic_evaluation_execution_id": "",
+                "semantic_evaluation_generation": 0,
+                "semantic_execution_mode": "NONE",
+            }
+            if replacement is not None:
+                semantic_binding = {
+                    "semantic_evaluation_operation_id": str(
+                        replacement["operation_id"]
+                    ),
+                    "semantic_evaluation_execution_id": str(
+                        replacement["evaluation_execution_id"]
+                    ),
+                    "semantic_evaluation_generation": int(
+                        replacement["generation"]
+                    ),
+                    "semantic_execution_mode": "NEW_REPLACEMENT",
+                }
+            elif str(evaluation.get("operation_id") or ""):
+                semantic_binding = {
+                    "semantic_evaluation_operation_id": str(
+                        evaluation["operation_id"]
+                    ),
+                    "semantic_evaluation_execution_id": str(
+                        evaluation["evaluation_execution_id"]
+                    ),
+                    "semantic_evaluation_generation": int(
+                        evaluation["generation"]
+                    ),
+                    "semantic_execution_mode": "RESUME_CURRENT",
+                }
             runtime_spec = RuntimeJobSpec(
                 job_kind="BOOK_OPENING_EXECUTE",
                 runtime_group="book_opening",
@@ -690,6 +768,7 @@ class PostgresBookOpeningRecoveryApplication:
                     "replacement_evaluation_operation_id": str(
                         (replacement or {}).get("operation_id") or ""
                     ),
+                    **semantic_binding,
                 },
                 max_attempts=1,
                 lease_loss_policy=AUTHORITY_CONVERGENCE_REQUIRED,
@@ -857,6 +936,652 @@ class PostgresBookOpeningRecoveryApplication:
             evidence_id=search_id,
             evidence_version=int(evidence["version"]),
             evidence_hash=str(evidence["evidence_hash"]),
+        )
+
+    def assert_execution_completion_checkpoints_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        opening_run_id: str,
+        opening_execution_id: str,
+        execution_generation: int,
+        result: dict[str, Any],
+    ) -> None:
+        """Prove the complete frozen search graph before terminalization.
+
+        This assertion deliberately lives inside the Book Opening completion
+        transaction.  Calling the application coordinator's checkpoint
+        helpers in order is not an Authority invariant: an internal caller
+        could otherwise submit ``book.opening.complete`` directly and bypass
+        every durable semantic work item.
+        """
+
+        expected_result_fields = {
+            "book_design_version",
+            "book_plan_version",
+            "volume_plan_version",
+            "arc_plan_versions",
+            "input_snapshot_id",
+            "search_ids",
+        }
+        if (
+            set(result) != expected_result_fields
+            or any(
+                not isinstance(result.get(field), str)
+                or not str(result.get(field) or "")
+                for field in (
+                    "book_design_version",
+                    "book_plan_version",
+                    "volume_plan_version",
+                    "input_snapshot_id",
+                )
+            )
+            or not isinstance(result.get("arc_plan_versions"), list)
+            or not result["arc_plan_versions"]
+            or any(
+                not isinstance(item, str) or not item
+                for item in result["arc_plan_versions"]
+            )
+            or len(set(result["arc_plan_versions"]))
+            != len(result["arc_plan_versions"])
+            or not isinstance(result.get("search_ids"), list)
+            or any(
+                not isinstance(item, str) or not item
+                for item in result["search_ids"]
+            )
+        ):
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_RESULT_INVALID",
+                "completion result is not the exact typed Book Opening result",
+            )
+
+        run = self._opening(uow, opening_run_id, lock=False)
+        if (
+            str(run["lifecycle"]) != "RUNNING"
+            or str(run["current_execution_id"] or "") != opening_execution_id
+            or int(run["current_execution_generation"] or 0)
+            != execution_generation
+        ):
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_BINDING_INVALID",
+                "completion checkpoints belong to another Opening execution",
+            )
+
+        cursor = self._validated_checkpoint_cursor(uow, run)
+        entries = list(cursor["entries"])
+        by_work_key: dict[str, dict[str, Any]] = {}
+        for entry in entries:
+            work_key = str(entry["semantic_work_key"])
+            if work_key in by_work_key:
+                raise KernelError(
+                    "BOOK_OPENING_COMPLETION_CHECKPOINT_INVALID",
+                    "completion checkpoint ledger contains duplicate work identity",
+                )
+            by_work_key[work_key] = entry
+
+        graph = self._expected_search_graph(run)
+        expected_search_ids = list(graph.values())
+        if list(result["search_ids"]) != expected_search_ids:
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_RESULT_DRIFT",
+                "completion result does not name the frozen Narrative Search graph",
+            )
+
+        selected_versions: list[str] = []
+        for semantic_work_key, search_id in graph.items():
+            search_checkpoint = by_work_key.get(semantic_work_key)
+            if (
+                search_checkpoint is None
+                or str(search_checkpoint["owning_authority"]) != "STORY_PLANNING"
+                or str(search_checkpoint["evidence_type"]) != "NARRATIVE_SEARCH"
+                or str(search_checkpoint["evidence_id"]) != search_id
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_COMPLETION_CHECKPOINT_REQUIRED",
+                    f"completed search lacks its outer checkpoint: {semantic_work_key}",
+                )
+            search_evidence = self._narrative_search_evidence(
+                uow,
+                search_id=search_id,
+                project_id=str(run["project_id"]),
+                workspace_id=str(run["workspace_id"]),
+                book_id=str(run["book_id"]),
+            )
+            selected_versions.append(
+                str(search_evidence["selected_candidate_asset_version_id"])
+            )
+            uow.cursor.execute(
+                """
+                SELECT strategy_directives,candidate_target
+                FROM authority_story_narrative_search
+                WHERE search_id=%s AND project_id=%s AND workspace_id=%s
+                  AND book_id=%s
+                FOR SHARE
+                """,
+                [
+                    search_id,
+                    run["project_id"],
+                    run["workspace_id"],
+                    run["book_id"],
+                ],
+            )
+            search_contract = uow.cursor.fetchone()
+            if (
+                search_contract is None
+                or int(search_contract[1]) <= 0
+                or int(search_contract[1]) != len(list(search_contract[0] or []))
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_COMPLETION_CHECKPOINT_INVALID",
+                    "Narrative Search branch contract is not exact",
+                )
+            for ordinal in range(1, int(search_contract[1]) + 1):
+                branch_key = f"future-{ordinal}"
+                branch_work_key = (
+                    f"narrative-search-branch:{search_id}:{branch_key}"
+                )
+                branch_checkpoint = by_work_key.get(branch_work_key)
+                if (
+                    branch_checkpoint is None
+                    or str(branch_checkpoint["owning_authority"])
+                    != "STORY_PLANNING"
+                    or str(branch_checkpoint["evidence_type"])
+                    not in {
+                        "NARRATIVE_SEARCH_BRANCH",
+                        "NARRATIVE_SEARCH_BRANCH_RECONCILIATION",
+                    }
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_COMPLETION_CHECKPOINT_REQUIRED",
+                        f"completed search lacks branch checkpoint {branch_work_key}",
+                    )
+
+        expected_book_plan = selected_versions[0]
+        expected_volume_plan = selected_versions[1]
+        expected_arc_plans = selected_versions[2:]
+        if (
+            str(result["book_plan_version"]) != expected_book_plan
+            or str(result["volume_plan_version"]) != expected_volume_plan
+            or list(result["arc_plan_versions"]) != expected_arc_plans
+        ):
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_RESULT_DRIFT",
+                "completion plan versions differ from selected Planning evidence",
+            )
+
+        input_checkpoint = by_work_key.get(
+            "book-opening:input-snapshot-resolved"
+        )
+        if (
+            input_checkpoint is None
+            or str(input_checkpoint["owning_authority"]) != "BOOK_AUTHORITY"
+            or str(input_checkpoint["evidence_type"]) != "INPUT_SNAPSHOT"
+            or str(input_checkpoint["evidence_id"])
+            != str(result["input_snapshot_id"])
+            or str(cursor["checkpoint_id"])
+            != str(input_checkpoint["checkpoint_id"])
+        ):
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_CHECKPOINT_REQUIRED",
+                "resolved input snapshot must be the durable checkpoint head",
+            )
+        uow.cursor.execute(
+            """
+            SELECT project_id,workspace_id,book_id,book_design_version,
+                   book_plan_version,current_volume_plan_version,
+                   active_arc_plan_versions
+            FROM authority_book_production_input_snapshot
+            WHERE snapshot_id=%s
+            FOR SHARE
+            """,
+            [result["input_snapshot_id"]],
+        )
+        snapshot = uow.cursor.fetchone()
+        if (
+            snapshot is None
+            or tuple(str(item) for item in snapshot[:3])
+            != (
+                str(run["project_id"]),
+                str(run["workspace_id"]),
+                str(run["book_id"]),
+            )
+            or str(snapshot[3]) != str(result["book_design_version"])
+            or str(snapshot[4]) != expected_book_plan
+            or str(snapshot[5]) != expected_volume_plan
+            or list(snapshot[6] or []) != expected_arc_plans
+        ):
+            raise KernelError(
+                "BOOK_OPENING_COMPLETION_RESULT_DRIFT",
+                "completion result differs from the authoritative input snapshot",
+            )
+
+    def commit_execution_narrative_search_branch(
+        self,
+        opening_run_id: str,
+        *,
+        runtime_claim: RuntimeJobClaim,
+        search_id: str,
+        branch_key: str,
+        branch_committer: Callable[[AuthorityUnitOfWork], Any],
+    ) -> Any:
+        """Atomically register one Planning branch and advance Opening progress.
+
+        Provider execution and Planning generation happen before this short
+        transaction.  The transaction only locks the existing execution
+        owners, validates the exact live fence, commits Planning membership,
+        appends immutable checkpoint evidence, and advances the monotonic
+        BookOpening checkpoint head.
+        """
+
+        if not search_id or not branch_key or not branch_key.startswith("future-"):
+            raise ValueError("Narrative Search branch identity is invalid")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            # Canonical order: Opening advisory/row -> OpeningExecution ->
+            # RuntimeJob -> RuntimeAttempt -> RuntimeLease -> Planning rows.
+            self._lock_opening(uow, opening_run_id)
+            run = self._opening(uow, opening_run_id, lock=True)
+            execution = self._current_execution(uow, run, lock=True)
+            self._require_live_checkpoint_claim(
+                uow,
+                run=run,
+                execution=execution,
+                runtime_claim=runtime_claim,
+            )
+            expected_search_ids = set(self._expected_search_graph(run).values())
+            if search_id not in expected_search_ids:
+                raise KernelError(
+                    "BOOK_OPENING_BRANCH_SEARCH_DRIFT",
+                    "Planning branch belongs to another frozen Book Opening graph",
+                )
+            evidence = branch_committer(uow)
+            membership_id = str(getattr(evidence, "membership_id", ""))
+            evidence_type = str(getattr(evidence, "evidence_type", ""))
+            evidence_id = str(getattr(evidence, "evidence_id", ""))
+            if (
+                str(getattr(evidence, "search_id", "")) != search_id
+                or str(getattr(evidence, "branch_key", "")) != branch_key
+                or int(getattr(evidence, "evidence_version", 0)) != 1
+                or not str(getattr(evidence, "evidence_hash", "")).startswith(
+                    "sha256:"
+                )
+                or evidence_type
+                not in {
+                    "NARRATIVE_SEARCH_BRANCH",
+                    "NARRATIVE_SEARCH_BRANCH_RECONCILIATION",
+                }
+                or not evidence_id
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BRANCH_EVIDENCE_INVALID",
+                    "Planning branch committer returned different evidence",
+                )
+            semantic_work_key = f"narrative-search-branch:{search_id}:{branch_key}"
+            if evidence_type == "NARRATIVE_SEARCH_BRANCH_RECONCILIATION":
+                if (
+                    str(getattr(evidence, "opening_run_id", ""))
+                    != opening_run_id
+                    or str(getattr(evidence, "opening_execution_id", ""))
+                    != str(execution["opening_execution_id"])
+                    or int(getattr(evidence, "execution_generation", 0))
+                    != int(execution["generation"])
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_BRANCH_EVIDENCE_INVALID",
+                        "Planning reconciliation evidence belongs to another execution",
+                    )
+                replay = self._branch_reconciliation_receipt(
+                    uow,
+                    opening_run_id=opening_run_id,
+                    membership_id=membership_id,
+                )
+                if replay is not None:
+                    checkpoint = self._append_checkpoint_in_uow(
+                        uow,
+                        run=run,
+                        execution=execution,
+                        semantic_work_key=semantic_work_key,
+                        owning_authority="STORY_PLANNING",
+                        evidence_type=evidence_type,
+                        evidence_id=evidence_id,
+                        evidence_version=int(evidence.evidence_version),
+                        evidence_hash=str(evidence.evidence_hash),
+                    )
+                    self._assert_branch_reconciliation_receipt_replay(
+                        replay,
+                        evidence=evidence,
+                        checkpoint=checkpoint,
+                    )
+                    uow.commit()
+                    self._checkpoint(
+                        "after_branch_checkpoint_commit_before_response"
+                    )
+                    return evidence
+                assessment = self._assess_branch_reconciliation_in_uow(
+                    uow,
+                    run=run,
+                    execution=execution,
+                    runtime_claim=runtime_claim,
+                    evidence=evidence,
+                    semantic_work_key=semantic_work_key,
+                )
+                self._checkpoint("after_branch_reconciliation_assessment")
+            else:
+                assessment = None
+            checkpoint = self._append_checkpoint_in_uow(
+                uow,
+                run=run,
+                execution=execution,
+                semantic_work_key=semantic_work_key,
+                owning_authority="STORY_PLANNING",
+                evidence_type=evidence_type,
+                evidence_id=evidence_id,
+                evidence_version=int(evidence.evidence_version),
+                evidence_hash=str(evidence.evidence_hash),
+            )
+            if assessment is not None:
+                self._record_branch_reconciliation_receipt_in_uow(
+                    uow,
+                    run=run,
+                    assessment=assessment,
+                    evidence=evidence,
+                    checkpoint=checkpoint,
+                )
+                self._checkpoint("after_branch_reconciliation_receipt")
+            self._checkpoint("after_branch_checkpoint_before_commit")
+            uow.commit()
+            self._checkpoint("after_branch_checkpoint_commit_before_response")
+        return evidence
+
+    def _assess_branch_reconciliation_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        run: dict[str, Any],
+        execution: dict[str, Any],
+        runtime_claim: RuntimeJobClaim,
+        evidence: Any,
+        semantic_work_key: str,
+    ) -> dict[str, Any]:
+        cursor = self._validated_checkpoint_cursor(uow, run)
+        stable_key = _stable_id(
+            "book-opening-branch-reconciliation-intent",
+            run["opening_run_id"],
+            evidence.membership_id,
+            evidence.reconciliation_evidence_id,
+            evidence.evidence_hash,
+        )
+        snapshot = {
+            "opening_run_id": str(run["opening_run_id"]),
+            "opening_execution_id": str(execution["opening_execution_id"]),
+            "execution_generation": int(execution["generation"]),
+            "runtime_job_id": runtime_claim.runtime_job_id,
+            "runtime_attempt_id": runtime_claim.attempt_id,
+            "runtime_lease_id": runtime_claim.lease_id,
+            "runtime_worker_id": runtime_claim.worker_id,
+            "runtime_fencing_token": runtime_claim.fencing_token,
+            "membership_id": str(evidence.membership_id),
+            "reconciliation_evidence_id": str(
+                evidence.reconciliation_evidence_id
+            ),
+            "reconciliation_evidence_hash": str(evidence.evidence_hash),
+            "semantic_work_key": semantic_work_key,
+            "predecessor_checkpoint_id": str(cursor["checkpoint_id"]),
+            "predecessor_checkpoint_sequence": int(cursor["sequence"]),
+            "predecessor_checkpoint_hash": str(cursor["checkpoint_hash"]),
+            "frozen_request_digest": str(run["frozen_request_digest"]),
+            "assessment_contract_version": (
+                "book-opening-branch-reconciliation-assessment.v1"
+            ),
+        }
+        assessment_hash = _canonical_hash(snapshot)
+        assessment_id = _stable_id(
+            "book-opening-branch-reconciliation-assessment", stable_key
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_opening_branch_reconciliation_assessment(
+                branch_reconciliation_assessment_id,opening_run_id,
+                opening_execution_id,execution_generation,runtime_job_id,
+                runtime_attempt_id,runtime_lease_id,runtime_worker_id,
+                runtime_fencing_token,membership_id,reconciliation_evidence_id,
+                semantic_work_key,predecessor_checkpoint_id,
+                predecessor_checkpoint_sequence,predecessor_checkpoint_hash,
+                assessment_contract_version,assessment_snapshot,assessment_hash,
+                reconciliation_intent_hash,outcome,stable_idempotency_key
+            ) VALUES (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NULLIF(%s,''),%s,%s,%s,
+                %s,%s,%s,'RECONCILABLE',%s
+            ) ON CONFLICT DO NOTHING
+            """,
+            [
+                assessment_id,
+                run["opening_run_id"],
+                execution["opening_execution_id"],
+                execution["generation"],
+                runtime_claim.runtime_job_id,
+                runtime_claim.attempt_id,
+                runtime_claim.lease_id,
+                runtime_claim.worker_id,
+                runtime_claim.fencing_token,
+                evidence.membership_id,
+                evidence.reconciliation_evidence_id,
+                semantic_work_key,
+                cursor["checkpoint_id"],
+                cursor["sequence"],
+                cursor["checkpoint_hash"],
+                "book-opening-branch-reconciliation-assessment.v1",
+                Jsonb(snapshot),
+                assessment_hash,
+                _canonical_hash(
+                    {
+                        "stable_idempotency_key": stable_key,
+                        "assessment_hash": assessment_hash,
+                    }
+                ),
+                stable_key,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            SELECT branch_reconciliation_assessment_id,opening_run_id,
+                   opening_execution_id,execution_generation,runtime_job_id,
+                   runtime_attempt_id,runtime_lease_id,runtime_worker_id,
+                   runtime_fencing_token,membership_id,reconciliation_evidence_id,
+                   semantic_work_key,COALESCE(predecessor_checkpoint_id,''),
+                   predecessor_checkpoint_sequence,predecessor_checkpoint_hash,
+                   assessment_contract_version,assessment_snapshot,assessment_hash,
+                   reconciliation_intent_hash,outcome,stable_idempotency_key
+            FROM authority_book_opening_branch_reconciliation_assessment
+            WHERE opening_run_id=%s AND membership_id=%s
+            FOR SHARE
+            """,
+            [run["opening_run_id"], evidence.membership_id],
+        )
+        row = uow.cursor.fetchone()
+        expected = (
+            assessment_id,
+            str(run["opening_run_id"]),
+            str(execution["opening_execution_id"]),
+            int(execution["generation"]),
+            runtime_claim.runtime_job_id,
+            runtime_claim.attempt_id,
+            runtime_claim.lease_id,
+            runtime_claim.worker_id,
+            runtime_claim.fencing_token,
+            str(evidence.membership_id),
+            str(evidence.reconciliation_evidence_id),
+            semantic_work_key,
+            str(cursor["checkpoint_id"]),
+            int(cursor["sequence"]),
+            str(cursor["checkpoint_hash"]),
+            "book-opening-branch-reconciliation-assessment.v1",
+            snapshot,
+            assessment_hash,
+            _canonical_hash(
+                {
+                    "stable_idempotency_key": stable_key,
+                    "assessment_hash": assessment_hash,
+                }
+            ),
+            "RECONCILABLE",
+            stable_key,
+        )
+        normalized = (
+            None
+            if row is None
+            else (
+                *(str(item) for item in row[:3]),
+                int(row[3]),
+                *(str(item) for item in row[4:8]),
+                int(row[8]),
+                *(str(item) for item in row[9:13]),
+                int(row[13]),
+                *(str(item) for item in row[14:16]),
+                dict(row[16]),
+                *(str(item) for item in row[17:]),
+            )
+        )
+        if normalized != expected:
+            raise KernelError(
+                "BOOK_OPENING_BRANCH_RECONCILIATION_CONFLICT",
+                "legacy branch assessment conflicts with durable recovery evidence",
+            )
+        return {
+            "assessment_id": assessment_id,
+            "assessment_hash": assessment_hash,
+            "intent_hash": expected[18],
+            "stable_idempotency_key": stable_key,
+        }
+
+    @staticmethod
+    def _branch_reconciliation_receipt(
+        uow: AuthorityUnitOfWork,
+        *,
+        opening_run_id: str,
+        membership_id: str,
+    ) -> tuple[Any, ...] | None:
+        uow.cursor.execute(
+            """
+            SELECT receipt.branch_reconciliation_receipt_id,
+                   receipt.branch_reconciliation_assessment_id,
+                   receipt.reconciliation_evidence_id,receipt.checkpoint_id,
+                   receipt.checkpoint_sequence,receipt.checkpoint_hash,
+                   receipt.result,receipt.result_hash,
+                   receipt.stable_idempotency_key,assessment.assessment_hash,
+                   assessment.stable_idempotency_key,
+                   receipt.event_id,receipt.audit_id,receipt.outbox_id
+            FROM authority_book_opening_branch_reconciliation_receipt AS receipt
+            JOIN authority_book_opening_branch_reconciliation_assessment
+                 AS assessment
+              ON assessment.branch_reconciliation_assessment_id=
+                 receipt.branch_reconciliation_assessment_id
+            WHERE receipt.opening_run_id=%s AND receipt.membership_id=%s
+            FOR SHARE OF receipt,assessment
+            """,
+            [opening_run_id, membership_id],
+        )
+        return uow.cursor.fetchone()
+
+    @staticmethod
+    def _assert_branch_reconciliation_receipt_replay(
+        receipt: tuple[Any, ...],
+        *,
+        evidence: Any,
+        checkpoint: dict[str, Any],
+    ) -> None:
+        expected_receipt_id = _stable_id(
+            "book-opening-branch-reconciliation-receipt",
+            str(receipt[1]),
+        )
+        expected_result = {
+            "branch_reconciliation_receipt_id": expected_receipt_id,
+            "branch_reconciliation_assessment_id": str(receipt[1]),
+            "reconciliation_evidence_id": evidence.reconciliation_evidence_id,
+            "membership_id": evidence.membership_id,
+            "checkpoint_id": checkpoint["checkpoint_id"],
+            "checkpoint_sequence": checkpoint["sequence"],
+            "checkpoint_hash": checkpoint["checkpoint_hash"],
+        }
+        if (
+            str(receipt[0]) != expected_receipt_id
+            or str(receipt[2]) != str(evidence.reconciliation_evidence_id)
+            or str(receipt[3]) != str(checkpoint["checkpoint_id"])
+            or int(receipt[4]) != int(checkpoint["sequence"])
+            or str(receipt[5]) != str(checkpoint["checkpoint_hash"])
+            or dict(receipt[6]) != expected_result
+            or str(receipt[7]) != _canonical_hash(expected_result)
+            or str(receipt[8]) != str(receipt[10])
+            or str(receipt[11]) != _stable_id("event", expected_receipt_id)
+            or str(receipt[12]) != _stable_id("audit", expected_receipt_id)
+            or str(receipt[13]) != _stable_id("outbox", expected_receipt_id)
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BRANCH_RECONCILIATION_CONFLICT",
+                "durable reconciliation receipt differs from checkpoint replay",
+            )
+
+    def _record_branch_reconciliation_receipt_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        run: dict[str, Any],
+        assessment: dict[str, Any],
+        evidence: Any,
+        checkpoint: dict[str, Any],
+    ) -> None:
+        receipt_id = _stable_id(
+            "book-opening-branch-reconciliation-receipt",
+            assessment["assessment_id"],
+        )
+        event_id = _stable_id("event", receipt_id)
+        audit_id = _stable_id("audit", receipt_id)
+        outbox_id = _stable_id("outbox", receipt_id)
+        result = {
+            "branch_reconciliation_receipt_id": receipt_id,
+            "branch_reconciliation_assessment_id": assessment["assessment_id"],
+            "reconciliation_evidence_id": evidence.reconciliation_evidence_id,
+            "membership_id": evidence.membership_id,
+            "checkpoint_id": checkpoint["checkpoint_id"],
+            "checkpoint_sequence": checkpoint["sequence"],
+            "checkpoint_hash": checkpoint["checkpoint_hash"],
+        }
+        result_hash = _canonical_hash(result)
+        self._record_event(
+            uow,
+            run,
+            "book.opening.branch_reconciled",
+            result,
+            event_id=event_id,
+            audit_id=audit_id,
+            outbox_id=outbox_id,
+        )
+        self._checkpoint("after_branch_reconciliation_event")
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_opening_branch_reconciliation_receipt(
+                branch_reconciliation_receipt_id,
+                branch_reconciliation_assessment_id,opening_run_id,membership_id,
+                reconciliation_evidence_id,checkpoint_id,checkpoint_sequence,
+                checkpoint_hash,result,result_hash,stable_idempotency_key,
+                event_id,audit_id,outbox_id
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            [
+                receipt_id,
+                assessment["assessment_id"],
+                run["opening_run_id"],
+                evidence.membership_id,
+                evidence.reconciliation_evidence_id,
+                checkpoint["checkpoint_id"],
+                checkpoint["sequence"],
+                checkpoint["checkpoint_hash"],
+                Jsonb(result),
+                result_hash,
+                assessment["stable_idempotency_key"],
+                event_id,
+                audit_id,
+                outbox_id,
+            ],
         )
 
     def require_execution_progress(
@@ -1383,9 +2108,27 @@ class PostgresBookOpeningRecoveryApplication:
                 evidence_version=int(pending_checkpoint_evidence["evidence_version"]),
                 evidence_hash=str(pending_checkpoint_evidence["evidence_hash"]),
             )
+        # Canonical cross-Authority order is Opening/Execution/Runtime ->
+        # Budget -> semantic Operation/ExternalEffect.  Reservation takes the
+        # Budget prefix before locking its Operation/Effect; keeping recovery
+        # in the same order prevents an AB/BA deadlock during assessment.
+        # Lock and validate Budget Authority before semantic/effect rows to
+        # preserve the canonical cross-Authority lock order.  A second
+        # assessment below asks for headroom only when the authoritative
+        # ExternalEffect evidence proves another Provider call is necessary.
+        replay_budget = self._budget_authority_snapshot(
+            uow, run, provider_call_required=False
+        )
         evaluation = self._semantic_evaluation(uow, run, checkpoint=checkpoint)
         external = self._external_effect_evidence(
             uow, str(evaluation.get("operation_id") or "")
+        )
+        budget = (
+            replay_budget
+            if str(external.get("classification") or "") == "PROVEN_SUCCESS"
+            else self._budget_authority_snapshot(
+                uow, run, provider_call_required=True
+            )
         )
         snapshot = {
             "opening": {
@@ -1396,6 +2139,13 @@ class PostgresBookOpeningRecoveryApplication:
                 "execution_contract_version": run["execution_contract_version"],
                 "current_execution_id": run["current_execution_id"],
                 "current_execution_generation": run["current_execution_generation"],
+                "budget_scope_id": str(run.get("budget_scope_id") or ""),
+                "budget_scope_revision": int(
+                    run.get("budget_scope_revision") or 0
+                ),
+                "budget_contract_state": str(
+                    run.get("budget_contract_state") or ""
+                ),
             },
             "execution": {
                 "opening_execution_id": execution["opening_execution_id"],
@@ -1409,6 +2159,7 @@ class PostgresBookOpeningRecoveryApplication:
             "checkpoint": checkpoint,
             "semantic_evaluation": evaluation,
             "external_effect": external,
+            "budget": budget,
             "policy_config_digest": self._policy_digest(),
             # The execution contract is release-stable so a rolling deployment
             # cannot strand an unclaimed generation.  RecoveryAssessment is
@@ -1419,6 +2170,53 @@ class PostgresBookOpeningRecoveryApplication:
         if pending_checkpoint_evidence is not None:
             snapshot["checkpoint_reconciliation"] = dict(pending_checkpoint_evidence)
         return snapshot
+
+    def _budget_authority_snapshot(
+        self,
+        uow: AuthorityUnitOfWork,
+        run: dict[str, Any],
+        *,
+        provider_call_required: bool,
+    ) -> dict[str, Any]:
+        budget_scope_id = str(run.get("budget_scope_id") or "")
+        budget_scope_revision = int(run.get("budget_scope_revision") or 0)
+        contract_state = str(run.get("budget_contract_state") or "")
+        if (
+            contract_state != "BOUND"
+            or not budget_scope_id
+            or budget_scope_revision <= 0
+        ):
+            body = {
+                "contract_version": "provider-budget-authority-snapshot.v1",
+                "budget_scope_id": budget_scope_id,
+                "budget_scope_revision": budget_scope_revision,
+                "budget_policy_hash": "",
+                "budget_contract_state": (
+                    contract_state
+                    or "LEGACY_BUDGET_RECONCILIATION_REQUIRED"
+                ),
+                "outcome": (
+                    BudgetAssessmentOutcome.RECONCILIATION_REQUIRED.value
+                ),
+                "reasons": ["book_opening_budget_scope_unbound"],
+            }
+            return {**body, "budget_snapshot_digest": _canonical_hash(body)}
+        assessment = assess_budget_scope_in_uow(
+            uow,
+            budget_scope_id=budget_scope_id,
+            project_id=str(run["project_id"]),
+            requested_amount="0",
+            requested_tokens=0,
+            requested_calls=0,
+            execution_mode=(
+                "PROVIDER_ALLOWED"
+                if provider_call_required
+                else "DURABLE_RESULT_REPLAY"
+            ),
+            expected_revision=budget_scope_revision,
+            use_policy_next_provider_allowance=provider_call_required,
+        )
+        return dict(assessment)
 
     def _runtime_binding(
         self,
@@ -1821,7 +2619,8 @@ class PostgresBookOpeningRecoveryApplication:
                    frozen_request_digest,version,execution_contract_version,
                    current_execution_id,current_execution_generation,
                    current_checkpoint_id,current_checkpoint_sequence,
-                   current_checkpoint_hash,recovery_state
+                   current_checkpoint_hash,recovery_state,budget_scope_id,
+                   budget_scope_revision,budget_contract_state
             FROM authority_book_opening_run
             WHERE opening_run_id=%s{suffix}
             """,
@@ -1847,6 +2646,9 @@ class PostgresBookOpeningRecoveryApplication:
             "current_checkpoint_sequence",
             "current_checkpoint_hash",
             "recovery_state",
+            "budget_scope_id",
+            "budget_scope_revision",
+            "budget_contract_state",
         )
         return dict(zip(keys, row, strict=True))
 
@@ -2069,6 +2871,10 @@ class PostgresBookOpeningRecoveryApplication:
                     "execution_generation": 1,
                     "recovery_intent_id": "",
                     "replacement_evaluation_operation_id": "",
+                    "semantic_evaluation_operation_id": "",
+                    "semantic_evaluation_execution_id": "",
+                    "semantic_evaluation_generation": 0,
+                    "semantic_execution_mode": "NONE",
                     "legacy_runtime_history_digest": history_digest,
                     "legacy_loss_marker": True,
                 },
@@ -2201,6 +3007,14 @@ class PostgresBookOpeningRecoveryApplication:
         checkpoint = dict(snapshot.get("checkpoint") or {})
         evaluation = dict(snapshot.get("semantic_evaluation") or {})
         external = dict(snapshot.get("external_effect") or {})
+        budget = dict(snapshot.get("budget") or {})
+        budget_v2 = bool(
+            str(budget.get("budget_scope_id") or "")
+            and int(budget.get("budget_scope_revision") or 0) > 0
+            and str(budget.get("budget_policy_hash") or "")
+            and str(budget.get("budget_snapshot_digest") or "")
+            and str(budget.get("outcome") or "")
+        )
         uow.cursor.execute(
             """
             INSERT INTO authority_book_opening_recovery_assessment(
@@ -2211,10 +3025,13 @@ class PostgresBookOpeningRecoveryApplication:
                 checkpoint_sequence,checkpoint_hash,evaluation_head_digest,
                 external_effect_digest,policy_config_digest,
                 authority_version_digest,snapshot,snapshot_hash,disposition,
-                idempotency_key
+                assessment_contract_version,budget_scope_id,
+                budget_scope_revision,budget_policy_hash,
+                budget_snapshot_digest,budget_outcome,idempotency_key
             ) VALUES (%s,%s,%s,%s,NULLIF(%s,''),%s,NULLIF(%s,''),NULLIF(%s,''),
                       NULLIF(%s,''),NULLIF(%s,''),%s,NULLIF(%s,''),%s,%s,
-                      %s,%s,%s,%s,%s,%s,%s,%s)
+                      %s,%s,%s,%s,%s,%s,%s,%s,NULLIF(%s,''),%s,
+                      NULLIF(%s,''),NULLIF(%s,''),NULLIF(%s,''),%s)
             """,
             [
                 assessment_id,
@@ -2262,6 +3079,24 @@ class PostgresBookOpeningRecoveryApplication:
                 Jsonb(snapshot),
                 _canonical_hash(snapshot),
                 disposition,
+                (
+                    "book-opening-recovery-assessment.v2"
+                    if budget_v2
+                    else "book-opening-recovery-assessment.v1"
+                ),
+                str(budget.get("budget_scope_id") or "") if budget_v2 else "",
+                (
+                    int(budget["budget_scope_revision"])
+                    if budget_v2
+                    else None
+                ),
+                str(budget.get("budget_policy_hash") or "") if budget_v2 else "",
+                (
+                    str(budget.get("budget_snapshot_digest") or "")
+                    if budget_v2
+                    else ""
+                ),
+                str(budget.get("outcome") or "") if budget_v2 else "",
                 idempotency_key,
             ],
         )
@@ -2480,12 +3315,16 @@ class PostgresBookOpeningRecoveryApplication:
         run: dict[str, Any],
         event_type: str,
         payload: dict[str, Any],
+        *,
+        event_id: str | None = None,
+        audit_id: str | None = None,
+        outbox_id: str | None = None,
     ) -> None:
         uow.repositories.operation_graph.record_event(
             {
-                "event_id": str(uuid4()),
-                "audit_id": str(uuid4()),
-                "outbox_id": str(uuid4()),
+                "event_id": event_id or str(uuid4()),
+                "audit_id": audit_id or str(uuid4()),
+                "outbox_id": outbox_id or str(uuid4()),
                 "aggregate_type": "book_opening",
                 "aggregate_id": str(run["opening_run_id"]),
                 "operation_id": str(run["root_operation_id"]),
@@ -2705,6 +3544,279 @@ class PostgresBookOpeningRecoveryApplication:
                 raise KernelError(
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
                     "checkpoint differs from Planning-owned search evidence",
+                )
+            return
+        if (owning_authority, evidence_type) == (
+            "STORY_PLANNING",
+            "NARRATIVE_SEARCH_BRANCH",
+        ):
+            uow.cursor.execute(
+                """
+                SELECT membership.membership_id,membership.search_id,
+                       membership.branch_key,
+                       membership.candidate_asset_version_id,
+                       membership.generation_operation_id,
+                       generation.input_snapshot_hash,
+                       candidate.content_hash,membership.projection_hash,
+                       membership.strategy_fingerprint,
+                       membership.qualification_hash,
+                       membership.branch_evidence_contract_version,
+                       membership.branch_evidence_hash
+                FROM authority_story_narrative_search_candidate AS membership
+                JOIN authority_story_planning_generation AS generation
+                  ON generation.operation_id=
+                     membership.generation_operation_id
+                 AND generation.narrative_search_id=membership.search_id
+                 AND generation.narrative_search_branch_key=
+                     membership.branch_key
+                 AND generation.candidate_asset_version_id=
+                     membership.candidate_asset_version_id
+                JOIN authority_story_planning_candidate AS candidate
+                  ON candidate.generation_id=generation.generation_id
+                 AND candidate.candidate_asset_version_id=
+                     membership.candidate_asset_version_id
+                JOIN authority_story_narrative_search AS search
+                  ON search.search_id=membership.search_id
+                WHERE membership.membership_id=%s
+                  AND search.project_id=%s AND search.workspace_id=%s
+                  AND search.book_id=%s
+                FOR SHARE OF membership,generation,candidate,search
+                """,
+                [
+                    evidence_id,
+                    run["project_id"],
+                    run["workspace_id"],
+                    run["book_id"],
+                ],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "Planning branch checkpoint has no exact durable membership",
+                )
+            payload = {
+                "membership_id": str(row[0]),
+                "search_id": str(row[1]),
+                "branch_key": str(row[2]),
+                "candidate_asset_version_id": str(row[3]),
+                "generation_operation_id": str(row[4]),
+                "generation_input_snapshot_hash": str(row[5]),
+                "candidate_content_hash": str(row[6]),
+                "projection_hash": str(row[7]),
+                "strategy_fingerprint": str(row[8]),
+                "qualification_hash": str(row[9]),
+                "evidence_version": 1,
+            }
+            expected_key = (
+                f"narrative-search-branch:{row[1]}:{row[2]}"
+            )
+            if (
+                evidence_version != 1
+                or str(row[10])
+                != "narrative-search-branch-evidence.v1"
+                or str(row[11]) != evidence_hash
+                or _canonical_hash(payload) != evidence_hash
+                or semantic_work_key != expected_key
+                or str(row[1])
+                not in set(self._expected_search_graph(run).values())
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "checkpoint differs from Planning-owned branch evidence",
+                )
+            return
+        if (owning_authority, evidence_type) == (
+            "STORY_PLANNING",
+            "NARRATIVE_SEARCH_BRANCH_RECONCILIATION",
+        ):
+            uow.cursor.execute(
+                """
+                SELECT reconciliation.reconciliation_evidence_id,
+                       membership.membership_id,membership.search_id,
+                       membership.branch_key,
+                       membership.candidate_asset_version_id,
+                       membership.generation_operation_id,
+                       reconciliation.source_branch_evidence_contract_version,
+                       reconciliation.opening_run_id,
+                       reconciliation.opening_execution_id,
+                       reconciliation.execution_generation,
+                       generation.input_snapshot_hash,candidate.content_hash,
+                       membership.projection_hash,membership.strategy_fingerprint,
+                       membership.qualification_hash,
+                       reconciliation.qualification_receipt_set_hash,
+                       reconciliation.reconciled_branch_evidence_hash,
+                       reconciliation.reconciliation_contract_version,
+                       reconciliation.evidence_version,
+                       reconciliation.evidence_payload,
+                       reconciliation.evidence_hash,membership.projection,
+                       membership.branch_evidence_contract_version,
+                       membership.branch_evidence_hash
+                FROM authority_story_narrative_branch_reconciliation_evidence
+                     AS reconciliation
+                JOIN authority_story_narrative_search_candidate AS membership
+                  ON membership.membership_id=reconciliation.membership_id
+                 AND membership.search_id=reconciliation.search_id
+                 AND membership.branch_key=reconciliation.branch_key
+                 AND membership.candidate_asset_version_id=
+                     reconciliation.candidate_asset_version_id
+                 AND membership.generation_operation_id=
+                     reconciliation.generation_operation_id
+                 AND membership.branch_evidence_contract_version=
+                     reconciliation.source_branch_evidence_contract_version
+                JOIN authority_story_planning_generation AS generation
+                  ON generation.operation_id=membership.generation_operation_id
+                 AND generation.narrative_search_id=membership.search_id
+                 AND generation.narrative_search_branch_key=membership.branch_key
+                 AND generation.candidate_asset_version_id=
+                     membership.candidate_asset_version_id
+                JOIN authority_story_planning_candidate AS candidate
+                  ON candidate.generation_id=generation.generation_id
+                 AND candidate.candidate_asset_version_id=
+                     membership.candidate_asset_version_id
+                JOIN authority_story_narrative_search AS search
+                  ON search.search_id=membership.search_id
+                WHERE reconciliation.reconciliation_evidence_id=%s
+                  AND reconciliation.opening_run_id=%s
+                  AND search.project_id=%s AND search.workspace_id=%s
+                  AND search.book_id=%s
+                FOR SHARE OF reconciliation,membership,generation,candidate,search
+                """,
+                [
+                    evidence_id,
+                    run["opening_run_id"],
+                    run["project_id"],
+                    run["workspace_id"],
+                    run["book_id"],
+                ],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "Planning reconciliation checkpoint has no exact sidecar evidence",
+                )
+            stored_payload = dict(row[19])
+            qualification_receipts = stored_payload.get("qualification_receipts")
+            if not isinstance(qualification_receipts, list) or not qualification_receipts:
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "Planning reconciliation omitted semantic receipt lineage",
+                )
+            qualification_ids = [
+                str(item.get("qualification_id") or "")
+                for item in qualification_receipts
+                if isinstance(item, dict)
+            ]
+            if (
+                len(qualification_ids) != len(qualification_receipts)
+                or any(not item for item in qualification_ids)
+                or len(set(qualification_ids)) != len(qualification_ids)
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "Planning reconciliation semantic receipt identity is invalid",
+                )
+            uow.cursor.execute(
+                """
+                SELECT qualification_id,design_layer,profile_id,profile_version,
+                       profile_hash,evaluation_hash,qualification_hash,
+                       evaluator_execution_class,evaluation_operation_id,
+                       evaluation_attempt_id,evaluation_asset_version_id,
+                       evaluation_evidence_hash,
+                       provider_model_call_asset_version_id,
+                       provider_model_call_content_hash,provider_evidence_hash,
+                       provider_result_hash,provider_route_snapshot_id
+                FROM authority_narrative_design_qualification
+                WHERE qualification_id=ANY(%s)
+                  AND project_id=%s AND book_id=%s AND asset_version_id=%s
+                  AND generation_operation_id=%s
+                  AND qualification_status='PASS'
+                  AND trust_boundary='INDEPENDENT'
+                ORDER BY design_layer
+                FOR SHARE
+                """,
+                [
+                    qualification_ids,
+                    run["project_id"],
+                    run["book_id"],
+                    row[4],
+                    row[5],
+                ],
+            )
+            receipt_rows = uow.cursor.fetchall()
+            current_receipts = [
+                {
+                    "qualification_id": str(item[0]),
+                    "design_layer": str(item[1]),
+                    "profile_id": str(item[2]),
+                    "profile_version": str(item[3]),
+                    "profile_hash": str(item[4]),
+                    "evaluation_hash": str(item[5]),
+                    "qualification_hash": str(item[6]),
+                    "evaluator_execution_class": str(item[7]),
+                    "evaluation_operation_id": str(item[8]),
+                    "evaluation_attempt_id": str(item[9]),
+                    "evaluation_asset_version_id": str(item[10]),
+                    "evaluation_evidence_hash": str(item[11]),
+                    "provider_model_call_asset_version_id": str(item[12] or ""),
+                    "provider_model_call_content_hash": str(item[13] or ""),
+                    "provider_evidence_hash": str(item[14] or ""),
+                    "provider_result_hash": str(item[15] or ""),
+                    "provider_route_snapshot_id": str(item[16] or ""),
+                }
+                for item in receipt_rows
+            ]
+            branch_payload = {
+                "membership_id": str(row[1]),
+                "search_id": str(row[2]),
+                "branch_key": str(row[3]),
+                "candidate_asset_version_id": str(row[4]),
+                "generation_operation_id": str(row[5]),
+                "generation_input_snapshot_hash": str(row[10]),
+                "candidate_content_hash": str(row[11]),
+                "projection_hash": str(row[12]),
+                "strategy_fingerprint": str(row[13]),
+                "qualification_hash": str(row[14]),
+                "evidence_version": 1,
+            }
+            expected_payload = {
+                **branch_payload,
+                "source_branch_evidence_contract_version": "legacy-unbound",
+                "opening_run_id": str(row[7]),
+                "opening_execution_id": str(row[8]),
+                "execution_generation": int(row[9]),
+                "qualification_receipt_set_hash": _canonical_hash(
+                    current_receipts
+                ),
+                "qualification_receipts": current_receipts,
+                "reconciled_branch_evidence_hash": _canonical_hash(branch_payload),
+                "reconciliation_contract_version": (
+                    "narrative-search-branch-reconciliation.v1"
+                ),
+            }
+            expected_key = f"narrative-search-branch:{row[2]}:{row[3]}"
+            if (
+                evidence_version != 1
+                or int(row[18]) != 1
+                or str(row[6]) != "legacy-unbound"
+                or str(row[17])
+                != "narrative-search-branch-reconciliation.v1"
+                or str(row[22]) != "legacy-unbound"
+                or str(row[23]) != ""
+                or _canonical_hash(dict(row[21])) != str(row[12])
+                or _canonical_hash(current_receipts) != str(row[15])
+                or _canonical_hash(branch_payload) != str(row[16])
+                or expected_payload != stored_payload
+                or _canonical_hash(expected_payload) != str(row[20])
+                or str(row[20]) != evidence_hash
+                or semantic_work_key != expected_key
+                or str(row[2])
+                not in set(self._expected_search_graph(run).values())
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "checkpoint differs from revalidated Planning sidecar evidence",
                 )
             return
         selectors = {

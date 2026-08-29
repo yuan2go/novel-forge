@@ -17,7 +17,10 @@ from novel_forge.modules.book_authority.production import (
 from novel_forge.modules.book_authority.input_resolver import (
     ResolveBookProductionInputCommand,
 )
-from novel_forge.modules.book_authority.opening import OpenBookProductionRequest
+from novel_forge.modules.book_authority.opening import (
+    BookOpeningBudgetReconciliationRequest as LegacyBudgetReconciliationRequest,
+    OpenBookProductionRequest,
+)
 from novel_forge.modules.book_design_authority import (
     FormationLayerInput,
     StartStoryFormationCommand,
@@ -39,6 +42,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     BookOpeningStartRequest = ctx.models["BookOpeningStartRequest"]
     BookOpeningControlRequest = ctx.models["BookOpeningControlRequest"]
     BookOpeningAssessmentRequest = ctx.models["BookOpeningAssessmentRequest"]
+    BookOpeningBudgetReconciliationRequest = ctx.models[
+        "BookOpeningBudgetReconciliationRequest"
+    ]
     BookOpeningConvergenceRequest = ctx.models["BookOpeningConvergenceRequest"]
     BookOpeningRecoveryRequest = ctx.models["BookOpeningRecoveryRequest"]
     BookOpeningCheckpointAssessmentRequest = ctx.models[
@@ -126,6 +132,50 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 expected_version=request.expected_version,
                 principal=principal,
             )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post(
+        "/opening-runs/{opening_run_id}/reconcile-legacy-budget-scope",
+        status_code=202,
+    )
+    def reconcile_legacy_book_opening_budget_scope(
+        opening_run_id: str,
+        request: BookOpeningBudgetReconciliationRequest,
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            receipt = composition.opening.reconcile_legacy_budget_scope(
+                opening_run_id,
+                LegacyBudgetReconciliationRequest(
+                    expected_opening_version=request.expected_opening_version,
+                    expected_frozen_request_digest=(
+                        request.expected_frozen_request_digest
+                    ),
+                    idempotency_key=request.idempotency_key,
+                    policy_contract_version=request.policy_contract_version,
+                    policy_snapshot=dict(request.policy_snapshot),
+                    policy_hash=request.policy_hash,
+                    currency=request.currency,
+                    budget_timezone=request.budget_timezone,
+                    started_at=request.started_at,
+                    deadline_at=request.deadline_at,
+                    reason=request.reason,
+                    legacy_operation_ids=tuple(request.legacy_operation_ids),
+                    legacy_reservation_ids=tuple(request.legacy_reservation_ids),
+                ),
+                principal=principal,
+            )
+            return asdict(receipt)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

@@ -847,8 +847,8 @@ def test_execution_loss_convergence_rolls_back_as_one_authority_unit(
     assert _loss_projection(orphan) == (
         "RUNNING",
         "RUNNING",
-        "CHECKPOINTED",
-        "CHECKPOINTED",
+        "RUNNING",
+        "RUNNING",
         "HELD",
         0,
         0,

@@ -64,6 +64,15 @@ def _authority_claim(
     return claim
 
 
+def _start_authority_claim(
+    authority: RuntimeJobAuthority, claim: RuntimeJobClaim
+) -> dict[str, object]:
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        started = authority.start_authority_owned_in_uow(uow, claim)
+        uow.commit()
+    return started
+
+
 def test_book_opening_job_requires_authority_coordinated_first_claim() -> None:
     authority = RuntimeJobAuthority(DATABASE_URL)
     scheduled = _schedule_opening_job(authority=authority, suffix="claim-plane")
@@ -86,6 +95,10 @@ def test_book_opening_job_requires_authority_coordinated_first_claim() -> None:
     assert claim.attempt_number == 1
     assert claim.fencing_token == 1
     assert authority.get(runtime_job_id)["status"] == "CLAIMED"
+    with pytest.raises(KernelError) as blocked:
+        authority.start(claim)
+    assert blocked.value.code == "RUNTIME_JOB_AUTHORITY_COORDINATOR_REQUIRED"
+    assert authority.get(runtime_job_id)["status"] == "CLAIMED"
 
 
 def test_runtime_job_start_replays_the_exact_live_claim_after_response_loss() -> None:
@@ -97,8 +110,8 @@ def test_runtime_job_start_replays_the_exact_live_claim_after_response_loss() ->
         worker_id="book-opening-start-replay-worker",
     )
 
-    started = authority.start(claim)
-    replayed = authority.start(claim)
+    started = _start_authority_claim(authority, claim)
+    replayed = _start_authority_claim(authority, claim)
 
     assert started == {
         "runtime_job_id": claim.runtime_job_id,
@@ -117,7 +130,7 @@ def test_assert_live_rechecks_the_exact_claim_against_database_time() -> None:
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-live-probe-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
 
     live = authority.assert_live(claim)
     assert live == {
@@ -165,7 +178,7 @@ def test_assert_live_rejects_any_relational_claim_drift(
         str(scheduled["runtime_job_id"]),
         worker_id=f"book-opening-exact-{field}-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
 
     with pytest.raises(KernelError) as stale:
         authority.assert_live(replace(claim, **{field: value}))
@@ -181,12 +194,51 @@ def test_generic_completion_cannot_terminalize_a_book_opening_job() -> None:
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-generic-complete-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
 
     with pytest.raises(KernelError) as blocked:
         authority.complete(claim, {"forbidden": "generic completion"})
     assert blocked.value.code == "RUNTIME_JOB_AUTHORITY_COORDINATOR_REQUIRED"
     assert authority.assert_live(claim)["status"] == "RUNNING"
+
+
+def test_internal_completion_cannot_bypass_the_frozen_checkpoint_graph() -> None:
+    orphan = create_legacy_book_opening_orphan()
+    run = orphan.opening.require(orphan.opening_run_id)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        authoritative_run = orphan.opening.recovery._opening(
+            uow, orphan.opening_run_id, lock=False
+        )
+        expected_search_ids = list(
+            orphan.opening.recovery._expected_search_graph(
+                authoritative_run
+            ).values()
+        )
+
+    forged_result = {
+        "book_design_version": "asset-version:forged-book-design",
+        "book_plan_version": "asset-version:forged-book-plan",
+        "volume_plan_version": "asset-version:forged-volume-plan",
+        "arc_plan_versions": ["asset-version:forged-arc-plan"],
+        "input_snapshot_id": "book-input-snapshot:forged",
+        "search_ids": expected_search_ids,
+    }
+    with pytest.raises(KernelError) as blocked:
+        orphan.opening._control(
+            run=run,
+            principal=orphan.principal,
+            definition_name="book.opening.complete",
+            idempotency_key=f"{orphan.opening_run_id}:forged-completion",
+            payload={
+                "expected_version": int(run["version"]),
+                "result": forged_result,
+                "runtime_claim": orphan.opening._runtime_claim_payload(
+                    orphan.outer_claim
+                ),
+            },
+        )
+    assert blocked.value.code == "BOOK_OPENING_COMPLETION_CHECKPOINT_REQUIRED"
+    assert orphan.opening.require(orphan.opening_run_id)["lifecycle"] == "RUNNING"
 
 
 def test_generic_failure_cannot_retry_or_terminalize_a_book_opening_job() -> None:
@@ -197,7 +249,7 @@ def test_generic_failure_cannot_retry_or_terminalize_a_book_opening_job() -> Non
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-generic-fail-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
 
     with pytest.raises(KernelError) as blocked:
         authority.fail(claim, {"forbidden": "generic failure"})
@@ -213,7 +265,7 @@ def test_generic_continuation_cannot_replace_a_book_opening_execution() -> None:
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-continuation-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
     continuation = RuntimeJobSpec(
         job_kind="BOOK_OPENING_EXECUTE",
         runtime_group="book_opening",
@@ -265,7 +317,7 @@ def test_execution_loss_replay_is_bound_to_the_exact_terminal_reason() -> None:
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-loss-replay-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -309,7 +361,7 @@ def test_authority_failure_replay_is_bound_to_the_exact_terminal_error() -> None
         str(scheduled["runtime_job_id"]),
         worker_id="book-opening-failure-replay-worker",
     )
-    authority.start(claim)
+    _start_authority_claim(authority, claim)
 
     def terminalize(error: dict[str, object]) -> dict[str, object]:
         with AuthorityUnitOfWork(DATABASE_URL) as uow:

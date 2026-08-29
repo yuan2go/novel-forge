@@ -27,6 +27,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
     reserve_provider_budget,
+    resolve_provider_token_reservation_contract,
     resolve_provider_budget_failure,
     settle_provider_budget,
 )
@@ -181,6 +182,174 @@ class ModelProviderResult:
             ) from exc
 
 
+def _model_budget_settlement(
+    result: ModelProviderResult,
+    *,
+    reserved_amount: str,
+    reserved_tokens: int,
+    frozen_capability_profile: Mapping[str, Any],
+) -> tuple[str, int, dict[str, Any]]:
+    """Use frozen receipt capabilities or retain the reservation ceiling.
+
+    A successful real Provider response is not evidence that its transport
+    supplied billable cost.  Releasing a bounded reservation to zero when the
+    frozen Adapter declared ``supports_cost_receipt=False`` makes the hard
+    stop fail open.  Fixtures retain their explicit zero-cost semantics.
+    """
+
+    if not result.real_model_call:
+        return result.cost_amount, result.total_tokens, {
+            "token_settlement_basis": "FIXTURE_RECEIPT",
+            "cost_settlement_basis": "FIXTURE_RECEIPT",
+        }
+    supports_usage = bool(
+        frozen_capability_profile.get("supports_usage_receipt")
+    )
+    supports_cost = bool(
+        frozen_capability_profile.get("supports_cost_receipt")
+    )
+    usage_tokens = result.total_tokens
+    actual_tokens = (
+        usage_tokens if supports_usage and usage_tokens > 0 else reserved_tokens
+    )
+    cost = dict(result.cost_evidence or {})
+    cost_available = (
+        supports_cost
+        and str(cost.get("availability") or "").upper() == "AVAILABLE"
+        and str(cost.get("source") or "").lower() != "not_provided"
+    )
+    actual_amount = result.cost_amount if cost_available else reserved_amount
+    return actual_amount, actual_tokens, {
+        "token_settlement_basis": (
+            "PROVIDER_USAGE_RECEIPT"
+            if actual_tokens == usage_tokens and supports_usage
+            else "RESERVATION_CEILING"
+        ),
+        "cost_settlement_basis": (
+            "PROVIDER_COST_RECEIPT" if cost_available else "RESERVATION_CEILING"
+        ),
+    }
+
+
+_MODEL_PROVIDER_RESULT_RECORDED_PHASES = frozenset(
+    {"PROVIDER_RESULT_RECORDED", "PROCESS_RESULT_RECORDED"}
+)
+_MODEL_PROVIDER_AMBIGUOUS_PHASES = frozenset(
+    {
+        "PROVIDER_INVOKING",
+        "PROVIDER_OUTCOME_UNKNOWN",
+        "PROCESS_STARTING",
+        "PROCESS_OUTCOME_UNKNOWN",
+    }
+)
+
+
+def _model_failed_provider_submission_state(
+    dispatched: Mapping[str, Any],
+) -> str:
+    """Classify a failed call from durable send evidence only."""
+
+    outcome = str(dispatched.get("outcome") or "unknown").strip().lower()
+    if outcome in {"unknown", "ambiguous"}:
+        return "AMBIGUOUS"
+    provider = dispatched.get("provider_evidence")
+    provider = provider if isinstance(provider, Mapping) else {}
+    production = provider.get("production_execution")
+    process = (
+        production.get("process_evidence")
+        if isinstance(production, Mapping)
+        else None
+    )
+    process = process if isinstance(process, Mapping) else {}
+    declared = [
+        value
+        for value in (
+            dispatched.get("request_sent"),
+            provider.get("request_sent"),
+            process.get("request_sent"),
+        )
+        if isinstance(value, bool)
+    ]
+    if declared and any(value != declared[0] for value in declared[1:]):
+        return "AMBIGUOUS"
+    phase = str(process.get("submission_phase") or "").strip().upper()
+    measured = _failed_provider_measurement(dispatched) is not None
+    if declared:
+        if declared[0]:
+            return "AMBIGUOUS" if phase in _MODEL_PROVIDER_AMBIGUOUS_PHASES else "SENT"
+        if measured or phase in (
+            _MODEL_PROVIDER_RESULT_RECORDED_PHASES
+            | _MODEL_PROVIDER_AMBIGUOUS_PHASES
+        ):
+            return "AMBIGUOUS"
+        return "NOT_SENT"
+    if any(
+        str(value).strip().lower() in {"unknown", "not_established"}
+        for value in (
+            dispatched.get("request_sent"),
+            provider.get("request_sent"),
+            process.get("request_sent"),
+        )
+        if value is not None
+    ):
+        return "AMBIGUOUS"
+    if phase in _MODEL_PROVIDER_AMBIGUOUS_PHASES:
+        return "AMBIGUOUS"
+    if measured or phase in _MODEL_PROVIDER_RESULT_RECORDED_PHASES:
+        return "SENT"
+    return "AMBIGUOUS"
+
+
+def _model_failed_provider_budget_decision(
+    *,
+    dispatched: Mapping[str, Any],
+    reserved_amount: str,
+    reserved_tokens: int,
+    frozen_capability_profile: Mapping[str, Any],
+) -> dict[str, Any]:
+    submission_state = _model_failed_provider_submission_state(dispatched)
+    if submission_state == "NOT_SENT":
+        return {"disposition": "RELEASE", "submission_state": submission_state}
+    if submission_state == "AMBIGUOUS":
+        return {
+            "disposition": "HOLD_UNKNOWN",
+            "submission_state": submission_state,
+        }
+    measurement = _failed_provider_measurement(dispatched)
+    measurement_authoritative = bool(
+        measurement is not None
+        and frozen_capability_profile.get("supports_usage_receipt") is True
+        and frozen_capability_profile.get("supports_cost_receipt") is True
+    )
+    if measurement_authoritative:
+        assert measurement is not None
+        usage, cost = measurement
+        actual_tokens = int(usage.get("total_tokens") or 0) or int(
+            usage.get("input_tokens") or 0
+        ) + int(usage.get("output_tokens") or 0)
+        actual_amount = str(cost.get("amount") or "0")
+    else:
+        actual_tokens = reserved_tokens
+        actual_amount = reserved_amount
+    return {
+        "disposition": "SETTLE",
+        "submission_state": submission_state,
+        "measurement_available": measurement_authoritative,
+        "actual_amount": actual_amount,
+        "actual_tokens": actual_tokens,
+        "token_settlement_basis": (
+            "PROVIDER_USAGE_RECEIPT"
+            if measurement_authoritative
+            else "RESERVATION_CEILING"
+        ),
+        "cost_settlement_basis": (
+            "PROVIDER_COST_RECEIPT"
+            if measurement_authoritative
+            else "RESERVATION_CEILING"
+        ),
+    }
+
+
 class ChapterModelPort(Protocol):
     def invoke(
         self,
@@ -188,6 +357,7 @@ class ChapterModelPort(Protocol):
         *,
         stage: str,
         payload: dict[str, Any],
+        pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult: ...
 
 
@@ -303,10 +473,10 @@ class ExternalEffectChapterModelPort:
         if requested is None:
             return default
         tokens = int(requested)
-        if tokens < 0 or tokens > default:
+        if tokens <= 0 or tokens > default:
             raise KernelError(
                 "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
-                "model effect token reservation must be within the frozen context cap",
+                "model effect token reservation must be positive and within the frozen context cap",
             )
         return tokens
 
@@ -318,6 +488,7 @@ class ExternalEffectChapterModelPort:
         payload: dict[str, Any],
         reservation_amount: str | None = None,
         reservation_tokens: int | None = None,
+        pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
         if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome"}:
             raise KernelError(
@@ -338,6 +509,37 @@ class ExternalEffectChapterModelPort:
             reservation_tokens,
             default=default_reservation_tokens,
         )
+        if bounded_reservation_tokens <= 0:
+            raise KernelError(
+                "MODEL_EFFECT_PROVIDER_TOKEN_CEILING_REQUIRED",
+                "model Provider execution requires a positive frozen token ceiling",
+            )
+        reservation_contract = resolve_provider_token_reservation_contract(
+            self.database_url,
+            operation_id=request.operation_id,
+            project_id=request.project_id,
+            currency="USD",
+            frozen_request_token_ceiling=bounded_reservation_tokens,
+        )
+        provider_output_token_ceiling = bounded_reservation_tokens
+        budget_scope_id = ""
+        budget_scope_revision = None
+        if reservation_contract["source"] == (
+            "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
+        ):
+            bounded_reservation_tokens = int(
+                reservation_contract["estimated_total_tokens"]
+            )
+            provider_output_token_ceiling = int(
+                reservation_contract["max_output_tokens"]
+            )
+            bounded_reservation_amount = str(
+                reservation_contract["estimated_cost_amount"]
+            )
+            budget_scope_id = str(reservation_contract["budget_scope_id"])
+            budget_scope_revision = int(
+                reservation_contract["budget_scope_revision"]
+            )
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -368,6 +570,7 @@ class ExternalEffectChapterModelPort:
         )
         effect_request_payload = {
             "stage": stage,
+            "max_output_tokens": provider_output_token_ceiling,
             "input": payload,
             "trace_id": request.trace_id,
             "correlation_id": request.correlation_id,
@@ -550,6 +753,8 @@ class ExternalEffectChapterModelPort:
                 )
                 or None,
                 caps=self.budget_caps,
+                budget_scope_id=budget_scope_id,
+                expected_budget_scope_revision=budget_scope_revision,
             ),
         )
         execution_binding = None
@@ -618,18 +823,31 @@ class ExternalEffectChapterModelPort:
                         correlation_id=request.correlation_id,
                     )
                     authorization.record_authorization()
+            (
+                completed_amount,
+                completed_tokens,
+                settlement_basis,
+            ) = _model_budget_settlement(
+                completed,
+                reserved_amount=bounded_reservation_amount,
+                reserved_tokens=bounded_reservation_tokens,
+                frozen_capability_profile=dict(
+                    effect.get("provider_capability_profile") or {}
+                ),
+            )
             settle_provider_budget(
                 self.database_url,
                 reservation_id=str(reservation["reservation_id"]),
                 project_id=request.project_id,
-                actual_amount=completed.cost_amount,
-                actual_tokens=completed.total_tokens,
+                actual_amount=completed_amount,
+                actual_tokens=completed_tokens,
                 evidence={
                     "provider_id": completed.provider_id,
                     "model_id": completed.model_id,
                     "real_model_call": completed.real_model_call,
                     "fixture": not completed.real_model_call,
                     "recovered_completed_effect": True,
+                    **settlement_basis,
                 },
             )
             self._record_model_call(
@@ -652,6 +870,12 @@ class ExternalEffectChapterModelPort:
                     execution_binding=execution_binding,
                 )
             return completed
+        if not bool(reservation.get("execution_authorized")):
+            raise KernelError(
+                "BUDGET_RESERVATION_EXECUTION_NOT_AUTHORIZED",
+                "reservation replay cannot authorize another Provider dispatch: "
+                + str(reservation.get("replay_disposition") or "UNKNOWN"),
+            )
         try:
             dispatched = dispatch_external_effect(
                 self.database_url,
@@ -660,6 +884,8 @@ class ExternalEffectChapterModelPort:
                 worker_id=request.worker_id or self.worker_id,
                 lease_seconds=self.lease_seconds,
                 adapter=effect_adapter,
+                budget_reservation_id=str(reservation["reservation_id"]),
+                pre_send_assertion=pre_send_assertion,
             )
         except KernelError:
             resolve_provider_budget_failure(
@@ -669,21 +895,34 @@ class ExternalEffectChapterModelPort:
             )
             raise
         if dispatched["outcome"] != "success":
-            measurement = _failed_provider_measurement(dispatched)
-            if measurement is None:
+            decision = _model_failed_provider_budget_decision(
+                dispatched=dispatched,
+                reserved_amount=bounded_reservation_amount,
+                reserved_tokens=bounded_reservation_tokens,
+                frozen_capability_profile=dict(
+                    effect.get("provider_capability_profile") or {}
+                ),
+            )
+            if decision["disposition"] == "RELEASE":
                 resolve_provider_budget_failure(
                     self.database_url,
                     reservation_id=str(reservation["reservation_id"]),
                     project_id=request.project_id,
                 )
+            elif decision["disposition"] == "HOLD_UNKNOWN":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=str(reservation["reservation_id"]),
+                    project_id=request.project_id,
+                    external_state_unknown=True,
+                )
             else:
-                usage, cost = measurement
                 settle_provider_budget(
                     self.database_url,
                     reservation_id=str(reservation["reservation_id"]),
                     project_id=request.project_id,
-                    actual_amount=str(cost.get("amount") or "0"),
-                    actual_tokens=int(usage.get("total_tokens") or 0),
+                    actual_amount=str(decision["actual_amount"]),
+                    actual_tokens=int(decision["actual_tokens"]),
                     evidence={
                         "provider_id": str(
                             (dispatched.get("provider_evidence") or {}).get(
@@ -691,12 +930,24 @@ class ExternalEffectChapterModelPort:
                             )
                             or ""
                         ),
-                        "model_id": str(cost.get("model") or ""),
                         "real_model_call": True,
                         "execution_outcome": str(dispatched["outcome"]).upper(),
                         "accepted_candidate": False,
+                        "submission_state": str(decision["submission_state"]),
+                        "measurement_available": bool(
+                            decision["measurement_available"]
+                        ),
+                        "token_settlement_basis": str(
+                            decision["token_settlement_basis"]
+                        ),
+                        "cost_settlement_basis": str(
+                            decision["cost_settlement_basis"]
+                        ),
                     },
                 )
+            measurement = _failed_provider_measurement(dispatched)
+            if decision.get("measurement_available") is True and measurement is not None:
+                usage, cost = measurement
                 self._record_failed_model_call(
                     request,
                     stage,
@@ -723,17 +974,26 @@ class ExternalEffectChapterModelPort:
             result=result,
         )
         self.fault_injector("after_provider_success")
+        actual_amount, actual_tokens, settlement_basis = _model_budget_settlement(
+            result,
+            reserved_amount=bounded_reservation_amount,
+            reserved_tokens=bounded_reservation_tokens,
+            frozen_capability_profile=dict(
+                effect.get("provider_capability_profile") or {}
+            ),
+        )
         settle_provider_budget(
             self.database_url,
             reservation_id=str(reservation["reservation_id"]),
             project_id=request.project_id,
-            actual_amount=result.cost_amount,
-            actual_tokens=result.total_tokens,
+            actual_amount=actual_amount,
+            actual_tokens=actual_tokens,
             evidence={
                 "provider_id": result.provider_id,
                 "model_id": result.model_id,
                 "real_model_call": result.real_model_call,
                 "fixture": not result.real_model_call,
+                **settlement_basis,
             },
         )
         self._record_model_call(
@@ -1420,12 +1680,36 @@ def _failed_provider_measurement(
     if (
         not isinstance(usage, Mapping)
         or not isinstance(cost, Mapping)
-        or usage.get("availability") != "AVAILABLE"
-        or usage.get("measurement") != "MEASURED"
-        or cost.get("availability") != "AVAILABLE"
+        or str(usage.get("availability") or "").upper() != "AVAILABLE"
+        or str(usage.get("measurement") or "").upper() != "MEASURED"
+        or str(cost.get("availability") or "").upper() != "AVAILABLE"
     ):
         return None
-    return usage, cost
+    token_values: list[int] = []
+    for key in ("input_tokens", "output_tokens", "total_tokens"):
+        value = usage.get(key)
+        if value is None or value == "":
+            token_values.append(0)
+            continue
+        if isinstance(value, bool):
+            return None
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return None
+        if parsed < 0:
+            return None
+        token_values.append(parsed)
+    measured_tokens = max(token_values[2], token_values[0] + token_values[1])
+    if measured_tokens <= 0:
+        return None
+    try:
+        measured_amount = Decimal(str(cost.get("amount") or ""))
+    except (InvalidOperation, ValueError):
+        return None
+    if not measured_amount.is_finite() or measured_amount < 0:
+        return None
+    return {**dict(usage), "total_tokens": measured_tokens}, cost
 
 
 def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:

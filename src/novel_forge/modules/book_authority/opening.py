@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
-from datetime import datetime
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
 import hashlib
 import json
+import re
 from typing import Any, Mapping
 from uuid import uuid4
 
@@ -18,6 +19,14 @@ from novel_forge.modules.book_design_authority import (
     BookDesignPayload,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetScopeRequest,
+    canonical_budget_reservation_snapshot,
+    canonical_budget_policy,
+    create_or_get_budget_scope_in_uow,
+    deterministic_budget_operation_binding_id,
+    lock_budget_scope_in_uow,
+)
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
     TransactionCheckpoint,
@@ -79,10 +88,21 @@ BOOK_OPENING_OPERATIONS = frozenset(
     {
         "book.opening.admit",
         "book.opening.complete",
+        "book.opening.reconcile_legacy_budget_scope",
         "book.opening.resume",
         "book.opening.abort",
     }
 )
+BOOK_OPENING_BUDGET_POLICY_VERSION = "book-opening-provider-budget.v1"
+DEFAULT_BOOK_OPENING_BUDGET_POLICY: Mapping[str, object] = {
+    "execution_mode": "PROVIDER_ALLOWED",
+    "provider_call_limit": 40,
+    "token_limit": 1_800_000,
+    "cost_limit_usd": "20",
+    "per_call_token_limit": 100_000,
+    "per_call_cost_limit_usd": "2",
+}
+DEFAULT_BOOK_OPENING_BUDGET_WINDOW_SECONDS = 3_600
 
 
 def _canonical_hash(value: Any) -> str:
@@ -198,6 +218,181 @@ class BookOpeningAdmission:
 
 
 @dataclass(frozen=True, slots=True)
+class BookOpeningBudgetReconciliationRequest:
+    """Explicit, bounded contract for one legacy Opening budget binding."""
+
+    expected_opening_version: int
+    expected_frozen_request_digest: str
+    idempotency_key: str
+    policy_contract_version: str
+    policy_snapshot: Mapping[str, Any]
+    policy_hash: str
+    currency: str
+    budget_timezone: str
+    started_at: datetime
+    deadline_at: datetime
+    reason: str
+    legacy_operation_ids: tuple[str, ...] = ()
+    legacy_reservation_ids: tuple[str, ...] = ()
+    contract_hash: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        required = (
+            self.idempotency_key,
+            self.policy_contract_version,
+            self.currency,
+            self.budget_timezone,
+            self.reason,
+        )
+        if self.expected_opening_version < 0 or any(
+            not str(value).strip() for value in required
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "legacy budget reconciliation request is incomplete",
+            )
+        if (
+            re.fullmatch(r"sha256:[0-9a-f]{64}", self.expected_frozen_request_digest)
+            is None
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "expected frozen request digest is invalid",
+            )
+        if (
+            self.started_at.tzinfo is None
+            or self.started_at.utcoffset() is None
+            or self.deadline_at.tzinfo is None
+            or self.deadline_at.utcoffset() is None
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "legacy budget timestamps must be timezone-aware",
+            )
+        if self.deadline_at <= self.started_at:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "legacy budget deadline must be after started_at",
+            )
+        policy = canonical_budget_policy(dict(self.policy_snapshot))
+        if str(policy["policy_hash"]) != self.policy_hash:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "explicit budget policy hash differs from its snapshot",
+            )
+        object.__setattr__(self, "currency", self.currency.strip().upper())
+        object.__setattr__(self, "policy_snapshot", policy["policy_snapshot"])
+        operation_ids = tuple(
+            sorted({str(item).strip() for item in self.legacy_operation_ids})
+        )
+        reservation_ids = tuple(
+            sorted({str(item).strip() for item in self.legacy_reservation_ids})
+        )
+        if any(not item for item in (*operation_ids, *reservation_ids)):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "legacy budget Authority identities cannot be empty",
+            )
+        object.__setattr__(self, "legacy_operation_ids", operation_ids)
+        object.__setattr__(self, "legacy_reservation_ids", reservation_ids)
+        object.__setattr__(
+            self,
+            "contract_hash",
+            _canonical_hash(self.contract_snapshot()),
+        )
+
+    def contract_snapshot(self) -> dict[str, Any]:
+        return {
+            "contract_version": "book-opening-budget-reconciliation-contract.v1",
+            "policy_contract_version": self.policy_contract_version,
+            "policy_snapshot": dict(self.policy_snapshot),
+            "policy_hash": self.policy_hash,
+            "currency": self.currency,
+            "budget_timezone": self.budget_timezone,
+            "started_at": self.started_at.isoformat(),
+            "deadline_at": self.deadline_at.isoformat(),
+            "legacy_operation_ids": list(self.legacy_operation_ids),
+            "legacy_reservation_ids": list(self.legacy_reservation_ids),
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "expected_opening_version": self.expected_opening_version,
+            "expected_frozen_request_digest": self.expected_frozen_request_digest,
+            "idempotency_key": self.idempotency_key,
+            "reason": self.reason,
+            **self.contract_snapshot(),
+            "contract_hash": self.contract_hash,
+        }
+
+    @classmethod
+    def from_mapping(
+        cls, value: Mapping[str, Any]
+    ) -> "BookOpeningBudgetReconciliationRequest":
+        expected = {
+            "expected_opening_version",
+            "expected_frozen_request_digest",
+            "idempotency_key",
+            "reason",
+            "contract_version",
+            "policy_contract_version",
+            "policy_snapshot",
+            "policy_hash",
+            "currency",
+            "budget_timezone",
+            "started_at",
+            "deadline_at",
+            "contract_hash",
+            "legacy_operation_ids",
+            "legacy_reservation_ids",
+        }
+        if set(value) != expected or value.get("contract_version") != (
+            "book-opening-budget-reconciliation-contract.v1"
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "frozen legacy budget contract fields are invalid",
+            )
+        request = cls(
+            expected_opening_version=int(value["expected_opening_version"]),
+            expected_frozen_request_digest=str(value["expected_frozen_request_digest"]),
+            idempotency_key=str(value["idempotency_key"]),
+            policy_contract_version=str(value["policy_contract_version"]),
+            policy_snapshot=dict(value["policy_snapshot"]),
+            policy_hash=str(value["policy_hash"]),
+            currency=str(value["currency"]),
+            budget_timezone=str(value["budget_timezone"]),
+            started_at=datetime.fromisoformat(str(value["started_at"])),
+            deadline_at=datetime.fromisoformat(str(value["deadline_at"])),
+            reason=str(value["reason"]),
+            legacy_operation_ids=tuple(
+                str(item) for item in value["legacy_operation_ids"]
+            ),
+            legacy_reservation_ids=tuple(
+                str(item) for item in value["legacy_reservation_ids"]
+            ),
+        )
+        if request.contract_hash != str(value["contract_hash"]):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "frozen legacy budget contract hash drifted",
+            )
+        return request
+
+
+@dataclass(frozen=True, slots=True)
+class BookOpeningBudgetReconciliationReceipt:
+    budget_reconciliation_receipt_id: str
+    opening_run_id: str
+    budget_scope_id: str
+    budget_scope_revision: int
+    policy_hash: str
+    contract_hash: str
+    result_hash: str
+    replayed: bool
+
+
+@dataclass(frozen=True, slots=True)
 class BookOpeningResult:
     book_design_version: str
     book_plan_version: str
@@ -218,6 +413,11 @@ class PostgresBookOpeningApplication:
         input_resolver: BookProductionInputResolver,
         application_build_id: str,
         commit_sha: str,
+        provider_budget_policy: Mapping[str, object] | None = None,
+        provider_budget_window_seconds: int = (
+            DEFAULT_BOOK_OPENING_BUDGET_WINDOW_SECONDS
+        ),
+        fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("Book opening requires PostgreSQL/build identity")
@@ -226,6 +426,15 @@ class PostgresBookOpeningApplication:
         self.input_resolver = input_resolver
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
+        if provider_budget_window_seconds <= 0:
+            raise ValueError("Book opening Provider budget window must be positive")
+        budget_policy = canonical_budget_policy(
+            dict(provider_budget_policy or DEFAULT_BOOK_OPENING_BUDGET_POLICY)
+        )
+        self.provider_budget_policy = dict(budget_policy["policy_snapshot"])
+        self.provider_budget_policy_hash = str(budget_policy["policy_hash"])
+        self.provider_budget_window_seconds = provider_budget_window_seconds
+        self.fault_injector = fault_injector
         self.runtime_jobs = RuntimeJobAuthority(database_url)
         semantic_replacement = getattr(
             getattr(narrative_search, "planning", None),
@@ -279,6 +488,14 @@ class PostgresBookOpeningApplication:
                     "opening_run_id": opening_run_id,
                     "frozen_request": frozen_request,
                     "frozen_request_digest": _canonical_hash(frozen_request),
+                    "provider_budget_contract": {
+                        "policy_contract_version": (BOOK_OPENING_BUDGET_POLICY_VERSION),
+                        "policy_snapshot": dict(self.provider_budget_policy),
+                        "policy_hash": self.provider_budget_policy_hash,
+                        "currency": "USD",
+                        "budget_timezone": "UTC",
+                        "window_seconds": self.provider_budget_window_seconds,
+                    },
                 },
                 "input_assets": self._opening_input_assets(request),
             },
@@ -295,6 +512,63 @@ class PostgresBookOpeningApplication:
             replayed=bool(executed["replayed"]),
         )
 
+    def reconcile_legacy_budget_scope(
+        self,
+        opening_run_id: str,
+        request: BookOpeningBudgetReconciliationRequest,
+        *,
+        principal: Principal,
+    ) -> BookOpeningBudgetReconciliationReceipt:
+        """Bind an explicit BudgetScope to one migrated legacy Opening."""
+
+        run = self.require(opening_run_id)
+        principal.require("book.authority.execute", str(run["project_id"]))
+        self._register_definitions()
+        executed = execute_transaction_command(
+            self.database_url,
+            {
+                "definition_name": "book.opening.reconcile_legacy_budget_scope",
+                "definition_version": BOOK_OPENING_DEFINITION_VERSION,
+                "project_id": str(run["project_id"]),
+                "workspace_id": str(run["workspace_id"]),
+                "book_id": str(run["book_id"]),
+                "actor_id": principal.principal_id,
+                "idempotency_scope": "book:opening",
+                "idempotency_key": (
+                    f"{opening_run_id}:legacy-budget:{request.idempotency_key}"
+                ),
+                "trace_id": f"trace:{opening_run_id}:legacy-budget",
+                "span_id": str(uuid4()),
+                "correlation_id": str(run["root_operation_id"]),
+                "causation_id": str(run["root_operation_id"]),
+                "causation_operation_id": str(run["root_operation_id"]),
+                "input": {
+                    "project_id": str(run["project_id"]),
+                    "book_id": str(run["book_id"]),
+                    "opening_run_id": opening_run_id,
+                    "budget_reconciliation": request.to_dict(),
+                },
+                "input_assets": [],
+            },
+            context=self._context(principal.principal_id),
+            handler=self._execute_transaction,
+            fault_injector=self.fault_injector,
+        )
+        return BookOpeningBudgetReconciliationReceipt(
+            budget_reconciliation_receipt_id=str(
+                executed["budget_reconciliation_receipt_id"]
+            ),
+            opening_run_id=opening_run_id,
+            budget_scope_id=str(executed["budget_scope_id"]),
+            budget_scope_revision=int(executed["budget_scope_revision"]),
+            policy_hash=str(executed["policy_hash"]),
+            contract_hash=str(executed["contract_hash"]),
+            result_hash=str(executed["result_hash"]),
+            replayed=bool(
+                executed.get("replayed") or executed.get("semantic_replayed")
+            ),
+        )
+
     def require(self, opening_run_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -305,7 +579,8 @@ class PostgresBookOpeningApplication:
                        execution_contract_version,current_execution_id,
                        current_execution_generation,current_checkpoint_id,
                        current_checkpoint_sequence,current_checkpoint_hash,
-                       recovery_state
+                       recovery_state,budget_scope_id,budget_scope_revision,
+                       budget_contract_state
                 FROM authority_book_opening_run
                 WHERE opening_run_id=%s
                 """,
@@ -335,6 +610,9 @@ class PostgresBookOpeningApplication:
                     "current_checkpoint_sequence",
                     "current_checkpoint_hash",
                     "recovery_state",
+                    "budget_scope_id",
+                    "budget_scope_revision",
+                    "budget_contract_state",
                 ),
                 row,
                 strict=True,
@@ -771,6 +1049,8 @@ class PostgresBookOpeningApplication:
                 "foundation_version": design_version,
                 "goal": "establish a sustainable Book narrative architecture",
             },
+            opening_run_id=opening_run_id,
+            runtime_claim=runtime_claim,
             progress=progress,
             execution_probe=execution_probe,
         )
@@ -795,6 +1075,8 @@ class PostgresBookOpeningApplication:
             transformation={
                 "goal": "create the first irreversible stage transformation"
             },
+            opening_run_id=opening_run_id,
+            runtime_claim=runtime_claim,
             progress=progress,
             execution_probe=execution_probe,
         )
@@ -826,6 +1108,8 @@ class PostgresBookOpeningApplication:
                     "goal": "produce a causal transformation with closure criteria",
                     "arc_key": arc_key,
                 },
+                opening_run_id=opening_run_id,
+                runtime_claim=runtime_claim,
                 progress=progress,
                 execution_probe=execution_probe,
             )
@@ -923,7 +1207,8 @@ class PostgresBookOpeningApplication:
     ) -> dict[str, Any]:
         uow.cursor.execute(
             """
-            SELECT definition_name,project_id,workspace_id,command_payload,actor_id
+            SELECT definition_name,project_id,workspace_id,command_payload,
+                   actor_id,created_at
             FROM authority_operation WHERE operation_id=%s
             """,
             [operation_id],
@@ -941,6 +1226,14 @@ class PostgresBookOpeningApplication:
             [f"book-opening:{opening_run_id}"],
         )
         checkpoint("after_domain_validation")
+        if definition_name == "book.opening.reconcile_legacy_budget_scope":
+            return self._reconcile_legacy_budget_scope_in_uow(
+                uow,
+                operation_id=operation_id,
+                payload=payload,
+                principal_id=str(operation[4]),
+                checkpoint=checkpoint,
+            )
         if definition_name == "book.opening.admit":
             frozen_request = dict(payload["frozen_request"])
             digest = _canonical_hash(frozen_request)
@@ -1007,6 +1300,10 @@ class PostgresBookOpeningApplication:
                         "execution_generation": 1,
                         "recovery_intent_id": "",
                         "replacement_evaluation_operation_id": "",
+                        "semantic_evaluation_operation_id": "",
+                        "semantic_evaluation_execution_id": "",
+                        "semantic_evaluation_generation": 0,
+                        "semantic_execution_mode": "NONE",
                     },
                     max_attempts=1,
                     lease_loss_policy=AUTHORITY_CONVERGENCE_REQUIRED,
@@ -1045,6 +1342,74 @@ class PostgresBookOpeningApplication:
                         "BOOK_OPENING_EXECUTION_ADMISSION_CONFLICT",
                         "Opening execution identity changed during admission",
                     )
+            budget_contract = payload.get("provider_budget_contract")
+            if not isinstance(budget_contract, Mapping):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_CONTRACT_INVALID",
+                    "Book Opening admission has no frozen Provider budget",
+                )
+            canonical_policy = canonical_budget_policy(
+                dict(budget_contract.get("policy_snapshot") or {})
+            )
+            if (
+                str(canonical_policy["policy_hash"])
+                != str(budget_contract.get("policy_hash") or "")
+                or int(budget_contract.get("window_seconds") or 0) <= 0
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_CONTRACT_INVALID",
+                    "Book Opening Provider budget differs from its frozen hash",
+                )
+            started_at = operation[5]
+            budget_scope = create_or_get_budget_scope_in_uow(
+                uow,
+                BudgetScopeRequest(
+                    project_id=str(operation[1]),
+                    owner_kind="BOOK_OPENING",
+                    owner_id=opening_run_id,
+                    stable_idempotency_key=(f"book-opening-budget:{opening_run_id}"),
+                    currency=str(budget_contract.get("currency") or ""),
+                    policy_contract_version=str(
+                        budget_contract.get("policy_contract_version") or ""
+                    ),
+                    policy_snapshot=dict(canonical_policy["policy_snapshot"]),
+                    started_at=started_at,
+                    deadline_at=started_at
+                    + timedelta(seconds=int(budget_contract["window_seconds"])),
+                    created_by_operation_id=operation_id,
+                    budget_timezone=str(budget_contract.get("budget_timezone") or ""),
+                ),
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_book_opening_run
+                SET budget_scope_id=%s,budget_scope_revision=%s,
+                    budget_contract_state='BOUND',
+                    updated_at=transaction_timestamp()
+                WHERE opening_run_id=%s
+                  AND (
+                      budget_scope_id IS NULL
+                      OR (
+                          budget_scope_id=%s
+                          AND budget_scope_revision=%s
+                          AND budget_contract_state='BOUND'
+                      )
+                  )
+                """,
+                [
+                    budget_scope["budget_scope_id"],
+                    budget_scope["revision"],
+                    opening_run_id,
+                    budget_scope["budget_scope_id"],
+                    budget_scope["revision"],
+                ],
+            )
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_BINDING_CONFLICT",
+                    "Book Opening is already bound to another Budget Authority",
+                )
+            checkpoint("after_budget_scope_binding")
         elif definition_name == "book.opening.complete":
             result = payload.get("result")
             if not isinstance(result, dict):
@@ -1091,6 +1456,13 @@ class PostgresBookOpeningApplication:
                     "BOOK_OPENING_COMPLETION_BINDING_INVALID",
                     "completion does not carry the exact Opening execution claim",
                 )
+            self.recovery.assert_execution_completion_checkpoints_in_uow(
+                uow,
+                opening_run_id=opening_run_id,
+                opening_execution_id=str(execution[0]),
+                execution_generation=int(execution[1]),
+                result=result,
+            )
             uow.cursor.execute(
                 """
                 UPDATE authority_book_opening_execution
@@ -1143,14 +1515,16 @@ class PostgresBookOpeningApplication:
                        execution.lifecycle,execution.version,
                        execution.runtime_job_id,execution.current_attempt_id,
                        execution.current_lease_id,execution.current_worker_id,
-                       execution.current_fencing_token
+                       execution.current_fencing_token,opening.project_id,
+                       opening.budget_contract_state,opening.budget_scope_id,
+                       opening.budget_scope_revision
                 FROM authority_book_opening_run AS opening
                 JOIN authority_book_opening_execution AS execution
                   ON execution.opening_execution_id=opening.current_execution_id
                  AND execution.opening_run_id=opening.opening_run_id
                  AND execution.generation=opening.current_execution_generation
                 WHERE opening.opening_run_id=%s AND opening.version=%s
-                  AND opening.lifecycle IN ('ADMITTED','FAILED')
+                  AND opening.lifecycle IN ('ADMITTED','RUNNING','FAILED')
                 FOR UPDATE OF opening,execution
                 """,
                 [opening_run_id, int(payload["expected_version"])],
@@ -1161,7 +1535,7 @@ class PostgresBookOpeningApplication:
                     "BOOK_OPENING_ABORT_CONFLICT",
                     "Book opening cannot abort at the expected version",
                 )
-            if str(binding[0]) == "ADMITTED":
+            if str(binding[0]) in {"ADMITTED", "RUNNING"}:
                 reason = {
                     "code": "BOOK_OPENING_AUTHORITY_ABORTED",
                     "opening_run_id": opening_run_id,
@@ -1191,22 +1565,119 @@ class PostgresBookOpeningApplication:
                         "BOOK_OPENING_ABORT_BINDING_INVALID",
                         "Opening execution and Runtime abort identity differ",
                     )
+                if (
+                    str(binding[11]) != "BOUND"
+                    or binding[12] is None
+                    or binding[13] is None
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_BUDGET_SCOPE_REQUIRED",
+                        "Opening abort requires an authoritative BudgetScope binding",
+                    )
+                budget_scope = lock_budget_scope_in_uow(
+                    uow,
+                    budget_scope_id=str(binding[12]),
+                    project_id=str(binding[10]),
+                )
+                if (
+                    int(budget_scope["revision"]) != int(binding[13])
+                    or str(budget_scope["owner_kind"]) != "BOOK_OPENING"
+                    or str(budget_scope["owner_id"]) != opening_run_id
+                    or str(budget_scope["currency"]).upper() != "USD"
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_BUDGET_SCOPE_DRIFT",
+                        "Opening abort BudgetScope differs from its frozen binding",
+                    )
+                semantic_mode = str(runtime["semantic_execution_mode"])
+                semantic_operation_id = str(runtime["semantic_evaluation_operation_id"])
+                semantic_execution_id = str(runtime["semantic_evaluation_execution_id"])
+                semantic_generation = int(runtime["semantic_evaluation_generation"])
                 replacement_operation_id = str(
                     runtime["replacement_evaluation_operation_id"]
                 )
-                if replacement_operation_id:
+                if semantic_mode == "NEW_REPLACEMENT":
+                    if (
+                        not replacement_operation_id
+                        or replacement_operation_id != semantic_operation_id
+                        or not semantic_execution_id
+                        or semantic_generation <= 1
+                    ):
+                        raise KernelError(
+                            "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                            "Opening abort replacement identity is incomplete",
+                        )
                     if self.recovery.semantic_replacement is None:
                         raise KernelError(
                             "BOOK_OPENING_REPLACEMENT_RUNTIME_REQUIRED",
                             "Opening abort requires the semantic replacement Application",
                         )
-                    self.recovery.semantic_replacement.cancel_unstarted_replacement_in_uow(
+                    if str(binding[0]) == "ADMITTED":
+                        self.recovery.semantic_replacement.cancel_unstarted_replacement_in_uow(
+                            uow,
+                            operation_id=replacement_operation_id,
+                            actor_id=str(operation[4]),
+                            trace_id=f"trace:{opening_run_id}:abort",
+                            correlation_id=str(operation_id),
+                            reason=(
+                                "Book Opening was aborted before replacement execution"
+                            ),
+                        )
+                    else:
+                        self.recovery.semantic_replacement.abort_opening_owned_execution_in_uow(
+                            uow,
+                            operation_id=semantic_operation_id,
+                            evaluation_execution_id=semantic_execution_id,
+                            generation=semantic_generation,
+                            actor_id=str(operation[4]),
+                            trace_id=f"trace:{opening_run_id}:abort",
+                            correlation_id=str(operation_id),
+                            reason=(
+                                "Book Opening owner aborted active semantic "
+                                "replacement execution"
+                            ),
+                        )
+                elif semantic_mode == "RESUME_CURRENT":
+                    if (
+                        replacement_operation_id
+                        or not semantic_operation_id
+                        or not semantic_execution_id
+                        or semantic_generation <= 0
+                    ):
+                        raise KernelError(
+                            "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                            "Opening abort resume identity is incomplete",
+                        )
+                    if self.recovery.semantic_replacement is None:
+                        raise KernelError(
+                            "BOOK_OPENING_REPLACEMENT_RUNTIME_REQUIRED",
+                            "Opening abort requires the semantic Evaluation Application",
+                        )
+                    self.recovery.semantic_replacement.abort_opening_owned_execution_in_uow(
                         uow,
-                        operation_id=replacement_operation_id,
+                        operation_id=semantic_operation_id,
+                        evaluation_execution_id=semantic_execution_id,
+                        generation=semantic_generation,
                         actor_id=str(operation[4]),
                         trace_id=f"trace:{opening_run_id}:abort",
                         correlation_id=str(operation_id),
-                        reason="Book Opening was aborted before replacement execution",
+                        reason="Book Opening owner aborted resumed semantic execution",
+                    )
+                elif semantic_mode == "NONE":
+                    if (
+                        replacement_operation_id
+                        or semantic_operation_id
+                        or semantic_execution_id
+                        or semantic_generation != 0
+                    ):
+                        raise KernelError(
+                            "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                            "Opening abort NONE mode carries semantic execution identity",
+                        )
+                else:
+                    raise KernelError(
+                        "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                        "Opening abort RuntimeJob carries an unknown semantic mode",
                     )
                 uow.cursor.execute(
                     """
@@ -1254,7 +1725,7 @@ class PostgresBookOpeningApplication:
                 UPDATE authority_book_opening_run
                 SET lifecycle='ABORTED',version=version+1,updated_at=NOW()
                 WHERE opening_run_id=%s AND version=%s
-                  AND lifecycle IN ('ADMITTED','FAILED')
+                  AND lifecycle IN ('ADMITTED','RUNNING','FAILED')
                 """,
                 [opening_run_id, int(payload["expected_version"])],
             )
@@ -1291,6 +1762,751 @@ class PostgresBookOpeningApplication:
             "lifecycle": str(run["lifecycle"]),
             "version": int(run["version"]),
         }
+
+    def _reconcile_legacy_budget_scope_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        payload: Mapping[str, Any],
+        principal_id: str,
+        checkpoint: TransactionCheckpoint,
+    ) -> dict[str, Any]:
+        opening_run_id = str(payload.get("opening_run_id") or "")
+        raw_request = payload.get("budget_reconciliation")
+        if not opening_run_id or not isinstance(raw_request, Mapping):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_INVALID",
+                "legacy budget reconciliation payload is incomplete",
+            )
+        request = BookOpeningBudgetReconciliationRequest.from_mapping(raw_request)
+        uow.cursor.execute(
+            """
+            SELECT opening_run_id,project_id,book_id,root_operation_id,
+                   lifecycle,version,frozen_request_digest,budget_scope_id,
+                   budget_scope_revision,budget_contract_state,
+                   current_execution_id,current_execution_generation
+            FROM authority_book_opening_run
+            WHERE opening_run_id=%s
+            FOR UPDATE
+            """,
+            [opening_run_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError("BOOK_OPENING_NOT_FOUND", "Book opening run is missing")
+        run = dict(
+            zip(
+                (
+                    "opening_run_id",
+                    "project_id",
+                    "book_id",
+                    "root_operation_id",
+                    "lifecycle",
+                    "version",
+                    "frozen_request_digest",
+                    "budget_scope_id",
+                    "budget_scope_revision",
+                    "budget_contract_state",
+                    "current_execution_id",
+                    "current_execution_generation",
+                ),
+                row,
+                strict=True,
+            )
+        )
+        if str(run["project_id"]) != str(payload.get("project_id") or "") or str(
+            run["book_id"]
+        ) != str(payload.get("book_id") or ""):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                "legacy budget command is outside its Opening scope",
+            )
+        intent = {
+            "contract_version": "book-opening-budget-reconciliation-intent.v1",
+            "opening_run_id": opening_run_id,
+            "expected_opening_version": request.expected_opening_version,
+            "expected_frozen_request_digest": (request.expected_frozen_request_digest),
+            "contract_hash": request.contract_hash,
+            "authorized_by": principal_id,
+            "authorization_reason": request.reason,
+        }
+        intent_hash = _canonical_hash(intent)
+        uow.cursor.execute(
+            """
+            SELECT budget_reconciliation_receipt_id,project_id,budget_scope_id,
+                   budget_scope_revision,expected_opening_version,
+                   frozen_request_digest,contract_snapshot,contract_hash,
+                   intent_hash,authorized_by,authorization_reason,result,
+                   result_hash
+            FROM authority_book_opening_budget_reconciliation_receipt
+            WHERE opening_run_id=%s
+            """,
+            [opening_run_id],
+        )
+        existing = uow.cursor.fetchone()
+        if existing is not None:
+            receipt = dict(
+                zip(
+                    (
+                        "budget_reconciliation_receipt_id",
+                        "project_id",
+                        "budget_scope_id",
+                        "budget_scope_revision",
+                        "expected_opening_version",
+                        "frozen_request_digest",
+                        "contract_snapshot",
+                        "contract_hash",
+                        "intent_hash",
+                        "authorized_by",
+                        "authorization_reason",
+                        "result",
+                        "result_hash",
+                    ),
+                    existing,
+                    strict=True,
+                )
+            )
+            if (
+                str(receipt["project_id"]) != str(run["project_id"])
+                or int(receipt["expected_opening_version"])
+                != request.expected_opening_version
+                or str(receipt["frozen_request_digest"])
+                != request.expected_frozen_request_digest
+                or dict(receipt["contract_snapshot"]) != request.contract_snapshot()
+                or str(receipt["contract_hash"]) != request.contract_hash
+                or str(receipt["intent_hash"]) != intent_hash
+                or str(receipt["authorized_by"]) != principal_id
+                or str(receipt["authorization_reason"]) != request.reason
+                or _canonical_hash(dict(receipt["result"]))
+                != str(receipt["result_hash"])
+                or str(run["budget_contract_state"]) != "BOUND"
+                or str(run["budget_scope_id"] or "") != str(receipt["budget_scope_id"])
+                or int(run["budget_scope_revision"] or 0)
+                != int(receipt["budget_scope_revision"])
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_IDEMPOTENCY_CONFLICT",
+                    "legacy budget reconciliation intent differs from its receipt",
+                )
+            return {
+                "budget_reconciliation_receipt_id": str(
+                    receipt["budget_reconciliation_receipt_id"]
+                ),
+                **dict(receipt["result"]),
+                "result_hash": str(receipt["result_hash"]),
+                "semantic_replayed": True,
+            }
+        if (
+            int(run["version"]) != request.expected_opening_version
+            or str(run["frozen_request_digest"])
+            != request.expected_frozen_request_digest
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_STALE",
+                "Book Opening version or frozen request changed before reconciliation",
+            )
+        if str(run["lifecycle"]) not in {"ADMITTED", "FAILED"}:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_STATE_INVALID",
+                "legacy budget reconciliation requires unclaimed ADMITTED or terminally failed Opening work",
+            )
+        if (
+            str(run["budget_contract_state"]) != "LEGACY_BUDGET_RECONCILIATION_REQUIRED"
+            or run["budget_scope_id"] is not None
+            or run["budget_scope_revision"] is not None
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_STATE_INVALID",
+                "Book Opening is not an unbound legacy budget owner",
+            )
+        execution_binding = self._lock_legacy_budget_reconciliation_execution(
+            uow, run=run
+        )
+        if str(run["lifecycle"]) == "ADMITTED" and (
+            request.legacy_operation_ids or request.legacy_reservation_ids
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_STATE_INVALID",
+                "unclaimed Opening cannot attribute historical Provider work",
+            )
+        scope = create_or_get_budget_scope_in_uow(
+            uow,
+            BudgetScopeRequest(
+                project_id=str(run["project_id"]),
+                owner_kind="BOOK_OPENING",
+                owner_id=opening_run_id,
+                stable_idempotency_key=(
+                    f"book-opening-budget-reconciliation:{opening_run_id}"
+                ),
+                currency=request.currency,
+                policy_contract_version=request.policy_contract_version,
+                policy_snapshot=request.policy_snapshot,
+                started_at=request.started_at,
+                deadline_at=request.deadline_at,
+                created_by_operation_id=operation_id,
+                budget_timezone=request.budget_timezone,
+            ),
+        )
+        checkpoint("after_legacy_budget_scope_creation")
+        operation_bindings = self._bind_legacy_budget_operations_in_uow(
+            uow,
+            run=run,
+            execution_binding=execution_binding,
+            scope=scope,
+            operation_ids=request.legacy_operation_ids,
+            bound_by_operation_id=operation_id,
+        )
+        reservation_attributions = (
+            self._prepare_legacy_budget_reservation_attributions_in_uow(
+                uow,
+                run=run,
+                scope=scope,
+                operation_ids=request.legacy_operation_ids,
+                reservation_ids=request.legacy_reservation_ids,
+            )
+        )
+        uow.cursor.execute(
+            """
+            UPDATE authority_book_opening_run
+            SET budget_scope_id=%s,budget_scope_revision=%s,
+                budget_contract_state='BOUND',version=version+1,
+                updated_at=transaction_timestamp()
+            WHERE opening_run_id=%s AND version=%s
+              AND frozen_request_digest=%s
+              AND budget_scope_id IS NULL
+              AND budget_scope_revision IS NULL
+              AND budget_contract_state=
+                  'LEGACY_BUDGET_RECONCILIATION_REQUIRED'
+            """,
+            [
+                scope["budget_scope_id"],
+                scope["revision"],
+                opening_run_id,
+                request.expected_opening_version,
+                request.expected_frozen_request_digest,
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_STALE",
+                "Book Opening budget binding CAS lost",
+            )
+        checkpoint("after_legacy_budget_scope_binding")
+        result = {
+            "opening_run_id": opening_run_id,
+            "opening_version": request.expected_opening_version + 1,
+            "budget_scope_id": str(scope["budget_scope_id"]),
+            "budget_scope_revision": int(scope["revision"]),
+            "policy_hash": request.policy_hash,
+            "contract_hash": request.contract_hash,
+            "operation_budget_binding_ids": [
+                item["operation_budget_binding_id"] for item in operation_bindings
+            ],
+            "legacy_budget_attribution_ids": [
+                item["legacy_budget_attribution_id"]
+                for item in reservation_attributions
+            ],
+            "legacy_budget_attribution_hash": _canonical_hash(reservation_attributions),
+            "provider_invoked": False,
+        }
+        result_hash = _canonical_hash(result)
+        receipt_id = _stable_id(
+            "book-opening-budget-reconciliation-receipt",
+            opening_run_id,
+            intent_hash,
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_opening_budget_reconciliation_receipt(
+                budget_reconciliation_receipt_id,opening_run_id,project_id,
+                budget_scope_id,budget_scope_revision,command_operation_id,
+                expected_opening_version,frozen_request_digest,
+                contract_snapshot,contract_hash,intent_hash,idempotency_key,
+                authorized_by,authorization_reason,result,result_hash
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            [
+                receipt_id,
+                opening_run_id,
+                run["project_id"],
+                scope["budget_scope_id"],
+                scope["revision"],
+                operation_id,
+                request.expected_opening_version,
+                request.expected_frozen_request_digest,
+                Jsonb(request.contract_snapshot()),
+                request.contract_hash,
+                intent_hash,
+                request.idempotency_key,
+                principal_id,
+                request.reason,
+                Jsonb(result),
+                result_hash,
+            ],
+        )
+        checkpoint("after_legacy_budget_reconciliation_receipt")
+        for attribution in reservation_attributions:
+            uow.cursor.execute(
+                """
+                INSERT INTO
+                    authority_book_opening_legacy_budget_reservation_attribution(
+                        legacy_budget_attribution_id,
+                        budget_reconciliation_receipt_id,opening_run_id,
+                        project_id,budget_scope_id,budget_scope_revision,
+                        reservation_id,operation_id,external_effect_id,
+                        reservation_version,reservation_status,
+                        reservation_snapshot,reservation_snapshot_hash,
+                        cost_evidence_id,cost_evidence_version,
+                        cost_evidence_hash,attributed_by_operation_id
+                    )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                        NULLIF(%s,''),%s,NULLIF(%s,''),%s)
+                """,
+                [
+                    attribution["legacy_budget_attribution_id"],
+                    receipt_id,
+                    opening_run_id,
+                    run["project_id"],
+                    scope["budget_scope_id"],
+                    scope["revision"],
+                    attribution["reservation_id"],
+                    attribution["operation_id"],
+                    attribution["external_effect_id"],
+                    attribution["reservation_version"],
+                    attribution["reservation_status"],
+                    Jsonb(attribution["reservation_snapshot"]),
+                    attribution["reservation_snapshot_hash"],
+                    attribution["cost_evidence_id"],
+                    attribution["cost_evidence_version"],
+                    attribution["cost_evidence_hash"],
+                    operation_id,
+                ],
+            )
+        checkpoint("after_legacy_budget_reservation_attribution")
+        uow.repositories.operation_graph.record_event(
+            {
+                "event_id": str(uuid4()),
+                "audit_id": str(uuid4()),
+                "outbox_id": str(uuid4()),
+                "aggregate_type": "book_opening",
+                "aggregate_id": opening_run_id,
+                "operation_id": operation_id,
+                "project_id": str(run["project_id"]),
+                "event_type": "book.opening.legacy_budget_reconciled",
+                "correlation_id": str(run["root_operation_id"]),
+                "causation_id": str(run["root_operation_id"]),
+                "payload": {
+                    "operation_id": operation_id,
+                    "budget_reconciliation_receipt_id": receipt_id,
+                    **result,
+                },
+            }
+        )
+        checkpoint("after_legacy_budget_reconciliation_outbox")
+        return {
+            "budget_reconciliation_receipt_id": receipt_id,
+            **result,
+            "result_hash": result_hash,
+            "semantic_replayed": False,
+        }
+
+    @staticmethod
+    def _lock_legacy_budget_reconciliation_execution(
+        uow: AuthorityUnitOfWork, *, run: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        execution_id = str(run.get("current_execution_id") or "")
+        execution_generation = int(run.get("current_execution_generation") or 0)
+        if not execution_id or execution_generation <= 0:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_EXECUTION_REQUIRED",
+                "legacy runtime execution must be reconciled before its budget",
+            )
+        uow.cursor.execute(
+            """
+            SELECT opening_execution_id,generation,runtime_job_id,lifecycle,
+                   current_attempt_id,current_lease_id,current_worker_id,
+                   current_fencing_token
+            FROM authority_book_opening_execution
+            WHERE opening_run_id=%s AND opening_execution_id=%s
+              AND generation=%s
+            FOR UPDATE
+            """,
+            [run["opening_run_id"], execution_id, execution_generation],
+        )
+        execution = uow.cursor.fetchone()
+        if execution is None or execution[2] is None:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_EXECUTION_REQUIRED",
+                "Book Opening has no authoritative RuntimeJob execution",
+            )
+        uow.cursor.execute(
+            """
+            SELECT runtime_job_id,status,current_attempt_id,current_fencing_token,
+                   claimed_by,attempt_count
+            FROM authority_runtime_job WHERE runtime_job_id=%s FOR UPDATE
+            """,
+            [execution[2]],
+        )
+        job = uow.cursor.fetchone()
+        if job is None:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_EXECUTION_REQUIRED",
+                "Book Opening RuntimeJob is missing",
+            )
+        attempt = None
+        lease = None
+        if execution[4] is not None:
+            uow.cursor.execute(
+                """
+                SELECT attempt_id,status,lease_id,worker_id,fencing_token
+                FROM authority_runtime_job_attempt
+                WHERE runtime_job_id=%s AND attempt_id=%s FOR UPDATE
+                """,
+                [execution[2], execution[4]],
+            )
+            attempt = uow.cursor.fetchone()
+        if execution[5] is not None:
+            uow.cursor.execute(
+                """
+                SELECT lease_id,status,worker_id,fencing_token,
+                       lease_expires_at>clock_timestamp()
+                FROM authority_runtime_job_lease
+                WHERE runtime_job_id=%s AND attempt_id=%s AND lease_id=%s
+                FOR UPDATE
+                """,
+                [execution[2], execution[4], execution[5]],
+            )
+            lease = uow.cursor.fetchone()
+        if str(run["lifecycle"]) == "ADMITTED":
+            valid = (
+                str(execution[3]) == "SCHEDULED"
+                and all(value is None for value in execution[4:8])
+                and str(job[1]) == "READY"
+                and job[2] is None
+                and int(job[3] or 0) == 0
+                and str(job[4] or "") == ""
+                and int(job[5]) == 0
+                and attempt is None
+                and lease is None
+            )
+        else:
+            valid = (
+                str(execution[3]) in {"FAILED", "LOST", "ABORTED"}
+                and str(job[1]) in {"FAILED", "DEAD_LETTER", "CANCELLED"}
+                and (
+                    attempt is None
+                    or str(attempt[1]) in {"FAILED", "ABANDONED", "SUCCEEDED"}
+                )
+                and (
+                    lease is None or str(lease[1]) in {"RELEASED", "EXPIRED", "REVOKED"}
+                )
+            )
+        if not valid:
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_LIVE_EXECUTION",
+                "legacy budget reconciliation cannot run with a valid live holder or nonterminal chain",
+            )
+        return {
+            "opening_execution_id": str(execution[0]),
+            "opening_execution_generation": int(execution[1]),
+            "runtime_job_id": str(execution[2]),
+            "runtime_attempt_id": str(execution[4] or ""),
+            "runtime_lease_id": str(execution[5] or ""),
+            "runtime_worker_id": str(execution[6] or ""),
+            "runtime_fencing_token": int(execution[7] or 0),
+        }
+
+    @staticmethod
+    def _bind_legacy_budget_operations_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        run: Mapping[str, Any],
+        execution_binding: Mapping[str, Any],
+        scope: Mapping[str, Any],
+        operation_ids: tuple[str, ...],
+        bound_by_operation_id: str,
+    ) -> list[dict[str, Any]]:
+        if not operation_ids:
+            return []
+        if not all(
+            (
+                execution_binding.get("runtime_attempt_id"),
+                execution_binding.get("runtime_lease_id"),
+                execution_binding.get("runtime_worker_id"),
+                int(execution_binding.get("runtime_fencing_token") or 0) > 0,
+            )
+        ):
+            raise KernelError(
+                "BOOK_OPENING_BUDGET_RECONCILIATION_EXECUTION_REQUIRED",
+                "historical Provider work requires an exact terminal execution fence",
+            )
+        bound: list[dict[str, Any]] = []
+        for legacy_operation_id in sorted(operation_ids):
+            uow.cursor.execute(
+                """
+                WITH RECURSIVE ancestry AS (
+                    SELECT operation_id,project_id,causation_operation_id,
+                           parent_operation_id,ARRAY[operation_id]::TEXT[] path
+                    FROM authority_operation WHERE operation_id=%s
+                    UNION ALL
+                    SELECT parent.operation_id,parent.project_id,
+                           parent.causation_operation_id,parent.parent_operation_id,
+                           ancestry.path || parent.operation_id
+                    FROM ancestry
+                    CROSS JOIN LATERAL (
+                        VALUES (ancestry.causation_operation_id),
+                               (ancestry.parent_operation_id)
+                    ) edge(operation_id)
+                    JOIN authority_operation parent
+                      ON parent.operation_id=edge.operation_id
+                    WHERE edge.operation_id IS NOT NULL
+                      AND cardinality(ancestry.path)<33
+                      AND NOT parent.operation_id=ANY(ancestry.path)
+                )
+                SELECT bool_and(project_id=%s),bool_or(operation_id=%s)
+                FROM ancestry
+                """,
+                [
+                    legacy_operation_id,
+                    run["project_id"],
+                    run["root_operation_id"],
+                ],
+            )
+            authority = uow.cursor.fetchone()
+            if authority is None or not bool(authority[0]) or not bool(authority[1]):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                    "legacy Operation is not causally owned by this Book Opening",
+                )
+            uow.cursor.execute(
+                "SELECT project_id FROM authority_operation WHERE operation_id=%s FOR KEY SHARE",
+                [legacy_operation_id],
+            )
+            if uow.cursor.fetchone() is None:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                    "legacy Operation is missing",
+                )
+            binding_id = deterministic_budget_operation_binding_id(
+                operation_id=legacy_operation_id,
+                opening_execution_id=str(execution_binding["opening_execution_id"]),
+                opening_execution_generation=int(
+                    execution_binding["opening_execution_generation"]
+                ),
+                runtime_attempt_id=str(execution_binding["runtime_attempt_id"]),
+                runtime_fencing_token=int(execution_binding["runtime_fencing_token"]),
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_book_opening_budget_operation_binding(
+                    operation_budget_binding_id,operation_id,opening_run_id,
+                    project_id,budget_scope_id,budget_scope_revision,
+                    opening_execution_id,opening_execution_generation,
+                    runtime_job_id,runtime_attempt_id,runtime_lease_id,
+                    runtime_worker_id,runtime_fencing_token,binding_source,
+                    bound_by_operation_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                          'LEGACY_RECONCILIATION',%s)
+                ON CONFLICT DO NOTHING
+                """,
+                [
+                    binding_id,
+                    legacy_operation_id,
+                    run["opening_run_id"],
+                    run["project_id"],
+                    scope["budget_scope_id"],
+                    scope["revision"],
+                    execution_binding["opening_execution_id"],
+                    execution_binding["opening_execution_generation"],
+                    execution_binding["runtime_job_id"],
+                    execution_binding["runtime_attempt_id"],
+                    execution_binding["runtime_lease_id"],
+                    execution_binding["runtime_worker_id"],
+                    execution_binding["runtime_fencing_token"],
+                    bound_by_operation_id,
+                ],
+            )
+            bound.append(
+                {
+                    "operation_id": legacy_operation_id,
+                    "operation_budget_binding_id": binding_id,
+                }
+            )
+        return bound
+
+    @staticmethod
+    def _prepare_legacy_budget_reservation_attributions_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        run: Mapping[str, Any],
+        scope: Mapping[str, Any],
+        operation_ids: tuple[str, ...],
+        reservation_ids: tuple[str, ...],
+    ) -> list[dict[str, Any]]:
+        operation_set = set(operation_ids)
+        attributions: list[dict[str, Any]] = []
+        for reservation_id in sorted(reservation_ids):
+            uow.cursor.execute(
+                """
+                SELECT operation_id,external_effect_id,project_id
+                FROM authority_budget_reservation
+                WHERE reservation_id=%s
+                """,
+                [reservation_id],
+            )
+            reservation_identity = uow.cursor.fetchone()
+            if (
+                reservation_identity is None
+                or str(reservation_identity[0]) not in operation_set
+                or str(reservation_identity[2]) != str(run["project_id"])
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_RESERVATION_MISSING",
+                    "legacy BudgetReservation is missing or outside its listed Operation set",
+                )
+            uow.cursor.execute(
+                """
+                SELECT 1 FROM authority_external_effect
+                WHERE external_effect_id=%s AND operation_id=%s
+                  AND project_id=%s FOR KEY SHARE
+                """,
+                [
+                    reservation_identity[1],
+                    reservation_identity[0],
+                    run["project_id"],
+                ],
+            )
+            if uow.cursor.fetchone() is None:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                    "legacy BudgetReservation ExternalEffect is missing",
+                )
+            uow.cursor.execute(
+                """
+                SELECT reservation_id,operation_id,external_effect_id,project_id,
+                       stable_idempotency_key,provider,chapter,currency,
+                       estimated_amount,reserved_amount,settled_amount,
+                       estimated_tokens,actual_tokens,status,caps,evidence,
+                       budget_timezone,budget_scope_id,budget_scope_revision,
+                       budget_breach,version
+                FROM authority_budget_reservation
+                WHERE reservation_id=%s AND project_id=%s
+                FOR UPDATE
+                """,
+                [reservation_id, run["project_id"]],
+            )
+            row = uow.cursor.fetchone()
+            columns = (
+                "reservation_id",
+                "operation_id",
+                "external_effect_id",
+                "project_id",
+                "stable_idempotency_key",
+                "provider",
+                "chapter",
+                "currency",
+                "estimated_amount",
+                "reserved_amount",
+                "settled_amount",
+                "estimated_tokens",
+                "actual_tokens",
+                "status",
+                "caps",
+                "evidence",
+                "budget_timezone",
+                "budget_scope_id",
+                "budget_scope_revision",
+                "budget_breach",
+                "version",
+            )
+            if row is None:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_RESERVATION_MISSING",
+                    "legacy BudgetReservation is missing",
+                )
+            reservation = dict(zip(columns, row, strict=True))
+            if (
+                str(reservation["operation_id"]) not in operation_set
+                or reservation["budget_scope_id"] is not None
+                or reservation["budget_scope_revision"] is not None
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                    "legacy BudgetReservation is not an unbound listed Operation cost",
+                )
+            if str(reservation["status"]) not in {
+                "SETTLED",
+                "RELEASED",
+                "REJECTED",
+            }:
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_RESERVATION_NOT_TERMINAL",
+                    "legacy reservation must be formally terminal before attribution",
+                )
+            if str(reservation["operation_id"]) != str(reservation_identity[0]) or str(
+                reservation["external_effect_id"]
+            ) != str(reservation_identity[1]):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_RECONCILIATION_SCOPE_CONFLICT",
+                    "legacy BudgetReservation identity changed while acquiring locks",
+                )
+            snapshot = canonical_budget_reservation_snapshot(reservation)
+            snapshot_hash = str(snapshot.pop("snapshot_hash"))
+            cost_evidence_id = ""
+            cost_evidence_version: int | None = None
+            cost_evidence_hash = ""
+            if str(reservation["status"]) == "SETTLED":
+                cost_evidence_id = f"budget-cost:{reservation_id}"
+                uow.cursor.execute(
+                    """
+                    SELECT cost_evidence_id,operation_id,provider,model,amount,
+                           currency,evidence
+                    FROM authority_operation_cost_evidence
+                    WHERE cost_evidence_id=%s AND operation_id=%s
+                    FOR KEY SHARE
+                    """,
+                    [cost_evidence_id, reservation["operation_id"]],
+                )
+                cost = uow.cursor.fetchone()
+                if cost is None:
+                    raise KernelError(
+                        "BOOK_OPENING_BUDGET_RECONCILIATION_EVIDENCE_MISSING",
+                        "settled legacy reservation lacks immutable cost evidence",
+                    )
+                cost_evidence_version = 0
+                cost_evidence_hash = _canonical_hash(
+                    {
+                        "cost_evidence_id": str(cost[0]),
+                        "operation_id": str(cost[1]),
+                        "provider": str(cost[2]),
+                        "model": str(cost[3]),
+                        "amount": format(cost[4].normalize(), "f"),
+                        "currency": str(cost[5]),
+                        "evidence": dict(cost[6] or {}),
+                    }
+                )
+            attributions.append(
+                {
+                    "legacy_budget_attribution_id": _stable_id(
+                        "legacy-budget-attribution",
+                        str(run["opening_run_id"]),
+                        reservation_id,
+                        str(scope["budget_scope_id"]),
+                    ),
+                    "reservation_id": reservation_id,
+                    "operation_id": str(reservation["operation_id"]),
+                    "external_effect_id": str(reservation["external_effect_id"]),
+                    "reservation_version": int(reservation["version"]),
+                    "reservation_status": str(reservation["status"]),
+                    "reservation_snapshot": snapshot,
+                    "reservation_snapshot_hash": snapshot_hash,
+                    "cost_evidence_id": cost_evidence_id,
+                    "cost_evidence_version": cost_evidence_version,
+                    "cost_evidence_hash": cost_evidence_hash,
+                }
+            )
+        return attributions
 
     @staticmethod
     def _runtime_claim_payload(claim: RuntimeJobClaim) -> dict[str, Any]:
@@ -1418,7 +2634,7 @@ class PostgresBookOpeningApplication:
         expected_version: int,
         runtime_claim: RuntimeJobClaim,
     ) -> None:
-        """Bind the exact live Runtime claim before business execution."""
+        """Atomically activate Runtime, Opening, and semantic replacement work."""
 
         if runtime_claim.subject_id != opening_run_id:
             raise KernelError(
@@ -1432,80 +2648,105 @@ class PostgresBookOpeningApplication:
             )
             uow.cursor.execute(
                 """
-                SELECT opening.lifecycle,opening.current_execution_id,
-                       opening.current_execution_generation,
-                       execution.lifecycle,execution.version,
-                       execution.runtime_job_id,execution.input_snapshot_hash,
-                       job.input_hash,job.status,job.current_attempt_id,
-                       job.current_fencing_token,job.lease_loss_policy,
-                       attempt.worker_id,attempt.lease_id,attempt.status,
-                       lease.lease_id,lease.worker_id,lease.fencing_token,
-                       lease.status,lease.lease_expires_at,
-                       execution.frozen_request_digest,
-                       opening.frozen_request_digest,
-                       execution.policy_snapshot_hash,
-                       execution.authority_contract_hash,
-                       execution.current_attempt_id,
-                       execution.current_lease_id,
-                       execution.current_worker_id,
-                       execution.current_fencing_token
-                FROM authority_book_opening_run AS opening
-                JOIN authority_book_opening_execution AS execution
-                  ON execution.opening_execution_id=opening.current_execution_id
-                 AND execution.opening_run_id=opening.opening_run_id
-                 AND execution.generation=opening.current_execution_generation
-                JOIN authority_runtime_job AS job
-                  ON job.runtime_job_id=execution.runtime_job_id
+                SELECT lifecycle,current_execution_id,current_execution_generation,
+                       frozen_request_digest,root_operation_id,project_id,
+                       recovery_state
+                FROM authority_book_opening_run
+                WHERE opening_run_id=%s AND version=%s
+                FOR UPDATE
+                """,
+                [opening_run_id, expected_version],
+            )
+            opening = uow.cursor.fetchone()
+            if (
+                opening is None
+                or str(opening[0]) not in {"ADMITTED", "RUNNING"}
+                or not str(opening[1] or "")
+                or int(opening[2] or 0) <= 0
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_EXECUTION_BINDING_INVALID",
+                    "Book Opening has no current executable generation",
+                )
+            uow.cursor.execute(
+                """
+                SELECT lifecycle,version,runtime_job_id,input_snapshot_hash,
+                       frozen_request_digest,policy_snapshot_hash,
+                       authority_contract_hash,current_attempt_id,
+                       current_lease_id,current_worker_id,current_fencing_token,
+                       recovery_intent_id
+                FROM authority_book_opening_execution
+                WHERE opening_run_id=%s AND opening_execution_id=%s
+                  AND generation=%s
+                FOR UPDATE
+                """,
+                [opening_run_id, str(opening[1]), int(opening[2])],
+            )
+            execution = uow.cursor.fetchone()
+            if (
+                execution is None
+                or str(execution[0]) not in {"BOUND", "RUNNING"}
+                or str(execution[2]) != runtime_claim.runtime_job_id
+                or str(execution[4]) != str(opening[3])
+                or str(execution[5]) != self.recovery._execution_policy_digest()
+                or str(execution[6]) != self.recovery._authority_digest()
+                or str(execution[7]) != runtime_claim.attempt_id
+                or str(execution[8]) != runtime_claim.lease_id
+                or str(execution[9]) != runtime_claim.worker_id
+                or int(execution[10] or 0) != runtime_claim.fencing_token
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_EXECUTION_BINDING_INVALID",
+                    "OpeningExecution does not bind the exact Runtime claim",
+                )
+            self.runtime_jobs.start_authority_owned_in_uow(uow, runtime_claim)
+            uow.cursor.execute(
+                """
+                SELECT job.input_hash,job.input_snapshot,job.status,
+                       job.current_attempt_id,job.current_fencing_token,
+                       job.lease_loss_policy,job.claimed_by,
+                       attempt.status,attempt.worker_id,attempt.lease_id,
+                       attempt.fencing_token,lease.status,lease.worker_id,
+                       lease.fencing_token,
+                       lease.lease_expires_at>clock_timestamp()
+                FROM authority_runtime_job AS job
                 JOIN authority_runtime_job_attempt AS attempt
                   ON attempt.attempt_id=job.current_attempt_id
                 JOIN authority_runtime_job_lease AS lease
                   ON lease.attempt_id=attempt.attempt_id
-                WHERE opening.opening_run_id=%s AND opening.version=%s
-                  AND execution.runtime_job_id=%s
-                FOR UPDATE OF opening,execution,job,attempt,lease
+                 AND lease.lease_id=attempt.lease_id
+                WHERE job.runtime_job_id=%s
                 """,
-                [opening_run_id, expected_version, runtime_claim.runtime_job_id],
+                [runtime_claim.runtime_job_id],
             )
-            row = uow.cursor.fetchone()
-            valid = bool(
-                row is not None
-                and str(row[0]) in {"ADMITTED", "RUNNING"}
-                and str(row[3]) in {"BOUND", "RUNNING"}
-                and str(row[6]) == str(row[7])
-                and str(row[8]) in {"RUNNING", "CHECKPOINTED"}
-                and str(row[9]) == runtime_claim.attempt_id
-                and int(row[10]) == runtime_claim.fencing_token
-                and str(row[11]) == AUTHORITY_CONVERGENCE_REQUIRED
-                and str(row[12]) == runtime_claim.worker_id
-                and str(row[13]) == runtime_claim.lease_id
-                and str(row[14]) in {"RUNNING", "CHECKPOINTED"}
-                and str(row[15]) == runtime_claim.lease_id
-                and str(row[16]) == runtime_claim.worker_id
-                and int(row[17]) == runtime_claim.fencing_token
-                and str(row[18]) == "HELD"
-                and str(row[20]) == str(row[21])
-                and str(row[22]) == self.recovery._execution_policy_digest()
-                and str(row[23]) == self.recovery._authority_digest()
-                and str(row[24]) == runtime_claim.attempt_id
-                and str(row[25]) == runtime_claim.lease_id
-                and str(row[26]) == runtime_claim.worker_id
-                and int(row[27]) == runtime_claim.fencing_token
-            )
-            if not valid:
+            runtime = uow.cursor.fetchone()
+            if (
+                runtime is None
+                or str(runtime[0]) != str(execution[3])
+                or dict(runtime[1] or {}) != dict(runtime_claim.input_snapshot)
+                or str(runtime[2]) not in {"RUNNING", "CHECKPOINTED"}
+                or str(runtime[3]) != runtime_claim.attempt_id
+                or int(runtime[4]) != runtime_claim.fencing_token
+                or str(runtime[5]) != AUTHORITY_CONVERGENCE_REQUIRED
+                or str(runtime[6]) != runtime_claim.worker_id
+                or str(runtime[7]) not in {"RUNNING", "CHECKPOINTED"}
+                or str(runtime[8]) != runtime_claim.worker_id
+                or str(runtime[9]) != runtime_claim.lease_id
+                or int(runtime[10]) != runtime_claim.fencing_token
+                or str(runtime[11]) != "HELD"
+                or str(runtime[12]) != runtime_claim.worker_id
+                or int(runtime[13]) != runtime_claim.fencing_token
+            ):
                 raise KernelError(
                     "BOOK_OPENING_EXECUTION_BINDING_INVALID",
-                    "Opening does not bind the exact RuntimeJob/Attempt/Lease/fence",
+                    "RuntimeJob/Attempt/Lease differs from the current Opening fence",
                 )
-            uow.cursor.execute(
-                "SELECT %s::timestamptz > transaction_timestamp()",
-                [row[19]],
-            )
-            if not bool(uow.cursor.fetchone()[0]):
+            if not bool(runtime[14]):
                 raise KernelError(
                     "BOOK_OPENING_EXECUTION_LEASE_EXPIRED",
-                    "Opening execution lease expired before business execution",
+                    "Opening execution lease expired before atomic activation",
                 )
-            if str(row[3]) == "BOUND":
+            if str(execution[0]) == "BOUND":
                 uow.cursor.execute(
                     """
                     UPDATE authority_book_opening_execution
@@ -1518,8 +2759,8 @@ class PostgresBookOpeningApplication:
                       AND current_fencing_token=%s
                     """,
                     [
-                        str(row[1]),
-                        int(row[4]),
+                        str(opening[1]),
+                        int(execution[1]),
                         runtime_claim.attempt_id,
                         runtime_claim.lease_id,
                         runtime_claim.worker_id,
@@ -1531,27 +2772,6 @@ class PostgresBookOpeningApplication:
                         "BOOK_OPENING_EXECUTION_BINDING_CONFLICT",
                         "Opening execution was concurrently bound",
                     )
-            else:
-                uow.cursor.execute(
-                    """
-                    SELECT 1 FROM authority_book_opening_execution
-                    WHERE opening_execution_id=%s AND current_attempt_id=%s
-                      AND current_lease_id=%s AND current_worker_id=%s
-                      AND current_fencing_token=%s AND lifecycle='RUNNING'
-                    """,
-                    [
-                        str(row[1]),
-                        runtime_claim.attempt_id,
-                        runtime_claim.lease_id,
-                        runtime_claim.worker_id,
-                        runtime_claim.fencing_token,
-                    ],
-                )
-                if uow.cursor.fetchone() is None:
-                    raise KernelError(
-                        "BOOK_OPENING_EXECUTION_BINDING_CONFLICT",
-                        "RUNNING Opening execution carries a different claim",
-                    )
             uow.cursor.execute(
                 """
                 UPDATE authority_book_opening_run
@@ -1562,12 +2782,93 @@ class PostgresBookOpeningApplication:
                   AND current_execution_id=%s
                   AND current_execution_generation=%s
                 """,
-                [opening_run_id, expected_version, str(row[1]), int(row[2])],
+                [opening_run_id, expected_version, str(opening[1]), int(opening[2])],
             )
             if uow.cursor.rowcount != 1:
                 raise KernelError(
                     "BOOK_OPENING_EXECUTION_BINDING_CONFLICT",
                     "Book Opening changed while its execution was bound",
+                )
+            semantic = dict(runtime_claim.input_snapshot)
+            if "semantic_execution_mode" not in semantic:
+                if int(opening[2]) != 1 or str(execution[11] or ""):
+                    raise KernelError(
+                        "BOOK_OPENING_SEMANTIC_BINDING_RECONCILIATION_REQUIRED",
+                        "legacy semantic binding is allowed only for generation one",
+                    )
+                semantic_mode = "NONE"
+            else:
+                semantic_mode = str(semantic.get("semantic_execution_mode") or "")
+            semantic_operation_id = str(
+                semantic.get("semantic_evaluation_operation_id") or ""
+            )
+            semantic_execution_id = str(
+                semantic.get("semantic_evaluation_execution_id") or ""
+            )
+            semantic_generation = int(
+                semantic.get("semantic_evaluation_generation") or 0
+            )
+            if semantic_mode == "NONE":
+                if (
+                    semantic_operation_id
+                    or semantic_execution_id
+                    or semantic_generation != 0
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                        "NONE semantic mode carries executable Evaluation identity",
+                    )
+            elif semantic_mode in {"NEW_REPLACEMENT", "RESUME_CURRENT"}:
+                if (
+                    not semantic_operation_id
+                    or not semantic_execution_id
+                    or semantic_generation <= 0
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                        "semantic execution binding is incomplete",
+                    )
+                if semantic_mode == "NEW_REPLACEMENT":
+                    if self.recovery.semantic_replacement is None:
+                        raise KernelError(
+                            "BOOK_OPENING_REPLACEMENT_RUNTIME_REQUIRED",
+                            "replacement release requires Story Design Authority",
+                        )
+                    uow.cursor.execute(
+                        "SELECT actor_id FROM authority_operation "
+                        "WHERE operation_id=%s AND project_id=%s",
+                        [semantic_operation_id, str(opening[5])],
+                    )
+                    semantic_actor = uow.cursor.fetchone()
+                    if semantic_actor is None or not str(execution[11] or ""):
+                        raise KernelError(
+                            "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                            "replacement lineage is not bound to this execution",
+                        )
+                    self.recovery.semantic_replacement.release_replacement_in_uow(
+                        uow,
+                        operation_id=semantic_operation_id,
+                        recovery_intent_id=str(execution[11]),
+                        actor_id=str(semantic_actor[0]),
+                        trace_id=(f"trace:{opening_run_id}:activation:{opening[2]}"),
+                        correlation_id=str(opening[4]),
+                        causation_id=str(execution[11]),
+                    )
+                else:
+                    uow.cursor.execute(
+                        "SELECT authority_narrative_replacement_gate_is_open(%s,%s)",
+                        [semantic_operation_id, str(opening[5])],
+                    )
+                    gate = uow.cursor.fetchone()
+                    if gate is None or not bool(gate[0]):
+                        raise KernelError(
+                            "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+                            "resumed semantic Evaluation lacks a live outer execution",
+                        )
+            else:
+                raise KernelError(
+                    "BOOK_OPENING_SEMANTIC_BINDING_INVALID",
+                    "RuntimeJob carries an unknown semantic execution mode",
                 )
             uow.commit()
 
@@ -1692,9 +2993,39 @@ class PostgresBookOpeningApplication:
         accepted_state: str,
         horizon: Mapping[str, object],
         transformation: Mapping[str, object],
+        opening_run_id: str = "",
+        runtime_claim: RuntimeJobClaim | None = None,
         progress: Mapping[str, Mapping[str, Any]] | None = None,
         execution_probe: Callable[[], object] | None = None,
     ):
+        opening_execution_binding: dict[str, Any] | None = None
+        if opening_run_id:
+            if runtime_claim is None:
+                raise KernelError(
+                    "BOOK_OPENING_EXECUTION_REQUIRED",
+                    "Planning generation requires the exact Opening Runtime claim",
+                )
+            if str(runtime_claim.input_snapshot.get("opening_run_id") or "") != (
+                opening_run_id
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_EXECUTION_BINDING_INVALID",
+                    "Planning generation Runtime claim belongs to another Opening",
+                )
+            opening_execution_binding = {
+                "opening_run_id": opening_run_id,
+                "opening_execution_id": str(
+                    runtime_claim.input_snapshot.get("opening_execution_id") or ""
+                ),
+                "opening_execution_generation": int(
+                    runtime_claim.input_snapshot.get("execution_generation") or 0
+                ),
+                "runtime_job_id": runtime_claim.runtime_job_id,
+                "runtime_attempt_id": runtime_claim.attempt_id,
+                "runtime_lease_id": runtime_claim.lease_id,
+                "runtime_worker_id": runtime_claim.worker_id,
+                "runtime_fencing_token": runtime_claim.fencing_token,
+            }
         generation = StoryPlanningGenerationCommand(
             project_id=request.project_id,
             workspace_id=request.workspace_id,
@@ -1707,6 +3038,7 @@ class PostgresBookOpeningApplication:
             idempotency_key=f"{request.idempotency_key}:{generator}:{logical_key}",
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
+            opening_execution_binding=opening_execution_binding,
         )
         search_request = NarrativeSearchRequest(
             generation=generation,
@@ -1720,6 +3052,56 @@ class PostgresBookOpeningApplication:
             accepted_through_chapter=0,
             parent_state_asset_version_id=accepted_state,
         )
+        qualified_branch_committer = None
+        if opening_run_id:
+            if runtime_claim is None or opening_execution_binding is None:
+                raise KernelError(
+                    "BOOK_OPENING_EXECUTION_REQUIRED",
+                    "Planning branch checkpoint requires the exact Runtime claim",
+                )
+
+            def commit_qualified_branch(*, search_id, branch_key, result):
+                def commit_in_uow(uow):
+                    try:
+                        return self.narrative_search.register_qualified_branch_in_uow(
+                            uow,
+                            search_id=search_id,
+                            branch_key=branch_key,
+                            result=result,
+                        )
+                    except KernelError as exc:
+                        if (
+                            exc.code
+                            != "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED"
+                        ):
+                            raise
+                    return (
+                        self.narrative_search.reconcile_legacy_qualified_branch_in_uow(
+                            uow,
+                            search_id=search_id,
+                            branch_key=branch_key,
+                            result=result,
+                            opening_run_id=opening_run_id,
+                            opening_execution_id=str(
+                                opening_execution_binding["opening_execution_id"]
+                            ),
+                            execution_generation=int(
+                                opening_execution_binding[
+                                    "opening_execution_generation"
+                                ]
+                            ),
+                        )
+                    )
+
+                return self.recovery.commit_execution_narrative_search_branch(
+                    opening_run_id,
+                    runtime_claim=runtime_claim,
+                    search_id=search_id,
+                    branch_key=branch_key,
+                    branch_committer=commit_in_uow,
+                )
+
+            qualified_branch_committer = commit_qualified_branch
         checkpoint = dict((progress or {}).get(f"{generator}:{logical_key}") or {})
         if checkpoint:
             if (
@@ -1730,22 +3112,70 @@ class PostgresBookOpeningApplication:
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
                     "semantic work checkpoint is not a Planning-owned Narrative Search",
                 )
+            search_id = str(checkpoint.get("evidence_id") or "")
+            branches = self.narrative_search.require_qualified_branches(
+                search_id,
+                expected_branch_keys=tuple(
+                    f"future-{ordinal}"
+                    for ordinal in range(
+                        1,
+                        len(search_request.strategy_directives) + 1,
+                    )
+                ),
+                project_id=request.project_id,
+            )
+            for branch in branches:
+                branch_key = branch.branch_key
+                branch_work_key = f"narrative-search-branch:{search_id}:{branch_key}"
+                branch_checkpoint = dict((progress or {}).get(branch_work_key) or {})
+                if branch_checkpoint:
+                    if (
+                        str(branch_checkpoint.get("owning_authority"))
+                        != "STORY_PLANNING"
+                        or str(branch_checkpoint.get("evidence_type"))
+                        != branch.evidence_type
+                        or str(branch_checkpoint.get("evidence_id") or "")
+                        != branch.evidence_id
+                        or int(branch_checkpoint.get("evidence_version") or 0)
+                        != branch.evidence_version
+                        or str(branch_checkpoint.get("evidence_hash") or "")
+                        != branch.evidence_hash
+                    ):
+                        raise KernelError(
+                            "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                            "future branch checkpoint is not Planning-owned evidence",
+                        )
+                    continue
+                if qualified_branch_committer is None:
+                    raise KernelError(
+                        "BOOK_OPENING_BRANCH_CHECKPOINT_REQUIRED",
+                        "whole-search replay cannot bypass a future branch checkpoint",
+                    )
+                qualified_branch_committer(
+                    search_id=search_id,
+                    branch_key=branch_key,
+                    result=branch.result,
+                )
             resumed = self.narrative_search.require_selected(
                 search_request,
                 activate_selected=True,
+                allow_reconciled_branches=True,
+                opening_run_id=opening_run_id,
             )
-            if resumed.search_id != str(checkpoint.get("evidence_id") or ""):
+            if resumed.search_id != search_id:
                 raise KernelError(
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
                     "resumed Narrative Search differs from the checkpoint cursor",
                 )
             return resumed
-        return self.narrative_search.explore(
-            search_request,
-            principal=principal,
-            activate_selected=True,
-            execution_probe=execution_probe,
-        )
+        explore_options: dict[str, Any] = {
+            "principal": principal,
+            "activate_selected": True,
+            "execution_probe": execution_probe,
+        }
+        if qualified_branch_committer is not None:
+            explore_options["qualified_branch_committer"] = qualified_branch_committer
+        return self.narrative_search.explore(search_request, **explore_options)
 
     @staticmethod
     def _stage_inputs(
@@ -1847,6 +3277,11 @@ def _opening_definition(
             "opening_run_id": {"type": "string"},
         },
     }
+    required_outbox_event = (
+        "book.opening.legacy_budget_reconciled"
+        if name == "book.opening.reconcile_legacy_budget_scope"
+        else "book.opening.transitioned"
+    )
     return {
         "name": name,
         "definition_version": BOOK_OPENING_DEFINITION_VERSION,
@@ -1887,7 +3322,7 @@ def _opening_definition(
         "completion_contract": {
             "version": "book-opening-completion.v1",
             "required_evidence": ["trace", "audit"],
-            "required_outbox_events": ["book.opening.transitioned"],
+            "required_outbox_events": [required_outbox_event],
         },
     }
 

@@ -679,6 +679,125 @@ class ExternalEffectRepository:
             )
         return target
 
+    def cancel_proven_never_sent(
+        self,
+        effect: dict[str, Any],
+        *,
+        reason: str,
+    ) -> bool:
+        """Terminalize only a dispatch history that proves no request was sent.
+
+        This is the narrow Authority primitive used when an owning workflow is
+        aborted.  It deliberately refuses to infer safety from an Effect's
+        retryable status alone: every dispatch and receipt is locked and any
+        held lease, receipt, in-flight state, or non-boolean ``request_sent``
+        evidence keeps the Effect on the reconciliation path.
+        """
+
+        effect_id = str(effect["external_effect_id"])
+        if str(effect["status"]) not in {"READY", "FAILED_RETRYABLE"}:
+            return False
+        self.cursor.execute(
+            """
+            SELECT dispatch_id,generation,status,evidence
+            FROM authority_external_effect_dispatch
+            WHERE external_effect_id=%s
+            ORDER BY generation,dispatch_id
+            FOR UPDATE
+            """,
+            [effect_id],
+        )
+        dispatches = [tuple(row) for row in self.cursor.fetchall()]
+        dispatch_ids = [str(row[0]) for row in dispatches]
+        if dispatch_ids:
+            self.cursor.execute(
+                """
+                SELECT external_receipt_id,dispatch_id,status
+                FROM authority_external_receipt
+                WHERE dispatch_id=ANY(%s)
+                ORDER BY dispatch_id,external_receipt_id
+                FOR UPDATE
+                """,
+                [dispatch_ids],
+            )
+            if self.cursor.fetchone() is not None:
+                return False
+            self.cursor.execute(
+                """
+                SELECT lease_id,dispatch_id,status
+                FROM authority_effect_dispatch_lease
+                WHERE dispatch_id=ANY(%s)
+                ORDER BY dispatch_id,fencing_token
+                FOR UPDATE
+                """,
+                [dispatch_ids],
+            )
+            leases = [tuple(row) for row in self.cursor.fetchall()]
+            if any(str(row[2]) == "HELD" for row in leases):
+                return False
+        else:
+            leases = []
+        leases_by_dispatch: dict[str, list[tuple[Any, ...]]] = {}
+        for lease in leases:
+            leases_by_dispatch.setdefault(str(lease[1]), []).append(lease)
+        if not dispatches:
+            if str(effect["status"]) != "READY":
+                return False
+        else:
+            for dispatch_id, _generation, status, evidence in dispatches:
+                normalized_evidence = dict(evidence or {})
+                if str(status) == "CREATED":
+                    if leases_by_dispatch.get(str(dispatch_id)):
+                        return False
+                    continue
+                if (
+                    str(status) == "FAILED_RETRYABLE"
+                    and normalized_evidence.get("request_sent") is False
+                ):
+                    continue
+                return False
+
+        terminal_evidence = Jsonb(
+            {
+                "owner_abort_reason": reason,
+                "request_sent": False,
+                "terminalized_as": "planned_never_sent",
+            }
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_external_effect_dispatch
+            SET status='CANCELLED',updated_at=clock_timestamp(),
+                finished_at=COALESCE(finished_at,clock_timestamp()),
+                evidence=evidence || %s
+            WHERE external_effect_id=%s
+              AND status IN ('CREATED','FAILED_RETRYABLE')
+            """,
+            [terminal_evidence, effect_id],
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_external_effect
+            SET status='CANCELLED',last_error=last_error || %s
+            WHERE external_effect_id=%s
+              AND operation_id=%s AND project_id=%s
+              AND status=%s
+            """,
+            [
+                terminal_evidence,
+                effect_id,
+                effect["operation_id"],
+                effect["project_id"],
+                effect["status"],
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "EFFECT_STATUS_CONFLICT",
+                "never-sent Effect changed during owner abort",
+            )
+        return True
+
     def record_event(self, row: dict[str, Any]) -> None:
         self.cursor.execute(
             """

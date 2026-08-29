@@ -702,12 +702,27 @@ class PostgresBookProductionQuery:
         evidence = dict(row[7] or {})
         frozen = dict(evidence.get("followup_snapshot") or {})
         command = dict(row[11] or {})
+        try:
+            request_context_token_budget = int(
+                command.get("context_token_budget") or 0
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "BOOK_FOLLOWUP_ACCEPTED_SNAPSHOT_INCOMPLETE",
+                "accepted Chapter request has an invalid context token budget",
+            ) from exc
+        if request_context_token_budget <= 0:
+            raise KernelError(
+                "BOOK_FOLLOWUP_ACCEPTED_SNAPSHOT_INCOMPLETE",
+                "accepted Chapter request requires a positive context token budget",
+            )
         context_refs = dict(command.get("context_version_refs") or {})
         longform_refs = dict(row[17] or {})
         if not frozen:
             frozen = {
-                "schema_version": "book-followup-accepted-snapshot-v1",
+                "schema_version": "book-followup-accepted-snapshot-v2",
                 "observed_through_chapter": int(row[2]),
+                "context_token_budget": request_context_token_budget,
                 "book_production_input_snapshot_id": str(
                     context_refs.get("book_production_input_snapshot_id")
                     or row[18]
@@ -762,6 +777,11 @@ class PostgresBookProductionQuery:
                 "acceptance_operation_id": str(row[6]),
                 "chapter_root_operation_id": str(row[12]),
             }
+        elif "context_token_budget" not in frozen:
+            # v1 snapshots predate the explicit Provider ceiling. The Chapter
+            # request command is immutable Authority evidence, so its frozen
+            # value is the only legal compatibility source.
+            frozen["context_token_budget"] = request_context_token_budget
         frozen.update(
             {
                 "book_run_id": str(row[0]),
@@ -780,6 +800,7 @@ class PostgresBookProductionQuery:
             "arc_plan_versions",
             "chapter_plan_version",
             "production_profile_version",
+            "context_token_budget",
             "light_recap_cadence",
             "formal_recap_cadence",
             "reader_segment_version",
@@ -819,6 +840,14 @@ class PostgresBookProductionQuery:
             raise KernelError(
                 "BOOK_FOLLOWUP_ACCEPTED_SNAPSHOT_DRIFT",
                 "advisory snapshot identity differs from committed acceptance",
+            )
+        if (
+            int(frozen["context_token_budget"]) != request_context_token_budget
+            or int(frozen["context_token_budget"]) <= 0
+        ):
+            raise KernelError(
+                "BOOK_FOLLOWUP_ACCEPTED_SNAPSHOT_DRIFT",
+                "advisory snapshot token ceiling differs from the Chapter request",
             )
         if (
             int(frozen["light_recap_cadence"]) <= 0

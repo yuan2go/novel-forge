@@ -5,8 +5,13 @@ from threading import Barrier
 from typing import Any
 from unittest.mock import patch
 
+import psycopg
 import pytest
 
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetReservationRequest,
+    reserve_provider_budget,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
@@ -96,6 +101,49 @@ def _admit(orphan: LegacyBookOpeningOrphan, seeded: dict[str, Any]) -> dict[str,
         )
         uow.commit()
     return result
+
+
+def _gate_is_open(*, operation_id: str, project_id: str) -> bool:
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "SELECT authority_narrative_replacement_gate_is_open(%s,%s)",
+            [operation_id, project_id],
+        )
+        row = uow.cursor.fetchone()
+    return row is not None and bool(row[0])
+
+
+def _recover_through_canonical_path(
+    orphan: LegacyBookOpeningOrphan,
+    *,
+    suffix: str,
+) -> Any:
+    loss_key = f"replacement-gate-loss:{orphan.opening_run_id}:{suffix}"
+    loss = orphan.opening.recovery.assess_execution_loss(
+        orphan.opening_run_id,
+        idempotency_key=loss_key,
+        principal=orphan.principal,
+    )
+    orphan.opening.recovery.converge_execution_loss(
+        loss.recovery_assessment_id,
+        idempotency_key=loss_key,
+        principal=orphan.principal,
+        expected_opening_run_id=orphan.opening_run_id,
+    )
+    assessment = orphan.opening.recovery.assess_recovery(
+        orphan.opening_run_id,
+        idempotency_key=(
+            f"replacement-gate-assessment:{orphan.opening_run_id}:{suffix}"
+        ),
+        principal=orphan.principal,
+    )
+    return orphan.opening.recovery.recover(
+        assessment.recovery_assessment_id,
+        idempotency_key=(f"replacement-gate-recover:{orphan.opening_run_id}:{suffix}"),
+        reason=f"exercise exact replacement execution gate {suffix}",
+        principal=orphan.principal,
+        expected_opening_run_id=orphan.opening_run_id,
+    )
 
 
 def _create_ambiguous_effect_orphan() -> LegacyBookOpeningOrphan:
@@ -209,7 +257,7 @@ def test_replacement_generation_is_atomic_admission_only_and_replay_safe() -> No
         "CANCELLED",
         "CANCELLED",
         admitted["operation_id"],
-        "READY",
+        "ADMITTED",
         2,
         orphan.evaluation_operation_id,
         seeded["recovery_intent_id"],
@@ -245,30 +293,20 @@ def test_replacement_same_intent_concurrency_converges_to_one_operation() -> Non
         assert int(uow.cursor.fetchone()[0]) == 1
 
 
-def test_replacement_runs_only_when_normal_governed_execution_is_invoked() -> None:
+def test_replacement_cannot_execute_before_outer_activation() -> None:
     orphan = create_legacy_book_opening_orphan()
     seeded = _seed_recovery_intent(orphan)
     admitted = _admit(orphan, seeded)
 
-    with pytest.raises(SimulatedBookOpeningProcessLoss):
+    with pytest.raises(KernelError) as blocked:
         orphan.planning.evaluate_candidate(
             orphan.evaluation_command,
             principal=orphan.evaluator,
             transition_principal=orphan.principal,
         )
-
-    with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        with pytest.raises(
-            KernelError, match="NARRATIVE_EVALUATION_REPLACEMENT_ACTIVE"
-        ):
-            orphan.planning.semantic_evaluation.cancel_unstarted_replacement_in_uow(
-                uow,
-                operation_id=str(admitted["operation_id"]),
-                actor_id=orphan.principal.principal_id,
-                trace_id=f"trace:abort:{orphan.opening_run_id}",
-                correlation_id=f"correlation:abort:{orphan.opening_run_id}",
-                reason="active replacement must fail closed",
-            )
+    assert blocked.value.code == (
+        "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED"
+    )
 
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
@@ -294,46 +332,30 @@ def test_replacement_runs_only_when_normal_governed_execution_is_invoked() -> No
         )
         row = uow.cursor.fetchone()
     assert row is not None
-    assert tuple(row) == ("CANCELLED", "EXECUTING", "RUNNING", 1, 0)
+    assert tuple(row) == ("CANCELLED", "ADMITTED", "ADMITTED", 0, 0)
 
 
-def test_replacement_scripted_fixture_executes_with_predecessor_evaluator() -> None:
+def test_scripted_replacement_is_also_blocked_before_outer_activation() -> None:
     orphan = create_legacy_book_opening_orphan(
         evaluator_execution_class="SCRIPTED_FIXTURE"
     )
     seeded = _seed_recovery_intent(orphan)
     admitted = _admit(orphan, seeded)
 
-    result = orphan.planning.evaluate_candidate(
-        orphan.evaluation_command,
-        principal=orphan.evaluator,
-        transition_principal=orphan.principal,
-    )
-
-    assert (
-        result.generation_operation_id
-        == orphan.evaluation_command.generation_operation_id
-    )
-    with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        terminal_replay = (
-            orphan.planning.semantic_evaluation.cancel_unstarted_replacement_in_uow(
-                uow,
-                operation_id=str(admitted["operation_id"]),
-                actor_id=orphan.principal.principal_id,
-                trace_id=f"trace:abort:{orphan.opening_run_id}",
-                correlation_id=f"correlation:abort:{orphan.opening_run_id}",
-                reason="terminal execution is immutable",
-            )
+    with pytest.raises(KernelError) as blocked:
+        orphan.planning.evaluate_candidate(
+            orphan.evaluation_command,
+            principal=orphan.evaluator,
+            transition_principal=orphan.principal,
         )
-    assert terminal_replay["operation_status"] == "SUCCEEDED"
-    assert terminal_replay["lifecycle"] == "SUCCEEDED"
-    assert terminal_replay["replayed"] is True
+    assert blocked.value.code == (
+        "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED"
+    )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
             SELECT predecessor.status,successor.status,
                    successor.actor_id,successor_execution.lifecycle,
-                   attempt.status,lease.status,
                    (SELECT COUNT(*) FROM authority_external_effect
                     WHERE operation_id IN (
                         predecessor.operation_id,successor.operation_id
@@ -344,10 +366,6 @@ def test_replacement_scripted_fixture_executes_with_predecessor_evaluator() -> N
                  predecessor.operation_id
             JOIN authority_operation AS successor
               ON successor.operation_id=successor_execution.operation_id
-            JOIN authority_attempt AS attempt
-              ON attempt.operation_id=successor.operation_id
-            JOIN authority_lease_acquisition AS lease
-              ON lease.attempt_id=attempt.attempt_id
             WHERE predecessor.operation_id=%s
               AND successor.operation_id=%s
             """,
@@ -357,11 +375,9 @@ def test_replacement_scripted_fixture_executes_with_predecessor_evaluator() -> N
     assert row is not None
     assert tuple(row) == (
         "CANCELLED",
-        "SUCCEEDED",
+        "ADMITTED",
         orphan.evaluator.principal_id,
-        "SUCCEEDED",
-        "SUCCEEDED",
-        "RELEASED",
+        "ADMITTED",
         0,
     )
 
@@ -482,3 +498,386 @@ def test_replacement_fails_closed_for_semantic_assessment_drift() -> None:
             [seeded["recovery_intent_id"]],
         )
         assert int(uow.cursor.fetchone()[0]) == 0
+
+
+def test_database_gate_missing_lineage_and_wrong_project_fail_closed() -> None:
+    orphan = create_legacy_book_opening_orphan()
+
+    assert not _gate_is_open(
+        operation_id="operation:missing-semantic-execution",
+        project_id=orphan.project_id,
+    )
+    assert not _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id="project:wrong-scope",
+    )
+
+
+def test_database_gate_rejects_direct_semantic_execution_bypasses() -> None:
+    orphan = create_legacy_book_opening_orphan()
+    receipt = _recover_through_canonical_path(orphan, suffix="direct-db-bypass")
+    operation_id = str(receipt.result["replacement_evaluation_operation_id"])
+    evaluation_execution_id = str(receipt.result["replacement_evaluation_execution_id"])
+    assert operation_id and evaluation_execution_id
+
+    rejected_statements = (
+        (
+            """
+            UPDATE authority_operation
+            SET status='READY',version=version+1
+            WHERE operation_id=%s AND status='ADMITTED'
+            """,
+            [operation_id],
+        ),
+        (
+            """
+            UPDATE authority_narrative_evaluation_execution
+            SET lifecycle='RUNNING',version=version+1
+            WHERE evaluation_execution_id=%s AND lifecycle='ADMITTED'
+            """,
+            [evaluation_execution_id],
+        ),
+        (
+            """
+            INSERT INTO authority_attempt(
+                attempt_id,operation_id,attempt_number,status
+            ) VALUES (%s,%s,1,'CREATED')
+            """,
+            [f"attempt:direct-bypass:{operation_id}", operation_id],
+        ),
+        (
+            """
+            INSERT INTO authority_external_effect(
+                external_effect_id,operation_id,effect_type,
+                stable_idempotency_key,status,request_hash,project_id
+            ) VALUES (%s,%s,'model.invoke',%s,'READY',%s,%s)
+            """,
+            [
+                f"effect:direct-bypass:{operation_id}",
+                operation_id,
+                f"direct-bypass:{operation_id}",
+                "sha256:" + "0" * 64,
+                orphan.project_id,
+            ],
+        ),
+    )
+    for statement, parameters in rejected_statements:
+        with pytest.raises(
+            psycopg.errors.CheckViolation,
+            match="NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+        ):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(statement, parameters)
+                uow.commit()
+
+    terminal_effect_id = f"effect:terminal-bypass-probe:{operation_id}"
+    terminal_dispatch_id = f"dispatch:terminal-bypass-probe:{operation_id}"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_external_effect(
+                external_effect_id,operation_id,effect_type,
+                stable_idempotency_key,status,request_hash,project_id
+            ) VALUES (%s,%s,'model.invoke',%s,'FAILED_FINAL',%s,%s)
+            """,
+            [
+                terminal_effect_id,
+                operation_id,
+                f"terminal-bypass-probe:{operation_id}",
+                "sha256:" + "1" * 64,
+                orphan.project_id,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_external_effect_dispatch(
+                dispatch_id,external_effect_id,generation,status,payload_hash
+            ) VALUES (%s,%s,1,'FAILED_FINAL',%s)
+            """,
+            [terminal_dispatch_id, terminal_effect_id, "sha256:" + "1" * 64],
+        )
+        uow.commit()
+    with pytest.raises(
+        psycopg.errors.CheckViolation,
+        match="NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+    ):
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_effect_dispatch_lease(
+                    lease_id,dispatch_id,owner,fencing_token,
+                    acquired_at,expires_at,heartbeat_at,status
+                ) VALUES (
+                    %s,%s,'direct-db-bypass-worker',1,
+                    clock_timestamp(),
+                    clock_timestamp()+INTERVAL '1 minute',
+                    clock_timestamp(),'HELD'
+                )
+                """,
+                [f"effect-lease:direct-bypass:{operation_id}", terminal_dispatch_id],
+            )
+            uow.commit()
+
+
+def test_new_replacement_gate_opens_only_after_exact_outer_activation() -> None:
+    orphan = create_legacy_book_opening_orphan()
+    receipt = _recover_through_canonical_path(orphan, suffix="new")
+    operation_id = str(receipt.result["replacement_evaluation_operation_id"])
+    assert operation_id
+    assert not _gate_is_open(
+        operation_id=operation_id,
+        project_id=orphan.project_id,
+    )
+
+    claim = orphan.opening.claim_next_execution(
+        worker_id="replacement-gate-new-worker",
+        lease_seconds=60,
+        project_id=orphan.project_id,
+    )
+    assert claim is not None
+    assert claim.runtime_job_id == receipt.result["runtime_job_id"]
+    # Claim owns no Provider permission.  Activation must atomically move the
+    # RuntimeJob, Attempt, OpeningExecution and BookOpening to RUNNING first.
+    assert not _gate_is_open(
+        operation_id=operation_id,
+        project_id=orphan.project_id,
+    )
+    orphan.opening._bind_running_execution(  # noqa: SLF001
+        orphan.opening_run_id,
+        expected_version=int(orphan.opening.require(orphan.opening_run_id)["version"]),
+        runtime_claim=claim,
+    )
+    assert _gate_is_open(
+        operation_id=operation_id,
+        project_id=orphan.project_id,
+    )
+    assert (
+        orphan.opening.claim_next_execution(
+            worker_id="replacement-gate-double-claim-worker",
+            lease_seconds=60,
+            project_id=orphan.project_id,
+        )
+        is None
+    )
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            UPDATE authority_runtime_job_lease
+            SET lease_expires_at=clock_timestamp()-INTERVAL '1 second'
+            WHERE lease_id=%s AND status='HELD'
+            """,
+            [claim.lease_id],
+        )
+        assert uow.cursor.rowcount == 1
+        uow.commit()
+    assert not _gate_is_open(
+        operation_id=operation_id,
+        project_id=orphan.project_id,
+    )
+
+
+def test_resume_current_gate_uses_exact_current_assessment_and_fence() -> None:
+    orphan = create_legacy_book_opening_orphan(terminalize_evaluation=False)
+    receipt = _recover_through_canonical_path(orphan, suffix="resume")
+    assert receipt.result["replacement_evaluation_operation_id"] == ""
+    assert not _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id=orphan.project_id,
+    )
+
+    claim = orphan.opening.claim_next_execution(
+        worker_id="replacement-gate-resume-worker",
+        lease_seconds=60,
+        project_id=orphan.project_id,
+    )
+    assert claim is not None
+    assert claim.runtime_job_id == receipt.result["runtime_job_id"]
+    assert not _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id=orphan.project_id,
+    )
+    orphan.opening._bind_running_execution(  # noqa: SLF001
+        orphan.opening_run_id,
+        expected_version=int(orphan.opening.require(orphan.opening_run_id)["version"]),
+        runtime_claim=claim,
+    )
+    assert _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id=orphan.project_id,
+    )
+
+
+def test_resume_current_outer_abort_fences_and_terminalizes_semantic_execution() -> (
+    None
+):
+    orphan = create_legacy_book_opening_orphan(terminalize_evaluation=False)
+    receipt = _recover_through_canonical_path(orphan, suffix="resume-abort")
+    assert receipt.result["replacement_evaluation_operation_id"] == ""
+
+    outer_claim = orphan.opening.claim_next_execution(
+        worker_id="replacement-gate-resume-abort-worker",
+        lease_seconds=60,
+        project_id=orphan.project_id,
+    )
+    assert outer_claim is not None
+    run = orphan.opening.require(orphan.opening_run_id)
+    aborted = orphan.opening.abort(
+        orphan.opening_run_id,
+        expected_version=int(run["version"]),
+        principal=orphan.principal,
+    )
+    assert aborted["lifecycle"] == "ABORTED"
+    assert not _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id=orphan.project_id,
+    )
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT job.status,runtime_attempt.status,runtime_lease.status,
+                   operation.status,evaluation.lifecycle,attempt.status,
+                   lease.status
+            FROM authority_runtime_job AS job
+            JOIN authority_runtime_job_attempt AS runtime_attempt
+              ON runtime_attempt.attempt_id=job.current_attempt_id
+            JOIN authority_runtime_job_lease AS runtime_lease
+              ON runtime_lease.lease_id=runtime_attempt.lease_id
+            JOIN authority_operation AS operation
+              ON operation.operation_id=%s
+            JOIN authority_narrative_evaluation_execution AS evaluation
+              ON evaluation.operation_id=operation.operation_id
+            JOIN authority_attempt AS attempt
+              ON attempt.operation_id=operation.operation_id
+            JOIN authority_lease_acquisition AS lease
+              ON lease.attempt_id=attempt.attempt_id
+            WHERE job.runtime_job_id=%s
+            """,
+            [orphan.evaluation_operation_id, outer_claim.runtime_job_id],
+        )
+        state = uow.cursor.fetchone()
+    assert state is not None
+    assert tuple(state) == (
+        "CANCELLED",
+        "ABANDONED",
+        "RELEASED",
+        "CANCELLED",
+        "CANCELLED",
+        "CANCELLED",
+        "RELEASED",
+    )
+
+    with pytest.raises(KernelError):
+        orphan.opening.runtime_jobs.heartbeat(outer_claim, lease_seconds=60)
+
+
+def test_resume_current_outer_abort_cancels_planned_never_sent_effect() -> None:
+    orphan = create_legacy_book_opening_orphan(terminalize_evaluation=False)
+    receipt = _recover_through_canonical_path(orphan, suffix="resume-planned-abort")
+    assert receipt.result["replacement_evaluation_operation_id"] == ""
+
+    outer_claim = orphan.opening.claim_next_execution(
+        worker_id="replacement-gate-resume-planned-abort-worker",
+        lease_seconds=60,
+        project_id=orphan.project_id,
+    )
+    assert outer_claim is not None
+    orphan.opening._bind_running_execution(  # noqa: SLF001
+        orphan.opening_run_id,
+        expected_version=int(orphan.opening.require(orphan.opening_run_id)["version"]),
+        runtime_claim=outer_claim,
+    )
+    effect = plan_external_effect(
+        DATABASE_URL,
+        EffectCommandContext(
+            operation_id=orphan.evaluation_operation_id,
+            project_id=orphan.project_id,
+            actor_id=orphan.evaluator.principal_id,
+            trace_id=f"trace:planned-abort:{orphan.opening_run_id}",
+            correlation_id=f"correlation:planned-abort:{orphan.opening_run_id}",
+            causation_id=outer_claim.runtime_job_id,
+        ),
+        effect_type="model.invoke",
+        provider="fixture-planned-never-sent",
+        capability="model.narrative_semantic_evaluation",
+        stable_idempotency_key=(f"planned-never-sent:{orphan.evaluation_operation_id}"),
+        request_payload={"candidate": "must-not-reach-provider"},
+        max_attempts=1,
+        reversible=False,
+        reconciliation_mode="query",
+    )
+    reservation = reserve_provider_budget(
+        DATABASE_URL,
+        BudgetReservationRequest(
+            operation_id=orphan.evaluation_operation_id,
+            external_effect_id=str(effect["external_effect_id"]),
+            project_id=orphan.project_id,
+            stable_idempotency_key=(
+                f"budget:planned-never-sent:{orphan.evaluation_operation_id}"
+            ),
+            provider="fixture-planned-never-sent",
+            currency="USD",
+            estimated_amount="2",
+            estimated_tokens=100_000,
+        ),
+    )
+    assert reservation["status"] == "RESERVED"
+
+    aborted = orphan.opening.abort(
+        orphan.opening_run_id,
+        expected_version=int(orphan.opening.require(orphan.opening_run_id)["version"]),
+        principal=orphan.principal,
+    )
+    assert aborted["lifecycle"] == "ABORTED"
+    assert not _gate_is_open(
+        operation_id=orphan.evaluation_operation_id,
+        project_id=orphan.project_id,
+    )
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT operation.status,evaluation.lifecycle,attempt.status,
+                   lease.status,effect.status,budget.status,
+                   (SELECT COUNT(*)
+                    FROM authority_external_effect_dispatch AS dispatch
+                    WHERE dispatch.external_effect_id=effect.external_effect_id),
+                   (SELECT COUNT(*)
+                    FROM state_event AS event
+                    WHERE event.aggregate_type='authority_external_effect'
+                      AND event.aggregate_id=effect.external_effect_id
+                      AND event.event_type='external_effect.cancelled')
+            FROM authority_operation AS operation
+            JOIN authority_narrative_evaluation_execution AS evaluation
+              ON evaluation.operation_id=operation.operation_id
+            JOIN authority_attempt AS attempt
+              ON attempt.operation_id=operation.operation_id
+            JOIN authority_lease_acquisition AS lease
+              ON lease.attempt_id=attempt.attempt_id
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=operation.operation_id
+            JOIN authority_budget_reservation AS budget
+              ON budget.external_effect_id=effect.external_effect_id
+             AND budget.reservation_id=%s
+            WHERE operation.operation_id=%s
+              AND effect.external_effect_id=%s
+            """,
+            [
+                reservation["reservation_id"],
+                orphan.evaluation_operation_id,
+                effect["external_effect_id"],
+            ],
+        )
+        state = uow.cursor.fetchone()
+    assert state is not None
+    assert tuple(state) == (
+        "CANCELLED",
+        "CANCELLED",
+        "CANCELLED",
+        "RELEASED",
+        "CANCELLED",
+        "RELEASED",
+        0,
+        1,
+    )

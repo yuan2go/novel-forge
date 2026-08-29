@@ -1768,6 +1768,49 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             [project_id, book_id],
         )
         assert uow.cursor.fetchone() == (12, 4)
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*),
+                   COUNT(checkpoint.checkpoint_id),
+                   BOOL_AND(
+                       checkpoint.evidence_version=1
+                       AND checkpoint.evidence_hash=candidate.branch_evidence_hash
+                       AND checkpoint.semantic_work_key=(
+                           'narrative-search-branch:' || candidate.search_id || ':' ||
+                           candidate.branch_key
+                       )
+                   )
+            FROM authority_story_narrative_search_candidate AS candidate
+            JOIN authority_story_narrative_search AS search
+              ON search.search_id=candidate.search_id
+            LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
+              ON checkpoint.opening_run_id=%s
+             AND checkpoint.opening_execution_id=%s
+             AND checkpoint.evidence_type='NARRATIVE_SEARCH_BRANCH'
+             AND checkpoint.evidence_id=candidate.membership_id
+            WHERE search.project_id=%s AND search.book_id=%s
+            """,
+            [
+                admission.opening_run_id,
+                opening_run["current_execution_id"],
+                project_id,
+                book_id,
+            ],
+        )
+        assert uow.cursor.fetchone() == (12, 12, True)
+        uow.cursor.execute(
+            """
+            SELECT budget_contract_state,budget_scope_id,budget_scope_revision
+            FROM authority_book_opening_run
+            WHERE opening_run_id=%s
+            """,
+            [admission.opening_run_id],
+        )
+        budget_binding = uow.cursor.fetchone()
+        assert budget_binding is not None
+        assert budget_binding[0] == "BOUND"
+        assert str(budget_binding[1]).startswith("budget-scope:")
+        assert budget_binding[2] == 1
 
 
 def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> None:
@@ -2313,7 +2356,20 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
     assert identities[2:] == ("ACTIVE", "ELIGIBLE")
 
 
-def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> None:
+@pytest.mark.parametrize(
+    "failure_checkpoint",
+    [
+        "after_provider_receipt_before_budget_settlement",
+        "after_measured_usage_before_candidate_acceptance",
+    ],
+    ids=[
+        "receipt-to-settlement-frozen-profile-drift",
+        "settlement-to-candidate",
+    ],
+)
+def test_planning_retry_reuses_frozen_pack_after_provider_result(
+    failure_checkpoint: str,
+) -> None:
     harness = CapabilityPackPostgresHarness("planning-attempt-retry")
     baseline_deployment_id = _activate_planning_pack(harness)
     generic = _seed_inputs(harness.project_id, harness.book_ids[0])
@@ -2321,14 +2377,11 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     injected = {"done": False}
 
     def fail_once(checkpoint: str) -> None:
-        if (
-            checkpoint == "after_measured_usage_before_candidate_acceptance"
-            and not injected["done"]
-        ):
+        if checkpoint == failure_checkpoint and not injected["done"]:
             injected["done"] = True
             raise KernelError(
                 "MODEL_EFFECT_RETRYABLE_PLANNING_PROOF",
-                "controlled proof failure after measured Provider usage",
+                "controlled proof failure after durable Provider success",
             )
 
     with tempfile.TemporaryDirectory(prefix="planning-attempt-retry-") as root:
@@ -2392,6 +2445,16 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             expected_activation_version=1,
             environment="test",
         )
+
+        if failure_checkpoint == "after_provider_receipt_before_budget_settlement":
+            # The durable Effect was sent under receipt-capable=true.  A later
+            # process may expose a changed adapter profile; replay must account
+            # the receipt using the Effect's first-send frozen profile.
+            execution.gateway.capability_profile = replace(
+                execution.gateway.capability_profile,
+                supports_usage_receipt=False,
+                supports_cost_receipt=False,
+            )
 
         result = planning.generate(command, principal=principal)
         execution.close()
@@ -2475,6 +2538,20 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             [result.generation_operation_id],
         )
         effect_count, dispatch_count, dispatch_generations = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT reservation.status,reservation.actual_tokens,
+                   effect.provider_capability_profile->>'supports_usage_receipt'
+            FROM authority_budget_reservation AS reservation
+            JOIN authority_external_effect AS effect
+              ON effect.external_effect_id=reservation.external_effect_id
+            WHERE reservation.operation_id=%s
+            ORDER BY reservation.created_at DESC
+            LIMIT 1
+            """,
+            [result.generation_operation_id],
+        )
+        reservation_proof = uow.cursor.fetchone()
     assert [(row[0], row[1]) for row in attempts] == [
         (1, "FAILED_RETRYABLE"),
         # The worker Attempt is terminal after its immutable Candidate is
@@ -2488,12 +2565,18 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     assert attempts[0][4] == attempts[1][4] == "1.1.0"
     assert attempts[0][5] == attempts[1][5] == baseline_deployment_id
     assert attempts[1][5] != replacement_deployment.deployment_id
-    assert evidence == [
-        ("cost_ledger", "false", "true", "false"),
-        ("model_call_log", "false", "true", "false"),
-        ("model_call_log", "true", "false", "true"),
-    ]
+    if failure_checkpoint == "after_measured_usage_before_candidate_acceptance":
+        assert evidence == [
+            ("cost_ledger", "false", "true", "false"),
+            ("model_call_log", "false", "true", "false"),
+            ("model_call_log", "true", "false", "true"),
+        ]
+    else:
+        assert evidence == [
+            ("model_call_log", "true", "false", "true"),
+        ]
     assert (effect_count, dispatch_count, dispatch_generations) == (1, 1, [1])
+    assert reservation_proof == ("SETTLED", 0, "true")
     assert candidate_count == 1
     assert planning_context_identity == (1, 1, 1)
 

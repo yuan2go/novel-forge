@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from collections.abc import Callable
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Protocol, Sequence
 
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.story_design_authority.qualification import (
+    required_qualification_profiles,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .application import StoryPlanningGenerationApplication
@@ -32,6 +35,14 @@ DEFAULT_SEARCH_DIRECTIVES = (
     "maximize costly character agency while preserving future options",
     "advance promises through consequence, reversal, and differentiated rhythm",
     "hybridize world pressure and relationship change without repeating recent patterns",
+)
+
+NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION = 1
+NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION = (
+    "narrative-search-branch-evidence.v1"
+)
+NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION = (
+    "narrative-search-branch-reconciliation.v1"
 )
 
 
@@ -114,6 +125,84 @@ class NarrativeSearchResult:
     replayed: bool
 
 
+@dataclass(frozen=True, slots=True)
+class NarrativeSearchBranchEvidence:
+    membership_id: str
+    search_id: str
+    branch_key: str
+    candidate_asset_version_id: str
+    generation_operation_id: str
+    generation_input_snapshot_hash: str
+    candidate_content_hash: str
+    projection_hash: str
+    strategy_fingerprint: str
+    qualification_hash: str
+    evidence_version: int
+    evidence_hash: str
+    replayed: bool
+
+    @property
+    def evidence_id(self) -> str:
+        return self.membership_id
+
+    @property
+    def evidence_type(self) -> str:
+        return "NARRATIVE_SEARCH_BRANCH"
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeSearchBranchReconciliationEvidence:
+    reconciliation_evidence_id: str
+    membership_id: str
+    search_id: str
+    branch_key: str
+    candidate_asset_version_id: str
+    generation_operation_id: str
+    source_branch_evidence_contract_version: str
+    opening_run_id: str
+    opening_execution_id: str
+    execution_generation: int
+    generation_input_snapshot_hash: str
+    candidate_content_hash: str
+    projection_hash: str
+    strategy_fingerprint: str
+    qualification_hash: str
+    qualification_receipt_set_hash: str
+    reconciled_branch_evidence_hash: str
+    reconciliation_contract_version: str
+    evidence_version: int
+    evidence_hash: str
+    replayed: bool
+
+    @property
+    def evidence_id(self) -> str:
+        return self.reconciliation_evidence_id
+
+    @property
+    def evidence_type(self) -> str:
+        return "NARRATIVE_SEARCH_BRANCH_RECONCILIATION"
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeSearchQualifiedBranch:
+    branch_key: str
+    result: PlanningGenerationResult
+    evidence_type: str
+    evidence_id: str
+    evidence_version: int
+    evidence_hash: str
+
+
+class NarrativeSearchQualifiedBranchCommitter(Protocol):
+    def __call__(
+        self,
+        *,
+        search_id: str,
+        branch_key: str,
+        result: PlanningGenerationResult,
+    ) -> NarrativeSearchBranchEvidence | NarrativeSearchBranchReconciliationEvidence: ...
+
+
 class PostgresNarrativeSearchApplication:
     """Planning-owned portfolio lifecycle; it does not activate Story truth."""
 
@@ -133,6 +222,8 @@ class PostgresNarrativeSearchApplication:
         principal: Principal,
         activate_selected: bool = False,
         execution_probe: Callable[[], object] | None = None,
+        qualified_branch_committer: NarrativeSearchQualifiedBranchCommitter
+        | None = None,
     ) -> NarrativeSearchResult:
         command = request.generation
         principal.require("story_planning.authority.execute", command.project_id)
@@ -146,6 +237,7 @@ class PostgresNarrativeSearchApplication:
             stable_key=search_key,
         )
         generations: dict[str, PlanningGenerationResult] = {}
+        reconciled_branch_seen = False
         for ordinal, directive in enumerate(request.strategy_directives, start=1):
             self._probe(execution_probe)
             branch_key = f"future-{ordinal}"
@@ -167,26 +259,49 @@ class PostgresNarrativeSearchApplication:
                     replayed=True,
                 )
             else:
-                result = self.planning.generate(
-                    replace(
-                        command,
-                        idempotency_key=f"{search_key}:{branch_key}",
-                        narrative_search_id=search_id,
-                        narrative_search_branch_key=branch_key,
-                        narrative_search_parent_state_asset_version_id=(
-                            request.parent_state_asset_version_id
-                        ),
-                        narrative_search_accepted_through_chapter=(
-                            request.accepted_through_chapter
-                        ),
-                        narrative_search_strategy_directive=directive,
-                        narrative_search_planning_horizon=(request.planning_horizon),
-                        narrative_search_desired_transformation=(
-                            request.desired_transformation
-                        ),
-                        narrative_search_hard_constraints=(request.hard_constraints),
-                        auto_approve_low_risk=False,
+                branch_command = replace(
+                    command,
+                    idempotency_key=f"{search_key}:{branch_key}",
+                    narrative_search_id=search_id,
+                    narrative_search_branch_key=branch_key,
+                    narrative_search_parent_state_asset_version_id=(
+                        request.parent_state_asset_version_id
                     ),
+                    narrative_search_accepted_through_chapter=(
+                        request.accepted_through_chapter
+                    ),
+                    narrative_search_strategy_directive=directive,
+                    narrative_search_planning_horizon=(request.planning_horizon),
+                    narrative_search_desired_transformation=(
+                        request.desired_transformation
+                    ),
+                    narrative_search_hard_constraints=(request.hard_constraints),
+                    # Keep the exact outer Authority fence explicit at the
+                    # branch boundary.  ``replace`` currently preserves it,
+                    # but naming it here makes every future-N command's
+                    # persisted lineage independent of dataclass defaults.
+                    opening_execution_binding=command.opening_execution_binding,
+                    auto_approve_low_risk=False,
+                )
+                frozen_command = self.planning.find_frozen_generation_command(
+                    project_id=command.project_id,
+                    idempotency_key=branch_command.idempotency_key,
+                )
+                if frozen_command is not None:
+                    expected_frozen_semantics = replace(
+                        branch_command,
+                        opening_execution_binding=(
+                            frozen_command.opening_execution_binding
+                        ),
+                    )
+                    if frozen_command != expected_frozen_semantics:
+                        raise KernelError(
+                            "NARRATIVE_SEARCH_BRANCH_FROZEN_COMMAND_DRIFT",
+                            "persisted future branch differs from the current Search semantics",
+                        )
+                    branch_command = frozen_command
+                result = self.planning.generate(
+                    branch_command,
                     principal=principal,
                     execution_probe=execution_probe,
                 )
@@ -196,16 +311,67 @@ class PostgresNarrativeSearchApplication:
                         "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
                         "search branch did not reach qualified approval-pending state",
                     )
-                self._register_candidate(search_id, branch_key, result)
+            if qualified_branch_committer is None:
+                branch_evidence = self._register_candidate(
+                    search_id, branch_key, result
+                )
+            else:
+                branch_evidence = qualified_branch_committer(
+                    search_id=search_id,
+                    branch_key=branch_key,
+                    result=result,
+                )
+            expected_membership_id = (
+                f"narrative-search-candidate:{search_id}:{branch_key}"
+            )
+            if (
+                branch_evidence.membership_id != expected_membership_id
+                or branch_evidence.search_id != search_id
+                or branch_evidence.branch_key != branch_key
+                or branch_evidence.candidate_asset_version_id
+                != result.candidate_asset_version_id
+                or branch_evidence.generation_operation_id
+                != result.generation_operation_id
+                or branch_evidence.evidence_version
+                != NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION
+                or not branch_evidence.evidence_hash.startswith("sha256:")
+            ):
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_COMMIT_INVALID",
+                    "qualified branch committer returned evidence for another Search branch",
+                )
+            reconciled_branch_seen = reconciled_branch_seen or (
+                branch_evidence.evidence_type
+                == "NARRATIVE_SEARCH_BRANCH_RECONCILIATION"
+            )
             generations[result.candidate_asset_version_id] = result
-        candidates = self._load_candidates(search_id)
+        if reconciled_branch_seen:
+            opening_binding = dict(command.opening_execution_binding or {})
+            opening_run_id = str(opening_binding.get("opening_run_id") or "")
+            if not opening_run_id:
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED",
+                    "reconciled branches require a Book Opening checkpoint owner",
+                )
+            self._require_reconciled_branch_outer_checkpoints(
+                search_id,
+                opening_run_id=opening_run_id,
+            )
+        candidates = self._load_candidates(
+            search_id,
+            allow_reconciled_branches=reconciled_branch_seen,
+        )
         if len(candidates) != len(request.strategy_directives):
             raise KernelError(
                 "NARRATIVE_SEARCH_CANDIDATE_SET_INCOMPLETE",
                 "not every frozen strategy produced a qualified future",
             )
         self._probe(execution_probe)
-        comparison, decision_replayed = self._select(search_id, candidates)
+        comparison, decision_replayed = self._select(
+            search_id,
+            candidates,
+            allow_reconciled_branches=reconciled_branch_seen,
+        )
         selected = generations.get(comparison.selected_candidate_asset_version_id)
         if selected is None:
             generation_id = next(
@@ -274,6 +440,8 @@ class PostgresNarrativeSearchApplication:
         request: NarrativeSearchRequest,
         *,
         activate_selected: bool,
+        allow_reconciled_branches: bool = False,
+        opening_run_id: str = "",
     ) -> NarrativeSearchResult:
         """Read an exact durable selection without admitting or executing work."""
 
@@ -323,7 +491,19 @@ class PostgresNarrativeSearchApplication:
                 "NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT",
                 "durable Narrative Search does not match the exact frozen request",
             )
-        candidates = self._load_candidates(search_id)
+        if allow_reconciled_branches:
+            if not opening_run_id:
+                raise ValueError(
+                    "reconciled selection requires its Book Opening checkpoint owner"
+                )
+            self._require_reconciled_branch_outer_checkpoints(
+                search_id,
+                opening_run_id=opening_run_id,
+            )
+        candidates = self._load_candidates(
+            search_id,
+            allow_reconciled_branches=allow_reconciled_branches,
+        )
         comparison = compare_narrative_futures(candidates)
         comparison_payload = comparison.to_dict()
         candidate_set_hash = canonical_hash(
@@ -580,62 +760,928 @@ class PostgresNarrativeSearchApplication:
             }
         )
 
-    def _register_candidate(
-        self, search_id: str, branch_key: str, result: PlanningGenerationResult
+    def require_qualified_branches(
+        self,
+        search_id: str,
+        *,
+        expected_branch_keys: Sequence[str],
+        project_id: str,
+    ) -> tuple[NarrativeSearchQualifiedBranch, ...]:
+        """Hydrate existing branch identities without executing Provider work."""
+
+        expected = tuple(expected_branch_keys)
+        if not expected or len(set(expected)) != len(expected):
+            raise ValueError("expected Search branch keys must be non-empty and unique")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT membership.branch_key,
+                       membership.candidate_asset_version_id,
+                       membership.generation_operation_id,
+                       generation.status,
+                       membership.membership_id,
+                       membership.branch_evidence_contract_version,
+                       membership.branch_evidence_hash,
+                       COALESCE(reconciliation.reconciliation_evidence_id,''),
+                       COALESCE(reconciliation.evidence_version,0),
+                       COALESCE(reconciliation.evidence_hash,'')
+                FROM authority_story_narrative_search_candidate AS membership
+                JOIN authority_story_planning_generation AS generation
+                  ON generation.operation_id=membership.generation_operation_id
+                 AND generation.narrative_search_id=membership.search_id
+                 AND generation.narrative_search_branch_key=membership.branch_key
+                 AND generation.candidate_asset_version_id=
+                     membership.candidate_asset_version_id
+                LEFT JOIN
+                    authority_story_narrative_branch_reconciliation_evidence
+                    AS reconciliation
+                  ON reconciliation.membership_id=membership.membership_id
+                WHERE membership.search_id=%s
+                ORDER BY membership.branch_key
+                """,
+                [search_id],
+            )
+            rows = tuple(tuple(row) for row in uow.cursor.fetchall())
+        if tuple(str(row[0]) for row in rows) != expected:
+            raise KernelError(
+                "NARRATIVE_SEARCH_CANDIDATE_SET_INCOMPLETE",
+                "durable Search membership does not contain every frozen future",
+            )
+        hydrated: list[NarrativeSearchQualifiedBranch] = []
+        for row in rows:
+            status = PlanningGenerationStatus(str(row[3]))
+            if status not in {
+                PlanningGenerationStatus.APPROVAL_PENDING,
+                PlanningGenerationStatus.APPROVED,
+                PlanningGenerationStatus.ACTIVE,
+            }:
+                raise KernelError(
+                    "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
+                    "durable Search branch is no longer qualified",
+                )
+            contract = str(row[5])
+            if contract == NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION:
+                evidence_type = "NARRATIVE_SEARCH_BRANCH"
+                evidence_id = str(row[4])
+                evidence_version = NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION
+                evidence_hash = str(row[6])
+            elif contract == "legacy-unbound" and row[7]:
+                evidence_type = "NARRATIVE_SEARCH_BRANCH_RECONCILIATION"
+                evidence_id = str(row[7])
+                evidence_version = int(row[8])
+                evidence_hash = str(row[9])
+            elif contract == "legacy-unbound":
+                evidence_type = ""
+                evidence_id = ""
+                evidence_version = 0
+                evidence_hash = ""
+            else:
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_EVIDENCE_DRIFT",
+                    "durable Search branch has an unknown evidence contract",
+                )
+            hydrated.append(
+                NarrativeSearchQualifiedBranch(
+                    branch_key=str(row[0]),
+                    result=PlanningGenerationResult(
+                        generation_operation_id=str(row[2]),
+                        candidate_asset_version_id=str(row[1]),
+                        status=status,
+                        story_design_state=self.planning.story_design.require(
+                            project_id=project_id,
+                            asset_version_id=str(row[1]),
+                        ),
+                        replayed=True,
+                    ),
+                    evidence_type=evidence_type,
+                    evidence_id=evidence_id,
+                    evidence_version=evidence_version,
+                    evidence_hash=evidence_hash,
+                )
+            )
+        return tuple(hydrated)
+
+    def _require_reconciled_branch_outer_checkpoints(
+        self,
+        search_id: str,
+        *,
+        opening_run_id: str,
     ) -> None:
-        generation = self.planning.require_candidate(result.candidate_asset_version_id)
-        asset = self.planning._require_asset(
-            project_id=str(generation["project_id"]),
-            asset_version_id=result.candidate_asset_version_id,
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT membership.branch_key,
+                       reconciliation.reconciliation_evidence_id,
+                       reconciliation.evidence_version,
+                       reconciliation.evidence_hash,
+                       checkpoint.checkpoint_id
+                FROM authority_story_narrative_search_candidate AS membership
+                JOIN authority_story_narrative_branch_reconciliation_evidence
+                     AS reconciliation
+                  ON reconciliation.membership_id=membership.membership_id
+                LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
+                  ON checkpoint.opening_run_id=%s
+                 AND checkpoint.semantic_work_key=
+                     'narrative-search-branch:' || membership.search_id || ':' ||
+                     membership.branch_key
+                 AND checkpoint.owning_authority='STORY_PLANNING'
+                 AND checkpoint.evidence_type=
+                     'NARRATIVE_SEARCH_BRANCH_RECONCILIATION'
+                 AND checkpoint.evidence_id=
+                     reconciliation.reconciliation_evidence_id
+                 AND checkpoint.evidence_version=reconciliation.evidence_version
+                 AND checkpoint.evidence_hash=reconciliation.evidence_hash
+                WHERE membership.search_id=%s
+                  AND membership.branch_evidence_contract_version='legacy-unbound'
+                ORDER BY membership.branch_key
+                """,
+                [opening_run_id, search_id],
+            )
+            rows = tuple(tuple(row) for row in uow.cursor.fetchall())
+        if any(not row[4] for row in rows):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED",
+                "legacy Search sidecar has no exact Book Opening checkpoint",
+            )
+
+    def register_qualified_branch_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        search_id: str,
+        branch_key: str,
+        result: PlanningGenerationResult,
+    ) -> NarrativeSearchBranchEvidence:
+        """Persist one qualified Search branch in a caller-owned transaction."""
+
+        search = self._lock_search_for_branch_registration(uow, search_id)
+        generation_record = self._lock_generation_for_branch_registration(
+            uow, result.generation_operation_id
         )
+        if (
+            str(generation_record["operation_id"])
+            != result.generation_operation_id
+            or str(generation_record.get("candidate_asset_version_id") or "")
+            != result.candidate_asset_version_id
+            or str(generation_record.get("narrative_search_id") or "") != search_id
+            or str(generation_record.get("narrative_search_branch_key") or "")
+            != branch_key
+            or str(generation_record["status"])
+            not in {"APPROVAL_PENDING", "APPROVED", "ACTIVE"}
+            or tuple(
+                str(generation_record[field])
+                for field in (
+                    "project_id",
+                    "workspace_id",
+                    "book_id",
+                    "generator_operation_name",
+                    "planning_scope",
+                    "logical_key",
+                )
+            )
+            != tuple(
+                str(search[field])
+                for field in (
+                    "project_id",
+                    "workspace_id",
+                    "book_id",
+                    "generator_operation_name",
+                    "planning_scope",
+                    "logical_key",
+                )
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "qualified Search branch differs from its Planning Generation lineage",
+            )
+        generation = self._lock_candidate_for_branch_registration(
+            uow, result.candidate_asset_version_id
+        )
+        if (
+            str(generation["generation_id"])
+            != str(generation_record["generation_id"])
+            or str(generation["project_id"])
+            != str(generation_record["project_id"])
+            or str(generation["book_id"]) != str(generation_record["book_id"])
+            or str(generation["asset_project_id"])
+            != str(generation_record["project_id"])
+            or str(generation["candidate_content_hash"])
+            != str(generation["asset_content_hash"])
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "qualified Search branch differs from its Planning candidate lineage",
+            )
         projection = NarrativeSearchProjection.from_mapping(
-            asset["content"].get("narrative_search_projection")
+            generation["asset_content"].get("narrative_search_projection")
         )
-        qualification = self.planning._require_narrative_qualification_summary(
+        qualification = self._lock_qualification_for_branch_registration(
+            uow,
             operation_id=result.generation_operation_id,
             candidate_asset_version_id=result.candidate_asset_version_id,
-            project_id=str(generation["project_id"]),
-            book_id=str(generation["book_id"]),
-            generator_operation_name=str(generation["generator_operation_name"]),
+            project_id=str(generation_record["project_id"]),
+            book_id=str(generation_record["book_id"]),
+            generator_operation_name=str(
+                generation_record["generator_operation_name"]
+            ),
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        membership_id = f"narrative-search-candidate:{search_id}:{branch_key}"
+        projection_payload = projection.to_dict()
+        projection_hash = canonical_hash(projection_payload)
+        qualification_hash = str(qualification["narrative_qualification_hash"])
+        evidence_payload = {
+            "membership_id": membership_id,
+            "search_id": search_id,
+            "branch_key": branch_key,
+            "candidate_asset_version_id": result.candidate_asset_version_id,
+            "generation_operation_id": result.generation_operation_id,
+            "generation_input_snapshot_hash": str(
+                generation_record["input_snapshot_hash"]
+            ),
+            "candidate_content_hash": str(generation["candidate_content_hash"]),
+            "projection_hash": projection_hash,
+            "strategy_fingerprint": projection.strategy_fingerprint,
+            "qualification_hash": qualification_hash,
+            "evidence_version": NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION,
+        }
+        evidence_hash = canonical_hash(evidence_payload)
+        expected = (
+            membership_id,
+            search_id,
+            branch_key,
+            result.candidate_asset_version_id,
+            result.generation_operation_id,
+            projection_payload,
+            projection_hash,
+            projection.strategy_fingerprint,
+            projection.comparison_score,
+            qualification_hash,
+            NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION,
+            evidence_hash,
+        )
+        stored = self._lock_branch_membership(uow, search_id, branch_key)
+        if stored is not None and str(stored[10]) == "legacy-unbound":
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED",
+                "legacy Search membership has no atomic branch evidence contract",
+            )
+        if str(search["status"]) not in {
+            "GENERATING",
+            "READY_FOR_SELECTION",
+            "SELECTED",
+            "ACTIVATED",
+        }:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "Narrative Search is not open to qualified branch registration",
+            )
+        inserted = False
+        if stored is None:
+            if str(search["status"]) != "GENERATING":
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                    "completed Narrative Search cannot admit a missing branch",
+                )
             uow.cursor.execute(
                 """
                 INSERT INTO authority_story_narrative_search_candidate(
                     membership_id, search_id, branch_key,
                     candidate_asset_version_id, generation_operation_id,
                     projection, projection_hash, strategy_fingerprint,
-                    comparison_score, qualification_hash, status
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ELIGIBLE')
-                ON CONFLICT (search_id, branch_key) DO NOTHING
+                    comparison_score, qualification_hash,
+                    branch_evidence_contract_version, branch_evidence_hash,
+                    status
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    'ELIGIBLE'
+                )
+                ON CONFLICT DO NOTHING
+                RETURNING membership_id
                 """,
                 [
-                    f"narrative-search-candidate:{search_id}:{branch_key}",
+                    membership_id,
                     search_id,
                     branch_key,
                     result.candidate_asset_version_id,
                     result.generation_operation_id,
-                    Jsonb(projection.to_dict()),
-                    canonical_hash(projection.to_dict()),
+                    Jsonb(projection_payload),
+                    projection_hash,
                     projection.strategy_fingerprint,
                     projection.comparison_score,
-                    qualification["narrative_qualification_hash"],
+                    qualification_hash,
+                    NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION,
+                    evidence_hash,
                 ],
             )
-            uow.commit()
+            inserted = uow.cursor.fetchone() is not None
+            stored = self._lock_branch_membership(uow, search_id, branch_key)
+        if stored is None:
+            if not inserted:
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_IDEMPOTENCY_CONFLICT",
+                    "qualified Search branch conflicts with another durable membership",
+                )
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_REGISTRATION_LOST",
+                "qualified Search branch was not durably registered",
+            )
+        if str(stored[10]) == "legacy-unbound":
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED",
+                "legacy Search membership has no atomic branch evidence contract",
+            )
+        normalized_stored = (
+            *(str(item) for item in stored[:5]),
+            dict(stored[5]),
+            str(stored[6]),
+            str(stored[7]),
+            float(stored[8]),
+            str(stored[9]),
+            str(stored[10]),
+            str(stored[11]),
+        )
+        if normalized_stored != expected:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_IDEMPOTENCY_CONFLICT",
+                "Search branch identity is already bound to different evidence",
+            )
+        return NarrativeSearchBranchEvidence(
+            **evidence_payload,
+            evidence_hash=evidence_hash,
+            replayed=not inserted,
+        )
 
-    def _load_candidates(self, search_id: str) -> tuple[NarrativeSearchCandidate, ...]:
+    def reconcile_legacy_qualified_branch_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        search_id: str,
+        branch_key: str,
+        result: PlanningGenerationResult,
+        opening_run_id: str,
+        opening_execution_id: str,
+        execution_generation: int,
+    ) -> NarrativeSearchBranchReconciliationEvidence:
+        """Append evidence for one immutable pre-contract membership.
+
+        This primitive deliberately requires a caller-owned transaction.  The
+        Book Opening coordinator must establish and validate its live runtime
+        fence before entering Planning's canonical Search -> Generation ->
+        Candidate/Qualification -> Membership lock order.  No Provider call is
+        made here and the historical membership is never changed.
+        """
+
+        if (
+            not opening_run_id
+            or not opening_execution_id
+            or execution_generation <= 0
+        ):
+            raise ValueError("legacy branch reconciliation requires an execution")
+        search = self._lock_search_for_branch_registration(uow, search_id)
+        generation_record = self._lock_generation_for_branch_registration(
+            uow, result.generation_operation_id
+        )
+        if (
+            str(generation_record["operation_id"])
+            != result.generation_operation_id
+            or str(generation_record.get("candidate_asset_version_id") or "")
+            != result.candidate_asset_version_id
+            or str(generation_record.get("narrative_search_id") or "") != search_id
+            or str(generation_record.get("narrative_search_branch_key") or "")
+            != branch_key
+            or str(generation_record["status"])
+            not in {"APPROVAL_PENDING", "APPROVED", "ACTIVE"}
+            or tuple(
+                str(generation_record[field])
+                for field in (
+                    "project_id",
+                    "workspace_id",
+                    "book_id",
+                    "generator_operation_name",
+                    "planning_scope",
+                    "logical_key",
+                )
+            )
+            != tuple(
+                str(search[field])
+                for field in (
+                    "project_id",
+                    "workspace_id",
+                    "book_id",
+                    "generator_operation_name",
+                    "planning_scope",
+                    "logical_key",
+                )
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_DRIFT",
+                "legacy branch differs from its current Planning Generation lineage",
+            )
+        candidate = self._lock_candidate_for_branch_registration(
+            uow, result.candidate_asset_version_id
+        )
+        if (
+            str(candidate["generation_id"])
+            != str(generation_record["generation_id"])
+            or str(candidate["project_id"])
+            != str(generation_record["project_id"])
+            or str(candidate["book_id"]) != str(generation_record["book_id"])
+            or str(candidate["asset_project_id"])
+            != str(generation_record["project_id"])
+            or str(candidate["candidate_content_hash"])
+            != str(candidate["asset_content_hash"])
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_DRIFT",
+                "legacy branch differs from its current Planning candidate lineage",
+            )
+        projection = NarrativeSearchProjection.from_mapping(
+            candidate["asset_content"].get("narrative_search_projection")
+        )
+        qualification = self._lock_qualification_for_branch_registration(
+            uow,
+            operation_id=result.generation_operation_id,
+            candidate_asset_version_id=result.candidate_asset_version_id,
+            project_id=str(generation_record["project_id"]),
+            book_id=str(generation_record["book_id"]),
+            generator_operation_name=str(
+                generation_record["generator_operation_name"]
+            ),
+        )
+        membership_id = f"narrative-search-candidate:{search_id}:{branch_key}"
+        projection_payload = projection.to_dict()
+        projection_hash = canonical_hash(projection_payload)
+        qualification_hash = str(qualification["narrative_qualification_hash"])
+        membership = self._lock_branch_membership(uow, search_id, branch_key)
+        expected_membership = (
+            membership_id,
+            search_id,
+            branch_key,
+            result.candidate_asset_version_id,
+            result.generation_operation_id,
+            projection_payload,
+            projection_hash,
+            projection.strategy_fingerprint,
+            projection.comparison_score,
+            qualification_hash,
+            "legacy-unbound",
+            "",
+        )
+        normalized_membership = (
+            None
+            if membership is None
+            else (
+                *(str(item) for item in membership[:5]),
+                dict(membership[5]),
+                str(membership[6]),
+                str(membership[7]),
+                float(membership[8]),
+                str(membership[9]),
+                str(membership[10]),
+                str(membership[11]),
+            )
+        )
+        if normalized_membership != expected_membership:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_DRIFT",
+                "legacy membership differs from revalidated authoritative evidence",
+            )
+        branch_payload = {
+            "membership_id": membership_id,
+            "search_id": search_id,
+            "branch_key": branch_key,
+            "candidate_asset_version_id": result.candidate_asset_version_id,
+            "generation_operation_id": result.generation_operation_id,
+            "generation_input_snapshot_hash": str(
+                generation_record["input_snapshot_hash"]
+            ),
+            "candidate_content_hash": str(candidate["candidate_content_hash"]),
+            "projection_hash": projection_hash,
+            "strategy_fingerprint": projection.strategy_fingerprint,
+            "qualification_hash": qualification_hash,
+            "evidence_version": NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION,
+        }
+        reconciled_branch_evidence_hash = canonical_hash(branch_payload)
+        qualification_receipt_set_hash = str(
+            qualification["qualification_receipt_set_hash"]
+        )
+        qualification_receipts = list(qualification["qualification_receipts"])
+        stable_payload = {
+            "membership_id": membership_id,
+            "source_branch_evidence_contract_version": "legacy-unbound",
+            "reconciliation_contract_version": (
+                NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION
+            ),
+        }
+        stable_key = "narrative-search-branch-reconciliation:" + canonical_hash(
+            stable_payload
+        ).removeprefix("sha256:")
+        reconciliation_evidence_id = stable_key
+        evidence_payload = {
+            **branch_payload,
+            "source_branch_evidence_contract_version": "legacy-unbound",
+            "opening_run_id": opening_run_id,
+            "opening_execution_id": opening_execution_id,
+            "execution_generation": execution_generation,
+            "qualification_receipt_set_hash": qualification_receipt_set_hash,
+            "qualification_receipts": qualification_receipts,
+            "reconciled_branch_evidence_hash": reconciled_branch_evidence_hash,
+            "reconciliation_contract_version": (
+                NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION
+            ),
+        }
+        evidence_hash = canonical_hash(evidence_payload)
+        expected = (
+            reconciliation_evidence_id,
+            membership_id,
+            search_id,
+            branch_key,
+            result.candidate_asset_version_id,
+            result.generation_operation_id,
+            "legacy-unbound",
+            opening_run_id,
+            opening_execution_id,
+            execution_generation,
+            str(generation_record["input_snapshot_hash"]),
+            str(candidate["candidate_content_hash"]),
+            projection_hash,
+            projection.strategy_fingerprint,
+            qualification_hash,
+            qualification_receipt_set_hash,
+            reconciled_branch_evidence_hash,
+            NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION,
+            NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION,
+            evidence_payload,
+            evidence_hash,
+            stable_key,
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_story_narrative_branch_reconciliation_evidence(
+                reconciliation_evidence_id,membership_id,search_id,branch_key,
+                candidate_asset_version_id,generation_operation_id,
+                source_branch_evidence_contract_version,opening_run_id,
+                opening_execution_id,execution_generation,
+                generation_input_snapshot_hash,candidate_content_hash,
+                projection_hash,strategy_fingerprint,qualification_hash,
+                qualification_receipt_set_hash,reconciled_branch_evidence_hash,
+                reconciliation_contract_version,evidence_version,
+                evidence_payload,evidence_hash,stable_idempotency_key
+            ) VALUES (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,%s
+            ) ON CONFLICT DO NOTHING
+            RETURNING reconciliation_evidence_id
+            """,
+            [
+                *expected[:19],
+                Jsonb(evidence_payload),
+                *expected[20:],
+            ],
+        )
+        inserted = uow.cursor.fetchone() is not None
+        uow.cursor.execute(
+            """
+            SELECT reconciliation_evidence_id,membership_id,search_id,branch_key,
+                   candidate_asset_version_id,generation_operation_id,
+                   source_branch_evidence_contract_version,opening_run_id,
+                   opening_execution_id,execution_generation,
+                   generation_input_snapshot_hash,candidate_content_hash,
+                   projection_hash,strategy_fingerprint,qualification_hash,
+                   qualification_receipt_set_hash,reconciled_branch_evidence_hash,
+                   reconciliation_contract_version,evidence_version,
+                   evidence_payload,evidence_hash,stable_idempotency_key
+            FROM authority_story_narrative_branch_reconciliation_evidence
+            WHERE membership_id=%s
+            FOR SHARE
+            """,
+            [membership_id],
+        )
+        stored = uow.cursor.fetchone()
+        normalized = (
+            None
+            if stored is None
+            else (
+                *(str(item) for item in stored[:9]),
+                int(stored[9]),
+                *(str(item) for item in stored[10:18]),
+                int(stored[18]),
+                dict(stored[19]),
+                str(stored[20]),
+                str(stored[21]),
+            )
+        )
+        if normalized != expected:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONFLICT",
+                "legacy membership is already bound to different reconciliation evidence",
+            )
+        return NarrativeSearchBranchReconciliationEvidence(
+            reconciliation_evidence_id=reconciliation_evidence_id,
+            membership_id=membership_id,
+            search_id=search_id,
+            branch_key=branch_key,
+            candidate_asset_version_id=result.candidate_asset_version_id,
+            generation_operation_id=result.generation_operation_id,
+            source_branch_evidence_contract_version="legacy-unbound",
+            opening_run_id=opening_run_id,
+            opening_execution_id=opening_execution_id,
+            execution_generation=execution_generation,
+            generation_input_snapshot_hash=str(
+                generation_record["input_snapshot_hash"]
+            ),
+            candidate_content_hash=str(candidate["candidate_content_hash"]),
+            projection_hash=projection_hash,
+            strategy_fingerprint=projection.strategy_fingerprint,
+            qualification_hash=qualification_hash,
+            qualification_receipt_set_hash=qualification_receipt_set_hash,
+            reconciled_branch_evidence_hash=reconciled_branch_evidence_hash,
+            reconciliation_contract_version=(
+                NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION
+            ),
+            evidence_version=NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION,
+            evidence_hash=evidence_hash,
+            replayed=not inserted,
+        )
+
+    @staticmethod
+    def _lock_search_for_branch_registration(
+        uow: AuthorityUnitOfWork, search_id: str
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT project_id,workspace_id,book_id,generator_operation_name,
+                   planning_scope,logical_key,status
+            FROM authority_story_narrative_search
+            WHERE search_id=%s
+            FOR UPDATE
+            """,
+            [search_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "Narrative Search does not exist",
+            )
+        fields = (
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "generator_operation_name",
+            "planning_scope",
+            "logical_key",
+            "status",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    @staticmethod
+    def _lock_generation_for_branch_registration(
+        uow: AuthorityUnitOfWork, operation_id: str
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT generation_id,operation_id,project_id,workspace_id,book_id,
+                   generator_operation_name,planning_scope,logical_key,
+                   input_snapshot_hash,status,candidate_asset_version_id,
+                   COALESCE(narrative_search_id,''),
+                   COALESCE(narrative_search_branch_key,'')
+            FROM authority_story_planning_generation
+            WHERE operation_id=%s
+            FOR SHARE
+            """,
+            [operation_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "Planning Generation does not exist",
+            )
+        fields = (
+            "generation_id",
+            "operation_id",
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "generator_operation_name",
+            "planning_scope",
+            "logical_key",
+            "input_snapshot_hash",
+            "status",
+            "candidate_asset_version_id",
+            "narrative_search_id",
+            "narrative_search_branch_key",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    @staticmethod
+    def _lock_candidate_for_branch_registration(
+        uow: AuthorityUnitOfWork, candidate_asset_version_id: str
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT candidate.generation_id,candidate.project_id,candidate.book_id,
+                   candidate.content_hash,version.content_hash,asset.project_id,
+                   version.content
+            FROM authority_story_planning_candidate AS candidate
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=candidate.candidate_asset_version_id
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE candidate.candidate_asset_version_id=%s
+            FOR SHARE OF candidate,version,asset
+            """,
+            [candidate_asset_version_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_LINEAGE_INVALID",
+                "Planning candidate does not exist",
+            )
+        fields = (
+            "generation_id",
+            "project_id",
+            "book_id",
+            "candidate_content_hash",
+            "asset_content_hash",
+            "asset_project_id",
+            "asset_content",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def _lock_qualification_for_branch_registration(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        candidate_asset_version_id: str,
+        project_id: str,
+        book_id: str,
+        generator_operation_name: str,
+    ) -> dict[str, Any]:
+        profiles = required_qualification_profiles(generator_operation_name)
+        expected = {profile.layer.value: profile for profile in profiles}
+        uow.cursor.execute(
+            """
+            SELECT qualification_id,design_layer,profile_id,profile_version,
+                   profile_hash,evaluation_hash,qualification_hash,
+                   evaluator_execution_class,evaluation_operation_id,
+                   evaluation_attempt_id,evaluation_asset_version_id,
+                   evaluation_evidence_hash,
+                   provider_model_call_asset_version_id,
+                   provider_model_call_content_hash,provider_evidence_hash,
+                   provider_result_hash,provider_route_snapshot_id
+            FROM authority_narrative_design_qualification AS qualification
+            WHERE project_id=%s AND book_id=%s
+              AND asset_version_id=%s AND generation_operation_id=%s
+              AND qualification_status='PASS'
+              AND trust_boundary='INDEPENDENT'
+              AND (
+                    evaluator_execution_class='MODEL_PROVIDER'
+                    OR (%s AND evaluator_execution_class='SCRIPTED_FIXTURE')
+                  )
+              AND (
+                    evaluator_execution_class<>'MODEL_PROVIDER'
+                    OR (
+                        provider_model_call_asset_version_id IS NOT NULL
+                        AND provider_model_call_content_hash IS NOT NULL
+                        AND provider_evidence_hash IS NOT NULL
+                        AND provider_result_hash IS NOT NULL
+                        AND provider_route_snapshot_id IS NOT NULL
+                    )
+                  )
+            ORDER BY design_layer
+            FOR SHARE OF qualification
+            """,
+            [
+                project_id,
+                book_id,
+                candidate_asset_version_id,
+                operation_id,
+                self.planning.allow_scripted_evaluation_fixture,
+            ],
+        )
+        rows = uow.cursor.fetchall()
+        by_layer = {str(row[1]): row for row in rows}
+        if set(by_layer) != set(expected) or len(rows) != len(expected):
+            raise KernelError(
+                "NARRATIVE_QUALIFICATION_RECEIPT_INCOMPLETE",
+                "Narrative Semantic Evaluation receipts are missing or ambiguous",
+            )
+        hashes: set[str] = set()
+        for layer in sorted(expected):
+            row = by_layer[layer]
+            profile = expected[layer]
+            if tuple(str(item) for item in row[2:5]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ):
+                raise KernelError(
+                    "NARRATIVE_QUALIFICATION_RECEIPT_STALE",
+                    "stored Narrative Qualification profile differs from current policy",
+                )
+            hashes.add(str(row[6]))
+        if len(hashes) != 1:
+            raise KernelError(
+                "NARRATIVE_QUALIFICATION_RECEIPT_INCONSISTENT",
+                "layer receipts do not share one qualification identity",
+            )
+        receipts = [
+            {
+                "qualification_id": str(row[0]),
+                "design_layer": str(row[1]),
+                "profile_id": str(row[2]),
+                "profile_version": str(row[3]),
+                "profile_hash": str(row[4]),
+                "evaluation_hash": str(row[5]),
+                "qualification_hash": str(row[6]),
+                "evaluator_execution_class": str(row[7]),
+                "evaluation_operation_id": str(row[8]),
+                "evaluation_attempt_id": str(row[9]),
+                "evaluation_asset_version_id": str(row[10]),
+                "evaluation_evidence_hash": str(row[11]),
+                "provider_model_call_asset_version_id": str(row[12] or ""),
+                "provider_model_call_content_hash": str(row[13] or ""),
+                "provider_evidence_hash": str(row[14] or ""),
+                "provider_result_hash": str(row[15] or ""),
+                "provider_route_snapshot_id": str(row[16] or ""),
+            }
+            for row in rows
+        ]
+        return {
+            "narrative_qualification_hash": hashes.pop(),
+            "qualification_receipts": receipts,
+            "qualification_receipt_set_hash": canonical_hash(receipts),
+        }
+
+    @staticmethod
+    def _lock_branch_membership(
+        uow: AuthorityUnitOfWork, search_id: str, branch_key: str
+    ) -> tuple[Any, ...] | None:
+        uow.cursor.execute(
+            """
+            SELECT membership_id,search_id,branch_key,
+                   candidate_asset_version_id,generation_operation_id,
+                   projection,projection_hash,strategy_fingerprint,
+                   comparison_score,qualification_hash,
+                   branch_evidence_contract_version,branch_evidence_hash
+            FROM authority_story_narrative_search_candidate
+            WHERE search_id=%s AND branch_key=%s
+            FOR UPDATE
+            """,
+            [search_id, branch_key],
+        )
+        return uow.cursor.fetchone()
+
+    def _register_candidate(
+        self, search_id: str, branch_key: str, result: PlanningGenerationResult
+    ) -> NarrativeSearchBranchEvidence:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            evidence = self.register_qualified_branch_in_uow(
+                uow,
+                search_id=search_id,
+                branch_key=branch_key,
+                result=result,
+            )
+            uow.commit()
+        return evidence
+
+    def _load_candidates(
+        self,
+        search_id: str,
+        *,
+        allow_reconciled_branches: bool = False,
+    ) -> tuple[NarrativeSearchCandidate, ...]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT candidate_asset_version_id, generation_operation_id,
-                       branch_key, projection, qualification_hash
-                FROM authority_story_narrative_search_candidate
-                WHERE search_id=%s ORDER BY branch_key
+                SELECT membership.candidate_asset_version_id,
+                       membership.generation_operation_id,
+                       membership.branch_key,membership.projection,
+                       membership.qualification_hash,
+                       membership.branch_evidence_contract_version,
+                       membership.branch_evidence_hash,
+                       COALESCE(reconciliation.reconciliation_evidence_id,''),
+                       COALESCE(reconciliation.reconciliation_contract_version,''),
+                       COALESCE(reconciliation.evidence_hash,'')
+                FROM authority_story_narrative_search_candidate AS membership
+                LEFT JOIN
+                    authority_story_narrative_branch_reconciliation_evidence
+                    AS reconciliation
+                  ON reconciliation.membership_id=membership.membership_id
+                WHERE membership.search_id=%s ORDER BY membership.branch_key
                 """,
                 [search_id],
             )
             rows = uow.cursor.fetchall()
+        self._require_consumable_branch_contracts(
+            rows,
+            allow_reconciled_branches=allow_reconciled_branches,
+        )
         return tuple(
             NarrativeSearchCandidate(
                 candidate_asset_version_id=str(row[0]),
@@ -648,7 +1694,11 @@ class PostgresNarrativeSearchApplication:
         )
 
     def _select(
-        self, search_id: str, candidates: Sequence[NarrativeSearchCandidate]
+        self,
+        search_id: str,
+        candidates: Sequence[NarrativeSearchCandidate],
+        *,
+        allow_reconciled_branches: bool = False,
     ) -> tuple[NarrativeSearchComparison, bool]:
         comparison = compare_narrative_futures(candidates)
         evidence = comparison.to_dict()
@@ -663,6 +1713,12 @@ class PostgresNarrativeSearchApplication:
             ]
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
+            self._lock_candidate_set_for_selection(
+                uow,
+                search_id=search_id,
+                candidates=candidates,
+                allow_reconciled_branches=allow_reconciled_branches,
+            )
             uow.cursor.execute(
                 """
                 INSERT INTO authority_story_narrative_search_decision(
@@ -721,9 +1777,123 @@ class PostgresNarrativeSearchApplication:
             uow.commit()
         return comparison, not inserted
 
+    @staticmethod
+    def _lock_candidate_set_for_selection(
+        uow: AuthorityUnitOfWork,
+        *,
+        search_id: str,
+        candidates: Sequence[NarrativeSearchCandidate],
+        allow_reconciled_branches: bool = False,
+    ) -> None:
+        uow.cursor.execute(
+            """
+            SELECT status
+            FROM authority_story_narrative_search
+            WHERE search_id=%s
+            FOR UPDATE
+            """,
+            [search_id],
+        )
+        search = uow.cursor.fetchone()
+        if search is None or str(search[0]) not in {
+            "GENERATING",
+            "READY_FOR_SELECTION",
+            "SELECTED",
+            "ACTIVATED",
+        }:
+            raise KernelError(
+                "NARRATIVE_SEARCH_CANDIDATE_SET_DRIFT",
+                "Narrative Search is not eligible for selection",
+            )
+        uow.cursor.execute(
+            """
+            SELECT membership.branch_key,
+                   membership.candidate_asset_version_id,
+                   membership.generation_operation_id,
+                   membership.branch_evidence_contract_version,
+                   membership.branch_evidence_hash,
+                   COALESCE(reconciliation.reconciliation_evidence_id,''),
+                   COALESCE(reconciliation.reconciliation_contract_version,''),
+                   COALESCE(reconciliation.evidence_hash,'')
+            FROM authority_story_narrative_search_candidate AS membership
+            LEFT JOIN authority_story_narrative_branch_reconciliation_evidence
+                       AS reconciliation
+              ON reconciliation.membership_id=membership.membership_id
+            WHERE membership.search_id=%s
+            ORDER BY membership.branch_key
+            FOR UPDATE OF membership
+            """,
+            [search_id],
+        )
+        rows = tuple(tuple(row) for row in uow.cursor.fetchall())
+        PostgresNarrativeSearchApplication._require_consumable_branch_contracts(
+            rows,
+            allow_reconciled_branches=allow_reconciled_branches,
+            contract_offset=3,
+        )
+        stored = tuple(tuple(str(value) for value in row[:3]) for row in rows)
+        expected = tuple(
+            (
+                candidate.branch_key,
+                candidate.candidate_asset_version_id,
+                candidate.generation_operation_id,
+            )
+            for candidate in candidates
+        )
+        if stored != expected:
+            raise KernelError(
+                "NARRATIVE_SEARCH_CANDIDATE_SET_DRIFT",
+                "locked Narrative Search membership differs from comparison input",
+            )
+
+    @staticmethod
+    def _require_consumable_branch_contracts(
+        rows: Sequence[Sequence[Any]],
+        *,
+        allow_reconciled_branches: bool,
+        contract_offset: int = 5,
+    ) -> None:
+        for row in rows:
+            contract = str(row[contract_offset])
+            branch_hash = str(row[contract_offset + 1])
+            reconciliation_id = str(row[contract_offset + 2])
+            reconciliation_contract = str(row[contract_offset + 3])
+            reconciliation_hash = str(row[contract_offset + 4])
+            modern = (
+                contract == NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION
+                and branch_hash.startswith("sha256:")
+            )
+            reconciled = (
+                allow_reconciled_branches
+                and contract == "legacy-unbound"
+                and branch_hash == ""
+                and bool(reconciliation_id)
+                and reconciliation_contract
+                == NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION
+                and reconciliation_hash.startswith("sha256:")
+            )
+            if modern or reconciled:
+                continue
+            if contract == "legacy-unbound":
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED",
+                    "legacy Search membership is not consumable without exact sidecar evidence",
+                )
+            raise KernelError(
+                "NARRATIVE_SEARCH_BRANCH_EVIDENCE_DRIFT",
+                "Narrative Search membership evidence contract is invalid",
+            )
+
 
 __all__ = [
     "DEFAULT_SEARCH_DIRECTIVES",
+    "NARRATIVE_SEARCH_BRANCH_EVIDENCE_CONTRACT_VERSION",
+    "NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION",
+    "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_CONTRACT_VERSION",
+    "NarrativeSearchBranchEvidence",
+    "NarrativeSearchBranchReconciliationEvidence",
+    "NarrativeSearchQualifiedBranch",
+    "NarrativeSearchQualifiedBranchCommitter",
     "NarrativeSearchRequest",
     "NarrativeSearchResult",
     "PostgresNarrativeSearchApplication",

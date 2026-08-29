@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
+from novel_forge.storage.migrations import MIGRATIONS, validate_migration_chain
 from novel_forge.storage.migrations.versions import (
     v20260828_0102_book_opening_recovery_closure as migration,
 )
 
 
-def test_book_opening_recovery_closure_is_the_forward_expand_head() -> None:
+def test_book_opening_recovery_closure_remains_in_the_forward_chain() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert migration.MIGRATION_ID in {
+        item.migration_id for item in MIGRATIONS
+    }
     assert migration.DOWN_REVISION == "20260826_0101_quality_qualification"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is False

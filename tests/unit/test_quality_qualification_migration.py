@@ -4,6 +4,7 @@ from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migrati
 from novel_forge.storage.migrations.versions import (
     v20260826_0101_quality_qualification as migration,
     v20260828_0102_book_opening_recovery_closure as successor,
+    v20260829_0103_book_opening_semantic_runtime_hardening as semantic_hardening,
 )
 
 
@@ -11,7 +12,8 @@ def test_quality_qualification_extends_one_forward_head() -> None:
     validate_migration_chain()
 
     assert successor.DOWN_REVISION == migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == successor.MIGRATION_ID
+    assert semantic_hardening.DOWN_REVISION == successor.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == semantic_hardening.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260825_0100_hierarchy_closure"
     assert migration.FORWARD_ONLY is True
     assert migration.DOWNGRADE_STATEMENTS == []

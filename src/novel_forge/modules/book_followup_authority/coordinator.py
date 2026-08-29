@@ -259,6 +259,7 @@ class PostgresBookFollowupCoordinator:
                 "previous_reader_state_version": previous_reader_state,
                 "evaluation_profile_version": "reader-evaluation:v1",
                 "model_strategy_version": snapshot["production_profile_version"],
+                "context_token_budget": int(snapshot["context_token_budget"]),
             },
             input_assets=(
                 self._asset_ref(draft),

@@ -21,6 +21,7 @@ class ReaderOutcomeModelPort(Protocol):
         *,
         stage: str,
         payload: dict[str, Any],
+        reservation_tokens: int | None = None,
     ) -> ModelProviderResult: ...
 
 

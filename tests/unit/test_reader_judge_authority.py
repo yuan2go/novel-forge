@@ -38,9 +38,10 @@ class _Resolver:
 class _ModelPort:
     external_effect_backed = True
 
-    def invoke(self, _request, *, stage, payload):
+    def invoke(self, _request, *, stage, payload, reservation_tokens=None):
         assert stage == "reader_outcome"
         assert payload["reader_judge_execution_snapshot"]["snapshot_id"]
+        assert reservation_tokens == 8_000
         return ModelProviderResult(
             output={
                 "reader_state": {
@@ -147,6 +148,7 @@ def _request() -> AuthorityHandlerRequest:
         "previous_reader_state_version": "reader-state-3",
         "evaluation_profile_version": "evaluation-1",
         "model_strategy_version": "model-v1",
+        "context_token_budget": 8_000,
         "genre": "genre-1",
         "subgenre": "subgenre-1",
         "chapter_type": "STANDARD",

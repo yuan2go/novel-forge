@@ -34,6 +34,7 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 from .evaluation_runtime import NarrativeProviderEvaluation
+from .replacement_gate import assert_narrative_replacement_execution_gate
 from .qualification import (
     NarrativeQualificationProfile,
     qualification_provider_schema,
@@ -79,6 +80,20 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         self.evaluation_query = AuthorityAssetQuery(self.database_url)
         self.evaluation_writer = AuthorityAssetWriter(self.database_url)
 
+    def assert_before_provider_send(
+        self,
+        *,
+        operation_id: str,
+        project_id: str,
+    ) -> dict[str, Any]:
+        """Re-read the derived replacement gate at the final send boundary."""
+
+        return assert_narrative_replacement_execution_gate(
+            self.database_url,
+            operation_id=operation_id,
+            project_id=project_id,
+        )
+
     def freeze_before_external_effect(
         self,
         *,
@@ -101,6 +116,10 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 "NARRATIVE_EVALUATION_EXECUTION_METADATA_INVALID",
                 "Narrative evaluation execution metadata is missing",
             )
+        self.assert_before_provider_send(
+            operation_id=str(metadata.get("operation_id") or ""),
+            project_id=str(metadata.get("project_id") or ""),
+        )
         artifacts = metadata.get("input_artifacts")
         if not isinstance(artifacts, list) or len(artifacts) != 1:
             raise KernelError(
@@ -583,6 +602,22 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             fencing_token=request.fencing_token,
             worker_id=request.worker_id,
         )
+        binder = self.model_port.capability_binder
+        binder_assertion = getattr(binder, "assert_before_provider_send", None)
+
+        def assert_before_provider_send() -> None:
+            if callable(binder_assertion):
+                binder_assertion(
+                    operation_id=request.operation_id,
+                    project_id=request.project_id,
+                )
+                return
+            assert_narrative_replacement_execution_gate(
+                self.database_url,
+                operation_id=request.operation_id,
+                project_id=request.project_id,
+            )
+
         result = self.model_port.invoke(
             chapter_request,
             stage=NARRATIVE_EVALUATION_STAGE,
@@ -591,6 +626,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
                 "candidate": dict(candidate.content),
                 "qualification_profiles": profile_payload,
             },
+            pre_send_assertion=assert_before_provider_send,
         )
         if not result.real_model_call:
             raise KernelError(

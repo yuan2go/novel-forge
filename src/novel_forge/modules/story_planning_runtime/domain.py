@@ -217,6 +217,7 @@ class StoryPlanningGenerationCommand:
     narrative_search_desired_transformation: Mapping[str, Any] | None = None
     narrative_search_hard_constraints: tuple[str, ...] = ()
     narrative_realization: Mapping[str, Any] | None = None
+    opening_execution_binding: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -280,6 +281,39 @@ class StoryPlanningGenerationCommand:
         elif realization:
             raise ValueError(
                 "Narrative Realization is a Chapter elaboration contract, not a Planning scale"
+            )
+        opening_binding = dict(self.opening_execution_binding or {})
+        if opening_binding:
+            expected_binding_fields = {
+                "opening_run_id",
+                "opening_execution_id",
+                "opening_execution_generation",
+                "runtime_job_id",
+                "runtime_attempt_id",
+                "runtime_lease_id",
+                "runtime_worker_id",
+                "runtime_fencing_token",
+            }
+            if (
+                set(opening_binding) != expected_binding_fields
+                or any(
+                    not str(opening_binding.get(field) or "").strip()
+                    for field in expected_binding_fields
+                    if field
+                    not in {
+                        "opening_execution_generation",
+                        "runtime_fencing_token",
+                    }
+                )
+                or int(opening_binding.get("opening_execution_generation") or 0)
+                <= 0
+                or int(opening_binding.get("runtime_fencing_token") or 0) <= 0
+            ):
+                raise ValueError(
+                    "Opening Planning Generation requires one exact execution fence"
+                )
+            object.__setattr__(
+                self, "opening_execution_binding", opening_binding
             )
         normalized = {
             str(role): str(version)

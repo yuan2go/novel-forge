@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 from typing import Any, Callable
@@ -21,6 +22,7 @@ from novel_forge.modules.command_kernel.asset_commands import (
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
     reserve_provider_budget,
+    resolve_provider_token_reservation_contract,
     resolve_provider_budget_failure,
     settle_provider_budget,
 )
@@ -69,6 +71,7 @@ from novel_forge.modules.production_execution.domain_execution import (
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
+    capability_profile_from_dict,
 )
 from novel_forge.modules.story_design_authority import (
     GeneratorDefinition,
@@ -2397,6 +2400,22 @@ class _PlanningGatewayEffectAdapter:
             request_sent = True
             result = self.session.gateway.reconcile(handle)
         except Exception as exc:
+            recovered = self.session.evidence_store.find_record(
+                request.execution_id
+            )
+            submission_phase = (
+                str(recovered.raw_evidence.get("submission_phase") or "")
+                if recovered is not None
+                else ""
+            )
+            request_sent = request_sent or submission_phase in {
+                "PROVIDER_INVOKING",
+                "PROVIDER_OUTCOME_UNKNOWN",
+                "PROVIDER_RESULT_RECORDED",
+                "PROCESS_STARTING",
+                "PROCESS_OUTCOME_UNKNOWN",
+                "PROCESS_RESULT_RECORDED",
+            }
             raise ExternalEffectAdapterError(
                 f"Planning gateway execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,
@@ -2477,6 +2496,274 @@ class _PlanningGatewayEffectAdapter:
         )
 
 
+def _nonnegative_usage_value(value: Any) -> tuple[int, bool]:
+    if value in {None, ""}:
+        return 0, True
+    if isinstance(value, bool):
+        return 0, False
+    try:
+        normalized = int(value)
+    except (TypeError, ValueError):
+        return 0, False
+    return (normalized, True) if normalized >= 0 else (0, False)
+
+
+def _is_nonnegative_decimal(value: str) -> bool:
+    try:
+        amount = Decimal(value)
+    except (InvalidOperation, ValueError):
+        return False
+    return amount.is_finite() and amount >= 0
+
+
+def _planning_budget_settlement(
+    *,
+    usage: Mapping[str, Any],
+    cost: Mapping[str, Any],
+    fixture: bool,
+    supports_usage_receipt: bool,
+    supports_cost_receipt: bool,
+    reserved_amount: str,
+    reserved_tokens: int,
+) -> dict[str, Any]:
+    input_tokens, input_valid = _nonnegative_usage_value(
+        usage.get("input_tokens")
+    )
+    output_tokens, output_valid = _nonnegative_usage_value(
+        usage.get("output_tokens")
+    )
+    declared_total, total_valid = _nonnegative_usage_value(
+        usage.get("total_tokens")
+    )
+    measured_total = max(declared_total, input_tokens + output_tokens)
+    reported_amount = str(cost.get("amount") or "0")
+    if fixture:
+        if (
+            not input_valid
+            or not output_valid
+            or not total_valid
+            or not _is_nonnegative_decimal(reported_amount)
+        ):
+            raise KernelError(
+                "PLANNING_FIXTURE_BUDGET_EVIDENCE_INVALID",
+                "scripted Planning budget evidence is malformed",
+            )
+        return {
+            "amount": reported_amount,
+            "total_tokens": measured_total,
+            "reported_amount": reported_amount,
+            "usage_basis": "FIXTURE_RECEIPT",
+            "cost_basis": "FIXTURE_RECEIPT",
+            "usage": {
+                **dict(usage),
+                "total_tokens": measured_total,
+                "budget_settlement_basis": "FIXTURE_RECEIPT",
+            },
+            "cost": {
+                **dict(cost),
+                "provider_reported_amount": reported_amount,
+                "amount": reported_amount,
+                "budget_settlement_basis": "FIXTURE_RECEIPT",
+            },
+        }
+    usage_authoritative = bool(
+        supports_usage_receipt
+        and input_valid
+        and output_valid
+        and total_valid
+        and measured_total > 0
+    )
+    total_tokens = measured_total if usage_authoritative else reserved_tokens
+    usage_basis = (
+        "PROVIDER_USAGE_RECEIPT"
+        if usage_authoritative
+        else "RESERVATION_CEILING"
+    )
+    cost_authoritative = bool(
+        supports_cost_receipt
+        and str(cost.get("availability") or "").upper() == "AVAILABLE"
+        and _is_nonnegative_decimal(reported_amount)
+    )
+    amount = reported_amount if cost_authoritative else reserved_amount
+    cost_basis = (
+        "PROVIDER_COST_RECEIPT"
+        if cost_authoritative
+        else "RESERVATION_CEILING"
+    )
+    return {
+        "amount": amount,
+        "total_tokens": total_tokens,
+        "reported_amount": reported_amount,
+        "usage_basis": usage_basis,
+        "cost_basis": cost_basis,
+        "usage": {
+            **dict(usage),
+            "total_tokens": total_tokens,
+            "budget_settlement_basis": usage_basis,
+        },
+        "cost": {
+            **dict(cost),
+            "provider_reported_amount": reported_amount,
+            "amount": amount,
+            "budget_settlement_basis": cost_basis,
+        },
+    }
+
+
+_PLANNING_PROVIDER_RESULT_RECORDED_PHASES = frozenset(
+    {"PROVIDER_RESULT_RECORDED", "PROCESS_RESULT_RECORDED"}
+)
+_PLANNING_PROVIDER_AMBIGUOUS_PHASES = frozenset(
+    {
+        "PROVIDER_INVOKING",
+        "PROVIDER_OUTCOME_UNKNOWN",
+        "PROCESS_STARTING",
+        "PROCESS_OUTCOME_UNKNOWN",
+    }
+)
+
+
+def _planning_failed_provider_submission_state(
+    dispatched: Mapping[str, Any],
+) -> str:
+    """Classify only durable Provider-send evidence, never a Python control path."""
+
+    outcome = str(dispatched.get("outcome") or "unknown").strip().lower()
+    if outcome in {"unknown", "ambiguous"}:
+        return "AMBIGUOUS"
+    provider = dispatched.get("provider_evidence")
+    provider = provider if isinstance(provider, Mapping) else {}
+    production = provider.get("production_execution")
+    process = (
+        production.get("process_evidence")
+        if isinstance(production, Mapping)
+        else None
+    )
+    process = process if isinstance(process, Mapping) else {}
+    declared = [
+        value
+        for value in (
+            dispatched.get("request_sent"),
+            provider.get("request_sent"),
+            process.get("request_sent"),
+        )
+        if isinstance(value, bool)
+    ]
+    if declared:
+        if any(value != declared[0] for value in declared[1:]):
+            return "AMBIGUOUS"
+        return "SENT" if declared[0] else "NOT_SENT"
+    if any(
+        str(value).strip().lower() in {"unknown", "not_established"}
+        for value in (
+            dispatched.get("request_sent"),
+            provider.get("request_sent"),
+            process.get("request_sent"),
+        )
+        if value is not None
+    ):
+        return "AMBIGUOUS"
+    submission_phase = str(process.get("submission_phase") or "").strip().upper()
+    if submission_phase in _PLANNING_PROVIDER_RESULT_RECORDED_PHASES:
+        return "SENT"
+    if submission_phase in _PLANNING_PROVIDER_AMBIGUOUS_PHASES:
+        return "AMBIGUOUS"
+    return "AMBIGUOUS"
+
+
+def _planning_failed_provider_measurement(
+    dispatched: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Mapping[str, Any]] | None:
+    provider = dispatched.get("provider_evidence")
+    production = (
+        provider.get("production_execution")
+        if isinstance(provider, Mapping)
+        else None
+    )
+    process = (
+        production.get("process_evidence")
+        if isinstance(production, Mapping)
+        else None
+    )
+    usage = process.get("usage") if isinstance(process, Mapping) else None
+    cost = process.get("cost") if isinstance(process, Mapping) else None
+    if (
+        not isinstance(usage, Mapping)
+        or not isinstance(cost, Mapping)
+        or str(usage.get("availability") or "").upper() != "AVAILABLE"
+        or str(usage.get("measurement") or "").upper() != "MEASURED"
+        or str(cost.get("availability") or "").upper() != "AVAILABLE"
+        or not _is_nonnegative_decimal(str(cost.get("amount") or ""))
+    ):
+        return None
+    return usage, cost
+
+
+def _planning_failed_provider_budget_decision(
+    *,
+    dispatched: Mapping[str, Any],
+    capability_profile: ProviderCapabilityProfile,
+    reserved_amount: str,
+    reserved_tokens: int,
+) -> dict[str, Any]:
+    submission_state = _planning_failed_provider_submission_state(dispatched)
+    if submission_state == "NOT_SENT":
+        return {"disposition": "RELEASE", "submission_state": submission_state}
+    if submission_state == "AMBIGUOUS":
+        return {
+            "disposition": "HOLD_UNKNOWN",
+            "submission_state": submission_state,
+        }
+    provider = dispatched.get("provider_evidence")
+    provider = provider if isinstance(provider, Mapping) else {}
+    measurement = _planning_failed_provider_measurement(dispatched)
+    usage, cost = measurement or ({}, {})
+    settlement = _planning_budget_settlement(
+        usage=usage,
+        cost=cost,
+        fixture=bool(provider.get("fixture_protocol_only")) if measurement else False,
+        supports_usage_receipt=capability_profile.supports_usage_receipt,
+        supports_cost_receipt=capability_profile.supports_cost_receipt,
+        reserved_amount=reserved_amount,
+        reserved_tokens=reserved_tokens,
+    )
+    return {
+        "disposition": "SETTLE",
+        "submission_state": submission_state,
+        "measurement_available": measurement is not None,
+        "settlement": settlement,
+    }
+
+
+def _planning_budget_capability_profile(
+    *,
+    adapter: _PlanningGatewayEffectAdapter,
+    recovered_completion: Mapping[str, Any] | None,
+) -> ProviderCapabilityProfile:
+    if recovered_completion is not None:
+        frozen = recovered_completion.get("provider_capability_profile")
+        if not isinstance(frozen, Mapping) or not frozen:
+            raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "durable Planning result has no first-send capability profile",
+            )
+        try:
+            profile = capability_profile_from_dict(dict(frozen))
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_INVALID",
+                "durable Planning result capability profile is invalid",
+            ) from exc
+    else:
+        profile = adapter.capability_profile
+    if profile.provider != adapter.provider:
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_CONFLICT",
+            "Planning budget capability profile belongs to another Provider",
+        )
+    return profile
+
+
 @dataclass(slots=True)
 class _PlanningPepPort:
     database_url: str
@@ -2486,6 +2773,8 @@ class _PlanningPepPort:
     effect_id: str
     stable_key: str
     reservation_id: str
+    reserved_amount: str
+    reserved_tokens: int
     binding: _PlanningExecutionBinding
     adapter: _PlanningGatewayEffectAdapter
     recovered_completion: dict[str, Any] | None
@@ -2501,24 +2790,115 @@ class _PlanningPepPort:
                 "PLANNING_PEP_CAPABILITY_DRIFT",
                 "Planning command differs from the frozen execution capability",
             )
-        dispatched = self.recovered_completion or dispatch_external_effect(
-            self.database_url,
-            self.context,
-            effect_id=self.effect_id,
-            worker_id=self.worker_id,
-            lease_seconds=self.lease_seconds,
-            adapter=self.adapter,
-        )
-        recovered_completion = self.recovered_completion is not None
-        if recovered_completion:
-            dispatched = {**dispatched, "outcome": "success"}
-        if dispatched["outcome"] != "success":
+        try:
+            dispatched = self.recovered_completion or dispatch_external_effect(
+                self.database_url,
+                self.context,
+                effect_id=self.effect_id,
+                worker_id=self.worker_id,
+                lease_seconds=self.lease_seconds,
+                adapter=self.adapter,
+                budget_reservation_id=self.reservation_id,
+            )
+        except Exception:
             resolve_provider_budget_failure(
                 self.database_url,
                 reservation_id=self.reservation_id,
                 project_id=self.context.project_id,
             )
+            raise
+        recovered_completion = self.recovered_completion is not None
+        if recovered_completion:
+            dispatched = {**dispatched, "outcome": "success"}
+        capability_profile = _planning_budget_capability_profile(
+            adapter=self.adapter,
+            recovered_completion=self.recovered_completion,
+        )
+        if dispatched["outcome"] != "success":
+            budget_decision = _planning_failed_provider_budget_decision(
+                dispatched=dispatched,
+                capability_profile=capability_profile,
+                reserved_amount=self.reserved_amount,
+                reserved_tokens=self.reserved_tokens,
+            )
             outcome = str(dispatched.get("outcome") or "unknown")
+            disposition = str(budget_decision["disposition"])
+            if disposition == "RELEASE":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
+            elif disposition == "HOLD_UNKNOWN":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    external_state_unknown=True,
+                )
+            elif disposition == "SETTLE":
+                settlement = dict(budget_decision["settlement"])
+                amount = str(settlement["amount"])
+                total_tokens = int(settlement["total_tokens"])
+                usage = dict(settlement["usage"])
+                cost = dict(settlement["cost"])
+                evidence = dispatched.get("provider_evidence")
+                provider_evidence = (
+                    evidence if isinstance(evidence, Mapping) else {}
+                )
+                settle_provider_budget(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    actual_amount=amount,
+                    actual_tokens=total_tokens,
+                    evidence={
+                        "provider_id": str(
+                            provider_evidence.get("provider_id") or ""
+                        ),
+                        "model_id": str(provider_evidence.get("model_id") or ""),
+                        "real_model_call": bool(
+                            provider_evidence.get("real_model_call")
+                        ),
+                        "fixture": bool(
+                            provider_evidence.get("fixture_protocol_only")
+                        ),
+                        "execution_outcome": outcome.upper(),
+                        "accepted_candidate": False,
+                        "submission_state": str(
+                            budget_decision["submission_state"]
+                        ),
+                        "measurement_available": bool(
+                            budget_decision["measurement_available"]
+                        ),
+                        "usage_settlement_basis": str(
+                            settlement["usage_basis"]
+                        ),
+                        "cost_settlement_basis": str(settlement["cost_basis"]),
+                    },
+                )
+                self._record_model_evidence(
+                    evidence=provider_evidence,
+                    usage=usage,
+                    cost=cost,
+                    amount=amount,
+                    total_tokens=total_tokens,
+                    accepted_candidate=False,
+                    recovered_completion=False,
+                    failure={
+                        "code": "PLANNING_PROVIDER_NON_SUCCESS",
+                        "outcome": outcome,
+                        "submission_state": str(
+                            budget_decision["submission_state"]
+                        ),
+                        "budget_disposition": "SETTLED",
+                    },
+                )
+            else:  # pragma: no cover - the pure decision contract is exhaustive
+                raise KernelError(
+                    "PLANNING_BUDGET_FAILURE_DISPOSITION_INVALID",
+                    "Planning Provider failure produced an unsupported budget action",
+                )
             code = (
                 "MODEL_EFFECT_RETRYABLE_PLANNING"
                 if outcome in {"retryable_failure", "not_found"}
@@ -2547,8 +2927,27 @@ class _PlanningPepPort:
                 "PLANNING_MODEL_EVIDENCE_INVALID",
                 "Planning provider evidence lacks result, usage, cost, or receipt",
             )
-        amount = str(cost.get("amount") or "0")
-        total_tokens = int(usage.get("total_tokens") or 0)
+        self.post_provider_fault_injector(
+            "after_provider_receipt_before_budget_settlement"
+        )
+        fixture = bool(evidence.get("fixture_protocol_only"))
+        real_model_call = bool(evidence.get("real_model_call"))
+        settlement = _planning_budget_settlement(
+            usage=usage,
+            cost=cost,
+            fixture=fixture,
+            supports_usage_receipt=capability_profile.supports_usage_receipt,
+            supports_cost_receipt=capability_profile.supports_cost_receipt,
+            reserved_amount=self.reserved_amount,
+            reserved_tokens=self.reserved_tokens,
+        )
+        amount = str(settlement["amount"])
+        total_tokens = int(settlement["total_tokens"])
+        usage_settlement_basis = str(settlement["usage_basis"])
+        cost_settlement_basis = str(settlement["cost_basis"])
+        reported_amount = str(settlement["reported_amount"])
+        normalized_usage = dict(settlement["usage"])
+        normalized_cost = dict(settlement["cost"])
         settle_provider_budget(
             self.database_url,
             reservation_id=self.reservation_id,
@@ -2558,8 +2957,11 @@ class _PlanningPepPort:
             evidence={
                 "provider_id": str(evidence.get("provider_id") or ""),
                 "model_id": str(evidence.get("model_id") or ""),
-                "real_model_call": bool(evidence.get("real_model_call")),
-                "fixture": bool(evidence.get("fixture_protocol_only")),
+                "real_model_call": real_model_call,
+                "fixture": fixture,
+                "usage_settlement_basis": usage_settlement_basis,
+                "cost_settlement_basis": cost_settlement_basis,
+                "provider_reported_cost_amount": reported_amount,
             },
         )
         try:
@@ -2569,8 +2971,8 @@ class _PlanningPepPort:
         except KernelError as exc:
             self._record_model_evidence(
                 evidence=evidence,
-                usage=usage,
-                cost=cost,
+                usage=normalized_usage,
+                cost=normalized_cost,
                 amount=amount,
                 total_tokens=total_tokens,
                 accepted_candidate=False,
@@ -2580,8 +2982,8 @@ class _PlanningPepPort:
             raise
         self._record_model_evidence(
             evidence=evidence,
-            usage=usage,
-            cost=cost,
+            usage=normalized_usage,
+            cost=normalized_cost,
             amount=amount,
             total_tokens=total_tokens,
             accepted_candidate=True,
@@ -2931,8 +3333,34 @@ class PostgresPlanningExecutionPreparer:
             candidate_payload={},
             arc_working_set=command.arc_working_set,
         )
+        try:
+            context_policy = json.loads(frozen.context_policy_payload_json)
+            frozen_request_token_ceiling = int(
+                context_policy.get("max_tokens") or 0
+            )
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise KernelError(
+                "PLANNING_PROVIDER_TOKEN_CEILING_INVALID",
+                "frozen Planning context policy has no valid token ceiling",
+            ) from exc
+        provider_token_contract = resolve_provider_token_reservation_contract(
+            self.database_url,
+            operation_id=operation_id,
+            project_id=command.project_id,
+            currency="USD",
+            frozen_request_token_ceiling=frozen_request_token_ceiling,
+        )
+        provider_reservation_amount = str(
+            provider_token_contract["estimated_cost_amount"]
+            or self.max_cost_per_call
+        )
+        provider_reservation_tokens = int(
+            provider_token_contract["estimated_total_tokens"]
+        )
         stable_request_payload = {
             "stage": command.generator_operation_name,
+            "max_output_tokens": provider_token_contract["max_output_tokens"],
+            "provider_token_contract": provider_token_contract,
             "input": {
                 "planning_command": {
                     "project_id": command.project_id,
@@ -3138,14 +3566,39 @@ class PostgresPlanningExecutionPreparer:
                     ),
                     provider=self.execution_transport.provider,
                     currency="USD",
-                    estimated_amount=self.max_cost_per_call,
-                    estimated_tokens=0,
+                    estimated_amount=provider_reservation_amount,
+                    estimated_tokens=provider_reservation_tokens,
                     caps=self.budget_caps,
+                    budget_scope_id=str(
+                        provider_token_contract["budget_scope_id"]
+                    ),
+                    expected_budget_scope_revision=(
+                        int(provider_token_contract["budget_scope_revision"])
+                        if provider_token_contract["budget_scope_revision"]
+                        is not None
+                        else None
+                    ),
                 ),
             )
+            if not bool(reservation.get("execution_authorized")):
+                raise KernelError(
+                    "BUDGET_RESERVATION_EXECUTION_NOT_AUTHORIZED",
+                    "Planning reservation replay cannot authorize dispatch: "
+                    + str(reservation.get("replay_disposition") or "UNKNOWN"),
+                )
             reservation_id = str(reservation["reservation_id"])
         else:
             reservation_id = str(recovered_completion["budget_reservation_id"])
+            # A durable Provider result must be settled against the original
+            # Budget Authority contract.  Runtime configuration may have
+            # changed since the first send, but it cannot rewrite the frozen
+            # reservation ceiling on replay.
+            provider_reservation_amount = str(
+                recovered_completion["budget_reserved_amount"]
+            )
+            provider_reservation_tokens = int(
+                recovered_completion["budget_estimated_tokens"]
+            )
         binding, contract_documents = self._execution_binding(
             operation_id=operation_id,
             attempt_id=attempt_id,
@@ -3177,6 +3630,8 @@ class PostgresPlanningExecutionPreparer:
                 effect_id=effect_id,
                 stable_key=stable_key,
                 reservation_id=reservation_id,
+                reserved_amount=provider_reservation_amount,
+                reserved_tokens=provider_reservation_tokens,
                 binding=binding,
                 adapter=adapter,
                 recovered_completion=recovered_completion,

@@ -154,11 +154,25 @@ class OpenAISdkTransport:
         self.client = client
 
     def execute(self, request: ProviderInvocationRequest) -> Mapping[str, Any]:
+        request_options: dict[str, Any] = {
+            "model": request.model,
+            "input": json.dumps(
+                request.request_payload, ensure_ascii=False, sort_keys=True
+            ),
+            "timeout": request.timeout_seconds,
+            "extra_headers": {"Idempotency-Key": request.stable_idempotency_key},
+        }
+        raw_max_output_tokens = request.request_payload.get("max_output_tokens")
+        if raw_max_output_tokens is not None:
+            try:
+                max_output_tokens = int(raw_max_output_tokens)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Provider request token ceiling is invalid") from exc
+            if max_output_tokens <= 0:
+                raise ValueError("Provider request token ceiling must be positive")
+            request_options["max_output_tokens"] = max_output_tokens
         response = self.client.responses.create(
-            model=request.model,
-            input=json.dumps(request.request_payload, ensure_ascii=False, sort_keys=True),
-            timeout=request.timeout_seconds,
-            extra_headers={"Idempotency-Key": request.stable_idempotency_key},
+            **request_options,
         )
         request_id = str(getattr(response, "id", "") or "")
         if not request_id:

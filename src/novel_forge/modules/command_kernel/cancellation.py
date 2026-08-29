@@ -139,7 +139,7 @@ def cancel_unstarted_operation_in_uow(
     reason: str,
     causation_id: str = "",
 ) -> dict[str, Any]:
-    """Cancel a READY Operation proven to have no Attempt or ExternalEffect."""
+    """Cancel an ADMITTED/READY Operation with no Attempt or ExternalEffect."""
 
     if any(
         not value.strip()
@@ -166,10 +166,11 @@ def cancel_unstarted_operation_in_uow(
             "version": int(operation["version"]),
             "replayed": True,
         }
-    if str(operation["status"]) != "READY":
+    operation_status = str(operation["status"])
+    if operation_status not in {"ADMITTED", "READY"}:
         raise KernelError(
             "OPERATION_STATUS_CONFLICT",
-            "only an unstarted READY Operation can be cancelled atomically",
+            "only an unstarted ADMITTED or READY Operation can be cancelled atomically",
         )
     uow.cursor.execute(
         """
@@ -195,7 +196,7 @@ def cancel_unstarted_operation_in_uow(
             operation_id=operation_id,
             project_id=project_id,
             expected_version=int(operation["version"]),
-            expected_status="READY",
+            expected_status=operation_status,
             target_status="CANCELLATION_REQUESTED",
             actor_id=actor_id,
             reason=reason,

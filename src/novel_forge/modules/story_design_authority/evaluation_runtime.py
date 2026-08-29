@@ -20,9 +20,13 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import (
+    resolve_provider_budget_failure_in_uow,
+)
 from novel_forge.modules.command_kernel.cancellation import (
     cancel_unstarted_operation_in_uow,
 )
+from novel_forge.modules.command_kernel.attempt_runtime import _transition_attempt
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     start_saga,
@@ -46,6 +50,10 @@ from .qualification import (
     NarrativeQualificationResult,
     required_qualification_profiles,
     validate_narrative_qualification,
+)
+from .replacement_gate import (
+    assert_narrative_replacement_execution_gate,
+    assert_narrative_replacement_execution_gate_in_uow,
 )
 
 
@@ -182,16 +190,28 @@ def _evaluation_command_payload_matches(
     request that callers replay after recovery.
     """
 
-    if dict(stored) == dict(expected):
+    def normalized(value: Mapping[str, Any]) -> dict[str, Any]:
+        result = dict(value)
+        payload = dict(result.get("payload") or {})
+        # 0103 starts freezing the server-derived Opening fence on the
+        # Evaluation command too.  Absence in legacy commands means only the
+        # ordinary unbound empty snapshot; non-empty drift still conflicts.
+        payload.setdefault("opening_execution_binding", {})
+        result["payload"] = payload
+        return result
+
+    normalized_stored = normalized(stored)
+    normalized_expected = normalized(expected)
+    if normalized_stored == normalized_expected:
         return True
-    stored_payload = dict(stored.get("payload") or {})
+    stored_payload = dict(normalized_stored.get("payload") or {})
     replay = stored_payload.pop("durable_success_replay", None)
     if not isinstance(replay, Mapping):
         return False
-    expected_payload = dict(expected.get("payload") or {})
+    expected_payload = dict(normalized_expected.get("payload") or {})
     if stored_payload != expected_payload:
         return False
-    expected_inputs = list(expected.get("input_asset_version_ids") or [])
+    expected_inputs = list(normalized_expected.get("input_asset_version_ids") or [])
     replay_inputs = [
         str(replay.get("model_call_asset_version_id") or ""),
         str(replay.get("cost_ledger_asset_version_id") or ""),
@@ -199,9 +219,9 @@ def _evaluation_command_payload_matches(
     ]
     if any(not item for item in replay_inputs):
         return False
-    return str(stored.get("project_id") or "") == str(
-        expected.get("project_id") or ""
-    ) and list(stored.get("input_asset_version_ids") or []) == [
+    return str(normalized_stored.get("project_id") or "") == str(
+        normalized_expected.get("project_id") or ""
+    ) and list(normalized_stored.get("input_asset_version_ids") or []) == [
         *expected_inputs,
         *replay_inputs,
     ]
@@ -975,6 +995,9 @@ class NarrativeSemanticEvaluationApplication:
                     "evaluation": (
                         None if command.evaluation is None else dict(command.evaluation)
                     ),
+                    "opening_execution_binding": dict(
+                        candidate["opening_execution_binding"]
+                    ),
                 },
             },
             "input_assets": [
@@ -987,13 +1010,38 @@ class NarrativeSemanticEvaluationApplication:
         }
         admitted = self._admit_candidate_once(command, admission_command)
         operation_id = str(admitted["operation_id"])
+        execution_generation = int(admitted["generation"])
         operation_actor_id = str(admitted.get("operation_actor_id") or command.actor_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = uow.repositories.attempt_runtime.operation_state(
                 operation_id, command.project_id
             )
-        operation_was_unstarted = operation["status"] in {"ADMITTED", "READY"}
-        if operation["status"] == "ADMITTED":
+        operation_status = str(operation["status"])
+        replacement_execution = execution_generation > 1
+        if replacement_execution and operation_status == "ADMITTED":
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+                "replacement semantic Evaluation was not released by its live Book Opening execution",
+            )
+        terminal_operation_statuses = {
+            "SUCCEEDED",
+            "FAILED_FINAL",
+            "CANCELLED",
+            "DEAD_LETTER",
+            "COMPENSATED",
+            "COMPENSATION_FAILED",
+        }
+        if (
+            replacement_execution
+            and operation_status not in terminal_operation_statuses
+        ):
+            assert_narrative_replacement_execution_gate(
+                self.database_url,
+                operation_id=operation_id,
+                project_id=command.project_id,
+            )
+        operation_was_unstarted = operation_status in {"ADMITTED", "READY"}
+        if not replacement_execution and operation_status == "ADMITTED":
             transition_operation(
                 self.database_url,
                 OperationTransitionCommand(
@@ -1583,24 +1631,9 @@ class NarrativeSemanticEvaluationApplication:
             project_id=project_id,
             lock=True,
         )
-        ready = transition_operation_in_uow(
-            uow,
-            OperationTransitionCommand(
-                operation_id=str(operation["operation_id"]),
-                project_id=project_id,
-                expected_version=int(operation["version"]),
-                expected_status="ADMITTED",
-                target_status="READY",
-                actor_id=actor_id,
-                reason="recovery admitted semantic Evaluation replacement",
-                trace_id=trace_id,
-                correlation_id=correlation_id,
-                causation_id=predecessor_operation_id,
-            ),
-        )
-        if str(ready["status"]) != "READY":
+        if str(operation["status"]) != "ADMITTED":
             self._replacement_stale(
-                "replacement Operation did not reach the unstarted READY state"
+                "replacement Operation did not remain in the unstarted ADMITTED state"
             )
         successor_execution_id = _stable_id(
             "narrative-evaluation-execution",
@@ -1662,6 +1695,113 @@ class NarrativeSemanticEvaluationApplication:
             "operation_id": str(operation["operation_id"]),
             "external_effect_disposition": disposition,
             "durable_result_replay": durable_success_replay is not None,
+            "replayed": False,
+        }
+
+    def release_replacement_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        recovery_intent_id: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        causation_id: str,
+    ) -> dict[str, Any]:
+        """Release the current replacement only under the live outer gate."""
+
+        if any(
+            not value.strip()
+            for value in (
+                operation_id,
+                recovery_intent_id,
+                actor_id,
+                trace_id,
+                correlation_id,
+                causation_id,
+            )
+        ):
+            raise ValueError("replacement release identity is incomplete")
+        execution = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=False
+        )
+        if execution is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_NOT_FOUND",
+                "semantic Evaluation replacement does not exist",
+            )
+        project_id = str(execution["project_id"])
+        candidate_id = str(execution["candidate_asset_version_id"])
+        self._lock_candidate(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+        )
+        current = self._current_execution_in_uow(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+            lock=True,
+        )
+        if (
+            current is None
+            or str(current["evaluation_execution_id"])
+            != str(execution["evaluation_execution_id"])
+            or str(current["operation_id"]) != operation_id
+        ):
+            self._replacement_stale(
+                "only the current semantic Evaluation generation may be released"
+            )
+        assert current is not None
+        if (
+            int(current["generation"]) <= 1
+            or str(current["recovery_intent_id"] or "") != recovery_intent_id
+            or not str(current["predecessor_operation_id"] or "")
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_IDENTITY_INVALID",
+                "replacement release requires exact recovery lineage",
+            )
+        assert_narrative_replacement_execution_gate_in_uow(
+            uow,
+            operation_id=operation_id,
+            project_id=project_id,
+        )
+        operation_status = str(current["operation_status"])
+        if operation_status == "READY":
+            return {
+                "evaluation_execution_id": str(current["evaluation_execution_id"]),
+                "generation": int(current["generation"]),
+                "operation_id": operation_id,
+                "operation_status": "READY",
+                "replayed": True,
+            }
+        if operation_status != "ADMITTED" or str(current["lifecycle"]) != "ADMITTED":
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_ACTIVE",
+                "only an unstarted ADMITTED replacement can be released",
+            )
+        ready = transition_operation_in_uow(
+            uow,
+            OperationTransitionCommand(
+                operation_id=operation_id,
+                project_id=project_id,
+                expected_version=int(current["operation_version"]),
+                expected_status="ADMITTED",
+                target_status="READY",
+                actor_id=actor_id,
+                reason="live Book Opening execution released semantic replacement",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                causation_id=causation_id,
+            ),
+        )
+        return {
+            "evaluation_execution_id": str(current["evaluation_execution_id"]),
+            "generation": int(current["generation"]),
+            "operation_id": operation_id,
+            "operation_status": str(ready["status"]),
             "replayed": False,
         }
 
@@ -1753,10 +1893,9 @@ class NarrativeSemanticEvaluationApplication:
                 "lifecycle": str(execution["lifecycle"]),
                 "replayed": True,
             }
-        if (
-            str(execution["lifecycle"]) != "ADMITTED"
-            or str(execution["operation_status"]) != "READY"
-        ):
+        if str(execution["lifecycle"]) != "ADMITTED" or str(
+            execution["operation_status"]
+        ) not in {"ADMITTED", "READY"}:
             raise KernelError(
                 "NARRATIVE_EVALUATION_REPLACEMENT_ACTIVE",
                 "active or ambiguous semantic Evaluation replacement cannot use unstarted cancellation",
@@ -1802,6 +1941,356 @@ class NarrativeSemanticEvaluationApplication:
             "operation_id": operation_id,
             "operation_status": str(cancellation["status"]),
             "lifecycle": "CANCELLED",
+            "replayed": False,
+        }
+
+    def abort_opening_owned_execution_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        evaluation_execution_id: str,
+        generation: int,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        """Converge the exact current RESUME execution when its owner aborts.
+
+        The outer Book Opening lock is already held.  This method takes the
+        semantic candidate/Operation/Attempt/Lease locks in their normal
+        order, fences any old worker, and never rewrites terminal history.
+        Exact planned/never-sent Effect evidence is cancelled in the same UoW;
+        durable success/failure remains immutable evidence, while any unknown
+        or potentially-sent request parks the semantic Operation in
+        reconciliation instead of permitting replay.
+        """
+
+        if (
+            any(
+                not value.strip()
+                for value in (
+                    operation_id,
+                    evaluation_execution_id,
+                    actor_id,
+                    trace_id,
+                    correlation_id,
+                    reason,
+                )
+            )
+            or generation <= 0
+        ):
+            raise ValueError("Opening-owned semantic abort identity is incomplete")
+        execution = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=False
+        )
+        if execution is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXECUTION_NOT_FOUND",
+                "Opening abort semantic execution is missing",
+            )
+        project_id = str(execution["project_id"])
+        candidate_id = str(execution["candidate_asset_version_id"])
+        # The BookOpening coordinator already holds the exact owner/runtime
+        # rows and its bound BudgetScope.  Semantic locks therefore remain
+        # strictly after the canonical Opening -> Runtime -> Budget prefix.
+        self._lock_candidate(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+        )
+        execution = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=True
+        )
+        assert execution is not None
+        current = self._current_execution_in_uow(
+            uow,
+            project_id=project_id,
+            candidate_asset_version_id=candidate_id,
+            lock=True,
+        )
+        if (
+            current is None
+            or str(current["evaluation_execution_id"]) != evaluation_execution_id
+            or str(current["operation_id"]) != operation_id
+            or int(current["generation"]) != generation
+            or str(execution["evaluation_execution_id"]) != evaluation_execution_id
+            or int(execution["generation"]) != generation
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_STALE",
+                "Opening abort no longer owns the current semantic execution",
+            )
+
+        external = self._external_effect_evidence_in_uow(uow, operation_id=operation_id)
+        external_effect_disposition = str(external["classification"])
+        external_effect_ids = {
+            str(item.get("effect_id") or "")
+            for item in external["evidence"]
+            if str(item.get("effect_id") or "")
+        }
+        if (
+            external_effect_disposition
+            == NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS.value
+            and len(external_effect_ids) == 1
+        ):
+            effect_id = next(iter(external_effect_ids))
+            effect = uow.repositories.external_effects.get_for_update(effect_id)
+            if (
+                str(effect["operation_id"]) != operation_id
+                or str(effect["project_id"]) != project_id
+            ):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_EXTERNAL_EFFECT_LINEAGE_INVALID",
+                    "semantic ExternalEffect belongs to another execution scope",
+                )
+            if uow.repositories.external_effects.cancel_proven_never_sent(
+                effect,
+                reason=reason,
+            ):
+                external_effect_disposition = "PROVEN_NEVER_SENT_CANCELLED"
+                uow.cursor.execute(
+                    """
+                    SELECT reservation_id,status
+                    FROM authority_budget_reservation
+                    WHERE external_effect_id=%s AND operation_id=%s
+                      AND project_id=%s
+                    ORDER BY created_at,reservation_id
+                    """,
+                    [effect_id, operation_id, project_id],
+                )
+                reservations = [tuple(row) for row in uow.cursor.fetchall()]
+                if len(reservations) > 1:
+                    raise KernelError(
+                        "BOOK_OPENING_BUDGET_RESERVATION_AMBIGUOUS",
+                        "never-sent semantic Effect has multiple budget generations",
+                    )
+                if reservations:
+                    reservation_id, reservation_status = reservations[0]
+                    if str(reservation_status) == "RESERVED":
+                        released = resolve_provider_budget_failure_in_uow(
+                            uow,
+                            reservation_id=str(reservation_id),
+                            project_id=project_id,
+                        )
+                        if str(released["status"]) != "RELEASED":
+                            raise KernelError(
+                                "BOOK_OPENING_BUDGET_RELEASE_CONFLICT",
+                                "never-sent semantic abort did not release its budget",
+                            )
+                    elif str(reservation_status) not in {
+                        "RELEASED",
+                        "REJECTED",
+                    }:
+                        raise KernelError(
+                            "BOOK_OPENING_BUDGET_RECONCILIATION_REQUIRED",
+                            "never-sent semantic Effect has non-releasable budget evidence",
+                        )
+                uow.repositories.external_effects.record_event(
+                    {
+                        "event_id": str(uuid4()),
+                        "audit_id": str(uuid4()),
+                        "outbox_id": str(uuid4()),
+                        "aggregate_type": "authority_external_effect",
+                        "aggregate_id": effect_id,
+                        "operation_id": operation_id,
+                        "project_id": project_id,
+                        "event_type": "external_effect.cancelled",
+                        "correlation_id": correlation_id,
+                        "causation_id": evaluation_execution_id,
+                        "payload": {
+                            "actor_id": actor_id,
+                            "trace_id": trace_id,
+                            "operation_id": operation_id,
+                            "reason": reason,
+                            "request_sent": False,
+                            "classification": "planned_never_sent",
+                        },
+                    }
+                )
+        external_effect_reconciliation_required = (
+            external_effect_disposition
+            == NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS.value
+        )
+
+        operation_status = str(execution["operation_status"])
+        operation_state = uow.repositories.attempt_runtime.operation_state(
+            operation_id, project_id
+        )
+        if str(operation_state["status"]) != operation_status:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_EXECUTION_STALE",
+                "semantic Operation changed during Opening abort",
+            )
+        operation_version = int(operation_state["version"])
+        terminal_operation_statuses = {
+            "SUCCEEDED",
+            "FAILED_FINAL",
+            "CANCELLED",
+            "DEAD_LETTER",
+            "COMPENSATED",
+            "COMPENSATION_FAILED",
+        }
+        if operation_status in terminal_operation_statuses:
+            self._synchronize_execution_in_uow(uow, execution)
+            return {
+                "evaluation_execution_id": evaluation_execution_id,
+                "operation_id": operation_id,
+                "operation_status": operation_status,
+                "lifecycle": _evaluation_lifecycle(operation_status),
+                "external_effect_disposition": external_effect_disposition,
+                "external_effect_reconciliation_required": (
+                    external_effect_reconciliation_required
+                ),
+                "replayed": True,
+            }
+        target_operation_status = (
+            "RECONCILIATION_REQUIRED"
+            if external_effect_reconciliation_required
+            else "CANCELLED"
+        )
+        if operation_status == "RECONCILIATION_REQUIRED":
+            if external_effect_reconciliation_required:
+                self._synchronize_execution_in_uow(uow, execution)
+                return {
+                    "evaluation_execution_id": evaluation_execution_id,
+                    "operation_id": operation_id,
+                    "operation_status": operation_status,
+                    "lifecycle": "RECONCILIATION_REQUIRED",
+                    "external_effect_disposition": external_effect_disposition,
+                    "external_effect_reconciliation_required": True,
+                    "replayed": True,
+                }
+        cancelable_statuses = {
+            "ADMITTED",
+            "READY",
+            "EXECUTING",
+            "WAITING_CHILDREN",
+            "WAITING_EXTERNAL_RESULT",
+            "WAITING_GATE",
+            "FAILED_RETRYABLE",
+            "CANCELLATION_REQUESTED",
+            "RECONCILIATION_REQUIRED",
+        }
+        if operation_status not in cancelable_statuses:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_ACTIVE",
+                f"Opening abort cannot converge semantic state {operation_status}",
+            )
+
+        uow.cursor.execute(
+            """
+            SELECT attempt_id,status,worker_id
+            FROM authority_attempt
+            WHERE operation_id=%s
+              AND status IN (
+                  'CREATED','QUEUED','LEASED','RUNNING','CHECKPOINTED',
+                  'RESULT_SUBMITTED'
+              )
+            ORDER BY attempt_number DESC
+            FOR UPDATE
+            """,
+            [operation_id],
+        )
+        active_attempts = [tuple(row) for row in uow.cursor.fetchall()]
+        if len(active_attempts) > 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_ATTEMPT_HISTORY_INVALID",
+                "semantic Operation has multiple active Attempts",
+            )
+        if active_attempts:
+            attempt_id, attempt_status, attempt_worker = active_attempts[0]
+            attempt = uow.repositories.attempt_runtime.get_for_update(
+                str(attempt_id), project_id
+            )
+            uow.cursor.execute(
+                """
+                SELECT owner,fencing_token,status
+                FROM authority_lease_acquisition
+                WHERE attempt_id=%s
+                ORDER BY fencing_token DESC
+                LIMIT 1
+                FOR UPDATE
+                """,
+                [attempt_id],
+            )
+            lease = uow.cursor.fetchone()
+            worker_id = str(attempt_worker or (lease[0] if lease else ""))
+            fencing_token = int(lease[1]) if lease is not None else None
+            _transition_attempt(
+                uow,
+                attempt,
+                "FAILED_FINAL"
+                if str(attempt_status) == "RESULT_SUBMITTED"
+                else "CANCELLED",
+                worker_id=worker_id,
+                fencing_token=fencing_token,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                result={
+                    "code": "NARRATIVE_EVALUATION_OPENING_OWNER_ABORTED",
+                    "reason": reason,
+                },
+            )
+            if lease is not None and str(lease[2]) == "HELD":
+                uow.repositories.attempt_runtime.release(
+                    str(attempt_id),
+                    str(lease[0]),
+                    int(lease[1]),
+                    "book_opening_authority_aborted",
+                )
+
+        if operation_status != "CANCELLATION_REQUESTED":
+            requested = transition_operation_in_uow(
+                uow,
+                OperationTransitionCommand(
+                    operation_id=operation_id,
+                    project_id=project_id,
+                    expected_version=operation_version,
+                    expected_status=operation_status,
+                    target_status="CANCELLATION_REQUESTED",
+                    actor_id=actor_id,
+                    reason=reason,
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    causation_id=evaluation_execution_id,
+                ),
+            )
+            operation_version = int(requested["version"])
+        transitioned = transition_operation_in_uow(
+            uow,
+            OperationTransitionCommand(
+                operation_id=operation_id,
+                project_id=project_id,
+                expected_version=operation_version,
+                expected_status="CANCELLATION_REQUESTED",
+                target_status=target_operation_status,
+                actor_id=actor_id,
+                reason=(
+                    "Book Opening aborted; durable ExternalEffect requires reconciliation"
+                    if external_effect_reconciliation_required
+                    else reason
+                ),
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                causation_id=evaluation_execution_id,
+            ),
+        )
+        refreshed = self._execution_by_operation_in_uow(
+            uow, predecessor_operation_id=operation_id, lock=True
+        )
+        assert refreshed is not None
+        self._synchronize_execution_in_uow(uow, refreshed)
+        return {
+            "evaluation_execution_id": evaluation_execution_id,
+            "operation_id": operation_id,
+            "operation_status": str(transitioned["status"]),
+            "lifecycle": _evaluation_lifecycle(str(transitioned["status"])),
+            "external_effect_disposition": external_effect_disposition,
+            "external_effect_reconciliation_required": (
+                external_effect_reconciliation_required
+            ),
             "replayed": False,
         }
 
@@ -1922,7 +2411,7 @@ class NarrativeSemanticEvaluationApplication:
                    execution.terminal_reason,execution.version,head.version,
                    operation.command_payload,
                    operation.input_asset_snapshot,operation.workspace_id,
-                   operation.actor_id,operation.status
+                   operation.actor_id,operation.status,operation.version
             FROM authority_narrative_evaluation_execution_head AS head
             JOIN authority_narrative_evaluation_execution AS execution
               ON execution.project_id=head.project_id
@@ -1965,6 +2454,7 @@ class NarrativeSemanticEvaluationApplication:
             "workspace_id",
             "operation_actor_id",
             "operation_status",
+            "operation_version",
         )
         return dict(zip(keys, row, strict=True))
 
@@ -2087,6 +2577,12 @@ class NarrativeSemanticEvaluationApplication:
                 raise KernelError(
                     "NARRATIVE_EVALUATION_EXECUTION_NOT_FOUND",
                     "semantic Evaluation Operation has no execution lineage",
+                )
+            if int(execution["generation"]) > 1:
+                assert_narrative_replacement_execution_gate_in_uow(
+                    uow,
+                    operation_id=operation_id,
+                    project_id=project_id,
                 )
             if str(execution["lifecycle"]) == "ADMITTED":
                 uow.cursor.execute(
@@ -2709,7 +3205,8 @@ class NarrativeSemanticEvaluationApplication:
                    design_state.execution_evidence->>'operation_id',
                    current_operation.command_payload,
                    current_operation.idempotency_key,
-                   generation_one.idempotency_key
+                   generation_one.idempotency_key,
+                   operation.command_payload
             FROM authority_operation_output_asset AS output
             JOIN authority_operation AS operation
               ON operation.operation_id=output.operation_id
@@ -2763,6 +3260,19 @@ class NarrativeSemanticEvaluationApplication:
                 "NARRATIVE_EVALUATION_GENERATION_LINEAGE_INVALID",
                 "candidate is not an exact gated or successful output of the generation Operation",
             )
+        generation_command_payload = dict(row[18] or {})
+        raw_opening_binding = dict(generation_command_payload.get("payload") or {}).get(
+            "opening_execution_binding"
+        )
+        if raw_opening_binding is None:
+            opening_execution_binding: dict[str, Any] = {}
+        elif isinstance(raw_opening_binding, Mapping):
+            opening_execution_binding = dict(raw_opening_binding)
+        else:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_OPENING_BINDING_INVALID",
+                "generation Operation carries a malformed Opening execution fence",
+            )
         expected_payload = {
             "project_id": command.project_id,
             "input_asset_version_ids": [
@@ -2780,6 +3290,7 @@ class NarrativeSemanticEvaluationApplication:
                 "evaluation": (
                     None if command.evaluation is None else dict(command.evaluation)
                 ),
+                "opening_execution_binding": opening_execution_binding,
             },
         }
         lineage_exists = (
@@ -2823,6 +3334,7 @@ class NarrativeSemanticEvaluationApplication:
             "content": dict(row[2]),
             "asset_type": str(row[3]),
             "generation_actor_id": str(row[4]),
+            "opening_execution_binding": opening_execution_binding,
         }
 
     def _require_asset(self, project_id: str, asset_version_id: str) -> dict[str, Any]:

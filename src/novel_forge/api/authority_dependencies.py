@@ -1654,6 +1654,37 @@ def build_book_production_composition(
             input_resolver=input_resolver,
             application_build_id=authority.application_build_id,
             commit_sha=authority.commit_sha,
+            provider_budget_policy={
+                "execution_mode": "PROVIDER_ALLOWED",
+                "provider_call_limit": int(
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT")
+                    or 40
+                ),
+                "token_limit": int(
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT")
+                    or 1_800_000
+                ),
+                "cost_limit_usd": str(
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT")
+                    or "20"
+                ),
+                "per_call_token_limit": int(
+                    values.get(
+                        "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT"
+                    )
+                    or 100_000
+                ),
+                "per_call_cost_limit_usd": str(
+                    values.get(
+                        "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT"
+                    )
+                    or "2"
+                ),
+            },
+            provider_budget_window_seconds=int(
+                values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS")
+                or 3_600
+            ),
         ),
         formation=StoryFormationApplication(
             settings.database_url,

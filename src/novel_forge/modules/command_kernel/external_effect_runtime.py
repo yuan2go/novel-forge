@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -39,6 +40,23 @@ from novel_forge.modules.production_execution.security import (
     assert_legacy_execution_allowed,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+_PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS = frozenset(
+    {
+        "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+        "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
+    }
+)
+_PERMANENT_BUDGET_AUTHORIZATION_DENIALS = frozenset(
+    {
+        "BUDGET_SCOPE_CONFLICT",
+        "BUDGET_SCOPE_NOT_FOUND",
+        "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",
+        "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
+        "BOOK_OPENING_PROVIDER_EXECUTION_NOT_LIVE",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -109,6 +127,9 @@ def read_succeeded_external_effect(
             )
         if effect["status"] != "SUCCEEDED":
             return None
+        frozen_capability_profile = _validated_frozen_provider_capability_profile(
+            effect
+        )
         uow.cursor.execute(
             """
             SELECT dispatch.generation, dispatch.evidence,
@@ -147,10 +168,11 @@ def read_succeeded_external_effect(
             )
         uow.cursor.execute(
             """
-            SELECT reservation_id
+            SELECT reservation_id,status,reserved_amount,estimated_tokens,version
             FROM authority_budget_reservation
-            WHERE external_effect_id=%s AND project_id=%s AND status='SETTLED'
-            ORDER BY settled_at DESC, reservation_id DESC
+            WHERE external_effect_id=%s AND project_id=%s
+              AND status IN ('SETTLED','RESERVED','HELD_UNKNOWN')
+            ORDER BY created_at DESC, reservation_id DESC
             LIMIT 1
             """,
             [effect_id, context.project_id],
@@ -159,13 +181,18 @@ def read_succeeded_external_effect(
         if budget is None:
             raise KernelError(
                 "EFFECT_SUCCESS_BUDGET_MISSING",
-                "succeeded Provider Effect has no settled budget evidence",
+                "succeeded Provider Effect has no recoverable budget reservation",
             )
         return {
             "external_effect_id": effect_id,
             "generation": int(generation),
             "provider_evidence": provider_evidence,
+            "provider_capability_profile": frozen_capability_profile,
             "budget_reservation_id": str(budget[0]),
+            "budget_reservation_status": str(budget[1]),
+            "budget_reserved_amount": str(budget[2]),
+            "budget_estimated_tokens": int(budget[3]),
+            "budget_reservation_version": int(budget[4]),
             "recovered": True,
         }
 
@@ -335,6 +362,17 @@ def plan_external_effect(
                     "capability": capability,
                 },
             )
+        # Repository.plan intentionally returns only admission identity.  The
+        # caller must nevertheless settle and recover against the capability
+        # profile frozen on the authoritative Effect, especially on replay
+        # where the current Adapter declaration is not the source of truth.
+        planned_effect = repository.get_for_update(result["external_effect_id"])
+        result = {
+            **result,
+            "provider_capability_profile": dict(
+                planned_effect.get("provider_capability_profile") or {}
+            ),
+        }
         uow.commit()
     return result
 
@@ -433,6 +471,8 @@ def dispatch_external_effect(
     worker_id: str,
     lease_seconds: int,
     adapter: ExternalEffectAdapter,
+    budget_reservation_id: str = "",
+    pre_send_assertion: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     assert_legacy_execution_allowed(
         component="ExternalEffect adapter",
@@ -481,6 +521,48 @@ def dispatch_external_effect(
             "Provider request deadline expired before dispatch",
         ) from exc
     try:
+        from novel_forge.modules.command_kernel.budget_runtime import (
+            assert_provider_execution_authorized,
+        )
+
+        assert_provider_execution_authorized(
+            database_url,
+            operation_id=context.operation_id,
+            external_effect_id=effect_id,
+            project_id=context.project_id,
+            budget_reservation_id=budget_reservation_id,
+        )
+    except Exception as exc:
+        error_code = str(getattr(exc, "code", ""))
+        permanent_denial = (
+            isinstance(exc, KernelError)
+            and error_code in _PERMANENT_BUDGET_AUTHORIZATION_DENIALS
+        )
+        submit_effect_dispatch_result(
+            database_url,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            worker_id=worker_id,
+            fencing_token=lease["fencing_token"],
+            outcome="final_failure" if permanent_denial else "retryable_failure",
+            evidence={
+                "error_type": type(exc).__name__,
+                "error_code": error_code,
+                "message": str(exc),
+                "request_sent": False,
+                "failure_phase": "budget_execution_assertion",
+                "authorization_denial_permanent": permanent_denial,
+            },
+        )
+        if isinstance(exc, KernelError):
+            raise
+        raise KernelError(
+            "EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED",
+            "Provider budget execution assertion failed before send",
+        ) from exc
+    provider_send_started = False
+    final_gate_started = False
+    try:
         with LeaseHeartbeatGuard(
             lambda: heartbeat_effect_dispatch(
                 database_url,
@@ -498,6 +580,15 @@ def dispatch_external_effect(
                 project_id=context.project_id,
             ),
         ):
+            # This is the last executable statement before entering the
+            # adapter.  The Effect dispatch lease is already held and its
+            # heartbeat guard is active; a stale outer owner cannot exploit a
+            # gap between its final Authority check and Provider send.
+            if pre_send_assertion is not None:
+                final_gate_started = True
+                pre_send_assertion()
+                final_gate_started = False
+            provider_send_started = True
             provider_result = adapter.execute(
                 stable_idempotency_key=effect["stable_idempotency_key"],
                 capability=effect["capability"],
@@ -533,6 +624,38 @@ def dispatch_external_effect(
             f"adapter exception was recorded as {recorded}",
         ) from exc
     except Exception as exc:
+        if not provider_send_started:
+            error_code = str(getattr(exc, "code", ""))
+            permanent_denial = (
+                final_gate_started
+                and error_code in _PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS
+            )
+            submit_effect_dispatch_result(
+                database_url,
+                context,
+                dispatch_id=dispatch["dispatch_id"],
+                worker_id=worker_id,
+                fencing_token=lease["fencing_token"],
+                outcome="final_failure" if permanent_denial else "retryable_failure",
+                evidence={
+                    "error_type": type(exc).__name__,
+                    "error_code": error_code,
+                    "message": str(exc),
+                    "request_sent": False,
+                    "failure_phase": (
+                        "pre_send_assertion"
+                        if final_gate_started
+                        else "dispatch_lease_guard"
+                    ),
+                    "authorization_denial_permanent": permanent_denial,
+                },
+            )
+            if isinstance(exc, KernelError):
+                raise
+            raise KernelError(
+                "EFFECT_PRE_SEND_ASSERTION_FAILED",
+                "Provider pre-send assertion failed before any request was sent",
+            ) from exc
         submit_effect_dispatch_result(
             database_url,
             context,
@@ -791,6 +914,34 @@ def _validate_frozen_adapter_capability(
             "EFFECT_PROVIDER_CAPABILITY_MISMATCH",
             "adapter runtime capabilities differ from the frozen ExternalEffect profile",
         )
+
+
+def _validated_frozen_provider_capability_profile(
+    effect: dict[str, Any],
+) -> dict[str, Any]:
+    frozen = effect.get("provider_capability_profile")
+    if not isinstance(frozen, dict) or not frozen:
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_MISSING",
+            "succeeded Provider Effect has no frozen capability profile",
+        )
+    try:
+        profile = capability_profile_from_dict(dict(frozen))
+    except (TypeError, ValueError) as exc:
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_INVALID",
+            "succeeded Provider Effect capability profile is invalid",
+        ) from exc
+    if (
+        profile.provider != str(effect.get("provider") or "")
+        or profile.reconciliation_mode
+        != str(effect.get("reconciliation_mode") or "")
+    ):
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_CONFLICT",
+            "succeeded Provider Effect capability profile differs from its frozen intent",
+        )
+    return profile.to_dict()
 
 
 def accept_external_effect_receipt(

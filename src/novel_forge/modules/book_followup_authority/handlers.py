@@ -58,12 +58,25 @@ class ReaderOutcomeHandler:
             "previous_reader_state_version",
             "evaluation_profile_version",
             "model_strategy_version",
+            "context_token_budget",
         )
         missing = [name for name in required if payload.get(name) in (None, "")]
         if missing:
             raise KernelError(
                 "READER_OUTCOME_INPUT_INVALID",
                 "missing Reader Outcome fields: " + ", ".join(missing),
+            )
+        try:
+            context_token_budget = int(payload["context_token_budget"])
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "READER_OUTCOME_INPUT_INVALID",
+                "Reader Outcome context token budget must be an integer",
+            ) from exc
+        if context_token_budget <= 0:
+            raise KernelError(
+                "READER_OUTCOME_INPUT_INVALID",
+                "Reader Outcome context token budget must be positive",
             )
         try:
             observed_through_chapter = int(
@@ -114,6 +127,7 @@ class ReaderOutcomeHandler:
                 ),
                 "reader_judge_execution_snapshot": judge.to_dict(),
             },
+            reservation_tokens=context_token_budget,
         )
         raw_state = result.output.get("reader_state")
         raw_evidence = result.output.get("evidence")

@@ -606,6 +606,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             "previous_reader_state_version": "reader-state:none",
             "evaluation_profile_version": "reader-evaluation:v1",
             "model_strategy_version": "model-strategy:v1",
+            "context_token_budget": 8_000,
         }
 
 
