@@ -81,8 +81,22 @@ def _assert_live_generation_one_opening(
             JOIN authority_runtime_job AS job
               ON job.runtime_job_id=opening_execution.runtime_job_id
              AND job.project_id=opening.project_id
-             AND job.job_kind='BOOK_OPENING_EXECUTE'
-             AND job.runtime_group='book_opening'
+             AND (
+                 (
+                     opening.workflow_contract_version=
+                         'book-opening-workflow-v1'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v3'
+                     AND job.job_kind='BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
+                     AND job.runtime_group='book_opening_workflow_v1'
+                 ) OR (
+                     opening.workflow_contract_version='legacy-monolithic-v2'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v2'
+                     AND job.job_kind='BOOK_OPENING_EXECUTE'
+                     AND job.runtime_group='book_opening'
+                 )
+             )
              AND job.subject_kind='BOOK_OPENING_RUN'
              AND job.subject_id=opening.opening_run_id
              AND job.input_hash=opening_execution.input_snapshot_hash
@@ -116,8 +130,6 @@ def _assert_live_generation_one_opening(
             WHERE opening.opening_run_id=%s
               AND opening.project_id=%s
               AND opening.book_id=%s
-              AND opening.execution_contract_version=
-                  'book-opening-execution-v2'
               AND opening.lifecycle='RUNNING'
               AND opening.recovery_state='READY'
               AND opening.current_execution_id=
@@ -230,8 +242,22 @@ def _assert_live_replacement_opening(
             JOIN authority_runtime_job AS job
               ON job.runtime_job_id=opening_execution.runtime_job_id
              AND job.project_id=opening.project_id
-             AND job.job_kind='BOOK_OPENING_EXECUTE'
-             AND job.runtime_group='book_opening'
+             AND (
+                 (
+                     opening.workflow_contract_version=
+                         'book-opening-workflow-v1'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v3'
+                     AND job.job_kind='BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
+                     AND job.runtime_group='book_opening_workflow_v1'
+                 ) OR (
+                     opening.workflow_contract_version='legacy-monolithic-v2'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v2'
+                     AND job.job_kind='BOOK_OPENING_EXECUTE'
+                     AND job.runtime_group='book_opening'
+                 )
+             )
              AND job.subject_kind='BOOK_OPENING_RUN'
              AND job.subject_id=opening.opening_run_id
              AND job.input_hash=opening_execution.input_snapshot_hash
@@ -283,8 +309,6 @@ def _assert_live_replacement_opening(
              AND lease.lease_expires_at>clock_timestamp()
             WHERE opening.project_id=%s
               AND opening.book_id=%s
-              AND opening.execution_contract_version=
-                  'book-opening-execution-v2'
               AND opening.lifecycle='RUNNING'
               AND opening.recovery_state='READY'
               AND opening_execution.current_attempt_id=attempt.attempt_id
@@ -398,8 +422,15 @@ def _is_recovery_bound(
             SELECT 1
             FROM authority_runtime_job AS job
             WHERE job.project_id=%s
-              AND job.job_kind='BOOK_OPENING_EXECUTE'
-              AND job.runtime_group='book_opening'
+              AND (
+                  (
+                      job.job_kind='BOOK_OPENING_EXECUTE'
+                      AND job.runtime_group='book_opening'
+                  ) OR (
+                      job.job_kind='BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
+                      AND job.runtime_group='book_opening_workflow_v1'
+                  )
+              )
               AND job.subject_kind='BOOK_OPENING_RUN'
               AND job.input_snapshot->>'semantic_evaluation_operation_id'=%s
               AND job.input_snapshot->>'semantic_evaluation_execution_id'=%s

@@ -45,7 +45,7 @@ def test_terminal_lineage_is_a_forward_only_projection_fix() -> None:
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
     assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == recovery_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == semantic_hardening.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert "MIGRATION_ONLY base projection" in sql

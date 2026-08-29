@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
@@ -105,6 +106,7 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.production_execution.contracts import ExecutionOutcome
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.migrations import run_migrations
 from novel_forge.workers.book_followup_authority import (
     execute_book_followup_admission_claim,
     schedule_book_followup_admission_jobs,
@@ -124,9 +126,49 @@ from tests.integration.capability_pack_postgres_support import (
 from tests.integration.hierarchy_closure_postgres_support import (
     seed_ready_story_foundation,
 )
+from tests.integration.migration_window_postgres_support import (
+    PRE_WORKFLOW_MIGRATION_ID,
+    WORKFLOW_MIGRATION_ID,
+    assert_database_at_migration,
+    disposable_database_at_migration,
+)
+import tests.integration.authority_postgres_support as authority_postgres_support
+import tests.integration.capability_pack_postgres_support as capability_pack_support
 
 
 RELEASE_SHA = "e" * 40
+
+
+@pytest.fixture()
+def pre_workflow_migration_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Iterator[str]:
+    base_database_url = DATABASE_URL
+    with disposable_database_at_migration(
+        base_database_url,
+        prefix="nf_core_functional_0103",
+        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+    ) as database_url:
+        monkeypatch.setattr(
+            authority_postgres_support,
+            "DATABASE_URL",
+            database_url,
+        )
+        monkeypatch.setattr(
+            capability_pack_support,
+            "DATABASE_URL",
+            database_url,
+        )
+        monkeypatch.setattr(
+            capability_pack_support,
+            "ensure_migrated",
+            lambda: assert_database_at_migration(
+                database_url,
+                target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+            ),
+        )
+        monkeypatch.setitem(globals(), "DATABASE_URL", database_url)
+        yield database_url
 
 
 class _MeasuredPlanningAndEvaluationTransport:
@@ -1557,7 +1599,16 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
         for role in GENERATOR_INPUT_ROLES[generator]
         if role not in {"book_plan", "volume_plan"}
     }
-    planning_inputs = {role: generic[role] for role in opening_roles}
+    planning_inputs = {
+        role: (
+            generic["initial_story_state"]
+            if role == "story_state"
+            else generic["initial_canon_snapshot"]
+            if role == "canon_snapshot"
+            else generic[role]
+        )
+        for role in opening_roles
+    }
 
     with tempfile.TemporaryDirectory(prefix="narrative-evolution-opening-") as root:
         settings = IndustrialSettings(
@@ -2920,6 +2971,7 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
 def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     runtime_path: str,
     monkeypatch: pytest.MonkeyPatch,
+    pre_workflow_migration_database: str,
 ) -> None:
     harness = CapabilityPackPostgresHarness("book-input-resolver")
     deployment_id = _activate_planning_pack(harness)
@@ -3223,6 +3275,31 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 "UPDATE authority_book_production_input_snapshot SET release_sha=%s WHERE snapshot_id=%s",
                 ["f" * 40, snapshot.snapshot_id],
             )
+
+    assert_database_at_migration(
+        pre_workflow_migration_database,
+        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+    )
+    migration_status = run_migrations(pre_workflow_migration_database)
+    assert migration_status["ok"] is True
+    assert migration_status["current"] == WORKFLOW_MIGRATION_ID
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT project_id,workspace_id,book_id,snapshot_hash,
+                   source_migration_id
+            FROM authority_book_opening_legacy_snapshot_entitlement
+            WHERE snapshot_id=%s
+            """,
+            [snapshot.snapshot_id],
+        )
+        assert uow.cursor.fetchone() == (
+            project_id,
+            workspace_id,
+            book_id,
+            snapshot.snapshot_hash,
+            WORKFLOW_MIGRATION_ID,
+        )
 
     book_authority = composition.authority
     from fastapi import FastAPI

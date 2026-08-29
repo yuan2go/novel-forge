@@ -17,7 +17,6 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
-    NarrativeSearchRequest,
     PostgresNarrativeSearchApplication,
     StoryPlanningGenerationApplication,
     canonical_hash,
@@ -141,7 +140,7 @@ def test_rolling_release_can_claim_stable_admission_but_not_reuse_old_assessment
         release_b.recovery._application_release_digest()
         != admitted.opening.recovery._application_release_digest()
     )
-    claim = release_b.claim_next_execution(
+    claim = release_b.claim_next_legacy_execution(
         worker_id="rolling-release-b-worker",
         lease_seconds=30,
         project_id=admitted.project_id,
@@ -386,6 +385,17 @@ def _create_checkpointed_search_orphan() -> _CheckpointedSearchOrphan:
         DATABASE_URL,
         planning=planning,
     )
+    workflow_payload_completed = False
+
+    def lose_process_after_workflow_payload(point: str) -> None:
+        nonlocal workflow_payload_completed
+        if point != "after_workflow_node_payload" or workflow_payload_completed:
+            return
+        workflow_payload_completed = True
+        raise SimulatedBookOpeningProcessLoss(
+            "opening process disappeared after the Book workflow payload"
+        )
+
     opening = PostgresBookOpeningApplication(
         DATABASE_URL,
         narrative_search=narrative_search,
@@ -397,6 +407,7 @@ def _create_checkpointed_search_orphan() -> _CheckpointedSearchOrphan:
         ),
         application_build_id=RELEASE_A_BUILD,
         commit_sha=RELEASE_A_SHA,
+        fault_injector=lose_process_after_workflow_payload,
     )
     opening_roles = {
         role
@@ -416,7 +427,16 @@ def _create_checkpointed_search_orphan() -> _CheckpointedSearchOrphan:
             actor_id=principal.principal_id,
             expected_book_version=int(generic["book_version"]),
             production_profile=generic["production_profile"],
-            planning_input_versions={role: generic[role] for role in opening_roles},
+            planning_input_versions={
+                role: (
+                    generic["initial_story_state"]
+                    if role == "story_state"
+                    else generic["initial_canon_snapshot"]
+                    if role == "canon_snapshot"
+                    else generic[role]
+                )
+                for role in opening_roles
+            },
             arc_logical_keys=("arc:checkpoint-resume",),
             idempotency_key=f"{project_id}:open-book",
             trace_id=f"trace:{project_id}:open-book",
@@ -433,42 +453,7 @@ def _create_checkpointed_search_orphan() -> _CheckpointedSearchOrphan:
     )
     assert claim is not None
 
-    def crash_after_authoritative_book_search_checkpoint() -> None:
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                """
-                SELECT evidence_id
-                FROM authority_book_opening_semantic_checkpoint
-                WHERE opening_run_id=%s
-                  AND semantic_work_key='book_plan.generate:book:main'
-                """,
-                [admission.opening_run_id],
-            )
-            row = uow.cursor.fetchone()
-        if row is not None:
-            raise SimulatedBookOpeningProcessLoss(
-                "opening process disappeared after the Book search checkpoint"
-            )
-
-    original_open = opening._open_frozen
-
-    def open_with_checkpoint_crash(
-        request: OpenBookProductionRequest, **kwargs: object
-    ):
-        worker_probe = kwargs.get("execution_probe")
-
-        def combined_probe() -> None:
-            if callable(worker_probe):
-                worker_probe()
-            crash_after_authoritative_book_search_checkpoint()
-
-        kwargs["execution_probe"] = combined_probe
-        return original_open(request, **kwargs)
-
-    with (
-        patch.object(opening, "_open_frozen", new=open_with_checkpoint_crash),
-        pytest.raises(SimulatedBookOpeningProcessLoss),
-    ):
+    with pytest.raises(SimulatedBookOpeningProcessLoss):
         execute_book_opening_claim(
             RuntimeJobAuthority(DATABASE_URL),
             opening,
@@ -476,28 +461,40 @@ def _create_checkpointed_search_orphan() -> _CheckpointedSearchOrphan:
             claim,
             lease_seconds=60,
         )
+    assert workflow_payload_completed is True
 
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
-            SELECT checkpoint.evidence_id,search.status,
-                   COUNT(effect.external_effect_id)
-            FROM authority_book_opening_semantic_checkpoint AS checkpoint
-            JOIN authority_story_narrative_search AS search
-              ON search.search_id=checkpoint.evidence_id
-             AND search.project_id=%s
-            LEFT JOIN authority_external_effect AS effect
-              ON effect.project_id=search.project_id
-            WHERE checkpoint.opening_run_id=%s
-              AND checkpoint.semantic_work_key='book_plan.generate:book:main'
-            GROUP BY checkpoint.evidence_id,search.status
+            SELECT search.search_id,search.status,
+                   COUNT(DISTINCT candidate.membership_id),
+                   COUNT(DISTINCT checkpoint.checkpoint_id)
+            FROM authority_story_narrative_search AS search
+            JOIN authority_story_narrative_search_candidate AS candidate
+              ON candidate.search_id=search.search_id
+            LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
+              ON checkpoint.opening_run_id=%s
+             AND checkpoint.semantic_work_key=(
+                 'narrative-search-branch:' || search.search_id || ':' ||
+                 candidate.branch_key
+             )
+            WHERE search.project_id=%s
+              AND search.book_id=%s
+              AND search.generator_operation_name='book_plan.generate'
+              AND search.logical_key='book:main'
+            GROUP BY search.search_id,search.status
             """,
-            [project_id, admission.opening_run_id],
+            [admission.opening_run_id, project_id, book_id],
         )
         checkpoint = uow.cursor.fetchone()
         assert checkpoint is not None
         assert str(checkpoint[1]) == "ACTIVATED"
-        assert int(checkpoint[2]) == 0
+        assert (int(checkpoint[2]), int(checkpoint[3])) == (3, 3)
+        uow.cursor.execute(
+            "SELECT COUNT(*) FROM authority_external_effect WHERE project_id=%s",
+            [project_id],
+        )
+        assert int(uow.cursor.fetchone()[0]) == 0
         uow.cursor.execute(
             """
             UPDATE authority_runtime_job_lease
@@ -556,39 +553,32 @@ def test_recovered_opening_uses_checkpointed_search_without_repeating_semantic_w
     assert claim is not None
     assert claim.runtime_job_id == receipt.result["runtime_job_id"]
 
-    original_explore = orphan.opening.narrative_search.explore
-
-    def reject_checkpointed_search_reexecution(
-        request: NarrativeSearchRequest, **kwargs: object
-    ):
-        generation = request.generation
-        if (
-            generation.generator_operation_name == "book_plan.generate"
-            and generation.logical_key == "book:main"
-        ):
-            raise AssertionError(
-                "recovered Opening re-entered completed checkpointed semantic work"
-            )
-        return original_explore(request, **kwargs)
-
-    with patch.object(
-        orphan.opening.narrative_search,
-        "explore",
-        side_effect=reject_checkpointed_search_reexecution,
-    ):
-        result = execute_book_opening_claim(
-            RuntimeJobAuthority(DATABASE_URL),
-            orphan.opening,
-            orphan.principal,
-            claim,
-            lease_seconds=60,
-        )
+    result = execute_book_opening_claim(
+        RuntimeJobAuthority(DATABASE_URL),
+        orphan.opening,
+        orphan.principal,
+        claim,
+        lease_seconds=60,
+    )
 
     assert result["search_ids"][0] == orphan.book_search_id
     assert orphan.opening.require(orphan.opening_run_id)["lifecycle"] == "COMPLETE"
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
-            "SELECT COUNT(*) FROM authority_external_effect WHERE project_id=%s",
-            [orphan.project_id],
+            """
+            SELECT
+                COUNT(DISTINCT generation.generation_id),
+                COUNT(DISTINCT candidate.membership_id),
+                COUNT(DISTINCT effect.external_effect_id)
+            FROM authority_story_narrative_search AS search
+            JOIN authority_story_planning_generation AS generation
+              ON generation.narrative_search_id=search.search_id
+            JOIN authority_story_narrative_search_candidate AS candidate
+              ON candidate.search_id=search.search_id
+            LEFT JOIN authority_external_effect AS effect
+              ON effect.project_id=search.project_id
+            WHERE search.search_id=%s
+            """,
+            [orphan.book_search_id],
         )
-        assert int(uow.cursor.fetchone()[0]) == 0
+        assert uow.cursor.fetchone() == (3, 3, 0)

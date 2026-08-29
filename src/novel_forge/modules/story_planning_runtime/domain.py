@@ -65,6 +65,69 @@ DEFAULT_NARRATIVE_LOAD_LIMITS: Mapping[str, int] = MappingProxyType(
 )
 
 
+def canonical_book_volume_allocation(
+    book_plan: Mapping[str, Any],
+) -> tuple[tuple[dict[str, Any], ...], int]:
+    """Derive the immutable, gap-free Volume chapter allocation for one Book."""
+
+    raw = book_plan.get("volume_skeleton")
+    target_value = (book_plan.get("length_strategy") or {}).get("target_chapters")
+    if (
+        not isinstance(raw, list)
+        or not raw
+        or not isinstance(target_value, int)
+        or isinstance(target_value, bool)
+        or target_value <= 0
+    ):
+        raise ValueError("Book Plan requires a Volume skeleton and chapter target")
+    target = int(target_value)
+    skeleton: list[dict[str, Any]] = []
+    for ordinal, item in enumerate(raw, start=1):
+        if (
+            not isinstance(item, Mapping)
+            or not isinstance(item.get("volume"), int)
+            or isinstance(item.get("volume"), bool)
+            or int(item["volume"]) != ordinal
+        ):
+            raise ValueError("Volume skeleton ordinals must be contiguous")
+        skeleton.append(dict(item))
+    if target < len(skeleton):
+        raise ValueError("Book target cannot be shorter than its Volume skeleton")
+
+    supplied_ranges = [item.get("chapter_range") for item in skeleton]
+    if any(value is not None for value in supplied_ranges):
+        if not all(value is not None for value in supplied_ranges):
+            raise ValueError("Volume skeleton ranges must be complete")
+        previous_end = 0
+        for item in skeleton:
+            value = item["chapter_range"]
+            if (
+                not isinstance(value, list)
+                or len(value) != 2
+                or any(
+                    not isinstance(chapter, int) or isinstance(chapter, bool)
+                    for chapter in value
+                )
+                or value[0] != previous_end + 1
+                or value[1] < value[0]
+            ):
+                raise ValueError("Volume skeleton ranges must be contiguous")
+            item["chapter_range"] = [int(value[0]), int(value[1])]
+            previous_end = int(value[1])
+        if previous_end != target:
+            raise ValueError("Volume skeleton must exactly cover the Book target")
+        return tuple(skeleton), target
+
+    base_size, larger_prefix = divmod(target, len(skeleton))
+    next_chapter = 1
+    for ordinal, item in enumerate(skeleton, start=1):
+        volume_size = base_size + (1 if ordinal <= larger_prefix else 0)
+        final_chapter = next_chapter + volume_size - 1
+        item["chapter_range"] = [next_chapter, final_chapter]
+        next_chapter = final_chapter + 1
+    return tuple(skeleton), target
+
+
 class PlanningGenerationStatus(StrEnum):
     ADMITTED = "ADMITTED"
     EXECUTING = "EXECUTING"
@@ -305,16 +368,13 @@ class StoryPlanningGenerationCommand:
                         "runtime_fencing_token",
                     }
                 )
-                or int(opening_binding.get("opening_execution_generation") or 0)
-                <= 0
+                or int(opening_binding.get("opening_execution_generation") or 0) <= 0
                 or int(opening_binding.get("runtime_fencing_token") or 0) <= 0
             ):
                 raise ValueError(
                     "Opening Planning Generation requires one exact execution fence"
                 )
-            object.__setattr__(
-                self, "opening_execution_binding", opening_binding
-            )
+            object.__setattr__(self, "opening_execution_binding", opening_binding)
         normalized = {
             str(role): str(version)
             for role, version in dict(self.input_versions).items()
@@ -517,6 +577,43 @@ class StoryPlanningGenerationCommand:
                     raise ValueError(
                         "ChapterGroup Narrative Search horizon is inconsistent"
                     )
+            if self.generator_operation_name == "volume_plan.generate":
+                chapter_range = search_horizon.get("chapter_range")
+                if chapter_range is not None and (
+                    search_horizon.get("level") != "VOLUME"
+                    or not isinstance(chapter_range, list)
+                    or len(chapter_range) != 2
+                    or any(
+                        not isinstance(item, int) or isinstance(item, bool)
+                        for item in chapter_range
+                    )
+                ):
+                    raise ValueError(
+                        "Volume Narrative Search requires an exact frozen chapter range"
+                    )
+                if chapter_range is not None:
+                    start, end = chapter_range
+                    if (
+                        start <= 0
+                        or end < start
+                        or self.narrative_search_accepted_through_chapter != 0
+                        or search_horizon.get("starts_at_chapter") != start
+                        or search_horizon.get("ends_at_chapter") != end
+                    ):
+                        raise ValueError(
+                            "Volume Narrative Search horizon is inconsistent"
+                        )
+            if self.generator_operation_name == "book_plan.generate":
+                target_chapters = search_horizon.get("target_chapters")
+                if target_chapters is not None and (
+                    search_horizon.get("level") != "BOOK"
+                    or not isinstance(target_chapters, int)
+                    or isinstance(target_chapters, bool)
+                    or target_chapters <= 0
+                ):
+                    raise ValueError(
+                        "Book Narrative Search frozen chapter target is invalid"
+                    )
         elif (
             self.narrative_search_parent_state_asset_version_id
             or self.narrative_search_accepted_through_chapter
@@ -569,13 +666,16 @@ class StoryPlanningGenerationCommand:
     @property
     def narrative_search_chapter_range(self) -> tuple[int, int] | None:
         if (
-            self.generator_operation_name != "chapter_group_plan.generate"
+            self.generator_operation_name
+            not in {"chapter_group_plan.generate", "volume_plan.generate"}
             or not self.narrative_search_id
         ):
             return None
-        chapter_range = dict(self.narrative_search_planning_horizon or {})[
+        chapter_range = dict(self.narrative_search_planning_horizon or {}).get(
             "chapter_range"
-        ]
+        )
+        if chapter_range is None:
+            return None
         return int(chapter_range[0]), int(chapter_range[1])
 
 

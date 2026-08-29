@@ -22,7 +22,15 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     execute_transaction_command,
 )
+from novel_forge.modules.story_design_authority.application import (
+    STORY_DESIGN_TRANSITION_DEFINITION,
+    STORY_DESIGN_TRANSITION_VERSION,
+)
+from novel_forge.storage.authority_repositories import IdempotencyConflictError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.book_opening_plan_fence import (
+    lock_and_assert_book_opening_plan_mutation,
+)
 
 from .definitions import (
     PLAN_BINDING_DEFINITION_VERSION,
@@ -47,6 +55,10 @@ _RELATIONS = {
     PlanContractType.CHAPTER_GROUP: "VOLUME_CONTAINS_CHAPTER_GROUP",
     PlanContractType.CHAPTER: "CHAPTER_GROUP_CONTAINS_CHAPTER",
 }
+
+_PLAN_BINDING_DEFINITION_NAME = "planning.binding.activate"
+_PLAN_BINDING_IDEMPOTENCY_SCOPE = "book:planning-binding"
+_LEGACY_PLAN_BINDING_DEFINITION_VERSION = "1.0.0"
 
 
 class PostgresHierarchicalPlanningAuthority:
@@ -85,6 +97,7 @@ class PostgresHierarchicalPlanningAuthority:
         trace_id: str,
         correlation_id: str,
         causation_operation_id: str = "",
+        story_design_transition_operation_id: str = "",
         principal: Principal,
     ) -> dict[str, Any]:
         principal.require("book.authority.execute", project_id)
@@ -100,52 +113,78 @@ class PostgresHierarchicalPlanningAuthority:
                 "approved plan replacement requires decision evidence",
             )
         self._register_definitions()
+        definition_version = self._binding_definition_version_for_replay(
+            project_id=project_id,
+            idempotency_key=idempotency_key,
+        )
+        definition_version = definition_version or PLAN_BINDING_DEFINITION_VERSION
+        if self.fault_injector is not None:
+            self.fault_injector("after_planning_binding_replay_version_read")
         input_assets = self._input_assets(
             project_id,
             tuple(item for item in (asset_version_id, parent_version_id) if item),
         )
-        result = execute_transaction_command(
-            self.database_url,
-            {
-                "definition_name": "planning.binding.activate",
-                "definition_version": PLAN_BINDING_DEFINITION_VERSION,
-                "project_id": project_id,
-                "workspace_id": workspace_id,
-                "book_id": book_id,
-                "actor_id": actor_id,
-                "idempotency_scope": "book:planning-binding",
-                "idempotency_key": idempotency_key,
-                "trace_id": trace_id,
-                "span_id": str(uuid4()),
-                "correlation_id": correlation_id,
-                "causation_id": causation_operation_id,
-                "causation_operation_id": causation_operation_id or None,
-                "input": {
+        binding_input = {
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "book_id": book_id,
+            "asset_version_id": asset_version_id,
+            "contract_type": contract_type.value,
+            "parent_version_id": parent_version_id,
+            "execution_scope": execution_scope.value,
+            "expected_active_asset_version_id": expected_active_asset_version_id,
+            "replacement_approved": replacement_approved,
+            "decision_evidence": evidence,
+        }
+
+        def execute(version: str) -> dict[str, Any]:
+            command_input = dict(binding_input)
+            if version != _LEGACY_PLAN_BINDING_DEFINITION_VERSION:
+                command_input["story_design_transition_operation_id"] = (
+                    story_design_transition_operation_id
+                )
+            return execute_transaction_command(
+                self.database_url,
+                {
+                    "definition_name": _PLAN_BINDING_DEFINITION_NAME,
+                    "definition_version": version,
                     "project_id": project_id,
                     "workspace_id": workspace_id,
                     "book_id": book_id,
-                    "asset_version_id": asset_version_id,
-                    "contract_type": contract_type.value,
-                    "parent_version_id": parent_version_id,
-                    "execution_scope": execution_scope.value,
-                    "expected_active_asset_version_id": (
-                        expected_active_asset_version_id
-                    ),
-                    "replacement_approved": replacement_approved,
-                    "decision_evidence": evidence,
+                    "actor_id": actor_id,
+                    "idempotency_scope": _PLAN_BINDING_IDEMPOTENCY_SCOPE,
+                    "idempotency_key": idempotency_key,
+                    "trace_id": trace_id,
+                    "span_id": str(uuid4()),
+                    "correlation_id": correlation_id,
+                    "causation_id": causation_operation_id,
+                    "causation_operation_id": causation_operation_id or None,
+                    "input": command_input,
+                    "input_assets": list(input_assets),
                 },
-                "input_assets": list(input_assets),
-            },
-            context=AdmissionContext(
-                actor_id=actor_id,
-                permissions=frozenset({"book.authority.execute"}),
-                available_handlers=frozenset({PLAN_BINDING_HANDLER_KEY}),
-                application_build_id=self.application_build_id,
-                commit_sha=self.commit_sha,
-            ),
-            handler=self._execute_transaction,
-            fault_injector=self.fault_injector,
-        )
+                context=AdmissionContext(
+                    actor_id=actor_id,
+                    permissions=frozenset({"book.authority.execute"}),
+                    available_handlers=frozenset({PLAN_BINDING_HANDLER_KEY}),
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                ),
+                handler=self._execute_transaction,
+                fault_injector=self.fault_injector,
+            )
+
+        try:
+            result = execute(definition_version)
+        except IdempotencyConflictError:
+            if definition_version != PLAN_BINDING_DEFINITION_VERSION:
+                raise
+            raced_version = self._binding_definition_version_for_replay(
+                project_id=project_id,
+                idempotency_key=idempotency_key,
+            )
+            if raced_version != _LEGACY_PLAN_BINDING_DEFINITION_VERSION:
+                raise
+            result = execute(raced_version)
         binding = self.require_binding(
             project_id=project_id, asset_version_id=asset_version_id
         )
@@ -154,6 +193,38 @@ class PostgresHierarchicalPlanningAuthority:
             "operation_id": result["operation_id"],
             "replayed": result["replayed"],
         }
+
+    def _binding_definition_version_for_replay(
+        self,
+        *,
+        project_id: str,
+        idempotency_key: str,
+    ) -> str | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT definition_name,definition_version,project_id
+                FROM authority_operation
+                WHERE idempotency_scope=%s AND idempotency_key=%s
+                """,
+                [_PLAN_BINDING_IDEMPOTENCY_SCOPE, idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        if (
+            str(row[0]) != _PLAN_BINDING_DEFINITION_NAME
+            or str(row[2]) != project_id
+            or str(row[1])
+            not in {
+                _LEGACY_PLAN_BINDING_DEFINITION_VERSION,
+                PLAN_BINDING_DEFINITION_VERSION,
+            }
+        ):
+            raise IdempotencyConflictError(
+                "planning binding idempotency key belongs to another authority request"
+            )
+        return str(row[1])
 
     def _execute_transaction(
         self,
@@ -164,7 +235,7 @@ class PostgresHierarchicalPlanningAuthority:
         uow.cursor.execute(
             """
             SELECT project_id, command_payload, actor_id,
-                   trace_id, correlation_id, causation_id
+                   trace_id, correlation_id, causation_operation_id
             FROM authority_operation
             WHERE operation_id=%s
             """,
@@ -186,6 +257,25 @@ class PostgresHierarchicalPlanningAuthority:
         expected_active = str(payload.get("expected_active_asset_version_id") or "")
         replacement_approved = bool(payload["replacement_approved"])
         decision_evidence = dict(payload.get("decision_evidence") or {})
+        story_design_transition_operation_id = str(
+            payload.get("story_design_transition_operation_id") or ""
+        )
+        lock_and_assert_book_opening_plan_mutation(
+            uow.cursor,
+            project_id=project_id,
+            book_id=book_id,
+            generation_operation_id=str(operation[5] or ""),
+            candidate_asset_version_id=asset_version_id,
+        )
+        if story_design_transition_operation_id:
+            self._apply_story_design_activation_in_uow(
+                uow,
+                transition_operation_id=story_design_transition_operation_id,
+                project_id=project_id,
+                actor_id=str(operation[2]),
+                asset_version_id=asset_version_id,
+            )
+            checkpoint("after_story_design_activation_before_binding")
         uow.cursor.execute(
             """
                 SELECT state.logical_key, state.lifecycle,
@@ -503,6 +593,9 @@ class PostgresHierarchicalPlanningAuthority:
                     "execution_scope": execution_scope.value,
                     "content_hash": str(row[4]),
                     "decision_evidence": decision_evidence,
+                    "story_design_transition_operation_id": (
+                        story_design_transition_operation_id
+                    ),
                 },
             }
         )
@@ -514,6 +607,108 @@ class PostgresHierarchicalPlanningAuthority:
             "logical_key": contract.logical_key,
             "previous_asset_version_id": previous_asset_version_id,
         }
+
+    @staticmethod
+    def _apply_story_design_activation_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        transition_operation_id: str,
+        project_id: str,
+        actor_id: str,
+        asset_version_id: str,
+    ) -> None:
+        """Apply the prepared ACTIVATE receipt inside the Planning commit UoW."""
+
+        uow.cursor.execute(
+            """
+            SELECT operation.status, operation.definition_name,
+                   operation.definition_version, operation.project_id,
+                   operation.actor_id, operation.command_payload,
+                   operation.input_asset_snapshot,
+                   receipt.content, receipt.content_hash,
+                   output.content_hash
+            FROM authority_operation AS operation
+            JOIN authority_operation_output_asset AS output
+              ON output.operation_id=operation.operation_id
+             AND output.output_key='story_design.transition.receipt'
+             AND output.role='transition_evidence'
+            JOIN authority_asset_version AS receipt
+              ON receipt.asset_version_id=output.asset_version_id
+            JOIN authority_asset AS asset ON asset.asset_id=receipt.asset_id
+            WHERE operation.operation_id=%s
+              AND asset.project_id=operation.project_id
+              AND asset.asset_type='story_design_transition_receipt'
+            FOR SHARE OF operation, output, receipt, asset
+            """,
+            [transition_operation_id],
+        )
+        rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "STORY_DESIGN_ACTIVATION_PREPARATION_REQUIRED",
+                "atomic Planning activation requires exactly one durable transition receipt",
+            )
+        row = rows[0]
+        payload = dict(row[5])
+        transition = dict(payload.get("payload") or {})
+        input_snapshot = list(row[6] or ())
+        receipt = dict(row[7])
+        frozen_target = input_snapshot[0] if len(input_snapshot) == 1 else {}
+        if (
+            str(row[0]) != "SUCCEEDED"
+            or str(row[1]) != STORY_DESIGN_TRANSITION_DEFINITION
+            or str(row[2]) != STORY_DESIGN_TRANSITION_VERSION
+            or str(row[3]) != project_id
+            or str(row[4]) != actor_id
+            or str(payload.get("project_id") or "") != project_id
+            or str(transition.get("transition") or "") != "ACTIVATE"
+            or str(transition.get("asset_version_id") or "") != asset_version_id
+            or str(receipt.get("type") or "") != "StoryDesignTransitionReceipt"
+            or str(receipt.get("project_id") or "") != project_id
+            or str(receipt.get("asset_version_id") or "") != asset_version_id
+            or str(receipt.get("transition") or "") != "ACTIVATE"
+            or str(receipt.get("logical_key") or "")
+            != str(transition.get("logical_key") or "")
+            or str(receipt.get("generator_operation_name") or "")
+            != str(transition.get("generator_operation_name") or "")
+            or str(receipt.get("generator_definition_version") or "")
+            != str(transition.get("generator_definition_version") or "")
+            or str(receipt.get("candidate_type") or "")
+            != str(transition.get("candidate_type") or "")
+            or str(receipt.get("planning_scope") or "")
+            != str(transition.get("planning_scope") or "")
+            or str(receipt.get("design_scope") or "")
+            != str(transition.get("design_scope") or "")
+            or receipt.get("expected_version") != transition.get("expected_version")
+            or str(receipt.get("source_kind") or "")
+            != str(transition.get("source_kind") or "")
+            or str(receipt.get("target_content_hash") or "")
+            != str(frozen_target.get("content_hash") or "")
+            or str(frozen_target.get("asset_version_id") or "") != asset_version_id
+            or str(frozen_target.get("project_id") or "") != project_id
+            or str(row[8]) != str(row[9])
+        ):
+            raise KernelError(
+                "STORY_DESIGN_ACTIVATION_PREPARATION_INVALID",
+                "prepared transition is not the exact successful ACTIVATE receipt",
+            )
+        uow.repositories.story_design.apply_transition(
+            operation_id=transition_operation_id,
+            project_id=project_id,
+            asset_version_id=asset_version_id,
+            logical_key=str(transition["logical_key"]),
+            generator_operation_name=str(transition["generator_operation_name"]),
+            generator_definition_version=str(
+                transition["generator_definition_version"]
+            ),
+            candidate_type=str(transition["candidate_type"]),
+            planning_scope=str(transition["planning_scope"]),
+            design_scope=str(transition["design_scope"]),
+            transition="ACTIVATE",
+            expected_version=int(transition["expected_version"]),
+            source_kind=str(transition["source_kind"]),
+            evidence=dict(transition.get("evidence") or {}),
+        )
 
     def _register_definitions(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:

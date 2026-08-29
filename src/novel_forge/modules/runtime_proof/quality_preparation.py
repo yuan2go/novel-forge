@@ -720,8 +720,22 @@ class BoundedQualityCampaignPreparer:
         planning_lineage = {
             "input_snapshot_id": opened["input_snapshot_id"],
             "book_plan_asset_version_id": opened["book_plan_version"],
-            "volume_plan_asset_version_id": opened["volume_plan_version"],
-            "arc_plan_asset_version_ids": list(opened["arc_plan_versions"]),
+            "volume_plan_asset_version_id": str(
+                opened.get("current_volume_plan_version")
+                or opened.get("volume_plan_version")
+                or ""
+            ),
+            "volume_portfolio_plan_version_ids": list(
+                opened.get("volume_portfolio_plan_versions") or ()
+            ),
+            "arc_plan_asset_version_ids": list(
+                opened.get("current_relevant_arc_plan_versions")
+                or opened.get("arc_plan_versions")
+                or ()
+            ),
+            "arc_portfolio_plan_version_ids": list(
+                opened.get("arc_portfolio_plan_versions") or ()
+            ),
             "opening_search_ids": list(opened["search_ids"]),
         }
         return BoundedQualityPreparationResult(
@@ -1722,6 +1736,8 @@ class BoundedQualityCampaignPreparer:
             worker_id=f"quality-opening-worker:{self.project_id}",
             lease_seconds=120,
             project_id=self.project_id,
+            expected_opening_run_id=admission.opening_run_id,
+            expected_runtime_job_id=admission.runtime_job_id,
         )
         if claim is None:
             raise RuntimeError("Book opening has no claimable bounded job")

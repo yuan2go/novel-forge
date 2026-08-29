@@ -121,7 +121,7 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
         semantic_hardening_migration.DOWN_REVISION
         == recovery_closure_migration.MIGRATION_ID
     )
-    assert LATEST_MIGRATION_ID == semantic_hardening_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
     assert migration.FORWARD_ONLY is True
 
 

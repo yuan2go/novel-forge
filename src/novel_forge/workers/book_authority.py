@@ -27,8 +27,13 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerProgrammingError,
     WorkerSupervisor,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.runtime_job import (
+    BOOK_OPENING_LEGACY_JOB_KIND,
+    BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    BOOK_OPENING_WORKFLOW_JOB_KIND,
+    BOOK_OPENING_WORKFLOW_RUNTIME_GROUP,
     RuntimeJobAuthority,
     RuntimeJobClaim,
     RuntimeJobSpec,
@@ -290,7 +295,7 @@ def execute_story_formation_claim(
         raise
 
 
-def execute_book_opening_claim(
+def execute_book_opening_node_claim(
     runtime_jobs: RuntimeJobAuthority,
     opening: PostgresBookOpeningApplication,
     principal: Principal,
@@ -299,11 +304,32 @@ def execute_book_opening_claim(
     lease_seconds: int = 30,
 ) -> dict[str, object]:
     if (
-        claim.job_kind != "BOOK_OPENING_EXECUTE"
-        or claim.runtime_group != "book_opening"
+        claim.job_kind != BOOK_OPENING_WORKFLOW_JOB_KIND
+        or claim.runtime_group != BOOK_OPENING_WORKFLOW_RUNTIME_GROUP
         or claim.subject_kind != "BOOK_OPENING_RUN"
+        or str(claim.input_snapshot.get("workflow_contract_version") or "")
+        != "book-opening-workflow-v1"
     ):
-        raise RuntimeError("Book worker received an invalid Book opening job")
+        raise RuntimeError(
+            "Book workflow-v1 worker received an invalid RuntimeJob identity"
+        )
+    return _execute_book_opening_claim(
+        runtime_jobs,
+        opening,
+        principal,
+        claim,
+        lease_seconds=lease_seconds,
+    )
+
+
+def _execute_book_opening_claim(
+    runtime_jobs: RuntimeJobAuthority,
+    opening: PostgresBookOpeningApplication,
+    principal: Principal,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int,
+) -> dict[str, object]:
     expected_version = int(claim.input_snapshot.get("observed_version", -1))
     try:
         # Opening.execute_run atomically moves RuntimeJob/Attempt and the
@@ -330,6 +356,22 @@ def execute_book_opening_claim(
         return result
     except Exception as exc:
         durable = opening.require(claim.subject_id)
+        workflow_node_id = str(claim.input_snapshot.get("workflow_node_id") or "")
+        if workflow_node_id:
+            try:
+                return opening.require_node_execution_result(
+                    opening_run_id=claim.subject_id,
+                    workflow_node_id=workflow_node_id,
+                    opening_execution_id=str(
+                        claim.input_snapshot.get("opening_execution_id") or ""
+                    ),
+                    execution_generation=int(
+                        claim.input_snapshot.get("execution_generation") or 0
+                    ),
+                )
+            except KernelError as durable_exc:
+                if durable_exc.code != "BOOK_OPENING_NODE_RESULT_NOT_FOUND":
+                    raise
         if str(durable["lifecycle"]) == "COMPLETE":
             # The Authority completion UoW committed and only its response (or
             # a racing heartbeat response) was lost.  Return durable truth;
@@ -347,6 +389,166 @@ def execute_book_opening_claim(
             error=failure,
         )
         raise
+
+
+def execute_legacy_book_opening_claim(
+    runtime_jobs: RuntimeJobAuthority,
+    opening: PostgresBookOpeningApplication,
+    principal: Principal,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int = 30,
+) -> dict[str, object]:
+    """Execute one explicitly drained legacy-monolithic-v2 RuntimeJob."""
+
+    if (
+        claim.job_kind != BOOK_OPENING_LEGACY_JOB_KIND
+        or claim.runtime_group != BOOK_OPENING_LEGACY_RUNTIME_GROUP
+        or claim.subject_kind != "BOOK_OPENING_RUN"
+        or str(claim.input_snapshot.get("workflow_contract_version") or "")
+    ):
+        raise RuntimeError("Legacy Book worker received a non-legacy RuntimeJob")
+    return _execute_book_opening_claim(
+        runtime_jobs,
+        opening,
+        principal,
+        claim,
+        lease_seconds=lease_seconds,
+    )
+
+
+def claim_next_book_opening_execution(
+    opening: PostgresBookOpeningApplication,
+    *,
+    worker_id: str,
+    lease_seconds: int,
+) -> RuntimeJobClaim | None:
+    """Claim v3 planning work first, then drain one exact legacy-v2 job.
+
+    The two repository seams each join BookOpening, OpeningExecution and
+    RuntimeJob on their exact versioned capability pair.  Keeping the fallback
+    here makes recovered legacy successors reachable from the production loop
+    without exposing either worker to the other contract's queue.
+    """
+
+    claim = opening.claim_next_node_execution(
+        worker_id=worker_id,
+        lease_seconds=lease_seconds,
+    )
+    if claim is not None:
+        return claim
+    return opening.claim_next_legacy_execution(
+        worker_id=worker_id,
+        lease_seconds=lease_seconds,
+    )
+
+
+def execute_claimed_book_opening_execution(
+    runtime_jobs: RuntimeJobAuthority,
+    opening: PostgresBookOpeningApplication,
+    principal: Principal,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int = 30,
+) -> dict[str, object]:
+    """Dispatch one claim only through its exact versioned worker seam."""
+
+    capability = (claim.job_kind, claim.runtime_group)
+    if capability == (
+        BOOK_OPENING_WORKFLOW_JOB_KIND,
+        BOOK_OPENING_WORKFLOW_RUNTIME_GROUP,
+    ):
+        return execute_book_opening_node_claim(
+            runtime_jobs,
+            opening,
+            principal,
+            claim,
+            lease_seconds=lease_seconds,
+        )
+    if capability == (
+        BOOK_OPENING_LEGACY_JOB_KIND,
+        BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    ):
+        return execute_legacy_book_opening_claim(
+            runtime_jobs,
+            opening,
+            principal,
+            claim,
+            lease_seconds=lease_seconds,
+        )
+    raise RuntimeError("Book worker received an unsupported contract pair")
+
+
+def execute_book_opening_claim(
+    runtime_jobs: RuntimeJobAuthority,
+    opening: PostgresBookOpeningApplication,
+    principal: Principal,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int = 30,
+) -> dict[str, object]:
+    """Compatibility coordinator that drains the five independently claimed nodes.
+
+    Production workers call ``execute_book_opening_node_claim`` and return to the
+    scheduler after one node.  This bounded adapter preserves existing in-process
+    callers while still creating a distinct RuntimeJob/Attempt/Lease per layer.
+    """
+
+    current_claim = claim
+    for _ in range(5):
+        if (current_claim.job_kind, current_claim.runtime_group) == (
+            BOOK_OPENING_LEGACY_JOB_KIND,
+            BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+        ):
+            result = execute_legacy_book_opening_claim(
+                runtime_jobs,
+                opening,
+                principal,
+                current_claim,
+                lease_seconds=lease_seconds,
+            )
+        else:
+            result = execute_book_opening_node_claim(
+                runtime_jobs,
+                opening,
+                principal,
+                current_claim,
+                lease_seconds=lease_seconds,
+            )
+        if "workflow_node_id" not in result:
+            return result
+        if str(result.get("lifecycle") or "") == "COMPLETE":
+            final = result.get("book_opening_result")
+            if not isinstance(final, dict):
+                raise RuntimeError("completed Book Opening has no workflow result")
+            # This adapter exists only for legacy in-process callers.  Keep the
+            # v3 aggregate immutable in PostgreSQL and project its current
+            # Volume/Arc identities into the historical response shape here.
+            compatible = dict(final)
+            compatible["volume_plan_version"] = str(
+                compatible.get("current_volume_plan_version") or ""
+            )
+            compatible["arc_plan_versions"] = list(
+                compatible.get("current_relevant_arc_plan_versions") or ()
+            )
+            return compatible
+        successor_runtime_job_id = str(result.get("successor_runtime_job_id") or "")
+        if not successor_runtime_job_id:
+            raise RuntimeError("Book Opening node has no exact successor RuntimeJob")
+        current_claim = opening.claim_next_node_execution(
+            worker_id=claim.worker_id,
+            lease_seconds=lease_seconds,
+            project_id=claim.project_id,
+            expected_opening_run_id=claim.subject_id,
+            expected_runtime_job_id=successor_runtime_job_id,
+        )
+        if (
+            current_claim is None
+            or current_claim.subject_id != claim.subject_id
+            or current_claim.runtime_job_id != successor_runtime_job_id
+        ):
+            raise RuntimeError("Book Opening successor node was not claimable")
+    raise RuntimeError("Book Opening workflow exceeded its fixed five-node graph")
 
 
 def main() -> int:
@@ -429,7 +631,8 @@ def main() -> int:
                         return WorkerSupervisor.FATAL_EXIT_CODE
                     continue
             if composition.opening is not None:
-                opening_claim = composition.opening.claim_next_execution(
+                opening_claim = claim_next_book_opening_execution(
+                    composition.opening,
                     worker_id=worker_id,
                     lease_seconds=lease_seconds,
                 )
@@ -442,7 +645,7 @@ def main() -> int:
                                 item.project_id,
                                 item.runtime_job_id,
                             ),
-                            execute=lambda item: execute_book_opening_claim(
+                            execute=lambda item: execute_claimed_book_opening_execution(
                                 runtime_jobs,
                                 composition.opening,
                                 principal,
@@ -549,8 +752,12 @@ if __name__ == "__main__":
 
 
 __all__ = [
+    "claim_next_book_opening_execution",
     "cli",
     "execute_book_coordination_claim",
+    "execute_claimed_book_opening_execution",
+    "execute_legacy_book_opening_claim",
+    "execute_book_opening_node_claim",
     "execute_book_projection_repair_claim",
     "execute_story_formation_claim",
     "main",

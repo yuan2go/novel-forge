@@ -203,6 +203,41 @@ class PostgresStoryDesignAssetAuthority:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
+        prepared = self.prepare_transition(command, principal=principal)
+        generator = GENERATOR_CATALOG[command.generator_operation_name]
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            result = uow.repositories.story_design.apply_transition(
+                operation_id=str(prepared["operation_id"]),
+                project_id=command.project_id,
+                asset_version_id=command.asset_version_id,
+                logical_key=command.logical_key,
+                generator_operation_name=generator.operation_name,
+                generator_definition_version=generator.definition_version,
+                candidate_type=generator.output_candidate_type,
+                planning_scope=command.planning_scope.value,
+                design_scope=GENERATOR_DESIGN_SCOPE[generator.operation_name].value,
+                transition=command.transition.value,
+                expected_version=command.expected_version,
+                source_kind=command.source_kind,
+                evidence=dict(command.evidence or {}),
+            )
+            uow.commit()
+        return result
+
+    def prepare_transition(
+        self,
+        command: StoryDesignTransitionCommand,
+        *,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Persist immutable transition execution evidence without projecting state.
+
+        Planning activation uses this preparation seam before a separate atomic
+        coordinator commits the Story Design projection and typed Planning
+        binding in one PostgreSQL transaction. Other lifecycle transitions keep
+        using :meth:`transition`, which projects immediately after preparation.
+        """
+
         principal.require("story_design.authority.execute", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError(
@@ -318,24 +353,10 @@ class PostgresStoryDesignAssetAuthority:
             operation_id=operation_id,
             project_id=command.project_id,
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            result = uow.repositories.story_design.apply_transition(
-                operation_id=operation_id,
-                project_id=command.project_id,
-                asset_version_id=command.asset_version_id,
-                logical_key=command.logical_key,
-                generator_operation_name=generator.operation_name,
-                generator_definition_version=generator.definition_version,
-                candidate_type=generator.output_candidate_type,
-                planning_scope=command.planning_scope.value,
-                design_scope=GENERATOR_DESIGN_SCOPE[generator.operation_name].value,
-                transition=command.transition.value,
-                expected_version=command.expected_version,
-                source_kind=command.source_kind,
-                evidence=dict(command.evidence or {}),
-            )
-            uow.commit()
-        return result
+        return {
+            "operation_id": operation_id,
+            "replayed": bool(admitted["replayed"]),
+        }
 
     def require(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

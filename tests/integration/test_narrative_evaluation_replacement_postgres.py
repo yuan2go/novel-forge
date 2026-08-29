@@ -629,7 +629,7 @@ def test_new_replacement_gate_opens_only_after_exact_outer_activation() -> None:
         project_id=orphan.project_id,
     )
 
-    claim = orphan.opening.claim_next_execution(
+    claim = orphan.opening.claim_next_legacy_execution(
         worker_id="replacement-gate-new-worker",
         lease_seconds=60,
         project_id=orphan.project_id,
@@ -652,7 +652,7 @@ def test_new_replacement_gate_opens_only_after_exact_outer_activation() -> None:
         project_id=orphan.project_id,
     )
     assert (
-        orphan.opening.claim_next_execution(
+        orphan.opening.claim_next_legacy_execution(
             worker_id="replacement-gate-double-claim-worker",
             lease_seconds=60,
             project_id=orphan.project_id,
@@ -686,7 +686,7 @@ def test_resume_current_gate_uses_exact_current_assessment_and_fence() -> None:
         project_id=orphan.project_id,
     )
 
-    claim = orphan.opening.claim_next_execution(
+    claim = orphan.opening.claim_next_legacy_execution(
         worker_id="replacement-gate-resume-worker",
         lease_seconds=60,
         project_id=orphan.project_id,
@@ -715,7 +715,7 @@ def test_resume_current_outer_abort_fences_and_terminalizes_semantic_execution()
     receipt = _recover_through_canonical_path(orphan, suffix="resume-abort")
     assert receipt.result["replacement_evaluation_operation_id"] == ""
 
-    outer_claim = orphan.opening.claim_next_execution(
+    outer_claim = orphan.opening.claim_next_legacy_execution(
         worker_id="replacement-gate-resume-abort-worker",
         lease_seconds=60,
         project_id=orphan.project_id,
@@ -777,7 +777,7 @@ def test_resume_current_outer_abort_cancels_planned_never_sent_effect() -> None:
     receipt = _recover_through_canonical_path(orphan, suffix="resume-planned-abort")
     assert receipt.result["replacement_evaluation_operation_id"] == ""
 
-    outer_claim = orphan.opening.claim_next_execution(
+    outer_claim = orphan.opening.claim_next_legacy_execution(
         worker_id="replacement-gate-resume-planned-abort-worker",
         lease_seconds=60,
         project_id=orphan.project_id,

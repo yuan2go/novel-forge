@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, Protocol
 from uuid import uuid4
 
@@ -19,6 +19,10 @@ from novel_forge.modules.command_kernel.budget_runtime import (
 )
 from novel_forge.modules.runtime_job import (
     AUTHORITY_CONVERGENCE_REQUIRED,
+    BOOK_OPENING_LEGACY_JOB_KIND,
+    BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    BOOK_OPENING_WORKFLOW_JOB_KIND,
+    BOOK_OPENING_WORKFLOW_RUNTIME_GROUP,
     RuntimeJobAuthority,
     RuntimeJobClaim,
     RuntimeJobSpec,
@@ -28,12 +32,53 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
+from .opening_workflow import BOOK_OPENING_WORKFLOW_CONTRACT_VERSION
+
 
 BOOK_OPENING_EXECUTION_CONTRACT_VERSION = "book-opening-execution-v2"
+BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION = "book-opening-execution-v3"
+BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION = "legacy-monolithic-v2"
 BOOK_OPENING_EXECUTION_POLICY_VERSION = "book-opening-execution-policy-v1"
 BOOK_OPENING_RECOVERY_POLICY_VERSION = "book-opening-recovery-v1"
 BOOK_OPENING_AUTHORITY_VERSION = "book-opening-authority-v2"
 BOOK_OPENING_MAX_SEMANTIC_EVALUATION_GENERATIONS = 3
+
+
+def book_opening_execution_contract_version(workflow_contract_version: str) -> str:
+    if workflow_contract_version == BOOK_OPENING_WORKFLOW_CONTRACT_VERSION:
+        return BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION
+    if workflow_contract_version == BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION:
+        return BOOK_OPENING_EXECUTION_CONTRACT_VERSION
+    raise KernelError(
+        "BOOK_OPENING_WORKFLOW_CONTRACT_UNSUPPORTED",
+        "Book Opening has no supported execution contract",
+    )
+
+
+def book_opening_runtime_job_identity(
+    workflow_contract_version: str,
+) -> tuple[str, str]:
+    if workflow_contract_version == BOOK_OPENING_WORKFLOW_CONTRACT_VERSION:
+        return BOOK_OPENING_WORKFLOW_JOB_KIND, BOOK_OPENING_WORKFLOW_RUNTIME_GROUP
+    if workflow_contract_version == BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION:
+        return BOOK_OPENING_LEGACY_JOB_KIND, BOOK_OPENING_LEGACY_RUNTIME_GROUP
+    raise KernelError(
+        "BOOK_OPENING_WORKFLOW_CONTRACT_UNSUPPORTED",
+        "Book Opening has no supported RuntimeJob capability",
+    )
+
+
+def _runtime_job_identity_for_execution_contract(
+    execution_contract_version: str,
+) -> tuple[str, str]:
+    if execution_contract_version == BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION:
+        return BOOK_OPENING_WORKFLOW_JOB_KIND, BOOK_OPENING_WORKFLOW_RUNTIME_GROUP
+    if execution_contract_version == BOOK_OPENING_EXECUTION_CONTRACT_VERSION:
+        return BOOK_OPENING_LEGACY_JOB_KIND, BOOK_OPENING_LEGACY_RUNTIME_GROUP
+    raise KernelError(
+        "BOOK_OPENING_EXECUTION_CONTRACT_UNSUPPORTED",
+        "Book Opening has no supported RuntimeJob capability",
+    )
 
 
 def _canonical_hash(value: Any) -> str:
@@ -197,6 +242,34 @@ class PostgresBookOpeningRecoveryApplication:
             lifecycle = str(binding["execution_lifecycle"])
             terminal = lifecycle in {"FAILED", "LOST", "ABORTED"}
             terminal_reason = dict(binding.get("terminal_reason") or {})
+            # Migration 0104 validates the execution row against the exact
+            # workflow/execution contract pair at INSERT time.  Advance only
+            # the locked legacy run's contract first, then insert its execution
+            # and publish the current pointer below.  All three mutations stay
+            # inside this UoW, so an insert/final-CAS failure rolls the contract
+            # advance back instead of leaving a partially reconciled Opening.
+            uow.cursor.execute(
+                """
+                UPDATE authority_book_opening_run
+                SET execution_contract_version=%s
+                WHERE opening_run_id=%s AND version=%s
+                  AND current_execution_id IS NULL
+                  AND execution_contract_version='legacy-unbound'
+                  AND workflow_contract_version='legacy-monolithic-v2'
+                  AND lifecycle IN ('ADMITTED','RUNNING','FAILED')
+                """,
+                [
+                    BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
+                    opening_run_id,
+                    run["version"],
+                ],
+            )
+            if uow.cursor.rowcount != 1:
+                self._stale("legacy Opening contract advancement changed")
+            bound_run = {
+                **run,
+                "execution_contract_version": BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
+            }
             uow.cursor.execute(
                 """
                 INSERT INTO authority_book_opening_execution(
@@ -229,7 +302,7 @@ class PostgresBookOpeningRecoveryApplication:
             )
             assessment_id = self._insert_assessment(
                 uow,
-                run=run,
+                run=bound_run,
                 kind="LEGACY_EXECUTION_RECONCILIATION",
                 idempotency_key=idempotency_key,
                 snapshot=snapshot,
@@ -250,18 +323,17 @@ class PostgresBookOpeningRecoveryApplication:
                 uow.cursor.execute(
                     """
                     UPDATE authority_book_opening_run
-                    SET execution_contract_version=%s,current_execution_id=%s,
+                    SET current_execution_id=%s,
                         current_execution_generation=1,lifecycle='FAILED',
                         failure=%s,recovery_instruction=%s,
                         recovery_state='RECOVERY_REQUIRED',version=version+1,
                         updated_at=transaction_timestamp()
                     WHERE opening_run_id=%s AND version=%s
                       AND current_execution_id IS NULL
-                      AND execution_contract_version='legacy-unbound'
+                      AND execution_contract_version=%s
                       AND lifecycle IN ('ADMITTED','RUNNING','FAILED')
                     """,
                     [
-                        BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
                         execution_id,
                         Jsonb(failure),
                         Jsonb(
@@ -272,26 +344,27 @@ class PostgresBookOpeningRecoveryApplication:
                         ),
                         opening_run_id,
                         run["version"],
+                        BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
                     ],
                 )
             else:
                 uow.cursor.execute(
                     """
                     UPDATE authority_book_opening_run
-                    SET execution_contract_version=%s,current_execution_id=%s,
+                    SET current_execution_id=%s,
                         current_execution_generation=1,
                         recovery_state='READY',version=version+1,
                         updated_at=transaction_timestamp()
                     WHERE opening_run_id=%s AND version=%s
                       AND current_execution_id IS NULL
-                      AND execution_contract_version='legacy-unbound'
+                      AND execution_contract_version=%s
                       AND lifecycle IN ('ADMITTED','RUNNING')
                     """,
                     [
-                        BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
                         execution_id,
                         opening_run_id,
                         run["version"],
+                        BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
                     ],
                 )
             if uow.cursor.rowcount != 1:
@@ -308,7 +381,7 @@ class PostgresBookOpeningRecoveryApplication:
             }
             receipt = self._insert_receipt(
                 uow,
-                run=run,
+                run=bound_run,
                 kind="LEGACY_EXECUTION_RECONCILIATION",
                 assessment_id=assessment_id,
                 intent_id="",
@@ -319,7 +392,7 @@ class PostgresBookOpeningRecoveryApplication:
             )
             self._record_event(
                 uow,
-                run,
+                bound_run,
                 "book.opening.legacy_execution_reconciled",
                 {**result, "recovery_assessment_id": assessment_id},
             )
@@ -731,27 +804,30 @@ class PostgresBookOpeningRecoveryApplication:
                     "semantic_evaluation_execution_id": str(
                         replacement["evaluation_execution_id"]
                     ),
-                    "semantic_evaluation_generation": int(
-                        replacement["generation"]
-                    ),
+                    "semantic_evaluation_generation": int(replacement["generation"]),
                     "semantic_execution_mode": "NEW_REPLACEMENT",
                 }
             elif str(evaluation.get("operation_id") or ""):
                 semantic_binding = {
-                    "semantic_evaluation_operation_id": str(
-                        evaluation["operation_id"]
-                    ),
+                    "semantic_evaluation_operation_id": str(evaluation["operation_id"]),
                     "semantic_evaluation_execution_id": str(
                         evaluation["evaluation_execution_id"]
                     ),
-                    "semantic_evaluation_generation": int(
-                        evaluation["generation"]
-                    ),
+                    "semantic_evaluation_generation": int(evaluation["generation"]),
                     "semantic_execution_mode": "RESUME_CURRENT",
                 }
+            workflow_contract_version = str(run["workflow_contract_version"])
+            expected_execution_contract = book_opening_execution_contract_version(
+                workflow_contract_version
+            )
+            if str(run["execution_contract_version"]) != expected_execution_contract:
+                self._stale("Book Opening execution contract drifted")
+            runtime_job_kind, runtime_group = book_opening_runtime_job_identity(
+                workflow_contract_version
+            )
             runtime_spec = RuntimeJobSpec(
-                job_kind="BOOK_OPENING_EXECUTE",
-                runtime_group="book_opening",
+                job_kind=runtime_job_kind,
+                runtime_group=runtime_group,
                 subject_kind="BOOK_OPENING_RUN",
                 subject_id=opening_run_id,
                 project_id=str(run["project_id"]),
@@ -769,6 +845,40 @@ class PostgresBookOpeningRecoveryApplication:
                         (replacement or {}).get("operation_id") or ""
                     ),
                     **semantic_binding,
+                    **(
+                        {
+                            "workflow_contract_version": str(
+                                run["workflow_contract_version"]
+                            ),
+                            "workflow_graph_revision": int(
+                                run["workflow_graph_revision"]
+                            ),
+                            "workflow_graph_hash": str(run["workflow_graph_hash"]),
+                            "workflow_node_id": str(execution["workflow_node_id"]),
+                            "workflow_node_kind": self._workflow_node_kind(
+                                uow, str(execution["workflow_node_id"])
+                            ),
+                            "workflow_node_key": self._workflow_node_key(
+                                uow, str(execution["workflow_node_id"])
+                            ),
+                            "workflow_node_input_hash": self._workflow_node_input_hash(
+                                uow, str(execution["workflow_node_id"])
+                            ),
+                            "workflow_transition_kind": "RECOVERY",
+                            "source_checkpoint_id": str(
+                                run["current_checkpoint_id"] or ""
+                            ),
+                            "source_checkpoint_sequence": int(
+                                run["current_checkpoint_sequence"]
+                            ),
+                            "source_checkpoint_hash": str(
+                                run["current_checkpoint_hash"] or ""
+                            ),
+                        }
+                        if str(run.get("workflow_contract_version") or "")
+                        == "book-opening-workflow-v1"
+                        else {}
+                    ),
                 },
                 max_attempts=1,
                 lease_loss_policy=AUTHORITY_CONVERGENCE_REQUIRED,
@@ -782,8 +892,11 @@ class PostgresBookOpeningRecoveryApplication:
                     predecessor_execution_id,predecessor_generation,
                     recovery_intent_id,runtime_job_id,lifecycle,frozen_request_digest,
                     input_snapshot_hash,policy_snapshot_hash,
-                    authority_contract_hash
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,'SCHEDULED',%s,%s,%s,%s)
+                    authority_contract_hash,workflow_node_id,
+                    workflow_transition_kind,source_checkpoint_id,
+                    source_checkpoint_sequence,source_checkpoint_hash
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,'SCHEDULED',%s,%s,%s,%s,
+                          NULLIF(%s,''),%s,NULLIF(%s,''),%s,%s)
                 """,
                 [
                     successor_execution_id,
@@ -796,7 +909,17 @@ class PostgresBookOpeningRecoveryApplication:
                     run["frozen_request_digest"],
                     runtime_spec.input_hash,
                     self._execution_policy_digest(),
-                    self._authority_digest(),
+                    self._authority_digest(str(run["execution_contract_version"])),
+                    str(execution.get("workflow_node_id") or ""),
+                    (
+                        "RECOVERY"
+                        if str(run.get("workflow_contract_version") or "")
+                        == "book-opening-workflow-v1"
+                        else "LEGACY_MONOLITHIC"
+                    ),
+                    str(run["current_checkpoint_id"] or ""),
+                    int(run["current_checkpoint_sequence"]),
+                    str(run["current_checkpoint_hash"] or ""),
                 ],
             )
             self._checkpoint("after_recovery_execution_creation")
@@ -982,12 +1105,10 @@ class PostgresBookOpeningRecoveryApplication:
                 not isinstance(item, str) or not item
                 for item in result["arc_plan_versions"]
             )
-            or len(set(result["arc_plan_versions"]))
-            != len(result["arc_plan_versions"])
+            or len(set(result["arc_plan_versions"])) != len(result["arc_plan_versions"])
             or not isinstance(result.get("search_ids"), list)
             or any(
-                not isinstance(item, str) or not item
-                for item in result["search_ids"]
+                not isinstance(item, str) or not item for item in result["search_ids"]
             )
         ):
             raise KernelError(
@@ -999,8 +1120,7 @@ class PostgresBookOpeningRecoveryApplication:
         if (
             str(run["lifecycle"]) != "RUNNING"
             or str(run["current_execution_id"] or "") != opening_execution_id
-            or int(run["current_execution_generation"] or 0)
-            != execution_generation
+            or int(run["current_execution_generation"] or 0) != execution_generation
         ):
             raise KernelError(
                 "BOOK_OPENING_COMPLETION_BINDING_INVALID",
@@ -1019,7 +1139,7 @@ class PostgresBookOpeningRecoveryApplication:
                 )
             by_work_key[work_key] = entry
 
-        graph = self._expected_search_graph(run)
+        graph = self._expected_search_graph(uow, run)
         expected_search_ids = list(graph.values())
         if list(result["search_ids"]) != expected_search_ids:
             raise KernelError(
@@ -1077,14 +1197,11 @@ class PostgresBookOpeningRecoveryApplication:
                 )
             for ordinal in range(1, int(search_contract[1]) + 1):
                 branch_key = f"future-{ordinal}"
-                branch_work_key = (
-                    f"narrative-search-branch:{search_id}:{branch_key}"
-                )
+                branch_work_key = f"narrative-search-branch:{search_id}:{branch_key}"
                 branch_checkpoint = by_work_key.get(branch_work_key)
                 if (
                     branch_checkpoint is None
-                    or str(branch_checkpoint["owning_authority"])
-                    != "STORY_PLANNING"
+                    or str(branch_checkpoint["owning_authority"]) != "STORY_PLANNING"
                     or str(branch_checkpoint["evidence_type"])
                     not in {
                         "NARRATIVE_SEARCH_BRANCH",
@@ -1109,17 +1226,13 @@ class PostgresBookOpeningRecoveryApplication:
                 "completion plan versions differ from selected Planning evidence",
             )
 
-        input_checkpoint = by_work_key.get(
-            "book-opening:input-snapshot-resolved"
-        )
+        input_checkpoint = by_work_key.get("book-opening:input-snapshot-resolved")
         if (
             input_checkpoint is None
             or str(input_checkpoint["owning_authority"]) != "BOOK_AUTHORITY"
             or str(input_checkpoint["evidence_type"]) != "INPUT_SNAPSHOT"
-            or str(input_checkpoint["evidence_id"])
-            != str(result["input_snapshot_id"])
-            or str(cursor["checkpoint_id"])
-            != str(input_checkpoint["checkpoint_id"])
+            or str(input_checkpoint["evidence_id"]) != str(result["input_snapshot_id"])
+            or str(cursor["checkpoint_id"]) != str(input_checkpoint["checkpoint_id"])
         ):
             raise KernelError(
                 "BOOK_OPENING_COMPLETION_CHECKPOINT_REQUIRED",
@@ -1187,7 +1300,7 @@ class PostgresBookOpeningRecoveryApplication:
                 execution=execution,
                 runtime_claim=runtime_claim,
             )
-            expected_search_ids = set(self._expected_search_graph(run).values())
+            expected_search_ids = set(self._expected_search_graph(uow, run).values())
             if search_id not in expected_search_ids:
                 raise KernelError(
                     "BOOK_OPENING_BRANCH_SEARCH_DRIFT",
@@ -1201,9 +1314,7 @@ class PostgresBookOpeningRecoveryApplication:
                 str(getattr(evidence, "search_id", "")) != search_id
                 or str(getattr(evidence, "branch_key", "")) != branch_key
                 or int(getattr(evidence, "evidence_version", 0)) != 1
-                or not str(getattr(evidence, "evidence_hash", "")).startswith(
-                    "sha256:"
-                )
+                or not str(getattr(evidence, "evidence_hash", "")).startswith("sha256:")
                 or evidence_type
                 not in {
                     "NARRATIVE_SEARCH_BRANCH",
@@ -1218,8 +1329,7 @@ class PostgresBookOpeningRecoveryApplication:
             semantic_work_key = f"narrative-search-branch:{search_id}:{branch_key}"
             if evidence_type == "NARRATIVE_SEARCH_BRANCH_RECONCILIATION":
                 if (
-                    str(getattr(evidence, "opening_run_id", ""))
-                    != opening_run_id
+                    str(getattr(evidence, "opening_run_id", "")) != opening_run_id
                     or str(getattr(evidence, "opening_execution_id", ""))
                     != str(execution["opening_execution_id"])
                     or int(getattr(evidence, "execution_generation", 0))
@@ -1252,9 +1362,7 @@ class PostgresBookOpeningRecoveryApplication:
                         checkpoint=checkpoint,
                     )
                     uow.commit()
-                    self._checkpoint(
-                        "after_branch_checkpoint_commit_before_response"
-                    )
+                    self._checkpoint("after_branch_checkpoint_commit_before_response")
                     return evidence
                 assessment = self._assess_branch_reconciliation_in_uow(
                     uow,
@@ -1320,9 +1428,7 @@ class PostgresBookOpeningRecoveryApplication:
             "runtime_worker_id": runtime_claim.worker_id,
             "runtime_fencing_token": runtime_claim.fencing_token,
             "membership_id": str(evidence.membership_id),
-            "reconciliation_evidence_id": str(
-                evidence.reconciliation_evidence_id
-            ),
+            "reconciliation_evidence_id": str(evidence.reconciliation_evidence_id),
             "reconciliation_evidence_hash": str(evidence.evidence_hash),
             "semantic_work_key": semantic_work_key,
             "predecessor_checkpoint_id": str(cursor["checkpoint_id"]),
@@ -1816,7 +1922,8 @@ class PostgresBookOpeningRecoveryApplication:
             or str(execution["frozen_request_digest"])
             != str(run["frozen_request_digest"])
             or str(execution["policy_snapshot_hash"]) != self._execution_policy_digest()
-            or str(execution["authority_contract_hash"]) != self._authority_digest()
+            or str(execution["authority_contract_hash"])
+            != self._authority_digest(str(run["execution_contract_version"]))
         ):
             raise KernelError(
                 "BOOK_OPENING_CHECKPOINT_EXECUTION_STALE",
@@ -1856,6 +1963,7 @@ class PostgresBookOpeningRecoveryApplication:
         evidence_id: str,
         evidence_version: int,
         evidence_hash: str,
+        workflow_node_id: str = "",
     ) -> dict[str, Any]:
         self._validate_checkpoint_evidence_identity(
             semantic_work_key=semantic_work_key,
@@ -1865,6 +1973,16 @@ class PostgresBookOpeningRecoveryApplication:
             evidence_version=evidence_version,
             evidence_hash=evidence_hash,
         )
+        bound_workflow_node_id = str(
+            workflow_node_id or execution.get("workflow_node_id") or ""
+        )
+        if str(run.get("workflow_contract_version") or "") == (
+            "book-opening-workflow-v1"
+        ) and bound_workflow_node_id != str(run.get("current_workflow_node_id") or ""):
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_WORKFLOW_NODE_STALE",
+                "checkpoint writer differs from the current workflow node",
+            )
         cursor = self._validated_checkpoint_cursor(uow, run)
         if (
             str(cursor["checkpoint_id"]) != str(run["current_checkpoint_id"] or "")
@@ -1891,6 +2009,7 @@ class PostgresBookOpeningRecoveryApplication:
               AND owning_authority=%s AND evidence_type=%s
               AND evidence_id=%s AND evidence_version=%s
               AND evidence_hash=%s
+              AND workflow_node_id IS NOT DISTINCT FROM NULLIF(%s,'')
             """,
             [
                 run["opening_run_id"],
@@ -1900,6 +2019,7 @@ class PostgresBookOpeningRecoveryApplication:
                 evidence_id,
                 evidence_version,
                 evidence_hash,
+                bound_workflow_node_id,
             ],
         )
         existing = uow.cursor.fetchone()
@@ -1947,9 +2067,9 @@ class PostgresBookOpeningRecoveryApplication:
                 owning_authority,evidence_type,evidence_id,evidence_version,
                 evidence_hash,frozen_request_digest,
                 predecessor_checkpoint_id,predecessor_checkpoint_sequence,
-                predecessor_checkpoint_hash,checkpoint_hash
+                predecessor_checkpoint_hash,checkpoint_hash,workflow_node_id
             ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                      NULLIF(%s,''),%s,NULLIF(%s,''),%s)
+                      NULLIF(%s,''),%s,NULLIF(%s,''),%s,NULLIF(%s,''))
             """,
             [
                 checkpoint_id,
@@ -1968,6 +2088,7 @@ class PostgresBookOpeningRecoveryApplication:
                 int(run["current_checkpoint_sequence"]) or None,
                 predecessor_hash,
                 checkpoint_hash,
+                bound_workflow_node_id,
             ],
         )
         self._checkpoint("after_checkpoint_append")
@@ -2126,9 +2247,7 @@ class PostgresBookOpeningRecoveryApplication:
         budget = (
             replay_budget
             if str(external.get("classification") or "") == "PROVEN_SUCCESS"
-            else self._budget_authority_snapshot(
-                uow, run, provider_call_required=True
-            )
+            else self._budget_authority_snapshot(uow, run, provider_call_required=True)
         )
         snapshot = {
             "opening": {
@@ -2140,12 +2259,16 @@ class PostgresBookOpeningRecoveryApplication:
                 "current_execution_id": run["current_execution_id"],
                 "current_execution_generation": run["current_execution_generation"],
                 "budget_scope_id": str(run.get("budget_scope_id") or ""),
-                "budget_scope_revision": int(
-                    run.get("budget_scope_revision") or 0
+                "budget_scope_revision": int(run.get("budget_scope_revision") or 0),
+                "budget_contract_state": str(run.get("budget_contract_state") or ""),
+                "workflow_contract_version": str(
+                    run.get("workflow_contract_version") or ""
                 ),
-                "budget_contract_state": str(
-                    run.get("budget_contract_state") or ""
+                "current_workflow_node_id": str(
+                    run.get("current_workflow_node_id") or ""
                 ),
+                "workflow_graph_revision": int(run.get("workflow_graph_revision") or 0),
+                "workflow_graph_hash": str(run.get("workflow_graph_hash") or ""),
             },
             "execution": {
                 "opening_execution_id": execution["opening_execution_id"],
@@ -2154,6 +2277,19 @@ class PostgresBookOpeningRecoveryApplication:
                 "version": int(execution["version"]),
                 "policy_snapshot_hash": execution["policy_snapshot_hash"],
                 "authority_contract_hash": execution["authority_contract_hash"],
+                "workflow_node_id": str(execution.get("workflow_node_id") or ""),
+                "workflow_transition_kind": str(
+                    execution.get("workflow_transition_kind") or ""
+                ),
+                "source_checkpoint_id": str(
+                    execution.get("source_checkpoint_id") or ""
+                ),
+                "source_checkpoint_sequence": int(
+                    execution.get("source_checkpoint_sequence") or 0
+                ),
+                "source_checkpoint_hash": str(
+                    execution.get("source_checkpoint_hash") or ""
+                ),
             },
             "runtime": runtime,
             "checkpoint": checkpoint,
@@ -2165,7 +2301,9 @@ class PostgresBookOpeningRecoveryApplication:
             # cannot strand an unclaimed generation.  RecoveryAssessment is
             # intentionally release-bound and therefore uses the exact running
             # application identity instead.
-            "authority_version_digest": self._application_release_digest(),
+            "authority_version_digest": self._application_release_digest(
+                str(run["execution_contract_version"])
+            ),
         }
         if pending_checkpoint_evidence is not None:
             snapshot["checkpoint_reconciliation"] = dict(pending_checkpoint_evidence)
@@ -2192,12 +2330,9 @@ class PostgresBookOpeningRecoveryApplication:
                 "budget_scope_revision": budget_scope_revision,
                 "budget_policy_hash": "",
                 "budget_contract_state": (
-                    contract_state
-                    or "LEGACY_BUDGET_RECONCILIATION_REQUIRED"
+                    contract_state or "LEGACY_BUDGET_RECONCILIATION_REQUIRED"
                 ),
-                "outcome": (
-                    BudgetAssessmentOutcome.RECONCILIATION_REQUIRED.value
-                ),
+                "outcome": (BudgetAssessmentOutcome.RECONCILIATION_REQUIRED.value),
                 "reasons": ["book_opening_budget_scope_unbound"],
             }
             return {**body, "budget_snapshot_digest": _canonical_hash(body)}
@@ -2331,7 +2466,7 @@ class PostgresBookOpeningRecoveryApplication:
                 and str(item["evidence_type"]) == "NARRATIVE_SEARCH"
             )
         }
-        graph = self._expected_search_graph(run)
+        graph = self._expected_search_graph(uow, run)
         target = next(
             (
                 (semantic_work_key, search_id)
@@ -2620,7 +2755,9 @@ class PostgresBookOpeningRecoveryApplication:
                    current_execution_id,current_execution_generation,
                    current_checkpoint_id,current_checkpoint_sequence,
                    current_checkpoint_hash,recovery_state,budget_scope_id,
-                   budget_scope_revision,budget_contract_state
+                   budget_scope_revision,budget_contract_state,
+                   workflow_contract_version,current_workflow_node_id,
+                   workflow_graph_revision,workflow_graph_hash
             FROM authority_book_opening_run
             WHERE opening_run_id=%s{suffix}
             """,
@@ -2649,6 +2786,10 @@ class PostgresBookOpeningRecoveryApplication:
             "budget_scope_id",
             "budget_scope_revision",
             "budget_contract_state",
+            "workflow_contract_version",
+            "current_workflow_node_id",
+            "workflow_graph_revision",
+            "workflow_graph_hash",
         )
         return dict(zip(keys, row, strict=True))
 
@@ -2684,7 +2825,10 @@ class PostgresBookOpeningRecoveryApplication:
                    runtime_job_id,current_attempt_id,current_lease_id,
                    current_worker_id,current_fencing_token,lifecycle,
                    frozen_request_digest,input_snapshot_hash,
-                   policy_snapshot_hash,authority_contract_hash,version
+                   policy_snapshot_hash,authority_contract_hash,version,
+                   workflow_node_id,workflow_transition_kind,
+                   source_checkpoint_id,source_checkpoint_sequence,
+                   source_checkpoint_hash
             FROM authority_book_opening_execution
             WHERE opening_execution_id=%s AND opening_run_id=%s
               AND generation=%s{suffix}
@@ -2718,6 +2862,11 @@ class PostgresBookOpeningRecoveryApplication:
             "policy_snapshot_hash",
             "authority_contract_hash",
             "version",
+            "workflow_node_id",
+            "workflow_transition_kind",
+            "source_checkpoint_id",
+            "source_checkpoint_sequence",
+            "source_checkpoint_hash",
         )
         return dict(zip(keys, row, strict=True))
 
@@ -3075,7 +3224,9 @@ class PostgresBookOpeningRecoveryApplication:
                 ),
                 str(external.get("digest") or _canonical_hash([])),
                 self._policy_digest(),
-                self._application_release_digest(),
+                self._application_release_digest(
+                    str(run["execution_contract_version"])
+                ),
                 Jsonb(snapshot),
                 _canonical_hash(snapshot),
                 disposition,
@@ -3085,17 +3236,9 @@ class PostgresBookOpeningRecoveryApplication:
                     else "book-opening-recovery-assessment.v1"
                 ),
                 str(budget.get("budget_scope_id") or "") if budget_v2 else "",
-                (
-                    int(budget["budget_scope_revision"])
-                    if budget_v2
-                    else None
-                ),
+                (int(budget["budget_scope_revision"]) if budget_v2 else None),
                 str(budget.get("budget_policy_hash") or "") if budget_v2 else "",
-                (
-                    str(budget.get("budget_snapshot_digest") or "")
-                    if budget_v2
-                    else ""
-                ),
+                (str(budget.get("budget_snapshot_digest") or "") if budget_v2 else ""),
                 str(budget.get("outcome") or "") if budget_v2 else "",
                 idempotency_key,
             ],
@@ -3346,7 +3489,7 @@ class PostgresBookOpeningRecoveryApplication:
                    evidence_type,evidence_id,evidence_version,evidence_hash,
                    frozen_request_digest,predecessor_checkpoint_id,
                    predecessor_checkpoint_sequence,predecessor_checkpoint_hash,
-                   checkpoint_hash
+                   checkpoint_hash,workflow_node_id
             FROM authority_book_opening_semantic_checkpoint
             WHERE opening_run_id=%s
             ORDER BY checkpoint_sequence
@@ -3390,6 +3533,7 @@ class PostgresBookOpeningRecoveryApplication:
                 predecessor_sequence,
                 predecessor_hash,
                 checkpoint_hash,
+                workflow_node_id,
             ) = row
             if (
                 int(sequence) != expected_sequence
@@ -3399,6 +3543,27 @@ class PostgresBookOpeningRecoveryApplication:
                 or str(predecessor_hash or "") != previous_hash
             ):
                 self._stale("Book Opening checkpoint hash chain is inconsistent")
+            if str(run.get("workflow_contract_version") or "") == (
+                "book-opening-workflow-v1"
+            ):
+                if not str(workflow_node_id or ""):
+                    self._stale("workflow checkpoint has no durable node identity")
+                uow.cursor.execute(
+                    """
+                    SELECT 1
+                    FROM authority_book_opening_execution
+                    WHERE opening_execution_id=%s AND opening_run_id=%s
+                      AND generation=%s AND workflow_node_id=%s
+                    """,
+                    [
+                        opening_execution_id,
+                        run["opening_run_id"],
+                        execution_generation,
+                        workflow_node_id,
+                    ],
+                )
+                if uow.cursor.fetchone() is None:
+                    self._stale("workflow checkpoint differs from its execution node")
             self._verify_evidence(
                 uow,
                 run=run,
@@ -3449,6 +3614,7 @@ class PostgresBookOpeningRecoveryApplication:
                     "evidence_version": int(row[8]),
                     "evidence_hash": str(row[9]),
                     "checkpoint_hash": str(row[14]),
+                    "workflow_node_id": str(row[15] or ""),
                 }
                 for row in rows
             ],
@@ -3510,6 +3676,227 @@ class PostgresBookOpeningRecoveryApplication:
             "evidence_hash": _canonical_hash(payload),
         }
 
+    def _node_receipt_authoritative_evidence(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        run: Mapping[str, Any],
+        node_receipt_id: str,
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT receipt.workflow_node_id,node.node_kind,node.node_key,
+                   node.input_hash,receipt.result,receipt.result_hash,
+                   receipt.authoritative_evidence_hash,
+                   receipt.reviewable_artifact_kind,
+                   receipt.reviewable_asset_version_ids,
+                   receipt.opening_execution_id,receipt.execution_generation
+            FROM authority_book_opening_node_receipt AS receipt
+            JOIN authority_book_opening_workflow_node AS node
+              ON node.workflow_node_id=receipt.workflow_node_id
+             AND node.opening_run_id=receipt.opening_run_id
+            WHERE receipt.node_receipt_id=%s AND receipt.opening_run_id=%s
+            FOR SHARE OF receipt,node
+            """,
+            [node_receipt_id, run["opening_run_id"]],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                "workflow node receipt is missing",
+            )
+        result = dict(row[4])
+        result_hash = _canonical_hash(result)
+        if result_hash != str(row[5]):
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                "workflow node receipt result hash drifted",
+            )
+
+        def asset(item: Mapping[str, Any]) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                SELECT version.content_hash,binding.binding_id,
+                       binding.contract_type,binding.logical_key,
+                       version.lifecycle,version.eligibility,version.governance,
+                       binding.freshness,active.asset_version_id
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                JOIN story_plan_binding AS binding
+                  ON binding.asset_version_id=version.asset_version_id
+                 AND binding.project_id=asset.project_id
+                 AND binding.book_id=%s
+                JOIN active_story_plan_version AS active
+                  ON active.project_id=binding.project_id
+                 AND active.book_id=binding.book_id
+                 AND active.logical_key=binding.logical_key
+                 AND active.binding_id=binding.binding_id
+                 AND active.asset_version_id=binding.asset_version_id
+                WHERE version.asset_version_id=%s AND asset.project_id=%s
+                FOR SHARE OF version,asset,binding,active
+                """,
+                [run["book_id"], item["asset_version_id"], run["project_id"]],
+            )
+            plan = uow.cursor.fetchone()
+            if (
+                plan is None
+                or str(plan[0]) != str(item["content_hash"])
+                or str(plan[1]) != str(item["binding_id"])
+                or tuple(str(value) for value in plan[4:7])
+                != ("ACTIVE", "ELIGIBLE", "CLEAR")
+                or str(plan[7]) != "CURRENT"
+                or str(plan[8]) != str(item["asset_version_id"])
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "node receipt Plan asset is no longer authoritative",
+                )
+            return {
+                "asset_version_id": str(item["asset_version_id"]),
+                "content_hash": str(item["content_hash"]),
+                "binding_id": str(item["binding_id"]),
+                "contract_type": str(plan[2]),
+                "logical_key": str(plan[3]),
+            }
+
+        def search(search_id: str, asset_version_id: str) -> dict[str, Any]:
+            item = self._narrative_search_evidence(
+                uow,
+                search_id=search_id,
+                project_id=str(run["project_id"]),
+                workspace_id=str(run["workspace_id"]),
+                book_id=str(run["book_id"]),
+            )
+            if str(item["selected_candidate_asset_version_id"]) != asset_version_id:
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "node receipt search selection changed",
+                )
+            return {
+                "search_id": search_id,
+                "search_evidence_hash": str(item["evidence_hash"]),
+            }
+
+        node_kind = str(row[1])
+        inner: list[dict[str, Any]] = []
+        assets: list[str] = []
+        if node_kind == "BOOK_PLAN":
+            plan_item = asset(result)
+            inner.extend(
+                (
+                    plan_item,
+                    search(str(result["search_id"]), plan_item["asset_version_id"]),
+                )
+            )
+            assets.append(plan_item["asset_version_id"])
+        elif node_kind in {"VOLUME_PORTFOLIO", "INITIAL_ARC_SCOPE"}:
+            collection = (
+                "volume_plan_versions"
+                if node_kind == "VOLUME_PORTFOLIO"
+                else "arc_plan_versions"
+            )
+            for raw in result.get(collection) or ():
+                plan_item = asset(dict(raw))
+                inner.extend(
+                    (
+                        plan_item,
+                        search(str(raw["search_id"]), plan_item["asset_version_id"]),
+                    )
+                )
+                assets.append(plan_item["asset_version_id"])
+        elif node_kind == "CURRENT_VOLUME":
+            uow.cursor.execute(
+                """
+                SELECT binding.binding_id
+                FROM story_plan_binding AS binding
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=%s
+                """,
+                [
+                    run["project_id"],
+                    run["book_id"],
+                    result["current_volume_plan_version_id"],
+                ],
+            )
+            binding = uow.cursor.fetchone()
+            if binding is None:
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "current Volume binding is missing",
+                )
+            plan_item = asset(
+                {
+                    "asset_version_id": result["current_volume_plan_version_id"],
+                    "content_hash": result["current_volume_content_hash"],
+                    "binding_id": str(binding[0]),
+                }
+            )
+            inner.append(plan_item)
+            assets.append(plan_item["asset_version_id"])
+        elif node_kind == "INPUT_SNAPSHOT":
+            uow.cursor.execute(
+                """
+                SELECT snapshot_hash,workspace_id,book_id
+                FROM authority_book_production_input_snapshot
+                WHERE snapshot_id=%s AND project_id=%s
+                FOR SHARE
+                """,
+                [result["snapshot_id"], run["project_id"]],
+            )
+            snapshot = uow.cursor.fetchone()
+            if (
+                snapshot is None
+                or str(snapshot[0]) != str(result["snapshot_hash"])
+                or str(snapshot[1]) != str(run["workspace_id"])
+                or str(snapshot[2]) != str(run["book_id"])
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "node receipt Input Snapshot is no longer authoritative",
+                )
+            inner.append(
+                {
+                    "snapshot_id": str(result["snapshot_id"]),
+                    "snapshot_hash": str(result["snapshot_hash"]),
+                }
+            )
+        else:
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                "workflow node receipt carries an unknown node kind",
+            )
+        if assets != [str(item) for item in row[8]]:
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                "node receipt reviewable asset set drifted",
+            )
+        authoritative_payload = {
+            "contract_version": "book-opening-node-authoritative-evidence.v1",
+            "opening_run_id": str(run["opening_run_id"]),
+            "workflow_node_id": str(row[0]),
+            "node_kind": node_kind,
+            "node_key": str(row[2]),
+            "node_input_hash": str(row[3]),
+            "result_hash": result_hash,
+            "reviewable_artifact_kind": str(row[7]),
+            "reviewable_asset_version_ids": assets,
+            "authoritative_inner_evidence": inner,
+        }
+        authoritative_hash = _canonical_hash(authoritative_payload)
+        if authoritative_hash != str(row[6]):
+            raise KernelError(
+                "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                "workflow node authoritative evidence hash drifted",
+            )
+        return {
+            "workflow_node_id": str(row[0]),
+            "node_kind": node_kind,
+            "authoritative_evidence_hash": authoritative_hash,
+            "opening_execution_id": str(row[9]),
+            "execution_generation": int(row[10]),
+        }
+
     def _verify_evidence(
         self,
         uow: AuthorityUnitOfWork,
@@ -3522,6 +3909,29 @@ class PostgresBookOpeningRecoveryApplication:
         evidence_version: int,
         evidence_hash: str,
     ) -> None:
+        if (owning_authority, evidence_type) == (
+            "BOOK_AUTHORITY",
+            "BOOK_OPENING_NODE_RECEIPT",
+        ):
+            evidence = self._node_receipt_authoritative_evidence(
+                uow,
+                run=run,
+                node_receipt_id=evidence_id,
+            )
+            if (
+                evidence_version != 1
+                or str(evidence["authoritative_evidence_hash"]) != evidence_hash
+                or semantic_work_key
+                != (
+                    f"book-opening-node:{evidence['node_kind']}:"
+                    f"{evidence['workflow_node_id']}"
+                )
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
+                    "checkpoint differs from its authoritative workflow node receipt",
+                )
+            return
         if (owning_authority, evidence_type) == (
             "STORY_PLANNING",
             "NARRATIVE_SEARCH",
@@ -3538,7 +3948,7 @@ class PostgresBookOpeningRecoveryApplication:
                 or str(evidence["evidence_hash"]) != evidence_hash
                 or semantic_work_key
                 != (f"{evidence['generator_operation_name']}:{evidence['logical_key']}")
-                or self._expected_search_graph(run).get(semantic_work_key)
+                or self._expected_search_graph(uow, run).get(semantic_work_key)
                 != evidence_id
             ):
                 raise KernelError(
@@ -3608,18 +4018,15 @@ class PostgresBookOpeningRecoveryApplication:
                 "qualification_hash": str(row[9]),
                 "evidence_version": 1,
             }
-            expected_key = (
-                f"narrative-search-branch:{row[1]}:{row[2]}"
-            )
+            expected_key = f"narrative-search-branch:{row[1]}:{row[2]}"
             if (
                 evidence_version != 1
-                or str(row[10])
-                != "narrative-search-branch-evidence.v1"
+                or str(row[10]) != "narrative-search-branch-evidence.v1"
                 or str(row[11]) != evidence_hash
                 or _canonical_hash(payload) != evidence_hash
                 or semantic_work_key != expected_key
                 or str(row[1])
-                not in set(self._expected_search_graph(run).values())
+                not in set(self._expected_search_graph(uow, run).values())
             ):
                 raise KernelError(
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
@@ -3698,7 +4105,10 @@ class PostgresBookOpeningRecoveryApplication:
                 )
             stored_payload = dict(row[19])
             qualification_receipts = stored_payload.get("qualification_receipts")
-            if not isinstance(qualification_receipts, list) or not qualification_receipts:
+            if (
+                not isinstance(qualification_receipts, list)
+                or not qualification_receipts
+            ):
                 raise KernelError(
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
                     "Planning reconciliation omitted semantic receipt lineage",
@@ -3786,9 +4196,7 @@ class PostgresBookOpeningRecoveryApplication:
                 "opening_run_id": str(row[7]),
                 "opening_execution_id": str(row[8]),
                 "execution_generation": int(row[9]),
-                "qualification_receipt_set_hash": _canonical_hash(
-                    current_receipts
-                ),
+                "qualification_receipt_set_hash": _canonical_hash(current_receipts),
                 "qualification_receipts": current_receipts,
                 "reconciled_branch_evidence_hash": _canonical_hash(branch_payload),
                 "reconciliation_contract_version": (
@@ -3800,8 +4208,7 @@ class PostgresBookOpeningRecoveryApplication:
                 evidence_version != 1
                 or int(row[18]) != 1
                 or str(row[6]) != "legacy-unbound"
-                or str(row[17])
-                != "narrative-search-branch-reconciliation.v1"
+                or str(row[17]) != "narrative-search-branch-reconciliation.v1"
                 or str(row[22]) != "legacy-unbound"
                 or str(row[23]) != ""
                 or _canonical_hash(dict(row[21])) != str(row[12])
@@ -3812,7 +4219,7 @@ class PostgresBookOpeningRecoveryApplication:
                 or str(row[20]) != evidence_hash
                 or semantic_work_key != expected_key
                 or str(row[2])
-                not in set(self._expected_search_graph(run).values())
+                not in set(self._expected_search_graph(uow, run).values())
             ):
                 raise KernelError(
                     "BOOK_OPENING_CHECKPOINT_EVIDENCE_DRIFT",
@@ -3863,7 +4270,7 @@ class PostgresBookOpeningRecoveryApplication:
             )
         uow.cursor.execute(sql, [evidence_id, run["project_id"]])
         row = uow.cursor.fetchone()
-        expected_search_ids = set(self._expected_search_graph(run).values())
+        expected_search_ids = set(self._expected_search_graph(uow, run).values())
         if (
             row is None
             or int(row[0]) != evidence_version
@@ -3881,7 +4288,51 @@ class PostgresBookOpeningRecoveryApplication:
             )
 
     @staticmethod
-    def _expected_search_graph(run: dict[str, Any]) -> dict[str, str]:
+    def _workflow_node_value(
+        uow: AuthorityUnitOfWork,
+        workflow_node_id: str,
+        column: str,
+    ) -> str:
+        allowed = {"node_kind", "node_key", "input_hash"}
+        if column not in allowed or not workflow_node_id:
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_NODE_MISSING",
+                "recovery workflow node identity is incomplete",
+            )
+        uow.cursor.execute(
+            f"SELECT {column} FROM authority_book_opening_workflow_node "
+            "WHERE workflow_node_id=%s",
+            [workflow_node_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or not str(row[0] or ""):
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_NODE_MISSING",
+                "recovery workflow node evidence is missing",
+            )
+        return str(row[0])
+
+    @classmethod
+    def _workflow_node_kind(
+        cls, uow: AuthorityUnitOfWork, workflow_node_id: str
+    ) -> str:
+        return cls._workflow_node_value(uow, workflow_node_id, "node_kind")
+
+    @classmethod
+    def _workflow_node_key(cls, uow: AuthorityUnitOfWork, workflow_node_id: str) -> str:
+        return cls._workflow_node_value(uow, workflow_node_id, "node_key")
+
+    @classmethod
+    def _workflow_node_input_hash(
+        cls, uow: AuthorityUnitOfWork, workflow_node_id: str
+    ) -> str:
+        return cls._workflow_node_value(uow, workflow_node_id, "input_hash")
+
+    @staticmethod
+    def _expected_search_graph(
+        uow: AuthorityUnitOfWork,
+        run: dict[str, Any],
+    ) -> dict[str, str]:
         frozen = dict(run["frozen_request"])
         stable_key = str(frozen.get("idempotency_key") or "")
         arc_keys = [str(item) for item in frozen.get("arc_logical_keys") or []]
@@ -3890,11 +4341,61 @@ class PostgresBookOpeningRecoveryApplication:
                 "BOOK_OPENING_FROZEN_GRAPH_INVALID",
                 "Opening frozen request cannot derive its exact semantic work graph",
             )
-        work = [
-            ("book_plan.generate", "book:main"),
-            ("volume_plan.generate", "volume:1"),
-            *(("arc_plan.generate", key) for key in arc_keys),
-        ]
+        if str(run.get("workflow_contract_version") or "") == (
+            "book-opening-workflow-v1"
+        ):
+            uow.cursor.execute(
+                """
+                SELECT ordinal
+                FROM authority_book_opening_workflow_node
+                WHERE workflow_node_id=%s AND opening_run_id=%s
+                """,
+                [run.get("current_workflow_node_id"), run["opening_run_id"]],
+            )
+            current = uow.cursor.fetchone()
+            if current is None:
+                raise KernelError(
+                    "BOOK_OPENING_FROZEN_GRAPH_INVALID",
+                    "Opening workflow has no current node ordinal",
+                )
+            ordinal = int(current[0])
+            work: list[tuple[str, str]] = [("book_plan.generate", "book:main")]
+            if ordinal >= 2:
+                uow.cursor.execute(
+                    """
+                    SELECT version.content
+                    FROM authority_book_opening_node_receipt AS receipt
+                    JOIN authority_book_opening_workflow_node AS node
+                      ON node.workflow_node_id=receipt.workflow_node_id
+                     AND node.opening_run_id=receipt.opening_run_id
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=
+                         receipt.result->>'asset_version_id'
+                    WHERE receipt.opening_run_id=%s AND node.node_kind='BOOK_PLAN'
+                    """,
+                    [run["opening_run_id"]],
+                )
+                book = uow.cursor.fetchone()
+                skeleton = list(
+                    (dict(book[0]) if book else {}).get("volume_skeleton") or ()
+                )
+                if not skeleton:
+                    raise KernelError(
+                        "BOOK_OPENING_FROZEN_GRAPH_INVALID",
+                        "workflow Volume graph cannot be derived from its Book Plan receipt",
+                    )
+                work.extend(
+                    ("volume_plan.generate", f"volume:{volume_ordinal}")
+                    for volume_ordinal in range(1, len(skeleton) + 1)
+                )
+            if ordinal >= 4:
+                work.extend(("arc_plan.generate", key) for key in arc_keys)
+        else:
+            work = [
+                ("book_plan.generate", "book:main"),
+                ("volume_plan.generate", "volume:1"),
+                *(("arc_plan.generate", key) for key in arc_keys),
+            ]
         graph: dict[str, str] = {}
         for generator, logical_key in work:
             semantic_work_key = f"{generator}:{logical_key}"
@@ -4007,22 +4508,39 @@ class PostgresBookOpeningRecoveryApplication:
             }
         )
 
-    def _authority_digest(self) -> str:
+    def _authority_digest(
+        self,
+        execution_contract_version: str = BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
+    ) -> str:
         """Stable execution contract shared by rolling-compatible releases."""
 
-        return _canonical_hash(
-            {
-                "version": BOOK_OPENING_AUTHORITY_VERSION,
-                "execution_contract": BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
-            }
-        )
+        payload = {
+            "version": BOOK_OPENING_AUTHORITY_VERSION,
+            "execution_contract": execution_contract_version,
+        }
+        if execution_contract_version != BOOK_OPENING_EXECUTION_CONTRACT_VERSION:
+            runtime_job_kind, runtime_group = (
+                _runtime_job_identity_for_execution_contract(execution_contract_version)
+            )
+            payload.update(
+                {
+                    "runtime_job_kind": runtime_job_kind,
+                    "runtime_group": runtime_group,
+                }
+            )
+        return _canonical_hash(payload)
 
-    def _application_release_digest(self) -> str:
+    def _application_release_digest(
+        self,
+        execution_contract_version: str = BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
+    ) -> str:
         """Exact release identity frozen into immutable assessments."""
 
         return _canonical_hash(
             {
-                "authority_contract_digest": self._authority_digest(),
+                "authority_contract_digest": self._authority_digest(
+                    execution_contract_version
+                ),
                 "application_build_id": self.application_build_id,
                 "commit_sha": self.commit_sha,
             }
@@ -4039,10 +4557,13 @@ class PostgresBookOpeningRecoveryApplication:
 __all__ = [
     "BOOK_OPENING_AUTHORITY_VERSION",
     "BOOK_OPENING_EXECUTION_CONTRACT_VERSION",
+    "BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION",
     "BOOK_OPENING_EXECUTION_POLICY_VERSION",
     "BOOK_OPENING_MAX_SEMANTIC_EVALUATION_GENERATIONS",
     "BOOK_OPENING_RECOVERY_POLICY_VERSION",
     "PostgresBookOpeningRecoveryApplication",
     "RecoveryAssessment",
     "RecoveryReceipt",
+    "book_opening_execution_contract_version",
+    "book_opening_runtime_job_identity",
 ]

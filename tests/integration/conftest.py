@@ -10,6 +10,54 @@ import pytest
 from novel_forge.storage.migrations import run_migrations
 
 
+_PROTECTED_DATABASE_NAMES = frozenset({"postgres", "template0", "template1"})
+_READ_ONLY_PREFLIGHT_OPTIONS = "-c default_transaction_read_only=on"
+
+
+def require_disposable_test_database(database_name: object) -> str:
+    """Validate the server-reported database identity without touching PostgreSQL."""
+    if not isinstance(database_name, str) or not database_name:
+        raise AssertionError(
+            "integration database safety preflight returned an invalid database name; "
+            "refusing migrations and cleanup"
+        )
+    if database_name in _PROTECTED_DATABASE_NAMES:
+        raise AssertionError(
+            "integration database safety preflight resolved a protected database; "
+            f"refusing migrations and cleanup for {database_name!r}"
+        )
+    if not database_name.endswith("_test"):
+        raise AssertionError(
+            "integration database safety requires a database ending in _test; "
+            f"refusing migrations and cleanup for {database_name!r}"
+        )
+    return database_name
+
+
+def preflight_integration_database(database_url: str) -> str:
+    """Resolve and validate the target through a read-only PostgreSQL session."""
+    with psycopg.connect(
+        database_url,
+        autocommit=True,
+        application_name="novel-forge-pytest-safety-preflight",
+        connect_timeout=5,
+        options=_READ_ONLY_PREFLIGHT_OPTIONS,
+    ) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT current_database(), current_setting('transaction_read_only')
+                """
+            )
+            row = cursor.fetchone()
+    if row is None or len(row) != 2 or str(row[1]).lower() != "on":
+        raise AssertionError(
+            "integration database safety preflight did not run read-only; "
+            "refusing migrations and cleanup"
+        )
+    return require_disposable_test_database(row[0])
+
+
 @pytest.fixture(scope="module", autouse=True)
 def isolate_postgresql_integration_module() -> Iterator[None]:
     """Keep global Authority registries from leaking across test modules."""
@@ -18,17 +66,21 @@ def isolate_postgresql_integration_module() -> Iterator[None]:
         yield
         return
 
+    preflight_database_name = preflight_integration_database(database_url)
     status = run_migrations(database_url)
     if not status["ok"]:
         raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
     with psycopg.connect(database_url, autocommit=True) as connection:
         with connection.cursor() as cursor:
             cursor.execute("SELECT current_database()")
-            database_name = str(cursor.fetchone()[0])
-            if not database_name.endswith("_test"):
+            row = cursor.fetchone()
+            database_name = require_disposable_test_database(
+                None if row is None else row[0]
+            )
+            if database_name != preflight_database_name:
                 raise AssertionError(
-                    "integration module isolation requires a database ending in _test; "
-                    f"refusing to truncate {database_name!r}"
+                    "integration database identity changed after safety preflight; "
+                    f"refusing cleanup for {database_name!r}"
                 )
             cursor.execute(
                 """

@@ -297,9 +297,9 @@ class BookProductionCompositionTests(unittest.TestCase):
             composition.opening.provider_budget_policy,
             {
                 "execution_mode": "PROVIDER_ALLOWED",
-                "provider_call_limit": 40,
-                "token_limit": 1_800_000,
-                "cost_limit_usd": "20",
+                "provider_call_limit": 48,
+                "token_limit": 4_800_000,
+                "cost_limit_usd": "96",
                 "per_call_token_limit": 100_000,
                 "per_call_cost_limit_usd": "2",
             },

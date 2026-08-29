@@ -554,8 +554,22 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         }
 
     logical_key = str(command.get("logical_key") or "")
-    fixture_book_volume_count = 2 if logical_key.endswith(":portfolio-2") else 1
-    fixture_book_target_chapters = fixture_book_volume_count * 3
+    search_horizon = command.get("narrative_search_planning_horizon")
+    frozen_book_target = (
+        search_horizon.get("target_chapters")
+        if isinstance(search_horizon, Mapping)
+        else None
+    )
+    fixture_book_target_chapters = (
+        int(frozen_book_target)
+        if isinstance(frozen_book_target, int)
+        and not isinstance(frozen_book_target, bool)
+        and frozen_book_target > 0
+        else 6
+        if logical_key.endswith(":portfolio-2")
+        else 3
+    )
+    fixture_book_volume_count = max(1, (fixture_book_target_chapters + 2) // 3)
     logical_ordinal = 1
     if stage == "volume_plan.generate":
         try:
@@ -570,12 +584,19 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         )
     group_start = chapter_number
     group_end = chapter_number + 2
-    search_horizon = command.get("narrative_search_planning_horizon")
     if stage == "chapter_group_plan.generate" and isinstance(search_horizon, Mapping):
         frozen_range = search_horizon.get("chapter_range")
         if isinstance(frozen_range, list) and len(frozen_range) == 2:
             group_start, group_end = map(int, frozen_range)
             chapter_number = group_start
+    volume_chapter_range = [
+        (logical_ordinal - 1) * 3 + 1,
+        logical_ordinal * 3,
+    ]
+    if stage == "volume_plan.generate" and isinstance(search_horizon, Mapping):
+        frozen_range = search_horizon.get("chapter_range")
+        if isinstance(frozen_range, list) and len(frozen_range) == 2:
+            volume_chapter_range = [int(frozen_range[0]), int(frozen_range[1])]
     arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
@@ -844,19 +865,13 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "climax": "costly revelation",
             "settlement": "new obligation",
             "next_volume_bridge": "wider threat",
-            "chapter_range": [
-                (logical_ordinal - 1) * 3 + 1,
-                logical_ordinal * 3,
-            ],
+            "chapter_range": volume_chapter_range,
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segments": [
                 {
                     "segment_id": "narrative-segment:1",
                     "objective": "Turn private doubt into public commitment",
-                    "chapter_range": [
-                        (logical_ordinal - 1) * 3 + 1,
-                        logical_ordinal * 3,
-                    ],
+                    "chapter_range": volume_chapter_range,
                     "entry_state_ref": str(
                         versions.get("story_state") or "story:entry"
                     ),
@@ -2400,9 +2415,7 @@ class _PlanningGatewayEffectAdapter:
             request_sent = True
             result = self.session.gateway.reconcile(handle)
         except Exception as exc:
-            recovered = self.session.evidence_store.find_record(
-                request.execution_id
-            )
+            recovered = self.session.evidence_store.find_record(request.execution_id)
             submission_phase = (
                 str(recovered.raw_evidence.get("submission_phase") or "")
                 if recovered is not None
@@ -2526,15 +2539,9 @@ def _planning_budget_settlement(
     reserved_amount: str,
     reserved_tokens: int,
 ) -> dict[str, Any]:
-    input_tokens, input_valid = _nonnegative_usage_value(
-        usage.get("input_tokens")
-    )
-    output_tokens, output_valid = _nonnegative_usage_value(
-        usage.get("output_tokens")
-    )
-    declared_total, total_valid = _nonnegative_usage_value(
-        usage.get("total_tokens")
-    )
+    input_tokens, input_valid = _nonnegative_usage_value(usage.get("input_tokens"))
+    output_tokens, output_valid = _nonnegative_usage_value(usage.get("output_tokens"))
+    declared_total, total_valid = _nonnegative_usage_value(usage.get("total_tokens"))
     measured_total = max(declared_total, input_tokens + output_tokens)
     reported_amount = str(cost.get("amount") or "0")
     if fixture:
@@ -2575,9 +2582,7 @@ def _planning_budget_settlement(
     )
     total_tokens = measured_total if usage_authoritative else reserved_tokens
     usage_basis = (
-        "PROVIDER_USAGE_RECEIPT"
-        if usage_authoritative
-        else "RESERVATION_CEILING"
+        "PROVIDER_USAGE_RECEIPT" if usage_authoritative else "RESERVATION_CEILING"
     )
     cost_authoritative = bool(
         supports_cost_receipt
@@ -2586,9 +2591,7 @@ def _planning_budget_settlement(
     )
     amount = reported_amount if cost_authoritative else reserved_amount
     cost_basis = (
-        "PROVIDER_COST_RECEIPT"
-        if cost_authoritative
-        else "RESERVATION_CEILING"
+        "PROVIDER_COST_RECEIPT" if cost_authoritative else "RESERVATION_CEILING"
     )
     return {
         "amount": amount,
@@ -2635,9 +2638,7 @@ def _planning_failed_provider_submission_state(
     provider = provider if isinstance(provider, Mapping) else {}
     production = provider.get("production_execution")
     process = (
-        production.get("process_evidence")
-        if isinstance(production, Mapping)
-        else None
+        production.get("process_evidence") if isinstance(production, Mapping) else None
     )
     process = process if isinstance(process, Mapping) else {}
     declared = [
@@ -2676,14 +2677,10 @@ def _planning_failed_provider_measurement(
 ) -> tuple[Mapping[str, Any], Mapping[str, Any]] | None:
     provider = dispatched.get("provider_evidence")
     production = (
-        provider.get("production_execution")
-        if isinstance(provider, Mapping)
-        else None
+        provider.get("production_execution") if isinstance(provider, Mapping) else None
     )
     process = (
-        production.get("process_evidence")
-        if isinstance(production, Mapping)
-        else None
+        production.get("process_evidence") if isinstance(production, Mapping) else None
     )
     usage = process.get("usage") if isinstance(process, Mapping) else None
     cost = process.get("cost") if isinstance(process, Mapping) else None
@@ -2843,9 +2840,7 @@ class _PlanningPepPort:
                 usage = dict(settlement["usage"])
                 cost = dict(settlement["cost"])
                 evidence = dispatched.get("provider_evidence")
-                provider_evidence = (
-                    evidence if isinstance(evidence, Mapping) else {}
-                )
+                provider_evidence = evidence if isinstance(evidence, Mapping) else {}
                 settle_provider_budget(
                     self.database_url,
                     reservation_id=self.reservation_id,
@@ -2853,27 +2848,19 @@ class _PlanningPepPort:
                     actual_amount=amount,
                     actual_tokens=total_tokens,
                     evidence={
-                        "provider_id": str(
-                            provider_evidence.get("provider_id") or ""
-                        ),
+                        "provider_id": str(provider_evidence.get("provider_id") or ""),
                         "model_id": str(provider_evidence.get("model_id") or ""),
                         "real_model_call": bool(
                             provider_evidence.get("real_model_call")
                         ),
-                        "fixture": bool(
-                            provider_evidence.get("fixture_protocol_only")
-                        ),
+                        "fixture": bool(provider_evidence.get("fixture_protocol_only")),
                         "execution_outcome": outcome.upper(),
                         "accepted_candidate": False,
-                        "submission_state": str(
-                            budget_decision["submission_state"]
-                        ),
+                        "submission_state": str(budget_decision["submission_state"]),
                         "measurement_available": bool(
                             budget_decision["measurement_available"]
                         ),
-                        "usage_settlement_basis": str(
-                            settlement["usage_basis"]
-                        ),
+                        "usage_settlement_basis": str(settlement["usage_basis"]),
                         "cost_settlement_basis": str(settlement["cost_basis"]),
                     },
                 )
@@ -2888,9 +2875,7 @@ class _PlanningPepPort:
                     failure={
                         "code": "PLANNING_PROVIDER_NON_SUCCESS",
                         "outcome": outcome,
-                        "submission_state": str(
-                            budget_decision["submission_state"]
-                        ),
+                        "submission_state": str(budget_decision["submission_state"]),
                         "budget_disposition": "SETTLED",
                     },
                 )
@@ -3201,8 +3186,7 @@ class PostgresPlanningExecutionPreparer:
                 chapter_schedule_row = require_chapter_schedule_row(
                     schedule_source.content,
                     chapter_number=int(
-                        (command.narrative_realization or {}).get("chapter_number")
-                        or 0
+                        (command.narrative_realization or {}).get("chapter_number") or 0
                     ),
                 )
             except (TypeError, ValueError) as exc:
@@ -3335,9 +3319,7 @@ class PostgresPlanningExecutionPreparer:
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
-            frozen_request_token_ceiling = int(
-                context_policy.get("max_tokens") or 0
-            )
+            frozen_request_token_ceiling = int(context_policy.get("max_tokens") or 0)
         except (TypeError, ValueError, json.JSONDecodeError) as exc:
             raise KernelError(
                 "PLANNING_PROVIDER_TOKEN_CEILING_INVALID",
@@ -3351,8 +3333,7 @@ class PostgresPlanningExecutionPreparer:
             frozen_request_token_ceiling=frozen_request_token_ceiling,
         )
         provider_reservation_amount = str(
-            provider_token_contract["estimated_cost_amount"]
-            or self.max_cost_per_call
+            provider_token_contract["estimated_cost_amount"] or self.max_cost_per_call
         )
         provider_reservation_tokens = int(
             provider_token_contract["estimated_total_tokens"]
@@ -3569,13 +3550,10 @@ class PostgresPlanningExecutionPreparer:
                     estimated_amount=provider_reservation_amount,
                     estimated_tokens=provider_reservation_tokens,
                     caps=self.budget_caps,
-                    budget_scope_id=str(
-                        provider_token_contract["budget_scope_id"]
-                    ),
+                    budget_scope_id=str(provider_token_contract["budget_scope_id"]),
                     expected_budget_scope_revision=(
                         int(provider_token_contract["budget_scope_revision"])
-                        if provider_token_contract["budget_scope_revision"]
-                        is not None
+                        if provider_token_contract["budget_scope_revision"] is not None
                         else None
                     ),
                 ),

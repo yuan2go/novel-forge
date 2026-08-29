@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
-PLAN_BINDING_DEFINITION_VERSION = "1.0.0"
+PLAN_BINDING_DEFINITION_VERSION = "1.1.0"
 PLAN_BINDING_HANDLER_KEY = "novel_forge.hierarchical_planning.binding.transaction"
 NARRATIVE_REALIZATION_DEFINITION_VERSION = "1.0.0"
 NARRATIVE_REALIZATION_HANDLER_KEY = (
@@ -41,6 +41,7 @@ def plan_binding_definitions(
                     "expected_active_asset_version_id",
                     "replacement_approved",
                     "decision_evidence",
+                    "story_design_transition_operation_id",
                 ],
                 "properties": {
                     "project_id": {"type": "string"},
@@ -53,6 +54,7 @@ def plan_binding_definitions(
                     "expected_active_asset_version_id": {"type": "string"},
                     "replacement_approved": {"type": "boolean"},
                     "decision_evidence": {"type": "object"},
+                    "story_design_transition_operation_id": {"type": "string"},
                 },
                 "additionalProperties": False,
             },
@@ -74,7 +76,7 @@ def plan_binding_definitions(
                 "additionalProperties": False,
             },
             "handler_key": PLAN_BINDING_HANDLER_KEY,
-            "handler_contract_version": "planning-binding-handler-v1",
+            "handler_contract_version": "planning-binding-handler-v2",
             "application_build_id": application_build_id,
             "commit_sha": commit_sha,
             "execution_mode": "transactional",
@@ -99,6 +101,7 @@ def plan_binding_definitions(
                 "book_scope_required": True,
                 "expected_active_version_required": True,
                 "legacy_writer": "disabled",
+                "atomic_story_design_activation": True,
             },
             "completion_contract": {
                 "version": "planning.binding.activate.completion.v1",

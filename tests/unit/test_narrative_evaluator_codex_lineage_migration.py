@@ -21,7 +21,7 @@ def test_codex_lineage_forward_fix_is_the_registered_head() -> None:
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
     assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == recovery_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == semantic_hardening.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
     assert migration.DOWN_REVISION == "20260821_0096_runtime_hardening"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is False

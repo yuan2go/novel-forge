@@ -15,10 +15,10 @@ from novel_forge.storage.migrations.versions import (
 )
 
 
-def test_semantic_runtime_hardening_is_the_forward_only_head() -> None:
+def test_semantic_runtime_hardening_remains_in_the_forward_only_chain() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
     assert migration.DOWN_REVISION == "20260828_0102_book_opening_recovery_closure"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is False
@@ -181,9 +181,7 @@ def test_operator_authoring_gate_mapping_matches_story_design_authority() -> Non
         if "CREATE OR REPLACE FUNCTION authority_narrative_replacement_gate_is_open"
         in statement
     )
-    python_gate = inspect.getsource(
-        assert_narrative_replacement_execution_gate_in_uow
-    )
+    python_gate = inspect.getsource(assert_narrative_replacement_execution_gate_in_uow)
     for generator, (author_definition, asset_type) in expected.items():
         author_mapping = re.compile(
             rf"WHEN\s+'{re.escape(generator)}'\s+THEN\s+"

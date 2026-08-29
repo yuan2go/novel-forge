@@ -202,25 +202,51 @@ def _seed_opening(
             f"asset:legacy-opening:{suffix}:workspace:v1"
         ),
     }
+    opening_values = [
+        opening_run_id,
+        scope["project_id"],
+        scope["workspace_id"],
+        scope["book_id"],
+        scope["operation_id"],
+        frozen_request["idempotency_key"],
+        Jsonb(frozen_request),
+        _canonical_hash(frozen_request),
+    ]
     cursor.execute(
         """
-        INSERT INTO authority_book_opening_run(
-            opening_run_id,project_id,workspace_id,book_id,
-            root_operation_id,stable_idempotency_key,lifecycle,
-            frozen_request,frozen_request_digest
-        ) VALUES (%s,%s,%s,%s,%s,%s,'RUNNING',%s,%s)
-        """,
-        [
-            opening_run_id,
-            scope["project_id"],
-            scope["workspace_id"],
-            scope["book_id"],
-            scope["operation_id"],
-            frozen_request["idempotency_key"],
-            Jsonb(frozen_request),
-            _canonical_hash(frozen_request),
-        ],
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public'
+              AND table_name='authority_book_opening_run'
+              AND column_name='workflow_contract_version'
+        )
+        """
     )
+    if bool(cursor.fetchone()[0]):
+        cursor.execute(
+            """
+            INSERT INTO authority_book_opening_run(
+                opening_run_id,project_id,workspace_id,book_id,
+                root_operation_id,stable_idempotency_key,lifecycle,
+                frozen_request,frozen_request_digest,
+                workflow_contract_version,current_workflow_node_id,
+                workflow_graph_revision,workflow_graph_hash
+            ) VALUES (%s,%s,%s,%s,%s,%s,'RUNNING',%s,%s,
+                      'legacy-monolithic-v2',NULL,0,'')
+            """,
+            opening_values,
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO authority_book_opening_run(
+                opening_run_id,project_id,workspace_id,book_id,
+                root_operation_id,stable_idempotency_key,lifecycle,
+                frozen_request,frozen_request_digest
+            ) VALUES (%s,%s,%s,%s,%s,%s,'RUNNING',%s,%s)
+            """,
+            opening_values,
+        )
     if with_runtime == "missing":
         return {
             **scope,

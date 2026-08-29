@@ -35,6 +35,7 @@ from .domain import (
     StoryPlanningGenerationCommand,
     StoryPlanningEvaluationCommand,
     build_planning_constraint_envelope,
+    canonical_book_volume_allocation,
     canonical_hash,
 )
 from .execution import PlanningExecutionRoute, PostgresPlanningExecutionPreparer
@@ -104,6 +105,7 @@ __all__ = [
     "StoryPlanningGenerationApplication",
     "StoryPlanningGenerationHandlerRegistry",
     "build_planning_constraint_envelope",
+    "canonical_book_volume_allocation",
     "compare_narrative_futures",
     "canonical_hash",
     "story_planning_generation_definition",

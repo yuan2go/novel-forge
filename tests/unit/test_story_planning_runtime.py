@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -128,9 +129,7 @@ def _chapter_schedule_row(*, chapter_number: int = 1) -> dict[str, object]:
             "target_emotion": "costly resolve",
             "reward_mode": "DISCOVERY",
         },
-        "arc_cadence": [
-            {"arc_plan_version_id": "arc:v1", "action": "ADVANCE"}
-        ],
+        "arc_cadence": [{"arc_plan_version_id": "arc:v1", "action": "ADVANCE"}],
         "obligation_actions": [
             {
                 "obligation_id": "promise:choice",
@@ -612,12 +611,14 @@ def test_chapter_provider_schema_freezes_active_schedule_row() -> None:
     assert properties["primary_function"]["const"] == schedule["primary_function"]
     assert properties["secondary_functions"]["minItems"] == 2
     assert properties["secondary_functions"]["maxItems"] == 2
-    assert properties["secondary_functions"]["items"]["enum"] == (
-        schedule["secondary_functions"]
+    assert (
+        properties["secondary_functions"]["items"]["enum"]
+        == (schedule["secondary_functions"])
     )
-    assert properties["required_state_delta"]["properties"]["summary"][
-        "const"
-    ] == schedule["required_state_delta"]["summary"]
+    assert (
+        properties["required_state_delta"]["properties"]["summary"]["const"]
+        == schedule["required_state_delta"]["summary"]
+    )
     assert properties["promise_action"]["const"] == schedule["promise_action"]
     assert properties["narrative_density"]["const"] == "HIGH"
     reader = properties["reader_experience"]["properties"]
@@ -1898,6 +1899,169 @@ def test_chapter_group_search_command_rejects_identity_without_frozen_request() 
             narrative_search_branch_key="future-1",
             narrative_search_strategy_directive="advance costly agency",
         )
+
+
+def test_volume_search_freezes_and_enforces_exact_book_portfolio_range() -> None:
+    base = _command("volume_plan.generate")
+    command = StoryPlanningGenerationCommand(
+        project_id=base.project_id,
+        workspace_id=base.workspace_id,
+        book_id=base.book_id,
+        actor_id=base.actor_id,
+        generator_operation_name=base.generator_operation_name,
+        logical_key="volume:2",
+        input_versions=base.input_versions,
+        parent_version_id=base.parent_version_id,
+        idempotency_key=base.idempotency_key,
+        trace_id=base.trace_id,
+        correlation_id=base.correlation_id,
+        narrative_search_id="search:volume:2",
+        narrative_search_branch_key="future-1",
+        narrative_search_strategy_directive="realize the frozen second volume",
+        narrative_search_planning_horizon={
+            "level": "VOLUME",
+            "ordinal": 2,
+            "chapter_range": [4, 6],
+            "starts_at_chapter": 4,
+            "ends_at_chapter": 6,
+        },
+        narrative_search_desired_transformation={"required_chapter_range": [4, 6]},
+        narrative_search_hard_constraints=(
+            "the Book portfolio allocation is immutable",
+        ),
+    )
+
+    assert command.narrative_search_chapter_range == (4, 6)
+    _validate_narrative_search_horizon(command, {"chapter_range": [4, 6]})
+
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_VOLUME_RANGE_MISMATCH"):
+        _validate_narrative_search_horizon(command, {"chapter_range": [4, 7]})
+
+
+def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation() -> (
+    None
+):
+    base = _command("book_plan.generate")
+    topology_budget = {
+        "contract_version": "book-opening-topology-budget.v2",
+        "policy_contract_version": "book-opening-provider-budget.v2",
+        "policy_hash": "sha256:" + "b" * 64,
+        "arc_count": 2,
+        "calls_per_search": 6,
+        "reserved_search_count": 1,
+        "provider_call_capacity": 48,
+        "reserved_provider_calls": 6,
+        "max_volume_count": 4,
+    }
+    command = StoryPlanningGenerationCommand(
+        project_id=base.project_id,
+        workspace_id=base.workspace_id,
+        book_id=base.book_id,
+        actor_id=base.actor_id,
+        generator_operation_name=base.generator_operation_name,
+        logical_key="book:main",
+        input_versions=base.input_versions,
+        idempotency_key=base.idempotency_key,
+        trace_id=base.trace_id,
+        correlation_id=base.correlation_id,
+        narrative_search_id="search:book",
+        narrative_search_branch_key="future-1",
+        narrative_search_strategy_directive="establish sustainable architecture",
+        narrative_search_planning_horizon={
+            "level": "BOOK",
+            "target_chapters": 12,
+            "opening_topology_budget": topology_budget,
+        },
+        narrative_search_desired_transformation={
+            "required_target_chapters": 12,
+        },
+        narrative_search_hard_constraints=("the Opening topology budget is immutable",),
+    )
+    candidate = planning_fixture_response(
+        "book_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "book:main",
+                "narrative_search_planning_horizon": {
+                    "level": "BOOK",
+                    "target_chapters": 12,
+                },
+            }
+        },
+    )
+    candidate["volume_skeleton"] = [
+        {"volume": ordinal, "goal": f"volume {ordinal}"} for ordinal in range(1, 5)
+    ]
+    _validate_narrative_search_horizon(command, candidate)
+
+    oversized = deepcopy(candidate)
+    oversized["volume_skeleton"].append({"volume": 5, "goal": "poisoned outer"})
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+        _validate_narrative_search_horizon(command, oversized)
+    repaired = replace(
+        command,
+        idempotency_key=f"{command.idempotency_key}:repair:1",
+        repair_of_candidate_id="candidate:oversized",
+        repair_reason="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED:report",
+        repair_number=1,
+    )
+    assert repaired.narrative_search_planning_horizon == (
+        command.narrative_search_planning_horizon
+    )
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+        _validate_narrative_search_horizon(repaired, oversized)
+
+    drifted = replace(
+        base,
+        logical_key="book:main",
+        narrative_search_id="search:book:drift",
+        narrative_search_branch_key="future-1",
+        narrative_search_strategy_directive="drifted topology",
+        narrative_search_planning_horizon={
+            "level": "BOOK",
+            "target_chapters": 12,
+            "opening_topology_budget": {
+                **topology_budget,
+                "max_volume_count": 5,
+            },
+        },
+        narrative_search_desired_transformation={"required_target_chapters": 12},
+        narrative_search_hard_constraints=("immutable topology",),
+    )
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT"):
+        _validate_narrative_search_horizon(drifted, candidate)
+
+
+def test_planning_fixture_obeys_frozen_book_target_and_volume_range() -> None:
+    book = planning_fixture_response(
+        "book_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "book:main",
+                "narrative_search_planning_horizon": {
+                    "level": "BOOK",
+                    "target_chapters": 8,
+                },
+            }
+        },
+    )
+    volume = planning_fixture_response(
+        "volume_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "volume:3",
+                "narrative_search_planning_horizon": {
+                    "level": "VOLUME",
+                    "chapter_range": [7, 8],
+                },
+            }
+        },
+    )
+
+    assert book["length_strategy"] == {"target_chapters": 8}
+    assert len(book["volume_skeleton"]) == 3
+    assert volume["chapter_range"] == [7, 8]
+    assert volume["narrative_segments"][0]["chapter_range"] == [7, 8]
 
 
 def _command(generator: str) -> StoryPlanningGenerationCommand:

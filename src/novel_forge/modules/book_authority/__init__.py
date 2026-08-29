@@ -45,6 +45,17 @@ from .recovery import (
     RecoveryAssessment,
     RecoveryReceipt,
 )
+from .opening_progress import (
+    BOOK_OPENING_WORKFLOW_PROGRESS_SCHEMA_VERSION,
+    BookOpeningWorkflowProgressProjection,
+    BookOpeningWorkflowProgressSnapshot,
+    PostgresBookOpeningWorkflowProgressQuery,
+    project_book_opening_workflow_progress,
+)
+from .opening_workflow import (
+    BOOK_OPENING_WORKFLOW_RESULT_SCHEMA_VERSION,
+    BookOpeningWorkflowResult,
+)
 
 __all__ = [
     "BookProductionState",
@@ -80,5 +91,12 @@ __all__ = [
     "PostgresBookOpeningRecoveryApplication",
     "RecoveryAssessment",
     "RecoveryReceipt",
+    "BOOK_OPENING_WORKFLOW_PROGRESS_SCHEMA_VERSION",
+    "BookOpeningWorkflowProgressProjection",
+    "BookOpeningWorkflowProgressSnapshot",
+    "PostgresBookOpeningWorkflowProgressQuery",
+    "project_book_opening_workflow_progress",
+    "BOOK_OPENING_WORKFLOW_RESULT_SCHEMA_VERSION",
+    "BookOpeningWorkflowResult",
     "ProjectionRepairBatchResult",
 ]

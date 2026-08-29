@@ -60,9 +60,7 @@ def canonical_budget_policy(policy: Mapping[str, Any]) -> dict[str, Any]:
         raw["token_limit"] = token_limit
         raw["cost_limit_usd"] = _decimal_text(cost_limit)
         per_call_tokens = int(raw.get("per_call_token_limit", token_limit))
-        per_call_cost = _amount(
-            str(raw.get("per_call_cost_limit_usd", cost_limit))
-        )
+        per_call_cost = _amount(str(raw.get("per_call_cost_limit_usd", cost_limit)))
         if (
             per_call_tokens <= 0
             or per_call_tokens > token_limit
@@ -213,9 +211,7 @@ def resolve_provider_token_reservation_contract(
             source = "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
             budget_scope_id = str(binding["budget_scope_id"])
             budget_scope_revision = int(binding["revision"])
-            estimated_cost_amount: str | None = str(
-                allowance["requested_amount"]
-            )
+            estimated_cost_amount: str | None = str(allowance["requested_amount"])
         else:
             estimated_tokens = frozen_request_token_ceiling * 2
             source = "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING"
@@ -312,18 +308,19 @@ def deterministic_budget_operation_binding_id(
             str(runtime_fencing_token),
         )
     )
-    return "budget-operation-binding:" + hashlib.sha256(
-        identity.encode("utf-8")
-    ).hexdigest()
+    return (
+        "budget-operation-binding:"
+        + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    )
 
 
 def deterministic_budget_effect_binding_id(
     *, external_effect_id: str, reservation_id: str
 ) -> str:
     identity = "\x1f".join((external_effect_id.strip(), reservation_id.strip()))
-    return "budget-effect-binding:" + hashlib.sha256(
-        identity.encode("utf-8")
-    ).hexdigest()
+    return (
+        "budget-effect-binding:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    )
 
 
 def canonical_budget_reservation_snapshot(
@@ -444,7 +441,9 @@ def deterministic_budget_evidence_link_id(
             str(evidence_version),
         )
     )
-    return "budget-evidence-link:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    return (
+        "budget-evidence-link:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -518,10 +517,18 @@ def acquire_budget_locks_in_uow(
     """
 
     currency_keys = sorted(
-        {str(currency).strip().upper() for currency in currencies if str(currency).strip()}
+        {
+            str(currency).strip().upper()
+            for currency in currencies
+            if str(currency).strip()
+        }
     )
     scope_keys = sorted(
-        {str(scope_id).strip() for scope_id in budget_scope_ids if str(scope_id).strip()}
+        {
+            str(scope_id).strip()
+            for scope_id in budget_scope_ids
+            if str(scope_id).strip()
+        }
     )
     for currency in currency_keys:
         uow.cursor.execute(
@@ -782,11 +789,7 @@ def resolve_book_opening_budget_scope_in_uow(
             "BOOK_OPENING_EXECUTION_NOT_LIVE",
             "exact Opening owner is not RUNNING",
         )
-    if (
-        str(opening[2]) != "BOUND"
-        or opening[3] is None
-        or opening[4] is None
-    ):
+    if str(opening[2]) != "BOUND" or opening[3] is None or opening[4] is None:
         raise KernelError(
             "BOOK_OPENING_BUDGET_SCOPE_REQUIRED",
             "RUNNING Book Opening has no authoritative BudgetScope binding",
@@ -893,9 +896,7 @@ def resolve_book_opening_budget_scope_in_uow(
     operation_budget_binding_id = deterministic_budget_operation_binding_id(
         operation_id=operation_id,
         opening_execution_id=str(live_after["opening_execution_id"]),
-        opening_execution_generation=int(
-            live_after["opening_execution_generation"]
-        ),
+        opening_execution_generation=int(live_after["opening_execution_generation"]),
         runtime_attempt_id=str(live_after["runtime_attempt_id"]),
         runtime_fencing_token=int(live_after["runtime_fencing_token"]),
     )
@@ -1058,9 +1059,7 @@ def _operation_opening_lineage_in_uow(
     for lineage_operation_id, _, raw_payload, depth in operations:
         command_payload = dict(raw_payload or {})
         nested_payload = command_payload.get("payload")
-        nested = (
-            dict(nested_payload) if isinstance(nested_payload, Mapping) else {}
-        )
+        nested = dict(nested_payload) if isinstance(nested_payload, Mapping) else {}
         frozen = nested.get("opening_execution_binding") or command_payload.get(
             "opening_execution_binding"
         )
@@ -1297,6 +1296,22 @@ def assert_provider_execution_authorized(
              AND execution.generation=opening.current_execution_generation
             JOIN authority_runtime_job AS job
               ON job.runtime_job_id=execution.runtime_job_id
+             AND (
+                 (
+                     opening.workflow_contract_version=
+                         'book-opening-workflow-v1'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v3'
+                     AND job.job_kind='BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
+                     AND job.runtime_group='book_opening_workflow_v1'
+                 ) OR (
+                     opening.workflow_contract_version='legacy-monolithic-v2'
+                     AND opening.execution_contract_version=
+                         'book-opening-execution-v2'
+                     AND job.job_kind='BOOK_OPENING_EXECUTE'
+                     AND job.runtime_group='book_opening'
+                 )
+             )
             JOIN authority_runtime_job_attempt AS attempt
               ON attempt.runtime_job_id=job.runtime_job_id
              AND attempt.attempt_id=execution.current_attempt_id
@@ -1473,6 +1488,21 @@ def _live_book_opening_budget_binding(
          AND execution.lifecycle='RUNNING'
         JOIN authority_runtime_job AS job
           ON job.runtime_job_id=execution.runtime_job_id
+         AND (
+             (
+                 opening.workflow_contract_version='book-opening-workflow-v1'
+                 AND opening.execution_contract_version=
+                     'book-opening-execution-v3'
+                 AND job.job_kind='BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
+                 AND job.runtime_group='book_opening_workflow_v1'
+             ) OR (
+                 opening.workflow_contract_version='legacy-monolithic-v2'
+                 AND opening.execution_contract_version=
+                     'book-opening-execution-v2'
+                 AND job.job_kind='BOOK_OPENING_EXECUTE'
+                 AND job.runtime_group='book_opening'
+             )
+         )
          AND job.status IN ('RUNNING','CHECKPOINTED')
          AND job.current_attempt_id=execution.current_attempt_id
          AND job.current_fencing_token=execution.current_fencing_token
@@ -1585,19 +1615,15 @@ def assess_budget_scope_in_uow(
             "budget scope policy revision changed after assessment",
         )
     canonical_policy = canonical_budget_policy(dict(scope["policy_snapshot"] or {}))
-    if (
-        canonical_policy["policy_hash"] != str(scope["policy_hash"])
-        or canonical_policy["policy_snapshot"]
-        != dict(scope["policy_snapshot"] or {})
-    ):
+    if canonical_policy["policy_hash"] != str(scope["policy_hash"]) or canonical_policy[
+        "policy_snapshot"
+    ] != dict(scope["policy_snapshot"] or {}):
         raise KernelError(
             "BUDGET_SCOPE_POLICY_DRIFT",
             "budget scope policy differs from its authoritative hash",
         )
     if use_policy_next_provider_allowance:
-        allowance = next_provider_budget_allowance(
-            canonical_policy["policy_snapshot"]
-        )
+        allowance = next_provider_budget_allowance(canonical_policy["policy_snapshot"])
         mode = str(allowance["execution_mode"])
         requested_calls = int(allowance["requested_calls"])
         requested_tokens = int(allowance["requested_tokens"])
@@ -1635,7 +1661,8 @@ def assess_budget_scope_in_uow(
         "version",
     )
     reservations = [
-        dict(zip(reservation_columns, row, strict=True)) for row in uow.cursor.fetchall()
+        dict(zip(reservation_columns, row, strict=True))
+        for row in uow.cursor.fetchall()
     ]
     for reservation in reservations:
         reservation["authority_source"] = "DIRECT_SCOPE"
@@ -1736,12 +1763,8 @@ def assess_budget_scope_in_uow(
                         reservation_id=str(attribution["reservation_id"]),
                         evidence_kind="OPERATION_COST",
                         evidence_id=str(attribution["cost_evidence_id"] or ""),
-                        evidence_version=int(
-                            attribution["cost_evidence_version"] or 0
-                        ),
-                        evidence_hash=str(
-                            attribution["cost_evidence_hash"] or ""
-                        ),
+                        evidence_version=int(attribution["cost_evidence_version"] or 0),
+                        evidence_hash=str(attribution["cost_evidence_hash"] or ""),
                         stable_idempotency_key=(
                             "legacy-operation-cost:"
                             + str(attribution["reservation_id"])
@@ -1825,8 +1848,7 @@ def assess_budget_scope_in_uow(
     ):
         reasons.append("settlement_evidence_link_missing")
     reservations_by_id = {
-        str(reservation["reservation_id"]): reservation
-        for reservation in reservations
+        str(reservation["reservation_id"]): reservation for reservation in reservations
     }
     for link in evidence_links:
         reservation = reservations_by_id.get(str(link["reservation_id"]))
@@ -1892,9 +1914,7 @@ def assess_budget_scope_in_uow(
             reasons.append("token_limit_exhausted")
         if committed_amount + amount > cost_limit:
             reasons.append("cost_limit_exhausted")
-        per_call_token_limit = int(
-            policy.get("per_call_token_limit", token_limit)
-        )
+        per_call_token_limit = int(policy.get("per_call_token_limit", token_limit))
         per_call_cost_limit = _amount(
             str(policy.get("per_call_cost_limit_usd", cost_limit))
         )
@@ -2365,7 +2385,10 @@ def reserve_provider_budget_in_uow(
         raise KernelError(
             "BUDGET_RESERVATION_INVALID", "budget reservation is incomplete"
         )
-    if request.expected_budget_scope_revision is not None and not request.budget_scope_id:
+    if (
+        request.expected_budget_scope_revision is not None
+        and not request.budget_scope_id
+    ):
         raise KernelError(
             "BUDGET_RESERVATION_INVALID",
             "budget scope revision requires a budget_scope_id",
@@ -2445,10 +2468,15 @@ def reserve_provider_budget_in_uow(
     )
     operation_scope = uow.cursor.fetchone()
     expected_book_id = str((locked_budget_scope or {}).get("book_id") or "")
-    if operation_scope is None or tuple(operation_scope[:2]) != (
-        request.project_id,
-        request.project_id,
-    ) or (expected_book_id and str(operation_scope[2]) != expected_book_id):
+    if (
+        operation_scope is None
+        or tuple(operation_scope[:2])
+        != (
+            request.project_id,
+            request.project_id,
+        )
+        or (expected_book_id and str(operation_scope[2]) != expected_book_id)
+    ):
         raise KernelError(
             "BUDGET_SCOPE_CONFLICT", "budget effect is outside project scope"
         )
@@ -2615,10 +2643,15 @@ def reserve_provider_budget_in_uow(
             effective_budget_scope_id or None,
             budget_scope_revision,
         )
-        if concurrent is None or tuple(concurrent[1:7]) + (
-            str(concurrent[8]) if concurrent[8] is not None else None,
-            int(concurrent[9]) if concurrent[9] is not None else None,
-        ) != expected:
+        if (
+            concurrent is None
+            or tuple(concurrent[1:7])
+            + (
+                str(concurrent[8]) if concurrent[8] is not None else None,
+                int(concurrent[9]) if concurrent[9] is not None else None,
+            )
+            != expected
+        ):
             raise KernelError(
                 "BUDGET_IDEMPOTENCY_CONFLICT",
                 "budget stable key belongs to another request",
@@ -2808,9 +2841,7 @@ def settle_provider_budget_in_uow(
     row = _reservation(uow, reservation_id, project_id, lock=True)
     if row["status"] == "SETTLED":
         if row["settled_amount"] != amount or row["actual_tokens"] != actual_tokens:
-            raise KernelError(
-                "BUDGET_SETTLEMENT_CONFLICT", "settlement replay differs"
-            )
+            raise KernelError("BUDGET_SETTLEMENT_CONFLICT", "settlement replay differs")
         if locked_scope is not None:
             _link_operation_cost_evidence_in_uow(
                 uow,
@@ -2829,10 +2860,7 @@ def settle_provider_budget_in_uow(
         }
     if row["status"] not in {"RESERVED", "HELD_UNKNOWN"}:
         raise KernelError("BUDGET_STATUS_CONFLICT", "reservation cannot be settled")
-    if (
-        amount > row["reserved_amount"]
-        or actual_tokens > int(row["estimated_tokens"])
-    ):
+    if amount > row["reserved_amount"] or actual_tokens > int(row["estimated_tokens"]):
         uow.cursor.execute(
             """
             UPDATE authority_budget_reservation

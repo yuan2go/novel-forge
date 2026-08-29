@@ -21,10 +21,14 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 from novel_forge.modules.story_design_authority.evaluation_execution import (
     GatewayNarrativeSemanticEvaluationExecutionPort,
 )
-from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.modules.runtime_job import (
+    BOOK_OPENING_LEGACY_JOB_KIND,
+    BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    RuntimeJobAuthority,
+)
 import novel_forge.modules.content_authority.scheduler as content_scheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-from novel_forge.workers.book_authority import execute_book_opening_claim
+from novel_forge.workers.book_authority import execute_legacy_book_opening_claim
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated
 from tests.integration.book_opening_recovery_postgres_support import (
     LegacyBookOpeningOrphan,
@@ -345,13 +349,17 @@ def test_verified_receipt_before_output_recovers_same_generation_without_replay(
     assert _counts(orphan) == (1, 1, 1, 1, 1)
     assert adapter.invocations == 1
 
-    claim = orphan.opening.claim_next_execution(
+    claim = orphan.opening.claim_next_legacy_execution(
         worker_id="durable-receipt-successor-worker",
         lease_seconds=60,
         project_id=orphan.project_id,
     )
     assert claim is not None
     assert claim.runtime_job_id == receipt.result["runtime_job_id"]
+    assert (claim.job_kind, claim.runtime_group) == (
+        BOOK_OPENING_LEGACY_JOB_KIND,
+        BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    )
     original_checkpoint = orphan.opening._checkpoint_search
     checkpoint_committed = {"value": False}
 
@@ -371,7 +379,7 @@ def test_verified_receipt_before_output_recovers_same_generation_without_replay(
         ),
         pytest.raises(SimulatedBookOpeningProcessLoss),
     ):
-        execute_book_opening_claim(
+        execute_legacy_book_opening_claim(
             RuntimeJobAuthority(DATABASE_URL),
             orphan.opening,
             orphan.principal,
@@ -617,7 +625,7 @@ def test_complete_success_bundle_recovers_by_projection_with_zero_provider_repla
             0,
         )
 
-    claim = orphan.opening.claim_next_execution(
+    claim = orphan.opening.claim_next_legacy_execution(
         worker_id="durable-complete-successor-worker",
         lease_seconds=60,
         project_id=orphan.project_id,

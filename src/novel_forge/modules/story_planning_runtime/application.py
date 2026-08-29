@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict
+import re
 from typing import Any
 from uuid import uuid4
 
@@ -79,6 +80,7 @@ from .domain import (
     StoryPlanningGenerationCommand,
     StoryPlanningEvaluationCommand,
     build_planning_constraint_envelope,
+    canonical_book_volume_allocation,
     canonical_hash,
     require_chapter_schedule_row,
 )
@@ -736,6 +738,18 @@ class StoryPlanningGenerationApplication:
         )
         if generation_command.generator_operation_name == "chapter_plan.generate":
             self._require_frozen_realization_slice(generation_command)
+        if (
+            generation_command.generator_operation_name == "book_plan.generate"
+            and getattr(generation_command, "narrative_search_id", "")
+        ):
+            candidate_content = self._require_asset(
+                project_id=generation["project_id"],
+                asset_version_id=candidate_asset_version_id,
+            )["content"]
+            _validate_narrative_search_horizon(
+                generation_command,
+                dict(candidate_content),
+            )
         narrative_search_id = str(generation_record.get("narrative_search_id") or "")
         if narrative_search_id:
             self._require_selected_search_candidate(
@@ -760,13 +774,16 @@ class StoryPlanningGenerationApplication:
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
         )
-        if state["lifecycle"] != "ACTIVE":
+        story_design_transition_operation_id = ""
+        if state["lifecycle"] == "ACTIVE":
+            story_design_transition_operation_id = str(state["updated_by_operation_id"])
+        else:
             if state["approval"] != "APPROVED":
                 raise KernelError(
                     "PLANNING_CANDIDATE_APPROVAL_REQUIRED",
                     "Planning candidate activation requires an approval decision",
                 )
-            state = self.story_design.transition(
+            prepared = self.story_design.prepare_transition(
                 StoryDesignTransitionCommand(
                     project_id=generation["project_id"],
                     workspace_id=generation["workspace_id"],
@@ -787,6 +804,7 @@ class StoryPlanningGenerationApplication:
                 ),
                 principal=principal,
             )
+            story_design_transition_operation_id = str(prepared["operation_id"])
         binding = self.planning.bind_active_contract(
             project_id=generation["project_id"],
             workspace_id=generation["workspace_id"],
@@ -803,7 +821,12 @@ class StoryPlanningGenerationApplication:
             trace_id=trace_id,
             correlation_id=correlation_id,
             causation_operation_id=generation["generation_operation_id"],
+            story_design_transition_operation_id=(story_design_transition_operation_id),
             principal=principal,
+        )
+        state = self.story_design.require(
+            project_id=generation["project_id"],
+            asset_version_id=candidate_asset_version_id,
         )
         chapter_plan_projection = None
         if generation["planning_scope"].value == PlanContractType.CHAPTER.value:
@@ -1332,15 +1355,10 @@ class StoryPlanningGenerationApplication:
             )
 
         resolved_by_id = {
-            str(item.get("asset_version_id") or ""): str(
-                item.get("content_hash") or ""
-            )
+            str(item.get("asset_version_id") or ""): str(item.get("content_hash") or "")
             for item in resolved_input_assets
         }
-        if (
-            len(resolved_by_id) != len(resolved_input_assets)
-            or "" in resolved_by_id
-        ):
+        if len(resolved_by_id) != len(resolved_input_assets) or "" in resolved_by_id:
             raise KernelError(
                 "PLANNING_GENERATION_ADMISSION_SNAPSHOT_INVALID",
                 "resolved Planning Generation inputs are not uniquely identified",
@@ -1573,13 +1591,13 @@ class StoryPlanningGenerationApplication:
                     content=content,
                 )
                 if command.generator_operation_name == "arc_plan.generate":
-                    expected_volume_scope = {
+                    expected_volume_scope = (
                         command.input_versions["volume_plan"],
                         *command.arc_scope_volume_plan_version_ids,
-                    }
-                    declared_volume_scope = {
+                    )
+                    declared_volume_scope = tuple(
                         str(item) for item in content.get("cross_volume_scope") or ()
-                    }
+                    )
                     if declared_volume_scope != expected_volume_scope:
                         raise KernelError(
                             "NARRATIVE_ARC_AUTHORITY_SCOPE_MISMATCH",
@@ -2815,9 +2833,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
             command.narrative_search_hard_constraints
         ),
         "narrative_realization": dict(command.narrative_realization or {}),
-        "opening_execution_binding": dict(
-            command.opening_execution_binding or {}
-        ),
+        "opening_execution_binding": dict(command.opening_execution_binding or {}),
     }
 
 
@@ -2927,10 +2943,118 @@ def _authority_role_versions(
 def _validate_narrative_search_horizon(
     command: StoryPlanningGenerationCommand, content: dict[str, Any]
 ) -> None:
+    if (
+        command.generator_operation_name == "book_plan.generate"
+        and command.narrative_search_id
+    ):
+        target = int(
+            dict(command.narrative_search_planning_horizon or {}).get("target_chapters")
+            or 0
+        )
+        if target <= 0:
+            return
+        if (
+            int((content.get("length_strategy") or {}).get("target_chapters") or 0)
+            != target
+        ):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BOOK_TARGET_MISMATCH",
+                "Book candidate must exactly match the frozen Production Profile chapter target",
+            )
+        try:
+            skeleton, _ = canonical_book_volume_allocation(content)
+        except ValueError as exc:
+            raise KernelError(
+                "NARRATIVE_SEARCH_BOOK_PORTFOLIO_MISMATCH",
+                "Book candidate Volume skeleton cannot form the frozen chapter portfolio",
+            ) from exc
+        raw_topology = dict(command.narrative_search_planning_horizon or {}).get(
+            "opening_topology_budget"
+        )
+        if raw_topology is not None and not isinstance(raw_topology, Mapping):
+            raise KernelError(
+                "NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT",
+                "Book candidate topology budget must be an immutable object",
+            )
+        topology = dict(raw_topology or {})
+        if topology:
+            expected = {
+                "contract_version",
+                "policy_contract_version",
+                "policy_hash",
+                "arc_count",
+                "calls_per_search",
+                "reserved_search_count",
+                "provider_call_capacity",
+                "reserved_provider_calls",
+                "max_volume_count",
+            }
+            integer_fields = {
+                "arc_count",
+                "calls_per_search",
+                "reserved_search_count",
+                "provider_call_capacity",
+                "reserved_provider_calls",
+                "max_volume_count",
+            }
+            valid_integers = all(
+                isinstance(topology.get(field), int)
+                and not isinstance(topology.get(field), bool)
+                and int(topology[field]) > 0
+                for field in integer_fields
+            )
+            if (
+                set(topology) != expected
+                or not valid_integers
+                or topology.get("contract_version") != "book-opening-topology-budget.v2"
+                or topology.get("policy_contract_version")
+                != "book-opening-provider-budget.v2"
+                or re.fullmatch(
+                    r"sha256:[0-9a-f]{64}", str(topology.get("policy_hash") or "")
+                )
+                is None
+                or topology.get("calls_per_search") != 6
+                or topology.get("reserved_search_count") != 1
+                or topology.get("reserved_provider_calls") != 6
+                or 6
+                * (
+                    1
+                    + int(topology.get("max_volume_count") or 0)
+                    + int(topology.get("arc_count") or 0)
+                    + 1
+                )
+                > int(topology.get("provider_call_capacity") or 0)
+                or 6
+                * (
+                    1
+                    + int(topology.get("max_volume_count") or 0)
+                    + 1
+                    + int(topology.get("arc_count") or 0)
+                    + 1
+                )
+                <= int(topology.get("provider_call_capacity") or 0)
+            ):
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT",
+                    "Book candidate topology budget differs from its immutable Opening horizon",
+                )
+            if len(skeleton) > int(topology["max_volume_count"]):
+                raise KernelError(
+                    "NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED",
+                    "Book candidate Volume skeleton exceeds its immutable Opening budget",
+                )
+        return
     chapter_range = command.narrative_search_chapter_range
     if chapter_range is None:
         return
     start, end = chapter_range
+    if command.generator_operation_name == "volume_plan.generate":
+        if content.get("chapter_range") != [start, end]:
+            raise KernelError(
+                "NARRATIVE_SEARCH_VOLUME_RANGE_MISMATCH",
+                "Volume candidate must exactly match its frozen Book portfolio range",
+            )
+        return
     expected = list(range(start, end + 1))
     candidate_range = content.get("chapter_range")
     matrix = content.get("chapter_function_matrix")
