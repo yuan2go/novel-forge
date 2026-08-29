@@ -384,6 +384,10 @@ class StoryPlanningGenerationApplication:
                     "content_hash": repair_asset["content_hash"],
                 }
             )
+        input_assets = self._replay_ordered_input_assets(
+            command=command,
+            resolved_input_assets=input_assets,
+        )
         payload = _command_payload(command)
         self._probe(execution_probe)
         admitted = admit_command(
@@ -1227,6 +1231,154 @@ class StoryPlanningGenerationApplication:
                 "frozen Planning Generation command is unavailable",
             )
         return _command_from_payload(dict(row[0]))
+
+    def find_frozen_generation_command(
+        self,
+        *,
+        project_id: str,
+        idempotency_key: str,
+    ) -> StoryPlanningGenerationCommand | None:
+        """Return the immutable command already admitted for one generation key.
+
+        Narrative Search may lose its process after Command admission (or after
+        semantic work) but before branch membership is committed.  A successor
+        BookOpening execution has a different outer fence, so rebuilding the
+        command from that successor would correctly conflict with the existing
+        Command Kernel identity.  Resume must instead replay the exact frozen
+        command and let the normal generation/evaluation authorities converge.
+        """
+
+        if not project_id or not idempotency_key:
+            raise ValueError("frozen Planning Generation identity is incomplete")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT command_payload->'payload'
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND definition_name=%s
+                  AND idempotency_scope='book:story-planning-generation'
+                  AND idempotency_key=%s
+                """,
+                [
+                    project_id,
+                    STORY_PLANNING_GENERATION_DEFINITION,
+                    idempotency_key,
+                ],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        if not isinstance(row[0], dict):
+            raise KernelError(
+                "PLANNING_GENERATION_COMMAND_MISSING",
+                "frozen Planning Generation command is unavailable",
+            )
+        command = _command_from_payload(dict(row[0]))
+        if (
+            command.project_id != project_id
+            or command.idempotency_key != idempotency_key
+        ):
+            raise KernelError(
+                "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
+                "frozen Planning Generation command differs from its Authority identity",
+            )
+        return command
+
+    def _replay_ordered_input_assets(
+        self,
+        *,
+        command: StoryPlanningGenerationCommand,
+        resolved_input_assets: list[dict[str, str]],
+    ) -> list[dict[str, str]]:
+        """Preserve the admitted snapshot order when replaying an Operation.
+
+        PostgreSQL JSONB does not preserve object-key insertion order.  Rebuilding
+        ``input_versions`` from the frozen payload can therefore produce the same
+        semantic assets in a different list order, while the Command Kernel
+        request digest intentionally covers the admitted list.  The immutable
+        Operation snapshot is the replay authority: every identity/hash must
+        still match, and only its original ordering is reused.
+        """
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT command_payload->'payload', input_asset_snapshot
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND definition_name=%s
+                  AND idempotency_scope='book:story-planning-generation'
+                  AND idempotency_key=%s
+                """,
+                [
+                    command.project_id,
+                    STORY_PLANNING_GENERATION_DEFINITION,
+                    command.idempotency_key,
+                ],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return resolved_input_assets
+        if not isinstance(row[0], dict) or not isinstance(row[1], list):
+            raise KernelError(
+                "PLANNING_GENERATION_ADMISSION_SNAPSHOT_INVALID",
+                "frozen Planning Generation admission snapshot is unavailable",
+            )
+        if _command_from_payload(dict(row[0])) != command:
+            raise KernelError(
+                "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
+                "replay command differs from the frozen Planning Generation",
+            )
+
+        resolved_by_id = {
+            str(item.get("asset_version_id") or ""): str(
+                item.get("content_hash") or ""
+            )
+            for item in resolved_input_assets
+        }
+        if (
+            len(resolved_by_id) != len(resolved_input_assets)
+            or "" in resolved_by_id
+        ):
+            raise KernelError(
+                "PLANNING_GENERATION_ADMISSION_SNAPSHOT_INVALID",
+                "resolved Planning Generation inputs are not uniquely identified",
+            )
+        ordered: list[dict[str, str]] = []
+        seen: set[str] = set()
+        for item in row[1]:
+            if not isinstance(item, dict):
+                raise KernelError(
+                    "PLANNING_GENERATION_ADMISSION_SNAPSHOT_INVALID",
+                    "frozen Planning Generation input evidence is malformed",
+                )
+            asset_version_id = str(item.get("asset_version_id") or "")
+            content_hash = str(item.get("content_hash") or "")
+            if (
+                not asset_version_id
+                or asset_version_id in seen
+                or resolved_by_id.get(asset_version_id) != content_hash
+                or str(item.get("project_id") or command.project_id)
+                != command.project_id
+            ):
+                raise KernelError(
+                    "PLANNING_GENERATION_ADMISSION_SNAPSHOT_DRIFT",
+                    "current Planning inputs differ from the frozen admission snapshot",
+                )
+            seen.add(asset_version_id)
+            ordered.append(
+                {
+                    "asset_version_id": asset_version_id,
+                    "content_hash": content_hash,
+                }
+            )
+        if seen != set(resolved_by_id):
+            raise KernelError(
+                "PLANNING_GENERATION_ADMISSION_SNAPSHOT_DRIFT",
+                "current Planning input set differs from the frozen admission snapshot",
+            )
+        return ordered
 
     def require_candidate(self, candidate_asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -2663,6 +2815,9 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
             command.narrative_search_hard_constraints
         ),
         "narrative_realization": dict(command.narrative_realization or {}),
+        "opening_execution_binding": dict(
+            command.opening_execution_binding or {}
+        ),
     }
 
 
@@ -2726,6 +2881,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         ),
         narrative_realization=(
             dict(payload.get("narrative_realization") or {}) or None
+        ),
+        opening_execution_binding=(
+            dict(payload.get("opening_execution_binding") or {}) or None
         ),
     )
 

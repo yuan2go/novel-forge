@@ -158,6 +158,22 @@ class _SourceGatewayEffectAdapter:
             request_sent = True
             result = self.session.gateway.reconcile(handle)
         except Exception as exc:
+            recovered = self.session.evidence_store.find_record(
+                request.execution_id
+            )
+            submission_phase = (
+                str(recovered.raw_evidence.get("submission_phase") or "")
+                if recovered is not None
+                else ""
+            )
+            request_sent = request_sent or submission_phase in {
+                "PROVIDER_INVOKING",
+                "PROVIDER_OUTCOME_UNKNOWN",
+                "PROVIDER_RESULT_RECORDED",
+                "PROCESS_STARTING",
+                "PROCESS_OUTCOME_UNKNOWN",
+                "PROCESS_RESULT_RECORDED",
+            }
             raise ExternalEffectAdapterError(
                 f"Source PEP execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,

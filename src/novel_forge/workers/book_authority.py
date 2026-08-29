@@ -306,15 +306,10 @@ def execute_book_opening_claim(
         raise RuntimeError("Book worker received an invalid Book opening job")
     expected_version = int(claim.input_snapshot.get("observed_version", -1))
     try:
-        runtime_jobs.start(claim)
-        runtime_jobs.checkpoint(
-            claim,
-            {
-                "stage": "BOOK_OPENING_STARTED",
-                "opening_run_id": claim.subject_id,
-                "observed_version": expected_version,
-            },
-        )
+        # Opening.execute_run atomically moves RuntimeJob/Attempt and the
+        # BookOpening execution chain to RUNNING before releasing any semantic
+        # replacement.  A separate start/checkpoint transaction here would
+        # recreate the orphan window this worker is meant to close.
         with LeaseHeartbeatGuard(
             lambda: runtime_jobs.heartbeat(claim, lease_seconds=lease_seconds),
             lease_seconds=lease_seconds,

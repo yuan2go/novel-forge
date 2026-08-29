@@ -52,6 +52,7 @@ from novel_forge.storage.migrations.versions import (
     v20260825_0100_hierarchy_closure as hierarchy_closure_migration,
     v20260826_0101_quality_qualification as quality_qualification_migration,
     v20260828_0102_book_opening_recovery_closure as recovery_closure_migration,
+    v20260829_0103_book_opening_semantic_runtime_hardening as semantic_hardening_migration,
 )
 
 
@@ -116,7 +117,11 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
         recovery_closure_migration.DOWN_REVISION
         == quality_qualification_migration.MIGRATION_ID
     )
-    assert LATEST_MIGRATION_ID == recovery_closure_migration.MIGRATION_ID
+    assert (
+        semantic_hardening_migration.DOWN_REVISION
+        == recovery_closure_migration.MIGRATION_ID
+    )
+    assert LATEST_MIGRATION_ID == semantic_hardening_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

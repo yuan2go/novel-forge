@@ -2577,8 +2577,11 @@ class PostgresBookAuthority:
             )
         )
         return {
-            "schema_version": "book-followup-accepted-snapshot-v1",
+            "schema_version": "book-followup-accepted-snapshot-v2",
             "observed_through_chapter": int(request["chapter_number"]),
+            "context_token_budget": int(
+                command_payload.get("context_token_budget") or 0
+            ),
             "book_production_input_snapshot_id": str(
                 context_refs.get("book_production_input_snapshot_id")
                 or book.get("input_snapshot_id")

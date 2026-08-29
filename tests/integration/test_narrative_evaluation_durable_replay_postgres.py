@@ -609,13 +609,27 @@ def test_complete_success_bundle_recovers_by_projection_with_zero_provider_repla
             [replacement_operation_id],
         )
         assert tuple(uow.cursor.fetchone()) == (
-            "READY",
+            "ADMITTED",
             "ADMITTED",
             orphan.evaluation_operation_id,
             orphan.evaluation_attempt_id,
             0,
             0,
         )
+
+    claim = orphan.opening.claim_next_execution(
+        worker_id="durable-complete-successor-worker",
+        lease_seconds=60,
+        project_id=orphan.project_id,
+    )
+    assert claim is not None
+    assert claim.runtime_job_id == admitted.result["runtime_job_id"]
+    opening = orphan.opening.require(orphan.opening_run_id)
+    orphan.opening._bind_running_execution(  # noqa: SLF001
+        orphan.opening_run_id,
+        expected_version=int(opening["version"]),
+        runtime_claim=claim,
+    )
 
     semantic_command = _semantic_command(orphan)
     evaluated = orphan.planning.semantic_evaluation.execute(

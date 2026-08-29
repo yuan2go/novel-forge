@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
@@ -131,6 +132,56 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             project_id=context.project_id,
         )
         self.assertEqual(held["status"], "HELD_UNKNOWN")
+
+    def test_success_dispatch_receipt_gap_never_releases_reservation(self) -> None:
+        context, effect_id = self._effect("success")
+        reservation = reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=context.operation_id,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+                stable_idempotency_key=f"budget:{effect_id}",
+                provider="fake_deterministic_provider",
+                currency="USD",
+                estimated_amount="1.00",
+                estimated_tokens=1000,
+            ),
+        )
+        with patch(
+            "novel_forge.modules.command_kernel.external_effect_runtime."
+            "accept_external_effect_receipt",
+            side_effect=RuntimeError("receipt transaction unavailable"),
+        ):
+            with self.assertRaises(RuntimeError):
+                dispatch_external_effect(
+                    DATABASE_URL,
+                    context,
+                    effect_id=effect_id,
+                    worker_id="provider-receipt-gap-worker",
+                    lease_seconds=30,
+                    adapter=FakeDeterministicProvider("success"),
+                )
+
+        held = resolve_provider_budget_failure(
+            DATABASE_URL,
+            reservation_id=reservation["reservation_id"],
+            project_id=context.project_id,
+        )
+        self.assertEqual(held["status"], "HELD_UNKNOWN")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT effect.status,reservation.status
+                FROM authority_external_effect AS effect
+                JOIN authority_budget_reservation AS reservation
+                  ON reservation.external_effect_id=effect.external_effect_id
+                WHERE effect.external_effect_id=%s
+                  AND reservation.reservation_id=%s
+                """,
+                [effect_id, reservation["reservation_id"]],
+            )
+            self.assertEqual(cursor.fetchone(), ("DISPATCHED", "HELD_UNKNOWN"))
 
     def test_invalid_dimension_chapter_scope_and_timezone_fail_closed(self) -> None:
         for caps, timezone, code in (

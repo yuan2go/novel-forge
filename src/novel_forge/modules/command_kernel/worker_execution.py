@@ -42,7 +42,27 @@ _DEAD_LETTER_CODES = frozenset(
     }
 )
 _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
-_FINAL_FAILURE_CODES = frozenset({"CHAPTER_QUALITY_GATE_FAILED"})
+_FINAL_FAILURE_CODES = frozenset(
+    {
+        "CHAPTER_QUALITY_GATE_FAILED",
+        # Once a semantic Provider attempt has reached the final send gate,
+        # loss/abort of its exact outer Opening fence is permanent for that
+        # Operation generation.  Retrying the same generation can never
+        # acquire a different owner and would only create a retry poison loop.
+        "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+        "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
+        # These denials are evaluated at the final Provider authorization
+        # boundary.  They are immutable identity/lifecycle failures for the
+        # frozen Effect generation, so retrying the same Operation cannot
+        # make it executable and would split a terminal ExternalEffect from a
+        # retryable parent Operation.
+        "BUDGET_SCOPE_CONFLICT",
+        "BUDGET_SCOPE_NOT_FOUND",
+        "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",
+        "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
+        "BOOK_OPENING_PROVIDER_EXECUTION_NOT_LIVE",
+    }
+)
 
 
 class WorkerProgrammingError(RuntimeError):

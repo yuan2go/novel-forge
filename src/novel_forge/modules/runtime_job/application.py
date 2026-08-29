@@ -735,59 +735,117 @@ class RuntimeJobAuthority:
 
     def start(self, claim: RuntimeJobClaim) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            locked = self._lock_and_assert_claim(uow, claim)
-            if str(locked[0]) in {"RUNNING", "CHECKPOINTED"}:
-                return {
-                    "runtime_job_id": claim.runtime_job_id,
-                    "attempt_id": claim.attempt_id,
-                    "status": str(locked[0]),
-                    "replayed": True,
-                }
-            if str(locked[0]) != "CLAIMED" or str(locked[6]) != "CLAIMED":
-                raise KernelError(
-                    "RUNTIME_JOB_STATE_CONFLICT",
-                    "runtime job and Attempt must both be CLAIMED before start",
-                )
-            uow.cursor.execute(
-                """
-                UPDATE authority_runtime_job_attempt
-                SET status='RUNNING', started_at=COALESCE(started_at,NOW())
-                WHERE attempt_id=%s AND runtime_job_id=%s AND worker_id=%s
-                  AND lease_id=%s AND fencing_token=%s AND status='CLAIMED'
-                """,
-                [
-                    claim.attempt_id,
-                    claim.runtime_job_id,
-                    claim.worker_id,
-                    claim.lease_id,
-                    claim.fencing_token,
-                ],
-            )
-            if uow.cursor.rowcount != 1:
-                raise KernelError(
-                    "RUNTIME_JOB_STATE_CONFLICT",
-                    "runtime job attempt must be CLAIMED before start",
-                )
-            uow.cursor.execute(
-                """
-                UPDATE authority_runtime_job SET status='RUNNING', updated_at=NOW()
-                WHERE runtime_job_id=%s AND current_attempt_id=%s
-                  AND current_fencing_token=%s AND status='CLAIMED'
-                """,
-                [claim.runtime_job_id, claim.attempt_id, claim.fencing_token],
-            )
-            if uow.cursor.rowcount != 1:
-                self._raise_stale_claim()
-            self._append_event(
-                uow,
-                runtime_job_id=claim.runtime_job_id,
-                attempt_id=claim.attempt_id,
-                event_type="runtime_job.started",
-                worker_id=claim.worker_id,
-                fencing_token=claim.fencing_token,
-                payload={},
-            )
+            result = self.start_in_uow(uow, claim)
             uow.commit()
+        return result
+
+    def start_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        claim: RuntimeJobClaim,
+    ) -> dict[str, Any]:
+        """Start a generic RuntimeJob in a caller-owned transaction."""
+
+        return self._start_in_uow(
+            uow,
+            claim,
+            authority_coordinated=False,
+        )
+
+    def start_authority_owned_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        claim: RuntimeJobClaim,
+    ) -> dict[str, Any]:
+        """Start a no-takeover job inside its business Authority UoW."""
+
+        return self._start_in_uow(
+            uow,
+            claim,
+            authority_coordinated=True,
+        )
+
+    def _start_in_uow(
+        self,
+        uow: AuthorityUnitOfWork,
+        claim: RuntimeJobClaim,
+        *,
+        authority_coordinated: bool,
+    ) -> dict[str, Any]:
+        locked = self._lock_and_assert_claim(uow, claim)
+        job_kind = str(locked[14])
+        lease_loss_policy = str(locked[15])
+        if authority_coordinated:
+            if (
+                job_kind != "BOOK_OPENING_EXECUTE"
+                or lease_loss_policy != AUTHORITY_CONVERGENCE_REQUIRED
+            ):
+                raise KernelError(
+                    "RUNTIME_JOB_AUTHORITY_COORDINATOR_INVALID",
+                    "coordinated start requires a no-takeover Book Opening job",
+                )
+        else:
+            self._require_generic_terminal_allowed(
+                job_kind=job_kind,
+                lease_loss_policy=lease_loss_policy,
+            )
+        if str(locked[0]) in {"RUNNING", "CHECKPOINTED"}:
+            return {
+                "runtime_job_id": claim.runtime_job_id,
+                "attempt_id": claim.attempt_id,
+                "status": str(locked[0]),
+                "replayed": True,
+            }
+        if str(locked[0]) != "CLAIMED" or str(locked[6]) != "CLAIMED":
+            raise KernelError(
+                "RUNTIME_JOB_STATE_CONFLICT",
+                "runtime job and Attempt must both be CLAIMED before start",
+            )
+        uow.cursor.execute(
+            """
+            UPDATE authority_runtime_job_attempt
+            SET status='RUNNING', started_at=COALESCE(started_at,NOW())
+            WHERE attempt_id=%s AND runtime_job_id=%s AND worker_id=%s
+              AND lease_id=%s AND fencing_token=%s AND status='CLAIMED'
+            """,
+            [
+                claim.attempt_id,
+                claim.runtime_job_id,
+                claim.worker_id,
+                claim.lease_id,
+                claim.fencing_token,
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            raise KernelError(
+                "RUNTIME_JOB_STATE_CONFLICT",
+                "runtime job attempt must be CLAIMED before start",
+            )
+        uow.cursor.execute(
+            """
+            UPDATE authority_runtime_job SET status='RUNNING', updated_at=NOW()
+            WHERE runtime_job_id=%s AND current_attempt_id=%s
+              AND current_fencing_token=%s AND status='CLAIMED'
+            """,
+            [claim.runtime_job_id, claim.attempt_id, claim.fencing_token],
+        )
+        if uow.cursor.rowcount != 1:
+            self._raise_stale_claim()
+        self._append_event(
+            uow,
+            runtime_job_id=claim.runtime_job_id,
+            attempt_id=claim.attempt_id,
+            event_type=(
+                "runtime_job.authority_started"
+                if authority_coordinated
+                else "runtime_job.started"
+            ),
+            worker_id=claim.worker_id,
+            fencing_token=claim.fencing_token,
+            payload={
+                "authority_coordinated": authority_coordinated,
+            },
+        )
         return {
             "runtime_job_id": claim.runtime_job_id,
             "attempt_id": claim.attempt_id,
@@ -1763,6 +1821,18 @@ class RuntimeJobAuthority:
                 "replacement_evaluation_operation_id": str(
                     input_snapshot.get("replacement_evaluation_operation_id") or ""
                 ),
+                "semantic_evaluation_operation_id": str(
+                    input_snapshot.get("semantic_evaluation_operation_id") or ""
+                ),
+                "semantic_evaluation_execution_id": str(
+                    input_snapshot.get("semantic_evaluation_execution_id") or ""
+                ),
+                "semantic_evaluation_generation": int(
+                    input_snapshot.get("semantic_evaluation_generation") or 0
+                ),
+                "semantic_execution_mode": str(
+                    input_snapshot.get("semantic_execution_mode") or "NONE"
+                ),
                 "replayed": True,
             }
         if status not in SCHEDULABLE_JOB_STATUSES | ACTIVE_JOB_STATUSES:
@@ -1781,7 +1851,7 @@ class RuntimeJobAuthority:
                 SELECT attempt.status,attempt.worker_id,attempt.lease_id,
                        attempt.fencing_token,lease.status,lease.worker_id,
                        lease.fencing_token,
-                       lease.lease_expires_at > transaction_timestamp()
+                       lease.lease_expires_at > clock_timestamp()
                 FROM authority_runtime_job_attempt AS attempt
                 JOIN authority_runtime_job_lease AS lease
                   ON lease.lease_id=attempt.lease_id
@@ -1818,7 +1888,7 @@ class RuntimeJobAuthority:
                 SET status='RELEASED',released_at=transaction_timestamp(),
                     release_reason='book_opening_authority_aborted'
                 WHERE lease_id=%s AND status='HELD'
-                  AND lease_expires_at > transaction_timestamp()
+                  AND lease_expires_at > clock_timestamp()
                 """,
                 [lease_id],
             )
@@ -1894,6 +1964,18 @@ class RuntimeJobAuthority:
             "fencing_token": fencing_token,
             "replacement_evaluation_operation_id": str(
                 input_snapshot.get("replacement_evaluation_operation_id") or ""
+            ),
+            "semantic_evaluation_operation_id": str(
+                input_snapshot.get("semantic_evaluation_operation_id") or ""
+            ),
+            "semantic_evaluation_execution_id": str(
+                input_snapshot.get("semantic_evaluation_execution_id") or ""
+            ),
+            "semantic_evaluation_generation": int(
+                input_snapshot.get("semantic_evaluation_generation") or 0
+            ),
+            "semantic_execution_mode": str(
+                input_snapshot.get("semantic_execution_mode") or "NONE"
             ),
             "replayed": False,
         }
@@ -2136,7 +2218,7 @@ class RuntimeJobAuthority:
               ON lease.attempt_id=attempt.attempt_id
              AND lease.lease_id=attempt.lease_id
             WHERE job.runtime_job_id=%s
-              AND lease.lease_expires_at > transaction_timestamp()
+              AND lease.lease_expires_at > clock_timestamp()
             FOR UPDATE OF job, attempt, lease
             """,
             [claim.runtime_job_id],

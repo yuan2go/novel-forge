@@ -34,6 +34,8 @@ from .projection_repair import (
 )
 from .opening import (
     BookOpeningAdmission,
+    BookOpeningBudgetReconciliationReceipt,
+    BookOpeningBudgetReconciliationRequest,
     BookOpeningResult,
     OpenBookProductionRequest,
     PostgresBookOpeningApplication,
@@ -70,6 +72,8 @@ __all__ = [
     "PostgresBookProductionQuery",
     "PostgresBookProjectionRepairAuthority",
     "BookOpeningAdmission",
+    "BookOpeningBudgetReconciliationReceipt",
+    "BookOpeningBudgetReconciliationRequest",
     "BookOpeningResult",
     "OpenBookProductionRequest",
     "PostgresBookOpeningApplication",

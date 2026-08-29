@@ -55,6 +55,33 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                 WorkerFailureClass.FINAL_FAILURE,
             ),
             (
+                KernelError(
+                    "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+                    "replacement owner is terminally lost",
+                ),
+                WorkerFailureClass.FINAL_FAILURE,
+            ),
+            (
+                KernelError(
+                    "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
+                    "original Opening owner was aborted",
+                ),
+                WorkerFailureClass.FINAL_FAILURE,
+            ),
+            *(
+                (
+                    KernelError(code, "frozen Provider authorization is closed"),
+                    WorkerFailureClass.FINAL_FAILURE,
+                )
+                for code in (
+                    "BUDGET_SCOPE_CONFLICT",
+                    "BUDGET_SCOPE_NOT_FOUND",
+                    "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",
+                    "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
+                    "BOOK_OPENING_PROVIDER_EXECUTION_NOT_LIVE",
+                )
+            ),
+            (
                 KernelError("MODEL_EFFECT_TIMEOUT", "provider timed out"),
                 WorkerFailureClass.RETRYABLE,
             ),

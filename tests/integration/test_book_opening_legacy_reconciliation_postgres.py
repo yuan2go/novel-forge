@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Iterator
+from datetime import datetime, timedelta, timezone
 from typing import cast
 from unittest.mock import patch
 from uuid import uuid4
@@ -15,6 +16,7 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority import (
+    BookOpeningBudgetReconciliationRequest,
     BookProductionInputResolver,
     PostgresBookOpeningApplication,
 )
@@ -22,6 +24,7 @@ from novel_forge.modules.book_authority.recovery import (
     PostgresBookOpeningRecoveryApplication,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import canonical_budget_policy
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.story_planning_runtime import (
     PostgresNarrativeSearchApplication,
@@ -415,6 +418,37 @@ def _recover(
     fixture: dict[str, str],
     principal: Principal,
 ) -> object:
+    opening = _opening(recovery.database_url)
+    run = opening.require(fixture["opening_run_id"])
+    policy = canonical_budget_policy(
+        {
+            "execution_mode": "PROVIDER_ALLOWED",
+            "provider_call_limit": 40,
+            "token_limit": 1_800_000,
+            "cost_limit_usd": "20",
+            "per_call_token_limit": 100_000,
+            "per_call_cost_limit_usd": "2",
+        }
+    )
+    started_at = datetime.now(timezone.utc)
+    budget_receipt = opening.reconcile_legacy_budget_scope(
+        fixture["opening_run_id"],
+        BookOpeningBudgetReconciliationRequest(
+            expected_opening_version=int(run["version"]),
+            expected_frozen_request_digest=str(run["frozen_request_digest"]),
+            idempotency_key=f"legacy-budget:{fixture['opening_run_id']}",
+            policy_contract_version="book-opening-provider-budget.v1",
+            policy_snapshot=dict(policy["policy_snapshot"]),
+            policy_hash=str(policy["policy_hash"]),
+            currency="USD",
+            budget_timezone="UTC",
+            started_at=started_at,
+            deadline_at=started_at + timedelta(hours=1),
+            reason="bind explicit bounded budget before legacy recovery",
+        ),
+        principal=principal,
+    )
+    assert budget_receipt.replayed is False
     assessment = recovery.assess_recovery(
         fixture["opening_run_id"],
         idempotency_key=f"legacy-recovery-assess:{fixture['opening_run_id']}",
@@ -560,7 +594,7 @@ def test_expired_active_legacy_execution_rejects_abort_until_formal_loss(
             expected_version=int(before["version"]),
             principal=principal,
         )
-    assert conflict.value.code == "BOOK_OPENING_ABORT_CONFLICT"
+    assert conflict.value.code == "RUNTIME_JOB_ABORT_BINDING_INVALID"
 
     with psycopg.connect(database_url) as connection:
         unchanged = connection.execute(

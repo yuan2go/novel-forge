@@ -18,8 +18,12 @@ class BookProductionCompositionTests(unittest.TestCase):
         from novel_forge.api.routers.book_authority import create_router
         from novel_forge.api.routers.context import ProductRouterContext
         from novel_forge.modules.book_authority import (
+            BookOpeningBudgetReconciliationReceipt,
             RecoveryAssessment,
             RecoveryReceipt,
+        )
+        from novel_forge.modules.command_kernel.budget_runtime import (
+            canonical_budget_policy,
         )
 
         calls: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
@@ -80,6 +84,24 @@ class BookProductionCompositionTests(unittest.TestCase):
                 calls.append(("reconcile_checkpoint", args, kwargs))
                 return self._receipt("CHECKPOINT_RECONCILIATION")
 
+        class OpeningApplication:
+            recovery = RecoveryApplication()
+
+            def reconcile_legacy_budget_scope(
+                self, *args: object, **kwargs: object
+            ) -> BookOpeningBudgetReconciliationReceipt:
+                calls.append(("reconcile_legacy_budget_scope", args, kwargs))
+                return BookOpeningBudgetReconciliationReceipt(
+                    budget_reconciliation_receipt_id="budget-receipt:1",
+                    opening_run_id="opening:1",
+                    budget_scope_id="budget-scope:1",
+                    budget_scope_revision=1,
+                    policy_hash="sha256:" + "4" * 64,
+                    contract_hash="sha256:" + "5" * 64,
+                    result_hash="sha256:" + "6" * 64,
+                    replayed=False,
+                )
+
         principal = Principal(
             principal_id="trusted-operator",
             principal_type=PrincipalType.LOCAL_OPERATOR,
@@ -87,9 +109,7 @@ class BookProductionCompositionTests(unittest.TestCase):
             project_scope=frozenset({"project:1"}),
             authentication_source="test",
         )
-        composition = SimpleNamespace(
-            opening=SimpleNamespace(recovery=RecoveryApplication())
-        )
+        composition = SimpleNamespace(opening=OpeningApplication())
         app = FastAPI()
         app.include_router(
             create_router(
@@ -102,7 +122,32 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         resolver = SimpleNamespace(resolve_api_principal=lambda **_values: principal)
         prefix = "/product/production/book-authority/opening-runs/opening:1"
+        budget_policy = {
+            "execution_mode": "PROVIDER_ALLOWED",
+            "provider_call_limit": 40,
+            "token_limit": 1_800_000,
+            "cost_limit_usd": "20",
+        }
         requests = (
+            (
+                "reconcile_legacy_budget_scope",
+                "reconcile-legacy-budget-scope",
+                {
+                    "expected_opening_version": 0,
+                    "expected_frozen_request_digest": "sha256:" + "a" * 64,
+                    "idempotency_key": "legacy-budget",
+                    "policy_contract_version": "book-opening-provider-budget.v1",
+                    "policy_snapshot": budget_policy,
+                    "policy_hash": canonical_budget_policy(budget_policy)[
+                        "policy_hash"
+                    ],
+                    "currency": "USD",
+                    "budget_timezone": "UTC",
+                    "started_at": "2026-08-29T00:00:00Z",
+                    "deadline_at": "2026-08-29T01:00:00Z",
+                    "reason": "operator supplied bounded recovery budget",
+                },
+            ),
             (
                 "reconcile_legacy_execution",
                 "reconcile-legacy-execution",
@@ -248,6 +293,17 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.supervisor.scheduler.query, composition.query)
         self.assertIs(composition.supervisor.chapter_groups, composition.chapter_groups)
         self.assertIs(composition.supervisor.production_preparation, preparation)
+        self.assertEqual(
+            composition.opening.provider_budget_policy,
+            {
+                "execution_mode": "PROVIDER_ALLOWED",
+                "provider_call_limit": 40,
+                "token_limit": 1_800_000,
+                "cost_limit_usd": "20",
+                "per_call_token_limit": 100_000,
+                "per_call_cost_limit_usd": "2",
+            },
+        )
 
     def test_tick_has_one_canonical_supervisor_path(self) -> None:
         from novel_forge.modules.book_authority.composition import (

@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
@@ -75,6 +76,11 @@ class _CountingProvider(FakeDeterministicProvider):
         return super().execute(**kwargs)
 
 
+class _NeverSentProvider(FakeDeterministicProvider):
+    def execute(self, **_kwargs):
+        raise AssertionError("Provider must not run after a failed pre-send assertion")
+
+
 class ExternalEffectRuntimePostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -99,6 +105,64 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "success")
         self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
+    def test_permanent_pre_send_denial_blocks_provider_and_terminalizes_effect(
+        self,
+    ) -> None:
+        context = self._context()
+        effect = self._plan(context, scenario="success")
+
+        def reject() -> None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+                "outer execution lease was lost before Provider send",
+            )
+
+        with self.assertRaises(KernelError) as blocked:
+            dispatch_external_effect(
+                DATABASE_URL,
+                context,
+                effect_id=effect,
+                worker_id="dispatcher-pre-send-gate",
+                lease_seconds=30,
+                adapter=_NeverSentProvider("success"),
+                pre_send_assertion=reject,
+            )
+        self.assertEqual(
+            blocked.exception.code,
+            "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
+        )
+        self._assert_effect(effect, "FAILED_FINAL", "FAILED_FINAL")
+
+    def test_permanent_budget_assertion_denial_is_terminal_before_send(self) -> None:
+        context = self._context()
+        effect = self._plan(context, scenario="success")
+
+        with (
+            patch(
+                "novel_forge.modules.command_kernel.budget_runtime."
+                "assert_provider_execution_authorized",
+                side_effect=KernelError(
+                    "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
+                    "Opening lease or frozen budget fence is terminally stale",
+                ),
+            ),
+            self.assertRaises(KernelError) as blocked,
+        ):
+            dispatch_external_effect(
+                DATABASE_URL,
+                context,
+                effect_id=effect,
+                worker_id="dispatcher-budget-gate",
+                lease_seconds=30,
+                adapter=_NeverSentProvider("success"),
+            )
+
+        self.assertEqual(
+            blocked.exception.code,
+            "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
+        )
+        self._assert_effect(effect, "FAILED_FINAL", "FAILED_FINAL")
 
     def test_provider_v2_profile_and_request_id_are_frozen_and_persisted(self) -> None:
         context = self._context()

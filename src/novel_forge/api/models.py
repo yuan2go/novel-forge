@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -972,6 +973,25 @@ class BookOpeningControlRequest(BaseModel):
 
 class BookOpeningAssessmentRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+
+
+class BookOpeningBudgetReconciliationRequest(BaseModel):
+    expected_opening_version: int = Field(ge=0)
+    expected_frozen_request_digest: str = Field(
+        pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    idempotency_key: str = Field(min_length=1)
+    policy_contract_version: str = Field(min_length=1)
+    policy_snapshot: dict[str, object]
+    policy_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    currency: str = Field(min_length=1)
+    budget_timezone: str = Field(min_length=1)
+    started_at: datetime
+    deadline_at: datetime
+    reason: str = Field(min_length=1)
+    legacy_operation_ids: list[str] = Field(default_factory=list)
+    legacy_reservation_ids: list[str] = Field(default_factory=list)
     actor_id: str = ""
 
 
@@ -2441,6 +2461,9 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "BookOpeningStartRequest": BookOpeningStartRequest,
         "BookOpeningControlRequest": BookOpeningControlRequest,
         "BookOpeningAssessmentRequest": BookOpeningAssessmentRequest,
+        "BookOpeningBudgetReconciliationRequest": (
+            BookOpeningBudgetReconciliationRequest
+        ),
         "BookOpeningConvergenceRequest": BookOpeningConvergenceRequest,
         "BookOpeningRecoveryRequest": BookOpeningRecoveryRequest,
         "BookOpeningCheckpointAssessmentRequest": (

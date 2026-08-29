@@ -19,8 +19,8 @@ def test_book_opening_process_loss_converges_and_admits_one_replacement() -> Non
 
     assert orphan.cross_layer_state() == (
         "RUNNING",
-        "CHECKPOINTED",
-        "CHECKPOINTED",
+        "RUNNING",
+        "RUNNING",
         "HELD",
         True,
         "CANCELLED",
