@@ -113,6 +113,37 @@ class NarrativeSearchRequest:
                 or self.planning_horizon.get("ends_at_chapter") != end
             ):
                 raise ValueError("ChapterGroup search horizon is inconsistent")
+        if self.generation.generator_operation_name == "volume_plan.generate":
+            chapter_range = self.planning_horizon.get("chapter_range")
+            if chapter_range is not None and (
+                self.planning_horizon.get("level") != "VOLUME"
+                or not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in chapter_range
+                )
+            ):
+                raise ValueError("Volume search requires an exact frozen chapter range")
+            if chapter_range is not None:
+                start, end = chapter_range
+                if (
+                    start <= 0
+                    or end < start
+                    or self.accepted_through_chapter != 0
+                    or self.planning_horizon.get("starts_at_chapter") != start
+                    or self.planning_horizon.get("ends_at_chapter") != end
+                ):
+                    raise ValueError("Volume search horizon is inconsistent")
+        if self.generation.generator_operation_name == "book_plan.generate":
+            target_chapters = self.planning_horizon.get("target_chapters")
+            if target_chapters is not None and (
+                self.planning_horizon.get("level") != "BOOK"
+                or not isinstance(target_chapters, int)
+                or isinstance(target_chapters, bool)
+                or target_chapters <= 0
+            ):
+                raise ValueError("Book search frozen chapter target is invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,7 +231,9 @@ class NarrativeSearchQualifiedBranchCommitter(Protocol):
         search_id: str,
         branch_key: str,
         result: PlanningGenerationResult,
-    ) -> NarrativeSearchBranchEvidence | NarrativeSearchBranchReconciliationEvidence: ...
+    ) -> (
+        NarrativeSearchBranchEvidence | NarrativeSearchBranchReconciliationEvidence
+    ): ...
 
 
 class PostgresNarrativeSearchApplication:
@@ -919,8 +952,7 @@ class PostgresNarrativeSearchApplication:
             uow, result.generation_operation_id
         )
         if (
-            str(generation_record["operation_id"])
-            != result.generation_operation_id
+            str(generation_record["operation_id"]) != result.generation_operation_id
             or str(generation_record.get("candidate_asset_version_id") or "")
             != result.candidate_asset_version_id
             or str(generation_record.get("narrative_search_id") or "") != search_id
@@ -959,10 +991,8 @@ class PostgresNarrativeSearchApplication:
             uow, result.candidate_asset_version_id
         )
         if (
-            str(generation["generation_id"])
-            != str(generation_record["generation_id"])
-            or str(generation["project_id"])
-            != str(generation_record["project_id"])
+            str(generation["generation_id"]) != str(generation_record["generation_id"])
+            or str(generation["project_id"]) != str(generation_record["project_id"])
             or str(generation["book_id"]) != str(generation_record["book_id"])
             or str(generation["asset_project_id"])
             != str(generation_record["project_id"])
@@ -982,9 +1012,7 @@ class PostgresNarrativeSearchApplication:
             candidate_asset_version_id=result.candidate_asset_version_id,
             project_id=str(generation_record["project_id"]),
             book_id=str(generation_record["book_id"]),
-            generator_operation_name=str(
-                generation_record["generator_operation_name"]
-            ),
+            generator_operation_name=str(generation_record["generator_operation_name"]),
         )
         membership_id = f"narrative-search-candidate:{search_id}:{branch_key}"
         projection_payload = projection.to_dict()
@@ -1132,19 +1160,14 @@ class PostgresNarrativeSearchApplication:
         made here and the historical membership is never changed.
         """
 
-        if (
-            not opening_run_id
-            or not opening_execution_id
-            or execution_generation <= 0
-        ):
+        if not opening_run_id or not opening_execution_id or execution_generation <= 0:
             raise ValueError("legacy branch reconciliation requires an execution")
         search = self._lock_search_for_branch_registration(uow, search_id)
         generation_record = self._lock_generation_for_branch_registration(
             uow, result.generation_operation_id
         )
         if (
-            str(generation_record["operation_id"])
-            != result.generation_operation_id
+            str(generation_record["operation_id"]) != result.generation_operation_id
             or str(generation_record.get("candidate_asset_version_id") or "")
             != result.candidate_asset_version_id
             or str(generation_record.get("narrative_search_id") or "") != search_id
@@ -1183,10 +1206,8 @@ class PostgresNarrativeSearchApplication:
             uow, result.candidate_asset_version_id
         )
         if (
-            str(candidate["generation_id"])
-            != str(generation_record["generation_id"])
-            or str(candidate["project_id"])
-            != str(generation_record["project_id"])
+            str(candidate["generation_id"]) != str(generation_record["generation_id"])
+            or str(candidate["project_id"]) != str(generation_record["project_id"])
             or str(candidate["book_id"]) != str(generation_record["book_id"])
             or str(candidate["asset_project_id"])
             != str(generation_record["project_id"])
@@ -1206,9 +1227,7 @@ class PostgresNarrativeSearchApplication:
             candidate_asset_version_id=result.candidate_asset_version_id,
             project_id=str(generation_record["project_id"]),
             book_id=str(generation_record["book_id"]),
-            generator_operation_name=str(
-                generation_record["generator_operation_name"]
-            ),
+            generator_operation_name=str(generation_record["generator_operation_name"]),
         )
         membership_id = f"narrative-search-candidate:{search_id}:{branch_key}"
         projection_payload = projection.to_dict()

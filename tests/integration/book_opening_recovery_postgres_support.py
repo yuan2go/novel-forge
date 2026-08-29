@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import ExitStack
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
 from types import MethodType
 from typing import Any
 from unittest.mock import patch
@@ -18,6 +19,10 @@ from novel_forge.modules.command_kernel.cancellation import (
     CancelCommand,
     request_cancellation,
     resolve_cancellation,
+)
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetScopeRequest,
+    create_or_get_budget_scope_in_uow,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.attempt_runtime import (
@@ -138,6 +143,161 @@ class LegacyBookOpeningOrphan:
             row = uow.cursor.fetchone()
         assert row is not None
         return tuple(row)
+
+
+def _seed_legacy_monolithic_opening(
+    *,
+    opening: PostgresBookOpeningApplication,
+    request: OpenBookProductionRequest,
+) -> tuple[str, str]:
+    """Persist one post-0103/pre-0104 v2 Opening history for regression tests.
+
+    This is deliberately test-only historical seeding. It must not call the
+    current admission command because that command owns the v3 workflow graph.
+    The RuntimeJob remains ordinary production work, so claim, activation,
+    process loss, convergence, and recovery still execute through real
+    Authority paths.
+    """
+
+    opening_run_id = identifier("book-opening-recovery-run")
+    opening_execution_id = identifier("book-opening-recovery-execution")
+    runtime_job_id = identifier("book-opening-recovery-runtime-job")
+    frozen_request = request.to_dict()
+    frozen_request_digest = canonical_hash(frozen_request)
+    runtime_input = {
+        "opening_run_id": opening_run_id,
+        "observed_version": 0,
+        "frozen_request_digest": frozen_request_digest,
+        "opening_execution_id": opening_execution_id,
+        "execution_generation": 1,
+        "recovery_intent_id": "",
+        "replacement_evaluation_operation_id": "",
+        "semantic_evaluation_operation_id": "",
+        "semantic_evaluation_execution_id": "",
+        "semantic_evaluation_generation": 0,
+        "semantic_execution_mode": "NONE",
+    }
+    runtime_input_hash = canonical_hash(runtime_input)
+    started_at = datetime.now(timezone.utc)
+    deadline_at = started_at + timedelta(seconds=opening.provider_budget_window_seconds)
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT created_by_operation_id
+            FROM authority_book
+            WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+            FOR KEY SHARE
+            """,
+            [request.project_id, request.workspace_id, request.book_id],
+        )
+        book = uow.cursor.fetchone()
+        if book is None:
+            raise AssertionError("legacy Opening fixture has no Book Authority owner")
+        root_operation_id = str(book[0])
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_opening_run(
+                opening_run_id,project_id,workspace_id,book_id,
+                root_operation_id,stable_idempotency_key,lifecycle,
+                frozen_request,frozen_request_digest,
+                execution_contract_version,recovery_state,
+                workflow_contract_version,current_workflow_node_id,
+                workflow_graph_revision,workflow_graph_hash
+            ) VALUES (%s,%s,%s,%s,%s,%s,'ADMITTED',%s,%s,
+                      'book-opening-execution-v2','READY',
+                      'legacy-monolithic-v2',NULL,0,'')
+            """,
+            [
+                opening_run_id,
+                request.project_id,
+                request.workspace_id,
+                request.book_id,
+                root_operation_id,
+                request.idempotency_key,
+                Jsonb(frozen_request),
+                frozen_request_digest,
+            ],
+        )
+        budget_scope = create_or_get_budget_scope_in_uow(
+            uow,
+            BudgetScopeRequest(
+                project_id=request.project_id,
+                owner_kind="BOOK_OPENING",
+                owner_id=opening_run_id,
+                stable_idempotency_key=f"book-opening-budget:{opening_run_id}",
+                currency="USD",
+                policy_contract_version="book-opening-provider-budget.v1",
+                policy_snapshot=opening.provider_budget_policy,
+                started_at=started_at,
+                deadline_at=deadline_at,
+                created_by_operation_id=root_operation_id,
+                budget_timezone="UTC",
+            ),
+        )
+        uow.cursor.execute(
+            """
+            UPDATE authority_book_opening_run
+            SET budget_scope_id=%s,budget_scope_revision=%s,
+                budget_contract_state='BOUND'
+            WHERE opening_run_id=%s
+            """,
+            [
+                budget_scope["budget_scope_id"],
+                budget_scope["revision"],
+                opening_run_id,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_runtime_job(
+                runtime_job_id,job_kind,runtime_group,subject_kind,
+                subject_id,project_id,dedupe_key,input_snapshot,input_hash,
+                max_attempts,lease_loss_policy
+            ) VALUES (%s,'BOOK_OPENING_EXECUTE','book_opening',
+                      'BOOK_OPENING_RUN',%s,%s,%s,%s,%s,1,
+                      'AUTHORITY_CONVERGENCE_REQUIRED')
+            """,
+            [
+                runtime_job_id,
+                opening_run_id,
+                request.project_id,
+                f"{opening_run_id}:generation:1",
+                Jsonb(runtime_input),
+                runtime_input_hash,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_opening_execution(
+                opening_execution_id,opening_run_id,generation,
+                runtime_job_id,lifecycle,frozen_request_digest,
+                input_snapshot_hash,policy_snapshot_hash,
+                authority_contract_hash,workflow_transition_kind,
+                source_checkpoint_sequence,source_checkpoint_hash
+            ) VALUES (%s,%s,1,%s,'SCHEDULED',%s,%s,%s,%s,
+                      'LEGACY_MONOLITHIC',0,'')
+            """,
+            [
+                opening_execution_id,
+                opening_run_id,
+                runtime_job_id,
+                frozen_request_digest,
+                runtime_input_hash,
+                opening.recovery._execution_policy_digest(),
+                opening.recovery._authority_digest(),
+            ],
+        )
+        uow.cursor.execute(
+            """
+            UPDATE authority_book_opening_run
+            SET current_execution_id=%s,current_execution_generation=1
+            WHERE opening_run_id=%s
+            """,
+            [opening_execution_id, opening_run_id],
+        )
+        uow.commit()
+    return opening_run_id, runtime_job_id
 
 
 def create_legacy_book_opening_orphan(
@@ -381,12 +541,17 @@ def create_legacy_book_opening_orphan(
         initial_story_state_version=generic["initial_story_state"],
         initial_canon_snapshot_version=generic["initial_canon_snapshot"],
     )
-    admission = opening.admit(request, principal=principal)
+    opening_run_id, runtime_job_id = _seed_legacy_monolithic_opening(
+        opening=opening,
+        request=request,
+    )
     runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
-    outer_claim = opening.claim_next_execution(
+    outer_claim = opening.claim_next_legacy_execution(
         worker_id="book-opening-process-that-disappears",
         lease_seconds=30,
         project_id=project_id,
+        expected_opening_run_id=opening_run_id,
+        expected_runtime_job_id=runtime_job_id,
     )
     assert outer_claim is not None
 
@@ -537,8 +702,8 @@ def create_legacy_book_opening_orphan(
         planning=planning,
         principal=principal,
         evaluator=evaluator,
-        opening_run_id=admission.opening_run_id,
-        runtime_job_id=admission.runtime_job_id,
+        opening_run_id=opening_run_id,
+        runtime_job_id=runtime_job_id,
         outer_claim=outer_claim,
         evaluation_command=evaluation_command,
         evaluation_operation_id=evaluation_operation_id,

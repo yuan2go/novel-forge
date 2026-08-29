@@ -10,7 +10,12 @@ import pytest
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobClaim
+from novel_forge.modules.runtime_job import (
+    BOOK_OPENING_LEGACY_JOB_KIND,
+    BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    RuntimeJobAuthority,
+    RuntimeJobClaim,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated
 from tests.integration.book_opening_recovery_postgres_support import (
@@ -83,7 +88,7 @@ def _recover(ready: RecoveryReadyOpening) -> Any:
 def _claim(
     orphan: LegacyBookOpeningOrphan, *, worker_id: str
 ) -> RuntimeJobClaim | None:
-    return orphan.opening.claim_next_execution(
+    return orphan.opening.claim_next_legacy_execution(
         worker_id=worker_id,
         lease_seconds=30,
         project_id=orphan.project_id,
@@ -474,6 +479,14 @@ def test_completion_vs_execution_loss_cannot_publish_a_stale_success() -> None:
 def test_recovered_runtime_job_claim_vs_claim_admits_one_attempt() -> None:
     ready = _ready_for_recovery(suffix="claim-claim")
     admitted = _recover(ready)
+    assert (
+        ready.orphan.opening.claim_next_node_execution(
+            worker_id="workflow-v3-worker-must-not-drain-legacy",
+            lease_seconds=30,
+            project_id=ready.orphan.project_id,
+        )
+        is None
+    )
     barrier = Barrier(2)
 
     def claim(ordinal: int) -> RuntimeJobClaim | None:
@@ -489,6 +502,10 @@ def test_recovered_runtime_job_claim_vs_claim_admits_one_attempt() -> None:
     winners = tuple(item for item in claims if item is not None)
     assert len(winners) == 1
     assert winners[0].runtime_job_id == admitted.result["runtime_job_id"]
+    assert (winners[0].job_kind, winners[0].runtime_group) == (
+        BOOK_OPENING_LEGACY_JOB_KIND,
+        BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+    )
     job = RuntimeJobAuthority(DATABASE_URL).get(admitted.result["runtime_job_id"])
     assert (job["status"], job["attempt_count"], job["lease_loss_policy"]) == (
         "CLAIMED",

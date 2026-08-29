@@ -1657,33 +1657,26 @@ def build_book_production_composition(
             provider_budget_policy={
                 "execution_mode": "PROVIDER_ALLOWED",
                 "provider_call_limit": int(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT")
-                    or 40
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT") or 48
                 ),
                 "token_limit": int(
                     values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT")
-                    or 1_800_000
+                    or 4_800_000
                 ),
                 "cost_limit_usd": str(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT")
-                    or "20"
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT") or "96"
                 ),
                 "per_call_token_limit": int(
-                    values.get(
-                        "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT"
-                    )
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT")
                     or 100_000
                 ),
                 "per_call_cost_limit_usd": str(
-                    values.get(
-                        "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT"
-                    )
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT")
                     or "2"
                 ),
             },
             provider_budget_window_seconds=int(
-                values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS")
-                or 3_600
+                values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS") or 3_600
             ),
         ),
         formation=StoryFormationApplication(

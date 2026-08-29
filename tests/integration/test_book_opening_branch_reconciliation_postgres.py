@@ -116,7 +116,7 @@ def _prepare_live_legacy_branch() -> _LiveLegacyBranch:
         principal=orphan.principal,
         expected_opening_run_id=orphan.opening_run_id,
     )
-    claim = orphan.opening.claim_next_execution(
+    claim = orphan.opening.claim_next_legacy_execution(
         worker_id=f"branch-reconciliation-worker:{orphan.opening_run_id}",
         lease_seconds=60,
         project_id=orphan.project_id,
@@ -161,20 +161,18 @@ def _commit_branch(fixture: _LiveLegacyBranch):
         except KernelError as exc:
             if exc.code != "NARRATIVE_SEARCH_BRANCH_RECONCILIATION_REQUIRED":
                 raise
-        return (
-            orphan.opening.narrative_search.reconcile_legacy_qualified_branch_in_uow(
-                uow,
-                search_id=fixture.search_id,
-                branch_key=fixture.branch_key,
-                result=fixture.result,
-                opening_run_id=orphan.opening_run_id,
-                opening_execution_id=str(
-                    fixture.claim.input_snapshot["opening_execution_id"]
-                ),
-                execution_generation=int(
-                    fixture.claim.input_snapshot["execution_generation"]
-                ),
-            )
+        return orphan.opening.narrative_search.reconcile_legacy_qualified_branch_in_uow(
+            uow,
+            search_id=fixture.search_id,
+            branch_key=fixture.branch_key,
+            result=fixture.result,
+            opening_run_id=orphan.opening_run_id,
+            opening_execution_id=str(
+                fixture.claim.input_snapshot["opening_execution_id"]
+            ),
+            execution_generation=int(
+                fixture.claim.input_snapshot["execution_generation"]
+            ),
         )
 
     return orphan.opening.recovery.commit_execution_narrative_search_branch(
@@ -219,10 +217,7 @@ def _projection(fixture: _LiveLegacyBranch) -> tuple[int, ...]:
                 fixture.orphan.opening_run_id,
                 fixture.orphan.opening_run_id,
                 fixture.orphan.opening_run_id,
-                (
-                    f"narrative-search-branch:{fixture.search_id}:"
-                    f"{fixture.branch_key}"
-                ),
+                (f"narrative-search-branch:{fixture.search_id}:{fixture.branch_key}"),
                 fixture.orphan.opening_run_id,
                 (
                     f"narrative-search-candidate:{fixture.search_id}:"

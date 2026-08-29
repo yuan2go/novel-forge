@@ -19,9 +19,29 @@ TERMINAL_JOB_STATUSES = frozenset({"SUCCEEDED", "FAILED", "DEAD_LETTER", "CANCEL
 SAME_JOB_TAKEOVER = "SAME_JOB_TAKEOVER"
 AUTHORITY_CONVERGENCE_REQUIRED = "AUTHORITY_CONVERGENCE_REQUIRED"
 LEASE_LOSS_POLICIES = frozenset({SAME_JOB_TAKEOVER, AUTHORITY_CONVERGENCE_REQUIRED})
+BOOK_OPENING_LEGACY_JOB_KIND = "BOOK_OPENING_EXECUTE"
+BOOK_OPENING_LEGACY_RUNTIME_GROUP = "book_opening"
+BOOK_OPENING_WORKFLOW_JOB_KIND = "BOOK_OPENING_WORKFLOW_NODE_EXECUTE"
+BOOK_OPENING_WORKFLOW_RUNTIME_GROUP = "book_opening_workflow_v1"
+BOOK_OPENING_RUNTIME_JOB_IDENTITIES = frozenset(
+    {
+        (BOOK_OPENING_LEGACY_JOB_KIND, BOOK_OPENING_LEGACY_RUNTIME_GROUP),
+        (BOOK_OPENING_WORKFLOW_JOB_KIND, BOOK_OPENING_WORKFLOW_RUNTIME_GROUP),
+    }
+)
+BOOK_OPENING_RUNTIME_JOB_KINDS = frozenset(
+    job_kind for job_kind, _runtime_group in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
+)
 OPERATIONAL_RUNTIME_JOB_CONTRACTS = {
     "STORY_FORMATION_ADVANCE": ("story_formation", "STORY_FORMATION_RUN"),
-    "BOOK_OPENING_EXECUTE": ("book_opening", "BOOK_OPENING_RUN"),
+    BOOK_OPENING_LEGACY_JOB_KIND: (
+        BOOK_OPENING_LEGACY_RUNTIME_GROUP,
+        "BOOK_OPENING_RUN",
+    ),
+    BOOK_OPENING_WORKFLOW_JOB_KIND: (
+        BOOK_OPENING_WORKFLOW_RUNTIME_GROUP,
+        "BOOK_OPENING_RUN",
+    ),
     "BOOK_COORDINATION_TICK": ("book", "BOOK_RUN"),
     "BOOK_FOLLOWUP_ADMISSION": ("book_followup", "CHAPTER_ACCEPTANCE"),
     "BOOK_PROJECTION_REPAIR": ("book_repair", "BOOK_RUN"),
@@ -106,14 +126,18 @@ class RuntimeJobSpec:
             raise ValueError("runtime job available_at must be timezone-aware")
         if self.lease_loss_policy not in LEASE_LOSS_POLICIES:
             raise ValueError("runtime job lease-loss policy is invalid")
+        opening_runtime_identity = (self.job_kind, self.runtime_group)
         if (
-            self.job_kind == "BOOK_OPENING_EXECUTE"
+            opening_runtime_identity in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
             and self.lease_loss_policy != AUTHORITY_CONVERGENCE_REQUIRED
         ):
             raise ValueError(
                 "Book Opening RuntimeJobs require Authority loss convergence"
             )
-        if self.job_kind == "BOOK_OPENING_EXECUTE" and self.max_attempts != 1:
+        if (
+            opening_runtime_identity in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
+            and self.max_attempts != 1
+        ):
             raise ValueError(
                 "Book Opening requires exactly one RuntimeJob attempt per "
                 "execution generation"
@@ -303,7 +327,7 @@ class RuntimeJobAuthority:
             )
         ):
             raise ValueError("runtime job cancellation scope is incomplete")
-        if job_kind == "BOOK_OPENING_EXECUTE":
+        if job_kind in BOOK_OPENING_RUNTIME_JOB_KINDS:
             raise KernelError(
                 "RUNTIME_JOB_AUTHORITY_COORDINATOR_REQUIRED",
                 "Book Opening RuntimeJobs may be cancelled only by Book Authority",
@@ -598,6 +622,8 @@ class RuntimeJobAuthority:
         runtime_job_id: str,
         worker_id: str,
         lease_seconds: int,
+        expected_job_kind: str = BOOK_OPENING_LEGACY_JOB_KIND,
+        expected_runtime_group: str = BOOK_OPENING_LEGACY_RUNTIME_GROUP,
     ) -> RuntimeJobClaim:
         """Claim one exact no-takeover Book Opening job under its owner UoW.
 
@@ -622,10 +648,12 @@ class RuntimeJobAuthority:
             [runtime_job_id],
         )
         row = uow.cursor.fetchone()
+        expected_identity = (expected_job_kind, expected_runtime_group)
+        if expected_identity not in BOOK_OPENING_RUNTIME_JOB_IDENTITIES:
+            raise ValueError("Book Opening RuntimeJob identity is not supported")
         valid = bool(
             row is not None
-            and str(row[0]) == "BOOK_OPENING_EXECUTE"
-            and str(row[1]) == "book_opening"
+            and (str(row[0]), str(row[1])) == expected_identity
             and str(row[2]) == "BOOK_OPENING_RUN"
             and int(row[5]) == 0
             and not str(row[6] or "")
@@ -777,7 +805,9 @@ class RuntimeJobAuthority:
         lease_loss_policy = str(locked[15])
         if authority_coordinated:
             if (
-                job_kind != "BOOK_OPENING_EXECUTE"
+                (claim.job_kind, claim.runtime_group)
+                not in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
+                or job_kind != claim.job_kind
                 or lease_loss_policy != AUTHORITY_CONVERGENCE_REQUIRED
             ):
                 raise KernelError(
@@ -1744,8 +1774,7 @@ class RuntimeJobAuthority:
             )
         if (
             str(job[3]) != AUTHORITY_CONVERGENCE_REQUIRED
-            or str(job[4]) != "BOOK_OPENING_EXECUTE"
-            or str(job[5]) != "book_opening"
+            or (str(job[4]), str(job[5])) not in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
             or str(job[6]) != "BOOK_OPENING_RUN"
         ):
             raise KernelError(
@@ -2308,7 +2337,7 @@ class RuntimeJobAuthority:
         *, job_kind: str, lease_loss_policy: str
     ) -> None:
         if (
-            job_kind == "BOOK_OPENING_EXECUTE"
+            job_kind in BOOK_OPENING_RUNTIME_JOB_KINDS
             or lease_loss_policy == AUTHORITY_CONVERGENCE_REQUIRED
         ):
             raise KernelError(

@@ -3,14 +3,24 @@ from __future__ import annotations
 import hashlib
 import json
 import unittest
+from copy import deepcopy
+from uuid import uuid4
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_design_authority import FoundationRole
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    execute_transaction_command,
+)
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
     PlanExecutionScope,
     PostgresHierarchicalPlanningAuthority,
+)
+from novel_forge.modules.hierarchical_planning.definitions import (
+    PLAN_BINDING_HANDLER_KEY,
+    plan_binding_definitions,
 )
 from novel_forge.modules.story_design_authority import (
     DesignTransition,
@@ -590,6 +600,237 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         self.assertNotEqual(first["operation_id"], story_design_operation_id)
         self.assertEqual(first["created_by_operation_id"], first["operation_id"])
 
+    def test_v1_binding_replays_after_v11_upgrade_without_new_authority_work(
+        self,
+    ) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK,
+            "book:rolling-upgrade-replay",
+            seed_generation_lineage=True,
+        )
+        idempotency_key = f"rolling-upgrade:{asset_version_id}:planning-binding"
+        command = {
+            "project_id": self.project_id,
+            "workspace_id": f"workspace:{self.project_id}",
+            "book_id": self.book_id,
+            "actor_id": self.principal.principal_id,
+            "asset_version_id": asset_version_id,
+            "contract_type": PlanContractType.BOOK,
+            "parent_version_id": "",
+            "execution_scope": PlanExecutionScope.PLANNED,
+            "expected_active_asset_version_id": "",
+            "replacement_approved": False,
+            "decision_evidence": {},
+            "idempotency_key": idempotency_key,
+            "trace_id": f"trace:{idempotency_key}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT updated_by_operation_id
+                FROM authority_story_design_version_state
+                WHERE project_id=%s AND asset_version_id=%s
+                """,
+                [self.project_id, asset_version_id],
+            )
+            story_design_transition_operation_id = str(uow.cursor.fetchone()[0])
+
+        legacy = self._execute_v1_binding(**command)
+        replay = self.planning.bind_active_contract(
+            **command,
+            story_design_transition_operation_id=(story_design_transition_operation_id),
+        )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*), MIN(definition_version), MAX(definition_version)
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND idempotency_scope='book:planning-binding'
+                  AND idempotency_key=%s
+                """,
+                [self.project_id, idempotency_key],
+            )
+            operations = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM outbox_event
+                WHERE project_id=%s AND topic='story_plan.bound'
+                  AND payload->>'operation_id'=%s
+                """,
+                [self.project_id, legacy["operation_id"]],
+            )
+            outbox_count = int(uow.cursor.fetchone()[0])
+
+        self.assertEqual(replay["operation_id"], legacy["operation_id"])
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(tuple(operations), (1, "1.0.0", "1.0.0"))
+        self.assertEqual(outbox_count, 1)
+
+    def test_v1_binding_replay_rejects_evidence_and_input_asset_drift(self) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK,
+            "book:rolling-upgrade-drift",
+            seed_generation_lineage=True,
+        )
+        idempotency_key = f"rolling-upgrade:{asset_version_id}:planning-binding"
+        command = {
+            "project_id": self.project_id,
+            "workspace_id": f"workspace:{self.project_id}",
+            "book_id": self.book_id,
+            "actor_id": self.principal.principal_id,
+            "asset_version_id": asset_version_id,
+            "contract_type": PlanContractType.BOOK,
+            "parent_version_id": "",
+            "execution_scope": PlanExecutionScope.PLANNED,
+            "expected_active_asset_version_id": "",
+            "replacement_approved": False,
+            "decision_evidence": {},
+            "idempotency_key": idempotency_key,
+            "trace_id": f"trace:{idempotency_key}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
+        self._execute_v1_binding(**command)
+
+        with self.assertRaisesRegex(KernelError, "IDEMPOTENCY_CONFLICT"):
+            self.planning.bind_active_contract(
+                **{**command, "decision_evidence": {"decision_id": "drift"}}
+            )
+
+        another_asset_version_id = self._activate_design(
+            PlanContractType.BOOK,
+            "book:rolling-upgrade-other-asset",
+            seed_generation_lineage=True,
+        )
+        with self.assertRaisesRegex(KernelError, "IDEMPOTENCY_CONFLICT"):
+            self.planning.bind_active_contract(
+                **{**command, "asset_version_id": another_asset_version_id}
+            )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_operation
+                WHERE project_id=%s
+                  AND idempotency_scope='book:planning-binding'
+                  AND idempotency_key=%s
+                """,
+                [self.project_id, idempotency_key],
+            )
+            operation_count = int(uow.cursor.fetchone()[0])
+        self.assertEqual(operation_count, 1)
+
+    def test_v1_worker_winning_after_v11_probe_converges_to_legacy_replay(
+        self,
+    ) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK,
+            "book:rolling-upgrade-race",
+            seed_generation_lineage=True,
+        )
+        idempotency_key = f"rolling-upgrade:{asset_version_id}:planning-binding"
+        command = {
+            "project_id": self.project_id,
+            "workspace_id": f"workspace:{self.project_id}",
+            "book_id": self.book_id,
+            "actor_id": self.principal.principal_id,
+            "asset_version_id": asset_version_id,
+            "contract_type": PlanContractType.BOOK,
+            "parent_version_id": "",
+            "execution_scope": PlanExecutionScope.PLANNED,
+            "expected_active_asset_version_id": "",
+            "replacement_approved": False,
+            "decision_evidence": {},
+            "idempotency_key": idempotency_key,
+            "trace_id": f"trace:{idempotency_key}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
+        legacy_winner: dict = {}
+
+        def let_v1_worker_win(point: str) -> None:
+            if (
+                point == "after_planning_binding_replay_version_read"
+                and not legacy_winner
+            ):
+                legacy_winner.update(self._execute_v1_binding(**command))
+
+        upgraded = PostgresHierarchicalPlanningAuthority(
+            DATABASE_URL,
+            application_build_id="hierarchical-planning-upgrade-race",
+            commit_sha="b" * 40,
+            fault_injector=let_v1_worker_win,
+        )
+        replay = upgraded.bind_active_contract(**command)
+
+        self.assertEqual(replay["operation_id"], legacy_winner["operation_id"])
+        self.assertTrue(replay["replayed"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*),MIN(definition_version),MAX(definition_version)
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND idempotency_scope='book:planning-binding'
+                  AND idempotency_key=%s
+                """,
+                [self.project_id, idempotency_key],
+            )
+            operations = tuple(uow.cursor.fetchone())
+        self.assertEqual(operations, (1, "1.0.0", "1.0.0"))
+
+    def test_v1_binding_replay_key_cannot_cross_project_scope(self) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK,
+            "book:rolling-upgrade-project-scope",
+            seed_generation_lineage=True,
+        )
+        idempotency_key = f"rolling-upgrade:{asset_version_id}:planning-binding"
+        command = {
+            "project_id": self.project_id,
+            "workspace_id": f"workspace:{self.project_id}",
+            "book_id": self.book_id,
+            "actor_id": self.principal.principal_id,
+            "asset_version_id": asset_version_id,
+            "contract_type": PlanContractType.BOOK,
+            "parent_version_id": "",
+            "execution_scope": PlanExecutionScope.PLANNED,
+            "expected_active_asset_version_id": "",
+            "replacement_approved": False,
+            "decision_evidence": {},
+            "idempotency_key": idempotency_key,
+            "trace_id": f"trace:{idempotency_key}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
+        self._execute_v1_binding(**command)
+        foreign_project_id = identifier("foreign-project")
+        foreign_principal = Principal(
+            principal_id="foreign-planning-authority",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"book.authority.execute"}),
+            project_scope=frozenset({foreign_project_id}),
+            authentication_source="integration-test",
+        )
+
+        with self.assertRaisesRegex(KernelError, "IDEMPOTENCY_CONFLICT"):
+            self.planning.bind_active_contract(
+                **{
+                    **command,
+                    "project_id": foreign_project_id,
+                    "workspace_id": f"workspace:{foreign_project_id}",
+                    "book_id": f"book:{foreign_project_id}",
+                    "actor_id": foreign_principal.principal_id,
+                    "asset_version_id": "foreign-candidate:v1",
+                    "principal": foreign_principal,
+                }
+            )
+
     def test_binding_rolls_back_business_outbox_and_operation_on_fault(self) -> None:
         asset_version_id = self._activate_design(PlanContractType.BOOK, "book:rollback")
 
@@ -668,6 +909,90 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             **self._binding_command(version_id, "initial"),
         )
 
+    def _execute_v1_binding(
+        self,
+        *,
+        project_id: str,
+        workspace_id: str,
+        book_id: str,
+        actor_id: str,
+        asset_version_id: str,
+        contract_type: PlanContractType,
+        parent_version_id: str,
+        execution_scope: PlanExecutionScope,
+        expected_active_asset_version_id: str,
+        replacement_approved: bool,
+        decision_evidence: dict,
+        idempotency_key: str,
+        trace_id: str,
+        correlation_id: str,
+        principal: Principal,
+    ) -> dict:
+        legacy_definition = deepcopy(
+            plan_binding_definitions(
+                application_build_id="hierarchical-planning-integration",
+                commit_sha="b" * 40,
+            )[0]
+        )
+        legacy_definition["definition_version"] = "1.0.0"
+        legacy_definition["handler_contract_version"] = "planning-binding-handler-v1"
+        legacy_definition["command_schema"]["required"].remove(
+            "story_design_transition_operation_id"
+        )
+        legacy_definition["command_schema"]["properties"].pop(
+            "story_design_transition_operation_id"
+        )
+        legacy_definition["policy"].pop("atomic_story_design_activation")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(legacy_definition)
+            uow.commit()
+
+        input_assets = self.planning._input_assets(
+            project_id,
+            tuple(item for item in (asset_version_id, parent_version_id) if item),
+        )
+        return execute_transaction_command(
+            DATABASE_URL,
+            {
+                "definition_name": "planning.binding.activate",
+                "definition_version": "1.0.0",
+                "project_id": project_id,
+                "workspace_id": workspace_id,
+                "book_id": book_id,
+                "actor_id": actor_id,
+                "idempotency_scope": "book:planning-binding",
+                "idempotency_key": idempotency_key,
+                "trace_id": trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": correlation_id,
+                "causation_id": "",
+                "causation_operation_id": None,
+                "input": {
+                    "project_id": project_id,
+                    "workspace_id": workspace_id,
+                    "book_id": book_id,
+                    "asset_version_id": asset_version_id,
+                    "contract_type": contract_type.value,
+                    "parent_version_id": parent_version_id,
+                    "execution_scope": execution_scope.value,
+                    "expected_active_asset_version_id": (
+                        expected_active_asset_version_id
+                    ),
+                    "replacement_approved": replacement_approved,
+                    "decision_evidence": decision_evidence,
+                },
+                "input_assets": list(input_assets),
+            },
+            context=AdmissionContext(
+                actor_id=actor_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=frozenset({PLAN_BINDING_HANDLER_KEY}),
+                application_build_id="hierarchical-planning-integration",
+                commit_sha="b" * 40,
+            ),
+            handler=self.planning._execute_transaction,
+        )
+
     def _binding_command(self, asset_version_id: str, label: str) -> dict:
         self.counter += 1
         return {
@@ -690,6 +1015,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         parent_version_id: str = "",
         extra: dict | None = None,
         label: str = "",
+        seed_generation_lineage: bool = True,
     ) -> str:
         self.counter += 1
         content = self._contract_content(
@@ -733,6 +1059,13 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 [version_id, asset_id, json.dumps(content), content_hash],
             )
             uow.commit()
+        if seed_generation_lineage:
+            self._seed_generation_lineage(
+                asset_version_id=version_id,
+                content_hash=content_hash,
+                contract_type=contract_type,
+                logical_key=logical_key,
+            )
         state_version = 0
         transitions = (
             DesignTransition.ENROLL,
@@ -770,6 +1103,89 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             )
             state_version = int(state["version"])
         return version_id
+
+    def _seed_generation_lineage(
+        self,
+        *,
+        asset_version_id: str,
+        content_hash: str,
+        contract_type: PlanContractType,
+        logical_key: str,
+    ) -> None:
+        definition_name = identifier("planning-generation-lineage-definition")
+        operation_id = identifier("planning-generation-lineage-operation")
+        attempt_id = identifier("planning-generation-lineage-attempt")
+        generation_id = identifier("planning-generation-lineage")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            insert_definition(uow.cursor, definition_name)
+            insert_operation(
+                uow.cursor,
+                operation_id=operation_id,
+                definition_name=definition_name,
+                project_id=self.project_id,
+                workspace_id=f"workspace:{self.project_id}",
+                command_payload={"payload": {"book_id": self.book_id}},
+                status="SUCCEEDED",
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_attempt(
+                    attempt_id,operation_id,attempt_number,status,
+                    worker_id,max_attempts
+                ) VALUES (%s,%s,1,'SUCCEEDED','planning-upgrade-fixture',1)
+                """,
+                [attempt_id, operation_id],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_story_planning_generation(
+                    generation_id,operation_id,project_id,workspace_id,book_id,
+                    generator_operation_name,planning_scope,logical_key,
+                    input_snapshot,input_snapshot_hash,status
+                ) VALUES (
+                    %s,%s,%s,%s,%s,%s,%s,%s,
+                    '[]'::jsonb,%s,'ADMITTED'
+                )
+                """,
+                [
+                    generation_id,
+                    operation_id,
+                    self.project_id,
+                    f"workspace:{self.project_id}",
+                    self.book_id,
+                    _GENERATOR[contract_type],
+                    contract_type.value,
+                    logical_key,
+                    "sha256:" + "9" * 64,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_story_planning_candidate(
+                    candidate_id,generation_id,project_id,book_id,
+                    candidate_asset_version_id,content_hash,attempt_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s)
+                """,
+                [
+                    identifier("planning-generation-lineage-candidate"),
+                    generation_id,
+                    self.project_id,
+                    self.book_id,
+                    asset_version_id,
+                    content_hash,
+                    attempt_id,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_story_planning_generation
+                SET candidate_asset_version_id=%s,status='APPROVAL_PENDING',
+                    version=version+1
+                WHERE generation_id=%s
+                """,
+                [asset_version_id, generation_id],
+            )
+            uow.commit()
 
     def _contract_content(
         self,

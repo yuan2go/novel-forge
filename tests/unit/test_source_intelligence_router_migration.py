@@ -77,7 +77,7 @@ def test_source_intelligence_router_is_forward_only_migration_head() -> None:
         semantic_hardening_migration.DOWN_REVISION
         == recovery_closure_migration.MIGRATION_ID
     )
-    assert LATEST_MIGRATION_ID == semantic_hardening_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
 
 
 def test_profile_and_analysis_plan_use_existing_asset_authority() -> None:

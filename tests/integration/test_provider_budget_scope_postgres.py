@@ -435,8 +435,7 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
         self.assertEqual(token_contract["max_output_tokens"], 8_000)
         self.assertEqual(token_contract["estimated_cost_amount"], "2")
         self.assertLessEqual(
-            token_contract["input_token_ceiling"]
-            + token_contract["max_output_tokens"],
+            token_contract["input_token_ceiling"] + token_contract["max_output_tokens"],
             token_contract["estimated_total_tokens"],
         )
         with self.assertRaises(KernelError) as insufficient:
@@ -853,7 +852,11 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
                     updated_at=clock_timestamp()
                 WHERE opening_run_id=%s AND lifecycle='ADMITTED'
                 """,
-                [scope["budget_scope_id"], scope["revision"], fixture["opening_run_id"]],
+                [
+                    scope["budget_scope_id"],
+                    scope["revision"],
+                    fixture["opening_run_id"],
+                ],
             )
         return scope
 
@@ -899,9 +902,12 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
                     opening_run_id,project_id,workspace_id,book_id,
                     root_operation_id,stable_idempotency_key,lifecycle,
                     frozen_request,frozen_request_digest,
-                    execution_contract_version,recovery_state
+                    execution_contract_version,recovery_state,
+                    workflow_contract_version,current_workflow_node_id,
+                    workflow_graph_revision,workflow_graph_hash
                 ) VALUES (%s,%s,%s,%s,%s,%s,'ADMITTED',%s,%s,
-                          'book-opening-execution-v2','READY')
+                          'book-opening-execution-v2','READY',
+                          'legacy-monolithic-v2',NULL,0,'')
                 """,
                 [
                     opening_run_id,

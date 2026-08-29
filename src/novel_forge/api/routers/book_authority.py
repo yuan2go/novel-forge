@@ -21,6 +21,9 @@ from novel_forge.modules.book_authority.opening import (
     BookOpeningBudgetReconciliationRequest as LegacyBudgetReconciliationRequest,
     OpenBookProductionRequest,
 )
+from novel_forge.modules.book_authority.opening_progress import (
+    PostgresBookOpeningWorkflowProgressQuery,
+)
 from novel_forge.modules.book_design_authority import (
     FormationLayerInput,
     StartStoryFormationCommand,
@@ -109,6 +112,25 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.query", str(run["project_id"]))
             return run
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/opening-runs/{opening_run_id}/progress")
+    def book_opening_progress(opening_run_id: str) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError(
+                    "BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable"
+                )
+            progress = PostgresBookOpeningWorkflowProgressQuery(
+                composition.opening.database_url
+            ).progress(opening_run_id=opening_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", progress.project_id)
+            return progress.to_dict()
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

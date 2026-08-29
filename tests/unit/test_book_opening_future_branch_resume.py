@@ -112,7 +112,12 @@ def _request() -> OpenBookProductionRequest:
         actor_id="operator:test",
         expected_book_version=1,
         production_profile="quality-proof",
-        planning_input_versions={"topic": "asset:topic:v1"},
+        planning_input_versions={
+            "topic": "asset:topic:v1",
+            "production_profile": "quality-proof",
+            "story_state": "story-state:v1",
+            "canon_snapshot": "canon:v1",
+        },
         arc_logical_keys=("arc:1",),
         idempotency_key="opening:test",
         trace_id="trace:test",
@@ -145,9 +150,7 @@ def _claim() -> RuntimeJobClaim:
 
 
 def test_whole_search_resume_reconciles_every_missing_branch_in_same_uow() -> None:
-    application = PostgresBookOpeningApplication.__new__(
-        PostgresBookOpeningApplication
-    )
+    application = PostgresBookOpeningApplication.__new__(PostgresBookOpeningApplication)
     search = _Search()
     recovery = _Recovery()
     application.narrative_search = search
@@ -191,9 +194,7 @@ def test_whole_search_resume_reconciles_every_missing_branch_in_same_uow() -> No
 
 
 def test_whole_search_resume_accepts_only_explicit_branch_checkpoint_types() -> None:
-    application = PostgresBookOpeningApplication.__new__(
-        PostgresBookOpeningApplication
-    )
+    application = PostgresBookOpeningApplication.__new__(PostgresBookOpeningApplication)
     search = _Search()
     recovery = _Recovery()
     application.narrative_search = search
@@ -208,12 +209,8 @@ def test_whole_search_resume_accepts_only_explicit_branch_checkpoint_types() -> 
     for ordinal in (1, 2, 3):
         progress[f"narrative-search-branch:search:test:future-{ordinal}"] = {
             "owning_authority": "STORY_PLANNING",
-            "evidence_type": (
-                "NARRATIVE_SEARCH_BRANCH"
-            ),
-            "evidence_id": (
-                f"narrative-search-candidate:search:test:future-{ordinal}"
-            ),
+            "evidence_type": ("NARRATIVE_SEARCH_BRANCH"),
+            "evidence_id": (f"narrative-search-candidate:search:test:future-{ordinal}"),
             "evidence_version": 1,
             "evidence_hash": "sha256:" + str(ordinal) * 64,
         }
@@ -241,9 +238,7 @@ def test_whole_search_resume_accepts_only_explicit_branch_checkpoint_types() -> 
 
 
 def test_whole_search_resume_rejects_branch_checkpoint_evidence_drift() -> None:
-    application = PostgresBookOpeningApplication.__new__(
-        PostgresBookOpeningApplication
-    )
+    application = PostgresBookOpeningApplication.__new__(PostgresBookOpeningApplication)
     search = _Search()
     recovery = _Recovery()
     application.narrative_search = search
@@ -259,9 +254,7 @@ def test_whole_search_resume_rejects_branch_checkpoint_evidence_drift() -> None:
         progress[f"narrative-search-branch:search:test:future-{ordinal}"] = {
             "owning_authority": "STORY_PLANNING",
             "evidence_type": "NARRATIVE_SEARCH_BRANCH",
-            "evidence_id": (
-                f"narrative-search-candidate:search:test:future-{ordinal}"
-            ),
+            "evidence_id": (f"narrative-search-candidate:search:test:future-{ordinal}"),
             "evidence_version": 1,
             "evidence_hash": "sha256:" + str(ordinal) * 64,
         }

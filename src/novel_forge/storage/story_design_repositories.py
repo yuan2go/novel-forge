@@ -10,6 +10,9 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.book_opening_plan_fence import (
+    lock_and_assert_book_opening_plan_mutation,
+)
 
 
 class StoryDesignRepository:
@@ -17,9 +20,7 @@ class StoryDesignRepository:
         self.cursor = cursor
 
     def register_generator(self, definition: dict[str, Any]) -> None:
-        encoded = json.dumps(
-            definition, sort_keys=True, separators=(",", ":")
-        ).encode()
+        encoded = json.dumps(definition, sort_keys=True, separators=(",", ":")).encode()
         definition_hash = "sha256:" + hashlib.sha256(encoded).hexdigest()
         self.cursor.execute(
             """
@@ -74,6 +75,50 @@ class StoryDesignRepository:
         )
         if self.cursor.fetchone() is not None:
             return self.require(project_id, asset_version_id)
+        if transition == "ACTIVATE":
+            self.cursor.execute(
+                """
+                SELECT generation.operation_id,generation.book_id,
+                       generation.logical_key,
+                       generation.generator_operation_name
+                FROM authority_story_planning_candidate AS candidate
+                JOIN authority_story_planning_generation AS generation
+                  ON generation.generation_id=candidate.generation_id
+                 AND generation.project_id=candidate.project_id
+                 AND generation.book_id=candidate.book_id
+                WHERE candidate.project_id=%s
+                  AND candidate.candidate_asset_version_id=%s
+                """,
+                [project_id, asset_version_id],
+            )
+            planning_generation = self.cursor.fetchone()
+            if planning_generation is not None:
+                if (
+                    str(planning_generation[2]) != logical_key
+                    or str(planning_generation[3]) != generator_operation_name
+                ):
+                    raise KernelError(
+                        "BOOK_OPENING_PLAN_MUTATION_NOT_AUTHORIZED",
+                        "Story Design activation differs from PlanningGeneration lineage",
+                    )
+                lock_and_assert_book_opening_plan_mutation(
+                    self.cursor,
+                    project_id=project_id,
+                    book_id=str(planning_generation[1]),
+                    generation_operation_id=str(planning_generation[0]),
+                    candidate_asset_version_id=asset_version_id,
+                )
+            elif generator_operation_name in {
+                "book_plan.generate",
+                "volume_plan.generate",
+                "arc_plan.generate",
+                "chapter_group_plan.generate",
+                "chapter_plan.generate",
+            }:
+                raise KernelError(
+                    "STORY_DESIGN_PLANNING_GENERATION_REQUIRED",
+                    "Planning-scope Story Design activation requires exact Generation lineage",
+                )
         self.cursor.execute(
             """
             SELECT lifecycle, qualification, approval, freshness,
@@ -271,9 +316,7 @@ class StoryDesignRepository:
         return dict(zip(fields, row, strict=True))
 
     @staticmethod
-    def _validate_enrollment(
-        source_kind: str, evidence: dict[str, Any]
-    ) -> None:
+    def _validate_enrollment(source_kind: str, evidence: dict[str, Any]) -> None:
         if source_kind == "GENERATED":
             required = (
                 "operation_id",
@@ -284,9 +327,8 @@ class StoryDesignRepository:
                 "usage_receipt_ref",
                 "cost_receipt_ref",
             )
-            if (
-                not evidence.get("production_execution_gateway_backed")
-                or any(not evidence.get(key) for key in required)
+            if not evidence.get("production_execution_gateway_backed") or any(
+                not evidence.get(key) for key in required
             ):
                 raise KernelError(
                     "STORY_DESIGN_PEP_EVIDENCE_REQUIRED",
@@ -333,10 +375,7 @@ class StoryDesignRepository:
     ) -> tuple[str, str, str, str, int, int]:
         if transition == "MATERIALIZE" and lifecycle == "CANDIDATE":
             lifecycle = "MATERIALIZED"
-        elif (
-            transition == "STRUCTURAL_VALIDATE"
-            and lifecycle == "MATERIALIZED"
-        ):
+        elif transition == "STRUCTURAL_VALIDATE" and lifecycle == "MATERIALIZED":
             if source_kind == "LEGACY_IMPORT":
                 self._require_validator_receipt(evidence, "STRUCTURAL")
             if evidence.get("passed") is False:
@@ -351,8 +390,7 @@ class StoryDesignRepository:
             else:
                 qualification = "STRUCTURALLY_VALID"
         elif (
-            transition == "SEMANTIC_VALIDATE"
-            and qualification == "STRUCTURALLY_VALID"
+            transition == "SEMANTIC_VALIDATE" and qualification == "STRUCTURALLY_VALID"
         ):
             if source_kind == "LEGACY_IMPORT":
                 self._require_validator_receipt(evidence, "SEMANTIC")
@@ -367,18 +405,13 @@ class StoryDesignRepository:
                     qualification, lifecycle = "FAILED", "REJECTED"
             else:
                 qualification = "SEMANTICALLY_VALID"
-        elif (
-            transition == "QUALIFY"
-            and qualification == "SEMANTICALLY_VALID"
-        ):
+        elif transition == "QUALIFY" and qualification == "SEMANTICALLY_VALID":
             if source_kind == "LEGACY_IMPORT":
                 receipt = evidence.get("qualification_receipt")
                 if (
                     not isinstance(receipt, dict)
                     or receipt.get("status") != "PASS"
-                    or not str(receipt.get("result_hash") or "").startswith(
-                        "sha256:"
-                    )
+                    or not str(receipt.get("result_hash") or "").startswith("sha256:")
                     or not receipt.get("migration_validation_id")
                 ):
                     raise KernelError(
@@ -386,10 +419,7 @@ class StoryDesignRepository:
                         "Legacy Story Design qualification requires bound validation",
                     )
             qualification = "QUALIFIED"
-        elif (
-            transition == "SUBMIT_APPROVAL"
-            and qualification == "QUALIFIED"
-        ):
+        elif transition == "SUBMIT_APPROVAL" and qualification == "QUALIFIED":
             approval = "PENDING"
         elif transition == "APPROVE" and approval == "PENDING":
             approval = "APPROVED"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 import json
 import tempfile
 from pathlib import Path
@@ -46,6 +47,7 @@ from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.migrations import run_migrations
 from novel_forge.workers.book_authority import (
     execute_book_coordination_claim,
     schedule_book_coordination_jobs,
@@ -59,6 +61,12 @@ from tests.integration.authority_postgres_support import (
 from tests.integration.capability_pack_postgres_support import (
     CapabilityPackPostgresHarness,
 )
+from tests.integration.migration_window_postgres_support import (
+    PRE_WORKFLOW_MIGRATION_ID,
+    WORKFLOW_MIGRATION_ID,
+    assert_database_at_migration,
+    disposable_database_at_migration,
+)
 from tests.integration.test_core_functional_loops_postgres import (
     RELEASE_SHA,
     _activate_planning_pack,
@@ -66,6 +74,46 @@ from tests.integration.test_core_functional_loops_postgres import (
     _seed_inputs,
 )
 import tests.integration.test_postgresql_only_chapter_slice as chapter_slice_fixture
+import tests.integration.authority_postgres_support as authority_postgres_support
+import tests.integration.capability_pack_postgres_support as capability_pack_support
+import tests.integration.test_core_functional_loops_postgres as core_functional_fixture
+
+
+@pytest.fixture()
+def pre_workflow_migration_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Iterator[str]:
+    base_database_url = DATABASE_URL
+    with disposable_database_at_migration(
+        base_database_url,
+        prefix="nf_narrative_0103",
+        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+    ) as database_url:
+        monkeypatch.setattr(
+            authority_postgres_support,
+            "DATABASE_URL",
+            database_url,
+        )
+        monkeypatch.setattr(
+            capability_pack_support,
+            "DATABASE_URL",
+            database_url,
+        )
+        monkeypatch.setattr(
+            capability_pack_support,
+            "ensure_migrated",
+            lambda: assert_database_at_migration(
+                database_url,
+                target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+            ),
+        )
+        monkeypatch.setattr(
+            core_functional_fixture,
+            "DATABASE_URL",
+            database_url,
+        )
+        monkeypatch.setitem(globals(), "DATABASE_URL", database_url)
+        yield database_url
 
 
 def _activate(
@@ -784,6 +832,7 @@ def test_planning_retry_freezes_narrative_intelligence_and_honors_revocation(
 
 def test_accepted_reality_closes_three_chapter_orchestration_loop(
     monkeypatch: pytest.MonkeyPatch,
+    pre_workflow_migration_database: str,
 ) -> None:
     monkeypatch.setattr(
         authority_dependencies,
@@ -980,6 +1029,30 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             activated["arc_obligation"],
             activated["arc_countermove"],
         }
+        assert_database_at_migration(
+            pre_workflow_migration_database,
+            target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+        )
+        migration_status = run_migrations(pre_workflow_migration_database)
+        assert migration_status["ok"] is True
+        assert migration_status["current"] == WORKFLOW_MIGRATION_ID
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT project_id,workspace_id,book_id,snapshot_hash,
+                       source_migration_id
+                FROM authority_book_opening_legacy_snapshot_entitlement
+                WHERE snapshot_id=%s
+                """,
+                [snapshot.snapshot_id],
+            )
+            assert uow.cursor.fetchone() == (
+                project_id,
+                workspace_id,
+                book_id,
+                snapshot.snapshot_hash,
+                WORKFLOW_MIGRATION_ID,
+            )
         admission = composition.authority.start(
             StartBookProductionCommand(
                 project_id=project_id,

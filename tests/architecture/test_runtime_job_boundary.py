@@ -18,6 +18,7 @@ class RuntimeJobBoundaryTests(unittest.TestCase):
                 "BOOK_FOLLOWUP_ADMISSION",
                 "BOOK_PROJECTION_REPAIR",
                 "BOOK_OPENING_EXECUTE",
+                "BOOK_OPENING_WORKFLOW_NODE_EXECUTE",
                 "BOOK_OPENING_EXECUTION_LOSS_SCAN",
                 "STORY_FORMATION_ADVANCE",
                 "OPERATION_DEADLINE_SCAN",

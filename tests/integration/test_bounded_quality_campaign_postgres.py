@@ -308,7 +308,16 @@ def test_scripted_bounded_quality_campaign_uses_canonical_two_by_four_runtime(
                 actor_id=operator.principal_id,
                 expected_book_version=int(generic["book_version"]),
                 production_profile=generic["production_profile"],
-                planning_input_versions={role: generic[role] for role in opening_roles},
+                planning_input_versions={
+                    role: (
+                        generic["initial_story_state"]
+                        if role == "story_state"
+                        else generic["initial_canon_snapshot"]
+                        if role == "canon_snapshot"
+                        else generic[role]
+                    )
+                    for role in opening_roles
+                },
                 arc_logical_keys=("arc:bounded-primary",),
                 idempotency_key=f"{project_id}:bounded-quality:open",
                 trace_id=f"trace:{project_id}:bounded-quality:open",

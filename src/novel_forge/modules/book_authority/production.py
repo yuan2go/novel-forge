@@ -612,6 +612,43 @@ class PostgresBookAuthority:
             _operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                SELECT book_id,version,current_book_design_asset_version_id,status
+                FROM authority_book
+                WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+                FOR UPDATE
+                """,
+                [command.project_id, command.workspace_id, command.book_id],
+            )
+            book_owner = uow.cursor.fetchone()
+            if book_owner is None:
+                raise KernelError(
+                    "BOOK_NOT_FOUND",
+                    "Book Production requires its exact Book Authority owner",
+                )
+            uow.cursor.execute(
+                """
+                SELECT opening_run_id
+                FROM authority_book_opening_run
+                WHERE project_id=%s AND book_id=%s
+                  AND lifecycle IN ('ADMITTED','RUNNING','FAILED')
+                FOR UPDATE
+                """,
+                [command.project_id, command.book_id],
+            )
+            if uow.cursor.fetchone() is not None:
+                raise KernelError(
+                    "BOOK_OPENING_WORKFLOW_COMPLETION_REQUIRED",
+                    "BookRun cannot start while an Opening workflow is active",
+                )
+            self._require_snapshot_plan_portfolio_current_in_uow(
+                uow,
+                command,
+                book_version=int(book_owner[1]),
+                book_design_version=str(book_owner[2] or ""),
+                book_status=str(book_owner[3]),
+            )
             uow.repositories.book_authority.create_run(
                 {
                     "book_run_id": book_run_id,
@@ -1387,9 +1424,7 @@ class PostgresBookAuthority:
                 expected_book_version=int(current["version"]),
             )
             command_payload = dict(request.get("command_payload") or {})
-            realization_id = str(
-                command_payload.get("narrative_realization_id") or ""
-            )
+            realization_id = str(command_payload.get("narrative_realization_id") or "")
             if book["input_mode"] == "RESOLVED_AUTHORITY_INPUT" and not realization_id:
                 raise KernelError(
                     "NARRATIVE_REALIZATION_REQUIRED",
@@ -1404,9 +1439,7 @@ class PostgresBookAuthority:
                     book_id=book["book_id"],
                     realization_id=realization_id,
                     chapter_number=int(request["chapter_number"]),
-                    chapter_plan_asset_version_id=str(
-                        request["chapter_plan_version"]
-                    ),
+                    chapter_plan_asset_version_id=str(request["chapter_plan_version"]),
                     acceptance_id=acceptance_id,
                     chapter_outcome_asset_version_id=outcome.asset_version_id,
                     realization_evidence=[
@@ -2348,6 +2381,7 @@ class PostgresBookAuthority:
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_DRIFT",
                 "caller projection differs from the immutable Authority snapshot",
             )
+        self._require_completed_opening_workflow_for_snapshot(command)
         values = [str(item) for item in row[3:7]]
         values.extend(str(item) for item in row[7])
         if row[8]:
@@ -2355,6 +2389,266 @@ class PostgresBookAuthority:
         values.extend(str(item) for item in row[9:17])
         values.extend(str(item) for item in row[17:19] if item)
         return tuple(dict.fromkeys(values))
+
+    @staticmethod
+    def _require_snapshot_plan_portfolio_current_in_uow(
+        uow: AuthorityUnitOfWork,
+        command: StartBookProductionCommand,
+        *,
+        book_version: int,
+        book_design_version: str,
+        book_status: str,
+    ) -> None:
+        if command.input_mode != "RESOLVED_AUTHORITY_INPUT":
+            return
+        uow.cursor.execute(
+            """
+            SELECT expected_book_version,book_design_version,book_plan_version,
+                   volume_portfolio_plan_versions,arc_portfolio_plan_versions
+            FROM authority_book_production_input_snapshot
+            WHERE snapshot_id=%s AND project_id=%s
+              AND workspace_id=%s AND book_id=%s
+            FOR KEY SHARE
+            """,
+            [
+                command.input_snapshot_id,
+                command.project_id,
+                command.workspace_id,
+                command.book_id,
+            ],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_SCOPE_INVALID",
+                "BookRun snapshot changed before admission commit",
+            )
+        if (
+            int(row[0]) != book_version
+            or str(row[1]) != book_design_version
+            or book_status != "DESIGN_ACTIVE"
+        ):
+            raise KernelError(
+                "BOOK_INPUT_BOOK_AUTHORITY_STALE",
+                "BookRun snapshot no longer matches the locked Book Authority epoch",
+            )
+        book_plan_id = str(row[2])
+        volume_ids = tuple(str(item) for item in row[3])
+        arc_ids = tuple(str(item) for item in row[4])
+        portfolio = (book_plan_id, *volume_ids, *arc_ids)
+        if len(portfolio) != len(set(portfolio)):
+            raise KernelError(
+                "BOOK_INPUT_PORTFOLIO_STALE",
+                "BookRun snapshot has a duplicate Plan portfolio",
+            )
+        uow.cursor.execute(
+            """
+            SELECT binding.asset_version_id,binding.contract_type,
+                   binding.freshness
+            FROM active_story_plan_version AS active
+            JOIN story_plan_binding AS binding
+              ON binding.binding_id=active.binding_id
+             AND binding.asset_version_id=active.asset_version_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            WHERE binding.project_id=%s AND binding.book_id=%s
+              AND binding.asset_version_id=ANY(%s)
+              AND version.lifecycle='ACTIVE'
+              AND version.eligibility='ELIGIBLE'
+              AND version.governance='CLEAR'
+            FOR SHARE OF active,binding,version
+            """,
+            [command.project_id, command.book_id, list(portfolio)],
+        )
+        bindings = {
+            str(asset_id): (str(contract_type), str(freshness))
+            for asset_id, contract_type, freshness in uow.cursor.fetchall()
+        }
+        expected = {
+            book_plan_id: "BOOK",
+            **{asset_id: "VOLUME" for asset_id in volume_ids},
+            **{asset_id: "ARC" for asset_id in arc_ids},
+        }
+        if set(bindings) != set(expected) or any(
+            bindings[asset_id] != (contract_type, "CURRENT")
+            for asset_id, contract_type in expected.items()
+        ):
+            raise KernelError(
+                "BOOK_INPUT_PORTFOLIO_STALE",
+                "BookRun snapshot Plan portfolio is no longer active and current",
+            )
+
+    def _require_completed_opening_workflow_for_snapshot(
+        self, command: StartBookProductionCommand
+    ) -> None:
+        """Gate BookRun admission on an exact terminal Opening evidence link.
+
+        Migration 0104 transactionally entitles the exact InputSnapshot rows
+        that already existed at cutover.  New snapshots must instead have the
+        immutable final-node binding written by the Opening completion UoW, or
+        exact legacy-monolithic completion evidence.  Wall-clock timestamps are
+        never used as authorization provenance.
+        """
+
+        from .opening_progress import PostgresBookOpeningWorkflowProgressQuery
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT link.opening_run_id,opening.lifecycle,
+                       opening.current_workflow_node_id,opening.result,
+                       link.workflow_node_id,link.node_receipt_id,
+                       link.checkpoint_id,link.checkpoint_sequence,
+                       link.checkpoint_hash,link.snapshot_hash,
+                       snapshot.snapshot_hash,receipt.reviewable_artifact_kind
+                FROM authority_book_opening_input_snapshot_binding AS link
+                JOIN authority_book_opening_run AS opening
+                  ON opening.opening_run_id=link.opening_run_id
+                JOIN authority_book_opening_node_receipt AS receipt
+                  ON receipt.opening_run_id=link.opening_run_id
+                 AND receipt.node_receipt_id=link.node_receipt_id
+                 AND receipt.workflow_node_id=link.workflow_node_id
+                JOIN authority_book_production_input_snapshot AS snapshot
+                  ON snapshot.snapshot_id=link.snapshot_id
+                WHERE link.snapshot_id=%s
+                  AND opening.project_id=%s
+                  AND opening.workspace_id=%s
+                  AND opening.book_id=%s
+                """,
+                [
+                    command.input_snapshot_id,
+                    command.project_id,
+                    command.workspace_id,
+                    command.book_id,
+                ],
+            )
+            bindings = tuple(uow.cursor.fetchall())
+            legacy_opening_run_id = ""
+            legacy_snapshot_entitled = False
+            if not bindings:
+                uow.cursor.execute(
+                    """
+                    SELECT entitlement.snapshot_id
+                    FROM authority_book_opening_legacy_snapshot_entitlement
+                         AS entitlement
+                    JOIN authority_book_production_input_snapshot AS snapshot
+                      ON snapshot.snapshot_id=entitlement.snapshot_id
+                     AND snapshot.project_id=entitlement.project_id
+                     AND snapshot.workspace_id=entitlement.workspace_id
+                     AND snapshot.book_id=entitlement.book_id
+                     AND snapshot.snapshot_hash=entitlement.snapshot_hash
+                    WHERE entitlement.snapshot_id=%s
+                      AND entitlement.project_id=%s
+                      AND entitlement.workspace_id=%s
+                      AND entitlement.book_id=%s
+                      AND entitlement.source_migration_id=
+                          '20260829_0104_book_opening_workflow_nodes'
+                    """,
+                    [
+                        command.input_snapshot_id,
+                        command.project_id,
+                        command.workspace_id,
+                        command.book_id,
+                    ],
+                )
+                legacy_snapshot_entitled = len(tuple(uow.cursor.fetchall())) == 1
+                uow.cursor.execute(
+                    """
+                    SELECT opening_run_id,lifecycle,result
+                    FROM authority_book_opening_run
+                    WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+                      AND workflow_contract_version='legacy-monolithic-v2'
+                      AND lifecycle='COMPLETE'
+                      AND result->>'input_snapshot_id'=%s
+                    """,
+                    [
+                        command.project_id,
+                        command.workspace_id,
+                        command.book_id,
+                        command.input_snapshot_id,
+                    ],
+                )
+                legacy_rows = tuple(uow.cursor.fetchall())
+                if len(legacy_rows) == 1 and isinstance(legacy_rows[0][2], dict):
+                    legacy_opening_run_id = str(legacy_rows[0][0])
+        if legacy_snapshot_entitled:
+            return
+        if legacy_opening_run_id:
+            legacy_progress = PostgresBookOpeningWorkflowProgressQuery(
+                self.database_url
+            ).progress(opening_run_id=legacy_opening_run_id)
+            legacy_report = legacy_progress.to_dict()
+            legacy_checkpoint = legacy_report.get("persistent_checkpoint")
+            if (
+                legacy_progress.compatibility_mode == "LEGACY_MONOLITHIC"
+                and legacy_progress.progress_status == "COMPLETE"
+                and isinstance(legacy_checkpoint, dict)
+                and str(legacy_checkpoint.get("status") or "") == "AVAILABLE_LEGACY"
+            ):
+                return
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_EVIDENCE_INVALID",
+                "Legacy Book Opening has no exact completed checkpoint evidence",
+            )
+        if len(bindings) != 1:
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_COMPLETION_REQUIRED",
+                "BookRun input must have one exact final Book Opening workflow binding",
+            )
+        (
+            opening_run_id,
+            lifecycle,
+            current_node_id,
+            result,
+            bound_node_id,
+            _node_receipt_id,
+            checkpoint_id,
+            checkpoint_sequence,
+            checkpoint_hash,
+            bound_snapshot_hash,
+            actual_snapshot_hash,
+            artifact_kind,
+        ) = bindings[0]
+        if (
+            str(lifecycle) != "COMPLETE"
+            or str(current_node_id or "") != str(bound_node_id)
+            or not isinstance(result, dict)
+            or str(result.get("input_snapshot_id") or "") != command.input_snapshot_id
+            or str(bound_snapshot_hash) != str(actual_snapshot_hash)
+            or str(artifact_kind) != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+        ):
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_COMPLETION_REQUIRED",
+                "BookRun cannot start before the Input Snapshot layer completes",
+            )
+        progress = PostgresBookOpeningWorkflowProgressQuery(self.database_url).progress(
+            opening_run_id=str(opening_run_id)
+        )
+        projected = progress.to_dict()
+        furthest = projected.get("furthest_completed_layer")
+        artifact = projected.get("reviewable_artifact")
+        checkpoint = projected.get("persistent_checkpoint")
+        if (
+            progress.progress_status != "COMPLETE"
+            or not isinstance(furthest, dict)
+            or str(furthest.get("node_kind") or "") != "INPUT_SNAPSHOT"
+            or not isinstance(artifact, dict)
+            or str(artifact.get("status") or "") != "AVAILABLE"
+            or str(artifact.get("artifact_kind") or "")
+            != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+            or not isinstance(checkpoint, dict)
+            or str(checkpoint.get("status") or "") != "AVAILABLE"
+            or str(checkpoint.get("source_workflow_node_id") or "")
+            != str(bound_node_id)
+            or str(checkpoint.get("checkpoint_id") or "") != str(checkpoint_id)
+            or int(checkpoint.get("checkpoint_sequence") or 0)
+            != int(checkpoint_sequence)
+            or str(checkpoint.get("checkpoint_hash") or "") != str(checkpoint_hash)
+        ):
+            raise KernelError(
+                "BOOK_OPENING_WORKFLOW_EVIDENCE_INVALID",
+                "BookRun admission requires an authoritative final asset and checkpoint",
+            )
 
     def require_chapter_request(self, chapter_request_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -3378,10 +3672,6 @@ def _validate_start(command: StartBookProductionCommand) -> None:
         != len(versions.get("arc_plan_versions", ()))
         or command.input_mode
         not in {"LEGACY_FIXTURE_INPUT_MODE", "RESOLVED_AUTHORITY_INPUT"}
-        or (
-            command.input_mode == "RESOLVED_AUTHORITY_INPUT"
-            and not command.input_snapshot_id
-        )
         or (
             command.input_mode == "LEGACY_FIXTURE_INPUT_MODE"
             and command.input_snapshot_id

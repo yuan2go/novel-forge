@@ -18,6 +18,7 @@ def require_current_foundation_set(
     project_id: str,
     book_id: str,
     require_ready: bool = False,
+    lock: bool = False,
 ) -> QualifiedFoundationSet:
     # Keep the storage module loadable while Book Design Authority composes its
     # application package.  Runtime construction happens only after both
@@ -28,6 +29,9 @@ def require_current_foundation_set(
         QualifiedFoundationSet,
     )
 
+    lock_clause = (
+        " FOR SHARE OF binding, version, state, active, qualification" if lock else ""
+    )
     cursor.execute(
         """
         SELECT binding.foundation_role, binding.authority_name,
@@ -61,13 +65,15 @@ def require_current_foundation_set(
         WHERE binding.project_id=%s AND binding.book_id=%s
           AND binding.freshness='CURRENT' AND binding.retired_at IS NULL
         ORDER BY binding.foundation_role
-        """,
+        """
+        + lock_clause,
         [project_id, book_id],
     )
     rows = cursor.fetchall()
-    if len({int(row[23]) for row in rows}) > 1 or len(
-        {str(row[24]) for row in rows}
-    ) > 1:
+    if (
+        len({int(row[23]) for row in rows}) > 1
+        or len({str(row[24]) for row in rows}) > 1
+    ):
         raise KernelError(
             "FOUNDATION_SET_MIXED_GENERATION",
             "Foundation Set cannot mix Formation runs or set generations",
