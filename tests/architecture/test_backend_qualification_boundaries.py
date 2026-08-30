@@ -11,6 +11,18 @@ RUN_LABEL = "novel-forge.qualification.run-id"
 
 
 class BackendQualificationBoundaryTests(unittest.TestCase):
+    def test_backend_make_entry_is_python_only_and_has_no_fixed_port(self) -> None:
+        source = (ROOT / "Makefile").read_text(encoding="utf-8")
+        recipe = source.split("p0-backend-qualification:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+
+        self.assertIn("scripts/run_p0_backend_qualification.py", recipe)
+        self.assertIn("--profile $(P0_PROFILE)", recipe)
+        self.assertIn("$(P0_EVIDENCE_DIR)", recipe)
+        self.assertNotIn("npm", recipe)
+        self.assertNotIn("55432", source)
+
     def test_qualification_compose_resources_are_labeled_and_ports_are_dynamic(
         self,
     ) -> None:

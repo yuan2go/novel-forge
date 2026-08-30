@@ -42,19 +42,20 @@ class ArchitectureManifestTests(unittest.TestCase):
         )
         self.assertTrue(all(count > 0 for count in module_counts.values()))
 
-    def test_ci_regenerates_ignored_runtime_skills_before_drift_check(self) -> None:
-        workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
-        sync_position = workflow.find("make sync-skills")
-        check_position = workflow.find("make check-skills")
+    def test_backend_static_regenerates_runtime_skills_before_drift_check(self) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        target = makefile.split("p0-backend-static:", 1)[1].split("\n", 1)[0]
+        sync_position = target.find("sync-skills")
+        check_position = target.find("check-skills")
 
         self.assertGreaterEqual(sync_position, 0)
         self.assertGreater(check_position, sync_position)
         self.assertIn(".claude/skills/", (ROOT / ".gitignore").read_text(encoding="utf-8"))
 
-    def test_ci_architecture_job_installs_test_collection_dependencies(self) -> None:
+    def test_ci_backend_job_installs_complete_qualification_dependencies(self) -> None:
         workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
 
-        self.assertIn('python -m pip install -e ".[api,postgres,test]"', workflow)
+        self.assertIn('python -m pip install -e ".[test,industrial]"', workflow)
 
 
 if __name__ == "__main__":

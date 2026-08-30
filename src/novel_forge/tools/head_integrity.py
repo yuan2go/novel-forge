@@ -12,8 +12,11 @@ from dataclasses import dataclass
 import importlib
 import json
 from pathlib import Path
+import re
 import subprocess
 from typing import Iterable
+
+import yaml
 
 
 DEFAULT_REQUIRED_IMPORTS = (
@@ -303,13 +306,29 @@ def _test_collection_failures(root: Path) -> set[str]:
     makefile = (root / "Makefile").read_text(encoding="utf-8") if (root / "Makefile").is_file() else ""
     workflow_path = root / ".github" / "workflows" / "core-os-ci.yml"
     workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.is_file() else ""
+    qualification_runner_path = root / "scripts" / "run_p0_backend_qualification.py"
+    qualification_runner = (
+        qualification_runner_path.read_text(encoding="utf-8")
+        if qualification_runner_path.is_file()
+        else ""
+    )
     runner_path = root / "scripts" / "run_authority_postgres_tests.py"
     runner = runner_path.read_text(encoding="utf-8") if runner_path.is_file() else ""
     if "head-integrity-check:" not in makefile:
         failures.add("Makefile:head-integrity-check")
-    for suite in ("tests/unit", "tests/integration", "tests/acceptance"):
-        if suite not in workflow:
-            failures.add(f"core-os-ci:{suite}")
+    try:
+        workflow_document = yaml.safe_load(workflow)
+        jobs = workflow_document.get("jobs") if isinstance(workflow_document, dict) else None
+        workflow_commands = "\n".join(
+            str(step.get("run") or "")
+            for job in (jobs or {}).values()
+            if isinstance(job, dict)
+            for step in job.get("steps", [])
+            if isinstance(step, dict)
+        )
+    except (AttributeError, TypeError, yaml.YAMLError) as exc:
+        workflow_commands = ""
+        failures.add(f"core-os-ci:parse:{type(exc).__name__}")
     try:
         from novel_forge.tools.backend_qualification_contract import (
             QualificationContractError,
@@ -318,11 +337,18 @@ def _test_collection_failures(root: Path) -> set[str]:
 
         qualification = load_qualification_manifest(root)
     except (QualificationContractError, FileNotFoundError, ValueError) as exc:
+        complete_collection_paths: set[str] = set()
         failures.add(
             "backend-qualification-manifest:"
             f"{type(exc).__name__}:{exc}"
         )
     else:
+        complete_collection_paths = {
+            path
+            for contract in qualification.pytest_collections
+            if contract.complete_collection and not contract.allow_skips
+            for path in contract.paths
+        }
         postgres_collections = tuple(
             contract
             for contract in qualification.pytest_collections
@@ -336,6 +362,24 @@ def _test_collection_failures(root: Path) -> set[str]:
             or postgres_collections[0].allow_skips
         ):
             failures.add("postgres-collection:complete-integration-required")
+    make_match = re.search(
+        r"(?m)^p0-backend-qualification:[^\n]*\n(?P<recipe>(?:\t[^\n]*\n?)+)",
+        makefile,
+    )
+    common_entry = bool(
+        "make p0-backend-qualification" in workflow_commands
+        and make_match is not None
+        and "scripts/run_p0_backend_qualification.py"
+        in make_match.group("recipe")
+        and "from novel_forge.tools.backend_qualification import main"
+        in qualification_runner
+    )
+    for suite in ("tests/unit", "tests/integration", "tests/acceptance"):
+        if suite in workflow_commands:
+            continue
+        if common_entry and suite in complete_collection_paths:
+            continue
+        failures.add(f"core-os-ci:{suite}")
     if "build_postgres_pytest_command" not in runner:
         failures.add("postgres-runner:canonical-complete-collection-entry")
     return failures

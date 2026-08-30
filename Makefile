@@ -3,8 +3,14 @@ PYTHONPATH := src
 PYTEST := $(PYTHON) -m pytest
 WEB_DIR ?= web/admin
 AUTHORITY_COMPOSE ?= docker compose -f compose.yml
+P0_PROFILE ?= local
+P0_EVIDENCE_DIR ?= /tmp/novel-forge-p0
+QUALIFICATION_CONFIG_TOKEN := 00000000000000000000000000000000
+QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
+QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
+QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -20,16 +26,19 @@ help:
 	@echo "make lint-authority - require Ruff-clean Authority production surfaces"
 	@echo "make lint-ratchet - reject new or increased repository Ruff debt"
 	@echo "make validate  - validate Authority code, manifests, fitness, and Compose configuration"
-	@echo "make demo      - run the PostgreSQL Authority fixture/recovery demo"
+	@echo "make demo      - run the canonical exact-SHA P0 backend qualification"
 	@echo "make authority-up - build and start the PostgreSQL Authority backend"
 	@echo "make authority-down - stop the PostgreSQL Authority backend"
 	@echo "make authority-build - build Authority API and worker images"
-	@echo "make authority-smoke - run the isolated Authority Compose recovery smoke"
+	@echo "make authority-smoke - alias the canonical exact-SHA P0 backend qualification"
 	@echo "make authority-logs - tail Authority API and worker logs"
 	@echo "make authority-test - run local Authority lint, architecture, unit, and acceptance gates"
 	@echo "make authority-postgres-test - run non-skippable Authority PostgreSQL tests"
 	@echo "make authority-compose-config-check - validate Authority Compose"
 	@echo "make authority-query-plan-release - run representative-scale real Planner proof"
+	@echo "make p0-backend-list-gates - print the canonical backend gate list as JSON"
+	@echo "make p0-backend-static - run backend-only static and manifest checks"
+	@echo "make p0-backend-qualification - run exact-SHA backend qualification without Admin UI"
 	@echo "make infra-up  - start Authority PostgreSQL and object storage"
 	@echo "make postgres-authority-test-up - start isolated PostgreSQL authority test service"
 	@echo "make postgres-authority-test - run non-skippable authority PostgreSQL tests"
@@ -62,8 +71,7 @@ validate: lint lint-authority lint-ratchet architecture-manifests-check architec
 
 demo: authority-demo
 
-authority-demo:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
+authority-demo: p0-backend-qualification
 
 infra-up:
 	$(AUTHORITY_COMPOSE) up -d --wait postgresql object-store
@@ -78,7 +86,8 @@ postgres-authority-test-down:
 	docker compose -f compose.postgres-test.yml down
 
 postgres-authority-test:
-	NOVEL_FORGE_DATABASE_URL=$${NOVEL_FORGE_DATABASE_URL:-postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test} \
+	@test -n "$${NOVEL_FORGE_DATABASE_URL:-}" || { echo "NOVEL_FORGE_DATABASE_URL is required; fixed qualification ports are forbidden" >&2; exit 2; }
+	NOVEL_FORGE_DATABASE_URL="$${NOVEL_FORGE_DATABASE_URL}" \
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_authority_postgres_tests.py
 
 authority-up:
@@ -90,8 +99,7 @@ authority-down:
 authority-build:
 	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker book-followup-authority-worker outbox-worker maintenance-worker
 
-authority-smoke:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
+authority-smoke: p0-backend-qualification
 
 authority-logs:
 	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker book-followup-authority-worker outbox-worker maintenance-worker
@@ -102,12 +110,35 @@ authority-test: lint lint-authority lint-ratchet architecture-manifests-check ar
 authority-postgres-test: postgres-authority-test
 
 authority-compose-config-check:
+	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
 	$(AUTHORITY_COMPOSE) config --quiet
-	docker compose -f compose.postgres-test.yml config --quiet
+	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
+	NOVEL_FORGE_POSTGRES_TEST_DATABASE=$(QUALIFICATION_CONFIG_DATABASE) \
+	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-postgresql \
+		-f compose.postgres-test.yml config --quiet
+	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
+	NOVEL_FORGE_AUTHORITY_API_HOST_IP=127.0.0.1 \
+	NOVEL_FORGE_AUTHORITY_API_PORT=0 \
+	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-runtime \
+		-f compose.yml -f compose.qualification.yml config --quiet
+	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
+	NOVEL_FORGE_AUTHORITY_API_HOST_IP=127.0.0.1 \
+	NOVEL_FORGE_AUTHORITY_API_PORT=0 \
+	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-worker \
+		-f compose.yml -f compose.worker-e2e.yml -f compose.qualification.yml config --quiet
 
 authority-query-plan-release:
-	NOVEL_FORGE_DATABASE_URL=$${NOVEL_FORGE_DATABASE_URL:-postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test} \
+	@test -n "$${NOVEL_FORGE_DATABASE_URL:-}" || { echo "NOVEL_FORGE_DATABASE_URL is required; fixed qualification ports are forbidden" >&2; exit 2; }
+	NOVEL_FORGE_DATABASE_URL="$${NOVEL_FORGE_DATABASE_URL}" \
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/qualify_authority_query_plans.py
+
+p0-backend-list-gates:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_p0_backend_qualification.py --list-gates
+
+p0-backend-static: lint lint-authority lint-ratchet head-integrity-check architecture-manifests-check architecture-fitness-check sync-skills check-skills authority-compose-config-check
+
+p0-backend-qualification:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_p0_backend_qualification.py --profile $(P0_PROFILE) --output "$(P0_EVIDENCE_DIR)/p0-backend-qualification-$$(git rev-parse HEAD).json"
 
 api:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli.authority serve-api
