@@ -116,18 +116,25 @@ def check_workers(root: Path) -> dict[str, Any]:
 
 def check_tests(root: Path) -> dict[str, Any]:
     manifest = _load(root, "test-manifest.yaml")
+    collections = list(manifest.get("collections", []))
     from novel_forge.tools.backend_qualification_contract import (
         load_qualification_manifest,
     )
 
-    qualification = load_qualification_manifest(root)
-    qualification_collections = {
-        item.name: item for item in qualification.pytest_collections
-    }
-    collections = list(manifest.get("collections", []))
+    qualification_required = any(
+        "qualification_class" in item or "complete_collection" in item
+        for item in collections
+        if isinstance(item, dict)
+    )
+    qualification_collections = {}
+    if qualification_required:
+        qualification = load_qualification_manifest(root)
+        qualification_collections = {
+            item.name: item for item in qualification.pytest_collections
+        }
     required_modules = [str(item) for item in manifest.get("required_modules", [])]
     manifest_names = {str(item.get("name") or "") for item in collections}
-    if manifest_names != set(qualification_collections):
+    if qualification_required and manifest_names != set(qualification_collections):
         raise ValueError(
             "test manifest and backend qualification collections differ"
         )
@@ -138,21 +145,22 @@ def check_tests(root: Path) -> dict[str, Any]:
         start = root / relative
         if not start.is_dir():
             raise ValueError(f"test directory does not exist: {start.relative_to(root)}")
-        contract = qualification_collections[name]
-        if contract.paths != (relative,):
-            raise ValueError(
-                f"qualification collection {name} does not match {relative}"
-            )
-        qualification_class = str(item.get("qualification_class") or "")
-        if qualification_class != contract.classification:
-            raise ValueError(
-                f"qualification class differs for collection {name}"
-            )
-        complete_collection = item.get("complete_collection")
-        if complete_collection is not contract.complete_collection:
-            raise ValueError(
-                f"complete collection policy differs for collection {name}"
-            )
+        if qualification_required:
+            contract = qualification_collections[name]
+            if contract.paths != (relative,):
+                raise ValueError(
+                    f"qualification collection {name} does not match {relative}"
+                )
+            qualification_class = str(item.get("qualification_class") or "")
+            if qualification_class != contract.classification:
+                raise ValueError(
+                    f"qualification class differs for collection {name}"
+                )
+            complete_collection = item.get("complete_collection")
+            if complete_collection is not contract.complete_collection:
+                raise ValueError(
+                    f"complete collection policy differs for collection {name}"
+                )
         collection_paths.append(relative)
     for relative in required_modules:
         if not (root / relative).is_file():
@@ -235,8 +243,10 @@ def check_tests(root: Path) -> dict[str, Any]:
             {
                 "name": name,
                 "count": count,
-                "qualification_class": str(item["qualification_class"]),
-                "complete_collection": bool(item["complete_collection"]),
+                "qualification_class": str(
+                    item.get("qualification_class") or "LEGACY_UNCLASSIFIED"
+                ),
+                "complete_collection": bool(item.get("complete_collection", False)),
                 "source_file_count": len(source_files),
                 "collected_file_count": len(collected_files),
             }

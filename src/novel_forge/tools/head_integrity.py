@@ -23,12 +23,6 @@ DEFAULT_REQUIRED_IMPORTS = (
     "novel_forge.storage.migrations.versions",
 )
 
-REQUIRED_POSTGRES_TEST_MODULES = (
-    "test_book_followup_authority_postgres.py",
-    "test_book_to_chapter_authority_vertical_postgres.py",
-)
-
-
 @dataclass(frozen=True, slots=True)
 class HeadIntegrityReport:
     tracked_file_count: int
@@ -316,11 +310,34 @@ def _test_collection_failures(root: Path) -> set[str]:
     for suite in ("tests/unit", "tests/integration", "tests/acceptance"):
         if suite not in workflow:
             failures.add(f"core-os-ci:{suite}")
-    for module in REQUIRED_POSTGRES_TEST_MODULES:
-        if module not in runner:
-            failures.add(f"postgres-runner:{module}")
-        if not (root / "tests" / "integration" / module).is_file():
-            failures.add(f"integration-test:missing:{module}")
+    try:
+        from novel_forge.tools.backend_qualification_contract import (
+            QualificationContractError,
+            load_qualification_manifest,
+        )
+
+        qualification = load_qualification_manifest(root)
+    except (QualificationContractError, FileNotFoundError, ValueError) as exc:
+        failures.add(
+            "backend-qualification-manifest:"
+            f"{type(exc).__name__}:{exc}"
+        )
+    else:
+        postgres_collections = tuple(
+            contract
+            for contract in qualification.pytest_collections
+            if contract.classification == "POSTGRESQL_REQUIRED"
+        )
+        if len(postgres_collections) != 1:
+            failures.add("postgres-collection:exactly-one-required")
+        elif (
+            postgres_collections[0].paths != ("tests/integration",)
+            or not postgres_collections[0].complete_collection
+            or postgres_collections[0].allow_skips
+        ):
+            failures.add("postgres-collection:complete-integration-required")
+    if "build_postgres_pytest_command" not in runner:
+        failures.add("postgres-runner:canonical-complete-collection-entry")
     return failures
 
 
