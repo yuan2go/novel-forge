@@ -24,6 +24,9 @@ from novel_forge.modules.artifact_lineage import (
     semantic_dimensions_for,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.legacy_migration_lineage import (
+    require_approved_legacy_migration_lineage,
+)
 
 
 def execute_authority_handler(
@@ -376,25 +379,41 @@ def _require_approved_archival_story_design(
     evidence = (
         payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
     )
-    decision_id = str(evidence.get("migration_decision_id") or "")
     target_version_id = str(payload.get("asset_version_id") or "")
-    if not decision_id or not target_version_id:
+    frozen_inputs = operation.get("input_asset_snapshot")
+    frozen_target = (
+        frozen_inputs[0]
+        if isinstance(frozen_inputs, list)
+        and len(frozen_inputs) == 1
+        and isinstance(frozen_inputs[0], dict)
+        else {}
+    )
+    target_content_hash = str(frozen_target.get("content_hash") or "")
+    if not target_version_id or not target_content_hash:
         return False
     uow.cursor.execute(
         """
-        SELECT 1
-        FROM authority_legacy_migration_decision AS decision
-        JOIN authority_legacy_migration_item AS item
-          ON item.migration_item_id=decision.migration_item_id
-        WHERE decision.migration_decision_id=%s
-          AND decision.decision='APPROVE'
-          AND decision.target_asset_version_id=%s
-          AND item.project_id=%s
-          AND item.status IN ('QUALIFIED','ACTIVATED')
+        SELECT version.lifecycle, version.eligibility, version.governance
+        FROM authority_asset_version AS version
+        JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+        WHERE version.asset_version_id=%s
+          AND version.content_hash=%s
+          AND asset.project_id=%s
         """,
-        [decision_id, target_version_id, operation["project_id"]],
+        [target_version_id, target_content_hash, operation["project_id"]],
     )
-    return uow.cursor.fetchone() is not None
+    target_state = uow.cursor.fetchone()
+    if target_state != ("IMPORTED", "PENDING_EVALUATION", "CLEAR"):
+        return False
+    require_approved_legacy_migration_lineage(
+        uow.cursor,
+        project_id=str(operation["project_id"]),
+        workspace_id=str(operation["workspace_id"]),
+        target_asset_version_id=target_version_id,
+        target_content_hash=target_content_hash,
+        evidence=evidence,
+    )
+    return True
 
 
 def require_current_fence(

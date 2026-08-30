@@ -97,7 +97,8 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
         )
         versions = (
             book_fixtures.BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
-                project_id
+                project_id,
+                scope_already_seeded=True,
             )
         )
         principal = Principal(
@@ -227,7 +228,8 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
         )
         versions = (
             book_fixtures.BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
-                project_id
+                project_id,
+                scope_already_seeded=True,
             )
         )
         book_principal = Principal(
@@ -781,7 +783,8 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
 
         versions = (
             book_fixtures.BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
-                pack_harness.project_id
+                pack_harness.project_id,
+                scope_already_seeded=True,
             )
         )
         actor_id = f"agent-operator:{pack_harness.project_id}"

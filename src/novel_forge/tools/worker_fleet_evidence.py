@@ -19,9 +19,16 @@ REQUIRED_SCENARIO_FIELDS = frozenset(
         "worker",
         "scenario",
         "commit_sha",
+        "run_id",
+        "project_name",
         "runtime_group",
         "worker_id",
         "work_id",
+        "pre_restart_work_id",
+        "recovered_work_id",
+        "post_restart_work_id",
+        "authoritative_side_effect",
+        "cleanup",
         "attempt_or_job_id",
         "lease_id",
         "fencing_token",
@@ -57,6 +64,15 @@ def validate_worker_evidence(
         raise ValueError("worker evidence commit_sha must be a full lowercase Git SHA")
     if expected_sha and commit_sha != expected_sha:
         raise ValueError("worker evidence belongs to another Git SHA")
+    run_id = str(evidence["run_id"])
+    project_name = str(evidence["project_name"])
+    if (
+        len(run_id) != 35
+        or not run_id.startswith("p0-")
+        or any(character not in "0123456789abcdef" for character in run_id[3:])
+        or not project_name.startswith(f"nf-p0-{run_id[3:]}")
+    ):
+        raise ValueError("worker evidence lacks a run-scoped resource identity")
     required_truth = (
         "restart",
         "recovery",
@@ -78,12 +94,33 @@ def validate_worker_evidence(
         "runtime_group",
         "worker_id",
         "work_id",
+        "pre_restart_work_id",
+        "recovered_work_id",
+        "post_restart_work_id",
         "attempt_or_job_id",
         "lease_id",
         "checkpoint",
     ):
         if not str(evidence[field]).strip():
             raise ValueError(f"worker evidence field {field} is empty")
+    work_ids = {
+        str(evidence["pre_restart_work_id"]),
+        str(evidence["recovered_work_id"]),
+        str(evidence["post_restart_work_id"]),
+    }
+    if len(work_ids) != 3:
+        raise ValueError("worker evidence requires distinct post-restart work")
+    if str(evidence["work_id"]) != str(evidence["recovered_work_id"]):
+        raise ValueError("worker evidence primary work must be the recovered work")
+    if evidence["authoritative_side_effect"] is not True:
+        raise ValueError("worker evidence lacks a post-restart authoritative side effect")
+    cleanup = evidence["cleanup"]
+    if (
+        not isinstance(cleanup, Mapping)
+        or cleanup.get("status") != "PASS"
+        or cleanup.get("remaining_resource_count") != 0
+    ):
+        raise ValueError("worker evidence ownership-checked cleanup is incomplete")
     if int(evidence["fencing_token"]) < 2:
         raise ValueError("worker recovery evidence requires a higher fencing token")
     return dict(evidence)

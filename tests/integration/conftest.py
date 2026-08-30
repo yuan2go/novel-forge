@@ -8,30 +8,20 @@ from psycopg import sql
 import pytest
 
 from novel_forge.storage.migrations import run_migrations
+from novel_forge.tools.backend_qualification_resources import (
+    require_disposable_database_name,
+)
 
 
-_PROTECTED_DATABASE_NAMES = frozenset({"postgres", "template0", "template1"})
 _READ_ONLY_PREFLIGHT_OPTIONS = "-c default_transaction_read_only=on"
 
 
 def require_disposable_test_database(database_name: object) -> str:
     """Validate the server-reported database identity without touching PostgreSQL."""
-    if not isinstance(database_name, str) or not database_name:
-        raise AssertionError(
-            "integration database safety preflight returned an invalid database name; "
-            "refusing migrations and cleanup"
-        )
-    if database_name in _PROTECTED_DATABASE_NAMES:
-        raise AssertionError(
-            "integration database safety preflight resolved a protected database; "
-            f"refusing migrations and cleanup for {database_name!r}"
-        )
-    if not database_name.endswith("_test"):
-        raise AssertionError(
-            "integration database safety requires a database ending in _test; "
-            f"refusing migrations and cleanup for {database_name!r}"
-        )
-    return database_name
+    try:
+        return require_disposable_database_name(database_name)
+    except ValueError as exc:
+        raise AssertionError(str(exc)) from exc
 
 
 def preflight_integration_database(database_url: str) -> str:

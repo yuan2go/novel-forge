@@ -1,0 +1,63 @@
+{
+  "schema_version": "novel-forge.backend-qualification-manifest.v1",
+  "migration_manifest": "architecture/manifests/migration-manifest.yaml",
+  "pytest_collections": [
+    {"name": "architecture", "paths": ["tests/architecture"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
+    {"name": "unit", "paths": ["tests/unit"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
+    {"name": "acceptance", "paths": ["tests/acceptance"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
+    {"name": "integration", "paths": ["tests/integration"], "classification": "POSTGRESQL_REQUIRED", "complete_collection": true, "allow_skips": false}
+  ],
+  "required_gates": [
+    "source-preflight",
+    "static-and-manifests",
+    "pytest-backend",
+    "postgresql-start",
+    "migration-fresh",
+    "pytest-postgresql-integration",
+    "migration-head",
+    "query-plan-release",
+    "compose-runtime",
+    "evidence-finalization"
+  ],
+  "semantic_slices": {
+    "migration_matrix": [
+      "tests/integration/test_authority_migrations_postgres.py",
+      "tests/integration/test_authority_schema_postgres.py",
+      "tests/integration/test_authority_legacy_migration_postgres.py",
+      "tests/integration/test_book_opening_legacy_reconciliation_postgres.py",
+      "tests/integration/test_book_opening_recovery_regression_postgres.py",
+      "tests/integration/test_book_opening_runtime_hardening_postgres.py",
+      "tests/integration/test_book_opening_workflow_upgrade_postgres.py"
+    ],
+    "provider_hard_stop_and_callback": [
+      "tests/unit/test_d0_provider_qualification.py",
+      "tests/unit/test_provider_adapter_v2.py",
+      "tests/integration/test_d0_provider_qualification_authority_postgres.py",
+      "tests/integration/test_provider_callback_authority_postgres.py"
+    ],
+    "backend_vertical_slice": [
+      "tests/integration/test_core_functional_loops_postgres.py",
+      "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+      "tests/integration/test_book_opening_workflow_nodes_postgres.py",
+      "tests/integration/test_story_planning_atomic_activation_postgres.py",
+      "tests/integration/test_chapter_outcome_story_state_postgres.py"
+    ],
+    "book_opening_recovery": [
+      "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",
+      "tests/integration/test_book_opening_recovery_protocol_postgres.py",
+      "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",
+      "tests/integration/test_book_opening_workflow_concurrency_postgres.py",
+      "tests/integration/test_book_opening_workflow_failures_postgres.py"
+    ]
+  },
+  "evidence_ceilings": {
+    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
+    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
+    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
+    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
+    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
+    "LONGFORM": "NOT_PROVEN",
+    "MULTIBOOK": "NOT_PROVEN",
+    "PRODUCTION": "NOT_PROVEN"
+  }
+}

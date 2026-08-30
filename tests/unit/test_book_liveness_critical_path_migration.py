@@ -24,7 +24,7 @@ def test_book_liveness_closure_is_the_forward_only_backup_required_head() -> Non
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
     assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == recovery_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
+    assert LATEST_MIGRATION_ID == "20260830_0105_p0_backend_qualification_repairs"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is True
     assert "pre-0093 backup" in migration.FORWARD_FIX

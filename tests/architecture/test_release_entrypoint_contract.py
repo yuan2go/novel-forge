@@ -65,7 +65,8 @@ class ReleaseEntrypointContractTests(unittest.TestCase):
         self.assertNotIn("postgres-init", source)
         self.assertNotIn("postgres-sync", source)
         self.assertIn('test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"', source)
-        self.assertIn("authority-compose-${{ github.sha }}", source)
+        self.assertIn("make p0-backend-qualification", source)
+        self.assertIn("p0-backend-qualification-${{ github.sha }}", source)
 
 
 if __name__ == "__main__":

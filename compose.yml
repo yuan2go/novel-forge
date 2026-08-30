@@ -158,7 +158,10 @@ services:
       NOVEL_FORGE_DATABASE_ROLE: api
       NOVEL_FORGE_AUTHORITY_WORKER_ID: chapter-authority-api
     ports:
-      - "${NOVEL_FORGE_AUTHORITY_API_PORT:-8000}:8000"
+      - target: 8000
+        host_ip: "${NOVEL_FORGE_AUTHORITY_API_HOST_IP:-0.0.0.0}"
+        published: "${NOVEL_FORGE_AUTHORITY_API_PORT:-8000}"
+        protocol: tcp
     depends_on:
       authority-migration:
         condition: service_completed_successfully

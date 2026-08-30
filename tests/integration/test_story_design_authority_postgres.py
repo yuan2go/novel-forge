@@ -50,7 +50,7 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
         )
         self.assertEqual(enrolled["lifecycle"], "CANDIDATE")
         with self.assertRaisesRegex(
-            KernelError, "STORY_DESIGN_TRANSITION_INVALID"
+            KernelError, "STORY_DESIGN_PLANNING_GENERATION_REQUIRED"
         ):
             self._transition(
                 candidate,
@@ -78,8 +78,20 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             )
 
     def test_activation_supersedes_old_version(self) -> None:
-        first = self._seed_candidate("book-plan-candidate-a")
-        second = self._seed_candidate("book-plan-candidate-b")
+        first = self._seed_candidate(
+            "theme-candidate-a",
+            generator_operation_name="theme.candidates.generate",
+            logical_key="theme:main",
+            asset_type="theme_candidate_pool",
+            planning_scope=PlanningScope.NOT_APPLICABLE,
+        )
+        second = self._seed_candidate(
+            "theme-candidate-b",
+            generator_operation_name="theme.candidates.generate",
+            logical_key="theme:main",
+            asset_type="theme_candidate_pool",
+            planning_scope=PlanningScope.NOT_APPLICABLE,
+        )
         self._advance_to_active(first)
         self._advance_to_active(second)
         first_state = self.authority.require(
@@ -97,7 +109,7 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
                 """
                 SELECT COUNT(*), MAX(asset_version_id)
                 FROM authority_story_design_active_version
-                WHERE project_id=%s AND logical_key='book-plan:main'
+                WHERE project_id=%s AND logical_key='theme:main'
                 """,
                 [self.project_id],
             )
@@ -157,6 +169,101 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(
             raised.exception.code, "STORY_DESIGN_VALIDATOR_RECEIPT_REQUIRED"
         )
+
+    def test_legacy_import_cannot_activate_without_exact_migration_lineage(
+        self,
+    ) -> None:
+        candidate = self._seed_candidate("legacy-unapproved-activation")
+        legacy_evidence = {
+            "legacy_import_operation_id": "fixture-import-operation",
+            "migration_run_id": "fixture-migration-run",
+            "migration_item_id": "fixture-migration-item",
+            "migration_decision_id": "fixture-migration-decision",
+            "migration_validation_id": "fixture-migration-validation",
+            "workspace_id": f"workspace:{self.project_id}",
+            "source_hash": f"sha256:{'1' * 64}",
+            "target_content_hash": candidate["content_hash"],
+            "validator_result_hash": f"sha256:{'2' * 64}",
+            "validator_version": "fixture-validator.v1",
+        }
+        state = self._transition(
+            candidate,
+            DesignTransition.ENROLL,
+            expected_version=0,
+            source_kind="LEGACY_IMPORT",
+            evidence=legacy_evidence,
+        )
+        state = self._transition(
+            candidate,
+            DesignTransition.MATERIALIZE,
+            expected_version=int(state["version"]),
+            source_kind="LEGACY_IMPORT",
+            evidence=legacy_evidence,
+        )
+        for transition, validation_kind in (
+            (DesignTransition.STRUCTURAL_VALIDATE, "STRUCTURAL"),
+            (DesignTransition.SEMANTIC_VALIDATE, "SEMANTIC"),
+        ):
+            state = self._transition(
+                candidate,
+                transition,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence={
+                    **legacy_evidence,
+                    "validator_receipt": {
+                        "validation_kind": validation_kind,
+                        "status": "PASS",
+                        "validator_name": "fixture-validator",
+                        "validator_version": "fixture-validator.v1",
+                        "result_hash": f"sha256:{'2' * 64}",
+                    },
+                },
+            )
+        state = self._transition(
+            candidate,
+            DesignTransition.QUALIFY,
+            expected_version=int(state["version"]),
+            source_kind="LEGACY_IMPORT",
+            evidence={
+                **legacy_evidence,
+                "qualification_receipt": {
+                    "status": "PASS",
+                    "result_hash": f"sha256:{'2' * 64}",
+                    "migration_validation_id": "fixture-migration-validation",
+                },
+            },
+        )
+        for transition in (
+            DesignTransition.SUBMIT_APPROVAL,
+            DesignTransition.APPROVE,
+        ):
+            state = self._transition(
+                candidate,
+                transition,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence=legacy_evidence,
+            )
+
+        with self.assertRaises(KernelError) as raised:
+            self._transition(
+                candidate,
+                DesignTransition.ACTIVATE,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence=legacy_evidence,
+            )
+
+        self.assertEqual(raised.exception.code, "LEGACY_MIGRATION_LINEAGE_INVALID")
+        unchanged = self.authority.require(
+            project_id=self.project_id,
+            asset_version_id=candidate["asset_version_id"],
+        )
+        self.assertEqual(unchanged["lifecycle"], "MATERIALIZED")
+        self.assertEqual(unchanged["qualification"], "QUALIFIED")
+        self.assertEqual(unchanged["approval"], "APPROVED")
+        self.assertEqual(int(unchanged["version"]), int(state["version"]))
 
     def test_semantic_repair_is_bounded(self) -> None:
         candidate = self._seed_candidate("bounded-repair")
@@ -248,10 +355,10 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
                 ),
                 asset_version_id=candidate["asset_version_id"],
                 content_hash=candidate["content_hash"],
-                logical_key="book-plan:main",
-                generator_operation_name="book_plan.generate",
+                logical_key=candidate["logical_key"],
+                generator_operation_name=candidate["generator_operation_name"],
                 transition=transition,
-                planning_scope=PlanningScope.BOOK,
+                planning_scope=PlanningScope(candidate["planning_scope"]),
                 expected_version=expected_version,
                 source_kind=source_kind,
                 evidence=effective_evidence,
@@ -259,7 +366,15 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             principal=self.principal,
         )
 
-    def _seed_candidate(self, label: str) -> dict[str, str]:
+    def _seed_candidate(
+        self,
+        label: str,
+        *,
+        generator_operation_name: str = "book_plan.generate",
+        logical_key: str = "book-plan:main",
+        asset_type: str = "book_plan_candidate",
+        planning_scope: PlanningScope = PlanningScope.BOOK,
+    ) -> dict[str, str]:
         asset_id = f"{self.project_id}:{label}"
         version_id = f"{asset_id}:v1"
         content = {
@@ -276,9 +391,9 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             uow.cursor.execute(
                 """
                 INSERT INTO authority_asset(asset_id, project_id, asset_type)
-                VALUES (%s, %s, 'book_plan_candidate')
+                VALUES (%s, %s, %s)
                 """,
-                [asset_id, self.project_id],
+                [asset_id, self.project_id, asset_type],
             )
             uow.cursor.execute(
                 """
@@ -295,6 +410,9 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
         return {
             "asset_version_id": version_id,
             "content_hash": content_hash,
+            "generator_operation_name": generator_operation_name,
+            "logical_key": logical_key,
+            "planning_scope": planning_scope.value,
         }
 
 

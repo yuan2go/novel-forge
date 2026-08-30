@@ -29,6 +29,9 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.book_opening_plan_fence import (
     lock_and_assert_book_opening_plan_mutation,
 )
+from novel_forge.storage.legacy_migration_lineage import (
+    require_approved_legacy_migration_lineage,
+)
 
 from .definitions import (
     PLAN_BINDING_DEFINITION_VERSION,
@@ -313,7 +316,9 @@ class PostgresHierarchicalPlanningAuthority:
                 self._qualify_approved_migration_candidate(
                     uow.cursor,
                     project_id=project_id,
+                    workspace_id=str(payload["workspace_id"]),
                     asset_version_id=asset_version_id,
+                    target_content_hash=str(row[4]),
                     operation_id=operation_id,
                     decision_evidence=decision_evidence,
                 )
@@ -846,55 +851,25 @@ class PostgresHierarchicalPlanningAuthority:
         cursor: Any,
         *,
         project_id: str,
+        workspace_id: str,
         asset_version_id: str,
+        target_content_hash: str,
         operation_id: str,
         decision_evidence: dict[str, Any],
     ) -> None:
-        decision_id = str(decision_evidence.get("migration_decision_id") or "")
-        item_id = str(decision_evidence.get("migration_item_id") or "")
-        validation_id = str(decision_evidence.get("migration_validation_id") or "")
-        result_hash = str(decision_evidence.get("validator_result_hash") or "")
-        validator_version = str(decision_evidence.get("validator_version") or "")
-        cursor.execute(
-            """
-            SELECT decision.operation_id, validation.validated_by_operation_id
-            FROM authority_legacy_migration_decision AS decision
-            JOIN authority_legacy_migration_validation AS validation
-              ON validation.migration_validation_id=decision.migration_validation_id
-            JOIN authority_legacy_migration_item AS item
-              ON item.migration_item_id=decision.migration_item_id
-            WHERE decision.migration_decision_id=%s
-              AND decision.migration_item_id=%s
-              AND decision.migration_validation_id=%s
-              AND decision.decision='APPROVE'
-              AND decision.target_asset_version_id=%s
-              AND validation.target_asset_version_id=%s
-              AND validation.result_hash=%s
-              AND validation.validator_version=%s
-              AND validation.status='PASS'
-              AND item.project_id=%s
-              AND item.target_asset_version_id=%s
-              AND item.status='QUALIFIED'
-            FOR SHARE OF decision, validation, item
-            """,
-            [
-                decision_id,
-                item_id,
-                validation_id,
-                asset_version_id,
-                asset_version_id,
-                result_hash,
-                validator_version,
-                project_id,
-                asset_version_id,
-            ],
+        lineage = require_approved_legacy_migration_lineage(
+            cursor,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            target_asset_version_id=asset_version_id,
+            target_content_hash=target_content_hash,
+            evidence=decision_evidence,
         )
-        lineage = cursor.fetchone()
-        if lineage is None or not all(str(item or "") for item in lineage):
-            raise KernelError(
-                "PLANNING_MIGRATION_QUALIFICATION_INVALID",
-                "legacy Planning promotion requires an exact approved validation lineage",
-            )
+        decision_id = str(lineage["migration_decision_id"])
+        item_id = str(lineage["migration_item_id"])
+        validation_id = str(lineage["migration_validation_id"])
+        result_hash = str(lineage["validator_result_hash"])
+        validator_version = str(lineage["validator_version"])
         cursor.execute(
             """
             INSERT INTO authority_asset_qualification(
@@ -913,8 +888,8 @@ class PostgresHierarchicalPlanningAuthority:
                         "migration_validation_id": validation_id,
                         "validator_result_hash": result_hash,
                         "validator_version": validator_version,
-                        "decision_operation_id": str(lineage[0]),
-                        "validation_operation_id": str(lineage[1]),
+                        "decision_operation_id": lineage["decision_operation_id"],
+                        "validation_operation_id": lineage["validation_operation_id"],
                         "planning_binding_operation_id": operation_id,
                     }
                 ),
