@@ -1,4 +1,4 @@
-"""Final Provider-send gate for Narrative Evaluation executions.
+"""INVARIANT: Final Provider-send gate for Narrative Evaluation executions.
 
 The Story Design execution row identifies the semantic generation.  It does
 not own Book Opening liveness.  When a generation is causally bound to a Book
@@ -36,7 +36,6 @@ def _assert_live_generation_one_opening(
     book_id: str,
     opening_binding: dict[str, Any],
 ) -> None:
-    """Require the immutable Planning binding to still be the live owner."""
 
     if set(opening_binding) != _OPENING_BINDING_FIELDS:
         raise KernelError(
@@ -179,7 +178,6 @@ def _assert_live_replacement_opening(
     predecessor_operation_id: str,
     closed_code: str = "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
 ) -> None:
-    """Derive semantic permission from one exact recovery execution chain."""
 
     uow.cursor.execute(
         """
@@ -409,7 +407,6 @@ def _is_recovery_bound(
     evaluation_execution_id: str,
     generation: int,
 ) -> bool:
-    """Return whether immutable history binds this Evaluation to recovery."""
 
     # Deliberately do not join through the outer lineage here.  Any durable
     # RuntimeJob that claims this exact semantic execution as NEW/RESUME makes
@@ -457,7 +454,6 @@ def assert_narrative_replacement_execution_gate_in_uow(
     operation_id: str,
     project_id: str,
 ) -> dict[str, Any]:
-    """Assert semantic lineage and any owner-derived final execution gate."""
 
     if not operation_id.strip() or not project_id.strip():
         raise KernelError(

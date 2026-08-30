@@ -1,5 +1,3 @@
-"""Recovery-aware Content Authority worker over Command Kernel Attempt primitives."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -46,7 +44,6 @@ class ContentScheduledExecution:
 
 
 class ContentAuthorityScheduler:
-    """Runs or recovers one admitted Operation without creating a parallel scheduler."""
 
     def __init__(
         self,
@@ -69,7 +66,6 @@ class ContentAuthorityScheduler:
         limit: int = 50,
         project_ids: Iterable[str] = (),
     ) -> tuple[tuple[str, str], ...]:
-        """Return recoverable work; lease arbitration remains authoritative."""
         if limit <= 0:
             raise ValueError("limit must be positive")
         projects = tuple(

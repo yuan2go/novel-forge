@@ -1,4 +1,4 @@
-"""Planning-owned contracts for bounded divergent narrative search.
+"""INVARIANT: Planning-owned contracts for bounded divergent narrative search.
 
 Search compares immutable Story Planning candidates.  It is deliberately not
 an Authority or execution runtime: generation remains Operation/Attempt/PEP,

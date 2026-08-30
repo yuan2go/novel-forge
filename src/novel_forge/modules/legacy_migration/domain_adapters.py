@@ -1,4 +1,4 @@
-"""Explicit adapters from archival AssetVersions into domain Authorities.
+"""INVARIANT: Explicit adapters from archival AssetVersions into domain Authorities.
 
 Adapters never infer approval from Legacy payloads.  They are invoked only
 after ``migration.item.approve`` has committed an independent decision.

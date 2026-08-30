@@ -1,5 +1,3 @@
-"""Bounded non-interactive Git repository ExternalEffect adapter."""
-
 from __future__ import annotations
 
 import hashlib

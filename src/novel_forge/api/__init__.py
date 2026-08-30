@@ -1,1 +1,0 @@
-"""Novel Forge Authority API."""

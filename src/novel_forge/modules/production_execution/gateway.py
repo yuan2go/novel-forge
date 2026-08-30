@@ -1,4 +1,4 @@
-"""Attempt-bound admission and backend routing for production model execution.
+"""INVARIANT: Attempt-bound admission and backend routing for production model execution.
 
 The gateway owns no Attempt state.  It verifies the caller's existing Authority
 Attempt and fencing token, resolves immutable routing/input contracts, and then
@@ -66,7 +66,6 @@ class ExecutionAdmission:
 
 
 class StaticAttemptFenceVerifier:
-    """Explicit test/composition fixture; production injects the Authority query."""
 
     def __init__(
         self,
@@ -98,7 +97,6 @@ class StaticAttemptFenceVerifier:
 
 
 class StaticExecutionContractSource:
-    """Read-only contract source for tests and explicit bootstrap fixtures."""
 
     def __init__(
         self,
@@ -159,7 +157,6 @@ class StaticExecutionContractSource:
 
 
 class CapabilityProbe:
-    """Fail-closed comparison of a frozen route with a backend declaration."""
 
     @staticmethod
     def verify(

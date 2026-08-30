@@ -1,4 +1,3 @@
-"""Recovery-aware Source Authority worker over the shared Command Kernel."""
 from __future__ import annotations
 
 from typing import Any
@@ -32,7 +31,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 class SourceAuthorityScheduler:
-    """Claims Source Operations from PostgreSQL; no process-local task state exists."""
 
     def __init__(
         self,

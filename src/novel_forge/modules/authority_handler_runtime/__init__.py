@@ -1,4 +1,4 @@
-"""Shared fenced runtime for storage-free authority handlers."""
+"""INVARIANT: Shared fenced runtime for storage-free authority handlers."""
 
 from .contracts import (
     AuthorityAuxiliaryOutput,

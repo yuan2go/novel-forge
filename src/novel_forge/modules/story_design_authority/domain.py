@@ -1,5 +1,3 @@
-"""Shared lifecycle and generator contracts for authoritative story design."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -45,11 +43,6 @@ class PlanningScope(StrEnum):
 
 
 class DesignScope(StrEnum):
-    """Semantic ownership of a Story Design candidate.
-
-    This is deliberately separate from PlanningScope: a Creative Foundation is
-    an upstream Story Design truth candidate, not a BOOK plan in disguise.
-    """
 
     CREATIVE_FOUNDATION = "CREATIVE_FOUNDATION"
     THEME_CONTRACT = "THEME_CONTRACT"

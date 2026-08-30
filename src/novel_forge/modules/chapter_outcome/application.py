@@ -1,4 +1,3 @@
-"""Command application using the shared Authority Attempt/runtime."""
 from __future__ import annotations
 
 from dataclasses import dataclass

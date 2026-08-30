@@ -1,4 +1,3 @@
-"""D0 Provider qualification runner with explicit fixture/real separation."""
 from __future__ import annotations
 
 from dataclasses import asdict

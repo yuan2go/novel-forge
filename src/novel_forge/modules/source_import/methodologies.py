@@ -1,5 +1,3 @@
-"""Exact canonical Skill materialization for Source analysis strategies."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,7 +27,6 @@ class SourceMethodology:
 
 
 class SourceMethodologyRegistry:
-    """Loads root Skill sources and refuses generated/runtime copies."""
 
     def __init__(
         self,

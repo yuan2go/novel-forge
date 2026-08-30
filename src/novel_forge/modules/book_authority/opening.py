@@ -1,5 +1,3 @@
-"""Book opening coordinator over existing design, planning, and input Authorities."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -252,7 +250,6 @@ class BookOpeningAdmission:
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningBudgetReconciliationRequest:
-    """Explicit, bounded contract for one legacy Opening budget binding."""
 
     expected_opening_version: int
     expected_frozen_request_digest: str
@@ -468,7 +465,6 @@ class BookOpeningNodeExecutionResult:
 
 
 class PostgresBookOpeningApplication:
-    """Coordinates existing Authorities; it owns no new truth or execution state."""
 
     def __init__(
         self,
@@ -532,7 +528,6 @@ class PostgresBookOpeningApplication:
     def admit(
         self, request: OpenBookProductionRequest, *, principal: Principal
     ) -> BookOpeningAdmission:
-        """Freeze a durable opening run without owning Provider execution."""
 
         principal.require("book.authority.execute", request.project_id)
         principal.require("story_planning.authority.execute", request.project_id)
@@ -637,7 +632,6 @@ class PostgresBookOpeningApplication:
         *,
         principal: Principal,
     ) -> BookOpeningBudgetReconciliationReceipt:
-        """Bind an explicit BudgetScope to one migrated legacy Opening."""
 
         run = self.require(opening_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
@@ -764,7 +758,6 @@ class PostgresBookOpeningApplication:
         return projection
 
     def require_progress(self, opening_run_id: str) -> dict[str, Any]:
-        """Project durable workflow progress without mutating Authority state."""
 
         from .opening_progress import PostgresBookOpeningWorkflowProgressQuery
 
@@ -783,7 +776,6 @@ class PostgresBookOpeningApplication:
         expected_opening_run_id: str = "",
         expected_runtime_job_id: str = "",
     ) -> RuntimeJobClaim | None:
-        """Claim exactly one durable Book Opening planning-layer node."""
 
         return self._claim_next_execution_for_contract(
             workflow_contract_version=BOOK_OPENING_WORKFLOW_CONTRACT_VERSION,
@@ -803,12 +795,6 @@ class PostgresBookOpeningApplication:
         expected_opening_run_id: str = "",
         expected_runtime_job_id: str = "",
     ) -> RuntimeJobClaim | None:
-        """Drain one explicitly selected legacy-monolithic-v2 execution.
-
-        This seam is intentionally separate from the workflow-node worker loop.
-        It exists only while admitted or recovered v2 RuntimeJobs are drained;
-        its exact contract identity cannot claim workflow-v1/v3 node work.
-        """
 
         return self._claim_next_execution_for_contract(
             workflow_contract_version=BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION,
@@ -827,7 +813,6 @@ class PostgresBookOpeningApplication:
         opening_execution_id: str,
         execution_generation: int,
     ) -> dict[str, Any]:
-        """Return durable node completion after a lost command response."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -919,7 +904,6 @@ class PostgresBookOpeningApplication:
         expected_opening_run_id: str = "",
         expected_runtime_job_id: str = "",
     ) -> RuntimeJobClaim | None:
-        """Claim workflow-v1 node work; retained as the v3 caller alias."""
 
         return self.claim_next_node_execution(
             worker_id=worker_id,
@@ -939,7 +923,6 @@ class PostgresBookOpeningApplication:
         expected_opening_run_id: str = "",
         expected_runtime_job_id: str = "",
     ) -> RuntimeJobClaim | None:
-        """Atomically claim one exact versioned no-takeover execution."""
 
         if not worker_id or lease_seconds <= 0:
             raise ValueError("Opening claim requires worker and positive lease")
@@ -4969,7 +4952,6 @@ class PostgresBookOpeningApplication:
         uow: AuthorityUnitOfWork,
         workflow: BookOpeningWorkflow,
     ) -> None:
-        """Persist or exactly replay the immutable five-layer workflow graph."""
 
         for node in workflow.nodes:
             uow.cursor.execute(
@@ -5182,7 +5164,6 @@ class PostgresBookOpeningApplication:
         expected_version: int,
         runtime_claim: RuntimeJobClaim,
     ) -> None:
-        """Atomically activate Runtime, Opening, and semantic replacement work."""
 
         if runtime_claim.subject_id != opening_run_id:
             raise KernelError(

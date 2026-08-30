@@ -1,5 +1,3 @@
-"""Transactional plan-change proposal, decision and impact persistence."""
-
 from __future__ import annotations
 
 from typing import Any

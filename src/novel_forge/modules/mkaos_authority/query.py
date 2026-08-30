@@ -1,5 +1,3 @@
-"""Strong PostgreSQL queries for MKAOS Candidate/Decision/Card/Pack assets."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +21,6 @@ class MkaosAuthorityQuery:
         need: NarrativeIntelligenceNeed,
         limit: int = 6,
     ) -> dict[str, Any]:
-        """Resolve governed possibilities from active cards for one Planning task."""
 
         if limit < 1 or limit > 12:
             raise ValueError("Narrative Intelligence limit must be within 1..12")
@@ -145,13 +142,6 @@ class MkaosAuthorityQuery:
         asset_version_id: str,
         content_hash: str,
     ) -> dict[str, Any]:
-        """Fail closed when a frozen Planning card lost production authority.
-
-        A Planning Context freezes the selected immutable AssetVersion, but a
-        technical retry still has to honor a later MKAOS revocation.  The
-        frozen version therefore preserves semantics without preserving an
-        obsolete permission to consume it.
-        """
 
         if not project_id or not asset_version_id or not content_hash:
             raise ValueError(
@@ -288,7 +278,6 @@ class MkaosAuthorityQuery:
         book_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
-        """Trace selected cards through Planning Context, Candidate, and Plan binding."""
 
         _validate(project_id, limit)
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -474,7 +463,6 @@ class MkaosAuthorityQuery:
         result_asset_version_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
-        """Trace cards through a frozen Context and successful Provider effect."""
         _validate(project_id, limit)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -556,7 +544,6 @@ class MkaosAuthorityQuery:
         target_capability_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
-        """List Context-frozen selections without claiming Provider consumption."""
         _validate(project_id, limit)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

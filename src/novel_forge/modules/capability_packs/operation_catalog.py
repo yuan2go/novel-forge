@@ -1,5 +1,3 @@
-"""Read-only OperationDefinition resolution over the existing Authority contract."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -151,7 +149,6 @@ class OperationDefinitionCatalog(Protocol):
 
 
 class OperationDefinitionReader(Protocol):
-    """Minimal read-only shape implemented by OperationDefinitionRepository."""
 
     def get(
         self, definition_name: str, definition_version: str
@@ -204,7 +201,6 @@ class InMemoryOperationDefinitionCatalog:
 
 
 class RepositoryOperationDefinitionLoader:
-    """Read-only preload adapter; the compiler receives only its memory snapshot."""
 
     def __init__(self, repository: OperationDefinitionReader) -> None:
         self._repository = repository

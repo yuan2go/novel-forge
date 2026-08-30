@@ -1,4 +1,4 @@
-"""Versioned and idempotent recovery commands for Authority Operations."""
+"""INVARIANT: Versioned and idempotent recovery commands for Authority Operations."""
 from __future__ import annotations
 
 import hashlib

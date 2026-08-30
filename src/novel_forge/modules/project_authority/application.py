@@ -1,5 +1,3 @@
-"""Project/Workspace commands over the shared Command Kernel runtime."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

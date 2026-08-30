@@ -11,7 +11,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 class PostgresProductionAssetResolver:
-    """Read-only resolver for latest qualified Authority AssetVersions."""
 
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url
@@ -127,7 +126,6 @@ class PostgresProductionAssetResolver:
         asset_type: str,
         accepted_chapter: int,
     ) -> tuple[ResolvedProductionAsset, ...]:
-        """Resolve the exact Book acceptance pointer required by continuation."""
 
         if (
             asset_type not in {"story_state_snapshot", "canon_snapshot"}
@@ -215,7 +213,6 @@ class PostgresProductionAssetResolver:
     def resolve_active_arc_plan_override(
         self, *, project_id: str, book_id: str, asset_version_id: str
     ) -> ResolvedProductionAsset:
-        """Adapt one active Planning candidate to its ArcPlan domain role."""
 
         if not book_id:
             raise ValueError("ArcPlan preparation requires Book scope")

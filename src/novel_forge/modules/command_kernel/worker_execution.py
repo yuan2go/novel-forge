@@ -1,5 +1,3 @@
-"""Shared isolation boundary for long-running Authority worker batches."""
-
 from __future__ import annotations
 
 import json
@@ -66,7 +64,7 @@ _FINAL_FAILURE_CODES = frozenset(
 
 
 class WorkerProgrammingError(RuntimeError):
-    """Raised after the rest of the current batch has been isolated and attempted."""
+    pass
 
 
 class WorkerHealthStatus(StrEnum):
@@ -98,7 +96,6 @@ class WorkerHealthSnapshot:
 
 
 class WorkerSupervisor:
-    """Process-local health and deployment restart contract."""
 
     FATAL_EXIT_CODE = 70
 
@@ -276,7 +273,6 @@ T = TypeVar("T")
 
 
 class AuthorityWorkerExecutionBoundary:
-    """Runs every task in a polled batch even when an earlier task fails."""
 
     def __init__(
         self, *, worker_kind: str, logger: logging.Logger | None = None

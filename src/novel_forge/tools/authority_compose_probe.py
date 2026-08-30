@@ -1,4 +1,3 @@
-"""Synthetic fixture probe used only by the Authority Compose smoke runner."""
 from __future__ import annotations
 
 import argparse

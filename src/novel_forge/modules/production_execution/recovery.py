@@ -1,9 +1,3 @@
-"""Authority AssetVersion-backed recovery for Production Execution records.
-
-This is an evidence store and recovery projection only.  Authority Attempt and
-ExternalEffect remain the owners of execution and external-outcome terminal state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -211,7 +205,6 @@ def _record_from_dict(payload: Mapping[str, Any]) -> ExecutionRecord:
 
 
 class AuthorityExecutionRecoveryStore:
-    """Versioned recovery evidence scoped to one Authority project."""
 
     def __init__(self, database_url: str, *, project_id: str) -> None:
         if not database_url or not project_id:

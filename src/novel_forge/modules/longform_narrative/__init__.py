@@ -1,5 +1,3 @@
-"""Accepted-evidence contracts for long-form Arc and obligation control."""
-
 from .contracts import (
     ArcActualState,
     ArcCheckpoint,

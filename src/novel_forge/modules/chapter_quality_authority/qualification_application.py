@@ -1,4 +1,4 @@
-"""PostgreSQL Authority application for bounded Quality Qualification.
+"""INVARIANT: PostgreSQL Authority application for bounded Quality Qualification.
 
 The tables added by migration 0101 are authoritative indexes over immutable
 Authority assets and Command Kernel operations.  This module never invokes a
@@ -558,12 +558,6 @@ class PostgresQualityQualificationAuthority:
         *,
         principal: Principal,
     ) -> dict[str, str]:
-        """Materialize a bounded comparison corpus or derived evidence report.
-
-        This remains inside Quality Qualification Authority. It records a
-        derived, source-bound artifact and never mutates accepted prose,
-        Canon, Story State, plans, or human evidence.
-        """
 
         campaign = self._require_campaign_row(command.campaign_id)
         principal.require(MANAGE_PERMISSION, campaign["project_id"])
@@ -908,7 +902,6 @@ class PostgresQualityQualificationAuthority:
         source_asset_version_ids: tuple[str, ...],
         principal: Principal,
     ) -> dict[str, Any]:
-        """Fail the qualification process without inventing Narrative evidence."""
 
         campaign = self._require_campaign_row(campaign_id)
         principal.require(MANAGE_PERMISSION, campaign["project_id"])

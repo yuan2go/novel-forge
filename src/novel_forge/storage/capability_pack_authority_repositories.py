@@ -1,5 +1,3 @@
-"""PostgreSQL repositories for Capability Pack Authority configuration facts."""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -31,7 +29,6 @@ class CapabilityPackAuthorityRepository:
         self.cursor = cursor
 
     def lock_pack_authority(self, pack_id: str) -> None:
-        """Serialize one Pack family across independent Authority sessions."""
 
         self.cursor.execute(
             "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
@@ -317,7 +314,6 @@ class CapabilityPackAuthorityRepository:
         )
 
     def blocked_dependencies(self, pack_id: str, pack_version: str) -> tuple[str, ...]:
-        """Return exact upstream versions that cannot admit new runtime work."""
 
         blocked: list[str] = []
         for dependency in self.dependencies_for_version(pack_id, pack_version):
@@ -1622,7 +1618,6 @@ class CapabilityPackAuthorityRepository:
         *,
         excluding_attempt_id: str,
     ) -> dict[str, Any] | None:
-        """Return the prior immutable Capability content for an Attempt retry."""
 
         self.cursor.execute(
             """

@@ -1,5 +1,3 @@
-"""Attempt-bound contracts for the Novel Forge Production Execution Plane."""
-
 from .capabilities import (
     CapabilityDefinition,
     CapabilityId,

@@ -1,5 +1,3 @@
-"""PostgreSQL read model for professional authoring surfaces."""
-
 from __future__ import annotations
 
 import json
@@ -13,7 +11,6 @@ from .projections import build_chapter_transaction_workspace
 
 
 class PostgresAuthoringQuery:
-    """Strong queries over authority evidence; this service performs no mutation."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

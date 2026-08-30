@@ -1,4 +1,4 @@
-"""Declarative JSON contract for ``novelos.capability_pack.v1``.
+"""INVARIANT: Declarative JSON contract for ``novelos.capability_pack.v1``.
 
 The Loader deliberately accepts any exact JSON object so one validation pass can
 report multiple authoring errors.  This module owns the complete structural

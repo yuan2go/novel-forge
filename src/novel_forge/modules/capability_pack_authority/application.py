@@ -1,5 +1,3 @@
-"""Application service for PostgreSQL Capability Pack Authority."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -117,7 +115,6 @@ def build_binding_set(
     manifest: Mapping[str, Any],
     agent_definitions: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Build one complete immutable binding set and fail on cross-snapshot drift."""
 
     artifacts = [dict(item) for item in compiled.get("resolved_artifacts") or ()]
     artifact_bindings = {
@@ -405,12 +402,6 @@ def _select_capability_skill(
     input_contract_ref: str,
     output_contract_ref: str,
 ) -> dict[str, Any]:
-    """Select a Skill from the Pack without requiring an Agent Definition.
-
-    Exact input/output contract matches win.  Packs whose Skill contract is
-    intentionally broader may fall back to a single required Skill; multiple
-    ambiguous fallbacks fail closed instead of depending on list order.
-    """
 
     exact = [
         dict(item)

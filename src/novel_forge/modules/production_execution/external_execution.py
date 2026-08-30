@@ -1,9 +1,3 @@
-"""Domain-facing contracts for non-model remote actions.
-
-The execution plane owns invocation and lifecycle evidence. Publishing, feedback,
-source, and notification domains still own eligibility, semantic validation,
-materialization, approval, and activation.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -167,7 +161,6 @@ class ExternalActionExecutionPort(Protocol):
 
 
 class GatewayExternalActionExecutionPort:
-    """Execute only frozen Authority requests and project their external evidence."""
 
     production_execution_gateway_backed = True
 

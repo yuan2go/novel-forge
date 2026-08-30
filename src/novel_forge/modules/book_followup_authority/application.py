@@ -1,5 +1,3 @@
-"""Command application over the existing Command Kernel and Attempt scheduler."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

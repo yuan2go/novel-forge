@@ -1,4 +1,3 @@
-"""PostgreSQL repository for generic ExternalEffect dispatch and reconciliation."""
 from __future__ import annotations
 
 from typing import Any
@@ -685,14 +684,6 @@ class ExternalEffectRepository:
         *,
         reason: str,
     ) -> bool:
-        """Terminalize only a dispatch history that proves no request was sent.
-
-        This is the narrow Authority primitive used when an owning workflow is
-        aborted.  It deliberately refuses to infer safety from an Effect's
-        retryable status alone: every dispatch and receipt is locked and any
-        held lease, receipt, in-flight state, or non-boolean ``request_sent``
-        evidence keeps the Effect on the reconciliation path.
-        """
 
         effect_id = str(effect["external_effect_id"])
         if str(effect["status"]) not in {"READY", "FAILED_RETRYABLE"}:

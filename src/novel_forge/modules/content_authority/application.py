@@ -1,8 +1,3 @@
-"""Synchronous worker facade for one Content Authority Operation.
-
-The facade coordinates existing Command Kernel primitives; it is not a second runtime.
-Schedulers may call the lower-level admission/attempt/runtime functions directly.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass

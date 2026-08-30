@@ -1,10 +1,3 @@
-"""Frozen contract and bounded orchestration for Quality Qualification.
-
-The runner owns only proof scope and recovery invariants.  A supplied runtime
-port performs Canonical Runtime work and remains the owner of Provider calls,
-Chapter acceptance, Reader/Recap, and Authority persistence.
-"""
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -89,7 +82,6 @@ _SEMANTIC_ARC_KEYS = frozenset(
 
 
 class QualityCampaignTerminalError(RuntimeError):
-    """A bounded campaign violation that must become terminal evidence."""
 
     def __init__(
         self,
@@ -111,7 +103,6 @@ def classify_campaign_recovery_exhaustion(
     root_operation_id: str,
     error_code: str,
 ) -> QualityCampaignTerminalError | None:
-    """Turn an unrecoverable Chapter subtree into terminal campaign evidence."""
 
     exhausted: list[dict[str, Any]] = []
     for raw in operations:
@@ -211,7 +202,6 @@ def _semantic_evidence_value(value: Any, *, field: str = "") -> Any:
 
 
 def semantic_quality_evidence_identity(value: Mapping[str, Any]) -> str:
-    """Hash narrative semantics while excluding generated runtime identity."""
 
     if not isinstance(value, Mapping) or not value:
         raise ValueError("semantic Quality evidence must be a non-empty object")
@@ -639,7 +629,6 @@ class BoundedQualityCampaignResult:
 
     @property
     def deterministic_identity(self) -> str:
-        """Identity for one exact execution, including durable runtime ids."""
 
         return _digest(
             {
@@ -677,7 +666,6 @@ class BoundedQualityCampaignResult:
 
     @property
     def semantic_identity(self) -> str:
-        """Cross-run identity that excludes generated ids and timestamps."""
 
         return _digest(
             {
@@ -967,7 +955,6 @@ def _bounded_realization_event_chain(
 def bounded_quality_planning_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Canonical deterministic Planning fixture for the exact 4+4 dry-run."""
 
     payload = deepcopy(planning_fixture_response(stage, inputs))
     command = dict(inputs.get("planning_command") or {})
@@ -1067,7 +1054,6 @@ def bounded_quality_planning_fixture_response(
 def bounded_quality_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Deterministic Chapter/Reader fixture with auditable longitudinal movement."""
 
     payload = deepcopy(default_chapter_fixture_response(stage, inputs))
     if stage == "draft":

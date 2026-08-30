@@ -1,4 +1,5 @@
-"""Evidence-based long-form semantic stability reports."""
+"""INVARIANT: semantic reports derive only from supplied evidence and perform no I/O."""
+
 from __future__ import annotations
 from collections import Counter
 from typing import Any

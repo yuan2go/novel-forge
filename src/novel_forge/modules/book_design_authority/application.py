@@ -1,5 +1,3 @@
-"""Book + BookDesign commands through the shared Command Kernel."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -471,7 +469,6 @@ class BookDesignAuthorityApplication:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Evaluate one immutable BookDesign candidate in a separate Attempt."""
 
         if command.generator_operation_name != "book_design.propose":
             raise KernelError(

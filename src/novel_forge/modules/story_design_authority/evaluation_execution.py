@@ -1,5 +1,3 @@
-"""Story Design binding for governed semantic evaluation on the shared PEP."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -69,7 +67,6 @@ def _canonical_hash(value: Any) -> str:
 class PostgresNarrativeEvaluationExecutionContractBinder(
     PostgresChapterExecutionContractBinder
 ):
-    """Freeze evaluator-owned target/profile/context contracts for the shared PEP."""
 
     workflow_definition_ref = NARRATIVE_EVALUATION_WORKFLOW_REF
     execution_binding_domain = "narrative_evaluation"
@@ -86,7 +83,6 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         operation_id: str,
         project_id: str,
     ) -> dict[str, Any]:
-        """Re-read the derived replacement gate at the final send boundary."""
 
         return assert_narrative_replacement_execution_gate(
             self.database_url,
@@ -427,14 +423,6 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
     def _canonical_dependencies(
         self, document: Any
     ) -> tuple[tuple[str, Any, Any], ...]:
-        """Resolve only immutable dependencies named by a BookDesign v5 candidate.
-
-        The evaluator, rather than its caller, resolves these versions.  This keeps
-        generator prompts and mutable projections out of the evaluation while
-        making the reference-only BookDesign contract semantically reviewable.
-        Qualification assets are verified for lineage but are intentionally not
-        exposed as selected inputs, so a prior verdict cannot prime the evaluator.
-        """
 
         if (
             document.asset_type != "book_design"
@@ -525,7 +513,6 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
 
 
 class GatewayNarrativeSemanticEvaluationExecutionPort:
-    """Invoke the evaluator and verify its ModelCallLog before qualification."""
 
     production_execution_gateway_backed = True
     external_effect_backed = True

@@ -1,5 +1,3 @@
-"""Versioned OperationDefinitions for the PostgreSQL-only chapter slice."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -387,12 +385,6 @@ def _definition(
 
 
 def _definition_maturity_metadata() -> dict[str, Any]:
-    """Describe runtime binding without claiming test/provider proof here.
-
-    The generated catalog may promote this to ``integration_proven`` when it
-    attaches the committed PostgreSQL evidence suite.  Runtime definitions
-    themselves only assert that a concrete handler is bound and enabled.
-    """
 
     return {
         "definition_status": "enabled",

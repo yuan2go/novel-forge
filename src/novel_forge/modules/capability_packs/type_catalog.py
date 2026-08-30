@@ -1,5 +1,3 @@
-"""Governed, immutable policy catalogs used by Capability Pack resolution."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -40,7 +38,6 @@ class CapabilityTypePolicy:
 
 
 class CapabilityTypePolicyCatalog:
-    """Read-only catalog; P1A intentionally opens one capability type."""
 
     def __init__(self, policies: Iterable[CapabilityTypePolicy]) -> None:
         values: dict[str, CapabilityTypePolicy] = {}
@@ -129,7 +126,6 @@ def default_capability_type_catalog() -> CapabilityTypePolicyCatalog:
 def conservative_capability_type_policy(
     capability_type: str,
 ) -> CapabilityTypePolicy:
-    """Return the fail-closed policy used only while reporting an unknown type."""
 
     return CapabilityTypePolicy(
         capability_type=capability_type,

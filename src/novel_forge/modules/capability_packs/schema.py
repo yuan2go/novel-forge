@@ -1,4 +1,4 @@
-"""Strongly named, immutable Capability Pack protocol objects.
+"""INVARIANT: Strongly named, immutable Capability Pack protocol objects.
 
 Parsing is deliberately lossless: the original JSON object remains the source
 for canonical serialization and hashing, while named dataclasses expose the P0

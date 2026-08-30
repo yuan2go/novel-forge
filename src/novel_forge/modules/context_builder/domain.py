@@ -1,4 +1,4 @@
-"""Storage-free governed context selection and immutable bundle payloads.
+"""INVARIANT: Storage-free governed context selection and immutable bundle payloads.
 
 The module is shared by compatibility services and PostgreSQL Authority
 handlers.  It never discovers assets or persists results; callers must supply
@@ -447,7 +447,6 @@ def build_authority_context_bundle(
     accessible_knowledge_fact_ids: Iterable[str] = (),
     required_long_distance_fact_ids: Iterable[str] = (),
 ) -> dict[str, Any]:
-    """Build the canonical immutable ContextBundle content payload."""
     profile = resolve_context_profile(stage)
     required = frozenset(str(item) for item in required_asset_types if str(item))
     unsupported = required - profile.allowed_asset_types

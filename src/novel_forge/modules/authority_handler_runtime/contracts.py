@@ -1,4 +1,3 @@
-"""Typed contracts shared by Chapter and Content Authority runtimes."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -97,7 +96,6 @@ class AuthorityHandlerRegistration:
 
 
 class AuthorityHandlerRegistry(Protocol):
-    """Registry seam consumed by the one shared fenced handler scheduler."""
 
     @property
     def definition_names(self) -> frozenset[str]: ...

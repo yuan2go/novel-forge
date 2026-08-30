@@ -1,5 +1,3 @@
-"""Pure Source profiling, logical-document and classification admission contracts."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -121,7 +119,6 @@ class SourceIntelligencePolicy:
 
     @property
     def profiling_policy_hash(self) -> str:
-        """Identity of fields that can change classification or resolution."""
         return canonical_hash(
             {
                 key: value

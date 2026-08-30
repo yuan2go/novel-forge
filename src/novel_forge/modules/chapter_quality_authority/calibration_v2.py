@@ -1,5 +1,3 @@
-"""Canonical v2 Judge calibration with bounded-evidence semantics."""
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -377,7 +375,6 @@ def evaluate_quality_calibration_v2(
     blind_preferences: tuple[BlindPairPreference, ...] = (),
     reader_outcomes: tuple[ReaderOutcomeEvidence, ...] = (),
 ) -> CalibrationResult:
-    """Produce bounded diagnostics; this function cannot activate a profile."""
 
     if (
         run.profile_version_id != profile.profile_version_id

@@ -1,5 +1,3 @@
-"""PostgreSQL projections for durable product-level Source imports."""
-
 from __future__ import annotations
 
 from typing import Any, Iterable

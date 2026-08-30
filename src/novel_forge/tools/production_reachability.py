@@ -1,5 +1,3 @@
-"""Derive production reachability from imports, composition, and Compose."""
-
 from __future__ import annotations
 
 import argparse

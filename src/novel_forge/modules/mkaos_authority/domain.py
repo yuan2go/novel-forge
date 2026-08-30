@@ -1,5 +1,3 @@
-"""Deterministic MKAOS candidate, evidence, approval and pack invariants."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -102,7 +100,6 @@ class KnowledgePackSelection:
 
 @dataclass(frozen=True, slots=True)
 class NarrativeIntelligenceNeed:
-    """A bounded Planning question; it is not a request for a ready-made plot."""
 
     scope: str
     target_stage: str
@@ -218,7 +215,6 @@ def select_narrative_intelligence(
     *,
     limit: int = 6,
 ) -> dict[str, Any]:
-    """Select governed possibilities without granting them Story Authority."""
 
     if limit < 1 or limit > 12:
         raise ValueError("Narrative Intelligence selection limit must be within 1..12")

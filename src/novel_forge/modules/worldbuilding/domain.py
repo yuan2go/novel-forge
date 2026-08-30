@@ -1,4 +1,3 @@
-"""Storage-free goal-driven world rule construction and validation."""
 from __future__ import annotations
 
 from typing import Any

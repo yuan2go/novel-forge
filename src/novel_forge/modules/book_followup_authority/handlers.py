@@ -1,4 +1,4 @@
-"""Storage-free handlers executed by the shared fenced Authority runtime."""
+"""INVARIANT: Storage-free handlers executed by the shared fenced Authority runtime."""
 
 from __future__ import annotations
 

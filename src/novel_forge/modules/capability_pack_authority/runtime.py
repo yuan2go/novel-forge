@@ -1,5 +1,3 @@
-"""Universal PostgreSQL Capability Pack runtime resolver foundation."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -106,7 +104,6 @@ class CapabilityPackRuntimeResolver:
         snapshot_creation_fencing_token: int | None = None,
         snapshot_creation_worker_id: str = "",
     ) -> CapabilityPackAttemptSnapshot:
-        """Resolve at most once and bind the result to the current Attempt fence."""
 
         creation_fence = (
             execution_fencing_token
@@ -199,7 +196,6 @@ class CapabilityPackRuntimeResolver:
         self,
         snapshot: CapabilityPackAttemptSnapshot,
     ) -> CapabilityPackArtifactMaterialization:
-        """Read exact registered content for an existing Attempt Snapshot only."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             stored = uow.repositories.capability_packs.find_attempt_snapshot(
@@ -231,7 +227,6 @@ class CapabilityPackRuntimeResolver:
         snapshot_id: str,
         snapshot_hash: str,
     ) -> CapabilityPackAttemptSnapshot:
-        """Load a previously frozen Snapshot without resolving current activation."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             stored = uow.repositories.capability_packs.find_attempt_snapshot(attempt_id)
@@ -540,7 +535,6 @@ class CapabilityPackRuntimeResolver:
 def chapter_node_binding_from_snapshot(
     snapshot: CapabilityPackExecutionSnapshot,
 ) -> dict[str, Any]:
-    """Expose the immutable Pack node as a runtime binding, never a global pointer."""
 
     operation_name, separator, operation_version = (
         snapshot.operation_definition_ref.rpartition("@")
@@ -605,7 +599,6 @@ def materialize_registered_pack_version(
     snapshot: CapabilityPackExecutionSnapshot,
     registered_version: Mapping[str, Any],
 ) -> CapabilityPackArtifactMaterialization:
-    """Materialize exact provider inputs without consulting active deployment state."""
 
     from novel_forge.modules.capability_packs.artifacts import (
         ArtifactKind,

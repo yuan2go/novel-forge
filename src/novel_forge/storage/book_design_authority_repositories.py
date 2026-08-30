@@ -1,5 +1,3 @@
-"""PostgreSQL write model for the Book + BookDesign Track B slice."""
-
 from __future__ import annotations
 
 from collections.abc import Callable

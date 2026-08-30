@@ -1,4 +1,4 @@
-"""Task-specific Provider projections from immutable Chapter Authority inputs.
+"""INVARIANT: Task-specific Provider projections from immutable Chapter Authority inputs.
 
 The full ContextBundle and Capability materialization remain replay evidence.  This
 module is the only Chapter path allowed to turn those Authority records into model
@@ -160,7 +160,6 @@ _OPERATIONAL_KEYS = {
 
 
 def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
-    """Return one non-duplicated stage payload without Authority audit metadata."""
 
     if stage == "retrieval":
         texts = inputs.get("texts")
@@ -354,7 +353,6 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
 
 
 def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
-    """Freeze typed selectors used by Preparation and every later Provider stage."""
 
     characters: set[str] = set()
     arcs: set[str] = set()
@@ -454,7 +452,6 @@ def project_narrative_state_facts(
     projection: Mapping[str, Any],
     chapter: int,
 ) -> list[dict[str, Any]]:
-    """Bound state-bearing inputs before Context Builder performs token selection."""
 
     materialized = [dict(item) for item in facts]
     selectors = _selectors(projection, {})
@@ -481,7 +478,6 @@ def build_provider_context_view(
     context_bundle: Mapping[str, Any],
     task_view: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Project Minimum Sufficient Context with deterministic bounded cardinality."""
 
     if stage == "retrieval":
         return {
@@ -864,13 +860,6 @@ def project_reader_outcome_context_input(
     asset_type: str,
     content: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Project one accepted Reader Outcome input without Authority envelopes.
-
-    The Book follow-up command binds a broad recovery lineage, but a Reader judge
-    needs only the accepted prose, audience contract, intended experience, and a
-    bounded view of current reader-facing state.  Empty projections preserve the
-    immutable input reference without sending that asset to the Provider.
-    """
 
     if asset_type == "draft_version":
         return _prose(content)
@@ -1032,7 +1021,6 @@ def _build_reader_outcome_context_view(
 def _build_planning_context_view(
     stage: str, context_bundle: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Project the Planning Authority bundle without its audit representation."""
 
     if context_bundle.get("schema_version") != "novelos.planning_context_bundle.v1":
         raise KernelError(
@@ -1347,7 +1335,6 @@ def _bound_planning_value(value: Any) -> tuple[Any, int, int]:
 def build_provider_knowledge_view(
     knowledge: Iterable[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Deduplicate selected MKAOS/Skill knowledge and remove deployment evidence."""
 
     selected: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -1503,7 +1490,6 @@ def _state_fact_relevant(
 
 
 def _state_fact_references(fact: Mapping[str, Any]) -> frozenset[str]:
-    """Extract exact typed references without coupling selection to JSON text."""
 
     references: set[str] = set()
 

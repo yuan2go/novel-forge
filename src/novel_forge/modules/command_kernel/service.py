@@ -37,13 +37,6 @@ def execute_transaction_command(
     fault_injector: TransactionCheckpoint | None = None,
     transaction_guard: TransactionGuard | None = None,
 ) -> dict[str, Any]:
-    """Execute a short, deterministic command in one PostgreSQL transaction.
-
-    Transaction commands never create Attempts or Leases. Admission, business
-    state, completion evidence, the replay result, and the terminal Operation
-    transition are committed together. The one post-commit checkpoint models a
-    lost HTTP response and is intentionally outside the transaction.
-    """
 
     checkpoint = fault_injector or _noop_checkpoint
     checkpoint("before_admission")

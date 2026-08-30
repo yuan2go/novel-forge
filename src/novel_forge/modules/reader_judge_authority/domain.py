@@ -1,4 +1,4 @@
-"""Immutable contracts and fail-closed rules for Reader Judge Authority."""
+"""INVARIANT: Immutable contracts and fail-closed rules for Reader Judge Authority."""
 
 from __future__ import annotations
 

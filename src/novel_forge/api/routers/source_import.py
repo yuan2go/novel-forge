@@ -1,5 +1,3 @@
-"""Product-level Source import commands and operational queries."""
-
 from __future__ import annotations
 
 from typing import Any

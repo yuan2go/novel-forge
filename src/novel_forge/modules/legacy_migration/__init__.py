@@ -1,5 +1,3 @@
-"""Frozen Legacy snapshot import through PostgreSQL Authority."""
-
 from .application import LegacyImportApplication, LegacyImportCommand
 from .approval import (
     LegacyMigrationApprovalApplication,

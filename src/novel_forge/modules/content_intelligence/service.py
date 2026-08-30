@@ -1,5 +1,3 @@
-"""PostgreSQL read applications for accepted long-form observations."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -10,7 +8,6 @@ from .domain import aggregate_pacing_windows
 
 
 class PacingAnalysisService:
-    """Aggregate only accepted PacingObservation AssetVersions as-of Chapter."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

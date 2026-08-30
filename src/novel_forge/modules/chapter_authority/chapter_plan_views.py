@@ -1,4 +1,3 @@
-"""Storage-free normalization and provider views for authoritative ChapterPlans."""
 from __future__ import annotations
 
 import hashlib

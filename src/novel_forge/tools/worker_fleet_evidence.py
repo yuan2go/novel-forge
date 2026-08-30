@@ -1,4 +1,3 @@
-"""SHA-bound evidence contract for the seven Authority worker scenarios."""
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -43,7 +42,6 @@ REQUIRED_SCENARIO_FIELDS = frozenset(
 def validate_worker_evidence(
     evidence: Mapping[str, Any], *, expected_worker: str = "", expected_sha: str = ""
 ) -> dict[str, Any]:
-    """Validate one scenario without accepting health-only or identity-only proof."""
     missing = sorted(REQUIRED_SCENARIO_FIELDS - evidence.keys())
     if missing:
         raise ValueError(f"worker evidence is missing required fields: {missing}")
@@ -94,7 +92,6 @@ def validate_worker_evidence(
 def build_worker_fleet_summary(
     scenarios: Iterable[Mapping[str, Any]], *, commit_sha: str
 ) -> dict[str, Any]:
-    """Fail closed unless all seven independent SHA-bound scenarios pass."""
     accepted: dict[str, dict[str, Any]] = {}
     for item in scenarios:
         validated = validate_worker_evidence(item, expected_sha=commit_sha)

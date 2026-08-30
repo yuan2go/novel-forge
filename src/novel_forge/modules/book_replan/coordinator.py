@@ -1,5 +1,3 @@
-"""Recap -> replacement Candidate -> PlanChange -> regeneration -> Book resume."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -134,7 +132,6 @@ class ReevaluateBookReplanCommand:
 
 
 class BookReplanCoordinator:
-    """Coordinates Authorities; it owns no Attempt, Lease, Fence, or Provider."""
 
     def __init__(
         self,
@@ -818,7 +815,6 @@ class BookReplanCoordinator:
         }
 
     def reevaluate(self, command: ReevaluateBookReplanCommand) -> dict[str, Any]:
-        """Close or escalate an applied Replan from a later Longform Recap."""
         self.principal.require("book.authority.execute", command.project_id)
         replan = self.require(command.replan_id)
         if replan["project_id"] != command.project_id or replan["status"] != "RESUMED":
@@ -1444,7 +1440,6 @@ class BookReplanCoordinator:
         source_arc_plan_version_id: str,
         portfolio_arc_plan_version_ids: tuple[str, ...],
     ) -> tuple[str, ...]:
-        """Return the persisted relation closure in dependency order."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

@@ -1,4 +1,5 @@
-"""Theme evolution and evidence-located anti-preaching gates."""
+"""INVARIANT: theme gates derive only from supplied evidence and perform no I/O."""
+
 from __future__ import annotations
 from typing import Any
 

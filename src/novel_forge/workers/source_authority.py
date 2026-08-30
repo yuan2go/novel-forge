@@ -1,4 +1,3 @@
-"""Standalone PostgreSQL Source Authority worker with lease takeover recovery."""
 from __future__ import annotations
 
 import os

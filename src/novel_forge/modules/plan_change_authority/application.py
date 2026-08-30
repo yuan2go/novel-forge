@@ -1,5 +1,3 @@
-"""Operation-backed PlanChange proposal, approval, impact and activation."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

@@ -1,4 +1,3 @@
-"""PostgreSQL-only MKAOS worker adapter over the shared Attempt/Lease scheduler."""
 from __future__ import annotations
 
 from novel_forge.modules.mkaos_authority.application import MkaosAuthorityApplication
@@ -8,7 +7,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 class MkaosAuthorityScheduler(SourceAuthorityScheduler):
-    """Reuse the Command Kernel scheduler mechanics; only domain selection differs."""
 
     def __init__(
         self,

@@ -1,4 +1,4 @@
-"""Generic fenced execution envelope for storage-free authority handlers."""
+"""INVARIANT: Generic fenced execution envelope for storage-free authority handlers."""
 
 from __future__ import annotations
 
@@ -228,13 +228,6 @@ def _load_materialized_result(
     request: AuthorityHandlerRequest,
     registration: AuthorityHandlerRegistration,
 ) -> AuthorityExecutionResult | None:
-    """Return an atomically materialized handler result without recomputing it.
-
-    A lease takeover changes the recovery fence. Handler output may legitimately
-    contain the original execution fence, so recomputing after materialization
-    would manufacture conflicting historical evidence. The stable operation
-    output is the recovery source of truth once it exists.
-    """
     with AuthorityUnitOfWork(database_url) as uow:
         require_current_fence(uow, command)
         uow.cursor.execute(
@@ -365,7 +358,6 @@ def _load_request(
 def _require_approved_archival_story_design(
     uow: AuthorityUnitOfWork, *, operation: dict[str, Any]
 ) -> bool:
-    """Authorize the narrow IMPORTED input path for Legacy StoryDesign only."""
     if operation["definition_name"] != "story_design.lifecycle.transition":
         return False
     command_payload = operation.get("command_payload") or {}

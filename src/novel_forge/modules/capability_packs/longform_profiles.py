@@ -1,5 +1,3 @@
-"""Deterministic governed Pack profiles for Planning and Reader sidecars."""
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -300,7 +298,6 @@ def build_narrative_evaluation_pack_profile(
     operation_definition_hash: str,
     pack_id: str = "narrative_semantic_evaluation_pack",
 ) -> LongformCapabilityPackProfile:
-    """Build the evaluator-owned Pack used by every design candidate stage."""
 
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)

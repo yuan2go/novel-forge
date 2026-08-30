@@ -1,5 +1,3 @@
-"""Storage-free domain transformations for the authoritative chapter chain."""
-
 from __future__ import annotations
 
 import json
@@ -60,13 +58,6 @@ def build_chapter_plan(
 
 
 def _retrieval_result_context_reference(content: dict[str, Any]) -> dict[str, Any]:
-    """Render replay identity without duplicating retrieved text in the prompt.
-
-    The immutable RetrievalResult remains a frozen Operation input. Context Build
-    consumes its full content to materialize exact source candidates, while this
-    protected reference preserves replay identity and ranking evidence without
-    spending the Draft token budget on a second copy of selected/rejected payloads.
-    """
 
     return {
         "type": content.get("type"),
@@ -386,7 +377,6 @@ def build_context_bundle(
 
 
 def _provider_accessible_fact_ids(plan: dict[str, Any]) -> set[str]:
-    """Derive one chapter-wide boundary without cross-POV knowledge union."""
 
     scene_boundaries = [
         {str(fact) for fact in scene.get("accessible_knowledge") or () if str(fact)}
@@ -646,7 +636,6 @@ def build_canon_patch(
 
 
 def _entity_key_components(entity_key: str) -> dict[str, str]:
-    """Rehydrate typed identity removed from compact state payload metadata."""
 
     components: dict[str, str] = {}
     for raw in entity_key.split("|"):

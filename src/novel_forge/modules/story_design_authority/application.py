@@ -1,5 +1,3 @@
-"""Command/Attempt-backed semantic lifecycle for Story Design assets."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -230,13 +228,6 @@ class PostgresStoryDesignAssetAuthority:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Persist immutable transition execution evidence without projecting state.
-
-        Planning activation uses this preparation seam before a separate atomic
-        coordinator commits the Story Design projection and typed Planning
-        binding in one PostgreSQL transaction. Other lifecycle transitions keep
-        using :meth:`transition`, which projects immediately after preparation.
-        """
 
         principal.require("story_design.authority.execute", command.project_id)
         if principal.principal_id != command.actor_id:

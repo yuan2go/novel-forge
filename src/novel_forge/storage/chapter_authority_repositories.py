@@ -1,7 +1,7 @@
-"""Persistence mechanics for fenced authority-handler input and output evidence.
+"""COMPATIBILITY: this import path remains stable for shared fenced persistence.
 
-The historical module path remains for compatibility.  No chapter business rule lives
-here; Chapter Authority and Content Authority share this repository.
+Chapter and Content Authorities share the repository; it owns no chapter
+business rules.
 """
 
 from __future__ import annotations

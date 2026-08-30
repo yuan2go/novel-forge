@@ -1,5 +1,3 @@
-"""Deterministic Book Production Supervisor over existing Domain Authorities."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -85,7 +83,6 @@ def _bounded_chapter_group_range(
 
 
 class PostgresBookProductionSupervisor:
-    """Chooses one business action per Tick; it owns no child Attempt or Provider."""
 
     def __init__(
         self,

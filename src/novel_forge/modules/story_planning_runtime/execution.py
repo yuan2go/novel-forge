@@ -1,5 +1,3 @@
-"""Planning-domain binding to the existing Production Execution Plane."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -127,7 +125,6 @@ def _planning_narrative_intelligence_need(
     production_profile: Mapping[str, Any],
     recent_repetition_keys: tuple[str, ...] = (),
 ) -> NarrativeIntelligenceNeed:
-    """Translate frozen Authority inputs into a bounded semantic selection need."""
 
     sources: list[Any] = [
         item.get("content")
@@ -302,15 +299,6 @@ def _merge_selection_terms(*values: tuple[str, ...]) -> tuple[str, ...]:
 def _recent_activated_repetition_keys(
     usage_records: Sequence[Mapping[str, Any]],
 ) -> tuple[str, ...]:
-    """Return repetition debt owned by current Planning intent.
-
-    A Context frozen for one divergent-search branch is evidence that the
-    provider saw a mechanism, not evidence that the Story selected or used
-    it. Counting every sibling branch here biases later branches and makes
-    their comparison inputs order-dependent. Current Plan bindings are the
-    first Planning-owned boundary that can legitimately constrain the next
-    search or elaboration task.
-    """
 
     return tuple(
         dict.fromkeys(
@@ -330,7 +318,6 @@ def _realization_reference_contract(
     frozen_by_operation_id: str,
     inputs: tuple[FrozenPlanningInput, ...],
 ) -> dict[str, Any]:
-    """Publish exact frozen identities the Provider may cite as realization truth."""
 
     references: dict[str, list[dict[str, str]]] = {}
     for domain_type, role_types in REALIZATION_AUTHORITY_ROLE_TYPES.items():
@@ -373,7 +360,6 @@ def _realization_reference_contract(
 
 @dataclass(frozen=True, slots=True)
 class PlanningExecutionRoute:
-    """Authority-selected Planning route carried into each frozen attempt."""
 
     model_profile: ModelProfile
     route_policy: RoutePolicy
@@ -504,7 +490,6 @@ def _fixture_chapter_shape(chapter_number: int) -> tuple[str, str]:
 
 
 def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
-    """Explicit deterministic response for SCRIPTED_FIXTURE routes only."""
 
     if stage not in _PLANNING_STAGES:
         raise ValueError(f"unsupported Planning fixture stage: {stage}")
@@ -1126,7 +1111,6 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
 
 
 def _fixture_character_arc_stage(boundary: int) -> str:
-    """Return a deterministic causal stage for scripted multi-chapter fixtures."""
 
     named = {
         0: "DENIAL",
@@ -1196,14 +1180,6 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
 
 
 def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
-    """Project frozen JSON values into the Provider's strict-schema dialect.
-
-    OpenAI Structured Outputs does not accept object- or array-valued ``const``
-    nodes.  This projection freezes object shape, array cardinality, and scalar
-    vocabulary without creating a second semantic authority.  Planning
-    Authority still compares the returned value with the complete frozen value,
-    including array order and multiplicity, before activation.
-    """
 
     if not values:
         raise ValueError("Frozen Provider schema requires at least one value")
@@ -1270,7 +1246,6 @@ def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
 
 
 def _realization_authority_ref_schema(domain_type: str) -> dict[str, Any]:
-    """Constrain Provider references to roles that can own the target domain."""
 
     role_types = REALIZATION_AUTHORITY_ROLE_TYPES[domain_type]
     string = {"type": "string", "minLength": 1}
@@ -1850,7 +1825,6 @@ def planning_provider_output_schema(
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """OpenAI-strict provider schema; Planning validation stays authoritative."""
 
     string = {"type": "string", "minLength": 1}
     string_array = {"type": "array", "items": {"type": "string"}}
@@ -2371,7 +2345,6 @@ class _PlanningExecutionBinding:
 
 
 class _PlanningGatewayEffectAdapter:
-    """Pure execution bridge for one already-frozen Planning request."""
 
     production_execution_gateway_backed = True
 
@@ -2629,7 +2602,6 @@ _PLANNING_PROVIDER_AMBIGUOUS_PHASES = frozenset(
 def _planning_failed_provider_submission_state(
     dispatched: Mapping[str, Any],
 ) -> str:
-    """Classify only durable Provider-send evidence, never a Python control path."""
 
     outcome = str(dispatched.get("outcome") or "unknown").strip().lower()
     if outcome in {"unknown", "ambiguous"}:
@@ -3095,7 +3067,6 @@ class _PlanningPepPort:
 
 
 class PostgresPlanningExecutionPreparer:
-    """Freeze Planning-domain PEP contracts on the current Authority Attempt."""
 
     production_execution_gateway_backed = True
 
@@ -4195,7 +4166,6 @@ class PostgresPlanningExecutionPreparer:
         command: StoryPlanningGenerationCommand,
         source: AuthorityAssetDocument,
     ) -> dict[str, Any]:
-        """Freeze the rejected candidate and governed failure evidence for repair."""
 
         _, separator, report_hash = command.repair_reason.partition(":")
         if not separator or not report_hash.startswith("sha256:"):

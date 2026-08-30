@@ -1,9 +1,3 @@
-"""PostgreSQL Authority Runtime Job execution plane.
-
-Runtime Jobs own execution coordination only. Business state remains in the
-domain Authority, Command Kernel Operation, Outbox, or ExternalEffect tables.
-"""
-
 from .application import (
     AUTHORITY_CONVERGENCE_REQUIRED,
     BOOK_OPENING_LEGACY_JOB_KIND,

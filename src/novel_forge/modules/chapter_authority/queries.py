@@ -1,5 +1,3 @@
-"""Strong PostgreSQL queries for authoritative chapter runs."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -229,7 +227,6 @@ class ChapterAuthorityQuery:
         project_id: str,
         root_operation_id: str,
     ) -> dict[str, Any]:
-        """Return immutable Chapter outputs and settlement state for Book acceptance."""
         run = self.require_run(
             project_id=project_id,
             root_operation_id=root_operation_id,
@@ -312,7 +309,6 @@ class ChapterAuthorityQuery:
         project_id: str,
         root_operation_id: str,
     ) -> dict[str, Any]:
-        """Return the concurrency state required by Chapter control commands."""
         if not project_id or not root_operation_id:
             raise ValueError("project_id and root_operation_id are required")
         with AuthorityUnitOfWork(self.database_url) as uow:

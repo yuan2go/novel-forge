@@ -1,4 +1,3 @@
-"""PostgreSQL persistence and projection queries for Project Authority."""
 from __future__ import annotations
 
 from typing import Any

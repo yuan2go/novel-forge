@@ -1,4 +1,3 @@
-"""Versioned Project/Workspace OperationDefinitions."""
 from __future__ import annotations
 
 from typing import Any

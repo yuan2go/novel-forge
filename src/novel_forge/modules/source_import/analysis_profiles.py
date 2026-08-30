@@ -1,5 +1,3 @@
-"""Versioned Source type strategies and dimension-specific Skill routing."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -64,7 +62,6 @@ class ResolvedAnalysisStrategy:
 def analysis_strategy_from_dict(
     payload: dict[str, Any], *, expected_fingerprint: str
 ) -> ResolvedAnalysisStrategy:
-    """Restore one admission-frozen strategy without re-resolving live Skills."""
     try:
         strategy = ResolvedAnalysisStrategy(
             profile_id=str(payload["profile_id"]),

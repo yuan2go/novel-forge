@@ -1,5 +1,3 @@
-"""Typed execution-time artifacts between an authoritative ChapterPlan and Context."""
-
 from __future__ import annotations
 
 import hashlib
@@ -25,7 +23,6 @@ def validate_chapter_execution_intent(
     expected_plan_asset_version_id: str = "",
     expected_plan_content_hash: str = "",
 ) -> dict[str, Any]:
-    """Verify the immutable Mission/Intent identities before downstream use."""
 
     normalized = dict(intent)
     intent_fingerprint = str(normalized.pop("intent_fingerprint", ""))
@@ -113,7 +110,6 @@ def validate_chapter_memo(
     intent: Mapping[str, Any],
     intent_asset_version_id: str,
 ) -> dict[str, Any]:
-    """Verify Memo identity and its exact non-authoritative Mission coverage."""
 
     validated_intent = validate_chapter_execution_intent(intent)
     normalized = dict(memo)
@@ -179,7 +175,6 @@ def build_chapter_execution_intent(
     chapter_plan: Mapping[str, Any],
     accepted_inputs: Iterable[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Compile a locked execution intent from Plan plus accepted state only."""
 
     chapter = int(
         chapter_plan.get("chapter") or chapter_plan.get("chapter_number") or 0
@@ -552,7 +547,6 @@ def qualify_chapter_memo(
     result: Mapping[str, Any],
     execution_evidence: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Bind a qualified working memo to Intent without changing its Plan."""
 
     validated_intent = validate_chapter_execution_intent(intent)
 

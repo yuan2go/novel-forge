@@ -1,5 +1,3 @@
-"""Canonical accepted-evidence input shared by live acceptance and repair."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,7 +12,6 @@ CANONICAL_LONGFORM_PROJECTOR_VERSION = "accepted-longform-projector-v2"
 def frozen_arc_plan_version_ids(
     *, request_payload: Mapping[str, Any], book_context: Mapping[str, Any]
 ) -> tuple[str, ...]:
-    """Resolve Arc scope from the frozen Chapter command before Book fallback."""
 
     refs = request_payload.get("context_version_refs")
     refs = dict(refs) if isinstance(refs, Mapping) else {}
@@ -72,7 +69,6 @@ class AcceptedLongformEvidence:
 def project_accepted_longform(
     evidence: AcceptedLongformEvidence,
 ) -> dict[str, Any]:
-    """Project only accepted facts; absent legacy observations remain UNKNOWN."""
 
     outcome = dict(evidence.chapter_outcome)
     adaptations: list[dict[str, Any]] = []

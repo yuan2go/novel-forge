@@ -1,5 +1,3 @@
-"""Bounded PostgreSQL Book Authority coordinator worker."""
-
 from __future__ import annotations
 
 import os
@@ -143,7 +141,6 @@ def execute_book_projection_repair_claim(
     lease_seconds: int = 30,
     maximum_chapters: int = 4,
 ) -> dict[str, object]:
-    """Execute one bounded repair envelope and atomically hand off continuation."""
 
     if (
         claim.job_kind != "BOOK_PROJECTION_REPAIR"
@@ -399,7 +396,6 @@ def execute_legacy_book_opening_claim(
     *,
     lease_seconds: int = 30,
 ) -> dict[str, object]:
-    """Execute one explicitly drained legacy-monolithic-v2 RuntimeJob."""
 
     if (
         claim.job_kind != BOOK_OPENING_LEGACY_JOB_KIND
@@ -423,13 +419,6 @@ def claim_next_book_opening_execution(
     worker_id: str,
     lease_seconds: int,
 ) -> RuntimeJobClaim | None:
-    """Claim v3 planning work first, then drain one exact legacy-v2 job.
-
-    The two repository seams each join BookOpening, OpeningExecution and
-    RuntimeJob on their exact versioned capability pair.  Keeping the fallback
-    here makes recovered legacy successors reachable from the production loop
-    without exposing either worker to the other contract's queue.
-    """
 
     claim = opening.claim_next_node_execution(
         worker_id=worker_id,
@@ -451,7 +440,6 @@ def execute_claimed_book_opening_execution(
     *,
     lease_seconds: int = 30,
 ) -> dict[str, object]:
-    """Dispatch one claim only through its exact versioned worker seam."""
 
     capability = (claim.job_kind, claim.runtime_group)
     if capability == (
@@ -487,12 +475,6 @@ def execute_book_opening_claim(
     *,
     lease_seconds: int = 30,
 ) -> dict[str, object]:
-    """Compatibility coordinator that drains the five independently claimed nodes.
-
-    Production workers call ``execute_book_opening_node_claim`` and return to the
-    scheduler after one node.  This bounded adapter preserves existing in-process
-    callers while still creating a distinct RuntimeJob/Attempt/Lease per layer.
-    """
 
     current_claim = claim
     for _ in range(5):
@@ -521,9 +503,8 @@ def execute_book_opening_claim(
             final = result.get("book_opening_result")
             if not isinstance(final, dict):
                 raise RuntimeError("completed Book Opening has no workflow result")
-            # This adapter exists only for legacy in-process callers.  Keep the
-            # v3 aggregate immutable in PostgreSQL and project its current
-            # Volume/Arc identities into the historical response shape here.
+            # Compatibility callers require the v2 response keys; project them
+            # without mutating the immutable PostgreSQL aggregate.
             compatible = dict(final)
             compatible["volume_plan_version"] = str(
                 compatible.get("current_volume_plan_version") or ""

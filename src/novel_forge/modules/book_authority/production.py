@@ -1,10 +1,3 @@
-"""Persistent Book Authority coordinator over the Chapter Authority command port.
-
-Only book checkpoints and Chapter operation references are stored here. Chapter
-attempts, leases, fences, effects, outputs, and terminal state remain owned by
-Chapter Authority.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -132,7 +125,6 @@ class BookProductionState(StrEnum):
 
 
 class BookProductionStateClass(StrEnum):
-    """Scheduling meaning for every durable Book production state."""
 
     ACTIONABLE = "ACTIONABLE"
     DURABLE_WAIT = "DURABLE_WAIT"
@@ -1763,7 +1755,6 @@ class PostgresBookAuthority:
         target_state: BookProductionState,
         principal: Principal,
     ) -> str:
-        """CAS one Supervisor-selected state through Book Authority."""
 
         book = self.require(book_run_id)
         principal.require("book.authority.execute", str(book["project_id"]))
@@ -1825,7 +1816,6 @@ class PostgresBookAuthority:
         expected_version: int,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Append a new input binding and CAS the current Book checkpoint pointer."""
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
         if target_state not in {
@@ -2166,7 +2156,6 @@ class PostgresBookAuthority:
     def complete_book_checkpoint(
         self, book_run_id: str, *, chapter_number: int
     ) -> dict[str, Any]:
-        """Persist final production closure and close the root Saga when terminal."""
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2481,14 +2470,6 @@ class PostgresBookAuthority:
     def _require_completed_opening_workflow_for_snapshot(
         self, command: StartBookProductionCommand
     ) -> None:
-        """Gate BookRun admission on an exact terminal Opening evidence link.
-
-        Migration 0104 transactionally entitles the exact InputSnapshot rows
-        that already existed at cutover.  New snapshots must instead have the
-        immutable final-node binding written by the Opening completion UoW, or
-        exact legacy-monolithic completion evidence.  Wall-clock timestamps are
-        never used as authorization provenance.
-        """
 
         from .opening_progress import PostgresBookOpeningWorkflowProgressQuery
 
@@ -2699,7 +2680,6 @@ class PostgresBookAuthority:
     def resolve_asset_refs(
         self, *, project_id: str, asset_version_ids: tuple[str, ...]
     ) -> tuple[dict[str, str], ...]:
-        """Resolve immutable Authority inputs without exposing a mutation port."""
         if len(asset_version_ids) != len(set(asset_version_ids)):
             raise KernelError(
                 "BOOK_INPUT_VERSION_DUPLICATE",
@@ -2857,7 +2837,6 @@ class PostgresBookAuthority:
         canon_snapshot_asset_version_id: str,
         acceptance_operation_id: str,
     ) -> dict[str, Any]:
-        """Freeze the accepted head observed by asynchronous advisory work."""
 
         command_payload = dict(request.get("command_payload") or {})
         context_refs = dict(command_payload.get("context_version_refs") or {})
@@ -3055,7 +3034,6 @@ class PostgresBookAuthority:
         chapter_number: int,
         requested: tuple[dict[str, Any], ...],
     ) -> tuple[dict[str, Any], ...]:
-        """Freeze compact current state from the immediately preceding acceptance."""
         if chapter_number <= 1:
             return requested
         book = self.require(book_run_id)
@@ -3211,7 +3189,6 @@ class PostgresBookAuthority:
             [AuthorityUnitOfWork, str, TransactionCheckpoint], dict[str, Any]
         ],
     ) -> dict[str, Any]:
-        """Run one deterministic Book mutation through Command Kernel authority."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(
@@ -3466,7 +3443,6 @@ def book_coordinate_definition(
 def select_chapter_acceptance_outputs(
     evidence: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
-    """Resolve the accepted generation through final release lineage."""
 
     outputs = list(evidence.get("outputs") or ())
     by_type: dict[str, list[dict[str, Any]]] = {}

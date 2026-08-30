@@ -19,7 +19,6 @@ from .contracts import (
 
 
 class ScriptedProviderAdapterV2:
-    """Protocol-only provider used for deterministic control-plane proofs."""
 
     provider = "scripted_provider_v2"
     reconciliation_mode = "query"

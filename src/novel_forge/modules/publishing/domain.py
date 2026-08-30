@@ -1,5 +1,3 @@
-"""Storage-free internal release gate and export manifest builder."""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -267,7 +265,6 @@ def finalize_blob_verified_release(
     canon_asset_version_id: str,
     context_bundle_version_id: str,
 ) -> dict[str, Any]:
-    """Bind final internal release readiness to authoritative post-upload evidence."""
     content_blobs = [item for item in export_blobs if item.get("role") == "content"]
     if len(content_blobs) != 1:
         raise KernelError(

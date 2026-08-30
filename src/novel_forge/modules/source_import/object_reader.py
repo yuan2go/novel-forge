@@ -1,5 +1,3 @@
-"""Verified object-store reads for Source Import workers."""
-
 from __future__ import annotations
 
 import hashlib

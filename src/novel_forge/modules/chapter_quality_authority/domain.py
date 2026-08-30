@@ -1,4 +1,4 @@
-"""Storage-free grouped quality evidence for the Chapter Authority Saga.
+"""INVARIANT: Storage-free grouped quality evidence for the Chapter Authority Saga.
 
 Deterministic checks only decide properties they can actually observe.  Semantic
 dimensions require a versioned calibrated evidence asset and otherwise fail
@@ -200,7 +200,6 @@ def build_quality_group_evidence(
 
 
 def build_chapter_quality_evidence(**kwargs: Any) -> list[dict[str, Any]]:
-    """Compatibility aggregate used by legacy callers; it preserves honest statuses."""
     return [
         item
         for group in QUALITY_GROUPS
@@ -216,12 +215,6 @@ def build_multiscale_quality_report(
     accepted_through_chapter: int,
     source_asset_version_ids: Iterable[str],
 ) -> dict[str, Any]:
-    """Project bounded longitudinal quality from accepted-only observations.
-
-    The Chapter runtime consumes compact observation projections, never full
-    historical prose.  Every usable row must name its Acceptance and accepted
-    outcome AssetVersion; unbound or future rows fail closed.
-    """
 
     observations = _accepted_quality_observations(
         context_bundle,

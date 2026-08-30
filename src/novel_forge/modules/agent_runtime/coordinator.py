@@ -1,4 +1,4 @@
-"""Shared Agent-turn execution and exact Domain commit coordination.
+"""INVARIANT: Shared Agent-turn execution and exact Domain commit coordination.
 
 The coordinator owns no lifecycle state.  It composes the existing Command
 Kernel Attempt/Fence, PEP evidence, collaboration Candidate, and Domain
@@ -40,7 +40,6 @@ from .contracts import AgentRuntimeBinding
 
 
 def agent_turn_identity(kind: str, attempt_id: str) -> str:
-    """Return one stable identity scheme shared by both scheduling modes."""
 
     return str(uuid5(NAMESPACE_URL, f"novel-forge:{kind}:{attempt_id}"))
 
@@ -62,7 +61,6 @@ class ExistingDomainAssetCommit:
 
 
 class ExistingDomainAssetCommitPort:
-    """Validate and reference an AssetVersion already written by Domain Authority."""
 
     def __init__(self, cursor: Any, expected: ExistingDomainAssetCommit) -> None:
         self.cursor = cursor
@@ -129,7 +127,6 @@ class ExistingDomainAssetCommitPort:
 
 
 class AgentTurnExecutionCoordinator:
-    """One Agent-turn core shared by Chapter and standalone schedulers."""
 
     def __init__(
         self,

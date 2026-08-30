@@ -1,4 +1,4 @@
-"""Exact qualified Foundation Set contracts.
+"""INVARIANT: Exact qualified Foundation Set contracts.
 
 The contracts bind existing immutable StoryDesign AssetVersions.  They do not
 create another Story Authority and deliberately contain no mutable projection.

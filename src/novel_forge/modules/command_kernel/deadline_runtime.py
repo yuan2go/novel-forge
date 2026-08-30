@@ -1,4 +1,3 @@
-"""Frozen business-deadline and cooperative cancellation probes."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -11,7 +10,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 def probe_operation_execution(
     database_url: str, *, operation_id: str, project_id: str
 ) -> dict[str, object]:
-    """Fail without extending the immutable business deadline."""
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -75,11 +73,6 @@ def scan_expired_operation_deadlines(
     actor_id: str,
     limit: int = 100,
 ) -> dict[str, object]:
-    """Issue idempotent cancellation commands for expired business deadlines.
-
-    A separate worker may call this while another worker is blocked. It never
-    extends the business deadline and does not forcibly terminate Python threads.
-    """
     if not actor_id or limit <= 0:
         raise ValueError("deadline scanner actor and positive limit are required")
     with AuthorityUnitOfWork(database_url) as uow:

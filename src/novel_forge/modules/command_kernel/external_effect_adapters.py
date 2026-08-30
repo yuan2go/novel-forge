@@ -1,4 +1,4 @@
-"""External-effect adapters. Calls are intentionally made outside database transactions."""
+"""INVARIANT: External-effect adapters. Calls are intentionally made outside database transactions."""
 from __future__ import annotations
 
 import base64
@@ -19,7 +19,6 @@ class ProviderResult:
 
 
 class ExternalEffectAdapterError(RuntimeError):
-    """Typed adapter failure that records whether provider submission may have started."""
 
     def __init__(self, message: str, *, request_sent: bool) -> None:
         super().__init__(message)
@@ -293,7 +292,6 @@ class LocalFileObjectStoreAdapter:
 
 
 class MinioObjectStoreExternalEffectAdapter:
-    """Idempotent object-store effect with hash/size reconciliation evidence."""
 
     provider = "minio_object_store"
     reconciliation_mode = "query"

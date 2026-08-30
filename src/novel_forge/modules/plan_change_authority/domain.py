@@ -1,5 +1,3 @@
-"""Pure semantic diff and approval policy for plan changes."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

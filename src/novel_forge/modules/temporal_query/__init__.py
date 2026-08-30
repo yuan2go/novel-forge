@@ -1,5 +1,3 @@
-"""PostgreSQL-backed, accepted-chapter temporal state queries."""
-
 from .service import (
     TemporalQueryService,
     TemporalStateEvent,

@@ -1,4 +1,4 @@
-"""Bounded background renewal for an already-fenced Authority lease."""
+"""INVARIANT: Bounded background renewal for an already-fenced Authority lease."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class LeaseHeartbeatGuard:
-    """Renew a lease while a blocking handler/adapter owns its fencing token."""
 
     def __init__(
         self,
@@ -56,7 +55,6 @@ class LeaseHeartbeatGuard:
         return False
 
     def assert_healthy(self) -> None:
-        """Fail the owning thread before it admits more work after lease loss."""
 
         self._assert_background_healthy()
         if self._probe is not None:

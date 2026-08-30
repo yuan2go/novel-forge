@@ -1,5 +1,3 @@
-"""Pure contracts for human preference and reader behavior calibration."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -48,7 +46,6 @@ BLIND_EVALUATION_DIMENSIONS = (
 
 @dataclass(frozen=True, slots=True)
 class HumanBlindDecision:
-    """One immutable subjective observation, never editorial Ground Truth."""
 
     decision_id: str
     pair_token: str
@@ -160,7 +157,6 @@ class BlindAdjudication:
 def reviewer_visible_decisions(
     decisions: Iterable[HumanBlindDecision], reviewer_id: str
 ) -> tuple[HumanBlindDecision, ...]:
-    """Do not reveal another evaluator's decisions before pack completion."""
 
     return tuple(item for item in decisions if item.reviewer_id == reviewer_id)
 

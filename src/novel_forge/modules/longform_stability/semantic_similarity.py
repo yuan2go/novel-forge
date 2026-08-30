@@ -1,4 +1,4 @@
-"""Provider-aware cross-chapter similarity evidence.
+"""INVARIANT: Provider-aware cross-chapter similarity evidence.
 
 The local hash adapter is intentionally retained as an offline regression
 signal.  It is never labelled as a semantic model and its evidence cannot be
@@ -31,7 +31,6 @@ class SimilarityEmbeddingProvider(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class LocalHashSimilarityProvider:
-    """Deterministic local regression signal; never semantic Provider evidence."""
 
     dimensions: int = 128
     name: str = "longform-local-hash"
@@ -63,11 +62,6 @@ def resolve_similarity_provider(
     env: Mapping[str, str] | None = None,
     strict: bool = False,
 ) -> tuple[SimilarityEmbeddingProvider | None, dict[str, Any]]:
-    """Resolve a semantic provider and describe whether evidence is verified.
-
-    Local/offline runs deliberately use a deterministic hash. Remote embeddings
-    are never resolved from environment variables inside the domain module.
-    """
 
     values = os.environ if env is None else env
     requested = str(values.get("NOVEL_FORGE_EMBEDDING_PROVIDER") or "").strip().lower()
@@ -120,7 +114,6 @@ def score_similarity(
     evidence_context: Mapping[str, Any] | None = None,
     thresholds: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Return explainable lexical, embedding, and composite similarity scores."""
 
     current_embedding, previous_embedding, execution_evidence = (
         execute_similarity_embedding_pair(

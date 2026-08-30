@@ -1,4 +1,4 @@
-"""Lease/fence recovery scheduler for Source import Operations."""
+"""INVARIANT: Lease/fence recovery scheduler for Source import Operations."""
 from __future__ import annotations
 
 from typing import Any

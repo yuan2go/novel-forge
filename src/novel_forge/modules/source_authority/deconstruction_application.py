@@ -1,5 +1,3 @@
-"""Command-Kernel application for governed source Observations and replay plans."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -126,7 +124,6 @@ class PlanSourceReprocessingCommand:
 
 
 class SourceDeconstructionApplication:
-    """Persists structured intelligence; it never fetches Source Blob bytes."""
 
     def __init__(
         self,

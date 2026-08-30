@@ -1,5 +1,3 @@
-"""Native long-form intelligence domains over governed Novel OS evidence."""
-
 from .domain import (
     aggregate_pacing_windows,
     build_hook_analysis,

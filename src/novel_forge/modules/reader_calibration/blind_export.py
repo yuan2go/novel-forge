@@ -1,5 +1,3 @@
-"""Deterministic reviewer-safe export for human blind comparison packs."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -187,7 +185,6 @@ def export_blind_evaluation_packs(
     evaluators: Iterable[BlindEvaluator],
     subjects: Iterable[BlindComparisonSubject],
 ) -> BlindExportBundle:
-    """Build two complementary packs while keeping identity mapping private."""
 
     reviewers = tuple(evaluators)
     rows = tuple(subjects)

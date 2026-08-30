@@ -1,4 +1,3 @@
-"""Storage-free controlled revision and ReviewIssue resolution claims."""
 from __future__ import annotations
 
 from typing import Any
@@ -79,7 +78,6 @@ def apply_quality_revision_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    """Apply one bounded repair ordered by aggregate Quality Authority."""
     if not all(
         (
             project_id,

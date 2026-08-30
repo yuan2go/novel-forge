@@ -1,5 +1,3 @@
-"""Immutable Prompt and Skill bundle contracts used by governed execution."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, fields

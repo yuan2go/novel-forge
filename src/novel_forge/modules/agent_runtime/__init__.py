@@ -1,5 +1,3 @@
-"""Unified PostgreSQL Agent Runtime built on the Authority Command Kernel."""
-
 from .contracts import (
     AgentCapabilityExecutionMapping,
     AgentDefinitionActivation,

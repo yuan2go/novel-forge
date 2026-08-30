@@ -1,5 +1,3 @@
-"""Structured Provider contracts for Source deconstruction and abstraction."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -241,7 +239,6 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
 def content_intelligence_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Explicit protocol fixture; it never qualifies production knowledge."""
 
     if stage == CLASSIFICATION_STAGE:
         return _classification_fixture(inputs)
@@ -339,7 +336,6 @@ def validate_content_intelligence_output(
     output_schema: Mapping[str, Any],
     value: Mapping[str, Any],
 ) -> Mapping[str, Any]:
-    """Validate the bounded domain contract used by real Provider backends."""
 
     expected = content_intelligence_output_schema(stage)
     if dict(output_schema) != expected:
@@ -502,7 +498,6 @@ def validate_content_intelligence_output(
 
 
 def _classification_fixture(inputs: Mapping[str, Any]) -> dict[str, Any]:
-    """Semantic protocol fixture; paths are weak evidence and never direct truth."""
 
     evidence = inputs.get("classification_evidence")
     samples = inputs.get("classification_samples")

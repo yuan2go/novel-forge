@@ -1,4 +1,3 @@
-"""Strong PostgreSQL projections over the shared Command Kernel runtime."""
 from __future__ import annotations
 
 from typing import Any
@@ -23,7 +22,6 @@ RECOVERY_STATUSES = (
 
 
 class AuthorityTaskQuery:
-    """Task/health views whose only source is PostgreSQL Authority state."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

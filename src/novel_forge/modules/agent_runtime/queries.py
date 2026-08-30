@@ -1,5 +1,3 @@
-"""Strong PostgreSQL projections for Agent Definitions and Agent Runs."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,7 +16,6 @@ from .contracts import (
 
 
 class AgentRuntimeQuery:
-    """Compose Agent Run views from the existing Authority fact owners."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -90,7 +87,6 @@ class AgentRuntimeQuery:
         return {**payload, "transcript": transcript}
 
     def recovery_health(self, *, project_id: str = "") -> dict[str, Any]:
-        """Aggregate derived recovery backlog without creating runtime state."""
 
         project_clause = "AND operation.project_id=%s" if project_id else ""
         parameters: list[Any] = [project_id] if project_id else []

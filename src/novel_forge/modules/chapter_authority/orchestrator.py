@@ -1,5 +1,3 @@
-"""Bounded PostgreSQL-only orchestration for one deterministic chapter."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -112,7 +110,6 @@ def admit_single_chapter_saga(
     registry: ChapterHandlerRegistry,
     permissions: frozenset[str],
 ) -> ChapterSagaAdmission:
-    """Persist a durable root Saga and first READY node without executing a handler."""
     _validate_request(request)
     plan_input = _chapter_plan_input(request)
     definition_version = chapter_definition_version(registry.model_effects_required)
@@ -861,7 +858,6 @@ def _measurement_evidence_inputs(
     root_operation_id: str,
     context_bundle_asset_version_id: str,
 ) -> list[dict[str, str]]:
-    """Freeze upstream Provider evidence that consumed this exact Context."""
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """

@@ -1,5 +1,3 @@
-"""Transactional projection for the durable Story Formation coordinator."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -272,12 +270,6 @@ class StoryFormationRepository:
         content_hash: str,
         operation_id: str,
     ) -> dict[str, Any]:
-        """Close Formation with an independently approved BookDesign v5.
-
-        Foundation layers must already be current. The BookDesign remains
-        owned and activated by Book Design Authority; this method only freezes
-        that exact Authority version into coordinator lineage.
-        """
 
         self.cursor.execute(
             """
@@ -744,13 +736,6 @@ class StoryFormationRepository:
         changed_role: FoundationRole,
         replacement_asset_version_id: str,
     ) -> None:
-        """Invalidate only future bindings that depend on a replaced parent.
-
-        Immutable AssetVersions and accepted history remain untouched.  A
-        repeated Formation using the same version is harmless; a changed
-        parent makes every current descendant unusable until rebound through
-        the governed sequence.
-        """
 
         self.cursor.execute(
             """

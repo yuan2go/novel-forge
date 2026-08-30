@@ -1,5 +1,3 @@
-"""Writer-facing projections over immutable Novel Forge authority evidence."""
-
 from .projections import (
     build_chapter_transaction_workspace,
     build_hook_debt_projection,

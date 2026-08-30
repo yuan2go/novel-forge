@@ -1,5 +1,3 @@
-"""PostgreSQL projections for Source Profile and AnalysisPlan AssetVersions."""
-
 from __future__ import annotations
 
 from typing import Any, Iterable

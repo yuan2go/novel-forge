@@ -1,4 +1,4 @@
-"""Fail-closed registry for Production Execution capabilities."""
+"""INVARIANT: Fail-closed registry for Production Execution capabilities."""
 
 from __future__ import annotations
 

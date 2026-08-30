@@ -1,4 +1,4 @@
-"""Attempt-bound Agent execution through ExternalEffect and PEP.
+"""INVARIANT: Attempt-bound Agent execution through ExternalEffect and PEP.
 
 This adapter reuses the Chapter PEP contract binder while Chapter model nodes
 are migrated.  It is deliberately not a Provider SDK adapter and cannot commit
@@ -68,7 +68,6 @@ _STAGES = frozenset(
 
 
 class ChapterGatewayAgentExecutionPreparer:
-    """Freeze a generic Agent work order against the current Chapter PEP route."""
 
     def __init__(
         self,

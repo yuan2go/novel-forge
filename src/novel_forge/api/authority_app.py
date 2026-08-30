@@ -1,8 +1,4 @@
-"""PostgreSQL-only production API surface.
-
-This module deliberately has no dependency on the legacy product service,
-projection synchronization, or filesystem routing policy.
-"""
+"""INVARIANT: production API composition cannot depend on legacy or filesystem authority."""
 
 from __future__ import annotations
 
@@ -748,7 +744,6 @@ def create_authority_app(settings: IndustrialSettings):
 
 
 def create_authority_app_from_env():
-    """Zero-argument Uvicorn reload factory for the Authority-only app."""
 
     return create_authority_app(IndustrialSettings.from_env())
 

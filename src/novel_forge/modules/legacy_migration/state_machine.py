@@ -1,4 +1,4 @@
-"""Durable Legacy migration phase and evidence contracts.
+"""INVARIANT: Durable Legacy migration phase and evidence contracts.
 
 The state machine is intentionally independent from PostgreSQL so that every
 caller, including resume/recovery code, shares the same transition rules and
@@ -113,7 +113,6 @@ def derive_migration_completion(
     *,
     required_level: MigrationVerificationLevel | str,
 ) -> MigrationCompletion:
-    """Derive one fail-closed run result from durable reconciliation facts."""
 
     level = MigrationVerificationLevel(required_level)
     domain_failure_count = (

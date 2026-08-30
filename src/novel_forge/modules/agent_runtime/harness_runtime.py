@@ -1,4 +1,4 @@
-"""Production adapters for the governed Agent Harness.
+"""INVARIANT: Production adapters for the governed Agent Harness.
 
 These adapters deliberately reuse AuthorityUnitOfWork and the owning Operation.
 They introduce no scheduler, lease, effect, or story-truth authority.
@@ -39,7 +39,6 @@ from .harness import (
 
 
 class PostgresAgentHarnessTranscript:
-    """Short-transaction append port for session provenance."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -92,7 +91,6 @@ class PostgresAgentHarnessTranscript:
 
 
 class PostgresOperationCancellation:
-    """Read the existing Command Kernel cancellation fact; own no state."""
 
     def __init__(self, database_url: str, *, project_id: str) -> None:
         self.database_url = database_url
@@ -107,7 +105,6 @@ class PostgresOperationCancellation:
 
 
 class PostgresAgentSessionUsageMeter:
-    """Aggregate existing receipt/ledger evidence over Agent causation lineage."""
 
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url
@@ -206,7 +203,6 @@ AgentToolHandler = Callable[
 
 
 class BoundAgentToolRouter:
-    """Invoke typed bindings after the Harness has applied its frozen allowlist."""
 
     def __init__(self, handlers: Mapping[str, AgentToolHandler]) -> None:
         if not handlers:
@@ -262,7 +258,6 @@ class BoundAgentToolRouter:
 
 
 class ScriptedAgentHarnessEffectAdapter:
-    """Deterministic development adapter; never qualifies as a real Provider."""
 
     provider = "scripted_agent_harness_fixture"
     reconciliation_mode = "query"
@@ -358,7 +353,6 @@ class ScriptedAgentHarnessEffectAdapter:
 
 
 class PostgresScriptedAgentModelTurnPort:
-    """ExternalEffect-backed protocol fixture for the durable Harness smoke path."""
 
     external_effect_backed = True
 
@@ -508,7 +502,6 @@ def build_scripted_agent_harness_factory(
     worker_id: str,
     lease_seconds: int = 30,
 ) -> Callable[[str, str, str], UnifiedAgentHarness]:
-    """Build the explicitly fixture-only durable Agent Harness composition."""
 
     def factory(project_id: str, attempt_id: str, trace_id: str) -> UnifiedAgentHarness:
         def query_accepted(

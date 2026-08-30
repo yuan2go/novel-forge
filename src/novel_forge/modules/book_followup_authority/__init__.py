@@ -1,5 +1,3 @@
-"""Governed Reader Outcome and Long-form Recap business operations."""
-
 from .domain import (
     LongformCheckpointType,
     ReaderOutcomeGate,

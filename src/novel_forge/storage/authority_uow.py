@@ -1,4 +1,4 @@
-"""Short PostgreSQL transaction boundary for Command Kernel authority writes."""
+"""INVARIANT: Short PostgreSQL transaction boundary for Command Kernel authority writes."""
 from __future__ import annotations
 
 from contextvars import ContextVar, Token

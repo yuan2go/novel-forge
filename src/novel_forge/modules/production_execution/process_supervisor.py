@@ -1,10 +1,3 @@
-"""Persistent, process-group-aware supervision for local Codex CLI workers.
-
-The process receipt is execution evidence, not an Attempt authority.  Production
-callers bind it to the existing Authority Attempt; legacy adapter callers may run
-unbound, but those receipts are explicitly ineligible as production evidence.
-"""
-
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -363,7 +356,6 @@ class ExecutionDirectoryLayout:
 
 
 class PersistentExecutionDirectory:
-    """Stable filesystem storage for process output and crash recovery evidence."""
 
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root).expanduser().resolve()
@@ -478,7 +470,6 @@ class PersistentExecutionDirectory:
         attempt_id: str | None = None,
         fencing_token: int | None = None,
     ) -> ExecutionDirectoryLayout:
-        """Import a running-process checkpoint for restart reconciliation."""
 
         layout = self.prepare(execution_id)
         request_digest = _canonical_hash({"execution_id": execution_id, "imported_running_process": True})
@@ -1057,11 +1048,6 @@ class CodexProcessSupervisor:
         reason: str,
         timeout: ProcessTimeout | None = None,
     ) -> ProcessRecoveryResult:
-        """Terminate only the verified local process group for an execution.
-
-        This is local-process cancellation evidence.  It deliberately makes no
-        claim that an upstream inference request was cancelled.
-        """
 
         recovery = self.recover(execution_id)
         receipt = recovery.receipt

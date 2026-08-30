@@ -1,4 +1,3 @@
-"""Domain-facing contract for Agent workspace result candidates."""
 from __future__ import annotations
 
 from dataclasses import dataclass

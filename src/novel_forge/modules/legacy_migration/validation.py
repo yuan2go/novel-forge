@@ -1,4 +1,3 @@
-"""Server-authoritative, operation-backed Legacy domain validation."""
 from __future__ import annotations
 
 import hashlib

@@ -1,4 +1,3 @@
-"""Typed candidate contracts for uncertain long-form analysis."""
 from __future__ import annotations
 
 from enum import StrEnum

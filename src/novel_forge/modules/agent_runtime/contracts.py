@@ -1,4 +1,4 @@
-"""Immutable contracts for the unified Agent Runtime.
+"""INVARIANT: Immutable contracts for the unified Agent Runtime.
 
 The runtime deliberately has no lifecycle aggregate of its own.  A run is the
 projection of an Authority Operation, its real Attempt/Lease/Fence, a frozen
@@ -21,7 +21,6 @@ _RELEASE_SHA = re.compile(r"^[0-9a-f]{40,64}$")
 
 
 class AgentRunStatus(StrEnum):
-    """Truthful presentation state derived from Command Kernel facts."""
 
     ADMITTED = "ADMITTED"
     WAITING_APPROVAL = "WAITING_APPROVAL"
@@ -49,7 +48,6 @@ class AgentDefinitionActivationStatus(StrEnum):
 
 
 class AgentExecutionEmbedding(StrEnum):
-    """Evidence about where the Agent turn is embedded, not lifecycle state."""
 
     EMBEDDED_DOMAIN_ATTEMPT = "EMBEDDED_DOMAIN_ATTEMPT"
     STANDALONE_CANDIDATE_OPERATION = "STANDALONE_CANDIDATE_OPERATION"
@@ -61,7 +59,6 @@ class AgentSchedulingAuthority(StrEnum):
 
 
 class AgentDomainCommitStatus(StrEnum):
-    """Query-only status derived from Candidate, Decision, and Commit facts."""
 
     NOT_REQUESTED = "NOT_REQUESTED"
     DOMAIN_DECISION_PENDING = "DOMAIN_DECISION_PENDING"
@@ -72,7 +69,6 @@ class AgentDomainCommitStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class AgentCapabilityExecutionMapping:
-    """One-to-one mapping to the existing PEP Capability Registry."""
 
     capability_id: str
     capability_version: int
@@ -104,7 +100,6 @@ class AgentCapabilityExecutionMapping:
 
 @dataclass(frozen=True, slots=True)
 class AgentDefinitionRuntimeContract:
-    """Content-addressed production extension of an AgentDefinition version."""
 
     agent_id: str
     definition_version: int
@@ -229,7 +224,6 @@ def derive_agent_run_status(
     lease_status: str = "",
     external_effect_status: str = "",
 ) -> AgentRunStatus:
-    """Derive an Agent Run status without persisting a duplicate lifecycle."""
 
     operation = str(operation_status).strip().upper()
     attempt = str(attempt_status).strip().upper()
@@ -273,7 +267,6 @@ def derive_agent_run_status(
 
 @dataclass(frozen=True, slots=True)
 class ChapterNodeExecutionBinding:
-    """Versioned Authority binding from a Chapter node to a candidate Agent."""
 
     binding_id: str
     binding_version: int
@@ -339,7 +332,6 @@ class ChapterNodeExecutionBinding:
 
 @dataclass(frozen=True, slots=True)
 class AgentRuntimeBinding:
-    """Frozen execution evidence bound to a real Authority Attempt and fence."""
 
     binding_id: str
     project_id: str

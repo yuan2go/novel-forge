@@ -1,4 +1,3 @@
-"""PostgreSQL MKAOS Candidate/Decision/Active Authority."""
 from .application import (
     ApproveKnowledgeCandidateCommand,
     BuildKnowledgePackCommand,

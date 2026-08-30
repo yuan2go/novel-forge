@@ -1,5 +1,3 @@
-"""OperationDefinitions for Agent Runtime administration and candidate work."""
-
 from __future__ import annotations
 
 from typing import Any

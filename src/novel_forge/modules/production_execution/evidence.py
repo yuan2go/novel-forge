@@ -1,5 +1,3 @@
-"""Backend-neutral execution evidence records and storage protocol."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

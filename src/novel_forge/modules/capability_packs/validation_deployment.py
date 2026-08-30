@@ -1,10 +1,3 @@
-"""Exact-release Capability Pack deployment for bounded validation campaigns.
-
-This module is an orchestration helper only. Capability Pack Authority and
-Agent Runtime remain the durable owners of registration, approval, deployment,
-activation, and execution bindings.
-"""
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -72,7 +65,6 @@ def register_validation_runtime_definitions(
     application_build_id: str,
     commit_sha: str,
 ) -> dict[str, str]:
-    """Register exact definitions required by the four production Packs."""
 
     planning = story_planning_generation_definition(
         application_build_id=application_build_id,

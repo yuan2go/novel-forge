@@ -1,4 +1,4 @@
-"""One Legacy record import using the shared fenced Authority runtime."""
+"""INVARIANT: One Legacy record import using the shared fenced Authority runtime."""
 from __future__ import annotations
 
 from dataclasses import dataclass

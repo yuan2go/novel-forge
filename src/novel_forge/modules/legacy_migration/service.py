@@ -1,4 +1,3 @@
-"""Resumable Legacy import coordinator and reconciliation queries."""
 from __future__ import annotations
 
 from dataclasses import asdict, replace

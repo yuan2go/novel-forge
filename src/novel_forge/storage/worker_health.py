@@ -70,7 +70,6 @@ def evaluate_worker_fleet_readiness(
 
 
 class PostgresWorkerHealthObserver:
-    """Persist rebuildable worker, database, and fleet operational projections."""
 
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url

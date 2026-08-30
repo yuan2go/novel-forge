@@ -1,5 +1,3 @@
-"""Typed boundary between chapter business handlers and PostgreSQL authority."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,7 +10,6 @@ from novel_forge.modules.command_kernel.errors import KernelError
 def resolve_stage_context_token_budget(
     command: dict[str, Any], stage: str, *, default: int = 6000
 ) -> int:
-    """Resolve a stage budget only from the frozen Chapter command."""
 
     budget = int(command.get("context_token_budget") or default)
     report = command.get("preparation_report")

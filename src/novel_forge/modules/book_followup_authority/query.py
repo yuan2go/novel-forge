@@ -1,5 +1,3 @@
-"""Read-only PostgreSQL projections for governed post-chapter results."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -33,7 +31,6 @@ class BookFollowupProjectionQuery:
         )
 
     def asset(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
-        """Resolve one immutable input with content and project ownership."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -67,12 +64,6 @@ class BookFollowupProjectionQuery:
         through_chapter: int,
         current_report_asset_version_id: str,
     ) -> dict[str, Any]:
-        """Load the complete accepted Reader sequence for a recap boundary.
-
-        Every accepted chapter through the boundary must have a successful
-        Reader report and state transition. Missing sidecar evidence fails
-        closed instead of being represented by invented stable defaults.
-        """
 
         if through_chapter <= 0 or not current_report_asset_version_id:
             raise ValueError("Reader recap evidence boundary is invalid")

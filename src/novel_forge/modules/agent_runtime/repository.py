@@ -1,5 +1,3 @@
-"""PostgreSQL repository for unified Agent Runtime configuration and evidence."""
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -34,7 +32,6 @@ from .harness import (
 
 
 class PostgresAgentRuntimeRepository:
-    """Cursor-bound repository used inside the existing Authority UoW."""
 
     production_authority = True
 
@@ -44,7 +41,6 @@ class PostgresAgentRuntimeRepository:
     def create_harness_session(
         self, session: AgentHarnessSession
     ) -> AgentHarnessSession:
-        """Freeze one reasoning session under an admitted durable Operation."""
 
         self.cursor.execute(
             """
@@ -184,7 +180,6 @@ class PostgresAgentRuntimeRepository:
         target_status: AgentHarnessStatus | None = None,
         usage: AgentHarnessUsage | None = None,
     ) -> AgentHarnessSession:
-        """CAS-append transcript evidence and advance the provenance projection."""
 
         event_type = AgentTranscriptEventType(event_type)
         if not request_id.strip() or turn_number < 0 or not trace_id.strip():
@@ -298,7 +293,6 @@ class PostgresAgentRuntimeRepository:
     def committed_request_events(
         self, *, agent_session_id: str
     ) -> tuple[Mapping[str, Any], ...]:
-        """Restore only transcript slices closed by REQUEST_COMMITTED."""
 
         self.cursor.execute(
             """
@@ -613,7 +607,6 @@ class PostgresAgentRuntimeRepository:
         return result
 
     def lock_active_definition(self, agent_id: str) -> dict[str, Any]:
-        """Serialize admission against definition disable/upgrade."""
 
         self.cursor.execute(
             """
@@ -632,11 +625,6 @@ class PostgresAgentRuntimeRepository:
     def lock_definition_version(
         self, agent_id: str, definition_version: int
     ) -> dict[str, Any]:
-        """Resolve an exact immutable definition frozen by a Pack Deployment.
-
-        A canary may legitimately run two Pack versions at once, so the global
-        Agent activation pointer cannot be the authority for both versions.
-        """
 
         self.cursor.execute(
             """

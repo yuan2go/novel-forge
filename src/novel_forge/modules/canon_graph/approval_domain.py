@@ -1,5 +1,3 @@
-"""Storage-free Canon proposal, risk, and decision reduction rules."""
-
 from __future__ import annotations
 
 import hashlib
@@ -190,7 +188,6 @@ def build_canon_change_proposal(
 def _semantic_identity_components(
     field: str, item: dict[str, Any]
 ) -> tuple[tuple[str, str], ...]:
-    """Resolve domain identity without treating an evidence location as identity."""
 
     for fields in _SEMANTIC_IDENTITY_FIELDS.get(field, ()):
         components = tuple((name, str(item.get(name) or "").strip()) for name in fields)

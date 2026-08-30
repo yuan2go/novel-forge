@@ -40,7 +40,6 @@ class MinioObjectStore:
         }
 
     def put_json(self, *, object_key: str, payload: dict[str, Any]) -> str:
-        """Store canonical JSON evidence without exposing credentials or local paths."""
         self.ensure_buckets()
         body = json.dumps(
             payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")

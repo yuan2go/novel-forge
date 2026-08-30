@@ -1,4 +1,3 @@
-"""Retrieval execution contracts; index governance remains in retrieval storage."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -120,7 +119,6 @@ def execute_similarity_embedding_pair(
     environment: str,
     evidence_context: Mapping[str, Any],
 ) -> tuple[list[float], list[float], dict[str, Any]]:
-    """Execute pair embeddings while keeping remote invocation inside PEP."""
 
     if execution_port is not None:
         candidate = execution_port.embed_batch(

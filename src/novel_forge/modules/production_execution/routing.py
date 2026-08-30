@@ -1,5 +1,3 @@
-"""Stable ModelProfile registry and immutable RouteSnapshot resolution."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -54,7 +52,6 @@ class FallbackPolicyRegistry:
 
 
 class ModelProfileRegistry:
-    """Registry of versioned stable aliases; it performs no model call."""
 
     def __init__(self, profiles: Iterable[ModelProfile] = ()) -> None:
         self._profiles: dict[tuple[str, int], ModelProfile] = {}
@@ -141,7 +138,6 @@ class RoutePolicyRegistry:
 
 
 class RouteSnapshotRegistry:
-    """Attempt-scoped immutable RouteSnapshot materializer."""
 
     def __init__(self, snapshots: Iterable[RouteSnapshot] = ()) -> None:
         self._by_id: dict[str, RouteSnapshot] = {}
@@ -189,7 +185,6 @@ class RouteRecommendation:
 
 
 class RouteRecommendationReadModel:
-    """Advisory projection only; RoutePolicy remains admission authority."""
 
     def __init__(self, recommendations: Iterable[RouteRecommendation] = ()) -> None:
         self._rows = {

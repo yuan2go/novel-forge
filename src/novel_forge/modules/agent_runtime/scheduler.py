@@ -1,10 +1,3 @@
-"""Persistent Agent candidate scheduler over the shared Command Kernel.
-
-No lifecycle facts are owned here.  PostgreSQL Authority Operations, Attempts,
-leases, fences, ExternalEffects and collaboration candidates remain the only
-runtime facts.  The scheduler only coordinates them.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
@@ -79,7 +72,6 @@ AgentHarnessFactory = Callable[[str, str, str], UnifiedAgentHarness]
 
 @dataclass(frozen=True, slots=True)
 class PreparedAgentExecution:
-    """Attempt-bound PEP contracts materialized before external execution."""
 
     execution_port: DomainExecutionPort
     route_snapshot_ref: str
@@ -149,7 +141,6 @@ class AgentSchedulerTick:
 
 
 class AgentAuthorityScheduler:
-    """Advance one PostgreSQL Agent candidate Operation at a time."""
 
     def __init__(
         self,

@@ -4,14 +4,12 @@ from enum import StrEnum
 
 
 class RuntimeControlLevel(StrEnum):
-    """How strictly a runtime environment is composed and admitted."""
 
     LOCAL = "LOCAL"
     CONTROLLED = "CONTROLLED"
 
 
 class RuntimeEnvironment(StrEnum):
-    """Canonical deployment environment used by every production boundary."""
 
     DEVELOPMENT = "development"
     TEST = "test"

@@ -6,7 +6,7 @@
     "tests",
     "scripts"
   ],
-  "diagnostic_count": 520,
+  "diagnostic_count": 519,
   "policy": {
     "new_file_diagnostics": "FORBIDDEN",
     "new_rule_for_existing_file": "FORBIDDEN",
@@ -315,7 +315,7 @@
     },
     {
       "path": "src/novel_forge/modules/ending/domain.py",
-      "content_sha256": "6265a9502b02030c49a780519ff13ffb25dad00d27d6dbf126aa72d66c03778b",
+      "content_sha256": "34915028f0784b8ffaaea4cbd64ad1dd69ed6a151bb9437bf5638248d08b7f84",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -348,7 +348,7 @@
     },
     {
       "path": "src/novel_forge/modules/longform_stability/semantic_domain.py",
-      "content_sha256": "a3ece5a837fb696535e83c0283c2fff4781a9d230cccb18f27d4a5ed4b6024d5",
+      "content_sha256": "a258a4c1c2c5c3009b9cf4339909f06e4435c4a3d861e8ba90f696c03005d436",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -448,7 +448,7 @@
     },
     {
       "path": "src/novel_forge/modules/provider_qualification/authority.py",
-      "content_sha256": "d4f9c1a57a20d5eba988aa70f589365b7b09aa139f685982af5d22a95b2ddaa5",
+      "content_sha256": "00206997dd67d8383fb6ba4ae8c6a2e0a174e1ce65431177d1d142858bf7d44c",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -493,7 +493,7 @@
     },
     {
       "path": "src/novel_forge/modules/theme/domain.py",
-      "content_sha256": "30c40228f56e2510170e73d798b6653f58337c43b27f97dd4358e123b49f1b52",
+      "content_sha256": "86a9745142dbe5ab1365c5352fa601d45083c19e82c402bcaed94e71536919e4",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -549,17 +549,6 @@
       }
     },
     {
-      "path": "src/novel_forge/tools/authority_parity_manifest.py",
-      "content_sha256": "212afcdfb3f8982bbc2b924f538b7f660490ab29caece0e0fc5d416620c85808",
-      "owner": "Domain Authority",
-      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
-      "replacement": "Module-local Ruff cleanup during next functional change",
-      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
-      "violations": {
-        "F401": 1
-      }
-    },
-    {
       "path": "src/novel_forge/tools/production_execution_inventory.py",
       "content_sha256": "1179f994dad2286cc3d7054448d271fb8f0c44477a4bc3cc5992ce9a31df2432",
       "owner": "Domain Authority",
@@ -572,7 +561,7 @@
     },
     {
       "path": "src/novel_forge/workers/healthcheck.py",
-      "content_sha256": "4df9c7f94a35d18d818787a5f4d4dd2a5d50dbcbfb6eccfd8f3c43bd39a94687",
+      "content_sha256": "aface19838188322bc4a9db6d7c807bc41e62151f9c49201be7ef90940b0ea50",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",

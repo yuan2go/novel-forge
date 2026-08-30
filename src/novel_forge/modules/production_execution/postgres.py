@@ -1,4 +1,4 @@
-"""PostgreSQL read adapters for the Production Execution Plane.
+"""INVARIANT: PostgreSQL read adapters for the Production Execution Plane.
 
 These adapters query existing Command Kernel Attempt/Lease authority and existing
 Authority AssetVersions.  They intentionally create no parallel execution tables.
@@ -105,7 +105,6 @@ class PostgresAttemptFenceVerifier:
 
 
 class PostgresExecutionRecoveryAuthorizationStore:
-    """Persist immutable dual-fence authorization plus its audit/outbox fact."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -226,7 +225,6 @@ class PostgresExecutionRecoveryAuthorizationStore:
 
 
 class PostgresExecutionContractSource:
-    """Reads immutable execution contracts from Authority AssetVersion documents."""
 
     MODEL_PROFILE_PREFIX = "production_execution/model_profiles"
     ROUTE_POLICY_PREFIX = "production_execution/route_policies"

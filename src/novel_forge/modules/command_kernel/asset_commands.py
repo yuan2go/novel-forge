@@ -1,4 +1,3 @@
-"""Typed commands for PostgreSQL-authoritative asset documents."""
 from __future__ import annotations
 
 from dataclasses import dataclass

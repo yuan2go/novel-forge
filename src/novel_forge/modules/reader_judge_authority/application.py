@@ -1,4 +1,4 @@
-"""PostgreSQL append-only Reader Judge qualification and runtime resolution."""
+"""INVARIANT: PostgreSQL append-only Reader Judge qualification and runtime resolution."""
 
 from __future__ import annotations
 
@@ -48,7 +48,6 @@ DEFINITIONS = (
 
 
 class ReaderJudgeAuthorityApplication:
-    """Writes Judge facts through Kernel transaction commands; never runs a model."""
 
     def __init__(
         self,
@@ -666,7 +665,6 @@ class ReaderJudgeAuthorityApplication:
         correlation_id: str,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Aggregate governed behavior facts; no caller-supplied probability pairs."""
         principal.require("reader_judge.authority.manage", project_id)
 
         def handler(

@@ -1,4 +1,4 @@
-"""Pure decision logic for governed post-chapter operations.
+"""INVARIANT: Pure decision logic for governed post-chapter operations.
 
 This module intentionally cannot write assets, mutate Canon, or activate plans.
 Handlers persist its outputs through the shared Authority handler runtime.
@@ -57,7 +57,6 @@ def evaluate_reader_outcome(
     *,
     evidence: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Return an explainable gate without reducing the state to one average."""
 
     missing = [name for name in READER_STATE_DIMENSIONS if name not in state]
     if missing:

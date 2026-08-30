@@ -1,4 +1,5 @@
-"""Closure planning, unified payoff state, and ending quality gates."""
+"""INVARIANT: ending gates derive only from supplied state and perform no I/O."""
+
 from __future__ import annotations
 from typing import Any
 

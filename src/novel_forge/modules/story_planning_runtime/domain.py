@@ -1,4 +1,4 @@
-"""Pure contracts for Capability-Pack-backed Story Planning generation.
+"""INVARIANT: Pure contracts for Capability-Pack-backed Story Planning generation.
 
 The module owns no scheduler, provider, persistence, or activation state.  It
 describes the immutable inputs and candidate evidence handed between the
@@ -68,7 +68,6 @@ DEFAULT_NARRATIVE_LOAD_LIMITS: Mapping[str, int] = MappingProxyType(
 def canonical_book_volume_allocation(
     book_plan: Mapping[str, Any],
 ) -> tuple[tuple[dict[str, Any], ...], int]:
-    """Derive the immutable, gap-free Volume chapter allocation for one Book."""
 
     raw = book_plan.get("volume_skeleton")
     target_value = (book_plan.get("length_strategy") or {}).get("target_chapters")
@@ -904,7 +903,6 @@ def build_planning_constraint_envelope(
     candidate_payload: Mapping[str, Any],
     arc_working_set: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Compile immutable parent constraints for validation and downstream execution."""
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
@@ -1253,7 +1251,6 @@ def canonical_hash(value: Any) -> str:
 def require_chapter_schedule_row(
     source_content: Mapping[str, Any], *, chapter_number: int
 ) -> dict[str, Any]:
-    """Extract one immutable Chapter row from its frozen Scheduling source."""
 
     if chapter_number <= 0:
         raise ValueError("Chapter schedule binding requires a positive Chapter number")

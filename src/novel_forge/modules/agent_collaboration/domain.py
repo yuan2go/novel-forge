@@ -1,4 +1,4 @@
-"""Pure domain contracts for Authority-led Agent collaboration.
+"""INVARIANT: Pure domain contracts for Authority-led Agent collaboration.
 
 The module deliberately owns no provider, process, scheduler, or persistence
 implementation.  Agent output remains a proposal until a domain Authority

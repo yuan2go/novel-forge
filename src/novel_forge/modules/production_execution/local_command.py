@@ -1,5 +1,3 @@
-"""Policy-bounded local command transport owned by the execution plane."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +7,6 @@ from typing import Mapping, Protocol, Sequence
 
 
 class LocalCommandError(RuntimeError):
-    """A bounded command failed after the execution plane admitted it."""
 
     def __init__(self, message: str, *, request_sent: bool) -> None:
         super().__init__(message)
@@ -28,7 +25,6 @@ class LocalCommandExecutionPort(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class BoundedLocalCommandExecutionPort:
-    """Non-shell transport with executable and output-size admission policy."""
 
     allowed_executables: tuple[str, ...]
     maximum_output_bytes: int = 64 * 1024 * 1024
@@ -94,7 +90,6 @@ class BoundedLocalCommandExecutionPort:
 def git_command_environment(
     source: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
-    """Build the minimal non-interactive environment required by Git."""
 
     values = os.environ if source is None else source
     allowed = (

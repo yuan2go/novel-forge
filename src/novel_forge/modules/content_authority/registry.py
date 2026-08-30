@@ -1,4 +1,3 @@
-"""Content handler/codec registry and shared-runtime registrations."""
 from __future__ import annotations
 
 from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRegistration

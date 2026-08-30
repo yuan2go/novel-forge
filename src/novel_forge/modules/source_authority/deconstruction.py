@@ -1,4 +1,4 @@
-"""Deterministic contracts for governed, incremental source deconstruction.
+"""INVARIANT: Deterministic contracts for governed, incremental source deconstruction.
 
 This module never reads Source Blob bytes.  It validates the identities and
 structured results that cross the Source Authority commit boundary after a

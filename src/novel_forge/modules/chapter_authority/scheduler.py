@@ -1,5 +1,3 @@
-"""Durable Chapter Saga scheduler over the shared Command Kernel primitives."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -107,7 +105,6 @@ def _admission_dependencies(node: ChapterNode) -> tuple[ChapterNode, ...]:
 
 
 class ChapterAuthorityScheduler:
-    """Advance at most one Chapter node using only PostgreSQL-rebuilt state."""
 
     def __init__(
         self,
@@ -266,7 +263,6 @@ class ChapterAuthorityScheduler:
         saga: dict[str, Any],
         children: dict[ChapterNode, dict[str, Any]],
     ) -> ChapterSchedulerTick | None:
-        """Run at most one bounded correction step ordered by aggregate Quality."""
         root_key = request.idempotency_key or (
             f"{request.project_id}:chapter:{request.chapter}:root"
         )

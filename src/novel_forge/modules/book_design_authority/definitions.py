@@ -1,4 +1,3 @@
-"""Operation definitions and execution classification for BookDesign Authority."""
 from __future__ import annotations
 
 from typing import Any
@@ -79,9 +78,8 @@ def book_design_definitions(
                 "handler_contract_version": "book-design-authority-handler-v1",
                 "application_build_id": application_build_id,
                 "commit_sha": commit_sha,
-                # The shared kernel persists this enum as ``transactional``;
-                # the policy field below carries the architecture-facing
-                # classification name used by Track B.
+                # Command Kernel persists this field as ``transactional``;
+                # policy retains the domain scheduling classification.
                 "execution_mode": "transactional",
                 "permissions": ["book_design.authority.execute"],
                 "approval_policy": {"required": False, "policy_key": "domain-decision-record"},

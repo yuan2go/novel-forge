@@ -1,5 +1,3 @@
-"""PostgreSQL-only Book Authority command and reconciliation entrypoints."""
-
 from __future__ import annotations
 
 from dataclasses import asdict

@@ -1,4 +1,4 @@
-"""Append-only Volume, Arc, contribution, and Ending checkpoint persistence."""
+"""INVARIANT: Append-only Volume, Arc, contribution, and Ending checkpoint persistence."""
 
 from __future__ import annotations
 
@@ -25,7 +25,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 class PostgresBookNarrativeCheckpointAuthority:
-    """Records checkpoint facts in a command caused by Chapter acceptance."""
 
     def __init__(
         self,

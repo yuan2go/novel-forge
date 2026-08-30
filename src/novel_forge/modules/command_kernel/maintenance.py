@@ -1,4 +1,3 @@
-"""Bounded operational recovery cycle for the Authority maintenance worker."""
 from __future__ import annotations
 
 from uuid import uuid4

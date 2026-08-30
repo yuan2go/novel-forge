@@ -1,4 +1,3 @@
-"""Polling Content Authority worker backed by Command Kernel leases."""
 from __future__ import annotations
 
 import os

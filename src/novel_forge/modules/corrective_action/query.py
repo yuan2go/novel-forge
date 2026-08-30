@@ -33,12 +33,6 @@ _FIELDS = (
 
 
 class CorrectiveActionQuery:
-    """Read the shared Issue -> Action -> Re-evaluation contract.
-
-    The projection does not own execution state. It resolves lineage from the
-    immutable outputs and lifecycle records of the Chapter, Reader, Longform,
-    PlanChange, Attempt, and Operation Authorities.
-    """
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

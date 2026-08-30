@@ -1,5 +1,3 @@
-"""Canonical ownership contract for layered long-form Narrative Memory."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

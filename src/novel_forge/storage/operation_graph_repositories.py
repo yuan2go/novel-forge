@@ -1,4 +1,3 @@
-"""Focused PostgreSQL repositories for Operation Graph, Saga, and completion."""
 from __future__ import annotations
 
 from typing import Any

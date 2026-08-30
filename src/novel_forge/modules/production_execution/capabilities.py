@@ -1,5 +1,3 @@
-"""Governed capability identifiers and immutable execution definitions."""
-
 from __future__ import annotations
 
 import hashlib

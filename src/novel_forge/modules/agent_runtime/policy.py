@@ -1,5 +1,3 @@
-"""Server-authoritative Tool policy resolution for Agent Harness admission."""
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -50,7 +48,6 @@ SERVER_AGENT_TOOL_CATALOG: dict[str, AgentToolSpec] = {
 
 
 class ServerAgentHarnessPolicyResolver:
-    """Freeze Definition/Role/Pack/Skill/Tool policy under PostgreSQL locks."""
 
     def __init__(
         self,

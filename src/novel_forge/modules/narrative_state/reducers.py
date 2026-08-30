@@ -1,4 +1,3 @@
-"""Deterministic reducers for materialized Narrative State v2 snapshots."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -113,11 +112,6 @@ def reduce_story_state_v2(
     chapter_outcome_id: str,
     previous_story_state_asset_version_id: str = "",
 ) -> dict[str, Any]:
-    """Apply one accepted ChapterOutcome event set to the current projection.
-
-    The reducer never mutates evidence. It is strict about chapter order and the
-    Project/Book scope, so replay and live acceptance use the same semantics.
-    """
 
     if not chapter_outcome_asset_version_id or not chapter_outcome_id:
         raise KernelError(
@@ -246,7 +240,6 @@ def reduce_story_state_v2(
 def rebuild_story_state(
     accepted_outcomes: Iterable[tuple[str, dict[str, Any]]],
 ) -> dict[str, Any]:
-    """Rebuild a projection from ordered accepted immutable outcomes."""
 
     state: dict[str, Any] | None = None
     previous_chapter = 0
@@ -271,7 +264,6 @@ def rebuild_story_state(
 def project_entity_state(
     snapshot: dict[str, Any], state_kind: str, entity_key: str
 ) -> dict[str, Any]:
-    """Return one materialized entity without inferring from historical changes."""
 
     try:
         kind = NarrativeStateKind(state_kind)
@@ -293,7 +285,6 @@ def project_entity_state(
 
 
 def compact_current_state_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
-    """Flatten a v2 current snapshot into bounded, provenance-carrying facts."""
 
     if snapshot.get("contract_version") != "story-state-snapshot-v2":
         raise KernelError(
@@ -325,7 +316,6 @@ def compact_current_state_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]
 
 
 def compact_canon_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
-    """Project accepted Canon truth without duplicating Authority metadata."""
 
     if snapshot.get("contract_version") != "canon-snapshot-v2":
         raise KernelError(
@@ -378,7 +368,6 @@ def materialize_canon_snapshot_v2(
     chapter_outcome_asset_version_id: str,
     previous_canon_asset_version_id: str = "",
 ) -> dict[str, Any]:
-    """Materialize Canon truth from the accepted fact events in the same transaction."""
 
     if story_state.get("contract_version") != "story-state-snapshot-v2":
         raise KernelError(
@@ -561,13 +550,6 @@ def _validate_immutable_definition(
 def _validate_character_lifecycle(
     old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
 ) -> None:
-    """Keep death/invalidation terminal unless Authority explicitly corrects it.
-
-    A superseding event means the prior accepted assertion itself was replaced.
-    An ordinary later upsert cannot silently turn a dead character alive again;
-    an in-story return must be modeled as an explicit, reviewable transition on
-    a new semantic identity rather than erasing accepted history.
-    """
 
     if event.state_kind is not NarrativeStateKind.CHARACTER_STATE:
         return
@@ -615,7 +597,6 @@ def _validate_obligation_transition(
 def _resolve_legacy_active_obligation(
     old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
 ) -> None:
-    """Interpret legacy ACTIVE as liveness, not a canonical lifecycle phase."""
 
     if event.state_kind is not NarrativeStateKind.NARRATIVE_OBLIGATION:
         return
@@ -778,7 +759,6 @@ def _serialized_current_state(
 def expire_effective_ranges(
     snapshot: dict[str, Any], *, at_chapter: int
 ) -> dict[str, Any]:
-    """Return a projection with facts whose explicit effective range has ended removed."""
 
     if at_chapter <= 0:
         raise ValueError("positive narrative chapter is required")

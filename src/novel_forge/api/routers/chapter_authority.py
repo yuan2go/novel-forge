@@ -1,4 +1,3 @@
-"""PostgreSQL-only command and strong-query entrypoints for one chapter."""
 from __future__ import annotations
 
 from typing import Any

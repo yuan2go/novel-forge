@@ -1,5 +1,3 @@
-"""Handler registry for governed post-chapter operations."""
-
 from __future__ import annotations
 
 from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRegistration

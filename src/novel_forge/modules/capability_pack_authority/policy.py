@@ -1,4 +1,4 @@
-"""Closed approval policy contracts for Capability Pack admission.
+"""INVARIANT: Closed approval policy contracts for Capability Pack admission.
 
 The policy is intentionally independent from PostgreSQL.  Application commands,
 rollout mutation, and runtime admission all call the same evaluator so an

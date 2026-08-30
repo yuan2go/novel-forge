@@ -1,4 +1,4 @@
-"""Canonical Book Opening fence for active Story Plan mutation."""
+"""INVARIANT: Canonical Book Opening fence for active Story Plan mutation."""
 
 from __future__ import annotations
 
@@ -15,13 +15,6 @@ def lock_and_assert_book_opening_plan_mutation(
     generation_operation_id: str,
     candidate_asset_version_id: str,
 ) -> None:
-    """Authorize one active-plan mutation against the current Opening lease.
-
-    The normal path proves the immutable PlanningGeneration binding is the
-    current Runtime fence.  Recovery may retain that immutable predecessor
-    binding, so its alternative path is the existing RecoveryAssessment-backed
-    narrative replacement gate plus the exact current recovery RuntimeJob.
-    """
 
     cursor.execute(
         """

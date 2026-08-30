@@ -1,5 +1,3 @@
-"""Command Kernel definitions for the product Source import execution plane."""
-
 from __future__ import annotations
 
 from typing import Any

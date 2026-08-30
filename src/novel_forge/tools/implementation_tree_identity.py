@@ -1,4 +1,4 @@
-"""Deterministic identity for files that can change Novel Forge runtime semantics.
+"""INVARIANT: Deterministic identity for files that can change Novel Forge runtime semantics.
 
 The identity is intentionally independent from Git commit ids and from checked-in
 or generated evidence documents.  CI binds the resulting digest to ``GITHUB_SHA``
@@ -61,7 +61,6 @@ def _is_excluded(path: Path, root: Path) -> bool:
 
 
 def select_implementation_paths(repo_root: str | Path) -> list[Path]:
-    """Return the exact, sorted working-tree files covered by the identity."""
     root = Path(repo_root).resolve()
     selected: set[Path] = set()
     for prefix in INCLUDED_PREFIXES:
@@ -98,7 +97,6 @@ def _file_record(root: Path, path: Path) -> dict[str, Any]:
 
 
 def build_implementation_tree_identity(repo_root: str | Path) -> dict[str, Any]:
-    """Build a self-describing SHA-256 identity from canonical file records."""
     root = Path(repo_root).resolve()
     records = [_file_record(root, path) for path in select_implementation_paths(root)]
     canonical = {

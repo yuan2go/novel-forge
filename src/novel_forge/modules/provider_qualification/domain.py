@@ -1,4 +1,3 @@
-"""Schema-backed contracts for the pre-Track-C real Provider probe."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

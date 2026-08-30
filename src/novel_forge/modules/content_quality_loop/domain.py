@@ -1,4 +1,3 @@
-"""Storage-free aggregation of versioned chapter quality evidence."""
 from __future__ import annotations
 
 from typing import Any, Iterable
@@ -179,7 +178,6 @@ def evaluate_quality_evidence(
 
 
 def derive_quality_actions(dimensions: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Turn failed evidence into bounded, traceable work; never infer broad replans."""
     actions: list[dict[str, Any]] = []
     passing = {
         "PASSED",

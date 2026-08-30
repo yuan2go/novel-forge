@@ -1,5 +1,3 @@
-"""Query-only authoring workbench over PostgreSQL authority evidence."""
-
 from __future__ import annotations
 
 from typing import Any

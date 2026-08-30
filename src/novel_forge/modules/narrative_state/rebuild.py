@@ -1,4 +1,3 @@
-"""Read-only deterministic Narrative State rebuild from Book Authority evidence."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,7 +36,6 @@ class NarrativeProjectionRebuildResult:
 
 
 class NarrativeStateRebuildService:
-    """Rebuild derived state without rewriting immutable Authority history."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

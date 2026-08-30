@@ -1,4 +1,4 @@
-"""Canonical preparation for one bounded 4+4 Quality campaign.
+"""INVARIANT: Canonical preparation for one bounded 4+4 Quality campaign.
 
 The preparer coordinates existing PostgreSQL Authorities. It does not write
 business tables directly and does not own Story, Plan, Canon, Chapter, Reader,

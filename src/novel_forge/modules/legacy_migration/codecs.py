@@ -1,4 +1,4 @@
-"""Typed conversion contracts for frozen Legacy assets.
+"""INVARIANT: Typed conversion contracts for frozen Legacy assets.
 
 The registry is deliberately closed: an unknown Legacy type is quarantined
 instead of being wrapped in a generic candidate that can drift into production.
@@ -413,7 +413,6 @@ def validate_archival_candidate(
     project_id: str,
     workspace_id: str,
 ) -> None:
-    """Validate the real archival envelope produced by the generic converter."""
     if not project_id or not workspace_id:
         raise ValueError("archival native candidate requires Project/Workspace scope")
     if not content_hash.startswith("sha256:") or len(content_hash) != 71:

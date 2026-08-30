@@ -1,5 +1,3 @@
-"""Reusable lifecycle conformance and deterministic failure-injection helpers."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -61,7 +59,6 @@ class InjectedExecutionFailure(RuntimeError):
 
 
 class FailureInjector:
-    """One-shot deterministic injector for fixture and integration tests."""
 
     def __init__(
         self, armed: tuple[FailureInjectionPoint | str, ...] = ()
@@ -102,12 +99,6 @@ class BackendConformanceReport:
 
 
 class BackendConformanceSuite:
-    """Protocol-level checks shared by every qualified backend.
-
-    Callback, timeout, malformed output, UNKNOWN, and restart scenarios remain
-    backend-specific because transports expose different lifecycle controls.
-    The complete required scenario catalog is exposed for coverage checks.
-    """
 
     scenarios = tuple(BackendConformanceScenario)
 

@@ -1,4 +1,4 @@
-"""In-memory payload injection for governed Blob ExternalEffects.
+"""INVARIANT: In-memory payload injection for governed Blob ExternalEffects.
 
 The ExternalEffect intent stores only the immutable object identity. Source bytes
 are reloaded from the frozen Git object on retry and are never serialized into

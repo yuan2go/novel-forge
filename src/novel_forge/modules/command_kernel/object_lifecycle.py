@@ -1,4 +1,4 @@
-"""Retention-aware orphan discovery for authoritative object references.
+"""INVARIANT: Retention-aware orphan discovery for authoritative object references.
 
 The scanner only marks candidates. Physical deletion remains an explicit
 ``object_store.delete`` External Effect through ``release_blob`` so a database

@@ -1,5 +1,3 @@
-"""Accepted-state temporal query routes for PostgreSQL Authority."""
-
 from __future__ import annotations
 
 from typing import Literal

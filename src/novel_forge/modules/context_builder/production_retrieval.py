@@ -1,4 +1,4 @@
-"""PostgreSQL discovery and deterministic immutable retrieval artifacts.
+"""INVARIANT: PostgreSQL discovery and deterministic immutable retrieval artifacts.
 
 Discovery is deliberately separate from ranking.  The Chapter scheduler runs
 discovery only after a qualified ChapterMemo exists and freezes every eligible
@@ -55,7 +55,6 @@ def build_retrieval_query_plan(
     memo: Mapping[str, Any],
     semantic_policy: str = "FALLBACK_ALLOWED",
 ) -> dict[str, Any]:
-    """Compile the sole production query plan from Intent plus qualified Memo."""
 
     policy = semantic_policy.strip().upper()
     if policy not in _SEMANTIC_POLICIES:
@@ -154,13 +153,6 @@ def discover_accepted_retrieval_candidates(
     book_id: str,
     query_plan: Mapping[str, Any],
 ) -> RetrievalDiscovery:
-    """Discover a bounded accepted candidate set using PostgreSQL FTS.
-
-    Exact structured channels may add legal accepted candidates to that bounded
-    set. Semantic vectors never participate in discovery; they are consulted
-    later only for members of this frozen set. PostgreSQL ``ts_rank`` is not
-    described as BM25.
-    """
 
     boundary = int(
         dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter")
@@ -417,7 +409,6 @@ def load_frozen_retrieval_candidate_union(
     operation_id: str,
     query_plan_fingerprint: str,
 ) -> FrozenRetrievalCandidateUnion | None:
-    """Load an Operation-owned union before considering another query effect."""
 
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
@@ -489,12 +480,6 @@ def freeze_retrieval_candidate_union(
     query_embedding_dimensions: int = 0,
     query_embedding_evidence: Mapping[str, Any] | None = None,
 ) -> FrozenRetrievalCandidateUnion:
-    """Freeze lexical/structured candidates and optional semantic rerank data.
-
-    The vector query is restricted to the already-discovered document IDs
-    before distance ordering. It cannot introduce a candidate. Replays consume
-    the immutable snapshot rather than observing later index updates.
-    """
 
     policy = str(query_plan.get("semantic_policy") or "FALLBACK_ALLOWED")
     vector = tuple(float(item) for item in query_embedding)
@@ -895,7 +880,6 @@ def build_retrieval_result(
     candidate_snapshot_id: str = "",
     candidate_snapshot_hash: str = "",
 ) -> dict[str, Any]:
-    """Rank one frozen candidate set into a replayable RetrievalResult."""
 
     if (
         str(query_plan.get("ranking_policy_version") or "") != RANKING_POLICY_VERSION

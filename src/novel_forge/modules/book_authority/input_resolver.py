@@ -1,4 +1,4 @@
-"""Resolve one immutable, compatible Book Production input snapshot."""
+"""INVARIANT: Resolve one immutable, compatible Book Production input snapshot."""
 
 from __future__ import annotations
 
@@ -202,7 +202,6 @@ def project_current_plan_cursor(
     arcs: list[dict[str, Any]],
     chapter_cursor: int,
 ) -> tuple[dict[str, Any], tuple[str, ...]]:
-    """Derive the current Volume and complete relevant Arc set from one portfolio."""
 
     current = _select_current_volume_from_portfolio(
         volumes, chapter_cursor=chapter_cursor

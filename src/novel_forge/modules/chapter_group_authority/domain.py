@@ -1,4 +1,3 @@
-"""Pure state and contract rules for ChapterGroup production."""
 from __future__ import annotations
 
 from dataclasses import dataclass

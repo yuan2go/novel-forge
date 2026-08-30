@@ -1,4 +1,4 @@
-"""Typed, layer-specific Narrative Semantic Evaluation contracts.
+"""INVARIANT: Typed, layer-specific Narrative Semantic Evaluation contracts.
 
 The module is policy owned by Story Design Authority.  It owns no runtime,
 scheduler, or persistence and deliberately does not define a universal judge.
@@ -605,7 +605,6 @@ def validate_narrative_qualification(
 
 
 def scripted_qualification(generator_operation_name: str) -> dict[str, Any]:
-    """Deterministic semantic receipt for explicit scripted-fixture routes only."""
 
     return {
         "schema_version": NARRATIVE_QUALIFICATION_SCHEMA_VERSION,

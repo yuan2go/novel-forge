@@ -1,4 +1,3 @@
-"""Authoritative Asset and Blob command handlers backed by short PostgreSQL transactions."""
 from __future__ import annotations
 
 import base64
@@ -370,7 +369,6 @@ def begin_blob_upload_dispatch(
     external_effect_id: str,
     provider: str,
 ) -> dict[str, Any]:
-    """Deprecated compatibility entry point backed by the generic dispatcher."""
     with AuthorityUnitOfWork(database_url) as uow:
         effect = uow.repositories.external_effects.get_for_update(external_effect_id)
         _require_project(effect, context.project_id, "external effect")
@@ -401,7 +399,6 @@ def accept_blob_upload_receipt(
     payload_hash: str,
     evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    """Deprecated receipt shape translated into the generic receipt inbox."""
     if actual_size < 0:
         raise KernelError("COMMAND_SCHEMA_INVALID", "receipt size cannot be negative")
     with AuthorityUnitOfWork(database_url) as uow:

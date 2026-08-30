@@ -1,5 +1,3 @@
-"""Deterministic lexical-first ranking over accepted Narrative Memory."""
-
 from __future__ import annotations
 
 import math
@@ -58,11 +56,6 @@ def hybrid_retrieve(
     query: HybridRetrievalQuery,
     documents: Iterable[Mapping[str, Any]],
 ) -> tuple[dict[str, Any], ...]:
-    """Rank one already-bounded lexical/structured candidate set.
-
-    Embeddings can only rerank documents supplied by discovery. This pure
-    function never performs semantic candidate discovery.
-    """
 
     query_tokens = _tokens(query.text)
     ranked: list[dict[str, Any]] = []
