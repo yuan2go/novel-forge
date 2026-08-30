@@ -40,7 +40,6 @@ from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
-    seed_authority_project_book,
 )
 from tests.integration.test_book_to_chapter_authority_vertical_postgres import (
     BookToChapterAuthorityVerticalPostgresTests,
@@ -304,7 +303,6 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             project_id
         )
         book_id = f"book:{project_id}"
-        seed_authority_project_book(project_id=project_id, book_id=book_id)
         book = book_authority.start(
             StartBookProductionCommand(
                 project_id=project_id,

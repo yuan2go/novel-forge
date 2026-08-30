@@ -12,9 +12,14 @@ import json
 import os
 import platform
 import re
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
+
+from novel_forge.tools.backend_qualification_contract import (
+    validate_resolved_dependency_snapshot,
+)
 
 
 GIT_SHA = re.compile(r"[0-9a-f]{40}")
@@ -28,6 +33,16 @@ REQUIRED_ARTIFACT_FILES = {
     "worker_fleet_evidence": "worker-fleet-summary-{sha}.json",
     "docker_image_digest": "docker-image-digest-{sha}.json",
     "environment_metadata": "environment-metadata-{sha}.json",
+}
+P0_EVIDENCE_CEILINGS = {
+    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
+    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
+    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
+    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
+    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
+    "LONGFORM": "NOT_PROVEN",
+    "MULTIBOOK": "NOT_PROVEN",
+    "PRODUCTION": "NOT_PROVEN",
 }
 
 
@@ -44,6 +59,149 @@ def _now() -> str:
 
 def _artifact_hash(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _required_gate_evidence(
+    gates: Sequence[Mapping[str, Any]], gate_id: str
+) -> Mapping[str, Any]:
+    matches = [gate for gate in gates if gate.get("gate_id") == gate_id]
+    if len(matches) != 1 or not isinstance(matches[0].get("evidence"), Mapping):
+        raise ValueError(f"P0 qualification gate evidence is missing: {gate_id}")
+    return matches[0]["evidence"]
+
+
+def _required_artifact_evidence(
+    evidence: Mapping[str, Any], *, evidence_name: str
+) -> None:
+    if not str(evidence.get("artifact") or "") or not CONTENT_DIGEST.fullmatch(
+        str(evidence.get("digest") or "")
+    ):
+        raise ValueError(f"{evidence_name} artifact identity is invalid")
+
+
+def _validate_pytest_gate_evidence(
+    evidence: Mapping[str, Any], *, expected_schema: str, evidence_name: str
+) -> None:
+    if evidence.get("schema_version") != expected_schema or evidence.get(
+        "status"
+    ) != "PASS":
+        raise ValueError(f"{evidence_name} structured evidence is not PASS")
+    junit = evidence.get("junit")
+    collection = evidence.get("collection")
+    accounting = evidence.get("case_accounting")
+    if not all(
+        isinstance(item, Mapping) for item in (junit, collection, accounting)
+    ):
+        raise ValueError(f"{evidence_name} machine evidence is incomplete")
+    tests = junit.get("tests")
+    passed = junit.get("passed")
+    duration = junit.get("duration_seconds")
+    if (
+        not isinstance(tests, int)
+        or isinstance(tests, bool)
+        or tests < 1
+        or passed != tests
+        or junit.get("failures") != 0
+        or junit.get("errors") != 0
+        or junit.get("skipped") != 0
+        or not isinstance(duration, (int, float))
+        or isinstance(duration, bool)
+        or duration < 0
+    ):
+        raise ValueError(f"{evidence_name} JUnit summary is not zero-skip PASS")
+    _required_artifact_evidence(junit, evidence_name=f"{evidence_name} JUnit")
+
+    collected = collection.get("collected_count")
+    source_files = collection.get("source_file_count")
+    if (
+        collection.get("complete_collection") is not True
+        or not isinstance(collected, int)
+        or isinstance(collected, bool)
+        or collected < 1
+        or not isinstance(source_files, int)
+        or isinstance(source_files, bool)
+        or source_files < 1
+        or collection.get("pytest_exit_status") != 0
+        or not CONTENT_DIGEST.fullmatch(
+            str(collection.get("report_digest") or "")
+        )
+    ):
+        raise ValueError(f"{evidence_name} complete collection evidence is invalid")
+    if (
+        accounting.get("authority") != "JUNIT_XML"
+        or accounting.get("junit_case_count") != tests
+        or accounting.get("collected_node_count") != collected
+        or accounting.get("additional_junit_case_count") != tests - collected
+        or tests < collected
+    ):
+        raise ValueError(f"{evidence_name} JUnit/collection accounting is invalid")
+
+
+def _validate_p0_gate_evidence(
+    *,
+    gates: Sequence[Mapping[str, Any]],
+    tested_sha: str,
+    source_tree: str,
+    expected_migration_head: str,
+) -> None:
+    source = _required_gate_evidence(gates, "source-preflight")
+    if (
+        source.get("commit_sha") != tested_sha
+        or source.get("source_tree") != source_tree
+        or source.get("dirty") is not False
+    ):
+        raise ValueError("P0 source-preflight evidence identity differs")
+
+    backend = _required_gate_evidence(gates, "pytest-backend")
+    _validate_pytest_gate_evidence(
+        backend,
+        expected_schema="novel-forge.backend-pytest-evidence.v1",
+        evidence_name="backend pytest",
+    )
+    if any(gate.get("gate_id") == "pytest-postgresql-integration" for gate in gates):
+        postgresql = _required_gate_evidence(
+            gates, "pytest-postgresql-integration"
+        )
+        _validate_pytest_gate_evidence(
+            postgresql,
+            expected_schema="novel-forge.postgresql-pytest-evidence.v1",
+            evidence_name="PostgreSQL pytest",
+        )
+
+    migration = _required_gate_evidence(gates, "migration-head")
+    if (
+        not expected_migration_head
+        or migration.get("expected_head") != expected_migration_head
+        or migration.get("observed_head") != expected_migration_head
+    ):
+        raise ValueError(
+            "P0 qualification migration head is not bound to the canonical manifest"
+        )
+    query_plan = _required_gate_evidence(gates, "query-plan-release")
+    _required_artifact_evidence(query_plan, evidence_name="query-plan")
+
+    compose = _required_gate_evidence(gates, "compose-runtime")
+    _required_artifact_evidence(compose, evidence_name="Compose runtime")
+    operation_ids = {
+        str(compose.get(key) or "")
+        for key in (
+            "pre_restart_operation_id",
+            "recovered_operation_id",
+            "post_restart_operation_id",
+        )
+    }
+    if "" in operation_ids or len(operation_ids) != 3:
+        raise ValueError(
+            "Compose runtime evidence requires three distinct operation identities"
+        )
+    if compose.get("authoritative_side_effect") is not True:
+        raise ValueError("Compose runtime evidence lacks an authoritative side effect")
+
+    finalization = _required_gate_evidence(gates, "evidence-finalization")
+    if finalization.get("atomic_write") is not True or not str(
+        finalization.get("artifact") or ""
+    ):
+        raise ValueError("P0 evidence finalization is not atomic")
 
 
 def build_docker_image_evidence(
@@ -198,14 +356,321 @@ def build_release_qualification(
     }
 
 
-def _write(path: str | Path, payload: Mapping[str, Any]) -> None:
-    Path(path).write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+def build_p0_backend_qualification_report(
+    *,
+    tested_sha: str,
+    source_tree: str,
+    source_identity: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    dependency_snapshot: Mapping[str, Any],
+    gates: Sequence[Mapping[str, Any]],
+    cleanup: Mapping[str, Any],
+    run_identity: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build one fail-closed P0 report from exact-revision gate evidence."""
+    commit_sha = _validated_sha(tested_sha)
+    tree_sha = _validated_sha(source_tree)
+    workflow_sha = str(source_identity.get("workflow_sha") or "")
+    if (
+        source_identity.get("dirty") is not False
+        or source_identity.get("commit_sha") != commit_sha
+        or source_identity.get("source_tree") != tree_sha
+        or (workflow_sha and workflow_sha != commit_sha)
+    ):
+        raise ValueError("P0 qualification source identity must be exact and clean")
+    if (
+        manifest.get("schema_version")
+        != "novel-forge.backend-qualification-manifest.v1"
+    ):
+        raise ValueError("P0 qualification manifest schema is invalid")
+    required_gates = manifest.get("required_gates")
+    if not isinstance(required_gates, list) or not required_gates:
+        raise ValueError("P0 qualification required gates are empty")
+    if not all(isinstance(item, str) and item for item in required_gates):
+        raise ValueError("P0 qualification required gate IDs are invalid")
+    if len(set(required_gates)) != len(required_gates):
+        raise ValueError("P0 qualification required gate IDs are duplicated")
+    gate_ids = [str(item.get("gate_id") or "") for item in gates]
+    if gate_ids != required_gates:
+        raise ValueError("P0 qualification gates are missing, extra, or out of order")
+    for gate in gates:
+        if gate.get("status") != "PASS":
+            raise ValueError(
+                f"P0 qualification gate is not PASS: {gate.get('gate_id')}"
+            )
+        duration = gate.get("duration_seconds")
+        if not isinstance(duration, (int, float)) or duration < 0:
+            raise ValueError(
+                f"P0 qualification gate duration is invalid: {gate.get('gate_id')}"
+            )
+        if not isinstance(gate.get("evidence"), Mapping):
+            raise ValueError(
+                f"P0 qualification gate evidence is invalid: {gate.get('gate_id')}"
+            )
+
+    validated_dependency = validate_resolved_dependency_snapshot(
+        dependency_snapshot
     )
 
+    expected_head = str(manifest.get("expected_migration_head") or "")
+    _validate_p0_gate_evidence(
+        gates=gates,
+        tested_sha=commit_sha,
+        source_tree=tree_sha,
+        expected_migration_head=expected_head,
+    )
+    migration_gate = next(
+        gate for gate in gates if gate.get("gate_id") == "migration-head"
+    )
+    migration_evidence = migration_gate["evidence"]
+    if (
+        not expected_head
+        or migration_evidence.get("expected_head") != expected_head
+        or migration_evidence.get("observed_head") != expected_head
+    ):
+        raise ValueError(
+            "P0 qualification migration head is not bound to the canonical manifest"
+        )
+    manifest_digests = manifest.get("manifest_digests")
+    if not isinstance(manifest_digests, Mapping) or not manifest_digests:
+        raise ValueError("P0 qualification manifest digests are empty")
+    if not all(
+        isinstance(path, str)
+        and path
+        and CONTENT_DIGEST.fullmatch(str(digest or ""))
+        for path, digest in manifest_digests.items()
+    ):
+        raise ValueError("P0 qualification manifest digest entry is invalid")
+    if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
+        raise ValueError("P0 qualification evidence ceilings differ from policy")
+    if cleanup.get("status") != "PASS" or cleanup.get(
+        "remaining_resource_count"
+    ) != 0:
+        raise ValueError("P0 qualification cleanup is incomplete")
+    if not str(run_identity.get("run_id") or ""):
+        raise ValueError("P0 qualification run identity is empty")
 
-def main() -> int:
+    from novel_forge.tools.backend_qualification_contract import sanitize_evidence
+
+    report = {
+        "schema_version": "novel-forge.p0-backend-qualification-report.v1",
+        "evidence_class": "p0_backend_engineering_qualification",
+        "status": "PASS",
+        "decision": "PASS",
+        "tested_sha": commit_sha,
+        "source_tree": tree_sha,
+        "source_identity": dict(source_identity),
+        "run_identity": dict(run_identity),
+        "qualification_manifest": {
+            "schema_version": manifest["schema_version"],
+            "manifest_digests": dict(manifest_digests),
+            "required_gates": list(required_gates),
+        },
+        "dependency_snapshot": validated_dependency,
+        "migration": {
+            "expected_head": expected_head,
+            "observed_head": str(migration_evidence["observed_head"]),
+            "expectation_source": "architecture/manifests/migration-manifest.yaml",
+        },
+        "gates": [dict(item) for item in gates],
+        "cleanup": dict(cleanup),
+        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "generated_at": _now(),
+    }
+    sanitized = sanitize_evidence(report)
+    if not isinstance(sanitized, dict):
+        raise ValueError("P0 qualification evidence sanitizer returned invalid data")
+    return sanitized
+
+
+def build_p0_backend_qualification_failure_report(
+    *,
+    tested_sha: str,
+    source_tree: str,
+    source_identity: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    dependency_snapshot: Mapping[str, Any],
+    gates: Sequence[Mapping[str, Any]],
+    cleanup: Mapping[str, Any],
+    run_identity: Mapping[str, Any],
+    failure_reason: str,
+) -> dict[str, Any]:
+    """Preserve partial exact-SHA evidence without promoting a failed run."""
+    commit_sha = _validated_sha(tested_sha)
+    tree_sha = _validated_sha(source_tree)
+    required_gates = manifest.get("required_gates")
+    if not isinstance(required_gates, list) or [
+        str(gate.get("gate_id") or "") for gate in gates
+    ] != required_gates:
+        raise ValueError("failed P0 report gates differ from the manifest")
+    allowed_statuses = {"PASS", "FAIL", "BLOCKED", "NOT_RUN"}
+    if not any(gate.get("status") in {"FAIL", "BLOCKED"} for gate in gates):
+        raise ValueError("failed P0 report has no failed or blocked gate")
+    if any(gate.get("status") not in allowed_statuses for gate in gates):
+        raise ValueError("failed P0 report contains an invalid gate status")
+    if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
+        raise ValueError("failed P0 report evidence ceilings differ from policy")
+    validated_dependency = validate_resolved_dependency_snapshot(
+        dependency_snapshot
+    )
+    if not failure_reason.strip():
+        raise ValueError("failed P0 report requires a failure reason")
+
+    from novel_forge.tools.backend_qualification_contract import sanitize_evidence
+
+    report = {
+        "schema_version": "novel-forge.p0-backend-qualification-report.v1",
+        "evidence_class": "p0_backend_engineering_qualification",
+        "status": "FAIL",
+        "decision": "FAIL",
+        "failure_reason": failure_reason,
+        "tested_sha": commit_sha,
+        "source_tree": tree_sha,
+        "source_identity": dict(source_identity),
+        "run_identity": dict(run_identity),
+        "qualification_manifest": {
+            "schema_version": manifest.get("schema_version"),
+            "manifest_digests": dict(manifest.get("manifest_digests") or {}),
+            "required_gates": list(required_gates),
+        },
+        "dependency_snapshot": validated_dependency,
+        "migration": {
+            "expected_head": str(manifest.get("expected_migration_head") or ""),
+            "observed_head": "",
+            "expectation_source": "architecture/manifests/migration-manifest.yaml",
+        },
+        "gates": [dict(item) for item in gates],
+        "cleanup": dict(cleanup),
+        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "generated_at": _now(),
+    }
+    sanitized = sanitize_evidence(report)
+    if not isinstance(sanitized, dict):
+        raise ValueError("failed P0 report sanitizer returned invalid data")
+    return sanitized
+
+
+def validate_p0_backend_qualification_report(
+    report: Mapping[str, Any],
+    *,
+    expected_sha: str,
+) -> dict[str, Any]:
+    """Independently validate the persisted success report's binding and ceilings."""
+    tested_sha = _validated_sha(expected_sha)
+    if report.get("schema_version") != (
+        "novel-forge.p0-backend-qualification-report.v1"
+    ):
+        raise ValueError("P0 backend qualification report schema is invalid")
+    if report.get("status") != "PASS" or report.get("decision") != "PASS":
+        raise ValueError("P0 backend qualification report is not PASS")
+    if report.get("tested_sha") != tested_sha:
+        raise ValueError("P0 backend qualification report targets another SHA")
+    if not GIT_SHA.fullmatch(str(report.get("source_tree") or "")):
+        raise ValueError("P0 backend qualification source tree is invalid")
+    source_identity = report.get("source_identity")
+    if (
+        not isinstance(source_identity, Mapping)
+        or source_identity.get("dirty") is not False
+        or source_identity.get("commit_sha") != tested_sha
+        or source_identity.get("source_tree") != report.get("source_tree")
+        or (
+            source_identity.get("workflow_sha")
+            and source_identity.get("workflow_sha") != tested_sha
+        )
+    ):
+        raise ValueError("P0 backend qualification source identity is not exact and clean")
+    dependency = report.get("dependency_snapshot")
+    if not isinstance(dependency, Mapping):
+        raise ValueError("P0 backend qualification dependency snapshot is invalid")
+    validated_dependency = validate_resolved_dependency_snapshot(dependency)
+    migration = report.get("migration")
+    if (
+        not isinstance(migration, Mapping)
+        or not migration.get("expected_head")
+        or migration.get("expected_head") != migration.get("observed_head")
+        or migration.get("expectation_source")
+        != "architecture/manifests/migration-manifest.yaml"
+    ):
+        raise ValueError("P0 backend qualification migration evidence is invalid")
+    manifest = report.get("qualification_manifest")
+    gates = report.get("gates")
+    if not isinstance(manifest, Mapping) or not isinstance(gates, list):
+        raise ValueError("P0 backend qualification gates are invalid")
+    required_gates = manifest.get("required_gates")
+    if not isinstance(required_gates, list) or [
+        item.get("gate_id") if isinstance(item, Mapping) else "" for item in gates
+    ] != required_gates:
+        raise ValueError("P0 backend qualification gate order differs")
+    if any(
+        not isinstance(item, Mapping) or item.get("status") != "PASS"
+        for item in gates
+    ):
+        raise ValueError("P0 backend qualification contains a non-PASS gate")
+    _validate_p0_gate_evidence(
+        gates=gates,
+        tested_sha=tested_sha,
+        source_tree=str(report["source_tree"]),
+        expected_migration_head=str(migration["expected_head"]),
+    )
+    cleanup = report.get("cleanup")
+    if (
+        not isinstance(cleanup, Mapping)
+        or cleanup.get("status") != "PASS"
+        or cleanup.get("remaining_resource_count") != 0
+    ):
+        raise ValueError("P0 backend qualification cleanup evidence is invalid")
+    if report.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
+        raise ValueError("P0 backend qualification evidence ceilings differ")
+    return {
+        "schema_version": "novel-forge.p0-backend-qualification-validation.v1",
+        "status": "PASS",
+        "tested_sha": tested_sha,
+        "source_tree": report["source_tree"],
+        "dependency_digest": validated_dependency["digest"],
+        "migration_head": migration["observed_head"],
+        "gate_count": len(gates),
+        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+    }
+
+
+def write_atomic_evidence(path: str | Path, payload: Mapping[str, Any]) -> None:
+    """Persist JSON evidence with fsync and same-directory atomic replacement."""
+    output = Path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_name = ""
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=output.parent,
+            prefix=f".{output.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_name = handle.name
+            json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, output)
+        directory = os.open(output.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if temporary_name:
+            try:
+                Path(temporary_name).unlink()
+            except FileNotFoundError:
+                pass
+
+
+def _write(path: str | Path, payload: Mapping[str, Any]) -> None:
+    write_atomic_evidence(path, payload)
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -233,7 +698,11 @@ def main() -> int:
     release_parser.add_argument("--artifact-root", type=Path, required=True)
     release_parser.add_argument("--output", required=True)
 
-    args = parser.parse_args()
+    p0_validate_parser = subparsers.add_parser("p0-validate")
+    p0_validate_parser.add_argument("--commit-sha", required=True)
+    p0_validate_parser.add_argument("--report", type=Path, required=True)
+
+    args = parser.parse_args(argv)
     if args.command == "image":
         payload = build_docker_image_evidence(
             commit_sha=args.commit_sha,
@@ -253,11 +722,24 @@ def main() -> int:
             commit_sha=args.commit_sha,
             needs=json.loads(args.needs_json),
         )
-    else:
+    elif args.command == "release":
         payload = build_release_qualification(
             commit_sha=args.commit_sha,
             artifact_root=args.artifact_root,
         )
+    else:
+        try:
+            report = json.loads(args.report.read_text(encoding="utf-8"))
+        except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("P0 qualification report is missing or invalid") from exc
+        if not isinstance(report, dict):
+            raise ValueError("P0 qualification report must be a JSON object")
+        payload = validate_p0_backend_qualification_report(
+            report,
+            expected_sha=args.commit_sha,
+        )
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
     _write(args.output, payload)
     return 0
 
@@ -268,8 +750,13 @@ if __name__ == "__main__":
 
 __all__ = [
     "REQUIRED_ARTIFACT_FILES",
+    "P0_EVIDENCE_CEILINGS",
+    "build_p0_backend_qualification_report",
+    "build_p0_backend_qualification_failure_report",
     "build_ci_test_result",
     "build_docker_image_evidence",
     "build_environment_metadata",
     "build_release_qualification",
+    "validate_p0_backend_qualification_report",
+    "write_atomic_evidence",
 ]

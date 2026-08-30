@@ -102,6 +102,22 @@ class _ModelAdapter:
             cost_amount="0.0042",
             currency="USD",
             real_model_call=True,
+            usage_evidence={
+                "availability": "AVAILABLE",
+                "measurement": "MEASURED",
+                "input_tokens": 120,
+                "output_tokens": 40,
+                "total_tokens": 160,
+            },
+            cost_evidence={
+                "availability": "AVAILABLE",
+                "measurement": "MEASURED",
+                "source": "provider_receipt",
+                "amount": "0.0042",
+                "currency": "USD",
+                "estimated": False,
+                "provider_billed": True,
+            },
         )
         return ProviderResult(
             outcome="success",
@@ -196,7 +212,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             workspace_id=f"workspace:{project_id}",
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
-            command={"chapter": 1},
+            command={"chapter": 1, "context_token_budget": 200},
             inputs=(),
         )
 
@@ -620,7 +636,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             stage="draft",
             payload={"prompt": "write"},
             reservation_amount="0.005",
-            reservation_tokens=120,
+            reservation_tokens=180,
         )
 
         with transaction() as connection, connection.cursor() as cursor:
@@ -634,7 +650,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             amount, tokens = cursor.fetchone()
         self.assertEqual(str(amount), "0.00500000")
-        self.assertEqual(tokens, 120)
+        self.assertEqual(tokens, 180)
 
         invalid_request = self._request()
         with self.assertRaises(KernelError) as raised:

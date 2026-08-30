@@ -10,6 +10,7 @@ from novel_forge.storage.migrations.versions import (
     v20260828_0102_book_opening_recovery_closure as recovery_closure,
     v20260829_0103_book_opening_semantic_runtime_hardening as semantic_hardening,
     v20260829_0104_book_opening_workflow_nodes as workflow_nodes,
+    v20260830_0105_p0_backend_qualification_repairs as qualification_repairs,
 )
 
 
@@ -26,7 +27,8 @@ def test_0096_is_forward_only_and_expands_runtime_terminal_evidence() -> None:
     assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == recovery_closure.MIGRATION_ID
     assert workflow_nodes.DOWN_REVISION == semantic_hardening.MIGRATION_ID
-    assert workflow_nodes.MIGRATION_ID == LATEST_MIGRATION_ID
+    assert qualification_repairs.DOWN_REVISION == workflow_nodes.MIGRATION_ID
+    assert qualification_repairs.MIGRATION_ID == LATEST_MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     for status in (
         "FAILED_RETRYABLE",

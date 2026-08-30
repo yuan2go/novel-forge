@@ -8,7 +8,11 @@ import pytest
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-from novel_forge.storage.migrations import MIGRATIONS, run_migrations
+from novel_forge.storage.migrations import (
+    LATEST_MIGRATION_ID,
+    MIGRATIONS,
+    run_migrations,
+)
 from tests.integration.authority_postgres_support import DATABASE_URL
 from tests.integration.test_book_opening_legacy_reconciliation_postgres import (
     _seed_opening,
@@ -212,7 +216,10 @@ def test_0104_upgrade_does_not_rewrite_v2_opening_execution_history(
 
     status = run_migrations(database_url)
     assert status["ok"] is True
-    assert status["current"] == WORKFLOW_MIGRATION_ID
+    assert status["current"] == LATEST_MIGRATION_ID
+    assert WORKFLOW_MIGRATION_ID in {
+        item["migration_id"] for item in status["applied"]
+    }
     assert _legacy_history(database_url, legacy["opening_run_id"]) == before
 
     with psycopg.connect(database_url) as connection:

@@ -1,7 +1,13 @@
 services:
   postgresql:
     ports:
-      - "127.0.0.1:${NOVEL_FORGE_WORKER_E2E_POSTGRES_PORT}:5432"
+      - target: 5432
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp
   object-store:
     ports:
-      - "127.0.0.1:${NOVEL_FORGE_WORKER_E2E_MINIO_PORT}:9000"
+      - target: 9000
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp

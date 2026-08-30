@@ -18,7 +18,7 @@ from novel_forge.storage.migrations.versions import (
 def test_semantic_runtime_hardening_remains_in_the_forward_only_chain() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
+    assert LATEST_MIGRATION_ID == "20260830_0105_p0_backend_qualification_repairs"
     assert migration.DOWN_REVISION == "20260828_0102_book_opening_recovery_closure"
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is False

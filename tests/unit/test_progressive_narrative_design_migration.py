@@ -56,7 +56,7 @@ def test_progressive_narrative_design_is_forward_only_head() -> None:
     assert quality_qualification.DOWN_REVISION == hierarchy_closure.MIGRATION_ID
     assert recovery_closure.DOWN_REVISION == quality_qualification.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == recovery_closure.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
+    assert LATEST_MIGRATION_ID == "20260830_0105_p0_backend_qualification_repairs"
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
     assert "CREATE TABLE authority_narrative_design_qualification" in sql
     assert "LONGFORM_DESIGN_QUALIFIED" in sql

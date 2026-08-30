@@ -20,9 +20,16 @@ def _evidence(worker: str) -> dict[str, object]:
         "worker": worker,
         "scenario": f"{worker} authority execution and recovery",
         "commit_sha": SHA,
+        "run_id": "p0-" + "1" * 32,
+        "project_name": "nf-p0-" + "1" * 32,
         "runtime_group": f"{worker}-authority",
         "worker_id": f"{worker}-worker-1",
-        "work_id": f"work:{worker}",
+        "work_id": f"work:{worker}:recovered",
+        "pre_restart_work_id": f"work:{worker}:pre",
+        "recovered_work_id": f"work:{worker}:recovered",
+        "post_restart_work_id": f"work:{worker}:post",
+        "authoritative_side_effect": True,
+        "cleanup": {"status": "PASS", "remaining_resource_count": 0},
         "attempt_or_job_id": f"attempt:{worker}",
         "lease_id": f"lease:{worker}",
         "fencing_token": 2,
@@ -74,6 +81,25 @@ class WorkerFleetEvidenceTests(unittest.TestCase):
         unfenced["fencing_token"] = 1
         with self.assertRaisesRegex(ValueError, "higher fencing token"):
             validate_worker_evidence(unfenced)
+
+    def test_worker_evidence_requires_distinct_post_restart_work(self) -> None:
+        same_work = _evidence("content")
+        same_work["post_restart_work_id"] = same_work["pre_restart_work_id"]
+        with self.assertRaisesRegex(ValueError, "distinct post-restart work"):
+            validate_worker_evidence(same_work)
+
+        no_side_effect = _evidence("content")
+        no_side_effect["authoritative_side_effect"] = False
+        with self.assertRaisesRegex(ValueError, "authoritative side effect"):
+            validate_worker_evidence(no_side_effect)
+
+        incomplete_cleanup = _evidence("content")
+        incomplete_cleanup["cleanup"] = {
+            "status": "FAIL",
+            "remaining_resource_count": -1,
+        }
+        with self.assertRaisesRegex(ValueError, "cleanup"):
+            validate_worker_evidence(incomplete_cleanup)
 
     def test_missing_duplicate_and_wrong_sha_fail_closed(self) -> None:
         with self.assertRaisesRegex(ValueError, "missing"):

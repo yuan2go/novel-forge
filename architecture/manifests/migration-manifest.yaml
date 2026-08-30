@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260829_0104_book_opening_workflow_nodes",
+  "head": "20260830_0105_p0_backend_qualification_repairs",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -106,6 +106,7 @@
     "20260826_0101_quality_qualification",
     "20260828_0102_book_opening_recovery_closure",
     "20260829_0103_book_opening_semantic_runtime_hardening",
-    "20260829_0104_book_opening_workflow_nodes"
+    "20260829_0104_book_opening_workflow_nodes",
+    "20260830_0105_p0_backend_qualification_repairs"
   ]
 }
