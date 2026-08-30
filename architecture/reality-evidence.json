@@ -1,5 +1,5 @@
 {
-  "schema_version": "novel-forge.reality-evidence.v1",
+  "schema_version": "novel-forge.reality-evidence.v2",
   "authority_order": [
     "executable_code",
     "schema_and_migrations",
@@ -23,7 +23,44 @@
   "migration_head": "20260829_0104_book_opening_workflow_nodes",
   "comment_policy": {
     "max_source_comments": 557,
-    "max_source_docstrings": 90
+    "max_source_docstrings": 108,
+    "allowed_module_docstrings": [
+      "src/novel_forge/api/routers/__init__.py",
+      "src/novel_forge/modules/capability_packs/loader.py",
+      "src/novel_forge/modules/capability_packs/protocol.py",
+      "src/novel_forge/modules/capability_packs/schema.py",
+      "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+      "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "src/novel_forge/modules/chapter_quality_authority/domain.py",
+      "src/novel_forge/modules/chapter_quality_authority/longitudinal.py",
+      "src/novel_forge/modules/chapter_quality_authority/qualification.py",
+      "src/novel_forge/modules/command_kernel/external_effect_adapters.py",
+      "src/novel_forge/modules/command_kernel/object_lifecycle.py",
+      "src/novel_forge/modules/content_authority/codecs.py",
+      "src/novel_forge/modules/content_intelligence/domain.py",
+      "src/novel_forge/modules/context_builder/production_retrieval.py",
+      "src/novel_forge/modules/context_contracts.py",
+      "src/novel_forge/modules/legacy_migration/codecs.py",
+      "src/novel_forge/modules/legacy_migration/domain_adapters.py",
+      "src/novel_forge/modules/legacy_migration/state_machine.py",
+      "src/novel_forge/modules/longform_stability/semantic_similarity.py",
+      "src/novel_forge/modules/production_execution/security.py",
+      "src/novel_forge/modules/provider_qualification/authority.py",
+      "src/novel_forge/modules/source_authority/deconstruction.py",
+      "src/novel_forge/modules/source_authority/domain.py",
+      "src/novel_forge/modules/source_import/object_store_adapter.py",
+      "src/novel_forge/modules/story_design_authority/qualification.py",
+      "src/novel_forge/modules/story_design_authority/replacement_gate.py",
+      "src/novel_forge/storage/chapter_authority_repositories.py",
+      "src/novel_forge/storage/database_runtime.py",
+      "src/novel_forge/tools/architecture_manifest.py",
+      "src/novel_forge/tools/documentation_reality.py",
+      "src/novel_forge/tools/head_integrity.py",
+      "src/novel_forge/tools/implementation_tree_identity.py",
+      "src/novel_forge/tools/production_execution_inventory.py",
+      "src/novel_forge/tools/release_run_evidence.py",
+      "src/novel_forge/workers/healthcheck.py"
+    ]
   },
   "qualification_runs": [
     {
@@ -32,7 +69,8 @@
       "collected": 418,
       "passed": 383,
       "failed": 35,
-      "passed_subtests": 73
+      "passed_subtests": 73,
+      "id": "postgres-authority-base-regression"
     },
     {
       "gate": "PYTHONPATH=src python -m pytest tests",
@@ -42,7 +80,75 @@
       "failed": 55,
       "passed_subtests": 1479,
       "duplicate_failed_collections": 11,
-      "unique_failed_test_symbols": 44
+      "unique_failed_test_symbols": 44,
+      "id": "full-repository-base-regression"
+    },
+    {
+      "id": "qualified-capability-evidence",
+      "gate": "PYTHONPATH=src .venv/bin/python -m pytest <exact qualification_evidence nodes>",
+      "observed_at_sha": "ec39b16433e6fbc5944b3835504a3b5862ba247a",
+      "implementation_tree_sha": "sha256:a846d023d53088a5f7a1ef004a3d256c52e1763a0608156bc10413c14ad0828b",
+      "collected": 14,
+      "passed": 14,
+      "failed": 0,
+      "qualification_evidence": [
+        {
+          "path": "tests/unit/test_authority_api_surface.py",
+          "symbol": "AuthorityApiSurfaceTests.test_required_product_reads_are_exposed_by_postgresql_app"
+        },
+        {
+          "path": "tests/unit/test_postgresql_authority_cli_boundary.py",
+          "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
+        },
+        {
+          "path": "tests/unit/test_command_kernel_admission.py",
+          "symbol": "CommandKernelAdmissionTests.test_missing_command_identity_is_rejected_before_uow"
+        },
+        {
+          "path": "tests/integration/test_authority_attempt_lease_schema_postgres.py",
+          "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
+        },
+        {
+          "path": "tests/integration/test_chapter_authority_scheduler_postgres.py",
+          "symbol": "ChapterAuthoritySchedulerPostgresTests.test_admission_does_not_execute_and_ticks_rebuild_full_saga"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_dependencies.py",
+          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_domain_handlers.py",
+          "symbol": "ChapterAuthorityDomainHandlerTests.test_post_blob_final_release_fails_closed_and_binds_receipt"
+        },
+        {
+          "path": "tests/integration/test_quality_qualification_postgres.py",
+          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
+        },
+        {
+          "path": "tests/integration/test_narrative_state_v2_postgres.py",
+          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
+        },
+        {
+          "path": "tests/architecture/test_narrative_state_boundaries.py",
+          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
+        },
+        {
+          "path": "tests/integration/test_source_import_runtime_postgres.py",
+          "symbol": "SourceImportRuntimePostgresTests.test_production_composition_runs_automatic_document_routing"
+        },
+        {
+          "path": "tests/integration/test_mkaos_authority_postgres.py",
+          "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
+        },
+        {
+          "path": "tests/integration/test_unified_agent_runtime_postgres.py",
+          "symbol": "UnifiedAgentRuntimePostgresTests.test_runtime_projection_reuses_kernel_attempt_and_lease_tables"
+        },
+        {
+          "path": "tests/unit/test_agent_authority_scheduler.py",
+          "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
+        }
+      ]
     }
   ],
   "qualification_failures": [
@@ -232,7 +338,10 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "proof_ceiling": "ENGINEERING_QUALIFIED"
+      "proof_ceiling": "ENGINEERING_QUALIFIED",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "command-attempt-lease-fence",
@@ -285,7 +394,10 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "proof_ceiling": "ENGINEERING_QUALIFIED"
+      "proof_ceiling": "ENGINEERING_QUALIFIED",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "external-effect-provider-control",
@@ -458,7 +570,10 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "proof_ceiling": "CHAPTER_FIXTURE_QUALIFIED_NOT_LONGFORM_PROVEN"
+      "proof_ceiling": "CHAPTER_FIXTURE_QUALIFIED_NOT_LONGFORM_PROVEN",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "quality-and-release-gates",
@@ -504,10 +619,13 @@
         },
         {
           "path": "tests/integration/test_quality_qualification_postgres.py",
-          "locator": "test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
+          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "proof_ceiling": "FIXTURE_QUALITY_QUALIFIED_NOT_HUMAN_PROVEN"
+      "proof_ceiling": "FIXTURE_QUALITY_QUALIFIED_NOT_HUMAN_PROVEN",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "book-opening-workflow",
@@ -652,10 +770,13 @@
         },
         {
           "path": "tests/architecture/test_narrative_state_boundaries.py",
-          "locator": "test_"
+          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
         }
       ],
-      "proof_ceiling": "DETERMINISTIC_FIXTURE_PROJECTION_QUALIFIED"
+      "proof_ceiling": "DETERMINISTIC_FIXTURE_PROJECTION_QUALIFIED",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "source-import-and-knowledge",
@@ -713,7 +834,10 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "proof_ceiling": "FIXTURE_PIPELINE_QUALIFIED_NOT_CONTENT_PRODUCTION_PROVEN"
+      "proof_ceiling": "FIXTURE_PIPELINE_QUALIFIED_NOT_CONTENT_PRODUCTION_PROVEN",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "agent-runtime",
@@ -764,10 +888,13 @@
         },
         {
           "path": "tests/unit/test_agent_authority_scheduler.py",
-          "locator": "test_"
+          "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "proof_ceiling": "REGISTERED_OPERATION_SLICE_QUALIFIED_NOT_COMPLETE_AGENT_CENTER"
+      "proof_ceiling": "REGISTERED_OPERATION_SLICE_QUALIFIED_NOT_COMPLETE_AGENT_CENTER",
+      "qualification_run_ids": [
+        "qualified-capability-evidence"
+      ]
     },
     {
       "concept": "postgresql-persistence-and-migrations",
