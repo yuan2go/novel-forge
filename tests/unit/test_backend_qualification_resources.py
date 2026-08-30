@@ -288,6 +288,37 @@ class QualificationRunIdentityTests(unittest.TestCase):
                 compose_command=("docker", "compose", "--env-file", ".env"),
             )
 
+    def test_compose_client_resolves_the_qualification_command_from_environment(
+        self,
+    ) -> None:
+        custom = DockerComposeClient.from_environment(
+            repo_root=Path.cwd(),
+            environment={
+                "NOVEL_FORGE_DOCKER_COMPOSE_BIN": (
+                    "'/Applications/Docker Compose/docker-compose' --ansi never"
+                )
+            },
+        )
+        default = DockerComposeClient.from_environment(
+            repo_root=Path.cwd(),
+            environment={},
+        )
+
+        self.assertEqual(
+            custom.compose_command,
+            (
+                "/Applications/Docker Compose/docker-compose",
+                "--ansi",
+                "never",
+            ),
+        )
+        self.assertEqual(default.compose_command, ("docker", "compose"))
+        with self.assertRaisesRegex(ValueError, "valid shell command"):
+            DockerComposeClient.from_environment(
+                repo_root=Path.cwd(),
+                environment={"NOVEL_FORGE_DOCKER_COMPOSE_BIN": "'unterminated"},
+            )
+
     def test_failed_docker_command_preserves_bounded_diagnostic_streams(self) -> None:
         def runner(
             command: Sequence[str], **_kwargs: object

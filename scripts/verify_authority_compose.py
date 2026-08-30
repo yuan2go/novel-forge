@@ -6,7 +6,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import shlex
 import time
 from typing import Any, Callable, Mapping
 
@@ -412,12 +411,10 @@ def main(argv: list[str] | None = None) -> int:
         compose_project=args.project_name,
         artifact_root=artifact_root,
     )
-    compose_command = tuple(
-        shlex.split(
-            os.environ.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose"
-        )
+    client = DockerComposeClient.from_environment(
+        repo_root=ROOT,
+        environment=os.environ,
     )
-    client = DockerComposeClient(repo_root=ROOT, compose_command=compose_command)
     compose_files = (ROOT / "compose.yml", ROOT / "compose.qualification.yml")
     environment = {
         **os.environ,

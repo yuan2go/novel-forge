@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import tempfile
 from typing import Callable, Mapping, Protocol, Sequence
@@ -171,6 +172,35 @@ CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 class DockerComposeClient:
     """Small Docker CLI adapter that parses only IDs and full inspect JSON."""
+
+    @classmethod
+    def from_environment(
+        cls,
+        *,
+        repo_root: Path,
+        environment: Mapping[str, str],
+        runner: CommandRunner = subprocess.run,
+        docker_command: Sequence[str] = ("docker",),
+    ) -> "DockerComposeClient":
+        raw_command = str(
+            environment.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose"
+        )
+        try:
+            compose_command = tuple(shlex.split(raw_command))
+        except ValueError as exc:
+            raise ValueError(
+                "NOVEL_FORGE_DOCKER_COMPOSE_BIN must be a valid shell command"
+            ) from exc
+        if not compose_command or not compose_command[0].strip():
+            raise ValueError(
+                "NOVEL_FORGE_DOCKER_COMPOSE_BIN must be a valid shell command"
+            )
+        return cls(
+            repo_root=repo_root,
+            runner=runner,
+            docker_command=docker_command,
+            compose_command=compose_command,
+        )
 
     def __init__(
         self,

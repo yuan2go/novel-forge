@@ -608,7 +608,10 @@ def run_qualification(
         )
     )
 
-    docker = DockerComposeClient(repo_root=root)
+    docker = DockerComposeClient.from_environment(
+        repo_root=root,
+        environment=environment,
+    )
     postgres_environment = {
         **environment,
         "NOVEL_FORGE_QUALIFICATION_RUN_ID": identity.run_id,

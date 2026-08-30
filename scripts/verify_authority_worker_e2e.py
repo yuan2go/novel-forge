@@ -8,7 +8,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shlex
 import subprocess
 import sys
 import time
@@ -32,9 +31,10 @@ from novel_forge.tools.release_run_evidence import write_atomic_evidence
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-COMPOSE = tuple(
-    shlex.split(os.environ.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose")
-)
+COMPOSE = DockerComposeClient.from_environment(
+    repo_root=ROOT,
+    environment=os.environ,
+).compose_command
 COMPOSE_FILES = (
     "compose.yml",
     "compose.worker-e2e.yml",
@@ -1717,7 +1717,10 @@ def main() -> int:
     }
     started = time.monotonic()
     control = ComposeControl(project, env, args.worker)
-    docker = DockerComposeClient(repo_root=ROOT, compose_command=COMPOSE)
+    docker = DockerComposeClient.from_environment(
+        repo_root=ROOT,
+        environment=os.environ,
+    )
     compose_paths = tuple(ROOT / item for item in COMPOSE_FILES)
     owned = OwnedComposeProject(
         identity=identity,
