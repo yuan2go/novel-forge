@@ -23,6 +23,16 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertNotIn("npm", recipe)
         self.assertNotIn("55432", source)
 
+    def test_qualification_compose_paths_disable_implicit_env_files(self) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        worker = (ROOT / "scripts/verify_authority_worker_e2e.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("COMPOSE_DISABLE_ENV_FILE=1", makefile)
+        self.assertIn('"COMPOSE_DISABLE_ENV_FILE": "1"', worker)
+        self.assertIn('if key != "COMPOSE_ENV_FILES"', worker)
+
     def test_qualification_compose_resources_are_labeled_and_ports_are_dynamic(
         self,
     ) -> None:

@@ -1697,7 +1697,12 @@ def main() -> int:
     )
     project = identity.compose_project
     env = {
-        **os.environ,
+        **{
+            key: value
+            for key, value in os.environ.items()
+            if key != "COMPOSE_ENV_FILES"
+        },
+        "COMPOSE_DISABLE_ENV_FILE": "1",
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
         "NOVEL_FORGE_APPLICATION_BUILD_ID": f"worker-e2e-{commit_sha[:12]}",
         "NOVEL_FORGE_ENVIRONMENT": "development",

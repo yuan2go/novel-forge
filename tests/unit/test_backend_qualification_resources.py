@@ -257,6 +257,37 @@ class QualificationRunIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(DockerCommandError, "timed out"):
             client.discover("nf-p0-timeout")
 
+    def test_compose_commands_cannot_load_repository_or_explicit_env_files(
+        self,
+    ) -> None:
+        captured_environment: dict[str, str] = {}
+
+        def runner(
+            command: Sequence[str], **kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            captured_environment.update(dict(kwargs["env"]))
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        client = DockerComposeClient(repo_root=Path.cwd(), runner=runner)
+        client.run_compose(
+            project_name="nf-p0-owned",
+            compose_files=(Path("compose.yml"),),
+            environment={
+                "COMPOSE_DISABLE_ENV_FILE": "0",
+                "COMPOSE_ENV_FILES": ".env",
+            },
+            arguments=("config", "--quiet"),
+            timeout=30,
+        )
+
+        self.assertEqual(captured_environment["COMPOSE_DISABLE_ENV_FILE"], "1")
+        self.assertNotIn("COMPOSE_ENV_FILES", captured_environment)
+        with self.assertRaisesRegex(ValueError, "env-file"):
+            DockerComposeClient(
+                repo_root=Path.cwd(),
+                compose_command=("docker", "compose", "--env-file", ".env"),
+            )
+
     def test_failed_docker_command_preserves_bounded_diagnostic_streams(self) -> None:
         def runner(
             command: Sequence[str], **_kwargs: object

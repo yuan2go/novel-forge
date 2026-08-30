@@ -184,6 +184,13 @@ class DockerComposeClient:
         self.runner = runner
         self.docker_command = tuple(docker_command)
         self.compose_command = tuple(compose_command)
+        if any(
+            token == "--env-file" or token.startswith("--env-file=")
+            for token in self.compose_command
+        ):
+            raise ValueError(
+                "qualification Compose command cannot use an explicit env-file"
+            )
 
     def _run(
         self,
@@ -299,6 +306,12 @@ class DockerComposeClient:
             for path in compose_files
             for value in ("-f", str(path))
         ]
+        compose_environment = {
+            key: value
+            for key, value in environment.items()
+            if key != "COMPOSE_ENV_FILES"
+        }
+        compose_environment["COMPOSE_DISABLE_ENV_FILE"] = "1"
         return self._run(
             [
                 *self.compose_command,
@@ -307,7 +320,7 @@ class DockerComposeClient:
                 *file_arguments,
                 *arguments,
             ],
-            environment=environment,
+            environment=compose_environment,
             timeout=timeout,
         )
 
