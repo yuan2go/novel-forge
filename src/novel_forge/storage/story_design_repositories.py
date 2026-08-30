@@ -13,6 +13,9 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.book_opening_plan_fence import (
     lock_and_assert_book_opening_plan_mutation,
 )
+from novel_forge.storage.legacy_migration_lineage import (
+    require_approved_legacy_migration_lineage,
+)
 
 
 class StoryDesignRepository:
@@ -115,9 +118,20 @@ class StoryDesignRepository:
                 "chapter_group_plan.generate",
                 "chapter_plan.generate",
             }:
-                raise KernelError(
-                    "STORY_DESIGN_PLANNING_GENERATION_REQUIRED",
-                    "Planning-scope Story Design activation requires exact Generation lineage",
+                if source_kind != "LEGACY_IMPORT":
+                    raise KernelError(
+                        "STORY_DESIGN_PLANNING_GENERATION_REQUIRED",
+                        "Planning-scope Story Design activation requires exact Generation lineage",
+                    )
+                require_approved_legacy_migration_lineage(
+                    self.cursor,
+                    project_id=project_id,
+                    workspace_id=str(evidence.get("workspace_id") or ""),
+                    target_asset_version_id=asset_version_id,
+                    target_content_hash=str(
+                        evidence.get("target_content_hash") or ""
+                    ),
+                    evidence=evidence,
                 )
         self.cursor.execute(
             """

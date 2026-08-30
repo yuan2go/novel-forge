@@ -512,6 +512,7 @@ class HierarchicalPlanningMigrationAdapter:
             scope=scope,
             logical_key=str(validation["logical_key"]),
             validation=validation,
+            prepare_planning_activation=True,
         )
         principal = _principal(
             context.actor_id,
@@ -534,11 +535,17 @@ class HierarchicalPlanningMigrationAdapter:
             trace_id=f"trace:{context.migration_run_id}",
             correlation_id=f"migration:{context.migration_run_id}",
             causation_operation_id=transition_operations[-1],
+            story_design_transition_operation_id=transition_operations[-1],
             principal=principal,
             decision_evidence={
                 "migration_decision_id": context.decision_id,
                 "migration_item_id": context.migration_item_id,
                 "migration_validation_id": context.migration_validation_id,
+                "migration_run_id": context.migration_run_id,
+                "workspace_id": context.workspace_id,
+                "source_hash": context.source_hash,
+                "legacy_import_operation_id": context.import_operation_id,
+                "target_content_hash": context.target_content_hash,
                 "validator_result_hash": context.validator_result_hash,
                 "validator_version": context.validator_version,
                 "reason": context.decision_reason,
@@ -926,6 +933,7 @@ def _activate_story_design(
     scope: PlanningScope,
     logical_key: str,
     validation: dict[str, Any],
+    prepare_planning_activation: bool = False,
 ) -> tuple[dict[str, Any], list[str]]:
     if (
         validation.get("status") != "PASS"
@@ -958,12 +966,15 @@ def _activate_story_design(
     ):
         evidence: dict[str, Any] = {
             "legacy_import_operation_id": context.import_operation_id,
+            "workspace_id": context.workspace_id,
+            "migration_item_id": context.migration_item_id,
             "migration_decision_id": context.decision_id,
             "migration_validation_id": context.migration_validation_id,
             "validator_result_hash": context.validator_result_hash,
             "validator_version": context.validator_version,
             "migration_run_id": context.migration_run_id,
             "source_hash": context.source_hash,
+            "target_content_hash": context.target_content_hash,
             "legacy_state_trusted_for_activation": False,
         }
         if transition in {
@@ -1016,29 +1027,34 @@ def _activate_story_design(
                 ),
                 "migration_validation_id": context.migration_validation_id,
             }
-        state = authority.transition(
-            StoryDesignTransitionCommand(
-                project_id=context.project_id,
-                workspace_id=context.workspace_id,
-                actor_id=context.actor_id,
-                trace_id=f"trace:{context.migration_run_id}",
-                correlation_id=f"migration:{context.migration_run_id}",
-                idempotency_key=(
-                    f"migration:story-design:{context.migration_item_id}:"
-                    f"{transition.value}:{context.decision_id}"
-                ),
-                asset_version_id=context.target_asset_version_id,
-                content_hash=context.target_content_hash,
-                logical_key=logical_key,
-                generator_operation_name=generator,
-                transition=transition,
-                planning_scope=scope,
-                expected_version=0 if state is None else int(state["version"]),
-                source_kind="LEGACY_IMPORT",
-                evidence=evidence,
+        command = StoryDesignTransitionCommand(
+            project_id=context.project_id,
+            workspace_id=context.workspace_id,
+            actor_id=context.actor_id,
+            trace_id=f"trace:{context.migration_run_id}",
+            correlation_id=f"migration:{context.migration_run_id}",
+            idempotency_key=(
+                f"migration:story-design:{context.migration_item_id}:"
+                f"{transition.value}:{context.decision_id}"
             ),
-            principal=principal,
+            asset_version_id=context.target_asset_version_id,
+            content_hash=context.target_content_hash,
+            logical_key=logical_key,
+            generator_operation_name=generator,
+            transition=transition,
+            planning_scope=scope,
+            expected_version=0 if state is None else int(state["version"]),
+            source_kind="LEGACY_IMPORT",
+            evidence=evidence,
         )
+        if (
+            prepare_planning_activation
+            and transition is DesignTransition.ACTIVATE
+        ):
+            prepared = authority.prepare_transition(command, principal=principal)
+            operation_ids.append(str(prepared["operation_id"]))
+            continue
+        state = authority.transition(command, principal=principal)
         operation_ids.append(str(state["updated_by_operation_id"]))
     assert state is not None
     return state, operation_ids

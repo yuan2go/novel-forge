@@ -170,6 +170,101 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             raised.exception.code, "STORY_DESIGN_VALIDATOR_RECEIPT_REQUIRED"
         )
 
+    def test_legacy_import_cannot_activate_without_exact_migration_lineage(
+        self,
+    ) -> None:
+        candidate = self._seed_candidate("legacy-unapproved-activation")
+        legacy_evidence = {
+            "legacy_import_operation_id": "fixture-import-operation",
+            "migration_run_id": "fixture-migration-run",
+            "migration_item_id": "fixture-migration-item",
+            "migration_decision_id": "fixture-migration-decision",
+            "migration_validation_id": "fixture-migration-validation",
+            "workspace_id": f"workspace:{self.project_id}",
+            "source_hash": f"sha256:{'1' * 64}",
+            "target_content_hash": candidate["content_hash"],
+            "validator_result_hash": f"sha256:{'2' * 64}",
+            "validator_version": "fixture-validator.v1",
+        }
+        state = self._transition(
+            candidate,
+            DesignTransition.ENROLL,
+            expected_version=0,
+            source_kind="LEGACY_IMPORT",
+            evidence=legacy_evidence,
+        )
+        state = self._transition(
+            candidate,
+            DesignTransition.MATERIALIZE,
+            expected_version=int(state["version"]),
+            source_kind="LEGACY_IMPORT",
+            evidence=legacy_evidence,
+        )
+        for transition, validation_kind in (
+            (DesignTransition.STRUCTURAL_VALIDATE, "STRUCTURAL"),
+            (DesignTransition.SEMANTIC_VALIDATE, "SEMANTIC"),
+        ):
+            state = self._transition(
+                candidate,
+                transition,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence={
+                    **legacy_evidence,
+                    "validator_receipt": {
+                        "validation_kind": validation_kind,
+                        "status": "PASS",
+                        "validator_name": "fixture-validator",
+                        "validator_version": "fixture-validator.v1",
+                        "result_hash": f"sha256:{'2' * 64}",
+                    },
+                },
+            )
+        state = self._transition(
+            candidate,
+            DesignTransition.QUALIFY,
+            expected_version=int(state["version"]),
+            source_kind="LEGACY_IMPORT",
+            evidence={
+                **legacy_evidence,
+                "qualification_receipt": {
+                    "status": "PASS",
+                    "result_hash": f"sha256:{'2' * 64}",
+                    "migration_validation_id": "fixture-migration-validation",
+                },
+            },
+        )
+        for transition in (
+            DesignTransition.SUBMIT_APPROVAL,
+            DesignTransition.APPROVE,
+        ):
+            state = self._transition(
+                candidate,
+                transition,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence=legacy_evidence,
+            )
+
+        with self.assertRaises(KernelError) as raised:
+            self._transition(
+                candidate,
+                DesignTransition.ACTIVATE,
+                expected_version=int(state["version"]),
+                source_kind="LEGACY_IMPORT",
+                evidence=legacy_evidence,
+            )
+
+        self.assertEqual(raised.exception.code, "LEGACY_MIGRATION_LINEAGE_INVALID")
+        unchanged = self.authority.require(
+            project_id=self.project_id,
+            asset_version_id=candidate["asset_version_id"],
+        )
+        self.assertEqual(unchanged["lifecycle"], "MATERIALIZED")
+        self.assertEqual(unchanged["qualification"], "QUALIFIED")
+        self.assertEqual(unchanged["approval"], "APPROVED")
+        self.assertEqual(int(unchanged["version"]), int(state["version"]))
+
     def test_semantic_repair_is_bounded(self) -> None:
         candidate = self._seed_candidate("bounded-repair")
         state = self._transition(
