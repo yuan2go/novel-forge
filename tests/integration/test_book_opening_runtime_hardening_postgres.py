@@ -211,7 +211,7 @@ def test_internal_completion_cannot_bypass_the_frozen_checkpoint_graph() -> None
         )
         expected_search_ids = list(
             orphan.opening.recovery._expected_search_graph(
-                authoritative_run
+                uow, authoritative_run
             ).values()
         )
 

@@ -49,6 +49,7 @@ from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
+    seed_authority_project_book,
 )
 from tests.integration import test_postgresql_only_chapter_slice as chapter_fixture
 
@@ -543,7 +544,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 StartBookProductionCommand(
                     project_id=project_id,
                     workspace_id=f"workspace:{project_id}",
-                    book_id=f"book:{project_id}:sequential-guard",
+                    book_id=f"book:{project_id}",
                     actor_id=principal.principal_id,
                     trace_id=identifier("trace"),
                     correlation_id=identifier("correlation"),
@@ -1678,6 +1679,11 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
 
     @staticmethod
     def _seed_book_inputs(project_id: str) -> dict[str, Any]:
+        seed_authority_project_book(
+            project_id=project_id,
+            workspace_id=f"workspace:{project_id}",
+            book_id=f"book:{project_id}",
+        )
         types = {
             "book_design_version": "book_design",
             "book_plan_version": "book_plan",

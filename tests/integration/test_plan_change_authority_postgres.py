@@ -295,6 +295,12 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             "book_plan_candidate",
             content,
         )
+        self.planning_fixture._seed_generation_lineage(
+            asset_version_id=version_id,
+            content_hash=content_hash,
+            contract_type=self._book_type(),
+            logical_key=logical_key,
+        )
         version = 0
         for transition in (
             DesignTransition.ENROLL,
