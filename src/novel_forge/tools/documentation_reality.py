@@ -12,8 +12,11 @@ import subprocess
 import tokenize
 from typing import Any, Iterable, Mapping
 
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
+)
 
-SCHEMA_VERSION = "novel-forge.reality-evidence.v1"
+SCHEMA_VERSION = "novel-forge.reality-evidence.v2"
 REPORT_SCHEMA_VERSION = "novel-forge.documentation-reality-check.v1"
 AUTHORITY_ORDER = [
     "executable_code",
@@ -35,7 +38,7 @@ CANONICAL_DOCUMENTS = [
     "docs/runtime-operations.md",
     "docs/development.md",
 ]
-MODULE_DOCSTRING_PREFIXES = (
+DOCSTRING_PREFIXES = (
     "INVARIANT:",
     "CONSTRAINT:",
     "SECURITY:",
@@ -152,6 +155,16 @@ def _validate_reference(
         _error(errors, f"{context} evidence requires symbol or locator: {relative}")
 
 
+def _reference_key(reference: object) -> tuple[str, str, str] | None:
+    if not isinstance(reference, Mapping):
+        return None
+    return (
+        str(reference.get("path") or "").strip(),
+        str(reference.get("symbol") or "").strip(),
+        str(reference.get("locator") or ""),
+    )
+
+
 def _validate_reference_list(
     root: Path,
     payload: Mapping[str, Any],
@@ -215,6 +228,66 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     if not migration_head:
         _error(errors, "reality inventory migration_head is missing")
 
+    current_tree_sha = str(
+        build_implementation_tree_identity(root).get("implementation_tree_sha") or ""
+    )
+    qualification_runs = inventory.get("qualification_runs")
+    runs_by_id: dict[str, Mapping[str, Any]] = {}
+    run_evidence: dict[str, set[tuple[str, str, str]]] = {}
+    if not isinstance(qualification_runs, list) or not qualification_runs:
+        _error(errors, "reality inventory qualification_runs must be a non-empty list")
+    else:
+        for index, run in enumerate(qualification_runs):
+            context = f"qualification_runs[{index}]"
+            if not isinstance(run, Mapping):
+                _error(errors, f"{context} must be an object")
+                continue
+            run_id = str(run.get("id") or "").strip()
+            if not CONCEPT_NAME.fullmatch(run_id):
+                _error(errors, f"{context}.id must be lowercase kebab-case")
+            elif run_id in runs_by_id:
+                _error(errors, f"duplicate qualification run id: {run_id}")
+            else:
+                runs_by_id[run_id] = run
+            if not str(run.get("gate") or "").strip():
+                _error(errors, f"{context}.gate is missing")
+            observed_at_sha = str(run.get("observed_at_sha") or "").strip()
+            if not re.fullmatch(r"[0-9a-f]{40}", observed_at_sha):
+                _error(errors, f"{context}.observed_at_sha must be a full Git SHA")
+            counts = [run.get(field) for field in ("collected", "passed", "failed")]
+            valid_counts = not any(
+                not isinstance(value, int) or value < 0 for value in counts
+            )
+            if not valid_counts:
+                _error(errors, f"{context} result counts must be non-negative integers")
+            elif counts[1] + counts[2] != counts[0]:
+                _error(errors, f"{context} passed plus failed must equal collected")
+            if valid_counts and counts[2] == 0:
+                implementation_tree_sha = str(
+                    run.get("implementation_tree_sha") or ""
+                ).strip()
+                if not re.fullmatch(r"sha256:[0-9a-f]{64}", implementation_tree_sha):
+                    _error(
+                        errors,
+                        f"{context}.implementation_tree_sha must be a SHA-256 digest",
+                    )
+                elif implementation_tree_sha != current_tree_sha:
+                    _error(
+                        errors,
+                        f"{context} does not qualify the current implementation tree",
+                    )
+                evidence = _validate_reference_list(
+                    root,
+                    run,
+                    "qualification_evidence",
+                    errors,
+                    context=context,
+                    required=True,
+                )
+                run_evidence[run_id] = {
+                    key for item in evidence if (key := _reference_key(item)) is not None
+                }
+
     capabilities = inventory.get("capabilities")
     if not isinstance(capabilities, list):
         _error(errors, "reality inventory capabilities must be a list")
@@ -272,6 +345,37 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             _error(
                 errors, f"{context} cannot be {status} without qualification evidence"
             )
+        qualification_run_ids = capability.get("qualification_run_ids", [])
+        if not isinstance(qualification_run_ids, list):
+            _error(errors, f"{context}.qualification_run_ids must be a list")
+            qualification_run_ids = []
+        if status in ("QUALIFIED", "PRODUCTION_PROVEN"):
+            if not qualification_run_ids:
+                _error(
+                    errors,
+                    f"{context} cannot be {status} without a passing qualification run",
+                )
+            qualification_keys = {
+                key
+                for item in qualification
+                if (key := _reference_key(item)) is not None
+            }
+            for run_id in qualification_run_ids:
+                run = runs_by_id.get(str(run_id))
+                if run is None:
+                    _error(errors, f"{context} references unknown run: {run_id}")
+                    continue
+                if int(run.get("failed") or 0) != 0 or int(run.get("passed") or 0) < 1:
+                    _error(errors, f"{context} references a non-passing run: {run_id}")
+                    continue
+                missing_qualification = qualification_keys - run_evidence.get(
+                    str(run_id), set()
+                )
+                if missing_qualification:
+                    _error(
+                        errors,
+                        f"{context} qualification evidence is not covered by run: {run_id}",
+                    )
         if status == "PRODUCTION_PROVEN":
             production_evidence = _validate_reference_list(
                 root,
@@ -286,26 +390,6 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     errors,
                     f"{context} cannot be PRODUCTION_PROVEN without live evidence",
                 )
-
-    qualification_runs = inventory.get("qualification_runs")
-    if not isinstance(qualification_runs, list) or not qualification_runs:
-        _error(errors, "reality inventory qualification_runs must be a non-empty list")
-    else:
-        for index, run in enumerate(qualification_runs):
-            context = f"qualification_runs[{index}]"
-            if not isinstance(run, Mapping):
-                _error(errors, f"{context} must be an object")
-                continue
-            if not str(run.get("gate") or "").strip():
-                _error(errors, f"{context}.gate is missing")
-            observed_at_sha = str(run.get("observed_at_sha") or "").strip()
-            if not re.fullmatch(r"[0-9a-f]{40}", observed_at_sha):
-                _error(errors, f"{context}.observed_at_sha must be a full Git SHA")
-            counts = [run.get(field) for field in ("collected", "passed", "failed")]
-            if any(not isinstance(value, int) or value < 0 for value in counts):
-                _error(errors, f"{context} result counts must be non-negative integers")
-            elif counts[1] + counts[2] != counts[0]:
-                _error(errors, f"{context} passed plus failed must equal collected")
 
     qualification_failures = inventory.get("qualification_failures")
     if not isinstance(qualification_failures, list):
@@ -451,24 +535,37 @@ def _validate_document_paths(root: Path, errors: list[str]) -> None:
                 )
 
 
-def _docstring_nodes(tree: ast.Module) -> Iterable[tuple[ast.AST, str]]:
-    for node in ast.walk(tree):
-        if not isinstance(
-            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
-        ):
-            continue
-        docstring = ast.get_docstring(node, clean=False)
-        if docstring is not None:
-            yield node, docstring
+def _docstring_nodes(
+    tree: ast.Module,
+) -> Iterable[tuple[ast.AST, str, str]]:
+    module_docstring = ast.get_docstring(tree, clean=False)
+    if module_docstring is not None:
+        yield tree, "<module>", module_docstring
+
+    def walk(node: ast.AST, prefix: str = "") -> Iterable[tuple[ast.AST, str, str]]:
+        for child in getattr(node, "body", []):
+            if not isinstance(
+                child, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                continue
+            qualified_name = f"{prefix}.{child.name}" if prefix else child.name
+            docstring = ast.get_docstring(child, clean=False)
+            if docstring is not None:
+                yield child, qualified_name, docstring
+            yield from walk(child, qualified_name)
+
+    yield from walk(tree)
 
 
-def _validate_python_comments(root: Path, errors: list[str]) -> tuple[int, int, int]:
+def _validate_python_comments(
+    root: Path, errors: list[str]
+) -> tuple[int, set[str], int]:
     source_root = root / "src"
     comment_count = 0
-    module_docstring_count = 0
+    module_docstrings: set[str] = set()
     docstring_count = 0
     if not source_root.is_dir():
-        return comment_count, module_docstring_count, docstring_count
+        return comment_count, module_docstrings, docstring_count
     for path in sorted(source_root.rglob("*.py")):
         relative = _relative(root, path)
         try:
@@ -489,7 +586,7 @@ def _validate_python_comments(root: Path, errors: list[str]) -> tuple[int, int, 
         tree = _load_python(path, errors, root)
         if tree is None:
             continue
-        for node, docstring in _docstring_nodes(tree):
+        for node, _, docstring in _docstring_nodes(tree):
             docstring_count += 1
             if HISTORICAL_OR_SPECULATIVE.search(docstring):
                 line = getattr(node, "lineno", 1)
@@ -498,14 +595,14 @@ def _validate_python_comments(root: Path, errors: list[str]) -> tuple[int, int, 
                     f"historical or speculative comment: {relative}:{line}",
                 )
             if isinstance(node, ast.Module):
-                module_docstring_count += 1
-            if not docstring.lstrip().startswith(MODULE_DOCSTRING_PREFIXES):
+                module_docstrings.add(relative)
+            if not docstring.lstrip().startswith(DOCSTRING_PREFIXES):
                 line = getattr(node, "lineno", 1)
                 _error(
                     errors,
                     f"docstring must explain an invariant: {relative}:{line}",
                 )
-    return comment_count, module_docstring_count, docstring_count
+    return comment_count, module_docstrings, docstring_count
 
 
 def _validate_web_comments(root: Path, errors: list[str]) -> None:
@@ -564,7 +661,7 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             _error(errors, f"cannot parse reality inventory: {exc}")
     capability_count = _validate_inventory(repository, inventory, errors)
-    comment_count, module_docstring_count, docstring_count = _validate_python_comments(
+    comment_count, module_docstrings, docstring_count = _validate_python_comments(
         repository, errors
     )
     _validate_web_comments(repository, errors)
@@ -581,6 +678,23 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
                 _error(errors, f"comment_policy.{field} must be a non-negative integer")
             elif actual > limit:
                 _error(errors, f"comment_policy.{field} exceeded: {actual} > {limit}")
+        allowed_module_docstrings = comment_policy.get("allowed_module_docstrings")
+        if not isinstance(allowed_module_docstrings, list) or any(
+            not isinstance(path, str) or not path.strip()
+            for path in allowed_module_docstrings or []
+        ):
+            _error(
+                errors,
+                "comment_policy.allowed_module_docstrings must be a list of paths",
+            )
+        else:
+            allowed = set(allowed_module_docstrings)
+            if len(allowed) != len(allowed_module_docstrings):
+                _error(errors, "comment_policy.allowed_module_docstrings has duplicates")
+            for relative in sorted(module_docstrings - allowed):
+                _error(errors, f"module docstring is not allowlisted: {relative}")
+            for relative in sorted(allowed - module_docstrings):
+                _error(errors, f"allowlisted module docstring is missing: {relative}")
 
     tested_sha = _git_head(repository)
     normalized_expected_sha = expected_sha.strip().lower()
@@ -598,7 +712,7 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
         "canonical_document_count": len(CANONICAL_DOCUMENTS),
         "capability_count": capability_count,
         "source_comment_count": comment_count,
-        "module_docstring_count": module_docstring_count,
+        "module_docstring_count": len(module_docstrings),
         "source_docstring_count": docstring_count,
         "errors": errors,
     }

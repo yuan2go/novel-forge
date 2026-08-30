@@ -4,14 +4,18 @@ Novel Forge documentation is a projection of executable repository facts. Source
 schema, migrations, runtime composition and tests outrank every sentence in this
 directory.
 
-The canonical set is intentionally limited to:
+The canonical prose set is intentionally limited to:
 
 - `README.md` — thin repository entry point.
+- `docs/README.md` — this allowlist and evidence policy.
 - `docs/current-system.md` — current architecture, ownership and evidence ceiling.
 - `docs/runtime-operations.md` — executable setup, migration, runtime and recovery
   procedures.
 - `docs/development.md` — repository, documentation, comment and validation rules.
-- `architecture/reality-evidence.json` — machine-readable capability-to-code evidence.
+
+`architecture/reality-evidence.json` is the separately governed machine-readable
+capability-to-code inventory. It is evidence for the prose set, not another prose
+document.
 
 `python -m novel_forge.tools.documentation_reality --repo-root .` validates this
 allowlist, referenced files and symbols, evidence status, and comment policy. Any other

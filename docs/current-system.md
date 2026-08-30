@@ -19,11 +19,13 @@ Evidence states mean:
 | `QUALIFIED` | Current repository tests exercise the cited behavior at this revision. |
 | `PRODUCTION_PROVEN` | Current live production evidence is bound to this revision and configuration. |
 
-No capability in the current inventory is `PRODUCTION_PROVEN`.
-`src/novel_forge/api/authority_app.py` returns `runtime_ready=false`,
-`real_provider_qualified=false`, `real_provider_proven=false`,
-`longform_proven=false`, and `production_verified=false` from its readiness projection.
-The CI workflow also excludes credentialed real-Provider execution.
+No capability in the current inventory is `PRODUCTION_PROVEN`. The base API readiness
+payload in `src/novel_forge/api/authority_app.py` defaults `runtime_ready=false`; the
+`/runtime/readiness` route replaces that value with the live API-and-worker-fleet
+calculation. Both paths still report `real_provider_qualified=false`,
+`real_provider_proven=false`, `longform_proven=false`, and
+`production_verified=false`. The CI workflow also excludes credentialed real-Provider
+execution.
 
 ## Executable topology
 
