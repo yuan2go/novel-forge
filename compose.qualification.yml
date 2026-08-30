@@ -1,0 +1,69 @@
+services:
+  postgresql:
+    ports:
+      - target: 5432
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  object-store:
+    ports:
+      - target: 9000
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  authority-migration:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  authority-api:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  book-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  content-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  mkaos-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  source-import-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  agent-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  book-followup-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  chapter-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  maintenance-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  outbox-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  source-authority-worker:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+
+volumes:
+  authority-runtime:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  authority-postgresql-data:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+  authority-object-data:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
+
+networks:
+  default:
+    labels:
+      novel-forge.qualification.run-id: "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}"
