@@ -316,7 +316,6 @@ class ChapterCapabilityPreflight:
 
 
 class PostgresChapterExecutionContractBinder:
-
     def __init__(
         self,
         database_url: str,
@@ -842,9 +841,7 @@ class PostgresChapterExecutionContractBinder:
         validation_policy_snapshot_ref = (
             f"production_execution/validation_policies/{token}"
         )
-        commit_policy_snapshot_ref = (
-            f"production_execution/commit_policies/{token}"
-        )
+        commit_policy_snapshot_ref = f"production_execution/commit_policies/{token}"
         context_policy = ContextPolicy(
             policy_id=context_policy_snapshot_ref,
             policy_version="v1",
@@ -1512,6 +1509,7 @@ class PostgresChapterExecutionContractBinder:
 class PostgresRetrievalProjectionExecutionContractBinder(
     PostgresChapterExecutionContractBinder
 ):
+    """INVARIANT: retrieval is not a Chapter Saga node and must not borrow its Capability Pack."""
 
     def __init__(
         self,
@@ -1715,6 +1713,7 @@ class ExternalEffectExecutionSessionStore:
     reconstructs the same request from PostgreSQL using the Provider idempotency key
     or persistent local execution directory.
     """
+
     def __init__(self) -> None:
         self._records: dict[str, ExecutionRecord] = {}
         self._evidence: dict[str, dict[str, Any]] = {}
@@ -2048,7 +2047,6 @@ def _provider_process_timeout_seconds(
 
 
 class PostgresProductionExecutionPayloadResolver:
-
     def __init__(
         self,
         database_url: str,
@@ -3222,7 +3220,6 @@ class _RecoveryAuthorizedGatewayAdapter:
 
 
 class ProductionExecutionGatewayExternalEffectAdapter:
-
     provider = "production_execution_gateway"
     reconciliation_mode = "query"
     production_execution_gateway_backed = True

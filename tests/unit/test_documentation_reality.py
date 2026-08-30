@@ -102,6 +102,24 @@ class DocumentationRealityTests(unittest.TestCase):
                 "\n".join(report["errors"]),
             )
 
+    def test_malformed_qualification_counts_fail_closed_without_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            inventory["qualification_runs"][0]["failed"] = "not-an-int"
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            errors = "\n".join(report["errors"])
+            self.assertIn("result counts must be non-negative integers", errors)
+            self.assertIn("references a run with invalid results", errors)
+
     def test_generated_web_dependencies_are_outside_repository_comment_policy(
         self,
     ) -> None:
@@ -165,9 +183,9 @@ class DocumentationRealityTests(unittest.TestCase):
                     "collected": 1,
                     "passed": 1,
                     "failed": 0,
-                    "implementation_tree_sha": build_implementation_tree_identity(
-                        root
-                    )["implementation_tree_sha"],
+                    "implementation_tree_sha": build_implementation_tree_identity(root)[
+                        "implementation_tree_sha"
+                    ],
                     "qualification_evidence": [
                         {"path": "tests/test_example.py", "symbol": "test_run"}
                     ],

@@ -385,6 +385,7 @@ def _definition(
 
 
 def _definition_maturity_metadata() -> dict[str, Any]:
+    """INVARIANT: runtime bindings cannot promote their own qualification evidence."""
 
     return {
         "definition_status": "enabled",

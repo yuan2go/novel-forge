@@ -59,12 +59,11 @@ class InjectedExecutionFailure(RuntimeError):
 
 
 class FailureInjector:
-
-    def __init__(
-        self, armed: tuple[FailureInjectionPoint | str, ...] = ()
-    ) -> None:
+    def __init__(self, armed: tuple[FailureInjectionPoint | str, ...] = ()) -> None:
         self._armed = {
-            item if isinstance(item, FailureInjectionPoint) else FailureInjectionPoint(item)
+            item
+            if isinstance(item, FailureInjectionPoint)
+            else FailureInjectionPoint(item)
             for item in armed
         }
 
@@ -81,9 +80,7 @@ class FailureInjector:
         )
         if normalized in self._armed:
             self._armed.remove(normalized)
-            raise InjectedExecutionFailure(
-                normalized, request_sent=request_sent
-            )
+            raise InjectedExecutionFailure(normalized, request_sent=request_sent)
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +96,7 @@ class BackendConformanceReport:
 
 
 class BackendConformanceSuite:
+    """CONSTRAINT: transport-specific recovery checks remain backend-owned."""
 
     scenarios = tuple(BackendConformanceScenario)
 

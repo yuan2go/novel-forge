@@ -228,6 +228,7 @@ class PostgresStoryDesignAssetAuthority:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
+        """INVARIANT: defer projection so Planning can commit both authorities in one transaction."""
 
         principal.require("story_design.authority.execute", command.project_id)
         if principal.principal_id != command.actor_id:

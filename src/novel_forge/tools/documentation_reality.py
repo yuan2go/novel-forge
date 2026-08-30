@@ -233,6 +233,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     )
     qualification_runs = inventory.get("qualification_runs")
     runs_by_id: dict[str, Mapping[str, Any]] = {}
+    run_results: dict[str, tuple[int, int, int]] = {}
     run_evidence: dict[str, set[tuple[str, str, str]]] = {}
     if not isinstance(qualification_runs, list) or not qualification_runs:
         _error(errors, "reality inventory qualification_runs must be a non-empty list")
@@ -258,11 +259,14 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             valid_counts = not any(
                 not isinstance(value, int) or value < 0 for value in counts
             )
+            counts_match = valid_counts and counts[1] + counts[2] == counts[0]
             if not valid_counts:
                 _error(errors, f"{context} result counts must be non-negative integers")
-            elif counts[1] + counts[2] != counts[0]:
+            elif not counts_match:
                 _error(errors, f"{context} passed plus failed must equal collected")
-            if valid_counts and counts[2] == 0:
+            elif run_id in runs_by_id and runs_by_id[run_id] is run:
+                run_results[run_id] = (counts[0], counts[1], counts[2])
+            if counts_match and counts[2] == 0:
                 implementation_tree_sha = str(
                     run.get("implementation_tree_sha") or ""
                 ).strip()
@@ -285,7 +289,9 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     required=True,
                 )
                 run_evidence[run_id] = {
-                    key for item in evidence if (key := _reference_key(item)) is not None
+                    key
+                    for item in evidence
+                    if (key := _reference_key(item)) is not None
                 }
 
     capabilities = inventory.get("capabilities")
@@ -365,7 +371,15 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 if run is None:
                     _error(errors, f"{context} references unknown run: {run_id}")
                     continue
-                if int(run.get("failed") or 0) != 0 or int(run.get("passed") or 0) < 1:
+                result_counts = run_results.get(str(run_id))
+                if result_counts is None:
+                    _error(
+                        errors,
+                        f"{context} references a run with invalid results: {run_id}",
+                    )
+                    continue
+                _, passed, failed = result_counts
+                if failed != 0 or passed < 1:
                     _error(errors, f"{context} references a non-passing run: {run_id}")
                     continue
                 missing_qualification = qualification_keys - run_evidence.get(
@@ -665,7 +679,9 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
         repository, errors
     )
     _validate_web_comments(repository, errors)
-    comment_policy = inventory.get("comment_policy") if isinstance(inventory, Mapping) else None
+    comment_policy = (
+        inventory.get("comment_policy") if isinstance(inventory, Mapping) else None
+    )
     if not isinstance(comment_policy, Mapping):
         _error(errors, "reality inventory comment_policy must be an object")
     else:
@@ -690,7 +706,9 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
         else:
             allowed = set(allowed_module_docstrings)
             if len(allowed) != len(allowed_module_docstrings):
-                _error(errors, "comment_policy.allowed_module_docstrings has duplicates")
+                _error(
+                    errors, "comment_policy.allowed_module_docstrings has duplicates"
+                )
             for relative in sorted(module_docstrings - allowed):
                 _error(errors, f"module docstring is not allowlisted: {relative}")
             for relative in sorted(allowed - module_docstrings):

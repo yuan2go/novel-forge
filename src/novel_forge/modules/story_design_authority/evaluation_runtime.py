@@ -186,6 +186,7 @@ def _evaluation_command_payload_matches(
     durable result; they do not change the original candidate evaluation
     request that callers replay after recovery.
     """
+
     def normalized(value: Mapping[str, Any]) -> dict[str, Any]:
         result = dict(value)
         payload = dict(result.get("payload") or {})
@@ -1289,6 +1290,7 @@ class NarrativeSemanticEvaluationApplication:
         expected_head_generation: int,
         expected_head_version: int,
     ) -> dict[str, Any]:
+        """INVARIANT: the caller owns the transaction; verify recovery evidence without starting an Attempt or Provider call."""
 
         replacement = NarrativeSemanticEvaluationReplacementCommand(
             predecessor_operation_id=predecessor_operation_id,
