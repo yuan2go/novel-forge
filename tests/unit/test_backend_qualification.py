@@ -32,6 +32,24 @@ ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
 
 
+def _documentation_report() -> str:
+    return json.dumps(
+        {
+            "schema_version": "novel-forge.documentation-reality-check.v1",
+            "evidence_class": "reality_inventory",
+            "status": "PASS",
+            "tested_sha": SHA,
+            "inventory_sha256": "sha256:" + "d" * 64,
+            "canonical_document_count": 5,
+            "capability_count": 13,
+            "source_comment_count": 1,
+            "module_docstring_count": 1,
+            "source_docstring_count": 1,
+            "errors": [],
+        }
+    )
+
+
 def _compose_operation(operation_id: str, *, fencing_token: int = 1) -> dict[str, object]:
     return {
         "status": "PASS",
@@ -358,6 +376,62 @@ class BackendQualificationCliTests(unittest.TestCase):
         self.assertEqual(payload["gates"], list(manifest.required_gates))
         self.assertEqual(payload["profile"], "inspection")
 
+    def test_documentation_reality_failure_is_an_explicit_fail_fast_gate(
+        self,
+    ) -> None:
+        commands: list[tuple[str, ...]] = []
+
+        class FailingDocumentationRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                parts = tuple(command)
+                commands.append(parts)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult(
+                        command=parts,
+                        returncode=1,
+                        stdout=json.dumps(
+                            {
+                                **json.loads(_documentation_report()),
+                                "status": "FAIL",
+                                "errors": ["stale reality inventory"],
+                            }
+                        ),
+                        stderr="",
+                        duration_seconds=0.1,
+                        timed_out=False,
+                    )
+                raise AssertionError(f"gate ran after documentation failure: {parts}")
+
+        with TemporaryDirectory() as temporary:
+            output = Path(temporary) / "p0-report.json"
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(output),
+                ],
+                process_runner=FailingDocumentationRunner(),
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 1)
+        statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
+        self.assertEqual(statuses["source-preflight"], "PASS")
+        self.assertEqual(statuses["documentation-reality"], "FAIL")
+        self.assertEqual(statuses["static-and-manifests"], "NOT_RUN")
+        self.assertFalse(any("p0-backend-static" in command for command in commands))
+
     def test_failed_static_gate_writes_partial_report_and_marks_dependents_not_run(
         self,
     ) -> None:
@@ -375,6 +449,8 @@ class BackendQualificationCliTests(unittest.TestCase):
                     return ProcessResult.success(parts, "")
                 if "--show-current" in parts:
                     return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
                 return ProcessResult(
                     command=parts,
                     returncode=1,
@@ -403,6 +479,7 @@ class BackendQualificationCliTests(unittest.TestCase):
         self.assertEqual(report["decision"], "FAIL")
         statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
         self.assertEqual(statuses["source-preflight"], "PASS")
+        self.assertEqual(statuses["documentation-reality"], "PASS")
         self.assertEqual(statuses["static-and-manifests"], "FAIL")
         self.assertEqual(statuses["pytest-backend"], "NOT_RUN")
         self.assertEqual(report["cleanup"]["status"], "PASS")
@@ -451,6 +528,8 @@ class BackendQualificationCliTests(unittest.TestCase):
                     return ProcessResult.success(parts, "")
                 if "--show-current" in parts:
                     return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
                 return ProcessResult(
                     command=parts,
                     returncode=1,

@@ -1,4 +1,3 @@
-"""Pytest plugin for atomic, machine-readable collection identity evidence."""
 from __future__ import annotations
 
 from datetime import datetime, timezone

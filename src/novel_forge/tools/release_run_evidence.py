@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
+    REQUIRED_GATE_ORDER,
     validate_resolved_dependency_snapshot,
 )
 
@@ -148,12 +149,66 @@ def _validate_p0_gate_evidence(
     ):
         raise ValueError("P0 source-preflight evidence identity differs")
 
+    documentation = _required_gate_evidence(gates, "documentation-reality")
+    documentation_counts = {
+        field: documentation.get(field)
+        for field in (
+            "canonical_document_count",
+            "capability_count",
+            "source_comment_count",
+            "module_docstring_count",
+            "source_docstring_count",
+        )
+    }
+    if (
+        documentation.get("schema_version")
+        != "novel-forge.documentation-reality-check.v1"
+        or documentation.get("evidence_class") != "reality_inventory"
+        or documentation.get("status") != "PASS"
+        or documentation.get("tested_sha") != tested_sha
+        or documentation.get("errors") != []
+        or not CONTENT_DIGEST.fullmatch(
+            str(documentation.get("inventory_sha256") or "")
+        )
+        or documentation_counts["canonical_document_count"] != 5
+        or not isinstance(documentation_counts["capability_count"], int)
+        or isinstance(documentation_counts["capability_count"], bool)
+        or documentation_counts["capability_count"] < 1
+        or any(
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < 0
+            for field, value in documentation_counts.items()
+            if field not in {"canonical_document_count", "capability_count"}
+        )
+    ):
+        raise ValueError("Documentation Reality evidence is not exact-SHA PASS")
+    _required_artifact_evidence(
+        documentation,
+        evidence_name="Documentation Reality",
+    )
+
     backend = _required_gate_evidence(gates, "pytest-backend")
     _validate_pytest_gate_evidence(
         backend,
         expected_schema="novel-forge.backend-pytest-evidence.v1",
         evidence_name="backend pytest",
     )
+    migration_compatibility = _required_gate_evidence(
+        gates, "migration-compatibility"
+    )
+    _validate_pytest_gate_evidence(
+        migration_compatibility,
+        expected_schema="novel-forge.postgresql-pytest-evidence.v1",
+        evidence_name="migration compatibility pytest",
+    )
+    migration_slices = migration_compatibility.get("semantic_slices")
+    if (
+        not isinstance(migration_slices, Mapping)
+        or not isinstance(migration_slices.get("migration_matrix"), list)
+        or not migration_slices["migration_matrix"]
+    ):
+        raise ValueError("migration compatibility matrix evidence is incomplete")
     if any(gate.get("gate_id") == "pytest-postgresql-integration" for gate in gates):
         postgresql = _required_gate_evidence(
             gates, "pytest-postgresql-integration"
@@ -359,7 +414,6 @@ def build_p0_backend_qualification_report(
     cleanup: Mapping[str, Any],
     run_identity: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Build one fail-closed P0 report from exact-revision gate evidence."""
     commit_sha = _validated_sha(tested_sha)
     tree_sha = _validated_sha(source_tree)
     workflow_sha = str(source_identity.get("workflow_sha") or "")
@@ -382,6 +436,8 @@ def build_p0_backend_qualification_report(
         raise ValueError("P0 qualification required gate IDs are invalid")
     if len(set(required_gates)) != len(required_gates):
         raise ValueError("P0 qualification required gate IDs are duplicated")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("P0 qualification required gate order is not canonical")
     gate_ids = [str(item.get("gate_id") or "") for item in gates]
     if gate_ids != required_gates:
         raise ValueError("P0 qualification gates are missing, extra, or out of order")
@@ -487,7 +543,6 @@ def build_p0_backend_qualification_failure_report(
     run_identity: Mapping[str, Any],
     failure_reason: str,
 ) -> dict[str, Any]:
-    """Preserve partial exact-SHA evidence without promoting a failed run."""
     commit_sha = _validated_sha(tested_sha)
     tree_sha = _validated_sha(source_tree)
     required_gates = manifest.get("required_gates")
@@ -495,6 +550,8 @@ def build_p0_backend_qualification_failure_report(
         str(gate.get("gate_id") or "") for gate in gates
     ] != required_gates:
         raise ValueError("failed P0 report gates differ from the manifest")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("failed P0 report gate order is not canonical")
     allowed_statuses = {"PASS", "FAIL", "BLOCKED", "NOT_RUN"}
     if not any(gate.get("status") in {"FAIL", "BLOCKED"} for gate in gates):
         raise ValueError("failed P0 report has no failed or blocked gate")
@@ -547,7 +604,6 @@ def validate_p0_backend_qualification_report(
     *,
     expected_sha: str,
 ) -> dict[str, Any]:
-    """Independently validate the persisted success report's binding and ceilings."""
     tested_sha = _validated_sha(expected_sha)
     if report.get("schema_version") != (
         "novel-forge.p0-backend-qualification-report.v1"
@@ -593,6 +649,8 @@ def validate_p0_backend_qualification_report(
         item.get("gate_id") if isinstance(item, Mapping) else "" for item in gates
     ] != required_gates:
         raise ValueError("P0 backend qualification gate order differs")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("P0 backend qualification gate order is not canonical")
     if any(
         not isinstance(item, Mapping) or item.get("status") != "PASS"
         for item in gates
@@ -626,7 +684,6 @@ def validate_p0_backend_qualification_report(
 
 
 def write_atomic_evidence(path: str | Path, payload: Mapping[str, Any]) -> None:
-    """Persist JSON evidence with fsync and same-directory atomic replacement."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary_name = ""

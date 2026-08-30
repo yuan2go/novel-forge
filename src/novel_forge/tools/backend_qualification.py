@@ -1,4 +1,3 @@
-"""Exact-revision orchestration for P0 backend engineering qualification."""
 from __future__ import annotations
 
 import argparse
@@ -15,8 +14,10 @@ import time
 from typing import Callable, Mapping, Protocol, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
+    PytestCollectionContract,
     QualificationContractError,
     build_backend_pytest_command,
+    build_postgres_pytest_command,
     expected_migration_head,
     load_qualification_manifest,
     resolved_dependency_snapshot,
@@ -482,9 +483,91 @@ def run_qualification(
     identity = QualificationRunIdentity.create(
         commit_sha=str(source["commit_sha"]), artifact_parent=output.parent
     )
+    identity.artifact_root.mkdir(parents=True, exist_ok=True)
     manifest_evidence = _manifest_evidence(root, manifest)
     dependency_snapshot = resolved_dependency_snapshot(
         args.python, repo_root=root
+    )
+    documentation = _run_process(
+        runner,
+        (
+            args.python,
+            "-m",
+            "novel_forge.tools.documentation_reality",
+            "--repo-root",
+            str(root),
+            "--expected-sha",
+            str(source["commit_sha"]),
+        ),
+        root=root,
+        environment=environment,
+        timeout=timeout(300),
+        log_path=identity.artifact_root / "documentation-reality-process.json",
+    )
+    documentation_output = identity.artifact_root / "documentation-reality.json"
+    documentation_payload: object = None
+    try:
+        documentation_payload = json.loads(documentation.stdout)
+        if not isinstance(documentation_payload, dict):
+            raise ValueError("documentation reality output is not an object")
+        if (
+            documentation_payload.get("schema_version")
+            != "novel-forge.documentation-reality-check.v1"
+            or documentation_payload.get("evidence_class") != "reality_inventory"
+            or documentation_payload.get("status") != "PASS"
+            or documentation_payload.get("tested_sha") != source["commit_sha"]
+            or documentation_payload.get("errors") != []
+        ):
+            raise ValueError("documentation reality evidence is not exact-SHA PASS")
+        write_atomic_evidence(documentation_output, documentation_payload)
+        documentation_evidence: dict[str, object] = {
+            **documentation_payload,
+            "artifact": documentation_output.name,
+            "digest": _digest(documentation_output),
+        }
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        documentation_evidence = {
+            "error": str(sanitize_evidence(exc)),
+            "report": (
+                sanitize_evidence(documentation_payload)
+                if isinstance(documentation_payload, Mapping)
+                else {}
+            ),
+            "returncode": documentation.returncode,
+            "timed_out": documentation.timed_out,
+        }
+    if documentation.returncode or "error" in documentation_evidence:
+        gates.append(
+            _gate_result(
+                "documentation-reality",
+                "FAIL",
+                duration_seconds=documentation.duration_seconds,
+                evidence=documentation_evidence,
+            )
+        )
+        return _failure_report(
+            output=output,
+            source=source,
+            manifest_evidence=manifest_evidence,
+            dependency_snapshot=dependency_snapshot,
+            identity=identity,
+            profile=args.profile,
+            gates=gates,
+            required_gates=manifest.required_gates,
+            cleanup={
+                "status": "PASS",
+                "remaining_resource_count": 0,
+                "phases": [],
+            },
+            failure_reason="documentation-reality failed",
+        )
+    gates.append(
+        _gate_result(
+            "documentation-reality",
+            "PASS",
+            duration_seconds=documentation.duration_seconds,
+            evidence=documentation_evidence,
+        )
     )
     static = _run_process(
         runner,
@@ -542,7 +625,6 @@ def run_qualification(
     )
 
     cleanup_phases: list[dict[str, object]] = []
-    identity.artifact_root.mkdir(parents=True, exist_ok=True)
 
     backend_junit = identity.artifact_root / "backend-pytest.xml"
     backend_collection = identity.artifact_root / "backend-pytest-collection.json"
@@ -767,6 +849,86 @@ def run_qualification(
             "PASS",
             duration_seconds=time.monotonic() - migration_started,
             evidence=fresh_migration,
+        )
+    )
+
+    migration_compatibility_paths = manifest.semantic_slices["migration_matrix"]
+    migration_compatibility_contract = PytestCollectionContract(
+        name="migration-compatibility",
+        paths=migration_compatibility_paths,
+        classification="POSTGRESQL_REQUIRED",
+        complete_collection=True,
+        allow_skips=False,
+    )
+    migration_compatibility_junit = (
+        identity.artifact_root / "migration-compatibility-pytest.xml"
+    )
+    migration_compatibility_collection = (
+        identity.artifact_root / "migration-compatibility-collection.json"
+    )
+    migration_compatibility_command = build_postgres_pytest_command(
+        contract=migration_compatibility_contract,
+        python=args.python,
+        junit_xml=migration_compatibility_junit,
+        collection_report=migration_compatibility_collection,
+    )
+    migration_compatibility_process = _run_process(
+        runner,
+        migration_compatibility_command,
+        root=root,
+        environment=database_environment,
+        timeout=timeout(3_600),
+        log_path=identity.artifact_root / "migration-compatibility-process.json",
+    )
+    try:
+        migration_compatibility_evidence = validate_postgres_test_evidence(
+            contract=migration_compatibility_contract,
+            junit_xml=migration_compatibility_junit,
+            collection_report=migration_compatibility_collection,
+            repo_root=root,
+            semantic_slices={
+                "migration_matrix": migration_compatibility_paths,
+            },
+        )
+    except (QualificationContractError, ValueError) as exc:
+        migration_compatibility_evidence = {
+            "error": str(sanitize_evidence(exc)),
+            "returncode": migration_compatibility_process.returncode,
+            "timed_out": migration_compatibility_process.timed_out,
+        }
+    if (
+        migration_compatibility_process.returncode
+        or migration_compatibility_evidence.get("status") != "PASS"
+    ):
+        cleanup_phases.append(
+            _cleanup_owned_project(postgres_owned, phase="postgresql")
+        )
+        gates.append(
+            _gate_result(
+                "migration-compatibility",
+                "FAIL",
+                duration_seconds=migration_compatibility_process.duration_seconds,
+                evidence=migration_compatibility_evidence,
+            )
+        )
+        return _failure_report(
+            output=output,
+            source=source,
+            manifest_evidence=manifest_evidence,
+            dependency_snapshot=dependency_snapshot,
+            identity=identity,
+            profile=args.profile,
+            gates=gates,
+            required_gates=manifest.required_gates,
+            cleanup=_aggregate_cleanup(cleanup_phases),
+            failure_reason="migration-compatibility failed",
+        )
+    gates.append(
+        _gate_result(
+            "migration-compatibility",
+            "PASS",
+            duration_seconds=migration_compatibility_process.duration_seconds,
+            evidence=migration_compatibility_evidence,
         )
     )
 

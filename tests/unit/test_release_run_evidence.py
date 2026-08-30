@@ -15,6 +15,7 @@ from novel_forge.tools.release_run_evidence import (
     write_atomic_evidence,
     main as release_evidence_main,
 )
+from novel_forge.tools.backend_qualification_contract import REQUIRED_GATE_ORDER
 
 
 SHA = "a" * 40
@@ -81,14 +82,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
     def test_p0_report_requires_dependency_migration_gate_and_cleanup_identity(
         self,
     ) -> None:
-        required_gates = (
-            "source-preflight",
-            "pytest-backend",
-            "migration-head",
-            "query-plan-release",
-            "compose-runtime",
-            "evidence-finalization",
-        )
+        required_gates = REQUIRED_GATE_ORDER
         manifest = {
             "schema_version": "novel-forge.backend-qualification-manifest.v1",
             "required_gates": list(required_gates),
@@ -134,6 +128,30 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 "additional_junit_case_count": 1,
             },
         }
+        postgres_evidence = {
+            **pytest_evidence,
+            "schema_version": "novel-forge.postgresql-pytest-evidence.v1",
+            "semantic_slices": {
+                "migration_matrix": [
+                    "tests/integration/test_authority_migrations_postgres.py"
+                ]
+            },
+        }
+        documentation_evidence = {
+            "schema_version": "novel-forge.documentation-reality-check.v1",
+            "evidence_class": "reality_inventory",
+            "status": "PASS",
+            "tested_sha": SHA,
+            "inventory_sha256": DIGEST,
+            "canonical_document_count": 5,
+            "capability_count": 13,
+            "source_comment_count": 1,
+            "module_docstring_count": 1,
+            "source_docstring_count": 1,
+            "errors": [],
+            "artifact": "documentation-reality.json",
+            "digest": DIGEST,
+        }
         gates = [
             {
                 "gate_id": gate_id,
@@ -146,8 +164,16 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         "dirty": False,
                     }
                     if gate_id == "source-preflight"
+                    else documentation_evidence
+                    if gate_id == "documentation-reality"
                     else pytest_evidence
                     if gate_id == "pytest-backend"
+                    else postgres_evidence
+                    if gate_id
+                    in {
+                        "migration-compatibility",
+                        "pytest-postgresql-integration",
+                    }
                     else {
                         "expected_head": "manifest-head",
                         "observed_head": "manifest-head",
@@ -223,12 +249,13 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             )
 
         invalid_compose_gates = [dict(item) for item in gates]
-        compose_gate = dict(invalid_compose_gates[4])
+        compose_index = required_gates.index("compose-runtime")
+        compose_gate = dict(invalid_compose_gates[compose_index])
         compose_gate["evidence"] = {
             **compose_gate["evidence"],
             "post_restart_operation_id": "operation-pre",
         }
-        invalid_compose_gates[4] = compose_gate
+        invalid_compose_gates[compose_index] = compose_gate
         with self.assertRaisesRegex(ValueError, "distinct operation"):
             build_p0_backend_qualification_report(
                 tested_sha=SHA,

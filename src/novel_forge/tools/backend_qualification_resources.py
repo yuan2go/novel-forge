@@ -1,4 +1,3 @@
-"""Run-scoped resource safety for backend engineering qualification."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,12 +28,10 @@ PROTECTED_DATABASE_NAMES = frozenset(
 
 
 class ResourceOwnershipError(RuntimeError):
-    """Raised before a resource operation whose ownership is ambiguous."""
+    pass
 
 
 class DockerCommandError(RuntimeError):
-    """Raised when Docker cannot provide a trustworthy resource operation."""
-
     def __init__(
         self,
         message: str,
@@ -88,7 +85,7 @@ class QualificationRunIdentity:
         compose_project: str,
         artifact_root: Path,
     ) -> "QualificationRunIdentity":
-        """Bind a derived Compose phase to an already-created run identity."""
+        """INVARIANT: every derived Compose phase reuses the originating run identity."""
         tested_sha = commit_sha.strip().lower()
         run_match = QUALIFICATION_RUN_ID.fullmatch(run_id.strip().lower())
         project_match = QUALIFICATION_COMPOSE_PROJECT.fullmatch(
@@ -171,8 +168,6 @@ CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
 class DockerComposeClient:
-    """Small Docker CLI adapter that parses only IDs and full inspect JSON."""
-
     @classmethod
     def from_environment(
         cls,
@@ -466,7 +461,7 @@ def _atomic_json(path: Path, payload: Mapping[str, object]) -> None:
 
 
 class OwnedComposeProject:
-    """Permit cleanup only for the exact run-labeled Compose resource set."""
+    """SECURITY: cleanup is permitted only for the captured run-labeled resource set."""
 
     def __init__(
         self,
@@ -563,7 +558,7 @@ def validate_disposable_database_url(
     *,
     expected_database: str,
 ) -> dict[str, object]:
-    """Validate a run-owned DSN and return only password-free evidence."""
+    """SECURITY: qualification writes only to its loopback run-owned database."""
     if not RUN_DATABASE_NAME.fullmatch(expected_database):
         raise ValueError("expected database is not a run-owned database identity")
     try:
@@ -606,7 +601,6 @@ def validate_disposable_database_url(
 
 
 def require_disposable_database_name(database_name: object) -> str:
-    """Validate a server-reported disposable database identity."""
     if not isinstance(database_name, str) or not database_name:
         raise ValueError(
             "database safety preflight returned an invalid name; refusing writes"
@@ -627,7 +621,6 @@ def published_loopback_port(
     *,
     container_port: int,
 ) -> int:
-    """Extract one Docker-assigned loopback port from full inspect JSON."""
     if (
         not isinstance(inspect_payload, list)
         or len(inspect_payload) != 1

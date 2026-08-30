@@ -1,4 +1,3 @@
-"""Fail-closed contracts for P0 backend engineering qualification."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,6 +19,30 @@ MIGRATION_MANIFEST = Path("architecture/manifests/migration-manifest.yaml")
 QUALIFICATION_SCHEMA_VERSION = "novel-forge.backend-qualification-manifest.v1"
 COLLECTION_CLASSIFICATIONS = frozenset(
     {"BACKEND_NON_POSTGRESQL", "POSTGRESQL_REQUIRED"}
+)
+REQUIRED_GATE_ORDER = (
+    "source-preflight",
+    "documentation-reality",
+    "static-and-manifests",
+    "pytest-backend",
+    "postgresql-start",
+    "migration-fresh",
+    "migration-compatibility",
+    "pytest-postgresql-integration",
+    "migration-head",
+    "query-plan-release",
+    "compose-runtime",
+    "evidence-finalization",
+)
+REQUIRED_SEMANTIC_SLICES = frozenset(
+    {
+        "migration_matrix",
+        "provider_hard_stop_and_callback",
+        "provider_effect_fixture_control",
+        "backend_vertical_slice",
+        "book_opening_recovery",
+        "story_design_plan_change_activation",
+    }
 )
 DEPENDENCY_NAME_SEPARATOR = re.compile(r"[-_.]+")
 DATABASE_URL_PATTERN = re.compile(
@@ -69,7 +92,7 @@ print(json.dumps({
 
 
 class QualificationContractError(ValueError):
-    """Raised when qualification inputs cannot support a trustworthy result."""
+    pass
 
 
 @dataclass(frozen=True)
@@ -123,7 +146,6 @@ def _relative_path(value: object, *, field: str) -> str:
 
 
 def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
-    """Load and validate the repository's canonical backend qualification policy."""
     root = repo_root.resolve()
     payload = _load_json_object(root / QUALIFICATION_MANIFEST)
     schema_version = _required_text(
@@ -208,6 +230,10 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
     )
     if not required_gates or len(set(required_gates)) != len(required_gates):
         raise QualificationContractError("required_gates must be non-empty and unique")
+    if required_gates != REQUIRED_GATE_ORDER:
+        raise QualificationContractError(
+            "required_gates differ from the canonical fail-fast order"
+        )
 
     raw_slices = payload.get("semantic_slices")
     if not isinstance(raw_slices, dict) or not raw_slices:
@@ -225,6 +251,26 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
                 f"semantic slice {name} references missing tests: {', '.join(missing)}"
             )
         semantic_slices[str(name)] = paths
+    missing_slices = sorted(REQUIRED_SEMANTIC_SLICES - semantic_slices.keys())
+    if missing_slices:
+        raise QualificationContractError(
+            "required semantic slices are missing: " + ", ".join(missing_slices)
+        )
+    discovered_migration_compatibility = {
+        path.relative_to(root).as_posix()
+        for pattern in ("test_*migration*.py", "test_*upgrade*.py")
+        for path in (root / "tests" / "integration").glob(pattern)
+        if path.is_file()
+    }
+    undeclared_migration_compatibility = sorted(
+        discovered_migration_compatibility
+        - set(semantic_slices["migration_matrix"])
+    )
+    if undeclared_migration_compatibility:
+        raise QualificationContractError(
+            "migration_matrix omits PostgreSQL migration/upgrade tests: "
+            + ", ".join(undeclared_migration_compatibility)
+        )
 
     raw_ceilings = payload.get("evidence_ceilings")
     if not isinstance(raw_ceilings, dict) or not raw_ceilings:
@@ -268,7 +314,7 @@ def _junit_duration(value: object) -> float:
 
 
 def parse_junit_xml(path: Path) -> dict[str, object]:
-    """Read pytest results from JUnit XML without consulting terminal output."""
+    """INVARIANT: JUnit XML, not terminal prose, owns executed test counts."""
     try:
         root = ElementTree.parse(path).getroot()
     except FileNotFoundError as exc:
@@ -321,7 +367,6 @@ def parse_junit_xml(path: Path) -> dict[str, object]:
 
 
 def expected_migration_head(repo_root: Path) -> str:
-    """Return the manifest-owned head after cross-checking the runtime registry."""
     payload = _load_json_object(repo_root.resolve() / MIGRATION_MANIFEST)
     if payload.get("schema_version") != "architecture-manifest.v1":
         raise QualificationContractError("unsupported migration manifest schema")
@@ -348,7 +393,7 @@ def _content_digest(content: bytes) -> str:
 def resolved_dependency_snapshot(
     python: str, *, repo_root: Path | None = None
 ) -> dict[str, object]:
-    """Resolve the target interpreter's installed package identity without pip."""
+    """INVARIANT: bind proof to resolved packages because Git may leave ranges unlocked."""
     completed = subprocess.run(
         [python, "-I", "-c", DEPENDENCY_PROBE],
         check=False,
@@ -434,7 +479,6 @@ def resolved_dependency_snapshot(
 def validate_resolved_dependency_snapshot(
     snapshot: Mapping[str, object],
 ) -> dict[str, object]:
-    """Recompute and validate a resolved-environment qualification identity."""
     if (
         snapshot.get("schema_version")
         != "novel-forge.resolved-dependency-snapshot.v1"
@@ -562,7 +606,7 @@ def _sanitize_evidence_text(value: str) -> str:
 
 
 def sanitize_evidence(value: object) -> object:
-    """Return a JSON-safe copy with credentials and connection URLs removed."""
+    """SECURITY: qualification evidence must not retain credentials or connection URLs."""
     if isinstance(value, Mapping):
         result: dict[str, object] = {}
         for key, nested in value.items():
@@ -590,7 +634,7 @@ def validate_collection_report(
     report_path: Path,
     repo_root: Path,
 ) -> dict[str, object]:
-    """Verify that pytest collected every test source in a declared root."""
+    """INVARIANT: complete evidence includes every declared test source exactly once."""
     payload = _load_json_object(report_path)
     if payload.get("schema_version") != "novel-forge.pytest-collection.v1":
         raise QualificationContractError("unsupported pytest collection report schema")
@@ -629,12 +673,35 @@ def validate_collection_report(
         )
 
     root = repo_root.resolve()
-    expected_files = {
-        path.relative_to(root).as_posix()
-        for relative in contract.paths
-        for path in (root / relative).rglob("test_*.py")
-        if path.is_file()
-    }
+    expected_files: set[str] = set()
+    for relative in contract.paths:
+        declared = (root / relative).resolve()
+        try:
+            declared_relative = declared.relative_to(root).as_posix()
+        except ValueError as exc:
+            raise QualificationContractError(
+                f"pytest collection path escapes repository: {relative}"
+            ) from exc
+        if declared.is_file():
+            if not declared.name.startswith("test_") or declared.suffix != ".py":
+                raise QualificationContractError(
+                    f"pytest collection file is not a test module: {relative}"
+                )
+            expected_files.add(declared_relative)
+            continue
+        if not declared.is_dir():
+            raise QualificationContractError(
+                f"pytest collection path does not exist: {relative}"
+            )
+        for path in declared.rglob("test_*.py"):
+            if not path.is_file():
+                continue
+            try:
+                expected_files.add(path.resolve().relative_to(root).as_posix())
+            except ValueError as exc:
+                raise QualificationContractError(
+                    f"pytest test source escapes repository: {path}"
+                ) from exc
     observed_files = set(source_files)
     if contract.complete_collection and expected_files != observed_files:
         missing = sorted(expected_files - observed_files)
@@ -705,7 +772,6 @@ def build_backend_pytest_command(
     junit_xml: Path,
     collection_report: Path,
 ) -> list[str]:
-    """Build the complete non-PostgreSQL backend pytest invocation."""
     if any(
         contract.classification != "BACKEND_NON_POSTGRESQL"
         for contract in contracts
@@ -728,7 +794,6 @@ def build_postgres_pytest_command(
     junit_xml: Path,
     collection_report: Path,
 ) -> list[str]:
-    """Build the complete PostgreSQL pytest invocation without filename selection."""
     if contract.classification != "POSTGRESQL_REQUIRED":
         raise QualificationContractError(
             "PostgreSQL pytest command requires a PostgreSQL collection contract"
@@ -748,7 +813,7 @@ def build_postgres_pytest_command(
 def _junit_collection_case_accounting(
     *, junit: Mapping[str, object], collection: Mapping[str, object]
 ) -> dict[str, object]:
-    """Relate collection nodes to JUnit cases without losing subtest results."""
+    """COMPATIBILITY: unittest subtests add JUnit cases without adding pytest nodes."""
     junit_case_count = int(junit["tests"])
     collected_node_count = int(collection["collected_count"])
     if junit_case_count < collected_node_count:
@@ -771,7 +836,6 @@ def validate_postgres_test_evidence(
     repo_root: Path,
     semantic_slices: Mapping[str, tuple[str, ...]],
 ) -> dict[str, object]:
-    """Validate a complete, zero-skip PostgreSQL pytest execution."""
     if contract.classification != "POSTGRESQL_REQUIRED":
         raise QualificationContractError(
             "PostgreSQL evidence requires a PostgreSQL collection contract"
@@ -799,10 +863,17 @@ def validate_postgres_test_evidence(
         )
 
     source_files = set(collection["source_files"])
-    roots = tuple(path.rstrip("/") + "/" for path in contract.paths)
+    declared_paths = tuple(path.rstrip("/") for path in contract.paths)
     slice_evidence: dict[str, list[str]] = {}
     for name, paths in semantic_slices.items():
-        relevant = sorted(path for path in paths if path.startswith(roots))
+        relevant = sorted(
+            path
+            for path in paths
+            if any(
+                path == declared or path.startswith(declared + "/")
+                for declared in declared_paths
+            )
+        )
         if not relevant:
             continue
         missing = sorted(set(relevant) - source_files)
@@ -834,7 +905,6 @@ def validate_backend_test_evidence(
     collection_report: Path,
     repo_root: Path,
 ) -> dict[str, object]:
-    """Validate the complete unit, architecture, and acceptance execution."""
     if not contracts or any(
         item.classification != "BACKEND_NON_POSTGRESQL" for item in contracts
     ):
@@ -987,7 +1057,6 @@ def validate_compose_runtime_evidence(
     expected_run_id: str,
     expected_project: str,
 ) -> dict[str, object]:
-    """Validate enqueue, recovery, restart, subsequent work, drain, and cleanup."""
     if evidence.get("schema_version") != "novel-forge.compose-runtime-evidence.v1":
         raise QualificationContractError("unsupported Compose runtime evidence schema")
     if evidence.get("status") != "PASS":
@@ -1141,6 +1210,8 @@ __all__ = [
     "PytestCollectionContract",
     "QualificationContractError",
     "QualificationManifest",
+    "REQUIRED_GATE_ORDER",
+    "REQUIRED_SEMANTIC_SLICES",
     "expected_migration_head",
     "load_qualification_manifest",
     "parse_junit_xml",

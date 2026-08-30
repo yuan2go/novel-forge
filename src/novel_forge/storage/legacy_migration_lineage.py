@@ -1,9 +1,3 @@
-"""Exact approval lineage checks for legacy domain activation.
-
-This module validates existing Legacy Migration Authority facts.  It does not
-create approval, qualification, activation, or planning state.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -21,7 +15,7 @@ def require_approved_legacy_migration_lineage(
     target_content_hash: str,
     evidence: Mapping[str, Any],
 ) -> dict[str, str]:
-    """Require one exact, current, independently approved migration lineage."""
+    """INVARIANT: activation requires one exact, current, independent approval lineage."""
 
     identity = {
         "migration_run_id": str(evidence.get("migration_run_id") or ""),

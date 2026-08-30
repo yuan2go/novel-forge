@@ -10,8 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 RUN_LABEL = "novel-forge.qualification.run-id"
 OPERATOR_DOCS = (
     ROOT / "README.md",
-    ROOT / "docs/operations/local-development.md",
-    ROOT / "docs/development/testing.md",
+    ROOT / "docs/current-system.md",
+    ROOT / "docs/runtime-operations.md",
+    ROOT / "docs/development.md",
 )
 
 
@@ -30,6 +31,8 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertIn("resolved dependency digest", docs)
         self.assertIn("branch governance", docs)
         self.assertIn("OPEN / NOT_CLOSED", docs)
+        self.assertIn("documentation-reality", docs)
+        self.assertIn("migration-compatibility", docs)
         for ceiling in (
             "REAL_PROVIDER",
             "HISTORICAL_ORPHAN_MUTATION",
