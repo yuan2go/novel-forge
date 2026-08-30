@@ -3,6 +3,7 @@ PYTHONPATH := src
 PYTEST := $(PYTHON) -m pytest
 WEB_DIR ?= web/admin
 AUTHORITY_COMPOSE ?= docker compose -f compose.yml
+QUALIFICATION_COMPOSE ?= $(if $(strip $(NOVEL_FORGE_DOCKER_COMPOSE_BIN)),$(NOVEL_FORGE_DOCKER_COMPOSE_BIN),docker compose)
 P0_PROFILE ?= local
 P0_EVIDENCE_DIR ?= /tmp/novel-forge-p0
 QUALIFICATION_CONFIG_TOKEN := 00000000000000000000000000000000
@@ -112,23 +113,23 @@ authority-postgres-test: postgres-authority-test
 authority-compose-config-check:
 	env -u COMPOSE_ENV_FILES COMPOSE_DISABLE_ENV_FILE=1 \
 	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
-	docker compose -f compose.yml config --quiet
+	$(QUALIFICATION_COMPOSE) -f compose.yml config --quiet
 	env -u COMPOSE_ENV_FILES COMPOSE_DISABLE_ENV_FILE=1 \
 	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
 	NOVEL_FORGE_POSTGRES_TEST_DATABASE=$(QUALIFICATION_CONFIG_DATABASE) \
-	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-postgresql \
+	$(QUALIFICATION_COMPOSE) -p $(QUALIFICATION_CONFIG_PROJECT)-postgresql \
 		-f compose.postgres-test.yml config --quiet
 	env -u COMPOSE_ENV_FILES COMPOSE_DISABLE_ENV_FILE=1 \
 	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
 	NOVEL_FORGE_AUTHORITY_API_HOST_IP=127.0.0.1 \
 	NOVEL_FORGE_AUTHORITY_API_PORT=0 \
-	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-runtime \
+	$(QUALIFICATION_COMPOSE) -p $(QUALIFICATION_CONFIG_PROJECT)-runtime \
 		-f compose.yml -f compose.qualification.yml config --quiet
 	env -u COMPOSE_ENV_FILES COMPOSE_DISABLE_ENV_FILE=1 \
 	NOVEL_FORGE_QUALIFICATION_RUN_ID=$(QUALIFICATION_CONFIG_RUN_ID) \
 	NOVEL_FORGE_AUTHORITY_API_HOST_IP=127.0.0.1 \
 	NOVEL_FORGE_AUTHORITY_API_PORT=0 \
-	docker compose -p $(QUALIFICATION_CONFIG_PROJECT)-worker \
+	$(QUALIFICATION_COMPOSE) -p $(QUALIFICATION_CONFIG_PROJECT)-worker \
 		-f compose.yml -f compose.worker-e2e.yml -f compose.qualification.yml config --quiet
 
 authority-query-plan-release:

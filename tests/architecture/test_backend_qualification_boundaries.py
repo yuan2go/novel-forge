@@ -55,11 +55,17 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
 
     def test_qualification_compose_paths_disable_implicit_env_files(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        config_recipe = makefile.split("authority-compose-config-check:", 1)[
+            1
+        ].split("\n\n", 1)[0]
         worker = (ROOT / "scripts/verify_authority_worker_e2e.py").read_text(
             encoding="utf-8"
         )
 
         self.assertIn("COMPOSE_DISABLE_ENV_FILE=1", makefile)
+        self.assertIn("NOVEL_FORGE_DOCKER_COMPOSE_BIN", makefile)
+        self.assertEqual(config_recipe.count("$(QUALIFICATION_COMPOSE)"), 4)
+        self.assertNotIn("docker compose", config_recipe)
         self.assertIn('"COMPOSE_DISABLE_ENV_FILE": "1"', worker)
         self.assertIn('if key != "COMPOSE_ENV_FILES"', worker)
 
