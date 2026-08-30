@@ -1,4 +1,4 @@
-"""Fail-closed source, registry, and CI integrity checks for a clean HEAD.
+"""INVARIANT: Fail-closed source, registry, and CI integrity checks for a clean HEAD.
 
 The check deliberately combines filesystem imports with Git tracking state.  A
 working tree can import an untracked module while a clean checkout is broken; the
@@ -280,7 +280,6 @@ def _registry_target_failures(root: Path, tracked: set[str]) -> set[str]:
     for relative in (
         "src/novel_forge/api/routers/book_authority.py",
         "src/novel_forge/storage/book_authority_repositories.py",
-        "config/authority/authority-parity-manifest.json",
     ):
         target = root / relative
         if not target.is_file():

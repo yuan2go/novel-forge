@@ -38,7 +38,7 @@ jobs:
       - name: Architecture boundaries
         run: |
           make head-integrity-check
-          make authority-parity-check
+          make documentation-reality-check
           make architecture-manifests-check
           make architecture-fitness-check
           make authority-only-config-check
@@ -236,8 +236,8 @@ jobs:
       - run: python -m pip install -e ".[test]"
       - run: python -m pytest tests/integration/test_book_authority_postgres.py
 
-  catalog-integrity:
-    name: catalog and coverage binding
+  reality-inventory:
+    name: documentation reality binding
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -251,17 +251,15 @@ jobs:
       - run: python -m pip install -e ".[test]"
       - name: Generate HEAD-bound evidence
         run: |
-          python -m novel_forge.tools.authority_coverage_manifest \
+          python -m novel_forge.tools.documentation_reality \
             --repo-root . \
-            --output /tmp/postgresql-authority-coverage-${GITHUB_SHA}.json \
-            --check-head \
-            --check-contract
-          python -m pytest tests/architecture/test_authority_coverage_baseline.py
-          python -m pytest tests/unit/test_authority_coverage_manifest.py
+            --expected-sha "${GITHUB_SHA}" \
+            --output /tmp/documentation-reality-${GITHUB_SHA}.json
+          python -m pytest tests/unit/test_documentation_reality.py
       - uses: actions/upload-artifact@v4
         with:
-          name: postgresql-authority-coverage-${{ github.sha }}
-          path: /tmp/postgresql-authority-coverage-${{ github.sha }}.json
+          name: documentation-reality-${{ github.sha }}
+          path: /tmp/documentation-reality-${{ github.sha }}.json
           if-no-files-found: error
 
   docker-image-evidence:
@@ -443,7 +441,7 @@ jobs:
       - provider-v2-conformance
       - callback-authority
       - book-authority
-      - catalog-integrity
+      - reality-inventory
       - docker-image-evidence
       - authority-compose
       - authority-worker-fleet-summary

@@ -149,7 +149,7 @@
     "storage": "github_actions_artifact",
     "must_bind_tested_repository_sha": true,
     "required_artifact_classes": [
-      "coverage_manifest",
+      "reality_inventory",
       "test_result",
       "migration_result",
       "compose_evidence",
