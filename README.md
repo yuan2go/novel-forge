@@ -1,51 +1,36 @@
 # Novel Forge
 
-Novel Forge is a local-first, PostgreSQL-authoritative AI novel production platform and an early Novel Operating System runtime. It coordinates versioned plans, governed chapter production, reader/recap follow-up, narrative state, source intelligence, knowledge assets, and bounded Agent execution through auditable operations rather than an interactive prompt workflow.
+Novel Forge is a local-first AI novel production runtime with PostgreSQL business
+authority, governed external effects, versioned artifacts and bounded workers.
 
-The production backend has one runtime family:
+Executable code, schema, migrations, runtime composition and tests are the only current
+system authority. Start with:
 
-```text
-FastAPI / CLI / workers
-        ↓
-Authority applications and Book/Chapter coordinators
-        ↓
-ProductionExecutionComposition
-        ↓
-Command Kernel · Attempt/Lease/Fence · ExternalEffect · RuntimeJob
-        ↓
-PostgreSQL Authority + MinIO object storage + governed providers
-```
+- `docs/current-system.md` — architecture, ownership, runtime paths and evidence ceiling.
+- `docs/runtime-operations.md` — setup, migrations, validation and recovery.
+- `docs/development.md` — repository, documentation and comment rules.
+- `architecture/reality-evidence.json` — machine-readable evidence inventory.
 
-Interactive Legacy API, CLI, Celery, workflow, Agent scheduler, production kernel, LocalStorage runtime, and their UI were retired. The only retained Legacy surface is the offline `novel-forge-migrate` utility for importing frozen snapshots into PostgreSQL Authority.
-
-## Start here
-
-- [Documentation index](docs/README.md)
-- [Architecture overview](docs/architecture/overview.md)
-- [Novel production flow](docs/product/novel-production-flow.md)
-- [Local development](docs/operations/local-development.md)
-- [Testing and proof levels](docs/development/testing.md)
-- [Bounded Quality Qualification](docs/operations/quality-qualification.md)
-- [Legacy snapshot migration](docs/operations/legacy-migration.md)
-
-## Local verification
+## Local setup
 
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install -e '.[dev]'
+uv venv --python 3.12
+uv pip install -e '.[api,postgres,provider-openai,test,object,ingestion,industrial]'
+npm --prefix web/admin ci
 make authority-test
-make authority-compose-config-check
 ```
 
-Start the PostgreSQL Authority stack with:
+Start the PostgreSQL and object-store composition with:
 
 ```bash
 make authority-up
 ```
 
-The default Compose profile uses the scripted `mock` provider. It is a development fixture and is not evidence of real-provider operation or production verification. See [configuration](docs/operations/configuration.md) and [testing](docs/development/testing.md) before interpreting a green run.
+The default `mock` Provider route is a fixture. It does not establish real-Provider,
+long-form, human/editorial or production proof.
 
-## Source of truth
+Validate documentation and evidence references with:
 
-Runtime reachability is declared in `architecture/manifests/production-entry-manifest.yaml` and `worker-manifest.yaml`; database evolution is declared in `migration-manifest.yaml`. Architecture fitness tests fail when production imports the migration-only Legacy surface or bypasses protected boundaries.
+```bash
+make documentation-reality-check
+```
