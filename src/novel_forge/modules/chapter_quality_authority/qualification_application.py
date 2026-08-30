@@ -1,10 +1,3 @@
-"""INVARIANT: PostgreSQL Authority application for bounded Quality Qualification.
-
-The tables added by migration 0101 are authoritative indexes over immutable
-Authority assets and Command Kernel operations.  This module never invokes a
-Provider and never treats a projection row as an artifact store.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

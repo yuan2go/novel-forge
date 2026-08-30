@@ -1,9 +1,3 @@
-"""INVARIANT: Production adapters for the governed Agent Harness.
-
-These adapters deliberately reuse AuthorityUnitOfWork and the owning Operation.
-They introduce no scheduler, lease, effect, or story-truth authority.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Callable

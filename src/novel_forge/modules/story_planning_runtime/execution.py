@@ -1180,7 +1180,14 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
 
 
 def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
+    """CONSTRAINT: Project frozen JSON values into the Provider's strict-schema dialect.
 
+    OpenAI Structured Outputs does not accept object- or array-valued ``const``
+    nodes.  This projection freezes object shape, array cardinality, and scalar
+    vocabulary without creating a second semantic authority.  Planning
+    Authority still compares the returned value with the complete frozen value,
+    including array order and multiplicity, before activation.
+    """
     if not values:
         raise ValueError("Frozen Provider schema requires at least one value")
 
@@ -1825,7 +1832,7 @@ def planning_provider_output_schema(
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-
+    """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
     string_array = {"type": "array", "items": {"type": "string"}}
     delta = _strict_object({"subject": string, "change": string})

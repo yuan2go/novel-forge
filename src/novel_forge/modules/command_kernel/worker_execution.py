@@ -64,7 +64,7 @@ _FINAL_FAILURE_CODES = frozenset(
 
 
 class WorkerProgrammingError(RuntimeError):
-    pass
+    """INVARIANT: Raised after the rest of the current batch has been isolated and attempted."""
 
 
 class WorkerHealthStatus(StrEnum):

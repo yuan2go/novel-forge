@@ -1,4 +1,3 @@
-"""INVARIANT: Permission-gated manual resolution for ExternalEffects that cannot be queried."""
 from __future__ import annotations
 
 import hashlib

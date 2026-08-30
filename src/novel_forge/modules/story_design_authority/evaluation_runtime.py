@@ -76,7 +76,12 @@ class NarrativeEvaluationExternalEffectDisposition(StrEnum):
 def classify_narrative_evaluation_external_effects(
     rows: Iterable[Mapping[str, object]],
 ) -> NarrativeEvaluationExternalEffectDisposition:
+    """INVARIANT: Classify only durable Effect/Dispatch/Receipt evidence.
 
+    Absence of an Effect is the sole no-effect proof. Once an Effect exists,
+    missing dispatch/receipt evidence or any in-flight/unknown state is
+    ambiguous and must be reconciled by the existing ExternalEffect runtime.
+    """
     evidence = tuple(dict(row) for row in rows)
     if not evidence:
         return NarrativeEvaluationExternalEffectDisposition.PROVEN_NO_EFFECT
@@ -174,7 +179,13 @@ def _stable_id(prefix: str, *parts: object) -> str:
 def _evaluation_command_payload_matches(
     stored: Mapping[str, Any], expected: Mapping[str, Any]
 ) -> bool:
+    """COMPATIBILITY: Compare a caller command with a generation-aware frozen command.
 
+    A successful-effect replacement carries three additional immutable evidence
+    inputs and a replay bundle.  Those fields authorize projection of the old
+    durable result; they do not change the original candidate evaluation
+    request that callers replay after recovery.
+    """
     def normalized(value: Mapping[str, Any]) -> dict[str, Any]:
         result = dict(value)
         payload = dict(result.get("payload") or {})
@@ -1931,7 +1942,16 @@ class NarrativeSemanticEvaluationApplication:
         correlation_id: str,
         reason: str,
     ) -> dict[str, Any]:
+        """INVARIANT: Converge the exact current RESUME execution when its owner aborts.
 
+        The outer Book Opening lock is already held.  This method takes the
+        semantic candidate/Operation/Attempt/Lease locks in their normal
+        order, fences any old worker, and never rewrites terminal history.
+        Exact planned/never-sent Effect evidence is cancelled in the same UoW;
+        durable success/failure remains immutable evidence, while any unknown
+        or potentially-sent request parks the semantic Operation in
+        reconciliation instead of permitting replay.
+        """
         if (
             any(
                 not value.strip()
@@ -2634,7 +2654,14 @@ class NarrativeSemanticEvaluationApplication:
         predecessor: dict[str, Any],
         external_evidence: dict[str, Any],
     ) -> dict[str, Any]:
+        """INVARIANT: Freeze one complete Provider result bundle for cross-generation replay.
 
+        A VERIFIED receipt alone is insufficient.  Admission requires the
+        successful Attempt, settled budget, ModelCallLog, CostLedger, and
+        semantic evaluation output to agree on the exact immutable execution.
+        The surrounding Recovery UoW rolls back its Intent and every successor
+        admission when any part is absent or inconsistent.
+        """
         operation_id = str(predecessor["operation_id"])
         project_id = str(predecessor["project_id"])
         candidate_id = str(predecessor["candidate_asset_version_id"])

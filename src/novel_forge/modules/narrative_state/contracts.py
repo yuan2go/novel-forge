@@ -63,7 +63,14 @@ _CHARACTER_BELIEF_STANCES = frozenset(
 def atomize_character_knowledge_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    """COMPATIBILITY: Normalize Character Knowledge to one character/proposition identity per event.
 
+    Older extraction prompts used ``acquired_fact_ids`` as a convenient bundle.  A
+    bundled record cannot participate in Narrative State compare-and-set semantics:
+    its durable identity is the pair ``(character_id, fact_id|proposition_id)``.
+    Expand that compatibility shape at the authority boundary while keeping direct,
+    already-atomic identities unchanged.
+    """
     atoms: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -121,7 +128,14 @@ def atomize_character_knowledge_changes(
 def normalize_character_belief_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    """COMPATIBILITY: Normalize Character Belief to its typed epistemic vocabulary.
 
+    Canon extraction schemas predating v7 exposed only the generic ``status`` or
+    ``state`` field even though the durable Narrative State contract names the
+    value ``stance``.  Upgrade those immutable historical payloads at read
+    boundaries, reject conflicting aliases, and persist only the canonical shape
+    for new assets.
+    """
     normalized: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -189,7 +203,14 @@ def normalize_character_belief_changes(
 def normalize_relationship_state_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    """COMPATIBILITY: Canonicalize relationship endpoints without inventing graph identity.
 
+    Canon Provider schemas through v7 exposed the generic ``character_id`` field,
+    so an otherwise typed relationship could use it for the source endpoint while
+    also supplying ``target_id``.  Upgrade that immutable shape at read boundaries,
+    reject conflicting aliases, and retain only ``source_id``/``target_id`` for new
+    Narrative State events.
+    """
     normalized: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -993,7 +1014,7 @@ def events_from_chapter_outcome(
     *,
     trace_id: str = "",
 ) -> tuple[NarrativeStateEvent, ...]:
-
+    """COMPATIBILITY: Read v2 events or deterministically adapt immutable v1 evidence."""
     contract = str(chapter_outcome.get("contract_version") or "")
     if contract in {"chapter-outcome-v2", "chapter-outcome-v3"}:
         return tuple(

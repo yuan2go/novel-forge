@@ -1,9 +1,4 @@
-"""INVARIANT: Task-specific Provider projections from immutable Chapter Authority inputs.
-
-The full ContextBundle and Capability materialization remain replay evidence.  This
-module is the only Chapter path allowed to turn those Authority records into model
-working context, so audit and duplicate representations cannot leak by accident.
-"""
+"""SECURITY: only task-specific projections may expose frozen Chapter inputs to a Provider; audit and duplicate representations stay excluded."""
 
 from __future__ import annotations
 
@@ -860,7 +855,13 @@ def project_reader_outcome_context_input(
     asset_type: str,
     content: Mapping[str, Any],
 ) -> dict[str, Any]:
+    """INVARIANT: Project one accepted Reader Outcome input without Authority envelopes.
 
+    The Book follow-up command binds a broad recovery lineage, but a Reader judge
+    needs only the accepted prose, audience contract, intended experience, and a
+    bounded view of current reader-facing state.  Empty projections preserve the
+    immutable input reference without sending that asset to the Provider.
+    """
     if asset_type == "draft_version":
         return _prose(content)
     if asset_type == "reader_contract":

@@ -1,11 +1,3 @@
-"""INVARIANT: Governed multi-turn Agent Harness over the Industrial Runtime.
-
-The Harness owns reasoning-session provenance, never business truth.  Callers
-must run it inside an already leased Authority Attempt.  Model turns and
-external tools are represented by ports whose results carry the owning
-ExternalEffect identity; deterministic read/query tools may omit one.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field

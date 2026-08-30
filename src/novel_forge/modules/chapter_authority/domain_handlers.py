@@ -58,7 +58,13 @@ def build_chapter_plan(
 
 
 def _retrieval_result_context_reference(content: dict[str, Any]) -> dict[str, Any]:
+    """INVARIANT: Render replay identity without duplicating retrieved text in the prompt.
 
+    The immutable RetrievalResult remains a frozen Operation input. Context Build
+    consumes its full content to materialize exact source candidates, while this
+    protected reference preserves replay identity and ranking evidence without
+    spending the Draft token budget on a second copy of selected/rejected payloads.
+    """
     return {
         "type": content.get("type"),
         "contract_version": content.get("contract_version"),

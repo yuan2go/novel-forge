@@ -112,7 +112,11 @@ def reduce_story_state_v2(
     chapter_outcome_id: str,
     previous_story_state_asset_version_id: str = "",
 ) -> dict[str, Any]:
+    """INVARIANT: Apply one accepted ChapterOutcome event set to the current projection.
 
+    The reducer never mutates evidence. It is strict about chapter order and the
+    Project/Book scope, so replay and live acceptance use the same semantics.
+    """
     if not chapter_outcome_asset_version_id or not chapter_outcome_id:
         raise KernelError(
             "NARRATIVE_OUTCOME_LINEAGE_REQUIRED",
@@ -550,7 +554,13 @@ def _validate_immutable_definition(
 def _validate_character_lifecycle(
     old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
 ) -> None:
+    """INVARIANT: Keep death/invalidation terminal unless Authority explicitly corrects it.
 
+    A superseding event means the prior accepted assertion itself was replaced.
+    An ordinary later upsert cannot silently turn a dead character alive again;
+    an in-story return must be modeled as an explicit, reviewable transition on
+    a new semantic identity rather than erasing accepted history.
+    """
     if event.state_kind is not NarrativeStateKind.CHARACTER_STATE:
         return
     previous = str(old.get("life_status") or old.get("status") or "").upper()

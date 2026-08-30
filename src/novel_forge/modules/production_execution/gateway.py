@@ -1,10 +1,3 @@
-"""INVARIANT: Attempt-bound admission and backend routing for production model execution.
-
-The gateway owns no Attempt state.  It verifies the caller's existing Authority
-Attempt and fencing token, resolves immutable routing/input contracts, and then
-delegates to an explicitly registered execution backend.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

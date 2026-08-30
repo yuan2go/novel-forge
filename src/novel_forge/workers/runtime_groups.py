@@ -1,9 +1,3 @@
-"""INVARIANT: Process-group entrypoints for the Authority-only deployment topology.
-
-Groups follow execution characteristics. They do not create one deployment per
-domain, and delivery queues never become the source of task state.
-"""
-
 from __future__ import annotations
 
 import os

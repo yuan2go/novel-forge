@@ -1,5 +1,3 @@
-"""INVARIANT: evidence evaluation is pure; it performs no I/O and cannot schedule work or mutate Authority state."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -423,7 +423,14 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
     def _canonical_dependencies(
         self, document: Any
     ) -> tuple[tuple[str, Any, Any], ...]:
+        """SECURITY: Resolve only immutable dependencies named by a BookDesign v5 candidate.
 
+        The evaluator, rather than its caller, resolves these versions.  This keeps
+        generator prompts and mutable projections out of the evaluation while
+        making the reference-only BookDesign contract semantically reviewable.
+        Qualification assets are verified for lineage but are intentionally not
+        exposed as selected inputs, so a prior verdict cannot prime the evaluator.
+        """
         if (
             document.asset_type != "book_design"
             or document.content.get("schema_version") != "book-design.v5"

@@ -1,10 +1,3 @@
-"""INVARIANT: Shared Agent-turn execution and exact Domain commit coordination.
-
-The coordinator owns no lifecycle state.  It composes the existing Command
-Kernel Attempt/Fence, PEP evidence, collaboration Candidate, and Domain
-Authority AssetVersion facts for both embedded and standalone execution.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

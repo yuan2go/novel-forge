@@ -1,5 +1,3 @@
-"""INVARIANT: Fail-closed dependency construction for PostgreSQL authority entrypoints."""
-
 from __future__ import annotations
 
 import hashlib
@@ -251,7 +249,12 @@ def _scripted_narrative_evaluation_fixture_enabled(
     runtime_environment: RuntimeEnvironment,
     values: Mapping[str, str],
 ) -> bool:
+    """SECURITY: Require an explicit test-only switch for scripted semantic receipts.
 
+    ``development`` may use other deterministic fixtures, but a Narrative
+    Qualification can admit canonical production input.  It therefore needs a
+    narrower boundary than the general runtime fixture flag.
+    """
     explicit = (
         str(
             values.get("NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE")

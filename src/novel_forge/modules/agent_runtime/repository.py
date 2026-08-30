@@ -625,7 +625,11 @@ class PostgresAgentRuntimeRepository:
     def lock_definition_version(
         self, agent_id: str, definition_version: int
     ) -> dict[str, Any]:
+        """INVARIANT: Resolve an exact immutable definition frozen by a Pack Deployment.
 
+        A canary may legitimately run two Pack versions at once, so the global
+        Agent activation pointer cannot be the authority for both versions.
+        """
         self.cursor.execute(
             """
             SELECT definition.agent_id, definition.definition_version,

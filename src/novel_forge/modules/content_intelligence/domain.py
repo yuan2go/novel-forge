@@ -1,8 +1,4 @@
-"""INVARIANT: Pure domain contracts for long-form intelligence.
-
-These functions never activate Canon and never infer semantic quality from raw
-text patterns. PostgreSQL applications persist their outputs as AssetVersions.
-"""
+"""INVARIANT: raw text patterns cannot establish Canon or semantic quality."""
 
 from __future__ import annotations
 

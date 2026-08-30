@@ -617,7 +617,12 @@ class RuntimeJobAuthority:
         expected_job_kind: str = BOOK_OPENING_LEGACY_JOB_KIND,
         expected_runtime_group: str = BOOK_OPENING_LEGACY_RUNTIME_GROUP,
     ) -> RuntimeJobClaim:
+        """INVARIANT: Claim one exact no-takeover Book Opening job under its owner UoW.
 
+        The Book Opening coordinator must already hold its aggregate and
+        execution locks. This primitive locks only RuntimeJob next, creates the
+        first and only Attempt/Lease, and deliberately does not commit.
+        """
         if not runtime_job_id or not worker_id or lease_seconds <= 0:
             raise ValueError(
                 "runtime job identity, worker and positive lease are required"
@@ -1054,7 +1059,12 @@ class RuntimeJobAuthority:
         *,
         authority_coordinated: bool,
     ) -> dict[str, Any]:
+        """INVARIANT: Terminalize one exact claim inside its coordinator transaction.
 
+        A committed response may be lost.  Repeating the same exact claim and
+        result therefore returns the immutable result row; a different result
+        or execution identity fails closed instead of rewriting history.
+        """
         result_hash = canonical_payload_hash(result)
         uow.cursor.execute(
             """
@@ -1503,7 +1513,12 @@ class RuntimeJobAuthority:
         expected_fencing_token: int,
         reason: dict[str, Any],
     ) -> dict[str, Any]:
+        """INVARIANT: Fence an expired no-takeover execution without authorizing a successor.
 
+        The Book Authority coordinator owns the surrounding transaction.  This
+        primitive owns only RuntimeJob/Attempt/Lease terminalization and never
+        creates recovery authorization or executes business work.
+        """
         if (
             not runtime_job_id
             or not expected_attempt_id
@@ -1716,7 +1731,12 @@ class RuntimeJobAuthority:
         runtime_job_id: str,
         reason: dict[str, Any],
     ) -> dict[str, Any]:
+        """INVARIANT: Cancel one Book Opening envelope under its business Authority lock.
 
+        The coordinator locks Opening and OpeningExecution first.  This method
+        then locks RuntimeJob -> Attempt -> Lease, revokes any winning claim,
+        and returns the exact terminal binding for the Opening execution row.
+        """
         reason_hash = canonical_payload_hash(reason)
         uow.cursor.execute(
             """

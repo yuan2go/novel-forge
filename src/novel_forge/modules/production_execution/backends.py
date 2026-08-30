@@ -1,9 +1,3 @@
-"""INVARIANT: Execution backend implementations behind :mod:`production_execution.gateway`.
-
-Backend records are execution evidence and recovery indexes.  They do not own
-Attempt lifecycle, approval, budget, or asset activation state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace

@@ -1,4 +1,4 @@
-"""INVARIANT: Shared storage-free context value objects without package import side effects."""
+"""INVARIANT: importing shared context value objects must not trigger package side effects."""
 
 from __future__ import annotations
 

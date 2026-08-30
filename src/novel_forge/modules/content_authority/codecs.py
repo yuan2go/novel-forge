@@ -1,8 +1,4 @@
-"""INVARIANT: Explicit frozen-input codecs for Content Authority operations.
-
-Each binder names and validates its inputs.  There is deliberately no generic
-``handler(**payload)`` escape hatch.
-"""
+"""SECURITY: every Content operation uses an explicit frozen-input binder; no generic payload-to-handler escape hatch exists."""
 
 from __future__ import annotations
 

@@ -1,9 +1,4 @@
-"""INVARIANT: Storage-free grouped quality evidence for the Chapter Authority Saga.
-
-Deterministic checks only decide properties they can actually observe.  Semantic
-dimensions require a versioned calibrated evidence asset and otherwise fail
-closed with an explicit non-passing status.
-"""
+"""INVARIANT: deterministic checks cannot pass an unobserved semantic dimension; missing calibrated evidence remains explicitly non-passing."""
 
 from __future__ import annotations
 
@@ -215,7 +210,12 @@ def build_multiscale_quality_report(
     accepted_through_chapter: int,
     source_asset_version_ids: Iterable[str],
 ) -> dict[str, Any]:
+    """INVARIANT: Project bounded longitudinal quality from accepted-only observations.
 
+    The Chapter runtime consumes compact observation projections, never full
+    historical prose.  Every usable row must name its Acceptance and accepted
+    outcome AssetVersion; unbound or future rows fail closed.
+    """
     observations = _accepted_quality_observations(
         context_bundle,
         project_id=project_id,

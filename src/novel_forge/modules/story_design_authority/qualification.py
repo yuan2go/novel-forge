@@ -1,8 +1,4 @@
-"""INVARIANT: Typed, layer-specific Narrative Semantic Evaluation contracts.
-
-The module is policy owned by Story Design Authority.  It owns no runtime,
-scheduler, or persistence and deliberately does not define a universal judge.
-"""
+"""CONSTRAINT: a layer-specific evaluation contract cannot act as a universal narrative judge."""
 
 from __future__ import annotations
 

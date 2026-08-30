@@ -1,4 +1,4 @@
-"""INVARIANT: Fail-closed, local-only UTF-8 JSON Loader for Capability Packs."""
+"""SECURITY: Capability Packs are loaded only from explicit local UTF-8 JSON files."""
 
 from __future__ import annotations
 

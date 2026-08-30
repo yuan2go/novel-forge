@@ -1023,7 +1023,14 @@ class BookAuthorityRepository:
 def _arc_checkpoint_followup(
     projection: dict[str, Any],
 ) -> dict[str, Any] | None:
+    """INVARIANT: Aggregate all actionable Arcs at one accepted boundary into one intent.
 
+    A Chapter has one durable Recap/ArcRevision operation.  Persisting one
+    follow-up per Arc would strand every row after the first because that
+    operation is idempotent per accepted Chapter.  The aggregate preserves
+    every checkpoint as evidence and selects the strongest decision without
+    mutating any future plan in the Acceptance transaction.
+    """
     actionable = [
         dict(item)
         for item in projection.get("arc_checkpoints") or ()

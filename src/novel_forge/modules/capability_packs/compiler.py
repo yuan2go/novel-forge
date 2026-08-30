@@ -1,5 +1,3 @@
-"""INVARIANT: Pure, deterministic Capability Pack compiler. It creates no runtime state."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

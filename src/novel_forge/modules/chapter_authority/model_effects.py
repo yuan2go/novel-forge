@@ -187,7 +187,13 @@ def _model_budget_settlement(
     reserved_tokens: int,
     frozen_capability_profile: Mapping[str, Any],
 ) -> tuple[str, int, dict[str, Any]]:
+    """INVARIANT: Use frozen receipt capabilities or retain the reservation ceiling.
 
+    A successful real Provider response is not evidence that its transport
+    supplied billable cost.  Releasing a bounded reservation to zero when the
+    frozen Adapter declared ``supports_cost_receipt=False`` makes the hard
+    stop fail open.  Fixtures retain their explicit zero-cost semantics.
+    """
     if not result.real_model_call:
         return result.cost_amount, result.total_tokens, {
             "token_settlement_basis": "FIXTURE_RECEIPT",
@@ -1075,7 +1081,7 @@ class ExternalEffectChapterModelPort:
                 )
 
     def _request_timeout_seconds(self, request: ChapterHandlerRequest) -> int:
-
+        """CONSTRAINT: Bind Provider time to the frozen Operation policy, not its lease."""
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
             with connection.cursor() as cursor:

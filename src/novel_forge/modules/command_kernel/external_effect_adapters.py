@@ -1,4 +1,5 @@
-"""INVARIANT: External-effect adapters. Calls are intentionally made outside database transactions."""
+"""INVARIANT: external calls occur outside database transactions."""
+
 from __future__ import annotations
 
 import base64

@@ -1,8 +1,5 @@
-"""INVARIANT: inventory scanning cannot import or connect to the inspected runtime.
+"""INVARIANT: inventory scanning cannot import or connect to the inspected runtime."""
 
-The static scanner resolves aliases, constant ``getattr`` calls, and local or
-imported wrapper functions.
-"""
 from __future__ import annotations
 
 import ast

@@ -1122,7 +1122,13 @@ def _validate_transition_preconditions(
     state: dict[str, list[dict[str, Any]]],
     extraction: dict[str, Any],
 ) -> None:
+    """INVARIANT: Reject narrative CAS claims that are not backed by accepted state.
 
+    ``from_*`` is an Authority compare-and-set precondition, not a description of
+    background state inferred from prose or Story Design.  Keeping this check in
+    Canon validation prevents an invalid patch from surviving every Chapter gate
+    only to fail during Book acceptance.
+    """
     for field, state_kinds, identity_aliases in _TRANSITION_PRECONDITION_SPECS:
         accepted = [item for kind in state_kinds for item in state.get(kind, [])]
         for change in extraction.get(field, []):

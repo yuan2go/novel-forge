@@ -1,9 +1,5 @@
-"""INVARIANT: Durable Legacy migration phase and evidence contracts.
+"""INVARIANT: resume and recovery callers share the same deterministic transition and checkpoint rules."""
 
-The state machine is intentionally independent from PostgreSQL so that every
-caller, including resume/recovery code, shares the same transition rules and
-checkpoint identity.
-"""
 from __future__ import annotations
 
 import hashlib

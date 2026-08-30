@@ -1,4 +1,3 @@
-"""INVARIANT: PostgreSQL outbox dispatcher with durable idempotent internal receipts."""
 from __future__ import annotations
 
 import os

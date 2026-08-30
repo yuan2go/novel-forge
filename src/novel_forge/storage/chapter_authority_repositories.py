@@ -1,8 +1,4 @@
-"""COMPATIBILITY: this import path remains stable for shared fenced persistence.
-
-Chapter and Content Authorities share the repository; it owns no chapter
-business rules.
-"""
+"""COMPATIBILITY: this import path remains stable for shared fenced persistence."""
 
 from __future__ import annotations
 

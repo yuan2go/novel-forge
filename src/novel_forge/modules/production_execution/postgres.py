@@ -1,9 +1,3 @@
-"""INVARIANT: PostgreSQL read adapters for the Production Execution Plane.
-
-These adapters query existing Command Kernel Attempt/Lease authority and existing
-Authority AssetVersions.  They intentionally create no parallel execution tables.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Callable, TypeVar

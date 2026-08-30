@@ -1,10 +1,4 @@
-"""INVARIANT: Strongly named, immutable Capability Pack protocol objects.
-
-Parsing is deliberately lossless: the original JSON object remains the source
-for canonical serialization and hashing, while named dataclasses expose the P0
-fields consumed by validation. Validation, rather than parsing, reports pack
-authoring mistakes so callers receive all actionable issues in one pass.
-"""
+"""CONSTRAINT: parsing retains the original JSON object for canonical hashing; validation, not parsing, aggregates authoring errors."""
 
 from __future__ import annotations
 

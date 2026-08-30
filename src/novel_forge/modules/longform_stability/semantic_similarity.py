@@ -1,10 +1,5 @@
-"""INVARIANT: Provider-aware cross-chapter similarity evidence.
+"""CONSTRAINT: the local hash adapter is only an offline regression signal and cannot qualify semantic-model or prose-quality claims."""
 
-The local hash adapter is intentionally retained as an offline regression
-signal.  It is never labelled as a semantic model and its evidence cannot be
-used to claim premium prose quality.  A configured embedding provider can be
-injected without changing the chapter-pattern contract.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -62,7 +57,11 @@ def resolve_similarity_provider(
     env: Mapping[str, str] | None = None,
     strict: bool = False,
 ) -> tuple[SimilarityEmbeddingProvider | None, dict[str, Any]]:
+    """CONSTRAINT: Resolve a semantic provider and describe whether evidence is verified.
 
+    Local/offline runs deliberately use a deterministic hash. Remote embeddings
+    are never resolved from environment variables inside the domain module.
+    """
     values = os.environ if env is None else env
     requested = str(values.get("NOVEL_FORGE_EMBEDDING_PROVIDER") or "").strip().lower()
     if execution_port is not None:

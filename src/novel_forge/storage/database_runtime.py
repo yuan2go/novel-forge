@@ -1,8 +1,5 @@
-"""INVARIANT: Bounded PostgreSQL connection, transaction, retry, and health runtime.
+"""CONSTRAINT: migration and bootstrap probes bypass the application pool because they must run before that pool exists."""
 
-Authority services share this entry point. Migration and bootstrap probes remain
-explicit exceptions because they must work before the application pool exists.
-"""
 from __future__ import annotations
 
 import logging
@@ -509,7 +506,12 @@ class ConnectionPoolRegistry:
 
 
 class TransactionExecutor:
+    """INVARIANT: Explicit retry boundary for short, idempotent, pure-database work.
 
+    Authority transactions do not opt into whole-transaction retry by default.
+    Unknown commit/connection outcomes are surfaced as reconciliation work and
+    are never blindly replayed.
+    """
     def __init__(
         self,
         runtime: DatabaseRuntime,

@@ -1,9 +1,5 @@
-"""INVARIANT: Deterministic identity for files that can change Novel Forge runtime semantics.
+"""INVARIANT: implementation identity excludes Git ids and generated evidence so CI can bind stable content identity to a tested commit."""
 
-The identity is intentionally independent from Git commit ids and from checked-in
-or generated evidence documents.  CI binds the resulting digest to ``GITHUB_SHA``
-inside a run artifact; the repository only stores the stable selection contract.
-"""
 from __future__ import annotations
 
 import fnmatch

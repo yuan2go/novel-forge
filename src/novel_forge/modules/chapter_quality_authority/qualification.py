@@ -1,10 +1,4 @@
-"""INVARIANT: Storage-free contracts for bounded Quality Qualification.
-
-The contracts deliberately keep engineering execution, narrative correctness,
-editorial evidence and Reader/longitudinal evidence separate.  They decide only
-from explicitly supplied evidence and never turn a missing layer into a zero or
-an averaged passing score.
-"""
+"""INVARIANT: engineering, narrative, editorial, Reader, and longitudinal evidence remain separate; a missing layer never becomes zero or a pass."""
 
 from __future__ import annotations
 

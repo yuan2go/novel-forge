@@ -1,5 +1,3 @@
-"""INVARIANT: Resolve one immutable, compatible Book Production input snapshot."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields

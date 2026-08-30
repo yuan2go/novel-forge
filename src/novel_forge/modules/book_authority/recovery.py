@@ -1060,7 +1060,14 @@ class PostgresBookOpeningRecoveryApplication:
         execution_generation: int,
         result: dict[str, Any],
     ) -> None:
+        """INVARIANT: Prove the complete frozen search graph before terminalization.
 
+        This assertion deliberately lives inside the Book Opening completion
+        transaction.  Calling the application coordinator's checkpoint
+        helpers in order is not an Authority invariant: an internal caller
+        could otherwise submit ``book.opening.complete`` directly and bypass
+        every durable semantic work item.
+        """
         expected_result_fields = {
             "book_design_version",
             "book_plan_version",
@@ -1259,7 +1266,14 @@ class PostgresBookOpeningRecoveryApplication:
         branch_key: str,
         branch_committer: Callable[[AuthorityUnitOfWork], Any],
     ) -> Any:
+        """INVARIANT: Atomically register one Planning branch and advance Opening progress.
 
+        Provider execution and Planning generation happen before this short
+        transaction.  The transaction only locks the existing execution
+        owners, validates the exact live fence, commits Planning membership,
+        appends immutable checkpoint evidence, and advances the monotonic
+        BookOpening checkpoint head.
+        """
         if not search_id or not branch_key or not branch_key.startswith("future-"):
             raise ValueError("Narrative Search branch identity is invalid")
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -4386,7 +4400,14 @@ class PostgresBookOpeningRecoveryApplication:
     def _semantic_replacement_required(
         *, evaluation: dict[str, Any], disposition: str
     ) -> bool:
+        """INVARIANT: Apply the frozen bounded replacement policy before creating Intent.
 
+        A non-terminal semantic Operation remains the Command Kernel's
+        execution truth.  The successor Opening generation re-enters through
+        its deterministic command identity and lets the normal worker replay
+        or fenced takeover converge that same Operation.  Only immutable
+        terminal predecessors receive an append-only replacement generation.
+        """
         operation_id = str(evaluation.get("operation_id") or "")
         if not operation_id:
             return False

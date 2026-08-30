@@ -1,9 +1,4 @@
-"""INVARIANT: Fail-closed security checks for durable production-execution contracts.
-
-Execution contracts and evidence may name a credential, but they must never carry
-the credential value.  This module is intentionally independent from the
-execution contracts so every persistence and transport boundary can reuse it.
-"""
+"""SECURITY: durable contracts may name a credential but must never contain its value."""
 
 from __future__ import annotations
 

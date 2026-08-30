@@ -1,4 +1,3 @@
-"""INVARIANT: PostgreSQL-authoritative Operation Graph and idempotent Saga coordination."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -140,6 +139,12 @@ def transition_saga_gate(
     target_status: str,
     reason: str,
 ) -> dict[str, Any]:
+    """INVARIANT: Fence and audit a business-gate transition on a Saga.
+
+    Gate owners use this command instead of updating ``authority_saga`` directly.
+    The coordinator lease, state mutation, StateEvent, AuditLog, and Outbox write are
+    committed in one transaction.
+    """
     _validate_context(context)
     if target_status not in {"WAITING_GATE", "RUNNING"} or not reason.strip():
         raise KernelError("SAGA_GATE_COMMAND_INVALID", "valid gate status and reason are required")

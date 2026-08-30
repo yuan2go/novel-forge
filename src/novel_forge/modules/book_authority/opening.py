@@ -795,7 +795,12 @@ class PostgresBookOpeningApplication:
         expected_opening_run_id: str = "",
         expected_runtime_job_id: str = "",
     ) -> RuntimeJobClaim | None:
+        """COMPATIBILITY: Drain one explicitly selected legacy-monolithic-v2 execution.
 
+        This seam is intentionally separate from the workflow-node worker loop.
+        It exists only while admitted or recovered v2 RuntimeJobs are drained;
+        its exact contract identity cannot claim workflow-v1/v3 node work.
+        """
         return self._claim_next_execution_for_contract(
             workflow_contract_version=BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION,
             worker_id=worker_id,

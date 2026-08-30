@@ -1,10 +1,3 @@
-"""INVARIANT: Chapter node bridge into the PostgreSQL Agent Definition Authority.
-
-The bridge attaches an Agent work order and immutable runtime evidence to the
-Chapter node's existing Authority Attempt.  It does not execute a second Agent
-Attempt and it never commits the Chapter domain asset.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace

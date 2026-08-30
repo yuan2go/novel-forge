@@ -270,7 +270,12 @@ class StoryFormationRepository:
         content_hash: str,
         operation_id: str,
     ) -> dict[str, Any]:
+        """INVARIANT: Close Formation with an independently approved BookDesign v5.
 
+        Foundation layers must already be current. The BookDesign remains
+        owned and activated by Book Design Authority; this method only freezes
+        that exact Authority version into coordinator lineage.
+        """
         self.cursor.execute(
             """
             SELECT project_id, book_id, lifecycle, current_stage, version
@@ -736,7 +741,13 @@ class StoryFormationRepository:
         changed_role: FoundationRole,
         replacement_asset_version_id: str,
     ) -> None:
+        """INVARIANT: Invalidate only future bindings that depend on a replaced parent.
 
+        Immutable AssetVersions and accepted history remain untouched.  A
+        repeated Formation using the same version is harmless; a changed
+        parent makes every current descendant unusable until rebound through
+        the governed sequence.
+        """
         self.cursor.execute(
             """
             SELECT asset_version_id

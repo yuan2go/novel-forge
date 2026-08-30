@@ -1,10 +1,3 @@
-"""INVARIANT: Authority admission binding for a compiled Capability Pack.
-
-Capability Packs freeze configuration only.  The returned contract references
-the existing OperationDefinition and Chapter Agent Binding; it owns no run,
-attempt, lease, fence, retry, timeout, approval, or completion state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

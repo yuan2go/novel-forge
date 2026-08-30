@@ -28,7 +28,11 @@ class OpenAITransportV2(Protocol):
 
 
 class OpenAIProviderAdapterV2:
+    """SECURITY: Controlled OpenAI SDK boundary with an explicit, mockable transport.
 
+    This class does not read environment variables and never creates a client by
+    itself.  The composition root owns credentials and transport construction.
+    """
     provider = "openai"
 
     def __init__(

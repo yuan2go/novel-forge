@@ -1,9 +1,3 @@
-"""INVARIANT: PostgreSQL adapter for the exact two-by-four Quality campaign.
-
-The adapter coordinates existing Authorities. It does not own Chapter truth,
-Provider effects, Reader state, Canon, plans, or human decisions.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

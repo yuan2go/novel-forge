@@ -1,8 +1,5 @@
-"""INVARIANT: release proof is a CI artifact bound to the tested Git SHA.
+"""INVARIANT: release proof is a CI artifact bound to the tested Git SHA, not a checked-in run narrative."""
 
-Checked-in reports and run identifiers cannot change implementation identity
-or require an evidence-only commit.
-"""
 from __future__ import annotations
 
 import argparse

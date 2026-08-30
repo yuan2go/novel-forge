@@ -1,9 +1,3 @@
-"""INVARIANT: Exact qualified Foundation Set contracts.
-
-The contracts bind existing immutable StoryDesign AssetVersions.  They do not
-create another Story Authority and deliberately contain no mutable projection.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

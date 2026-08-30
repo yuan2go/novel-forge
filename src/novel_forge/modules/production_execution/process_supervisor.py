@@ -1048,7 +1048,11 @@ class CodexProcessSupervisor:
         reason: str,
         timeout: ProcessTimeout | None = None,
     ) -> ProcessRecoveryResult:
+        """CONSTRAINT: Terminate only the verified local process group for an execution.
 
+        This is local-process cancellation evidence.  It deliberately makes no
+        claim that an upstream inference request was cancelled.
+        """
         recovery = self.recover(execution_id)
         receipt = recovery.receipt
         if receipt.status is not ProcessReceiptStatus.RUNNING:

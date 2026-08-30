@@ -1,10 +1,3 @@
-"""INVARIANT: Layer-specific deterministic gates for the qualified Story Foundation.
-
-Semantic literary judgment remains independent evidence.  These validators
-prove structural completeness, explicit parent references, and cross-layer
-coherence without copying upstream truth into downstream contracts.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Mapping

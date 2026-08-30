@@ -1,8 +1,5 @@
-"""INVARIANT: Typed conversion contracts for frozen Legacy assets.
+"""COMPATIBILITY: unknown archival types are quarantined instead of becoming generic production candidates."""
 
-The registry is deliberately closed: an unknown Legacy type is quarantined
-instead of being wrapped in a generic candidate that can drift into production.
-"""
 from __future__ import annotations
 
 import hashlib

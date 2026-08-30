@@ -1,5 +1,3 @@
-"""INVARIANT: production API composition cannot depend on legacy or filesystem authority."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

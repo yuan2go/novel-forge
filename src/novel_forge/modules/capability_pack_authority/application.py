@@ -402,7 +402,12 @@ def _select_capability_skill(
     input_contract_ref: str,
     output_contract_ref: str,
 ) -> dict[str, Any]:
+    """INVARIANT: Select a Skill from the Pack without requiring an Agent Definition.
 
+    Exact input/output contract matches win.  Packs whose Skill contract is
+    intentionally broader may fall back to a single required Skill; multiple
+    ambiguous fallbacks fail closed instead of depending on list order.
+    """
     exact = [
         dict(item)
         for item in skills

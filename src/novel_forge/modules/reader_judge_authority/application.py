@@ -1,5 +1,3 @@
-"""INVARIANT: PostgreSQL append-only Reader Judge qualification and runtime resolution."""
-
 from __future__ import annotations
 
 from dataclasses import asdict

@@ -1,10 +1,3 @@
-"""INVARIANT: Storage-free governed context selection and immutable bundle payloads.
-
-The module is shared by compatibility services and PostgreSQL Authority
-handlers.  It never discovers assets or persists results; callers must supply
-project-scoped, versioned candidates and persist the returned payload.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace

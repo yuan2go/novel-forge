@@ -1,11 +1,3 @@
-"""INVARIANT: Immutable contracts for the unified Agent Runtime.
-
-The runtime deliberately has no lifecycle aggregate of its own.  A run is the
-projection of an Authority Operation, its real Attempt/Lease/Fence, a frozen
-work order and execution binding, PEP evidence, and the accepting Domain
-Authority's records.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

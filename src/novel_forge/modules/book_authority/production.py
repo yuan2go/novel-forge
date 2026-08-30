@@ -2470,7 +2470,14 @@ class PostgresBookAuthority:
     def _require_completed_opening_workflow_for_snapshot(
         self, command: StartBookProductionCommand
     ) -> None:
+        """COMPATIBILITY: Gate BookRun admission on an exact terminal Opening evidence link.
 
+        Migration 0104 transactionally entitles the exact InputSnapshot rows
+        that already existed at cutover.  New snapshots must instead have the
+        immutable final-node binding written by the Opening completion UoW, or
+        exact legacy-monolithic completion evidence.  Wall-clock timestamps are
+        never used as authorization provenance.
+        """
         from .opening_progress import PostgresBookOpeningWorkflowProgressQuery
 
         with AuthorityUnitOfWork(self.database_url) as uow:

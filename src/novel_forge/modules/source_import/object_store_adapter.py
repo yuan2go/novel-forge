@@ -1,9 +1,5 @@
-"""INVARIANT: In-memory payload injection for governed Blob ExternalEffects.
+"""SECURITY: ExternalEffect intent stores object identity, never source bytes; retries reload bytes from the frozen Git object."""
 
-The ExternalEffect intent stores only the immutable object identity. Source bytes
-are reloaded from the frozen Git object on retry and are never serialized into
-PostgreSQL request JSON.
-"""
 from __future__ import annotations
 
 import base64

@@ -1,4 +1,3 @@
-"""INVARIANT: Chapter adapter over the shared fenced authority-handler runtime."""
 from __future__ import annotations
 
 from collections.abc import Callable

@@ -315,7 +315,7 @@
     },
     {
       "path": "src/novel_forge/modules/ending/domain.py",
-      "content_sha256": "34915028f0784b8ffaaea4cbd64ad1dd69ed6a151bb9437bf5638248d08b7f84",
+      "content_sha256": "27ee46bce4fe2d0b254ef10cb4a0a59d8088f8833cd9f831d65dc1447ed523df",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -348,7 +348,7 @@
     },
     {
       "path": "src/novel_forge/modules/longform_stability/semantic_domain.py",
-      "content_sha256": "a258a4c1c2c5c3009b9cf4339909f06e4435c4a3d861e8ba90f696c03005d436",
+      "content_sha256": "6f3c1a4a42b0272a084d5212c62e3392d36f89932e814db446d083d1f16d1dda",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -493,7 +493,7 @@
     },
     {
       "path": "src/novel_forge/modules/theme/domain.py",
-      "content_sha256": "86a9745142dbe5ab1365c5352fa601d45083c19e82c402bcaed94e71536919e4",
+      "content_sha256": "4be7bf98f45f1a34a1659e7e1f658638dc8ff8c5db2d21134fd0af3325dd2d0a",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",
@@ -561,7 +561,7 @@
     },
     {
       "path": "src/novel_forge/workers/healthcheck.py",
-      "content_sha256": "aface19838188322bc4a9db6d7c807bc41e62151f9c49201be7ef90940b0ea50",
+      "content_sha256": "f3ffcb7b78f252fc1e6df74877a75d5113c169ef457d2fff65749bbb274760af",
       "owner": "Domain Authority",
       "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
       "replacement": "Module-local Ruff cleanup during next functional change",

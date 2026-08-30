@@ -1,10 +1,3 @@
-"""INVARIANT: Immutable Capability Pack Authority contracts.
-
-This module contains configuration/deployment facts only.  Command Kernel
-Operation, Attempt, Lease, Fence, retry, compensation, and ExternalEffect
-state remain owned by their existing authorities.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

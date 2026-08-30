@@ -1,10 +1,4 @@
-"""INVARIANT: PostgreSQL discovery and deterministic immutable retrieval artifacts.
-
-Discovery is deliberately separate from ranking.  The Chapter scheduler runs
-discovery only after a qualified ChapterMemo exists and freezes every eligible
-source AssetVersion into the retrieval Operation.  The handler can therefore
-replay ranking without observing a changing projection head.
-"""
+"""INVARIANT: discovery freezes eligible source versions before ranking so replay cannot observe a changing projection head."""
 
 from __future__ import annotations
 
@@ -153,7 +147,13 @@ def discover_accepted_retrieval_candidates(
     book_id: str,
     query_plan: Mapping[str, Any],
 ) -> RetrievalDiscovery:
+    """INVARIANT: Discover a bounded accepted candidate set using PostgreSQL FTS.
 
+    Exact structured channels may add legal accepted candidates to that bounded
+    set. Semantic vectors never participate in discovery; they are consulted
+    later only for members of this frozen set. PostgreSQL ``ts_rank`` is not
+    described as BM25.
+    """
     boundary = int(
         dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter")
         or 0
@@ -480,7 +480,12 @@ def freeze_retrieval_candidate_union(
     query_embedding_dimensions: int = 0,
     query_embedding_evidence: Mapping[str, Any] | None = None,
 ) -> FrozenRetrievalCandidateUnion:
+    """INVARIANT: Freeze lexical/structured candidates and optional semantic rerank data.
 
+    The vector query is restricted to the already-discovered document IDs
+    before distance ordering. It cannot introduce a candidate. Replays consume
+    the immutable snapshot rather than observing later index updates.
+    """
     policy = str(query_plan.get("semantic_policy") or "FALLBACK_ALLOWED")
     vector = tuple(float(item) for item in query_embedding)
     if policy == "DISABLED" and vector:

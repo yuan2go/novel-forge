@@ -1708,7 +1708,13 @@ class ChapterFixtureResponseFactory(Protocol):
 
 
 class ExternalEffectExecutionSessionStore:
+    """INVARIANT: Transient gateway cache; PostgreSQL ExternalEffect remains recovery authority.
 
+    Every referenced manifest is copied into the ExternalEffect receipt before the
+    adapter returns.  A new worker deliberately starts with an empty cache and
+    reconstructs the same request from PostgreSQL using the Provider idempotency key
+    or persistent local execution directory.
+    """
     def __init__(self) -> None:
         self._records: dict[str, ExecutionRecord] = {}
         self._evidence: dict[str, dict[str, Any]] = {}
@@ -2026,7 +2032,7 @@ def default_chapter_fixture_response(
 def _provider_process_timeout_seconds(
     external_effect_timeout_seconds: int, *, max_attempts: int = 1
 ) -> int:
-
+    """CONSTRAINT: Bound each call inside the immutable total Effect deadline."""
     if max_attempts <= 0:
         raise ValueError("ExternalEffect max_attempts must be positive")
     attempt_window = external_effect_timeout_seconds // max_attempts
@@ -3064,7 +3070,7 @@ def _materialize_source_intelligence_prompt(
     inputs: Mapping[str, Any],
     materialization: Mapping[str, Any],
 ) -> tuple[str, dict[str, Any]]:
-
+    """SECURITY: Render Source analysis bytes only in Provider memory, never in PostgreSQL."""
     system = materialization.get("system_instruction")
     skill = materialization.get("skill")
     template = materialization.get("prompt_template")

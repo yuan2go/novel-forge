@@ -1,4 +1,5 @@
-"""CONSTRAINT: manifest files use JSON syntax in .yaml files so standard-library JSON parsing and YAML-aware tooling validate the same bytes."""
+"""CONSTRAINT: manifest .yaml files contain JSON syntax so standard-library JSON and YAML-aware tooling validate identical bytes."""
+
 from __future__ import annotations
 
 import argparse

@@ -1,5 +1,3 @@
-"""INVARIANT: Static, fail-closed Capability Pack protocol validation."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping

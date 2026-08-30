@@ -1,11 +1,3 @@
-"""INVARIANT: Pure contracts for Capability-Pack-backed Story Planning generation.
-
-The module owns no scheduler, provider, persistence, or activation state.  It
-describes the immutable inputs and candidate evidence handed between the
-Command Kernel, Agent Runtime, PEP, Story Design Authority, and Hierarchical
-Planning Authority.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

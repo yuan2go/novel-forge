@@ -978,7 +978,12 @@ def validate_chapter_provider_output_semantics(
 def _canon_change_semantic_slot(
     field: str, item: Mapping[str, Any]
 ) -> tuple[object, ...]:
+    """INVARIANT: Return a domain identity, never an evidence-location heuristic.
 
+    One passage may legitimately produce multiple audience-specific Disclosure
+    events or multiple typed state changes. Provider semantics are validated
+    before this function, so reaching the fallback is a programming error.
+    """
     for fields in _CANON_SEMANTIC_IDENTITIES.get(field, ()):
         values = tuple(str(item.get(key) or "") for key in fields)
         if all(values):

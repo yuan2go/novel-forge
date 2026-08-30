@@ -1145,7 +1145,14 @@ class PostgresNarrativeSearchApplication:
         opening_execution_id: str,
         execution_generation: int,
     ) -> NarrativeSearchBranchReconciliationEvidence:
+        """COMPATIBILITY: Append evidence for one immutable pre-contract membership.
 
+        This primitive deliberately requires a caller-owned transaction.  The
+        Book Opening coordinator must establish and validate its live runtime
+        fence before entering Planning's canonical Search -> Generation ->
+        Candidate/Qualification -> Membership lock order.  No Provider call is
+        made here and the historical membership is never changed.
+        """
         if not opening_run_id or not opening_execution_id or execution_generation <= 0:
             raise ValueError("legacy branch reconciliation requires an execution")
         search = self._lock_search_for_branch_registration(uow, search_id)

@@ -979,7 +979,12 @@ class StoryPlanningGenerationApplication:
     def _require_frozen_realization_slice(
         self, command: StoryPlanningGenerationCommand
     ) -> dict[str, Any]:
+        """SECURITY: Resolve Chapter elaboration identity from Planning Authority itself.
 
+        Caller-supplied mappings are only transport.  Generation, retry, and
+        activation all compare them with the current Frozen contract so a
+        shaped or stale mapping cannot materialize a ChapterPlan.
+        """
         supplied = dict(command.narrative_realization or {})
         if command.generator_operation_name != "chapter_plan.generate" or not supplied:
             raise KernelError(
@@ -1245,7 +1250,15 @@ class StoryPlanningGenerationApplication:
         project_id: str,
         idempotency_key: str,
     ) -> StoryPlanningGenerationCommand | None:
+        """INVARIANT: Return the immutable command already admitted for one generation key.
 
+        Narrative Search may lose its process after Command admission (or after
+        semantic work) but before branch membership is committed.  A successor
+        BookOpening execution has a different outer fence, so rebuilding the
+        command from that successor would correctly conflict with the existing
+        Command Kernel identity.  Resume must instead replay the exact frozen
+        command and let the normal generation/evaluation authorities converge.
+        """
         if not project_id or not idempotency_key:
             raise ValueError("frozen Planning Generation identity is incomplete")
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1289,7 +1302,15 @@ class StoryPlanningGenerationApplication:
         command: StoryPlanningGenerationCommand,
         resolved_input_assets: list[dict[str, str]],
     ) -> list[dict[str, str]]:
+        """COMPATIBILITY: Preserve the admitted snapshot order when replaying an Operation.
 
+        PostgreSQL JSONB does not preserve object-key insertion order.  Rebuilding
+        ``input_versions`` from the frozen payload can therefore produce the same
+        semantic assets in a different list order, while the Command Kernel
+        request digest intentionally covers the admitted list.  The immutable
+        Operation snapshot is the replay authority: every identity/hash must
+        still match, and only its original ordering is reused.
+        """
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

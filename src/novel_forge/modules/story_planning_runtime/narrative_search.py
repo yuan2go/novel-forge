@@ -1,11 +1,3 @@
-"""INVARIANT: Planning-owned contracts for bounded divergent narrative search.
-
-Search compares immutable Story Planning candidates.  It is deliberately not
-an Authority or execution runtime: generation remains Operation/Attempt/PEP,
-semantic qualification remains Story Design-owned, and activation remains
-Hierarchical Planning-owned.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -73,6 +73,11 @@ def scan_expired_operation_deadlines(
     actor_id: str,
     limit: int = 100,
 ) -> dict[str, object]:
+    """INVARIANT: Issue idempotent cancellation commands for expired business deadlines.
+
+    A separate worker may call this while another worker is blocked. It never
+    extends the business deadline and does not forcibly terminate Python threads.
+    """
     if not actor_id or limit <= 0:
         raise ValueError("deadline scanner actor and positive limit are required")
     with AuthorityUnitOfWork(database_url) as uow:

@@ -1,9 +1,4 @@
-"""INVARIANT: Accepted-history longitudinal Quality evidence.
-
-This module reduces compact, typed observations that already crossed Book
-Acceptance.  It does not infer Canon from prose, create a second obligation
-ledger, or average Chapter scores into Arc/Volume conclusions.
-"""
+"""INVARIANT: longitudinal evidence consumes accepted observations only and cannot infer Arc or Volume quality by averaging Chapter scores."""
 
 from __future__ import annotations
 
@@ -193,7 +188,7 @@ class VolumeSliceQualityEvaluation:
 
 
 def _json_ready(value: Any) -> Any:
-
+    """COMPATIBILITY: Round-trip to the exact JSON shape persisted by PostgreSQL JSONB."""
     return json.loads(
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     )

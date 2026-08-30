@@ -1,11 +1,4 @@
-"""INVARIANT: Final Provider-send gate for Narrative Evaluation executions.
-
-The Story Design execution row identifies the semantic generation.  It does
-not own Book Opening liveness.  When a generation is causally bound to a Book
-Opening, this module derives permission from the exact current
-OpeningExecution/RuntimeJob/Attempt/Lease chain immediately before the
-Provider adapter is entered.
-"""
+"""INVARIANT: a Book-bound evaluation must revalidate the exact live Opening execution and lease immediately before Provider dispatch."""
 
 from __future__ import annotations
 

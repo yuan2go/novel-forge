@@ -1,9 +1,3 @@
-"""INVARIANT: Pure decision logic for governed post-chapter operations.
-
-This module intentionally cannot write assets, mutate Canon, or activate plans.
-Handlers persist its outputs through the shared Authority handler runtime.
-"""
-
 from __future__ import annotations
 
 from enum import Enum

@@ -1,5 +1,3 @@
-"""INVARIANT: Append-only Volume, Arc, contribution, and Ending checkpoint persistence."""
-
 from __future__ import annotations
 
 import hashlib
