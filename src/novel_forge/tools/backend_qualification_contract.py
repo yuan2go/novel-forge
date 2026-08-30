@@ -553,6 +553,109 @@ def validate_collection_report(
     }
 
 
+def build_postgres_pytest_command(
+    *,
+    contract: PytestCollectionContract,
+    python: str,
+    junit_xml: Path,
+    collection_report: Path,
+) -> list[str]:
+    """Build the complete PostgreSQL pytest invocation without filename selection."""
+    if contract.classification != "POSTGRESQL_REQUIRED":
+        raise QualificationContractError(
+            "PostgreSQL pytest command requires a PostgreSQL collection contract"
+        )
+    if not contract.complete_collection or contract.allow_skips:
+        raise QualificationContractError(
+            "PostgreSQL pytest collection must be complete and forbid skips"
+        )
+    if not python.strip():
+        raise QualificationContractError("qualification Python executable is empty")
+    if not junit_xml.is_absolute() or not collection_report.is_absolute():
+        raise QualificationContractError(
+            "qualification pytest evidence paths must be absolute"
+        )
+    if any("*" in path or "?" in path or "[" in path for path in contract.paths):
+        raise QualificationContractError(
+            "PostgreSQL pytest collection paths cannot contain selection globs"
+        )
+    return [
+        python,
+        "-m",
+        "pytest",
+        *contract.paths,
+        "-q",
+        f"--junitxml={junit_xml}",
+        "-p",
+        "novel_forge.tools.pytest_collection_evidence",
+        f"--novel-forge-collection-report={collection_report}",
+    ]
+
+
+def validate_postgres_test_evidence(
+    *,
+    contract: PytestCollectionContract,
+    junit_xml: Path,
+    collection_report: Path,
+    repo_root: Path,
+    semantic_slices: Mapping[str, tuple[str, ...]],
+) -> dict[str, object]:
+    """Validate a complete, zero-skip PostgreSQL pytest execution."""
+    if contract.classification != "POSTGRESQL_REQUIRED":
+        raise QualificationContractError(
+            "PostgreSQL evidence requires a PostgreSQL collection contract"
+        )
+    junit = parse_junit_xml(junit_xml)
+    collection = validate_collection_report(
+        contract=contract,
+        report_path=collection_report,
+        repo_root=repo_root,
+    )
+    if junit["tests"] != collection["collected_count"]:
+        raise QualificationContractError(
+            "JUnit test count and pytest collection count differ"
+        )
+    if int(junit["skipped"]):
+        raise QualificationContractError(
+            "complete PostgreSQL qualification forbids test skips"
+        )
+    if int(junit["failures"]) or int(junit["errors"]):
+        raise QualificationContractError(
+            "PostgreSQL JUnit evidence contains failures or errors"
+        )
+    if int(collection["pytest_exit_status"]) != 0:
+        raise QualificationContractError(
+            "PostgreSQL pytest process did not report a successful exit"
+        )
+
+    source_files = set(collection["source_files"])
+    roots = tuple(path.rstrip("/") + "/" for path in contract.paths)
+    slice_evidence: dict[str, list[str]] = {}
+    for name, paths in semantic_slices.items():
+        relevant = sorted(path for path in paths if path.startswith(roots))
+        if not relevant:
+            continue
+        missing = sorted(set(relevant) - source_files)
+        if missing:
+            raise QualificationContractError(
+                f"PostgreSQL semantic slice {name} is missing tests: {missing}"
+            )
+        slice_evidence[str(name)] = relevant
+    return {
+        "schema_version": "novel-forge.postgresql-pytest-evidence.v1",
+        "status": "PASS",
+        "classification": contract.classification,
+        "complete_collection": True,
+        "junit": {
+            **junit,
+            "artifact": junit_xml.name,
+            "digest": _content_digest(junit_xml.read_bytes()),
+        },
+        "collection": collection,
+        "semantic_slices": slice_evidence,
+    }
+
+
 __all__ = [
     "COLLECTION_CLASSIFICATIONS",
     "MIGRATION_MANIFEST",
@@ -567,4 +670,6 @@ __all__ = [
     "resolved_dependency_snapshot",
     "sanitize_evidence",
     "validate_collection_report",
+    "build_postgres_pytest_command",
+    "validate_postgres_test_evidence",
 ]

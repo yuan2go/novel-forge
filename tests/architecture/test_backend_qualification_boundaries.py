@@ -59,6 +59,31 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
                 "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}",
             )
 
+    def test_postgresql_runner_has_no_curated_filename_or_fixed_port_contract(
+        self,
+    ) -> None:
+        source = (ROOT / "scripts/run_authority_postgres_tests.py").read_text(
+            encoding="utf-8"
+        )
+
+        manifest = yaml.safe_load(
+            (
+                ROOT
+                / "architecture/manifests/backend-qualification-manifest.yaml"
+            ).read_text(encoding="utf-8")
+        )
+        integration = next(
+            item
+            for item in manifest["pytest_collections"]
+            if item["name"] == "integration"
+        )
+        self.assertEqual(integration["paths"], ["tests/integration"])
+        self.assertTrue(integration["complete_collection"])
+        self.assertIn("build_postgres_pytest_command", source)
+        self.assertNotIn(".glob(", source)
+        self.assertNotIn("pytest.main", source)
+        self.assertNotIn("55432", source)
+
 
 if __name__ == "__main__":
     unittest.main()
