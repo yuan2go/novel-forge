@@ -22,6 +22,7 @@ from novel_forge.tools.backend_qualification_contract import (
     resolved_dependency_snapshot,
     sanitize_evidence,
     validate_backend_test_evidence,
+    validate_compose_runtime_evidence,
     validate_postgres_test_evidence,
 )
 from novel_forge.tools.backend_qualification_resources import (
@@ -1010,20 +1011,12 @@ def run_qualification(
         compose_evidence = _read_json_object(
             compose_output, evidence_name="Compose runtime evidence"
         )
-        required_steps = {
-            "clean_compose_ready",
-            "synthetic_operation_completed",
-            "pending_operation_recovered_after_worker_restart",
-            "post_restart_operation_completed",
-            "graceful_drain_released_connections",
-        }
-        if (
-            compose_evidence.get("status") != "PASS"
-            or compose_evidence.get("commit_sha") != source["commit_sha"]
-            or compose_evidence.get("run_id") != identity.run_id
-            or not required_steps.issubset(set(compose_evidence.get("steps") or []))
-        ):
-            raise ValueError("Compose runtime proof is incomplete or identity-mismatched")
+        compose_evidence = validate_compose_runtime_evidence(
+            compose_evidence,
+            expected_sha=str(source["commit_sha"]),
+            expected_run_id=identity.run_id,
+            expected_project=compose_project,
+        )
         compose_cleanup = compose_evidence.get("cleanup")
         if (
             not isinstance(compose_cleanup, Mapping)

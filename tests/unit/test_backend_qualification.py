@@ -17,6 +17,7 @@ from novel_forge.tools.backend_qualification_contract import (
     build_backend_pytest_command,
     build_postgres_pytest_command,
     load_qualification_manifest,
+    validate_compose_runtime_evidence,
     validate_postgres_test_evidence,
 )
 from novel_forge.tools.backend_qualification import (
@@ -29,6 +30,100 @@ from scripts import run_authority_postgres_tests
 
 ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
+
+
+def _compose_operation(operation_id: str, *, fencing_token: int = 1) -> dict[str, object]:
+    return {
+        "status": "PASS",
+        "operation_id": operation_id,
+        "operation_status": "SUCCEEDED",
+        "attempt_count": 1,
+        "lease_count": 1,
+        "max_fencing_token": fencing_token,
+        "output_asset_count": 1,
+        "audit_count": 1,
+        "published_outbox_count": 1,
+        "fixture": True,
+        "real_provider_proven": False,
+    }
+
+
+def _compose_evidence() -> dict[str, object]:
+    return {
+        "schema_version": "novel-forge.compose-runtime-evidence.v1",
+        "status": "PASS",
+        "commit_sha": SHA,
+        "run_id": "p0-" + "1" * 32,
+        "project_name": "nf-p0-" + "1" * 32 + "-runtime",
+        "steps": [
+            "clean_compose_ready",
+            "required_worker_fleet_ready",
+            "synthetic_operation_completed",
+            "pending_operation_recovered_after_worker_restart",
+            "post_restart_operation_completed",
+            "graceful_drain_released_connections",
+        ],
+        "normal_operation": _compose_operation("operation:normal"),
+        "recovered_operation": _compose_operation(
+            "operation:recovered", fencing_token=2
+        ),
+        "post_restart_operation": _compose_operation("operation:post"),
+        "expired_lease": {
+            "attempt_id": "attempt:expired",
+            "worker_id": "content-crashed-worker",
+            "fencing_token": 1,
+        },
+        "stale_fence": {
+            "status": "PASS",
+            "rejected_error_code": "ATTEMPT_FENCING_TOKEN_STALE",
+        },
+        "worker_restart": {
+            "worker_id": "content-authority-worker-1",
+            "worker_kind": "content",
+            "before_stop": {
+                "status": "READY",
+                "drain_status": "ACCEPTING",
+                "updated_at": "2026-08-30T01:00:00Z",
+                "last_heartbeat_at": "2026-08-30T01:00:00Z",
+            },
+            "stopped": {
+                "status": "STOPPED",
+                "drain_status": "DRAINED",
+                "updated_at": "2026-08-30T01:01:00Z",
+                "last_heartbeat_at": "2026-08-30T01:01:00Z",
+            },
+            "after_recovery_start": {
+                "status": "READY",
+                "drain_status": "ACCEPTING",
+                "updated_at": "2026-08-30T01:02:00Z",
+                "last_heartbeat_at": "2026-08-30T01:02:00Z",
+            },
+            "before_forced_restart": {
+                "status": "READY",
+                "drain_status": "ACCEPTING",
+                "updated_at": "2026-08-30T01:03:00Z",
+                "last_heartbeat_at": "2026-08-30T01:03:00Z",
+            },
+            "after_forced_restart": {
+                "status": "READY",
+                "drain_status": "ACCEPTING",
+                "updated_at": "2026-08-30T01:04:00Z",
+                "last_heartbeat_at": "2026-08-30T01:04:00Z",
+            },
+            "projection_changed": True,
+        },
+        "shutdown_database_governance": {
+            "idle_in_transaction": 0,
+            "active_transactions": 0,
+            "worker_connections": 0,
+        },
+        "drained_worker_count": 10,
+        "cleanup": {"status": "PASS", "remaining_resource_count": 0},
+        "fixture": True,
+        "real_provider_proven": False,
+        "longform_proven": False,
+        "production_verified": False,
+    }
 
 
 class PostgreSQLQualificationRunnerTests(unittest.TestCase):
@@ -172,6 +267,33 @@ class PostgreSQLQualificationRunnerTests(unittest.TestCase):
 
 
 class BackendQualificationCliTests(unittest.TestCase):
+    def test_compose_proof_requires_post_restart_authoritative_side_effect(
+        self,
+    ) -> None:
+        evidence = _compose_evidence()
+        validated = validate_compose_runtime_evidence(
+            evidence,
+            expected_sha=SHA,
+            expected_run_id="p0-" + "1" * 32,
+            expected_project="nf-p0-" + "1" * 32 + "-runtime",
+        )
+        self.assertEqual(validated["status"], "PASS")
+
+        invalid = dict(evidence)
+        invalid["post_restart_operation"] = {
+            **invalid["post_restart_operation"],
+            "output_asset_count": 0,
+        }
+        with self.assertRaisesRegex(
+            QualificationContractError, "post-restart authoritative side effect"
+        ):
+            validate_compose_runtime_evidence(
+                invalid,
+                expected_sha=SHA,
+                expected_run_id="p0-" + "1" * 32,
+                expected_project="nf-p0-" + "1" * 32 + "-runtime",
+            )
+
     def test_preflight_rejects_any_real_provider_route_before_commands(self) -> None:
         class ForbiddenRunner:
             def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:

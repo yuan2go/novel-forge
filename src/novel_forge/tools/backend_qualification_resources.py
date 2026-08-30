@@ -16,6 +16,10 @@ from psycopg.conninfo import conninfo_to_dict
 
 
 FULL_GIT_SHA = re.compile(r"[0-9a-f]{40}")
+QUALIFICATION_RUN_ID = re.compile(r"p0-([0-9a-f]{32})")
+QUALIFICATION_COMPOSE_PROJECT = re.compile(
+    r"nf-p0-([0-9a-f]{32})(?:-[a-z0-9][a-z0-9-]{0,31})?"
+)
 RUN_DATABASE_NAME = re.compile(r"nf_p0_[0-9a-f]{32}_test")
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
 PROTECTED_DATABASE_NAMES = frozenset(
@@ -59,6 +63,40 @@ class QualificationRunIdentity:
                 artifact_parent.resolve()
                 / f"novel-forge-p0-{tested_sha[:12]}-{token}"
             ),
+        )
+
+    @classmethod
+    def bind(
+        cls,
+        *,
+        commit_sha: str,
+        run_id: str,
+        compose_project: str,
+        artifact_root: Path,
+    ) -> "QualificationRunIdentity":
+        """Bind a derived Compose phase to an already-created run identity."""
+        tested_sha = commit_sha.strip().lower()
+        run_match = QUALIFICATION_RUN_ID.fullmatch(run_id.strip().lower())
+        project_match = QUALIFICATION_COMPOSE_PROJECT.fullmatch(
+            compose_project.strip().lower()
+        )
+        if not FULL_GIT_SHA.fullmatch(tested_sha):
+            raise ValueError("qualification identity requires a full lowercase Git SHA")
+        if (
+            run_match is None
+            or project_match is None
+            or run_match.group(1) != project_match.group(1)
+        ):
+            raise ValueError(
+                "qualification Compose project is not bound to the run-scoped identity"
+            )
+        token = run_match.group(1)
+        return cls(
+            commit_sha=tested_sha,
+            run_id=f"p0-{token}",
+            compose_project=compose_project.strip().lower(),
+            database_name=f"nf_p0_{token}_test",
+            artifact_root=artifact_root.resolve(),
         )
 
 
@@ -347,7 +385,10 @@ class OwnedComposeProject:
         self.compose_files = tuple(Path(path) for path in compose_files)
         self.environment = dict(environment)
         self.client = client
-        self.receipt_path = identity.artifact_root / "compose-resource-ownership.json"
+        self.receipt_path = (
+            identity.artifact_root
+            / f"compose-resource-ownership-{identity.compose_project}.json"
+        )
         self._captured: ComposeResourceSnapshot | None = None
 
     def assert_unclaimed(self) -> None:

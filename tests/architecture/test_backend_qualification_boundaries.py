@@ -59,6 +59,32 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
                 "${NOVEL_FORGE_QUALIFICATION_RUN_ID:?qualification run id required}",
             )
 
+        worker_e2e = yaml.safe_load(
+            (ROOT / "compose.worker-e2e.yml").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            worker_e2e["services"]["postgresql"]["ports"],
+            [
+                {
+                    "target": 5432,
+                    "host_ip": "127.0.0.1",
+                    "published": "0",
+                    "protocol": "tcp",
+                }
+            ],
+        )
+        self.assertEqual(
+            worker_e2e["services"]["object-store"]["ports"],
+            [
+                {
+                    "target": 9000,
+                    "host_ip": "127.0.0.1",
+                    "published": "0",
+                    "protocol": "tcp",
+                }
+            ],
+        )
+
     def test_postgresql_runner_has_no_curated_filename_or_fixed_port_contract(
         self,
     ) -> None:

@@ -888,6 +888,237 @@ def validate_backend_test_evidence(
     }
 
 
+def _positive_compose_counter(
+    value: object, *, field: str, minimum: int = 1
+) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < minimum
+    ):
+        raise QualificationContractError(
+            f"Compose runtime evidence field {field} must be at least {minimum}"
+        )
+    return value
+
+
+def _validate_compose_operation(
+    value: object, *, label: str, minimum_fencing_token: int
+) -> dict[str, object]:
+    if not isinstance(value, Mapping):
+        raise QualificationContractError(
+            f"Compose runtime {label} operation evidence is missing"
+        )
+    operation_id = _required_text(
+        value.get("operation_id"), field=f"Compose {label} operation_id"
+    )
+    if value.get("status") != "PASS" or value.get("operation_status") != "SUCCEEDED":
+        raise QualificationContractError(
+            f"Compose runtime {label} operation did not succeed"
+        )
+    _positive_compose_counter(
+        value.get("attempt_count"), field=f"{label}.attempt_count"
+    )
+    _positive_compose_counter(
+        value.get("lease_count"), field=f"{label}.lease_count"
+    )
+    _positive_compose_counter(
+        value.get("max_fencing_token"),
+        field=f"{label}.max_fencing_token",
+        minimum=minimum_fencing_token,
+    )
+    side_effect_fields = (
+        "output_asset_count",
+        "audit_count",
+        "published_outbox_count",
+    )
+    try:
+        for field in side_effect_fields:
+            _positive_compose_counter(
+                value.get(field), field=f"{label}.{field}"
+            )
+    except QualificationContractError as exc:
+        if label == "post-restart":
+            raise QualificationContractError(
+                "Compose post-restart authoritative side effect is incomplete"
+            ) from exc
+        raise
+    if value.get("fixture") is not True or value.get("real_provider_proven") is not False:
+        raise QualificationContractError(
+            f"Compose runtime {label} operation evidence overclaims provider scope"
+        )
+    return {**dict(value), "operation_id": operation_id}
+
+
+def _validate_worker_projection_snapshot(
+    value: object, *, label: str, stopped: bool = False
+) -> dict[str, object]:
+    if not isinstance(value, Mapping):
+        raise QualificationContractError(
+            f"Compose worker projection snapshot is missing: {label}"
+        )
+    status = _required_text(value.get("status"), field=f"worker restart {label}.status")
+    drain_status = _required_text(
+        value.get("drain_status"), field=f"worker restart {label}.drain_status"
+    )
+    if stopped:
+        if status != "STOPPED" or drain_status != "DRAINED":
+            raise QualificationContractError(
+                "Compose worker projection did not observe a drained stop"
+            )
+    elif status not in {"READY", "BUSY"} or drain_status != "ACCEPTING":
+        raise QualificationContractError(
+            f"Compose worker projection is not ready after {label}"
+        )
+    _required_text(
+        value.get("updated_at"), field=f"worker restart {label}.updated_at"
+    )
+    _required_text(
+        value.get("last_heartbeat_at"),
+        field=f"worker restart {label}.last_heartbeat_at",
+    )
+    return dict(value)
+
+
+def validate_compose_runtime_evidence(
+    evidence: Mapping[str, object],
+    *,
+    expected_sha: str,
+    expected_run_id: str,
+    expected_project: str,
+) -> dict[str, object]:
+    """Validate enqueue, recovery, restart, subsequent work, drain, and cleanup."""
+    if evidence.get("schema_version") != "novel-forge.compose-runtime-evidence.v1":
+        raise QualificationContractError("unsupported Compose runtime evidence schema")
+    if evidence.get("status") != "PASS":
+        raise QualificationContractError("Compose runtime evidence is not PASS")
+    if (
+        evidence.get("commit_sha") != expected_sha
+        or evidence.get("run_id") != expected_run_id
+        or evidence.get("project_name") != expected_project
+    ):
+        raise QualificationContractError("Compose runtime evidence identity differs")
+    required_steps = {
+        "clean_compose_ready",
+        "required_worker_fleet_ready",
+        "synthetic_operation_completed",
+        "pending_operation_recovered_after_worker_restart",
+        "post_restart_operation_completed",
+        "graceful_drain_released_connections",
+    }
+    steps = evidence.get("steps")
+    if not isinstance(steps, list) or not required_steps.issubset(
+        {str(item) for item in steps}
+    ):
+        raise QualificationContractError("Compose runtime proof steps are incomplete")
+
+    normal = _validate_compose_operation(
+        evidence.get("normal_operation"),
+        label="pre-restart",
+        minimum_fencing_token=1,
+    )
+    recovered = _validate_compose_operation(
+        evidence.get("recovered_operation"),
+        label="recovered",
+        minimum_fencing_token=2,
+    )
+    post_restart = _validate_compose_operation(
+        evidence.get("post_restart_operation"),
+        label="post-restart",
+        minimum_fencing_token=1,
+    )
+    operation_ids = {
+        normal["operation_id"],
+        recovered["operation_id"],
+        post_restart["operation_id"],
+    }
+    if len(operation_ids) != 3:
+        raise QualificationContractError(
+            "Compose runtime proof requires three distinct operation identities"
+        )
+
+    expired = evidence.get("expired_lease")
+    stale = evidence.get("stale_fence")
+    if (
+        not isinstance(expired, Mapping)
+        or not str(expired.get("attempt_id") or "")
+        or not isinstance(stale, Mapping)
+        or stale.get("status") != "PASS"
+        or not str(stale.get("rejected_error_code") or "")
+    ):
+        raise QualificationContractError(
+            "Compose runtime recovery lacks expired-lease or stale-fence evidence"
+        )
+
+    restart = evidence.get("worker_restart")
+    if not isinstance(restart, Mapping):
+        raise QualificationContractError("Compose worker restart evidence is missing")
+    _required_text(restart.get("worker_id"), field="worker restart worker_id")
+    _required_text(restart.get("worker_kind"), field="worker restart worker_kind")
+    snapshots = {
+        "before_stop": _validate_worker_projection_snapshot(
+            restart.get("before_stop"), label="before_stop"
+        ),
+        "stopped": _validate_worker_projection_snapshot(
+            restart.get("stopped"), label="stopped", stopped=True
+        ),
+        "after_recovery_start": _validate_worker_projection_snapshot(
+            restart.get("after_recovery_start"), label="after_recovery_start"
+        ),
+        "before_forced_restart": _validate_worker_projection_snapshot(
+            restart.get("before_forced_restart"), label="before_forced_restart"
+        ),
+        "after_forced_restart": _validate_worker_projection_snapshot(
+            restart.get("after_forced_restart"), label="after_forced_restart"
+        ),
+    }
+    updated_at_values = [
+        str(snapshot["updated_at"]) for snapshot in snapshots.values()
+    ]
+    if (
+        restart.get("projection_changed") is not True
+        or len(set(updated_at_values)) != len(updated_at_values)
+        or snapshots["before_forced_restart"]["last_heartbeat_at"]
+        == snapshots["after_forced_restart"]["last_heartbeat_at"]
+    ):
+        raise QualificationContractError(
+            "Compose worker restart is not bound to changed health projection evidence"
+        )
+
+    governance = evidence.get("shutdown_database_governance")
+    if not isinstance(governance, Mapping) or any(
+        governance.get(field) != 0
+        for field in (
+            "idle_in_transaction",
+            "active_transactions",
+            "worker_connections",
+        )
+    ):
+        raise QualificationContractError(
+            "Compose graceful drain left database activity"
+        )
+    _positive_compose_counter(
+        evidence.get("drained_worker_count"), field="drained_worker_count"
+    )
+    cleanup = evidence.get("cleanup")
+    if (
+        not isinstance(cleanup, Mapping)
+        or cleanup.get("status") != "PASS"
+        or cleanup.get("remaining_resource_count") != 0
+    ):
+        raise QualificationContractError(
+            "Compose runtime ownership-checked cleanup is incomplete"
+        )
+    if (
+        evidence.get("fixture") is not True
+        or evidence.get("real_provider_proven") is not False
+        or evidence.get("longform_proven") is not False
+        or evidence.get("production_verified") is not False
+    ):
+        raise QualificationContractError("Compose runtime evidence exceeds its ceiling")
+    return dict(evidence)
+
+
 __all__ = [
     "COLLECTION_CLASSIFICATIONS",
     "MIGRATION_MANIFEST",
@@ -907,4 +1138,5 @@ __all__ = [
     "build_backend_pytest_command",
     "validate_postgres_test_evidence",
     "validate_backend_test_evidence",
+    "validate_compose_runtime_evidence",
 ]

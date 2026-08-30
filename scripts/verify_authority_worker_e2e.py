@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import shlex
-import socket
 import subprocess
 import sys
 import time
@@ -19,6 +18,16 @@ from uuid import uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
+from novel_forge.tools.backend_qualification_contract import sanitize_evidence
+from novel_forge.tools.backend_qualification_resources import (
+    DockerCommandError,
+    DockerComposeClient,
+    OwnedComposeProject,
+    QualificationRunIdentity,
+    ResourceOwnershipError,
+)
+from novel_forge.tools.release_run_evidence import write_atomic_evidence
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -26,7 +35,11 @@ if str(ROOT) not in sys.path:
 COMPOSE = tuple(
     shlex.split(os.environ.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose")
 )
-COMPOSE_FILES = ("compose.yml", "compose.worker-e2e.yml")
+COMPOSE_FILES = (
+    "compose.yml",
+    "compose.worker-e2e.yml",
+    "compose.qualification.yml",
+)
 WORKER_SERVICES = {
     "chapter": "chapter-authority-worker",
     "content": "content-authority-worker",
@@ -74,12 +87,6 @@ def _compose(project: str, *arguments: str) -> list[str]:
     for compose_file in COMPOSE_FILES:
         command.extend(("-f", compose_file))
     return [*command, *arguments]
-
-
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
 
 
 def _connect(database_url: str) -> psycopg.Connection[Any]:
@@ -163,6 +170,26 @@ def _operation_execution_evidence(
         "audit_count": audit_count,
         "outbox_count": outbox_count,
     }
+
+
+def _distinct_succeeded_child_operation(
+    database_url: str,
+    *,
+    root_operation_id: str,
+    excluded_operation_ids: tuple[str, ...],
+) -> str:
+    with _connect(database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT operation_id FROM authority_operation "
+            "WHERE root_operation_id=%s AND status='SUCCEEDED' "
+            "AND NOT (operation_id=ANY(%s)) "
+            "ORDER BY created_at DESC, operation_id DESC LIMIT 1",
+            [root_operation_id, list(excluded_operation_ids)],
+        )
+        row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError("Chapter worker produced no distinct post-restart work")
+    return str(row[0])
 
 
 def _expire_attempt_lease(database_url: str, attempt_id: str) -> None:
@@ -436,10 +463,21 @@ def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
     execution = _operation_execution_evidence(
         settings.database_url, admission.first_operation_id
     )
+    post_restart_work_id = _distinct_succeeded_child_operation(
+        settings.database_url,
+        root_operation_id=admission.root_operation_id,
+        excluded_operation_ids=(
+            admission.root_operation_id,
+            admission.first_operation_id,
+        ),
+    )
     stale_result = assert_stale()
     return {
         "scenario": "Fixture Chapter root, 18 nodes, quality/canon/export and crash recovery",
-        "work_id": admission.root_operation_id,
+        "work_id": admission.first_operation_id,
+        "pre_restart_work_id": admission.root_operation_id,
+        "recovered_work_id": admission.first_operation_id,
+        "post_restart_work_id": post_restart_work_id,
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
@@ -477,15 +515,28 @@ def _content_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
         settings.database_url, admitted["operation_id"]
     )
     stale_result = assert_stale()
+    post_restart = submit(settings, f"content-post-restart-{uuid4().hex[:10]}")
+    post_restart_result = verify(
+        settings,
+        project_id=post_restart["project_id"],
+        operation_id=post_restart["operation_id"],
+        timeout_seconds=120,
+    )
     return {
         "scenario": "Creative Brief admission, materialization and crash recovery",
         "work_id": admitted["operation_id"],
+        "pre_restart_work_id": admitted["project_operation_id"],
+        "recovered_work_id": admitted["operation_id"],
+        "post_restart_work_id": post_restart["operation_id"],
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
         "checkpoint": json.dumps(execution["checkpoint"], sort_keys=True),
         "claimed_by": execution["claimed_by"],
-        "domain_evidence": terminal,
+        "domain_evidence": {
+            **terminal,
+            "post_restart_operation": post_restart_result,
+        },
         "expired_claim": stale,
         "stale_error_code": stale_result["rejected_error_code"],
     }
@@ -610,7 +661,9 @@ def _source_pipeline(
 
 
 def _source_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
-    project_id, workspace_id, _ = _project(settings.database_url, "source")
+    project_id, workspace_id, project_operation_id = _project(
+        settings.database_url, "source"
+    )
     control.stop_target()
     pipeline = _source_pipeline(
         settings,
@@ -627,6 +680,9 @@ def _source_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
     return {
         "scenario": "Real MinIO Put/Receipt, Source register/transform/projection and recovery",
         "work_id": pipeline["registration_operation_id"],
+        "pre_restart_work_id": project_operation_id,
+        "recovered_work_id": pipeline["registration_operation_id"],
+        "post_restart_work_id": pipeline["transform_operation_id"],
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
@@ -691,7 +747,9 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
         MkaosAuthorityQuery,
     )
 
-    project_id, workspace_id, _ = _project(settings.database_url, "mkaos")
+    project_id, workspace_id, project_operation_id = _project(
+        settings.database_url, "mkaos"
+    )
     source = _source_pipeline(
         settings,
         project_id=project_id,
@@ -823,6 +881,9 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     return {
         "scenario": "Candidate, independent approval, Knowledge Card/Pack and crash recovery",
         "work_id": str(candidate_admission["operation_id"]),
+        "pre_restart_work_id": project_operation_id,
+        "recovered_work_id": str(candidate_admission["operation_id"]),
+        "post_restart_work_id": str(pack_admission["operation_id"]),
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
@@ -1026,7 +1087,10 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
         completed_ticks = int(cursor.fetchone()[0])
     return {
         "scenario": "Book Runtime Job tick, real Chapter child acceptance/follow-up and recovery",
-        "work_id": book.book_run_id,
+        "work_id": stale_claim.runtime_job_id,
+        "pre_restart_work_id": chapter["chapter_request_id"],
+        "recovered_work_id": stale_claim.runtime_job_id,
+        "post_restart_work_id": book.book_run_id,
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
@@ -1134,6 +1198,26 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
     )
     poison_claim = poison_dispatcher.claim(limit=1, project_id=project_id)[0]
     poison = poison_dispatcher.fail(poison_claim, {"code": "FIXTURE_POISON_DELIVERY"})
+    post_restart_outbox_id, post_restart_event_id = _insert_outbox_event(
+        settings.database_url, project_id
+    )
+
+    def post_restart_state() -> tuple[Any, ...]:
+        with _connect(settings.database_url) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT status,fencing_token,published_at IS NOT NULL,"
+                "acked_at IS NOT NULL FROM outbox_event WHERE outbox_id=%s",
+                [post_restart_outbox_id],
+            )
+            return tuple(cursor.fetchone())
+
+    post_restart_terminal = _poll(
+        "post-restart Outbox delivery",
+        post_restart_state,
+        lambda row: (
+            str(row[0]).lower() == "acked" and int(row[1]) >= 1 and row[2] and row[3]
+        ),
+    )
     with _connect(settings.database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
             "SELECT outbox_delivery_execution_id,checkpoint,lease_id,fencing_token,worker_id "
@@ -1150,6 +1234,9 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
     return {
         "scenario": "Internal Outbox claim/checkpoint/ack/replay, poison and lease recovery",
         "work_id": outbox_id,
+        "pre_restart_work_id": event_id,
+        "recovered_work_id": outbox_id,
+        "post_restart_work_id": post_restart_outbox_id,
         "attempt_or_job_id": str(execution[0]),
         "lease_id": str(execution[2]),
         "fencing_token": int(execution[3]),
@@ -1164,6 +1251,8 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
             "external_broker_proven": False,
             "poison_outbox_id": poison_id,
             "poison_status": poison["status"],
+            "post_restart_event_id": post_restart_event_id,
+            "post_restart_delivery_status": post_restart_terminal[0],
         },
         "expired_claim": {
             "lease_id": stale.lease_id,
@@ -1382,9 +1471,22 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
         raise RuntimeError(
             "Maintenance E2E did not record recovery of the seeded expired Outbox claim"
         )
+    post_restart_work_id = next(
+        (
+            runtime_job_id
+            for runtime_job_id in scheduled_ids
+            if runtime_job_id != stale_claim.runtime_job_id
+        ),
+        "",
+    )
+    if not post_restart_work_id:
+        raise RuntimeError("Maintenance worker produced no distinct subsequent work")
     return {
         "scenario": "Deadline/lease/outbox/effect scans through fenced Runtime Jobs and recovery",
         "work_id": stale_claim.runtime_job_id,
+        "pre_restart_work_id": ids["operation"],
+        "recovered_work_id": stale_claim.runtime_job_id,
+        "post_restart_work_id": post_restart_work_id,
         "attempt_or_job_id": execution["attempt_id"],
         "lease_id": execution["lease_id"],
         "fencing_token": execution["fencing_token"],
@@ -1494,19 +1596,89 @@ class ComposeControl:
         return result
 
 
+def _cleanup_worker_project(
+    owned: OwnedComposeProject, *, captured: bool
+) -> dict[str, Any]:
+    try:
+        if not captured:
+            discovered = owned.client.discover(owned.identity.compose_project)
+            if not discovered.resources:
+                return {
+                    "status": "PASS",
+                    "remaining_resource_count": 0,
+                    "resource_count": 0,
+                    "ownership_capture": "NO_RESOURCES_CREATED",
+                }
+            owned.capture()
+        return dict(owned.cleanup())
+    except (DockerCommandError, ResourceOwnershipError, RuntimeError, ValueError) as exc:
+        return {
+            "status": "FAIL",
+            "remaining_resource_count": -1,
+            "error": str(sanitize_evidence(exc)),
+            "recovery": (
+                "inspect the exact run-scoped labels and ownership receipt; do not "
+                "perform an unscoped Docker cleanup"
+            ),
+        }
+
+
+def _clean_commit_sha() -> str:
+    commit_sha = _run(
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+        env=dict(os.environ),
+        timeout=10,
+    ).lower()
+    dirty = _run(
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+        ],
+        env=dict(os.environ),
+        timeout=15,
+    )
+    if dirty:
+        raise RuntimeError("worker proof requires a clean exact-revision worktree")
+    workflow_sha = os.environ.get("GITHUB_SHA", "").strip().lower()
+    if workflow_sha and workflow_sha != commit_sha:
+        raise RuntimeError("worker proof checkout differs from GITHUB_SHA")
+    return commit_sha
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--worker", choices=tuple(SCENARIOS), required=True)
     parser.add_argument("--project-name", default="")
+    parser.add_argument("--run-id", default="")
+    parser.add_argument("--artifact-root", type=Path)
     parser.add_argument("--no-build", action="store_true")
-    parser.add_argument("--keep", action="store_true")
-    parser.add_argument("--output", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    commit_sha = _run(["git", "rev-parse", "HEAD"], env=dict(os.environ), timeout=10)
-    project = args.project_name or f"novel-forge-{args.worker}-e2e-{os.getpid()}"
-    postgres_port = _free_port()
-    minio_port = _free_port()
-    api_port = _free_port()
+    commit_sha = _clean_commit_sha()
+    output = args.output.resolve()
+    if output.is_relative_to(ROOT):
+        parser.error("worker evidence output must be outside the tracked repository")
+    artifact_root = (args.artifact_root or output.parent).resolve()
+    if bool(args.project_name) != bool(args.run_id):
+        parser.error("--project-name and --run-id must be supplied together")
+    identity = (
+        QualificationRunIdentity.bind(
+            commit_sha=commit_sha,
+            run_id=args.run_id,
+            compose_project=args.project_name,
+            artifact_root=artifact_root,
+        )
+        if args.project_name
+        else QualificationRunIdentity.create(
+            commit_sha=commit_sha,
+            artifact_parent=artifact_root,
+        )
+    )
+    project = identity.compose_project
     env = {
         **os.environ,
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
@@ -1517,97 +1689,164 @@ def main() -> int:
         "NOVEL_FORGE_MINIO_ACCESS_KEY": "novel_forge",
         "NOVEL_FORGE_MINIO_SECRET_KEY": "novel_forge_dev_only",
         "NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION": "true",
-        "NOVEL_FORGE_WORKER_E2E_POSTGRES_PORT": str(postgres_port),
-        "NOVEL_FORGE_WORKER_E2E_MINIO_PORT": str(minio_port),
-        "NOVEL_FORGE_AUTHORITY_API_PORT": str(api_port),
+        "NOVEL_FORGE_AUTHORITY_API_HOST_IP": "127.0.0.1",
+        "NOVEL_FORGE_AUTHORITY_API_PORT": "0",
+        "NOVEL_FORGE_QUALIFICATION_RUN_ID": identity.run_id,
     }
-    database_url = f"postgresql://novel_forge:novel_forge_dev_only@127.0.0.1:{postgres_port}/novel_forge"
-    host_env = {
-        **env,
-        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
-        "NOVEL_FORGE_DATABASE_URL": database_url,
-        "NOVEL_FORGE_MINIO_ENDPOINT": f"127.0.0.1:{minio_port}",
-        "NOVEL_FORGE_MINIO_ACCESS_KEY": "novel_forge",
-        "NOVEL_FORGE_MINIO_SECRET_KEY": "novel_forge_dev_only",
-        "NOVEL_FORGE_MINIO_SECURE": "false",
-        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
-        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": (
-            f"/tmp/novel-forge-worker-e2e-{os.getpid()}"
-        ),
-    }
-    os.environ.update(host_env)
     started = time.monotonic()
     control = ComposeControl(project, env, args.worker)
+    docker = DockerComposeClient(repo_root=ROOT, compose_command=COMPOSE)
+    compose_paths = tuple(ROOT / item for item in COMPOSE_FILES)
+    owned = OwnedComposeProject(
+        identity=identity,
+        repo_root=ROOT,
+        compose_files=compose_paths,
+        environment=env,
+        client=docker,
+    )
+    captured = False
+    candidate: dict[str, Any] | None = None
+    failure: dict[str, Any] | None = None
     up = ["up", "-d"]
     if not args.no_build:
         up.append("--build")
     up.extend(("--wait", "--wait-timeout", "300"))
     try:
-        _run(
-            _compose(project, "down", "--volumes", "--remove-orphans"),
-            env=env,
-            timeout=120,
-        )
+        owned.assert_unclaimed()
         _run(_compose(project, *up), env=env, timeout=900)
+        ownership = owned.capture()
+        captured = True
+        postgres_port = docker.published_port(
+            project_name=project,
+            compose_files=compose_paths,
+            environment=env,
+            service="postgresql",
+            container_port=5432,
+        )
+        minio_port = docker.published_port(
+            project_name=project,
+            compose_files=compose_paths,
+            environment=env,
+            service="object-store",
+            container_port=9000,
+        )
+        database_url = (
+            "postgresql://novel_forge:novel_forge_dev_only@127.0.0.1:"
+            f"{postgres_port}/novel_forge"
+        )
+        host_env = {
+            **env,
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+            "NOVEL_FORGE_DATABASE_URL": database_url,
+            "NOVEL_FORGE_MINIO_ENDPOINT": f"127.0.0.1:{minio_port}",
+            "NOVEL_FORGE_MINIO_SECURE": "false",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": (
+                f"/tmp/novel-forge-worker-e2e-{identity.run_id}"
+            ),
+        }
+        os.environ.update(host_env)
         from novel_forge.infrastructure.settings import IndustrialSettings
         from novel_forge.storage.database_runtime import close_all_database_runtimes
-        from novel_forge.tools.worker_fleet_evidence import validate_worker_evidence
 
         settings = IndustrialSettings.from_env()
         scenario = SCENARIOS[args.worker](settings, control)
         drain = control.drain(database_url)
         runtime_group, worker_id = WORKER_IDENTITIES[args.worker]
-        evidence = validate_worker_evidence(
-            {
-                "type": "AuthorityWorkerComposeEvidence",
-                "schema_version": "authority-worker-fleet-evidence.v1",
-                "worker": args.worker,
-                "scenario": scenario.pop("scenario"),
-                "commit_sha": commit_sha,
-                "runtime_group": runtime_group,
-                "worker_id": worker_id,
-                **scenario,
-                "restart": control.restart_performed,
-                "recovery": True,
-                "stale_rejection": True,
-                "graceful_drain": drain["drained_worker_count"] >= 7,
-                "zero_leaked_connections": drain["worker_connections"] == 0,
-                "shutdown_database_governance": drain,
-                "fixture": True,
-                "real_provider_proven": False,
-                "longform_proven": False,
-                "production_verified": False,
-                "duration_seconds": round(time.monotonic() - started, 3),
-                "result": "PASS",
-            },
-            expected_worker=args.worker,
-            expected_sha=commit_sha,
-        )
+        candidate = {
+            "type": "AuthorityWorkerComposeEvidence",
+            "schema_version": "authority-worker-fleet-evidence.v1",
+            "worker": args.worker,
+            "scenario": scenario.pop("scenario"),
+            "commit_sha": commit_sha,
+            "run_id": identity.run_id,
+            "project_name": identity.compose_project,
+            "runtime_group": runtime_group,
+            "worker_id": worker_id,
+            **scenario,
+            "authoritative_side_effect": True,
+            "restart": control.restart_performed,
+            "recovery": True,
+            "stale_rejection": True,
+            "graceful_drain": drain["drained_worker_count"] >= 7,
+            "zero_leaked_connections": drain["worker_connections"] == 0,
+            "shutdown_database_governance": drain,
+            "ownership": ownership,
+            "fixture": True,
+            "real_provider_proven": False,
+            "longform_proven": False,
+            "production_verified": False,
+            "duration_seconds": round(time.monotonic() - started, 3),
+            "result": "PASS",
+        }
         close_all_database_runtimes()
-        encoded = json.dumps(evidence, ensure_ascii=False, sort_keys=True, indent=2)
-        if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(encoded + "\n", encoding="utf-8")
-        print(encoded)
-        return 0
-    except Exception:
-        logs = _run(
-            _compose(project, "logs", "--no-color", "--tail", "200"),
-            env=env,
-            timeout=120,
-            check=False,
-        )
-        if logs:
-            print(logs, file=os.sys.stderr)
-        raise
-    finally:
-        if not args.keep:
-            _run(
-                _compose(project, "down", "--volumes", "--remove-orphans"),
+    except Exception as exc:
+        failure = {
+            "type": type(exc).__name__,
+            "message": str(sanitize_evidence(exc)),
+        }
+        try:
+            logs = _run(
+                _compose(project, "logs", "--no-color", "--tail", "200"),
                 env=env,
-                timeout=180,
+                timeout=120,
                 check=False,
             )
+        except Exception as log_error:
+            logs = f"logs unavailable: {type(log_error).__name__}: {log_error}"
+        write_atomic_evidence(
+            identity.artifact_root / f"worker-e2e-{args.worker}-logs.json",
+            sanitize_evidence({"logs": logs}),
+        )
+    finally:
+        try:
+            from novel_forge.storage.database_runtime import close_all_database_runtimes
+
+            close_all_database_runtimes()
+        except (ImportError, RuntimeError):
+            pass
+        cleanup = _cleanup_worker_project(owned, captured=captured)
+
+    if candidate is not None and cleanup.get("status") == "PASS":
+        from novel_forge.tools.worker_fleet_evidence import validate_worker_evidence
+
+        candidate["cleanup"] = cleanup
+        try:
+            evidence = validate_worker_evidence(
+                candidate,
+                expected_worker=args.worker,
+                expected_sha=commit_sha,
+            )
+        except ValueError as exc:
+            failure = {
+                "type": type(exc).__name__,
+                "message": str(sanitize_evidence(exc)),
+            }
+            evidence = {}
+    else:
+        evidence = {}
+    if not evidence:
+        evidence = {
+            "type": "AuthorityWorkerComposeEvidence",
+            "schema_version": "authority-worker-fleet-evidence.v1",
+            "worker": args.worker,
+            "commit_sha": commit_sha,
+            "run_id": identity.run_id,
+            "project_name": identity.compose_project,
+            "cleanup": cleanup,
+            "failure": failure
+            or {"type": "CleanupError", "message": "owned cleanup did not pass"},
+            "fixture": True,
+            "real_provider_proven": False,
+            "production_verified": False,
+            "result": "FAIL",
+        }
+    sanitized = sanitize_evidence(evidence)
+    if not isinstance(sanitized, dict):
+        raise RuntimeError("worker evidence sanitizer returned invalid data")
+    write_atomic_evidence(output, sanitized)
+    print(json.dumps(sanitized, ensure_ascii=False, sort_keys=True, indent=2))
+    return 0 if sanitized.get("result") == "PASS" else 1
 
 
 if __name__ == "__main__":

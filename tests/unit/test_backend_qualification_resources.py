@@ -61,6 +61,27 @@ class QualificationRunIdentityTests(unittest.TestCase):
         )
         self.assertTrue(identity.artifact_root.is_absolute())
 
+    def test_existing_run_can_bind_one_derived_runtime_compose_project(self) -> None:
+        token = "1" * 32
+        with TemporaryDirectory() as temporary:
+            identity = QualificationRunIdentity.bind(
+                commit_sha=SHA,
+                run_id=f"p0-{token}",
+                compose_project=f"nf-p0-{token}-runtime",
+                artifact_root=Path(temporary) / "artifacts",
+            )
+
+        self.assertEqual(identity.run_id, f"p0-{token}")
+        self.assertEqual(identity.compose_project, f"nf-p0-{token}-runtime")
+        self.assertEqual(identity.database_name, f"nf_p0_{token}_test")
+        with self.assertRaisesRegex(ValueError, "run-scoped"):
+            QualificationRunIdentity.bind(
+                commit_sha=SHA,
+                run_id=f"p0-{token}",
+                compose_project="foreign-project",
+                artifact_root=Path(temporary) / "artifacts",
+            )
+
     def test_database_url_must_match_the_run_owned_loopback_database(self) -> None:
         database_name = "nf_p0_0123456789abcdef0123456789abcdef_test"
         safe_identity = validate_disposable_database_url(
