@@ -15,6 +15,7 @@ from novel_forge.tools.backend_qualification_contract import (
     parse_junit_xml,
     resolved_dependency_snapshot,
     sanitize_evidence,
+    validate_resolved_dependency_snapshot,
     validate_collection_report,
 )
 from novel_forge.tools.architecture_manifest import check_tests
@@ -137,6 +138,11 @@ class BackendQualificationManifestTests(unittest.TestCase):
         self.assertRegex(str(snapshot["digest"]), r"^sha256:[0-9a-f]{64}$")
         self.assertEqual(snapshot["reproducibility_class"], "RESOLVED_SNAPSHOT")
         self.assertFalse(snapshot["git_sha_alone_reproducible"])
+        self.assertEqual(validate_resolved_dependency_snapshot(snapshot), snapshot)
+        tampered = dict(snapshot)
+        tampered["packages"] = ["alpha-pkg==1.1", "zeta-pkg==2.0"]
+        with self.assertRaisesRegex(QualificationContractError, "digest differs"):
+            validate_resolved_dependency_snapshot(tampered)
         run.assert_called_once()
 
     def test_evidence_sanitizer_removes_secret_fields_and_dsn_values(self) -> None:

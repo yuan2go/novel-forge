@@ -416,7 +416,7 @@ def resolved_dependency_snapshot(
     digest = _content_digest(
         json.dumps(identity, separators=(",", ":"), sort_keys=True).encode("utf-8")
     )
-    return {
+    snapshot = {
         "schema_version": "novel-forge.resolved-dependency-snapshot.v1",
         **identity,
         "package_count": len(packages),
@@ -428,6 +428,112 @@ def resolved_dependency_snapshot(
         ),
         "git_sha_alone_reproducible": False,
     }
+    return validate_resolved_dependency_snapshot(snapshot)
+
+
+def validate_resolved_dependency_snapshot(
+    snapshot: Mapping[str, object],
+) -> dict[str, object]:
+    """Recompute and validate a resolved-environment qualification identity."""
+    if (
+        snapshot.get("schema_version")
+        != "novel-forge.resolved-dependency-snapshot.v1"
+    ):
+        raise QualificationContractError(
+            "resolved dependency snapshot schema is invalid"
+        )
+    python_implementation = _required_text(
+        snapshot.get("python_implementation"), field="python implementation"
+    )
+    python_version = _required_text(
+        snapshot.get("python_version"), field="python version"
+    )
+    packages = snapshot.get("packages")
+    if not isinstance(packages, list) or not packages or not all(
+        isinstance(item, str)
+        and item.count("==") == 1
+        and not any(character.isspace() for character in item)
+        for item in packages
+    ):
+        raise QualificationContractError(
+            "resolved dependency package identities are invalid"
+        )
+    package_names = [item.partition("==")[0] for item in packages]
+    if package_names != sorted(set(package_names)):
+        raise QualificationContractError(
+            "resolved dependency package identities must be sorted and unique"
+        )
+    package_count = snapshot.get("package_count")
+    if (
+        not isinstance(package_count, int)
+        or isinstance(package_count, bool)
+        or package_count != len(packages)
+    ):
+        raise QualificationContractError(
+            "resolved dependency package count differs from package identities"
+        )
+
+    provenance_files = snapshot.get("provenance_files")
+    if not isinstance(provenance_files, list):
+        raise QualificationContractError(
+            "resolved dependency provenance files are invalid"
+        )
+    normalized_provenance: list[dict[str, str]] = []
+    for item in provenance_files:
+        if not isinstance(item, Mapping):
+            raise QualificationContractError(
+                "resolved dependency provenance entry is invalid"
+            )
+        relative = _relative_path(
+            item.get("path"), field="dependency provenance path"
+        )
+        digest = _required_text(
+            item.get("digest"), field="dependency provenance digest"
+        )
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            raise QualificationContractError(
+                "resolved dependency provenance digest is invalid"
+            )
+        normalized_provenance.append({"path": relative, "digest": digest})
+    if normalized_provenance != sorted(
+        normalized_provenance, key=lambda item: item["path"]
+    ) or len({item["path"] for item in normalized_provenance}) != len(
+        normalized_provenance
+    ):
+        raise QualificationContractError(
+            "resolved dependency provenance files must be sorted and unique"
+        )
+
+    identity = {
+        "python_implementation": python_implementation,
+        "python_version": python_version,
+        "packages": packages,
+        "provenance_files": normalized_provenance,
+    }
+    observed_digest = _required_text(
+        snapshot.get("digest"), field="dependency snapshot digest"
+    )
+    calculated_digest = _content_digest(
+        json.dumps(identity, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    )
+    if observed_digest != calculated_digest:
+        raise QualificationContractError(
+            "resolved dependency snapshot digest differs from its identity"
+        )
+    expected_classification = (
+        "CONSTRAINTS_BOUND_RESOLVED_SNAPSHOT"
+        if normalized_provenance
+        else "RESOLVED_SNAPSHOT"
+    )
+    if snapshot.get("reproducibility_class") != expected_classification:
+        raise QualificationContractError(
+            "resolved dependency reproducibility class differs from provenance"
+        )
+    if snapshot.get("git_sha_alone_reproducible") is not False:
+        raise QualificationContractError(
+            "resolved dependency snapshot cannot claim Git SHA alone is reproducible"
+        )
+    return dict(snapshot)
 
 
 def _sensitive_evidence_key(key: str) -> bool:
@@ -553,6 +659,68 @@ def validate_collection_report(
     }
 
 
+def _build_pytest_command(
+    *,
+    contracts: tuple[PytestCollectionContract, ...],
+    python: str,
+    junit_xml: Path,
+    collection_report: Path,
+) -> list[str]:
+    if not contracts:
+        raise QualificationContractError("qualification pytest contracts are empty")
+    if any(not contract.complete_collection for contract in contracts):
+        raise QualificationContractError(
+            "qualification pytest collections must be complete"
+        )
+    if not python.strip():
+        raise QualificationContractError("qualification Python executable is empty")
+    if not junit_xml.is_absolute() or not collection_report.is_absolute():
+        raise QualificationContractError(
+            "qualification pytest evidence paths must be absolute"
+        )
+    paths = tuple(path for contract in contracts for path in contract.paths)
+    if len(set(paths)) != len(paths):
+        raise QualificationContractError("qualification pytest roots are duplicated")
+    if any("*" in path or "?" in path or "[" in path for path in paths):
+        raise QualificationContractError(
+            "qualification pytest collection paths cannot contain selection globs"
+        )
+    return [
+        python,
+        "-m",
+        "pytest",
+        *paths,
+        "-q",
+        f"--junitxml={junit_xml}",
+        "-p",
+        "novel_forge.tools.pytest_collection_evidence",
+        f"--novel-forge-collection-report={collection_report}",
+    ]
+
+
+def build_backend_pytest_command(
+    *,
+    contracts: tuple[PytestCollectionContract, ...],
+    python: str,
+    junit_xml: Path,
+    collection_report: Path,
+) -> list[str]:
+    """Build the complete non-PostgreSQL backend pytest invocation."""
+    if any(
+        contract.classification != "BACKEND_NON_POSTGRESQL"
+        for contract in contracts
+    ):
+        raise QualificationContractError(
+            "backend pytest command received a PostgreSQL collection"
+        )
+    return _build_pytest_command(
+        contracts=contracts,
+        python=python,
+        junit_xml=junit_xml,
+        collection_report=collection_report,
+    )
+
+
 def build_postgres_pytest_command(
     *,
     contract: PytestCollectionContract,
@@ -565,31 +733,34 @@ def build_postgres_pytest_command(
         raise QualificationContractError(
             "PostgreSQL pytest command requires a PostgreSQL collection contract"
         )
-    if not contract.complete_collection or contract.allow_skips:
+    if contract.allow_skips:
         raise QualificationContractError(
-            "PostgreSQL pytest collection must be complete and forbid skips"
+            "PostgreSQL pytest collection must forbid skips"
         )
-    if not python.strip():
-        raise QualificationContractError("qualification Python executable is empty")
-    if not junit_xml.is_absolute() or not collection_report.is_absolute():
+    return _build_pytest_command(
+        contracts=(contract,),
+        python=python,
+        junit_xml=junit_xml,
+        collection_report=collection_report,
+    )
+
+
+def _junit_collection_case_accounting(
+    *, junit: Mapping[str, object], collection: Mapping[str, object]
+) -> dict[str, object]:
+    """Relate collection nodes to JUnit cases without losing subtest results."""
+    junit_case_count = int(junit["tests"])
+    collected_node_count = int(collection["collected_count"])
+    if junit_case_count < collected_node_count:
         raise QualificationContractError(
-            "qualification pytest evidence paths must be absolute"
+            "JUnit reports fewer cases than pytest collected nodes"
         )
-    if any("*" in path or "?" in path or "[" in path for path in contract.paths):
-        raise QualificationContractError(
-            "PostgreSQL pytest collection paths cannot contain selection globs"
-        )
-    return [
-        python,
-        "-m",
-        "pytest",
-        *contract.paths,
-        "-q",
-        f"--junitxml={junit_xml}",
-        "-p",
-        "novel_forge.tools.pytest_collection_evidence",
-        f"--novel-forge-collection-report={collection_report}",
-    ]
+    return {
+        "authority": "JUNIT_XML",
+        "junit_case_count": junit_case_count,
+        "collected_node_count": collected_node_count,
+        "additional_junit_case_count": junit_case_count - collected_node_count,
+    }
 
 
 def validate_postgres_test_evidence(
@@ -611,10 +782,9 @@ def validate_postgres_test_evidence(
         report_path=collection_report,
         repo_root=repo_root,
     )
-    if junit["tests"] != collection["collected_count"]:
-        raise QualificationContractError(
-            "JUnit test count and pytest collection count differ"
-        )
+    case_accounting = _junit_collection_case_accounting(
+        junit=junit, collection=collection
+    )
     if int(junit["skipped"]):
         raise QualificationContractError(
             "complete PostgreSQL qualification forbids test skips"
@@ -652,7 +822,69 @@ def validate_postgres_test_evidence(
             "digest": _content_digest(junit_xml.read_bytes()),
         },
         "collection": collection,
+        "case_accounting": case_accounting,
         "semantic_slices": slice_evidence,
+    }
+
+
+def validate_backend_test_evidence(
+    *,
+    contracts: tuple[PytestCollectionContract, ...],
+    junit_xml: Path,
+    collection_report: Path,
+    repo_root: Path,
+) -> dict[str, object]:
+    """Validate the complete unit, architecture, and acceptance execution."""
+    if not contracts or any(
+        item.classification != "BACKEND_NON_POSTGRESQL" for item in contracts
+    ):
+        raise QualificationContractError(
+            "backend evidence requires non-PostgreSQL collection contracts"
+        )
+    combined = PytestCollectionContract(
+        name="backend",
+        paths=tuple(path for item in contracts for path in item.paths),
+        classification="BACKEND_NON_POSTGRESQL",
+        complete_collection=True,
+        allow_skips=any(item.allow_skips for item in contracts),
+    )
+    junit = parse_junit_xml(junit_xml)
+    collection = validate_collection_report(
+        contract=combined,
+        report_path=collection_report,
+        repo_root=repo_root,
+    )
+    case_accounting = _junit_collection_case_accounting(
+        junit=junit, collection=collection
+    )
+    if int(junit["failures"]) or int(junit["errors"]):
+        raise QualificationContractError(
+            "backend JUnit evidence contains failures or errors"
+        )
+    if not combined.allow_skips and int(junit["skipped"]):
+        raise QualificationContractError("backend qualification forbids test skips")
+    if int(collection["pytest_exit_status"]) != 0:
+        raise QualificationContractError(
+            "backend pytest process did not report a successful exit"
+        )
+    return {
+        "schema_version": "novel-forge.backend-pytest-evidence.v1",
+        "status": "PASS",
+        "junit": {
+            **junit,
+            "artifact": junit_xml.name,
+            "digest": _content_digest(junit_xml.read_bytes()),
+        },
+        "collection": collection,
+        "case_accounting": case_accounting,
+        "collections": [
+            {
+                "name": item.name,
+                "classification": item.classification,
+                "paths": list(item.paths),
+            }
+            for item in contracts
+        ],
     }
 
 
@@ -669,7 +901,10 @@ __all__ = [
     "parse_junit_xml",
     "resolved_dependency_snapshot",
     "sanitize_evidence",
+    "validate_resolved_dependency_snapshot",
     "validate_collection_report",
     "build_postgres_pytest_command",
+    "build_backend_pytest_command",
     "validate_postgres_test_evidence",
+    "validate_backend_test_evidence",
 ]

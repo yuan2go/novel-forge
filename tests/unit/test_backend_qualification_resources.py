@@ -10,6 +10,7 @@ import unittest
 from novel_forge.tools.backend_qualification_resources import (
     ComposeResource,
     ComposeResourceSnapshot,
+    DockerCommandError,
     DockerComposeClient,
     OwnedComposeProject,
     QualificationRunIdentity,
@@ -189,6 +190,17 @@ class QualificationRunIdentityTests(unittest.TestCase):
         self.assertTrue(
             all(resource.run_id == "p0-owned" for resource in snapshot.resources)
         )
+
+    def test_docker_timeout_becomes_a_bounded_resource_error(self) -> None:
+        def runner(
+            command: Sequence[str], **_kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            raise subprocess.TimeoutExpired(command, timeout=0.01)
+
+        client = DockerComposeClient(repo_root=Path.cwd(), runner=runner)
+
+        with self.assertRaisesRegex(DockerCommandError, "timed out"):
+            client.discover("nf-p0-timeout")
 
     def test_server_reported_database_name_must_be_disposable(self) -> None:
         self.assertEqual(

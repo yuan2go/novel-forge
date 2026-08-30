@@ -141,15 +141,24 @@ class DockerComposeClient:
         environment: Mapping[str, str] | None = None,
         timeout: float = 120,
     ) -> str:
-        completed = self.runner(
-            list(command),
-            cwd=self.repo_root,
-            env=None if environment is None else dict(environment),
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+        try:
+            completed = self.runner(
+                list(command),
+                cwd=self.repo_root,
+                env=None if environment is None else dict(environment),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise DockerCommandError(
+                "Docker command timed out before trustworthy resource evidence was available"
+            ) from exc
+        except OSError as exc:
+            raise DockerCommandError(
+                "Docker command could not start; resource state is unknown"
+            ) from exc
         if completed.returncode:
             raise DockerCommandError(
                 "Docker command failed without yielding trustworthy resource evidence: "

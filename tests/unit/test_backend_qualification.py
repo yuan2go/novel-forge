@@ -3,22 +3,32 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
+import signal
 import sys
 from tempfile import TemporaryDirectory
+from typing import Sequence
 import unittest
 from unittest.mock import patch
 
 from novel_forge.tools.backend_qualification_contract import (
     PytestCollectionContract,
     QualificationContractError,
+    build_backend_pytest_command,
     build_postgres_pytest_command,
     load_qualification_manifest,
     validate_postgres_test_evidence,
+)
+from novel_forge.tools.backend_qualification import (
+    ProcessResult,
+    SubprocessProcessRunner,
+    run_qualification,
 )
 from scripts import run_authority_postgres_tests
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SHA = "a" * 40
 
 
 class PostgreSQLQualificationRunnerTests(unittest.TestCase):
@@ -101,8 +111,8 @@ class PostgreSQLQualificationRunnerTests(unittest.TestCase):
                     },
                 )
             junit.write_text(
-                '<testsuites tests="2" failures="0" errors="0" skipped="0" '
-                'time="0.5"><testsuite tests="2" failures="0" errors="0" '
+                '<testsuites tests="3" failures="0" errors="0" skipped="0" '
+                'time="0.5"><testsuite tests="3" failures="0" errors="0" '
                 'skipped="0" time="0.5"/></testsuites>',
                 encoding="utf-8",
             )
@@ -117,7 +127,16 @@ class PostgreSQLQualificationRunnerTests(unittest.TestCase):
             )
 
         self.assertEqual(evidence["status"], "PASS")
-        self.assertEqual(evidence["junit"]["passed"], 2)
+        self.assertEqual(evidence["junit"]["passed"], 3)
+        self.assertEqual(
+            evidence["case_accounting"],
+            {
+                "authority": "JUNIT_XML",
+                "junit_case_count": 3,
+                "collected_node_count": 2,
+                "additional_junit_case_count": 1,
+            },
+        )
         self.assertEqual(
             evidence["semantic_slices"]["migration"],
             ["tests/integration/test_first.py"],
@@ -150,6 +169,199 @@ class PostgreSQLQualificationRunnerTests(unittest.TestCase):
 
         self.assertEqual(result, 2)
         run.assert_not_called()
+
+
+class BackendQualificationCliTests(unittest.TestCase):
+    def test_preflight_rejects_any_real_provider_route_before_commands(self) -> None:
+        class ForbiddenRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                raise AssertionError(f"command must not run: {command}")
+
+        with TemporaryDirectory() as temporary, patch.dict(
+            os.environ,
+            {
+                "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+                "NOVEL_FORGE_DRAFT_PROVIDER": "openai",
+            },
+        ):
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(Path(temporary) / "report.json"),
+                ],
+                process_runner=ForbiddenRunner(),
+            )
+
+        self.assertEqual(result, 2)
+
+    def test_list_gates_is_read_only_and_manifest_ordered(self) -> None:
+        with patch("builtins.print") as output:
+            result = run_qualification(
+                ["--repo-root", str(ROOT), "--list-gates"]
+            )
+
+        self.assertEqual(result, 0)
+        payload = json.loads(output.call_args.args[0])
+        manifest = load_qualification_manifest(ROOT)
+        self.assertEqual(payload["gates"], list(manifest.required_gates))
+        self.assertEqual(payload["profile"], "inspection")
+
+    def test_failed_static_gate_writes_partial_report_and_marks_dependents_not_run(
+        self,
+    ) -> None:
+        commands: list[tuple[str, ...]] = []
+
+        class FailingStaticRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                parts = tuple(command)
+                commands.append(parts)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                return ProcessResult(
+                    command=parts,
+                    returncode=1,
+                    stdout="",
+                    stderr="static gate failed",
+                    duration_seconds=0.2,
+                    timed_out=False,
+                )
+
+        with TemporaryDirectory() as temporary:
+            output = Path(temporary) / "p0-report.json"
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(output),
+                ],
+                process_runner=FailingStaticRunner(),
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 1)
+        self.assertEqual(report["decision"], "FAIL")
+        statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
+        self.assertEqual(statuses["source-preflight"], "PASS")
+        self.assertEqual(statuses["static-and-manifests"], "FAIL")
+        self.assertEqual(statuses["pytest-backend"], "NOT_RUN")
+        self.assertEqual(report["cleanup"]["status"], "PASS")
+        self.assertEqual(
+            report["evidence_ceilings"]["CURRENT_UI"],
+            "DEFERRED / NOT_RUN_BY_SCOPE",
+        )
+        self.assertTrue(any("p0-backend-static" in command for command in commands))
+
+    def test_backend_pytest_gate_is_complete_machine_readable_and_non_postgresql(
+        self,
+    ) -> None:
+        manifest = load_qualification_manifest(ROOT)
+        contracts = tuple(
+            item
+            for item in manifest.pytest_collections
+            if item.classification == "BACKEND_NON_POSTGRESQL"
+        )
+
+        command = build_backend_pytest_command(
+            contracts=contracts,
+            python=sys.executable,
+            junit_xml=Path("/tmp/backend.xml"),
+            collection_report=Path("/tmp/backend-collection.json"),
+        )
+
+        self.assertTrue(
+            {"tests/unit", "tests/architecture", "tests/acceptance"}.issubset(command)
+        )
+        self.assertNotIn("tests/integration", command)
+        self.assertFalse(any("*" in argument for argument in command))
+        self.assertIn("--junitxml=/tmp/backend.xml", command)
+
+    def test_total_timeout_bounds_source_and_static_subprocesses(self) -> None:
+        observed_timeouts: list[float] = []
+
+        class TimeoutRecordingRunner:
+            def run(self, command: Sequence[str], **kwargs: object) -> ProcessResult:
+                observed_timeouts.append(float(kwargs["timeout"]))
+                parts = tuple(command)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                return ProcessResult(
+                    command=parts,
+                    returncode=1,
+                    stdout="",
+                    stderr="static gate failed",
+                    duration_seconds=0.1,
+                    timed_out=False,
+                )
+
+        with TemporaryDirectory() as temporary:
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(Path(temporary) / "report.json"),
+                    "--total-timeout-seconds",
+                    "2",
+                ],
+                process_runner=TimeoutRecordingRunner(),
+            )
+
+        self.assertEqual(result, 1)
+        self.assertGreaterEqual(len(observed_timeouts), 5)
+        self.assertTrue(all(0 < value <= 2 for value in observed_timeouts))
+
+    def test_timeout_terminates_the_qualification_owned_process_group(self) -> None:
+        runner = SubprocessProcessRunner()
+        result = runner.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import subprocess,sys,time; "
+                    "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)']); "
+                    "print(child.pid, flush=True); time.sleep(30)"
+                ),
+            ],
+            cwd=ROOT,
+            environment=os.environ,
+            timeout=0.3,
+        )
+        match = re.search(r"\d+", result.stdout)
+        self.assertIsNotNone(match, result.stdout)
+        child_pid = int(match.group(0))
+        child_alive = True
+        try:
+            os.kill(child_pid, 0)
+        except ProcessLookupError:
+            child_alive = False
+        finally:
+            if child_alive:
+                os.kill(child_pid, signal.SIGKILL)
+
+        self.assertTrue(result.timed_out)
+        self.assertEqual(result.returncode, 124)
+        self.assertFalse(child_alive)
 
 
 if __name__ == "__main__":
