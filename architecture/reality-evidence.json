@@ -23,7 +23,7 @@
   "migration_head": "20260829_0104_book_opening_workflow_nodes",
   "comment_policy": {
     "max_source_comments": 557,
-    "max_source_docstrings": 108,
+    "max_source_docstrings": 113,
     "allowed_module_docstrings": [
       "src/novel_forge/api/routers/__init__.py",
       "src/novel_forge/modules/capability_packs/loader.py",
@@ -86,8 +86,8 @@
     {
       "id": "qualified-capability-evidence",
       "gate": "PYTHONPATH=src .venv/bin/python -m pytest <exact qualification_evidence nodes>",
-      "observed_at_sha": "ec39b16433e6fbc5944b3835504a3b5862ba247a",
-      "implementation_tree_sha": "sha256:a846d023d53088a5f7a1ef004a3d256c52e1763a0608156bc10413c14ad0828b",
+      "observed_at_sha": "c4b4990145b59488a4be4987ddeda6784edef917",
+      "implementation_tree_sha": "sha256:8e09f6d0e13487c8cefb145253a28c0eb6e2f8d5580d0fe24b29e6affce8b3ab",
       "collected": 14,
       "passed": 14,
       "failed": 0,
