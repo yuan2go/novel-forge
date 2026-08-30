@@ -8,9 +8,39 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 RUN_LABEL = "novel-forge.qualification.run-id"
+OPERATOR_DOCS = (
+    ROOT / "README.md",
+    ROOT / "docs/operations/local-development.md",
+    ROOT / "docs/development/testing.md",
+)
 
 
 class BackendQualificationBoundaryTests(unittest.TestCase):
+    def test_operator_docs_define_backend_scope_and_operational_exit_gates(
+        self,
+    ) -> None:
+        docs = "\n".join(path.read_text(encoding="utf-8") for path in OPERATOR_DOCS)
+
+        self.assertNotIn(".[dev]", docs)
+        self.assertIn(".[test,industrial]", docs)
+        self.assertIn("make p0-backend-qualification", docs)
+        self.assertIn("Docker-assigned", docs)
+        self.assertIn("DEFERRED / NOT_RUN_BY_SCOPE", docs)
+        self.assertIn("Git SHA alone", docs)
+        self.assertIn("resolved dependency digest", docs)
+        self.assertIn("branch governance", docs)
+        self.assertIn("OPEN / NOT_CLOSED", docs)
+        for ceiling in (
+            "REAL_PROVIDER",
+            "HISTORICAL_ORPHAN_MUTATION",
+            "EIGHT_CHAPTER",
+            "HUMAN_REVIEW",
+            "LONGFORM",
+            "MULTIBOOK",
+            "PRODUCTION",
+        ):
+            self.assertIn(ceiling, docs)
+
     def test_backend_make_entry_is_python_only_and_has_no_fixed_port(self) -> None:
         source = (ROOT / "Makefile").read_text(encoding="utf-8")
         recipe = source.split("p0-backend-qualification:", 1)[1].split(

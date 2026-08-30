@@ -33,18 +33,39 @@ Interactive Legacy API, CLI, Celery, workflow, Agent scheduler, production kerne
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[dev]'
-make authority-test
-make authority-compose-config-check
+python -m pip install -e '.[test,industrial]'
+make p0-backend-list-gates
+P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
+  make p0-backend-qualification
 ```
 
-Start the PostgreSQL Authority stack with:
+`p0-backend-qualification` is the canonical backend engineering gate locally and
+in CI. It requires a clean exact-revision worktree, executes every declared
+backend and PostgreSQL collection, performs migration/query-plan checks, and
+runs the scripted Authority Compose recovery/restart proof. PostgreSQL, API, and
+object-store host ports are Docker-assigned; every destructive resource is
+bound to a UUID run identity and ownership-checked before cleanup.
+
+The report records a resolved dependency digest. Git SHA alone cannot fully
+reproduce the currently unlocked dependency ranges; do not interpret an exact
+source revision as an exact dependency environment.
+
+For ordinary backend development outside qualification, start the Authority
+stack with:
 
 ```bash
 make authority-up
 ```
 
 The default Compose profile uses the scripted `mock` provider. It is a development fixture and is not evidence of real-provider operation or production verification. See [configuration](docs/operations/configuration.md) and [testing](docs/development/testing.md) before interpreting a green run.
+
+## Deferred Admin UI
+
+The current files under `web/admin` are an unsupported historical snapshot and
+will be replaced by a dedicated UI reconstruction. They are not an Authority
+client, are not part of backend qualification, and remain
+`DEFERRED / NOT_RUN_BY_SCOPE`. A backend PASS is not UI or product-experience
+evidence.
 
 ## Source of truth
 
