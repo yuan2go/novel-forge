@@ -1,10 +1,10 @@
 {
   "schema_version": "architecture-manifest.v1",
   "collections": [
-    {"name": "architecture", "start_dir": "tests/architecture", "pattern": "test_*.py", "minimum_count": 1},
-    {"name": "unit", "start_dir": "tests/unit", "pattern": "test_*.py", "minimum_count": 1},
-    {"name": "acceptance", "start_dir": "tests/acceptance", "pattern": "test_*.py", "minimum_count": 1},
-    {"name": "integration", "start_dir": "tests/integration", "pattern": "test_*.py", "minimum_count": 1}
+    {"name": "architecture", "start_dir": "tests/architecture", "pattern": "test_*.py", "minimum_count": 1, "qualification_class": "BACKEND_NON_POSTGRESQL", "complete_collection": true},
+    {"name": "unit", "start_dir": "tests/unit", "pattern": "test_*.py", "minimum_count": 1, "qualification_class": "BACKEND_NON_POSTGRESQL", "complete_collection": true},
+    {"name": "acceptance", "start_dir": "tests/acceptance", "pattern": "test_*.py", "minimum_count": 1, "qualification_class": "BACKEND_NON_POSTGRESQL", "complete_collection": true},
+    {"name": "integration", "start_dir": "tests/integration", "pattern": "test_*.py", "minimum_count": 1, "qualification_class": "POSTGRESQL_REQUIRED", "complete_collection": true}
   ],
   "required_modules": [
     "tests/architecture/test_head_integrity.py",
