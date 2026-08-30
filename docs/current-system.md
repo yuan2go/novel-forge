@@ -140,12 +140,11 @@ The repository contains unit, architecture, acceptance and PostgreSQL integratio
 Compose fixture/recovery checks, worker scenario checks, query-plan checks and web tests.
 Passing them establishes engineering qualification only for their fixtures and scope.
 
-At the frozen start revision `6b8ed04928bc40a7b347c93db4adaf1db72435d7`, the
-non-skippable PostgreSQL gate has 35 reproducible failures even on a newly created tmpfs
+The non-skippable PostgreSQL gate currently has 35 reproducible failures even on a newly created tmpfs
 database: 20 migration/constraint tests, two legacy-planning lineage tests, 11 Book
 production tests and two Book Opening hardening/replay tests. The exact groups and
 representative executable tests are recorded in `architecture/reality-evidence.json`.
-The complete 2,127-test repository run has 55 failures: 11 are duplicate collection of
+The complete 2,130-test repository run has 55 failures: 11 are duplicate collection of
 the same Book vertical failures, while six Chapter model-effect, one Plan Change and two
 Story Design tests add independent failing symbols. Consequently Provider effect control,
 Story Design/Plan Change activation, Book Opening, Book acceptance, migration and their

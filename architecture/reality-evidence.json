@@ -65,23 +65,22 @@
   "qualification_runs": [
     {
       "gate": "make postgres-authority-test",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "collected": 418,
       "passed": 383,
       "failed": 35,
       "passed_subtests": 73,
-      "id": "postgres-authority-base-regression"
+      "id": "postgres-authority-current-regression"
     },
     {
       "gate": "PYTHONPATH=src python -m pytest tests",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
-      "collected": 2127,
-      "passed": 2072,
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
+      "collected": 2130,
+      "passed": 2075,
       "failed": 55,
-      "passed_subtests": 1479,
       "duplicate_failed_collections": 11,
       "unique_failed_test_symbols": 44,
-      "id": "full-repository-base-regression"
+      "id": "full-repository-current-regression"
     },
     {
       "id": "qualified-capability-evidence",
@@ -156,7 +155,7 @@
       "id": "migration-chain-constraint-regressions",
       "scope": "clean install and 0101/0102 upgrade constraints",
       "gate": "make postgres-authority-test",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 20,
       "affected_capabilities": [
         "postgresql-persistence-and-migrations",
@@ -178,7 +177,7 @@
       "id": "legacy-planning-lineage-regressions",
       "scope": "legacy planning and Story Design activation lineage",
       "gate": "make postgres-authority-test",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 2,
       "affected_capabilities": [],
       "evidence": [
@@ -196,7 +195,7 @@
       "id": "book-production-authority-regressions",
       "scope": "Book owner, delegation, acceptance, pause, resume and replay",
       "gate": "make postgres-authority-test",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 11,
       "affected_capabilities": [
         "book-chapter-acceptance"
@@ -216,7 +215,7 @@
       "id": "book-opening-runtime-regressions",
       "scope": "Book Opening checkpoint hardening and replay RuntimeJob identity",
       "gate": "make postgres-authority-test",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 2,
       "affected_capabilities": [
         "book-opening-workflow",
@@ -237,7 +236,7 @@
       "id": "chapter-model-effect-regressions",
       "scope": "Chapter Provider effect timeout, unknown outcome, retry and settlement",
       "gate": "PYTHONPATH=src python -m pytest tests",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 6,
       "affected_capabilities": [
         "external-effect-provider-control"
@@ -257,7 +256,7 @@
       "id": "plan-change-activation-regression",
       "scope": "Plan Change impact approval and recoverable activation",
       "gate": "PYTHONPATH=src python -m pytest tests",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 1,
       "affected_capabilities": [
         "story-design-plan-activation"
@@ -273,7 +272,7 @@
       "id": "story-design-activation-regressions",
       "scope": "Story Design activation and supersession",
       "gate": "PYTHONPATH=src python -m pytest tests",
-      "observed_at_sha": "6b8ed04928bc40a7b347c93db4adaf1db72435d7",
+      "observed_at_sha": "7ec2d715f8d8ee6285be0d53bfbc995b8e5b99f4",
       "failed_test_count": 2,
       "affected_capabilities": [
         "story-design-plan-activation"

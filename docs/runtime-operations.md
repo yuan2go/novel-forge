@@ -83,7 +83,7 @@ git diff --check
 
 `make postgres-authority-test` uses the isolated default database at port 55432 unless
 `NOVEL_FORGE_DATABASE_URL` is explicitly provided. Its runner rejects skipped tests.
-The frozen start revision currently produces 35 failures in that gate on a new tmpfs
+The current implementation produces 35 failures in that gate on a new tmpfs
 database; `architecture/reality-evidence.json` records the affected scopes. Do not treat
 the passing subsets as full PostgreSQL, migration, Book or recovery qualification.
 The broader `pytest tests` run reports 55 failures because it also collects additional
