@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import tomllib
 from typing import Any, Callable
 
@@ -157,29 +158,49 @@ def check_tests(root: Path) -> dict[str, Any]:
         if not (root / relative).is_file():
             raise ValueError(f"required test module is missing: {relative}")
 
-    discovery = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pytest",
-            "--collect-only",
-            "-q",
-            "--disable-warnings",
-            *collection_paths,
-        ],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if discovery.returncode:
-        detail = discovery.stderr.strip() or discovery.stdout.strip()
-        raise ValueError(f"required pytest collection cannot be discovered: {detail}")
-    node_ids = tuple(
-        line.strip()
-        for line in discovery.stdout.splitlines()
-        if "::" in line and not line.startswith(" ")
-    )
+    with tempfile.TemporaryDirectory(prefix="novel-forge-test-manifest-") as temporary:
+        collection_report = Path(temporary) / "collection.json"
+        discovery = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                "--collect-only",
+                "-q",
+                "--disable-warnings",
+                "-p",
+                "novel_forge.tools.pytest_collection_evidence",
+                f"--novel-forge-collection-report={collection_report}",
+                *collection_paths,
+            ],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if discovery.returncode:
+            detail = discovery.stderr.strip() or discovery.stdout.strip()
+            raise ValueError(f"required pytest collection cannot be discovered: {detail}")
+        try:
+            collection_payload = json.loads(
+                collection_report.read_text(encoding="utf-8")
+            )
+        except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                "required pytest collection did not emit machine-readable evidence"
+            ) from exc
+    if (
+        collection_payload.get("schema_version")
+        != "novel-forge.pytest-collection.v1"
+        or collection_payload.get("collection_errors") != []
+    ):
+        raise ValueError("required pytest collection evidence is invalid")
+    raw_node_ids = collection_payload.get("node_ids")
+    if not isinstance(raw_node_ids, list) or not all(
+        isinstance(node_id, str) and "::" in node_id for node_id in raw_node_ids
+    ):
+        raise ValueError("required pytest collection node IDs are invalid")
+    node_ids = tuple(raw_node_ids)
 
     results: list[dict[str, Any]] = []
     for item in collections:
