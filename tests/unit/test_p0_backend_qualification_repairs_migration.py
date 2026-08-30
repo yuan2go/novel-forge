@@ -38,3 +38,13 @@ def test_0105_indexes_every_0104_foreign_key_by_its_complete_column_set() -> Non
         "    )",
     ):
         assert index_definition in sql
+
+
+def test_0105_flushes_deferred_integrity_checks_before_index_ddl() -> None:
+    assert migration.UPGRADE_STATEMENTS[0].strip() == (
+        "SET CONSTRAINTS ALL IMMEDIATE"
+    )
+    assert all(
+        "CREATE INDEX" not in statement.upper()
+        for statement in migration.UPGRADE_STATEMENTS[:1]
+    )

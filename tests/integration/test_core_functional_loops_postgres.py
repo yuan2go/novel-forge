@@ -106,7 +106,7 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.production_execution.contracts import ExecutionOutcome
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-from novel_forge.storage.migrations import run_migrations
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, run_migrations
 from novel_forge.workers.book_followup_authority import (
     execute_book_followup_admission_claim,
     schedule_book_followup_admission_jobs,
@@ -3287,7 +3287,10 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     )
     migration_status = run_migrations(pre_workflow_migration_database)
     assert migration_status["ok"] is True
-    assert migration_status["current"] == WORKFLOW_MIGRATION_ID
+    assert migration_status["current"] == LATEST_MIGRATION_ID
+    assert WORKFLOW_MIGRATION_ID in {
+        item["migration_id"] for item in migration_status["applied"]
+    }
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """

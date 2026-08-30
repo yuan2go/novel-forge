@@ -1678,12 +1678,15 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         return {1: first, 2: second}
 
     @staticmethod
-    def _seed_book_inputs(project_id: str) -> dict[str, Any]:
-        seed_authority_project_book(
-            project_id=project_id,
-            workspace_id=f"workspace:{project_id}",
-            book_id=f"book:{project_id}",
-        )
+    def _seed_book_inputs(
+        project_id: str, *, scope_already_seeded: bool = False
+    ) -> dict[str, Any]:
+        if not scope_already_seeded:
+            seed_authority_project_book(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                book_id=f"book:{project_id}",
+            )
         types = {
             "book_design_version": "book_design",
             "book_plan_version": "book_plan",

@@ -525,7 +525,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         opening_run_id: str,
         runtime_job_id: str,
         execution_id: str,
+        opening_lifecycle: str = "FAILED",
     ) -> None:
+        if opening_lifecycle not in {"FAILED", "ABORTED"}:
+            raise ValueError("opening_lifecycle must be terminal")
         with psycopg.connect(self.test_url) as connection:
             connection.execute(
                 """
@@ -551,11 +554,11 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             connection.execute(
                 """
                 UPDATE authority_book_opening_run
-                SET lifecycle='FAILED',recovery_state='RECOVERY_REQUIRED',
+                SET lifecycle=%s,recovery_state='RECOVERY_REQUIRED',
                     version=version+1,updated_at=transaction_timestamp()
                 WHERE opening_run_id=%s AND lifecycle='ADMITTED'
                 """,
-                [opening_run_id],
+                [opening_lifecycle, opening_run_id],
             )
 
     def test_clean_database_applies_complete_migration_chain(self) -> None:
@@ -1441,8 +1444,14 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
     def test_0102_legacy_terminal_execution_can_preserve_missing_runtime_job(
         self,
     ) -> None:
-        _project_id, source_opening_id, _runtime_job_id, _execution_id = (
+        _project_id, source_opening_id, runtime_job_id, source_execution_id = (
             self._seed_v2_scheduled_opening()
+        )
+        self._abort_unclaimed_opening_execution(
+            opening_run_id=source_opening_id,
+            runtime_job_id=runtime_job_id,
+            execution_id=source_execution_id,
+            opening_lifecycle="ABORTED",
         )
         for lifecycle in ("FAILED", "ABORTED"):
             suffix = lifecycle.lower()
@@ -1488,17 +1497,21 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                             opening_run_id,project_id,workspace_id,book_id,
                             root_operation_id,stable_idempotency_key,lifecycle,
                             frozen_request,frozen_request_digest,
-                            execution_contract_version,recovery_state
+                            execution_contract_version,recovery_state,
+                            workflow_contract_version,
+                            workflow_graph_revision,workflow_graph_hash,
+                            current_execution_id,current_execution_generation
                         )
                         SELECT %s,project_id,workspace_id,book_id,
-                               %s,%s,'FAILED',
+                               %s,%s,%s,
                                jsonb_build_object(
                                    'project_id',project_id,
                                    'workspace_id',workspace_id,
                                    'book_id',book_id,
                                    'idempotency_key',%s::text
                                ),%s,'book-opening-execution-v2',
-                               'RECOVERY_REQUIRED'
+                               'RECOVERY_REQUIRED','legacy-monolithic-v2',0,'',
+                               %s,1
                         FROM authority_book_opening_run
                         WHERE opening_run_id=%s
                         """,
@@ -1506,8 +1519,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                             opening_run_id,
                             operation_id,
                             opening_run_id,
+                            lifecycle,
                             opening_run_id,
                             "sha256:" + "1" * 64,
+                            execution_id,
                             source_opening_id,
                         ],
                     )
@@ -1534,15 +1549,6 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                             "sha256:" + "4" * 64,
                         ],
                     )
-                    connection.execute(
-                        """
-                        UPDATE authority_book_opening_run
-                        SET current_execution_id=%s,current_execution_generation=1
-                        WHERE opening_run_id=%s
-                        """,
-                        [execution_id, opening_run_id],
-                    )
-
         with psycopg.connect(self.test_url) as connection:
             preserved = connection.execute(
                 """
@@ -1559,7 +1565,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual(
             preserved,
-            [("FAILED", "ABORTED", None, None), ("FAILED", "FAILED", None, None)],
+            [
+                ("ABORTED", "ABORTED", None, None),
+                ("FAILED", "FAILED", None, None),
+            ],
         )
 
         with self.assertRaises(psycopg.errors.CheckViolation):

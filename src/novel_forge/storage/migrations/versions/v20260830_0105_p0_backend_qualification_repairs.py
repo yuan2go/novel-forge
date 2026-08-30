@@ -12,6 +12,7 @@ FORWARD_FIX = (
 
 
 UPGRADE_STATEMENTS = [
+    "SET CONSTRAINTS ALL IMMEDIATE",
     """
     CREATE INDEX authority_bo_legacy_entitlement_snapshot_fk_idx
     ON authority_book_opening_legacy_snapshot_entitlement(
