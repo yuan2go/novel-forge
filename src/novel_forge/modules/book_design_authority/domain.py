@@ -1,5 +1,3 @@
-"""Strongly typed Book and BookDesign contracts for the Track B slice."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field as dataclass_field

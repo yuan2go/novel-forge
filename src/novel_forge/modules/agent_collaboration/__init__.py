@@ -1,5 +1,3 @@
-"""Scoped conversational Agent collaboration domain."""
-
 from .domain import (
     AgentCapability,
     AgentCollaborationSession,

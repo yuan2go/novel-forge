@@ -36,7 +36,6 @@ def transition_operation_in_uow(
     uow: AuthorityUnitOfWork,
     command: OperationTransitionCommand,
 ) -> dict[str, int | str]:
-    """Apply one governed Operation CAS inside an owning Authority UoW."""
 
     _validate_transition_command(command)
     require_operation_transition(command.expected_status, command.target_status)

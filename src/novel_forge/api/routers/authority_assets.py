@@ -1,4 +1,3 @@
-"""PostgreSQL AssetVersion projections for product-domain read surfaces."""
 from __future__ import annotations
 
 from collections import defaultdict

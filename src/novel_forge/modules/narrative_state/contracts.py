@@ -1,4 +1,3 @@
-"""Narrative State v2 identity, temporal, lineage, and event contracts."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -64,7 +63,7 @@ _CHARACTER_BELIEF_STANCES = frozenset(
 def atomize_character_knowledge_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Normalize Character Knowledge to one character/proposition identity per event.
+    """COMPATIBILITY: Normalize Character Knowledge to one character/proposition identity per event.
 
     Older extraction prompts used ``acquired_fact_ids`` as a convenient bundle.  A
     bundled record cannot participate in Narrative State compare-and-set semantics:
@@ -72,7 +71,6 @@ def atomize_character_knowledge_changes(
     Expand that compatibility shape at the authority boundary while keeping direct,
     already-atomic identities unchanged.
     """
-
     atoms: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -130,7 +128,7 @@ def atomize_character_knowledge_changes(
 def normalize_character_belief_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Normalize Character Belief to its typed epistemic vocabulary.
+    """COMPATIBILITY: Normalize Character Belief to its typed epistemic vocabulary.
 
     Canon extraction schemas predating v7 exposed only the generic ``status`` or
     ``state`` field even though the durable Narrative State contract names the
@@ -138,7 +136,6 @@ def normalize_character_belief_changes(
     boundaries, reject conflicting aliases, and persist only the canonical shape
     for new assets.
     """
-
     normalized: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -206,7 +203,7 @@ def normalize_character_belief_changes(
 def normalize_relationship_state_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Canonicalize relationship endpoints without inventing graph identity.
+    """COMPATIBILITY: Canonicalize relationship endpoints without inventing graph identity.
 
     Canon Provider schemas through v7 exposed the generic ``character_id`` field,
     so an otherwise typed relationship could use it for the source endpoint while
@@ -214,7 +211,6 @@ def normalize_relationship_state_changes(
     reject conflicting aliases, and retain only ``source_id``/``target_id`` for new
     Narrative State events.
     """
-
     normalized: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
@@ -315,7 +311,6 @@ class NarrativeScope:
 
 @dataclass(frozen=True, slots=True)
 class NarrativePosition:
-    """Typed narrative coordinate carried by accepted events and Context manifests."""
 
     chapter: int
     volume_id: str = ""
@@ -434,7 +429,6 @@ class NarrativeCoordinate:
 
 @dataclass(frozen=True, slots=True)
 class StoryTime:
-    """In-world time, deliberately independent from narrative position."""
 
     timeline_id: str
     start_ordinal: int
@@ -866,7 +860,6 @@ def events_from_canon_patch(
     trace_id: str,
     canon_patch: dict[str, Any],
 ) -> tuple[NarrativeStateEvent, ...]:
-    """Normalize governed Canon changes into the sole v2 event vocabulary."""
 
     scope = NarrativeScope(project_id, book_id)
     changes: dict[NarrativeStateKind, list[dict[str, Any]]] = {
@@ -1021,8 +1014,7 @@ def events_from_chapter_outcome(
     *,
     trace_id: str = "",
 ) -> tuple[NarrativeStateEvent, ...]:
-    """Read v2 events or deterministically adapt immutable v1 evidence."""
-
+    """COMPATIBILITY: Read v2 events or deterministically adapt immutable v1 evidence."""
     contract = str(chapter_outcome.get("contract_version") or "")
     if contract in {"chapter-outcome-v2", "chapter-outcome-v3"}:
         return tuple(

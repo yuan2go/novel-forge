@@ -1,5 +1,3 @@
-"""Structured errors returned by Capability Pack validation and compilation."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -57,7 +55,6 @@ class CapabilityPackCompilationReport:
 
 
 class CapabilityPackLoadError(ValueError):
-    """Fail-closed Loader error with a stable machine-readable code."""
 
     def __init__(self, code: str, path: str, message: str) -> None:
         self.issue = CapabilityPackValidationIssue(

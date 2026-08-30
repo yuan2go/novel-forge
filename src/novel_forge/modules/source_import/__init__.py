@@ -1,5 +1,3 @@
-"""Canonical PostgreSQL Source Import runtime."""
-
 from .domain import (
     ManifestDiffEntry,
     NormalizedChunk,

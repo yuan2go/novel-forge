@@ -1,5 +1,3 @@
-"""Durable admission coordinator for non-blocking post-acceptance work."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,12 +57,6 @@ class BookFollowupCoordinationResult:
 
 
 class PostgresBookFollowupCoordinator:
-    """Admit advisory operations from immutable Chapter acceptance evidence.
-
-    Execution remains owned by the shared Command Kernel/Attempt scheduler. This
-    coordinator only discovers missing admissions and freezes their domain input.
-    It never advances the Book cursor or changes a production-critical state.
-    """
 
     def __init__(
         self,
@@ -383,7 +375,6 @@ class PostgresBookFollowupCoordinator:
             uow.commit()
 
     def reconcile_arc_checkpoint_followup(self, operation_id: str) -> None:
-        """Project canonical Operation state into future-only Book governance."""
 
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
             uow.cursor.execute(

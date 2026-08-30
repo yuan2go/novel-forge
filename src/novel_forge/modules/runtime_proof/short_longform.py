@@ -1,9 +1,3 @@
-"""Deterministic WP-VERIFY-01 evidence evaluation.
-
-The evaluator is deliberately pure: it receives a serialized evidence snapshot,
-performs no I/O, and cannot schedule work or mutate Authority state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -507,7 +501,6 @@ def _check_aggregate(
 def evaluate_short_longform_evidence(
     evidence: Mapping[str, Any],
 ) -> ShortLongformProofEvaluation:
-    """Evaluate an immutable snapshot without performing I/O or state changes."""
 
     checks: dict[str, ProofCheck] = {
         "planning_real_provider_proven": _check_planning(evidence),

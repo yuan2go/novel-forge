@@ -1,4 +1,3 @@
-"""Independent, operation-backed migration approval boundary."""
 from __future__ import annotations
 
 from dataclasses import dataclass

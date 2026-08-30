@@ -44,7 +44,6 @@ class ProviderCallbackAcceptCommand:
 
 
 class ProviderCallbackAuthorityService:
-    """Durable callback ingress bound to an existing ExternalEffect authority."""
 
     def __init__(self, database_url: str, registry: ProviderAdapterRegistry) -> None:
         if not database_url:

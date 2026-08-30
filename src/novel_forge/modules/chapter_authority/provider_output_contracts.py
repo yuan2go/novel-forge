@@ -117,7 +117,6 @@ def _object_schema(
 
 
 def _nullable(schema: dict[str, Any]) -> dict[str, Any]:
-    """Represent a business-optional field in a Codex strict output schema."""
 
     value = dict(schema)
     expected = value.get("type")
@@ -135,7 +134,6 @@ def _draft_schema() -> dict[str, Any]:
 
 
 def _agent_session_schema() -> dict[str, Any]:
-    """Strict provider contract for one governed Agent Harness turn."""
 
     json_envelope = _object_schema(
         {"payload_json": {"type": "string", "minLength": 2}},
@@ -723,7 +721,6 @@ def _retrieval_embedding_schema() -> dict[str, Any]:
 
 
 def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
-    """Return the exact provider-facing result contract for a Chapter stage."""
 
     if stage == "draft":
         schema = _draft_schema()
@@ -765,7 +762,6 @@ def validate_chapter_provider_output_schema(
     stage: str,
     value: object,
 ) -> dict[str, Any]:
-    """Validate the strict JSON contract without adding a second schema runtime."""
 
     return validate_chapter_provider_output_against_schema(
         stage,
@@ -779,7 +775,6 @@ def validate_chapter_provider_output_against_schema(
     schema: Mapping[str, Any],
     value: object,
 ) -> dict[str, Any]:
-    """Validate against the exact frozen schema supplied by the Capability runtime."""
 
     try:
         _validate(dict(schema), value, path="$", enforce_dialect=True)
@@ -796,7 +791,6 @@ def validate_chapter_provider_output_semantics(
     stage: str,
     value: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Reject structurally legal results that are not eligible stage outputs."""
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
     if stage == "canon_extraction":
@@ -984,13 +978,12 @@ def validate_chapter_provider_output_semantics(
 def _canon_change_semantic_slot(
     field: str, item: Mapping[str, Any]
 ) -> tuple[object, ...]:
-    """Return a domain identity, never an evidence-location heuristic.
+    """INVARIANT: Return a domain identity, never an evidence-location heuristic.
 
     One passage may legitimately produce multiple audience-specific Disclosure
     events or multiple typed state changes. Provider semantics are validated
     before this function, so reaching the fallback is a programming error.
     """
-
     for fields in _CANON_SEMANTIC_IDENTITIES.get(field, ()):
         values = tuple(str(item.get(key) or "") for key in fields)
         if all(values):

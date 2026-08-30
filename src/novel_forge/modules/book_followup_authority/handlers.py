@@ -1,5 +1,3 @@
-"""Storage-free handlers executed by the shared fenced Authority runtime."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

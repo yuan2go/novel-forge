@@ -1,11 +1,4 @@
-"""Declarative JSON contract for ``novelos.capability_pack.v1``.
-
-The Loader deliberately accepts any exact JSON object so one validation pass can
-report multiple authoring errors.  This module owns the complete structural
-contract: required keys, closed core objects, scalar types, array item types,
-and the explicitly open extension values.  Semantic and cross-reference rules
-remain in ``validator.py``.
-"""
+"""CONSTRAINT: parsing accepts an exact JSON object before validation so one validation pass can report every authoring error."""
 
 from __future__ import annotations
 

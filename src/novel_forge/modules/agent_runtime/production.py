@@ -1,5 +1,3 @@
-"""Production Agent Harness composition over the shared PEP and Authorities."""
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -62,13 +60,12 @@ AGENT_SESSION_STAGE = "agent_session"
 def _agent_turn_reservation_limits(
     *, session: AgentHarnessSession, provider_call_cap: str
 ) -> tuple[str, int]:
-    """Reserve only the unspent Session budget for the next model effect.
+    """INVARIANT: Reserve only the unspent Session budget for the next model effect.
 
     The authoritative aggregate gate still lives in the shared budget runtime.
     This sizing prevents each Agent turn from presenting the whole Session cap
     as a new reservation after earlier turns have already settled.
     """
-
     provider_maximum = Decimal(provider_call_cap)
     remaining_cost = Decimal(session.budget.max_cost_amount) - Decimal(
         session.usage.cost_amount
@@ -92,7 +89,6 @@ def _agent_turn_reservation_limits(
 def agent_route_execution_identity(
     route: Any, *, capability_pack_id: str
 ) -> dict[str, Any]:
-    """Canonical deployment identity used at admission and every model turn."""
 
     identity = {
         "contract_version": "agent-route-execution-identity.v1",
@@ -132,7 +128,6 @@ def agent_route_execution_identity(
 
 
 class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinder):
-    """Agent-owned contract projection over the shared gateway binder mechanics."""
 
     def __init__(
         self, database_url: str, routes: Mapping[str, Any], **values: Any
@@ -227,7 +222,6 @@ class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinde
 
 
 class PostgresProductionAgentModelTurnPort:
-    """Turn port backed by the shared gateway, ExternalEffect, receipt and budget."""
 
     external_effect_backed = True
     production_execution_gateway_backed = True
@@ -537,7 +531,6 @@ class PostgresProductionAgentModelTurnPort:
 
 
 class ProductionAgentToolBindings:
-    """The three production Tool ports; mutations remain in owning Authorities."""
 
     def __init__(
         self,
@@ -790,7 +783,6 @@ def build_production_agent_harness_factory(
     budget_caps: Mapping[str, str] | None = None,
     model_fault_injector: Callable[[str], None] | None = None,
 ) -> Callable[[str, str, str], UnifiedAgentHarness]:
-    """Bind controlled sessions; no scripted adapter is reachable here."""
 
     if "agent_session" not in adapter.routes:
         raise ValueError("production Agent route is not configured")

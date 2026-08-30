@@ -1,10 +1,3 @@
-"""Pure, serializable contracts for production model execution.
-
-These contracts deliberately contain no scheduler, provider, process, or persistence
-implementation.  They bind execution evidence to the existing Authority Attempt and
-therefore do not introduce an execution-attempt state machine.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -1074,14 +1067,13 @@ class ExecutionRequest(_Contract):
 
 @dataclass(frozen=True, slots=True)
 class ExecutionRecoveryAuthorization(_Contract):
-    """Current-worker authority over one immutable execution identity.
+    """INVARIANT: Current-worker authority over one immutable execution identity.
 
     ``execution_fencing_token`` remains the fence embedded in the original
     request, route/input contracts, Provider handle, and result evidence.
     ``recovery_fencing_token`` is checked against the currently HELD Attempt
     lease and authorizes only the named recovery action.
     """
-
     authorization_id: str
     execution_id: str
     external_effect_id: str

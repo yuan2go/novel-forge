@@ -1,4 +1,3 @@
-"""PostgreSQL-only Task Center and runtime-health routes."""
 from __future__ import annotations
 
 from typing import Any

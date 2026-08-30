@@ -1,4 +1,4 @@
-"""Fail-closed, local-only UTF-8 JSON Loader for Capability Packs."""
+"""SECURITY: Capability Packs are loaded only from explicit local UTF-8 JSON files."""
 
 from __future__ import annotations
 
@@ -85,7 +85,6 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _copy_json_value(value: Any, *, path: str, root: bool = False) -> Any:
-    """Copy only the exact JSON data model without coercing Python values."""
 
     if isinstance(value, Mapping):
         copied: dict[str, Any] = {}

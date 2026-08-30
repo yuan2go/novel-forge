@@ -1,5 +1,3 @@
-"""Repository port and deterministic in-memory test implementation."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -143,7 +141,6 @@ class CollaborationCommit:
 
 
 class InMemoryAgentCollaborationRepository:
-    """Behavioral test seam; never a production authority implementation."""
 
     production_authority = False
 

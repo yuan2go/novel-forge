@@ -1,5 +1,3 @@
-"""Source Authority commits for auditable classification and analysis planning."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -123,7 +121,6 @@ class CommitSourceAnalysisPlanCommand:
 
 
 class SourceProfilingApplication:
-    """Writes Profile and Plan AssetVersions; it never reads Source Blob bytes."""
 
     def __init__(
         self,

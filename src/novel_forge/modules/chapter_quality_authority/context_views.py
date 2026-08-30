@@ -69,7 +69,6 @@ class TokenEstimator(Protocol):
 
 
 class ConservativeTokenEstimator:
-    """Replaceable estimator that deliberately rounds multilingual JSON upward."""
 
     def estimate(self, value: str) -> int:
         if not value:
@@ -562,7 +561,6 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
 
 
 def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
-    """Freeze only long-form obligations, never the full provider/source envelope."""
 
     canonical_fields = (
         "chapter",
@@ -628,7 +626,6 @@ def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
 
 
 def _project_canon_conflicts(conflicts: list[Any]) -> list[dict[str, Any]]:
-    """Deduplicate conflict evidence while preserving corrective semantics."""
 
     projected: list[dict[str, Any]] = []
     for raw in conflicts:
@@ -671,7 +668,6 @@ def _conflict_candidate_summary(value: Any) -> Any:
 
 
 def _project_narrative_value(value: Any) -> Any:
-    """Remove null transport metadata from a task-specific narrative view."""
 
     if isinstance(value, dict):
         return {
@@ -813,7 +809,6 @@ def _estimate_final_quality_context(
 
 
 def _drop_redundant_empty_row_fields(row: dict[str, Any]) -> None:
-    """Keep evidence identity while removing null/default transport fields."""
 
     for key in ("entity_id", "relationship_pair", "chapter"):
         if row.get(key) is None:
@@ -823,7 +818,6 @@ def _drop_redundant_empty_row_fields(row: dict[str, Any]) -> None:
 
 
 def _compact_noncritical_current_candidate_rows(body: dict[str, Any]) -> bool:
-    """Collapse empty noncritical rows while retaining every semantic identity."""
 
     changed = False
     for state in body.get("current_state_candidates", {}).values():

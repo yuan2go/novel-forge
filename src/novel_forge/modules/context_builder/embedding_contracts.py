@@ -1,5 +1,3 @@
-"""Stable Operation and workflow contracts for retrieval embedding projection."""
-
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,3 @@
-"""Machine-executable evaluation of frozen Operation completion contracts."""
 from __future__ import annotations
 
 from dataclasses import dataclass

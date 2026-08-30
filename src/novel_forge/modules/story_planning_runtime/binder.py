@@ -1,5 +1,3 @@
-"""Capability-Pack/PEP binding for Story Planning candidate capabilities."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -33,7 +31,6 @@ from .domain import (
 
 @dataclass(frozen=True, slots=True)
 class PlanningCapabilityBinding:
-    """Immutable, Attempt-fenced execution identity for a typed Capability."""
 
     binding_id: str
     operation_id: str
@@ -74,7 +71,6 @@ class PlanningExecutionBundle:
 
 @dataclass(frozen=True, slots=True)
 class PreparedPlanningExecution:
-    """PEP contracts frozen for one existing Planning Authority Attempt."""
 
     execution_port: DomainExecutionPort
     context_bundle_asset_version_id: str
@@ -165,12 +161,6 @@ class PlanningExecutionBundleResolver(Protocol):
 
 
 class PostgresPlanningExecutionBundleResolver:
-    """Freeze Pack, Capability binding, and PEP on one durable Attempt.
-
-    The injected preparer is the single transport-specific seam. It must return
-    an ExternalEffect-backed Production Execution Plane port; this resolver owns
-    no provider, Attempt, Lease, or business activation state.
-    """
 
     def __init__(
         self,
@@ -376,7 +366,6 @@ class PlanningExecutionBinder(Protocol):
 
 
 class CapabilityPackBackedPlanningExecutionBinder:
-    """Validate one frozen typed-Capability binding and submit only through PEP."""
 
     production_execution_gateway_backed = True
 

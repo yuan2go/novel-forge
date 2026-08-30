@@ -1,5 +1,3 @@
-"""Storage-free canon extraction, conflict detection, and state reduction."""
-
 from __future__ import annotations
 
 import hashlib
@@ -74,7 +72,6 @@ HIGH_IMPACT_CHANGE_TYPES = {
 
 
 class CanonSemanticProviderPort(Protocol):
-    """Optional provider boundary; implementations must execute via ExternalEffect."""
 
     external_effect_backed: bool
 
@@ -97,7 +94,6 @@ def extract_canon_candidates(
     provider_extraction: dict[str, Any] | None = None,
     operator_annotations: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Produce deterministic candidates independently of revision-provider metadata."""
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError(
             "CANON_EXTRACTION_INPUT_INVALID", "versioned extraction lineage is required"
@@ -423,7 +419,6 @@ def _merge_operator_annotations(
 
 
 def _normalize_resource_changes(changes: list[dict[str, Any]]) -> None:
-    """Close the extraction/reducer boundary without weakening balance semantics."""
 
     for change in changes:
         if change.get("delta") is None:
@@ -459,7 +454,6 @@ _DISCLOSURE_READER_STATUS = {
 def _derive_reader_knowledge_changes(
     disclosures: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Materialize Reader Knowledge only from reader-facing presentation events."""
 
     by_fact: dict[str, dict[str, Any]] = {}
     for disclosure in disclosures:
@@ -588,7 +582,6 @@ def validate_deterministic_continuity(
     revision_text: str = "",
     identity_profiles: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Validate only invariants supported by explicit structured Authority data."""
 
     if chapter <= 0:
         raise ValueError("chapter must be positive")
@@ -946,7 +939,6 @@ _LEADING_PRONOUN = re.compile(
 def _deterministic_identity_pronoun_conflicts(
     *, revision_text: str, identity_profiles: tuple[dict[str, Any], ...]
 ) -> list[dict[str, Any]]:
-    """Check only exact adjacent Chinese coreference backed by Authority data."""
 
     if not revision_text or not identity_profiles:
         return []
@@ -1130,14 +1122,13 @@ def _validate_transition_preconditions(
     state: dict[str, list[dict[str, Any]]],
     extraction: dict[str, Any],
 ) -> None:
-    """Reject narrative CAS claims that are not backed by accepted state.
+    """INVARIANT: Reject narrative CAS claims that are not backed by accepted state.
 
     ``from_*`` is an Authority compare-and-set precondition, not a description of
     background state inferred from prose or Story Design.  Keeping this check in
     Canon validation prevents an invalid patch from surviving every Chapter gate
     only to fail during Book acceptance.
     """
-
     for field, state_kinds, identity_aliases in _TRANSITION_PRECONDITION_SPECS:
         accepted = [item for kind in state_kinds for item in state.get(kind, [])]
         for change in extraction.get(field, []):
@@ -1203,7 +1194,6 @@ def _validate_planned_execution(
     extraction: dict[str, Any],
     planned_execution: dict[str, Any],
 ) -> None:
-    """Reconcile deterministic Chapter execution commitments before acceptance."""
 
     if not planned_execution:
         return
@@ -1404,7 +1394,6 @@ def _bind_narrative_entity_versions(
     changes: dict[str, list[dict[str, Any]]],
     historical_state: dict[str, list[dict[str, Any]]],
 ) -> None:
-    """Fence each Canon-approved delta against the accepted entity version."""
 
     for state_kind, items in changes.items():
         accepted = historical_state.get(
@@ -1460,7 +1449,6 @@ def _validate_lifecycle_transition(
 def _narrative_state_changes(
     extraction: dict[str, Any], facts: list[dict[str, Any]]
 ) -> dict[str, list[dict[str, Any]]]:
-    """Expose Canon-approved deltas using the shared Narrative State vocabulary."""
 
     changes = {
         "canon_fact": facts,

@@ -1,5 +1,3 @@
-"""Static, fail-closed Capability Pack protocol validation."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -1702,7 +1700,6 @@ def _json_items(value: Any) -> tuple[Any, ...]:
 def _validate_stable_identity_inputs(
     payload: Mapping[str, Any], issues: _IssueCollector
 ) -> None:
-    """Reject machine- and run-specific values from a valid manifest identity."""
 
     def visit(value: Any, path: str) -> None:
         if isinstance(value, Mapping):

@@ -1,5 +1,3 @@
-"""Storage-free chapter handlers for PostgreSQL authority execution."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -78,7 +76,6 @@ from novel_forge.modules.production_preparation.policies import (
 
 
 class DeterministicFixtureChapterProvider:
-    """Deterministic acceptance provider; never presented as a real model call."""
 
     provider_id = "deterministic_chapter_fixture_v1"
     external_effect_backed = False

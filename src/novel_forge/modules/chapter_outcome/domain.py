@@ -1,4 +1,3 @@
-"""Accepted ChapterOutcome and deterministic Narrative State v2 reduction."""
 from __future__ import annotations
 
 from typing import Any
@@ -30,7 +29,6 @@ def build_chapter_outcome(
     trace_id: str,
     expected_arc_contributions: tuple[dict[str, Any], ...] = (),
 ) -> dict[str, Any]:
-    """Build immutable accepted-actual evidence before Book acceptance commits it."""
 
     if (
         not project_id
@@ -155,7 +153,6 @@ def reduce_story_state(
     chapter_outcome_asset_version_id: str,
     previous_story_state_asset_version_id: str = "",
 ) -> dict[str, Any]:
-    """Canonical production reduction using Narrative State v2 semantics."""
 
     events = events_from_chapter_outcome(
         chapter_outcome_asset_version_id,

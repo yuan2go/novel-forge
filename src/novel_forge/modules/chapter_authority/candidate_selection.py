@@ -1,4 +1,4 @@
-"""Deterministic Best Candidate selection; newest Revision is never assumed best."""
+"""INVARIANT: candidate selection never treats the newest Revision as the best candidate."""
 
 from __future__ import annotations
 

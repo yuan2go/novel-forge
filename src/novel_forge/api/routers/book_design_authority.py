@@ -1,5 +1,3 @@
-"""Command/query API for the Book + BookDesign Track B vertical slice."""
-
 from __future__ import annotations
 
 from typing import Any

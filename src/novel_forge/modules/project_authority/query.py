@@ -1,4 +1,3 @@
-"""Strong PostgreSQL queries and rebuildable Project projections."""
 from __future__ import annotations
 
 from typing import Any

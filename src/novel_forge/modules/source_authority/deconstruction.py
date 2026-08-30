@@ -1,9 +1,4 @@
-"""Deterministic contracts for governed, incremental source deconstruction.
-
-This module never reads Source Blob bytes.  It validates the identities and
-structured results that cross the Source Authority commit boundary after a
-governed deterministic or provider execution has completed.
-"""
+"""SECURITY: deconstruction validation never reads Source Blob bytes."""
 
 from __future__ import annotations
 

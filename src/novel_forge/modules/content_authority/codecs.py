@@ -1,8 +1,4 @@
-"""Explicit frozen-input codecs for Content Authority operations.
-
-Each binder names and validates its inputs.  There is deliberately no generic
-``handler(**payload)`` escape hatch.
-"""
+"""SECURITY: every Content operation uses an explicit frozen-input binder; no generic payload-to-handler escape hatch exists."""
 
 from __future__ import annotations
 
@@ -1076,13 +1072,6 @@ def author_fixture_waiver_approval(
 def author_story_design_candidate(
     request: AuthorityHandlerRequest,
 ) -> dict[str, Any]:
-    """Materialize one operator-authored Story Design candidate.
-
-    Content Authority owns only the immutable AssetVersion. Story Design
-    Authority still owns structural/semantic qualification, approval and
-    activation. The operation cannot be used as a raw-source import or as
-    Provider evidence.
-    """
 
     from novel_forge.modules.story_design_authority.validators import (
         validate_story_design_candidate,

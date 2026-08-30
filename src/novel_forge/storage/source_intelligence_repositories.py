@@ -1,5 +1,3 @@
-"""PostgreSQL projections for Source Deconstruction and selective replay."""
-
 from __future__ import annotations
 
 from typing import Any, Iterable

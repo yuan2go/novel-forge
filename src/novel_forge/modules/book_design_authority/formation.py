@@ -1,5 +1,3 @@
-"""Command-Kernel and RuntimeJob backed Story Formation coordinator."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -60,7 +58,6 @@ class StoryFormationAdmission:
 
 
 class StoryFormationApplication:
-    """Coordinates Authority-owned versions; it never owns Story truth."""
 
     def __init__(
         self,
@@ -176,7 +173,6 @@ class StoryFormationApplication:
         expected_version: int,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Execute or reconcile exactly one RuntimeJob-frozen semantic stage."""
 
         run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))

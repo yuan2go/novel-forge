@@ -1,5 +1,3 @@
-"""Durable Story Formation coordination contracts; never Story truth."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

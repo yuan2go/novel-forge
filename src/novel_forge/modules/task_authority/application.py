@@ -1,4 +1,3 @@
-"""Audited PostgreSQL controls for Task Center recovery actions."""
 from __future__ import annotations
 
 import hashlib

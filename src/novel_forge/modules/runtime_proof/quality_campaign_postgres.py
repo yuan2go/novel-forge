@@ -1,9 +1,3 @@
-"""PostgreSQL adapter for the exact two-by-four Quality campaign.
-
-The adapter coordinates existing Authorities. It does not own Chapter truth,
-Provider effects, Reader state, Canon, plans, or human decisions.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -76,7 +70,6 @@ class _CandidatePair:
 
 
 class PostgresBoundedQualityCampaignRuntime:
-    """Drive one already-started bounded campaign through Canonical Runtime."""
 
     def __init__(
         self,
@@ -180,7 +173,6 @@ class PostgresBoundedQualityCampaignRuntime:
         self,
         error: QualityCampaignTerminalError,
     ) -> Mapping[str, Any]:
-        """Persist an engineering qualification failure without recasting L1-L3."""
 
         summary = self._provider_runtime_summary()
         source_ids = tuple(
@@ -226,7 +218,6 @@ class PostgresBoundedQualityCampaignRuntime:
         *,
         error_code: str,
     ) -> QualityCampaignTerminalError | None:
-        """Classify only exhausted/final Chapter failures as terminal evidence."""
 
         try:
             root_operation_id = self._active_chapter_root_operation_id()

@@ -1,4 +1,5 @@
-"""Container health probe for PostgreSQL-backed Authority worker heartbeats."""
+"""INVARIANT: readiness requires both current migrations and a fresh accepting heartbeat."""
+
 from __future__ import annotations
 
 import argparse

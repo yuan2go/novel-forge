@@ -1,4 +1,3 @@
-"""Governed PostgreSQL application for preference and behavior calibration."""
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -435,7 +434,6 @@ class PostgresReaderCalibrationAuthority:
         bundle: BlindExportBundle,
         principal: Principal,
     ) -> dict[str, dict[str, Any]]:
-        """Persist public packs and private mappings in their separate boundaries."""
 
         task = self._task(task_id)
         principal.require("book.authority.execute", task["project_id"])
@@ -847,7 +845,6 @@ class PostgresReaderCalibrationAuthority:
         dimension_scores: dict[str, Any],
         principal: Principal,
     ) -> dict[str, Any]:
-        """Append an adjudication without modifying either raw human decision."""
 
         task = self._task(task_id)
         principal.require("book.authority.execute", task["project_id"])

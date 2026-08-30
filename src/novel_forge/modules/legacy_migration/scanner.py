@@ -1,4 +1,3 @@
-"""Read-only, deterministic scanner for a frozen Legacy JSON snapshot."""
 from __future__ import annotations
 
 import hashlib

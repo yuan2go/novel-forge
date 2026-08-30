@@ -1,10 +1,3 @@
-"""Bounded Agent workspace transaction execution contracts.
-
-The backend may produce patch/decision/report candidates only.  Authority and
-domain handlers remain responsible for validation, approval, commit, activation,
-and Git acceptance.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -18,6 +18,8 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
                 "src/novel_forge/example.py": "VALUE = 1\n",
                 "tests/unit/test_example.py": "def test_example(): pass\n",
                 "scripts/check_example.py": "print('checked')\n",
+                "config/capability_packs/example.json": '{"enabled":true}\n',
+                "skills/example/SKILL.md": "# Example runtime skill\n",
                 "architecture/manifests/example.yaml": '{"schema_version":"architecture-manifest.v1"}\n',
                 ".github/workflows/ci.yml": "name: CI\n",
                 "compose.authority-only.yml": "services: {}\n",
@@ -61,11 +63,13 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
     def test_identity_scope_is_explicit_and_self_describing(self) -> None:
         root = Path(__file__).resolve().parents[2]
         identity = build_implementation_tree_identity(root)
-        self.assertEqual(identity["schema_version"], "implementation-tree-identity.v1")
+        self.assertEqual(identity["schema_version"], "implementation-tree-identity.v2")
         self.assertEqual(identity["algorithm"], "sha256-canonical-file-records-v1")
         self.assertTrue(identity["implementation_tree_sha"].startswith("sha256:"))
         self.assertGreater(identity["path_count"], 0)
         self.assertIn("src/**", identity["scope"]["included"])
+        self.assertIn("config/**", identity["scope"]["included"])
+        self.assertIn("skills/**", identity["scope"]["included"])
         self.assertIn("docs/**", identity["scope"]["excluded"])
         self.assertNotIn(
             "docs/generated-coverage-baseline.json",

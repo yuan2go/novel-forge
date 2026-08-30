@@ -1,5 +1,3 @@
-"""Typed causal Narrative Realization contracts owned by Planning Authority."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -613,12 +611,6 @@ def _validate_event_chain(
 def validate_narrative_realization_event_chain(
     events: list[Mapping[str, Any]], *, chapter_range: tuple[int, int]
 ) -> tuple[NarrativeRealizationEvent, ...]:
-    """Validate a causal group realization without creating a Plan scale.
-
-    ChapterGroup generation owns the proposed event chain.  The Planning-owned
-    NarrativeRealization contract later binds the same typed events to accepted
-    boundary, Arc, Foundation and independent proof evidence.
-    """
 
     typed = tuple(NarrativeRealizationEvent.from_mapping(item) for item in events)
     if not typed:

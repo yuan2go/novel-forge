@@ -1,5 +1,3 @@
-"""Reusable lifecycle conformance and deterministic failure-injection helpers."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -61,13 +59,11 @@ class InjectedExecutionFailure(RuntimeError):
 
 
 class FailureInjector:
-    """One-shot deterministic injector for fixture and integration tests."""
-
-    def __init__(
-        self, armed: tuple[FailureInjectionPoint | str, ...] = ()
-    ) -> None:
+    def __init__(self, armed: tuple[FailureInjectionPoint | str, ...] = ()) -> None:
         self._armed = {
-            item if isinstance(item, FailureInjectionPoint) else FailureInjectionPoint(item)
+            item
+            if isinstance(item, FailureInjectionPoint)
+            else FailureInjectionPoint(item)
             for item in armed
         }
 
@@ -84,9 +80,7 @@ class FailureInjector:
         )
         if normalized in self._armed:
             self._armed.remove(normalized)
-            raise InjectedExecutionFailure(
-                normalized, request_sent=request_sent
-            )
+            raise InjectedExecutionFailure(normalized, request_sent=request_sent)
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,12 +96,7 @@ class BackendConformanceReport:
 
 
 class BackendConformanceSuite:
-    """Protocol-level checks shared by every qualified backend.
-
-    Callback, timeout, malformed output, UNKNOWN, and restart scenarios remain
-    backend-specific because transports expose different lifecycle controls.
-    The complete required scenario catalog is exposed for coverage checks.
-    """
+    """CONSTRAINT: transport-specific recovery checks remain backend-owned."""
 
     scenarios = tuple(BackendConformanceScenario)
 

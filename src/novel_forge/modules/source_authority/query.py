@@ -1,5 +1,3 @@
-"""PostgreSQL SourceDocument governance projection."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -399,7 +397,6 @@ class SourceAuthorityQuery:
         return [dict(zip(keys, row, strict=True)) for row in rows]
 
     def data_import_admission(self, *, project_id: str) -> dict[str, Any]:
-        """Evaluate current PostgreSQL evidence; missing proof always blocks."""
         if not project_id:
             raise ValueError("project_id is required")
         with AuthorityUnitOfWork(self.database_url) as uow:

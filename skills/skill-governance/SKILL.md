@@ -10,7 +10,7 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 - 项目源 Skill 必须维护在 root `skills/`，`.claude/skills/` 只能由 sync 生成或保留 runtime/vendor 工具 Skill。
 - 生产相关 Skill 必须包含 Novel OS Runtime Contract，并明确 schema-backed output、Context Builder、Knowledge Pack、ReviewIssue、GateResult、source isolation 和 traceability。
 - 外部 Skill 不得直接进入 root `skills/`，除非记录 source、license、scripts、dependencies、network/provider behavior 和 verification。
-- Skill 治理只更新仍有长期价值的最小文件：root Skill、`AGENTS.md` 或 `docs/development/skills.md`。不要生成 session-level 审计报告。
+- Skill 治理只更新仍有长期价值的最小文件：root Skill、`AGENTS.md` 或 `docs/development.md`。不要生成 session-level 审计报告。
 
 ## 适用场景
 
@@ -23,7 +23,7 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 
 - 目标 Skill 名称、任务上下文、相关 Agent、已有 `skills/<name>/SKILL.md`。
 - 外部来源时需提供 source path/URL、license、scripts、references、dependencies、network/provider behavior。
-- 相关 docs：`AGENTS.md`、`docs/development/skills.md`。
+- 相关 docs：`AGENTS.md`、`docs/development.md`。
 
 ## 操作流程
 

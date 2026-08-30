@@ -1,5 +1,3 @@
-"""PostgreSQL Authority repository for scoped Agent collaboration."""
-
 from __future__ import annotations
 
 from dataclasses import fields, is_dataclass, replace
@@ -47,7 +45,6 @@ from novel_forge.storage.authority_asset_store import (
 
 
 class PostgresAgentCollaborationRepository:
-    """Cursor-bound repository intended for an existing AuthorityUnitOfWork."""
 
     production_authority = True
 
@@ -1114,7 +1111,6 @@ class PostgresAgentCollaborationRepository:
 
 
 class PostgresAuthorityCandidateCommitter:
-    """Domain Authority command adapter over the existing AssetVersion authority."""
 
     def __init__(
         self,

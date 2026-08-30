@@ -1,11 +1,3 @@
-"""Governed multi-turn Agent Harness over the Industrial Runtime.
-
-The Harness owns reasoning-session provenance, never business truth.  Callers
-must run it inside an already leased Authority Attempt.  Model turns and
-external tools are represented by ports whose results carry the owning
-ExternalEffect identity; deterministic read/query tools may omit one.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -221,7 +213,6 @@ def with_skill_activation_tool(
     tools: tuple[AgentToolSpec, ...],
     skills: tuple[Mapping[str, Any], ...],
 ) -> tuple[AgentToolSpec, ...]:
-    """Expose the Harness-native activation action for a frozen Skill catalog."""
 
     has_native = any(
         tool.tool_name == SKILL_ACTIVATION_TOOL.tool_name for tool in tools
@@ -431,7 +422,6 @@ class AgentHarnessResult:
 
 
 class UnifiedAgentHarness:
-    """Bounded multi-turn loop with fail-closed Tool and Authority boundaries."""
 
     def __init__(
         self,

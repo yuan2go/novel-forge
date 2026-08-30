@@ -1,5 +1,3 @@
-"""Durable ChapterGroup coordinator over Book and Chapter Authority ports."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -679,7 +677,6 @@ class PostgresChapterGroupAuthority:
         target_group_plan_version_id: str,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Retire the old group after the Replan Authority approval transition."""
         group = self.require(group_run_id)
         if group["state"] in {
             ChapterGroupState.COMPLETED.value,

@@ -1,5 +1,3 @@
-"""Durable post-0094 repair owned by Book Authority."""
-
 from __future__ import annotations
 
 import hashlib
@@ -62,7 +60,6 @@ def _hash(value: Any) -> str:
 def validate_terminal_repair_rows(
     *, target_chapter: int, rows: list[Mapping[str, Any]]
 ) -> dict[str, Any]:
-    """Validate complete contiguous authoritative coverage before pointer CAS."""
 
     chapters = [int(row["chapter_number"]) for row in rows]
     expected = list(range(1, target_chapter + 1))
@@ -137,7 +134,6 @@ class ProjectionRepairBatchResult:
 
 
 class PostgresBookProjectionRepairAuthority:
-    """Runs bounded repair batches through fenced Command Kernel worker Operations."""
 
     def __init__(
         self,
@@ -404,7 +400,6 @@ class PostgresBookProjectionRepairAuthority:
     def _adopt_continuation_claim(
         self, repair: Mapping[str, Any], claim: RuntimeJobClaim
     ) -> None:
-        """Recover a crash after atomic RuntimeJob handoff but before pointer CAS."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -995,7 +990,6 @@ class PostgresBookProjectionRepairAuthority:
     def _operation_inputs(
         self, repair: Mapping[str, Any], action: str
     ) -> tuple[str, list[dict[str, str]]]:
-        """Freeze stable accepted evidence; execution fences never enter this digest."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

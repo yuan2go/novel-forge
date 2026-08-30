@@ -1,4 +1,3 @@
-"""Server-side resolution and freezing of Chapter Authority production inputs."""
 from .contracts import (
     ChapterAuthorityCommand,
     ProductionPreparationReport,

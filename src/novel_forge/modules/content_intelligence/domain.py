@@ -1,8 +1,4 @@
-"""Pure domain contracts for long-form intelligence.
-
-These functions never activate Canon and never infer semantic quality from raw
-text patterns. PostgreSQL applications persist their outputs as AssetVersions.
-"""
+"""INVARIANT: raw text patterns cannot establish Canon or semantic quality."""
 
 from __future__ import annotations
 
@@ -183,8 +179,8 @@ def build_pacing_observation(
             if isinstance(items, list)
         }
     else:
-        # Historical Canon patches remain readable evidence during deterministic
-        # v1 -> v2 rebuild; new production Canon emits only ``state_changes``.
+        # Compatibility patches remain readable during deterministic rebuild;
+        # current production Canon emits only ``state_changes``.
         snapshots = {
             str(item.get("state_kind") or ""): list(item.get("changes") or [])
             for item in canon.get("snapshot_candidates", [])

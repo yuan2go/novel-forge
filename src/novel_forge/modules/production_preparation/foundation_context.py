@@ -1,5 +1,3 @@
-"""Protected Chapter projections for authoritative Character and Reader contracts."""
-
 from __future__ import annotations
 
 import json
@@ -40,11 +38,6 @@ def project_character_foundation_context(
     content: Mapping[str, Any],
     source_asset_version_id: str,
 ) -> dict[str, Any]:
-    """Return a non-lossy, executable identity projection.
-
-    Historical Character assets remain readable, but Chapter execution must not
-    infer a name, alias, or pronoun from prose, a slug, or a model response.
-    """
 
     if asset_type not in {"character_cast", "character_card"}:
         raise KernelError(
@@ -139,7 +132,6 @@ def project_character_foundation_context(
 def project_reader_promise_context(
     *, content: Mapping[str, Any], source_asset_version_id: str
 ) -> dict[str, Any]:
-    """Project exact Reader Promise semantics without promoting intent to truth."""
 
     if not source_asset_version_id:
         raise KernelError(

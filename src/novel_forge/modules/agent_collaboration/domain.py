@@ -1,10 +1,3 @@
-"""Pure domain contracts for Authority-led Agent collaboration.
-
-The module deliberately owns no provider, process, scheduler, or persistence
-implementation.  Agent output remains a proposal until a domain Authority
-accepts it and an Authority command commits a versioned asset.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, is_dataclass, replace

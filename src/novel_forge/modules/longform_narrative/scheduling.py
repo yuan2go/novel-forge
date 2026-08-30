@@ -1,10 +1,3 @@
-"""Deterministic Arc working-set selection over accepted narrative reality.
-
-This module is a domain service, not an Authority or scheduling runtime.  It
-turns the global Arc portfolio, the latest accepted projection, and the frozen
-ChapterGroup cadence into a small explainable input for existing Planning.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -124,7 +117,6 @@ def build_arc_working_set(
     schedule_row: Mapping[str, Any] | None = None,
     reader_intent: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Select a bounded Arc set without turning future intent into Actual state."""
 
     if (
         not project_id.strip()

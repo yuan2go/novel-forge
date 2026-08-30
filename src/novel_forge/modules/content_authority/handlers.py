@@ -1,5 +1,3 @@
-"""Explicit storage-free handler bindings for content-domain operations."""
-
 from novel_forge.modules.characters.domain import (
     build_character,
     build_relationship_state,

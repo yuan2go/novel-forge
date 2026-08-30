@@ -1,5 +1,3 @@
-"""PostgreSQL-only MKAOS Candidate, Decision, Card and Pack routes."""
-
 from __future__ import annotations
 
 from decimal import Decimal

@@ -1,4 +1,4 @@
-"""Shared storage-free context value objects without package import side effects."""
+"""INVARIANT: importing shared context value objects must not trigger package side effects."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from typing import Any
 
 
 class ContextClass(StrEnum):
-    """Governed lifecycle class for content sent to a model task."""
 
     PROTECTED = "PROTECTED"
     COMPRESSIBLE = "COMPRESSIBLE"

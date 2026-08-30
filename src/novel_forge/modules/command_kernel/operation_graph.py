@@ -1,4 +1,3 @@
-"""PostgreSQL-authoritative Operation Graph and idempotent Saga coordination."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -140,7 +139,7 @@ def transition_saga_gate(
     target_status: str,
     reason: str,
 ) -> dict[str, Any]:
-    """Fence and audit a business-gate transition on a Saga.
+    """INVARIANT: Fence and audit a business-gate transition on a Saga.
 
     Gate owners use this command instead of updating ``authority_saga`` directly.
     The coordinator lease, state mutation, StateEvent, AuditLog, and Outbox write are
@@ -236,7 +235,6 @@ def terminalize_saga_from_extension(
     *,
     operation_id: str,
 ) -> dict[str, Any]:
-    """Propagate a late-bound child terminal through its existing root Saga."""
     _validate_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.operation_graph

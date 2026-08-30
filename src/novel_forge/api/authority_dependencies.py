@@ -1,5 +1,3 @@
-"""Fail-closed dependency construction for PostgreSQL authority entrypoints."""
-
 from __future__ import annotations
 
 import hashlib
@@ -251,13 +249,12 @@ def _scripted_narrative_evaluation_fixture_enabled(
     runtime_environment: RuntimeEnvironment,
     values: Mapping[str, str],
 ) -> bool:
-    """Require an explicit test-only switch for scripted semantic receipts.
+    """SECURITY: Require an explicit test-only switch for scripted semantic receipts.
 
     ``development`` may use other deterministic fixtures, but a Narrative
     Qualification can admit canonical production input.  It therefore needs a
     narrower boundary than the general runtime fixture flag.
     """
-
     explicit = (
         str(
             values.get("NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE")
@@ -1107,9 +1104,8 @@ def build_chapter_authority_application(
         # not a Chapter-stage model effect.  Applying the Chapter aggregate
         # cap here creates a cap with no Chapter budget lineage to charge.
         embedding_budget_caps=execution.budget_caps(),
-        # Ordinary Chapter model stages are governed Typed Capabilities. The
-        # old per-stage Agent binding bridge remains migration-only and is not
-        # reachable from canonical composition.
+        # Migration-only per-stage Agent bindings are intentionally
+        # unreachable from production composition.
         agent_binding_recorder=None,
         agent_binding_required=False,
         runtime_fault_injector=runtime_fault_injector,
@@ -1345,7 +1341,6 @@ def build_source_import_application(
     execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
 ) -> SourceImportApplication:
-    """Compose Source Import as a peer consumer of the shared PEP."""
 
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Source Import runtime requires PostgreSQL authority")
@@ -1420,7 +1415,6 @@ def chapter_capability_pack_compilation_report(
     *,
     env: Mapping[str, str] | None = None,
 ) -> dict[str, object]:
-    """Compile the shipped Chapter Pack from repository facts without activation."""
 
     values = os.environ if env is None else env
     _build_id, release_sha = authority_release_identity(env=values)
@@ -1502,7 +1496,6 @@ def build_book_followup_authority_application(
     execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
 ) -> BookFollowupAuthorityApplication:
-    """Compose advisory follow-up with the shared Production Execution Plane."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book Followup")
@@ -1532,7 +1525,6 @@ def build_book_production_composition(
     chapter_application: ChapterAuthorityApplication,
     env: Mapping[str, str] | None = None,
 ) -> BookProductionComposition:
-    """Build the one Book production graph consumed by API and Worker."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book production")
@@ -1693,7 +1685,6 @@ def build_reader_outcome_model_port(
     execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
 ) -> ExternalEffectChapterModelPort:
-    """Compose Reader Outcome with a Reader-owned Pack binder and shared PEP."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Reader Outcome")
@@ -1742,7 +1733,6 @@ def build_narrative_semantic_evaluation_execution_port(
     env: Mapping[str, str] | None = None,
     post_provider_fault_injector: Callable[[str], None] | None = None,
 ) -> GatewayNarrativeSemanticEvaluationExecutionPort:
-    """Compose Story Design evaluation with its own binder on the shared PEP."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL is required for Narrative Evaluation")
@@ -1804,7 +1794,6 @@ def build_story_planning_generation_application(
     env: Mapping[str, str] | None = None,
     post_provider_fault_injector: Callable[[str], None] | None = None,
 ) -> StoryPlanningGenerationApplication:
-    """Compose Story Planning as a peer consumer of the shared PEP."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Story Planning")

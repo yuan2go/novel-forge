@@ -1,4 +1,3 @@
-"""PostgreSQL Source Governance command and strong-query routes."""
 from __future__ import annotations
 
 from typing import Any

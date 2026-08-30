@@ -1,5 +1,3 @@
-"""Shared exact-current Foundation Set read invariant."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

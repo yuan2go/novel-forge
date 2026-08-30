@@ -1,5 +1,3 @@
-"""Deterministic, non-promotional Narrative Proof instrumentation."""
-
 from __future__ import annotations
 
 from typing import Any, Iterable, Mapping
@@ -13,7 +11,6 @@ _NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 def project_narrative_load(*, story_state: Mapping[str, Any]) -> dict[str, Any]:
-    """Project queryable load/debt from accepted Narrative State only."""
 
     chapter = int(story_state.get("accepted_through_chapter") or 0)
     current = dict(story_state.get("current_state") or {})
@@ -150,7 +147,6 @@ def measure_narrative_runtime(
     provider_usage_records: Iterable[Mapping[str, Any]] | None = None,
     expected_context_asset_version_ids: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """Build an observation while preserving zero-versus-missing semantics."""
     manifest = dict(context_bundle.get("context_manifest") or {})
     position = dict(manifest.get("narrative_position") or {})
     chapter = int(

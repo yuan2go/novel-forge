@@ -1,5 +1,3 @@
-"""Governed, rebuildable embedding projections for accepted retrieval documents."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -174,7 +172,6 @@ class _EmbeddingHandler:
 
 
 class RetrievalEmbeddingProjectionRuntime:
-    """Schedule and execute bounded document projection Operations."""
 
     def __init__(
         self,

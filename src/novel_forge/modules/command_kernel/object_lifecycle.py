@@ -1,9 +1,5 @@
-"""Retention-aware orphan discovery for authoritative object references.
+"""INVARIANT: database scans may only mark orphan candidates; physical deletion requires an explicit object-store ExternalEffect."""
 
-The scanner only marks candidates. Physical deletion remains an explicit
-``object_store.delete`` External Effect through ``release_blob`` so a database
-scan can never silently remove an object.
-"""
 from __future__ import annotations
 
 from typing import Any

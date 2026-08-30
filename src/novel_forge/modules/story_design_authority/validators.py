@@ -1,5 +1,3 @@
-"""Versioned, deterministic validators for Story Design candidates."""
-
 from __future__ import annotations
 
 import hashlib
@@ -117,7 +115,6 @@ def validate_story_design_candidate(
     logical_key: str,
     migration_context: Mapping[str, Any] | None = None,
 ) -> StoryDesignValidationResult:
-    """Validate schema, structure, semantics, generator contract and scope."""
 
     scope = PlanningScope(planning_scope)
     frozen_content = dict(content)

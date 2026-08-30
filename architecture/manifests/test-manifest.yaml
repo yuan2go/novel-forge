@@ -7,6 +7,7 @@
     {"name": "integration", "start_dir": "tests/integration", "pattern": "test_*.py", "minimum_count": 1, "qualification_class": "POSTGRESQL_REQUIRED", "complete_collection": true}
   ],
   "required_modules": [
+    "tests/unit/test_documentation_reality.py",
     "tests/architecture/test_head_integrity.py",
     "tests/integration/test_authority_migrations_postgres.py",
     "tests/integration/test_authority_schema_postgres.py",

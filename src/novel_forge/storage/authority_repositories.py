@@ -1,4 +1,3 @@
-"""Focused repositories for PostgreSQL Command Kernel authority."""
 from __future__ import annotations
 
 import hashlib

@@ -1,5 +1,3 @@
-"""PostgreSQL Project/Workspace Authority."""
-
 from .application import ProjectAuthorityApplication, ProjectAuthorityCommand
 from .query import ProjectAuthorityQuery
 

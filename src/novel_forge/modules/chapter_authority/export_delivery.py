@@ -1,4 +1,3 @@
-"""Generic ExternalEffect/Blob delivery for a chapter Export AssetVersion."""
 from __future__ import annotations
 
 import base64

@@ -1,5 +1,3 @@
-"""Transactional repository for semantic Story Design asset authority."""
-
 from __future__ import annotations
 
 import hashlib

@@ -1,5 +1,3 @@
-"""Deterministic accepted-evidence reducers for long-form narrative state."""
-
 from __future__ import annotations
 
 import hashlib
@@ -35,7 +33,6 @@ def normalize_arc_evidence(
     declared: Mapping[str, Mapping[str, Any]],
     raw_evidence: Iterable[Mapping[str, Any]],
 ) -> tuple[dict[str, Any], ...]:
-    """Normalize actual observations without ever copying PLAN payload into ACTUAL."""
 
     declared_ids = tuple(str(key) for key in declared if str(key))
     observed: dict[str, dict[str, Any]] = {}
@@ -302,7 +299,6 @@ def _criterion_id(arc_plan_version_id: str, ordinal: int, criterion: str) -> str
 def normalize_frozen_arc_plan(
     *, arc_plan_version_id: str, content: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Adapt the canonical Planning Arc asset without creating another Plan authority."""
 
     closure = tuple(
         str(item).strip()
@@ -372,7 +368,6 @@ def normalize_frozen_arc_plan(
 def reduce_accepted_obligations(
     *, entries: Iterable[Mapping[str, Any]], chapter_number: int
 ) -> list[dict[str, Any]]:
-    """Evaluate lifecycle from accepted state and chapter coordinates only."""
 
     source = [dict(item) for item in entries]
     base: dict[str, dict[str, Any]] = {}
@@ -509,7 +504,6 @@ def build_longform_projection_set(
     source_content_hashes: Mapping[str, str] | None = None,
     contract_adaptation_evidence: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Build the complete deterministic long-form projection for one acceptance."""
 
     if chapter_number <= 0 or any(
         not str(value).strip()

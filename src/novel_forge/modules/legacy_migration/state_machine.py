@@ -1,9 +1,5 @@
-"""Durable Legacy migration phase and evidence contracts.
+"""INVARIANT: resume and recovery callers share the same deterministic transition and checkpoint rules."""
 
-The state machine is intentionally independent from PostgreSQL so that every
-caller, including resume/recovery code, shares the same transition rules and
-checkpoint identity.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -113,7 +109,6 @@ def derive_migration_completion(
     *,
     required_level: MigrationVerificationLevel | str,
 ) -> MigrationCompletion:
-    """Derive one fail-closed run result from durable reconciliation facts."""
 
     level = MigrationVerificationLevel(required_level)
     domain_failure_count = (

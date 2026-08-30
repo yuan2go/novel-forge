@@ -1,9 +1,5 @@
-"""Fail-closed source, registry, and CI integrity checks for a clean HEAD.
+"""INVARIANT: integrity checks combine imports with Git tracking because an untracked module can work locally but fail from a clean checkout."""
 
-The check deliberately combines filesystem imports with Git tracking state.  A
-working tree can import an untracked module while a clean checkout is broken; the
-tracking check makes that class of incomplete commit visible before CI.
-"""
 from __future__ import annotations
 
 import argparse
@@ -277,7 +273,6 @@ def _registry_target_failures(root: Path, tracked: set[str]) -> set[str]:
     for relative in (
         "src/novel_forge/api/routers/book_authority.py",
         "src/novel_forge/storage/book_authority_repositories.py",
-        "config/authority/authority-parity-manifest.json",
     ):
         target = root / relative
         if not target.is_file():

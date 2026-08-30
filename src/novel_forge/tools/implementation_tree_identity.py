@@ -1,9 +1,5 @@
-"""Deterministic identity for files that can change Novel Forge runtime semantics.
+"""INVARIANT: implementation identity excludes Git ids and generated evidence so CI can bind stable content identity to a tested commit."""
 
-The identity is intentionally independent from Git commit ids and from checked-in
-or generated evidence documents.  CI binds the resulting digest to ``GITHUB_SHA``
-inside a run artifact; the repository only stores the stable selection contract.
-"""
 from __future__ import annotations
 
 import fnmatch
@@ -14,13 +10,15 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = "implementation-tree-identity.v1"
+SCHEMA_VERSION = "implementation-tree-identity.v2"
 ALGORITHM = "sha256-canonical-file-records-v1"
 
 INCLUDED_PREFIXES = (
     "src",
     "tests",
     "scripts",
+    "config",
+    "skills",
     "architecture/manifests",
     ".github/workflows",
 )
@@ -55,13 +53,17 @@ EXCLUDED_FILE_PATTERNS = (
 
 def _is_excluded(path: Path, root: Path) -> bool:
     relative = path.relative_to(root)
-    if any(part in EXCLUDED_DIRECTORY_NAMES or part.endswith(".egg-info") for part in relative.parts):
+    if any(
+        part in EXCLUDED_DIRECTORY_NAMES or part.endswith(".egg-info")
+        for part in relative.parts
+    ):
         return True
-    return any(fnmatch.fnmatch(path.name, pattern) for pattern in EXCLUDED_FILE_PATTERNS)
+    return any(
+        fnmatch.fnmatch(path.name, pattern) for pattern in EXCLUDED_FILE_PATTERNS
+    )
 
 
 def select_implementation_paths(repo_root: str | Path) -> list[Path]:
-    """Return the exact, sorted working-tree files covered by the identity."""
     root = Path(repo_root).resolve()
     selected: set[Path] = set()
     for prefix in INCLUDED_PREFIXES:
@@ -75,10 +77,14 @@ def select_implementation_paths(repo_root: str | Path) -> list[Path]:
         for path in root.iterdir():
             if not (path.is_file() or path.is_symlink()):
                 continue
-            if any(fnmatch.fnmatch(path.name, pattern) for pattern in ROOT_FILE_PATTERNS):
+            if any(
+                fnmatch.fnmatch(path.name, pattern) for pattern in ROOT_FILE_PATTERNS
+            ):
                 if not _is_excluded(path, root):
                     selected.add(path)
-    return sorted(selected, key=lambda path: path.relative_to(root).as_posix().encode("utf-8"))
+    return sorted(
+        selected, key=lambda path: path.relative_to(root).as_posix().encode("utf-8")
+    )
 
 
 def _file_record(root: Path, path: Path) -> dict[str, Any]:
@@ -98,7 +104,6 @@ def _file_record(root: Path, path: Path) -> dict[str, Any]:
 
 
 def build_implementation_tree_identity(repo_root: str | Path) -> dict[str, Any]:
-    """Build a self-describing SHA-256 identity from canonical file records."""
     root = Path(repo_root).resolve()
     records = [_file_record(root, path) for path in select_implementation_paths(root)]
     canonical = {
@@ -123,6 +128,8 @@ def build_implementation_tree_identity(repo_root: str | Path) -> dict[str, Any]:
                 "src/**",
                 "tests/**",
                 "scripts/**",
+                "config/**",
+                "skills/**",
                 "architecture/manifests/**",
                 ".github/workflows/**",
                 *ROOT_FILE_PATTERNS,

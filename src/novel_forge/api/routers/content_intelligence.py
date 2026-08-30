@@ -1,5 +1,3 @@
-"""Accepted long-form intelligence query routes."""
-
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query

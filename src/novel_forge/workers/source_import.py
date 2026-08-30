@@ -1,4 +1,3 @@
-"""Standalone durable Source Import worker over Command Kernel + shared PEP."""
 from __future__ import annotations
 
 import os

@@ -1,5 +1,3 @@
-"""PostgreSQL-authoritative single-chapter application slice."""
-
 from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
 )

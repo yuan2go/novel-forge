@@ -1,5 +1,3 @@
-"""Durable product Source import orchestration over existing Authorities."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -210,7 +208,6 @@ class ApplyReprocessingPlanCommand:
 
 
 class SourceImportApplication:
-    """Coordinates; Source and MKAOS Authorities still own business commits."""
 
     def __init__(
         self,

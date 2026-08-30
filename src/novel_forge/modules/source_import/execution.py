@@ -1,5 +1,3 @@
-"""Source-domain binding to the existing Production Execution Gateway."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -117,7 +115,6 @@ class _ExecutionSpec:
 
 
 class _SourceGatewayEffectAdapter:
-    """ExternalEffect adapter for one frozen Source execution request."""
 
     production_execution_gateway_backed = True
 
@@ -255,7 +252,6 @@ class _SourceGatewayEffectAdapter:
 
 
 class PostgresContentIntelligenceExecutionPort:
-    """Attempt-bound deconstruction and MKAOS execution through shared PEP."""
 
     external_effect_backed = True
     production_execution_gateway_backed = True

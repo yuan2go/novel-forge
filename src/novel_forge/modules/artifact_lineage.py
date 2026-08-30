@@ -1,5 +1,3 @@
-"""Unified immutable Artifact lineage and semantic invalidation contracts."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -120,7 +118,6 @@ class SemanticDiff:
 
 
 class PostgresArtifactLineageRepository:
-    """Cursor-bound append-only lineage and invalidation repository."""
 
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
@@ -179,7 +176,6 @@ class PostgresArtifactLineageRepository:
         reason: str,
         created_by_operation_id: str,
     ) -> tuple[dict[str, Any], ...]:
-        """Traverse dependencies selectively by intersecting semantic dimensions."""
 
         if not reason.strip() or not created_by_operation_id.strip():
             raise ValueError("semantic invalidation command is incomplete")
@@ -310,7 +306,6 @@ class PostgresArtifactLineageRepository:
         replacement_asset_version_id: str,
         resolved_by_operation_id: str,
     ) -> None:
-        """Resolve evidence only; never reactivate an old active pointer."""
 
         self.cursor.execute(
             """

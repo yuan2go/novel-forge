@@ -1,4 +1,3 @@
-"""Content Authority entry point over the shared fenced runtime."""
 from __future__ import annotations
 
 from collections.abc import Callable

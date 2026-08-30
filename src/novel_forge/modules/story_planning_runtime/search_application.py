@@ -1,5 +1,3 @@
-"""Durable divergent search over the existing Story Planning runtime."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -237,7 +235,6 @@ class NarrativeSearchQualifiedBranchCommitter(Protocol):
 
 
 class PostgresNarrativeSearchApplication:
-    """Planning-owned portfolio lifecycle; it does not activate Story truth."""
 
     def __init__(
         self,
@@ -476,7 +473,6 @@ class PostgresNarrativeSearchApplication:
         allow_reconciled_branches: bool = False,
         opening_run_id: str = "",
     ) -> NarrativeSearchResult:
-        """Read an exact durable selection without admitting or executing work."""
 
         command = request.generation
         search_key, search_id, input_hash, parent_hash = self._search_identity(request)
@@ -800,7 +796,6 @@ class PostgresNarrativeSearchApplication:
         expected_branch_keys: Sequence[str],
         project_id: str,
     ) -> tuple[NarrativeSearchQualifiedBranch, ...]:
-        """Hydrate existing branch identities without executing Provider work."""
 
         expected = tuple(expected_branch_keys)
         if not expected or len(set(expected)) != len(expected):
@@ -945,7 +940,6 @@ class PostgresNarrativeSearchApplication:
         branch_key: str,
         result: PlanningGenerationResult,
     ) -> NarrativeSearchBranchEvidence:
-        """Persist one qualified Search branch in a caller-owned transaction."""
 
         search = self._lock_search_for_branch_registration(uow, search_id)
         generation_record = self._lock_generation_for_branch_registration(
@@ -1151,7 +1145,7 @@ class PostgresNarrativeSearchApplication:
         opening_execution_id: str,
         execution_generation: int,
     ) -> NarrativeSearchBranchReconciliationEvidence:
-        """Append evidence for one immutable pre-contract membership.
+        """COMPATIBILITY: Append evidence for one immutable pre-contract membership.
 
         This primitive deliberately requires a caller-owned transaction.  The
         Book Opening coordinator must establish and validate its live runtime
@@ -1159,7 +1153,6 @@ class PostgresNarrativeSearchApplication:
         Candidate/Qualification -> Membership lock order.  No Provider call is
         made here and the historical membership is never changed.
         """
-
         if not opening_run_id or not opening_execution_id or execution_generation <= 0:
             raise ValueError("legacy branch reconciliation requires an execution")
         search = self._lock_search_for_branch_registration(uow, search_id)

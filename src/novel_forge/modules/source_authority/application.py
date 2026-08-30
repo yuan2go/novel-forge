@@ -1,5 +1,3 @@
-"""Verified-Blob SourceDocument commands over the shared Command Kernel."""
-
 from __future__ import annotations
 
 import hashlib
@@ -1205,7 +1203,6 @@ class SourceAuthorityApplication:
         }
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
-        """Execute the registered handler under a worker-owned current fence."""
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

@@ -1,5 +1,3 @@
-"""Typed PLAN/ACTUAL contracts for long-form narrative control."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

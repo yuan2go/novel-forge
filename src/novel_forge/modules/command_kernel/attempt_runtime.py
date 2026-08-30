@@ -220,7 +220,6 @@ def checkpoint_attempt_for_external_reconciliation(
     command: WorkerLeaseCommand,
     checkpoint: dict[str, Any],
 ) -> None:
-    """Atomically park a fenced Attempt and its Operation for reconciliation."""
     stale_error: KernelError | None = None
     with AuthorityUnitOfWork(database_url) as uow:
         attempt = uow.repositories.attempt_runtime.get_for_update(
@@ -395,7 +394,6 @@ def submit_attempt_failure(
     error_message: str,
     failure_class: str,
 ) -> None:
-    """Terminalize a running fenced Attempt after handler execution raised."""
     with AuthorityUnitOfWork(database_url) as uow:
         operation = uow.repositories.attempt_runtime.operation_state(
             command.causation_id, command.project_id

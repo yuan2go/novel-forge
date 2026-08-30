@@ -1,5 +1,3 @@
-"""Compact longitudinal Quality projection from committed Book acceptance."""
-
 from __future__ import annotations
 
 import hashlib
@@ -39,7 +37,6 @@ def load_accepted_quality_observations(
     book_id: str,
     accepted_through_chapter: int,
 ) -> list[dict[str, Any]]:
-    """Read exact accepted lineage and discard prose after metric projection."""
 
     if (
         not database_url

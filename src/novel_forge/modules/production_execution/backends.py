@@ -1,9 +1,3 @@
-"""Execution backend implementations behind :mod:`production_execution.gateway`.
-
-Backend records are execution evidence and recovery indexes.  They do not own
-Attempt lifecycle, approval, budget, or asset activation state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -193,7 +187,6 @@ def parse_codex_jsonl_evidence(
     allowed_tools: tuple[str, ...],
     denied_tools: tuple[str, ...] = (),
 ) -> dict[str, Any]:
-    """Parse measured terminal usage and observed tool activity from Codex JSONL."""
 
     events: list[Mapping[str, Any]] = []
     for line_number, line in enumerate(stdout.splitlines(), start=1):
@@ -359,7 +352,6 @@ class ExecutionPayloadResolver(Protocol):
 
 
 class StaticExecutionPayloadResolver:
-    """Explicit fixture resolver. Production uses governed artifact readers."""
 
     def __init__(self, payloads: Mapping[str, ResolvedExecutionPayload]) -> None:
         self._payloads = dict(payloads)
@@ -377,7 +369,6 @@ class StaticExecutionPayloadResolver:
 
 
 class InMemoryExecutionRecordStore:
-    """Non-production test store; refs are visibly fixture-only."""
 
     def __init__(self) -> None:
         self._records: dict[str, ExecutionRecord] = {}

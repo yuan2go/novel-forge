@@ -1,5 +1,3 @@
-"""Canonical Book production dependency graph shared by API and Worker."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -39,7 +37,6 @@ from .supervisor import (
 
 @dataclass(frozen=True, slots=True)
 class BookProductionComposition:
-    """Dependency container only; all durable state remains in PostgreSQL."""
 
     authority: PostgresBookAuthority
     query: PostgresBookProductionQuery

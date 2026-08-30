@@ -1,5 +1,3 @@
-"""Generic ExternalEffect-backed model boundary for chapter handlers."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -189,14 +187,13 @@ def _model_budget_settlement(
     reserved_tokens: int,
     frozen_capability_profile: Mapping[str, Any],
 ) -> tuple[str, int, dict[str, Any]]:
-    """Use frozen receipt capabilities or retain the reservation ceiling.
+    """INVARIANT: Use frozen receipt capabilities or retain the reservation ceiling.
 
     A successful real Provider response is not evidence that its transport
     supplied billable cost.  Releasing a bounded reservation to zero when the
     frozen Adapter declared ``supports_cost_receipt=False`` makes the hard
     stop fail open.  Fixtures retain their explicit zero-cost semantics.
     """
-
     if not result.real_model_call:
         return result.cost_amount, result.total_tokens, {
             "token_settlement_basis": "FIXTURE_RECEIPT",
@@ -247,7 +244,6 @@ _MODEL_PROVIDER_AMBIGUOUS_PHASES = frozenset(
 def _model_failed_provider_submission_state(
     dispatched: Mapping[str, Any],
 ) -> str:
-    """Classify a failed call from durable send evidence only."""
 
     outcome = str(dispatched.get("outcome") or "unknown").strip().lower()
     if outcome in {"unknown", "ambiguous"}:
@@ -1085,8 +1081,7 @@ class ExternalEffectChapterModelPort:
                 )
 
     def _request_timeout_seconds(self, request: ChapterHandlerRequest) -> int:
-        """Bind Provider time to the frozen Operation policy, not its lease."""
-
+        """CONSTRAINT: Bind Provider time to the frozen Operation policy, not its lease."""
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
             with connection.cursor() as cursor:
@@ -1126,7 +1121,6 @@ class ExternalEffectChapterModelPort:
         *,
         stable_key: str,
     ) -> tuple[int, str]:
-        """Read the immutable execution fence/worker from a replayed effect."""
 
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
@@ -1191,7 +1185,6 @@ class ExternalEffectChapterModelPort:
         stage: str,
         result: ModelProviderResult,
     ) -> None:
-        """Persist model/cost evidence for an already-dispatched governed effect."""
 
         execution = result.execution_evidence or {}
         execution_request = execution.get("execution_request")
@@ -1222,7 +1215,6 @@ class ExternalEffectChapterModelPort:
     def completed_effect_result(
         self, external_effect_id: str, project_id: str
     ) -> ModelProviderResult | None:
-        """Return durable provider evidence without dispatching the effect again."""
 
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
@@ -1609,7 +1601,6 @@ def model_call_log_ref(
     stage: str,
     external_effect_id: str = "",
 ) -> str:
-    """Return the authoritative, per-effect ModelCallLog locator."""
 
     return _model_log_ref(operation_id, attempt_id, stage, external_effect_id)
 
@@ -2035,7 +2026,6 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
-    """Public typed validation seam shared by legacy and provider-v2 gateways."""
 
     return _normalize_model_output(stage, raw)
 

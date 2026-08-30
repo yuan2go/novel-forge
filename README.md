@@ -1,34 +1,17 @@
 # Novel Forge
 
-Novel Forge is a local-first, PostgreSQL-authoritative AI novel production platform and an early Novel Operating System runtime. It coordinates versioned plans, governed chapter production, reader/recap follow-up, narrative state, source intelligence, knowledge assets, and bounded Agent execution through auditable operations rather than an interactive prompt workflow.
+Novel Forge is a local-first AI novel production runtime with PostgreSQL business
+authority, governed external effects, versioned artifacts and bounded workers.
 
-The production backend has one runtime family:
+Executable code, schema, migrations, runtime composition and tests are the only current
+system authority. Start with:
 
-```text
-FastAPI / CLI / workers
-        ↓
-Authority applications and Book/Chapter coordinators
-        ↓
-ProductionExecutionComposition
-        ↓
-Command Kernel · Attempt/Lease/Fence · ExternalEffect · RuntimeJob
-        ↓
-PostgreSQL Authority + MinIO object storage + governed providers
-```
+- `docs/current-system.md` — architecture, ownership, runtime paths and evidence ceiling.
+- `docs/runtime-operations.md` — setup, migrations, validation and recovery.
+- `docs/development.md` — repository, documentation and comment rules.
+- `architecture/reality-evidence.json` — machine-readable evidence inventory.
 
-Interactive Legacy API, CLI, Celery, workflow, Agent scheduler, production kernel, LocalStorage runtime, and their UI were retired. The only retained Legacy surface is the offline `novel-forge-migrate` utility for importing frozen snapshots into PostgreSQL Authority.
-
-## Start here
-
-- [Documentation index](docs/README.md)
-- [Architecture overview](docs/architecture/overview.md)
-- [Novel production flow](docs/product/novel-production-flow.md)
-- [Local development](docs/operations/local-development.md)
-- [Testing and proof levels](docs/development/testing.md)
-- [Bounded Quality Qualification](docs/operations/quality-qualification.md)
-- [Legacy snapshot migration](docs/operations/legacy-migration.md)
-
-## Local verification
+## Backend qualification
 
 ```bash
 python -m venv .venv
@@ -41,32 +24,28 @@ P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
 
 `p0-backend-qualification` is the canonical backend engineering gate locally and
 in CI. It requires a clean exact-revision worktree, executes every declared
-backend and PostgreSQL collection, performs migration/query-plan checks, and
-runs the scripted Authority Compose recovery/restart proof. PostgreSQL, API, and
-object-store host ports are Docker-assigned; every destructive resource is
-bound to a UUID run identity and ownership-checked before cleanup.
+backend and PostgreSQL collection, performs migration and query-plan checks, and
+runs the scripted Authority Compose recovery proof. Its report records the
+resolved dependency digest; Git SHA alone does not freeze unlocked dependency
+ranges.
 
-The report records a resolved dependency digest. Git SHA alone cannot fully
-reproduce the currently unlocked dependency ranges; do not interpret an exact
-source revision as an exact dependency environment.
-
-For ordinary backend development outside qualification, start the Authority
-stack with:
+For ordinary backend development, start the PostgreSQL Authority stack with:
 
 ```bash
 make authority-up
 ```
 
-The default Compose profile uses the scripted `mock` provider. It is a development fixture and is not evidence of real-provider operation or production verification. See [configuration](docs/operations/configuration.md) and [testing](docs/development/testing.md) before interpreting a green run.
+The default `mock` Provider route is a fixture. It does not establish real-Provider,
+long-form, human/editorial or production proof.
 
 ## Deferred Admin UI
 
-The current files under `web/admin` are an unsupported historical snapshot and
-will be replaced by a dedicated UI reconstruction. They are not an Authority
-client, are not part of backend qualification, and remain
-`DEFERRED / NOT_RUN_BY_SCOPE`. A backend PASS is not UI or product-experience
-evidence.
+The current `web/admin` tree is an unsupported historical snapshot pending a
+dedicated reconstruction. It is not part of backend qualification, and a backend
+PASS is not UI or product-experience evidence.
 
-## Source of truth
+Validate documentation and evidence references with:
 
-Runtime reachability is declared in `architecture/manifests/production-entry-manifest.yaml` and `worker-manifest.yaml`; database evolution is declared in `migration-manifest.yaml`. Architecture fitness tests fail when production imports the migration-only Legacy surface or bypasses protected boundaries.
+```bash
+make documentation-reality-check
+```

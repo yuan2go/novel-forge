@@ -1,5 +1,3 @@
-"""Operational query surface for product Source imports and downstream lineage."""
-
 from __future__ import annotations
 
 from typing import Any

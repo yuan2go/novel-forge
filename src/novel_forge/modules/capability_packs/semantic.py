@@ -1,5 +1,3 @@
-"""Cross-section resolution and semantic validation for Capability Packs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

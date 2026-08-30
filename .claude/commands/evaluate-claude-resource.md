@@ -109,6 +109,6 @@ For `adopt` or `adapt`, specify the smallest local change.
 
 - Do not import hooks by default.
 - Do not import resources that store protected fiction content inside Skills.
-- Do not add external dependencies without an ADR and tests.
+- Do not add external dependencies without an explicit current-doc decision and tests.
 - Do not change `.claude/skills/` directly; sync from root `skills/`.
 - Do not enable automatic shell/network behavior without explicit review.

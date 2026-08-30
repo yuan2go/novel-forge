@@ -1,10 +1,4 @@
-"""Storage-free contracts for bounded Quality Qualification.
-
-The contracts deliberately keep engineering execution, narrative correctness,
-editorial evidence and Reader/longitudinal evidence separate.  They decide only
-from explicitly supplied evidence and never turn a missing layer into a zero or
-an averaged passing score.
-"""
+"""INVARIANT: engineering, narrative, editorial, Reader, and longitudinal evidence remain separate; a missing layer never becomes zero or a pass."""
 
 from __future__ import annotations
 
@@ -246,7 +240,6 @@ class QualityCampaignManifest:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a detached copy; callers cannot mutate the frozen manifest."""
 
         return json.loads(self._canonical_payload)
 
@@ -371,7 +364,6 @@ def decide_quality_qualification(
     human_collection_closed: bool,
     required_evaluator_count: int = 2,
 ) -> QualityQualificationDecision:
-    """Reduce independent evidence without averaging across layers."""
 
     if required_evaluator_count < 2:
         raise ValueError("required_evaluator_count must be at least two")

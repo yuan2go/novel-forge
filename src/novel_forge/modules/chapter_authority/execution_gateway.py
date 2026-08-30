@@ -1,10 +1,3 @@
-"""Chapter ExternalEffect bridge to the unified ProductionExecutionGateway.
-
-The bridge owns no Attempt, retry, budget, or receipt state.  It freezes execution
-contracts as ordinary Authority AssetVersions and reconstructs gateway submissions
-from the PostgreSQL ExternalEffect after a worker restart.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -323,8 +316,6 @@ class ChapterCapabilityPreflight:
 
 
 class PostgresChapterExecutionContractBinder:
-    """Materialize immutable per-Attempt contracts through Authority AssetVersion."""
-
     def __init__(
         self,
         database_url: str,
@@ -366,7 +357,6 @@ class PostgresChapterExecutionContractBinder:
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
     ) -> ChapterCapabilityPreflight | None:
-        """Freeze and materialize Capability content before planning model I/O."""
 
         stage = str(request_payload.get("stage") or "")
         metadata = request_payload.get("_production_execution")
@@ -851,9 +841,7 @@ class PostgresChapterExecutionContractBinder:
         validation_policy_snapshot_ref = (
             f"production_execution/validation_policies/{token}"
         )
-        commit_policy_snapshot_ref = (
-            f"production_execution/commit_policies/{token}"
-        )
+        commit_policy_snapshot_ref = f"production_execution/commit_policies/{token}"
         context_policy = ContextPolicy(
             policy_id=context_policy_snapshot_ref,
             policy_version="v1",
@@ -1521,12 +1509,7 @@ class PostgresChapterExecutionContractBinder:
 class PostgresRetrievalProjectionExecutionContractBinder(
     PostgresChapterExecutionContractBinder
 ):
-    """Freeze a non-Agent projection contract before the Provider effect.
-
-    Retrieval projection is not a Chapter Saga node and therefore must not
-    borrow the Chapter Capability Pack. It still uses the same PEP binder,
-    immutable Authority AssetVersion, Tool policy, schema and route hashes.
-    """
+    """INVARIANT: retrieval is not a Chapter Saga node and must not borrow its Capability Pack."""
 
     def __init__(
         self,
@@ -1723,7 +1706,7 @@ class ChapterFixtureResponseFactory(Protocol):
 
 
 class ExternalEffectExecutionSessionStore:
-    """Transient gateway cache; PostgreSQL ExternalEffect remains recovery authority.
+    """INVARIANT: Transient gateway cache; PostgreSQL ExternalEffect remains recovery authority.
 
     Every referenced manifest is copied into the ExternalEffect receipt before the
     adapter returns.  A new worker deliberately starts with an empty cache and
@@ -1791,7 +1774,6 @@ class ExternalEffectExecutionSessionStore:
 def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Deterministic chapter fixture used only by SCRIPTED_FIXTURE routes."""
 
     if stage == "retrieval":
         texts = inputs.get("texts")
@@ -2049,8 +2031,7 @@ def default_chapter_fixture_response(
 def _provider_process_timeout_seconds(
     external_effect_timeout_seconds: int, *, max_attempts: int = 1
 ) -> int:
-    """Bound each call inside the immutable total Effect deadline."""
-
+    """CONSTRAINT: Bound each call inside the immutable total Effect deadline."""
     if max_attempts <= 0:
         raise ValueError("ExternalEffect max_attempts must be positive")
     attempt_window = external_effect_timeout_seconds // max_attempts
@@ -2066,13 +2047,6 @@ def _provider_process_timeout_seconds(
 
 
 class PostgresProductionExecutionPayloadResolver:
-    """Resolve one frozen ExternalEffect into backend-neutral execution payload.
-
-    The resolver intentionally owns no Chapter, Planning, or Reader business
-    semantics.  Domain binders freeze those contracts before this shared
-    Production Execution bridge validates and renders the governed payload.
-    """
-
     def __init__(
         self,
         database_url: str,
@@ -2458,7 +2432,6 @@ class PostgresProductionExecutionPayloadResolver:
 
 
 def _required_language_from_context(value: Any) -> str | None:
-    """Read only explicit governed language contracts from materialized context."""
 
     languages: set[str] = set()
 
@@ -3095,8 +3068,7 @@ def _materialize_source_intelligence_prompt(
     inputs: Mapping[str, Any],
     materialization: Mapping[str, Any],
 ) -> tuple[str, dict[str, Any]]:
-    """Render Source analysis bytes only in Provider memory, never in PostgreSQL."""
-
+    """SECURITY: Render Source analysis bytes only in Provider memory, never in PostgreSQL."""
     system = materialization.get("system_instruction")
     skill = materialization.get("skill")
     template = materialization.get("prompt_template")
@@ -3248,8 +3220,6 @@ class _RecoveryAuthorizedGatewayAdapter:
 
 
 class ProductionExecutionGatewayExternalEffectAdapter:
-    """Map the existing ExternalEffect protocol to one Attempt-bound gateway call."""
-
     provider = "production_execution_gateway"
     reconciliation_mode = "query"
     production_execution_gateway_backed = True
@@ -3416,12 +3386,10 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         return "" if route is None else route.model_profile.model_id
 
     def session_for_project(self, project_id: str) -> ChapterExecutionGatewaySession:
-        """Return the shared backend-neutral PEP session for a project."""
 
         return self._session(project_id)
 
     def register_execution_binder(self, domain: str, binder: Any) -> None:
-        """Register a domain-owned binder without importing its semantics here."""
 
         normalized = domain.strip().lower()
         if not normalized or normalized in self.execution_binders:
@@ -3649,7 +3617,6 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             return session
 
     def close_sessions(self) -> None:
-        """Drop all process-local gateway sessions before worker recovery."""
 
         with self._lock:
             self._sessions.clear()

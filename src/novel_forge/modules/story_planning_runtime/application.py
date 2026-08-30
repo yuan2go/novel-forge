@@ -1,5 +1,3 @@
-"""Command-Kernel-backed runtime for five hierarchical Planning generators."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
@@ -981,13 +979,12 @@ class StoryPlanningGenerationApplication:
     def _require_frozen_realization_slice(
         self, command: StoryPlanningGenerationCommand
     ) -> dict[str, Any]:
-        """Resolve Chapter elaboration identity from Planning Authority itself.
+        """SECURITY: Resolve Chapter elaboration identity from Planning Authority itself.
 
         Caller-supplied mappings are only transport.  Generation, retry, and
         activation all compare them with the current Frozen contract so a
         shaped or stale mapping cannot materialize a ChapterPlan.
         """
-
         supplied = dict(command.narrative_realization or {})
         if command.generator_operation_name != "chapter_plan.generate" or not supplied:
             raise KernelError(
@@ -1022,13 +1019,6 @@ class StoryPlanningGenerationApplication:
         trace_id: str,
         correlation_id: str,
     ) -> dict[str, Any]:
-        """Materialize the activated candidate as Chapter Runtime input.
-
-        The generic candidate and typed Planning binding remain authoritative.
-        This deterministic projection only gives the existing Chapter Runtime
-        its strict physical ``chapter_plan`` input contract with explicit
-        candidate and activation lineage.
-        """
 
         definition = chapter_plan_projection_definition(
             application_build_id=self.application_build_id,
@@ -1163,7 +1153,6 @@ class StoryPlanningGenerationApplication:
         trace_id: str,
         correlation_id: str,
     ) -> dict[str, Any]:
-        """Use the same typed projection after PlanChange-owned activation."""
 
         generation = self.require_candidate(candidate_asset_version_id)
         if generation["planning_scope"].value != PlanContractType.CHAPTER.value:
@@ -1261,7 +1250,7 @@ class StoryPlanningGenerationApplication:
         project_id: str,
         idempotency_key: str,
     ) -> StoryPlanningGenerationCommand | None:
-        """Return the immutable command already admitted for one generation key.
+        """INVARIANT: Return the immutable command already admitted for one generation key.
 
         Narrative Search may lose its process after Command admission (or after
         semantic work) but before branch membership is committed.  A successor
@@ -1270,7 +1259,6 @@ class StoryPlanningGenerationApplication:
         Command Kernel identity.  Resume must instead replay the exact frozen
         command and let the normal generation/evaluation authorities converge.
         """
-
         if not project_id or not idempotency_key:
             raise ValueError("frozen Planning Generation identity is incomplete")
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1314,7 +1302,7 @@ class StoryPlanningGenerationApplication:
         command: StoryPlanningGenerationCommand,
         resolved_input_assets: list[dict[str, str]],
     ) -> list[dict[str, str]]:
-        """Preserve the admitted snapshot order when replaying an Operation.
+        """COMPATIBILITY: Preserve the admitted snapshot order when replaying an Operation.
 
         PostgreSQL JSONB does not preserve object-key insertion order.  Rebuilding
         ``input_versions`` from the frozen payload can therefore produce the same
@@ -1323,7 +1311,6 @@ class StoryPlanningGenerationApplication:
         Operation snapshot is the replay authority: every identity/hash must
         still match, and only its original ordering is reused.
         """
-
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2641,7 +2628,6 @@ def chapter_plan_projection_definition(
 
 
 def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
-    """Project one generated execution contract without inventing narrative state."""
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")

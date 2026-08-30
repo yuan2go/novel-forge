@@ -1,4 +1,3 @@
-"""Storage-free review decisions and schema-shaped ReviewIssue payloads."""
 from __future__ import annotations
 
 import hashlib
@@ -84,7 +83,6 @@ def evaluate_rereview_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    """Verify revision claims independently and preserve ReviewIssue lineage."""
     reviewed = evaluate_review_result(
         project_id=project_id,
         target_asset_version_id=revision_version_id,

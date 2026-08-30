@@ -1,5 +1,3 @@
-"""Application facade for PostgreSQL-only chapter commands and strong queries."""
-
 from __future__ import annotations
 
 from collections.abc import Callable

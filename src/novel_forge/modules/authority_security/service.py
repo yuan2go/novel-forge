@@ -40,7 +40,6 @@ class Principal:
 
 
 class TrustedPrincipalResolver:
-    """Resolve identities from trusted server configuration, never request payloads."""
 
     def __init__(
         self,

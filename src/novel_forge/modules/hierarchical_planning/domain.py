@@ -1,5 +1,3 @@
-"""Pure contracts and validators for hierarchical story planning."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,10 +1,3 @@
-"""Domain-facing candidate port over the Production Execution Gateway.
-
-Domain modules own prompts, semantic validation, repair, approval, and activation.
-This module only turns an already frozen Authority ExecutionRequest into a structured
-candidate plus execution evidence.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -116,7 +109,6 @@ class DomainExecutionPort(Protocol):
 
 
 class GatewayDomainExecutionPort:
-    """Submit pre-bound Authority requests and return candidates without committing."""
 
     production_execution_gateway_backed = True
     # A GatewayDomainExecutionPort is only admissible after its request has
@@ -206,7 +198,6 @@ def execute_domain_candidate(
     review: Mapping[str, Any] | None = None,
     execution_port: DomainExecutionPort,
 ) -> DomainExecutionCandidate:
-    """Execute a frozen candidate request through the governed PEP port."""
 
     command = DomainExecutionCommand(
         capability=capability,

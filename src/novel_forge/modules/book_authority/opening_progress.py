@@ -1,5 +1,3 @@
-"""Read-only progress projection for the durable Book Opening workflow."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -27,7 +25,6 @@ _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningWorkflowProgressSnapshot:
-    """One repeatable-read snapshot of the Authorities used by the projection."""
 
     opening: Mapping[str, Any]
     nodes: tuple[Mapping[str, Any], ...]
@@ -42,7 +39,6 @@ class BookOpeningWorkflowProgressSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningWorkflowProgressProjection:
-    """Operator read model. It is evidence, never lifecycle Authority."""
 
     schema_version: str
     opening_run_id: str
@@ -85,7 +81,6 @@ def _workflow_graph_problem(
     ordered_nodes: tuple[Mapping[str, Any], ...],
     edges: tuple[Mapping[str, Any], ...],
 ) -> str:
-    """Validate the complete immutable graph before deriving semantic progress."""
 
     contract_version = str(opening.get("workflow_contract_version") or "")
     if contract_version != BOOK_OPENING_WORKFLOW_CONTRACT_VERSION:
@@ -179,7 +174,6 @@ def _workflow_graph_problem(
 def project_book_opening_workflow_progress(
     snapshot: BookOpeningWorkflowProgressSnapshot,
 ) -> BookOpeningWorkflowProgressProjection:
-    """Derive progress only from immutable receipts and current Authorities."""
 
     opening = dict(snapshot.opening)
     if str(opening.get("workflow_contract_version") or "") == ("legacy-monolithic-v2"):
@@ -1017,7 +1011,6 @@ def _budget_blocking_reason(budget_usage: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class PostgresBookOpeningWorkflowProgressQuery:
-    """Build the operator projection from one PostgreSQL read-only snapshot."""
 
     def __init__(self, database_url: str) -> None:
         if not str(database_url).strip():

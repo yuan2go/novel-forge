@@ -1,8 +1,5 @@
-"""PostgreSQL-authoritative D0 qualification orchestration.
+"""INVARIANT: fixture recovery evidence cannot qualify a real Provider route."""
 
-Fixture execution proves the recovery protocol only. Real Provider gate values
-remain false unless separately persisted from credentialed scenario evidence.
-"""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

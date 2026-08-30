@@ -1,5 +1,3 @@
-"""PostgreSQL projection repository for Planning-owned Narrative Realization."""
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -21,7 +19,6 @@ from novel_forge.storage.foundation_repositories import (
 def _realization_event_deviations(
     planned: dict[str, Any], observed: dict[str, Any]
 ) -> tuple[str, ...]:
-    """Compare accepted extraction with the frozen causal event contract."""
 
     deviations: set[str] = set()
     if any(
@@ -339,7 +336,6 @@ class NarrativeRealizationRepository:
         book_id: str,
         operation_id: str,
     ) -> tuple[str, ...]:
-        """Invalidate causal contracts whose governed Plan inputs are no longer current."""
 
         self.cursor.execute(
             """
@@ -497,7 +493,6 @@ class NarrativeRealizationRepository:
         realization_evidence: list[dict[str, Any]],
         operation_id: str,
     ) -> dict[str, Any]:
-        """Project observed evidence into coverage at the acceptance boundary."""
 
         self.cursor.execute(
             """

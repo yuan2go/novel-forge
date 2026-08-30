@@ -1,9 +1,4 @@
-"""Fail-closed security checks for durable production-execution contracts.
-
-Execution contracts and evidence may name a credential, but they must never carry
-the credential value.  This module is intentionally independent from the
-execution contracts so every persistence and transport boundary can reuse it.
-"""
+"""SECURITY: durable contracts may name a credential but must never contain its value."""
 
 from __future__ import annotations
 
@@ -93,7 +88,6 @@ _LEGACY_USAGE_LOGGER = logging.getLogger(
 
 @dataclass(frozen=True, slots=True)
 class LegacyUsageEvent:
-    """Structured evidence for an allowed or blocked compatibility attempt."""
 
     schema_version: str
     event_id: str
@@ -138,7 +132,6 @@ def assert_no_inline_secrets(
     *,
     label: str = "production execution payload",
 ) -> None:
-    """Reject credential keys or high-confidence credential values recursively."""
 
     def visit(value: Any, path: str) -> None:
         if isinstance(value, Enum):
@@ -199,7 +192,6 @@ def assert_legacy_execution_allowed(
     environment: str = "",
     recorder: Callable[[LegacyUsageEvent], None] | None = None,
 ) -> LegacyUsageEvent:
-    """Block compatibility execution before a network/process call in control mode."""
 
     normalized = execution_environment(environment)
     blocked = (

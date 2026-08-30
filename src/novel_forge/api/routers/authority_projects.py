@@ -1,4 +1,3 @@
-"""Project/Workspace routes backed exclusively by PostgreSQL Authority."""
 from __future__ import annotations
 
 from typing import Any

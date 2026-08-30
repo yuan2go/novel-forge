@@ -1,10 +1,3 @@
-"""Authority admission binding for a compiled Capability Pack.
-
-Capability Packs freeze configuration only.  The returned contract references
-the existing OperationDefinition and Chapter Agent Binding; it owns no run,
-attempt, lease, fence, retry, timeout, approval, or completion state.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,7 +31,6 @@ class CapabilityPackAuthorityBinding:
 def compiled_capability_pack_from_payload(
     payload: Mapping[str, Any],
 ) -> CompiledCapabilityPack:
-    """Rehydrate and authenticate a compiler artifact at Authority admission."""
 
     try:
         nodes = tuple(
@@ -131,7 +123,6 @@ def bind_compiled_pack_for_admission(
     chapter_binding: ChapterNodeExecutionBinding,
     authority_operation_definition: Mapping[str, Any],
 ) -> CapabilityPackAuthorityBinding:
-    """Fail closed on Pack/Authority drift without copying control policy."""
 
     node = next(
         (item for item in compiled.workflow_nodes if item.node_id == workflow_node_id),

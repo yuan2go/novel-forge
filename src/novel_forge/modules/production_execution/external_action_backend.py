@@ -1,10 +1,3 @@
-"""Governed backend for non-model remote actions.
-
-Publishing, feedback retrieval, source fetches, notifications, and webhooks use
-this contract instead of pretending to be model Providers.  Records remain
-evidence/projections of the existing Authority Attempt and ExternalEffect.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -149,7 +142,6 @@ class ExternalActionAdapter(Protocol):
 
 
 class ScriptedExternalActionAdapter:
-    """Deterministic protocol fixture; never production-qualified."""
 
     def __init__(self, scenario: str = "success") -> None:
         self.scenario = scenario

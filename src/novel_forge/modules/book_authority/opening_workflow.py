@@ -142,7 +142,6 @@ def assess_book_opening_topology_budget(
     policy: Mapping[str, Any],
     arc_count: int,
 ) -> BookOpeningTopologyBudget:
-    """Freeze the largest Opening topology with one complete Search in reserve."""
 
     if (
         policy_contract_version != BOOK_OPENING_PROVIDER_BUDGET_POLICY_CONTRACT_VERSION

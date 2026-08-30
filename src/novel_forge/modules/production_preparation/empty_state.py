@@ -38,7 +38,6 @@ def initialize_typed_empty_state(
     absence_evidence_asset_version_id: str,
     absence_evidence: dict[str, object],
 ) -> dict[str, object]:
-    """Build an explicit empty baseline after Authority absence proof succeeds."""
     if state_kind not in LEGACY_INITIALIZABLE_STATE_KINDS:
         raise ValueError("typed empty initializer state kind is unsupported")
     if absence_evidence.get("state_kind") != state_kind:
@@ -170,7 +169,6 @@ def project_typed_empty_state(
     *,
     snapshot: TypedEmptyStateSnapshot,
 ) -> ResolvedProductionAsset:
-    """Expose a persisted typed-empty AssetVersion through its logical state role."""
     structured_facts = [
         {
             "declared_empty": True,

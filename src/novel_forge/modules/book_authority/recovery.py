@@ -1,5 +1,3 @@
-"""Canonical Book Opening execution-loss and recovery application."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -172,7 +170,6 @@ class RecoveryReceipt:
 
 
 class PostgresBookOpeningRecoveryApplication:
-    """Coordinates existing Authorities without owning a second runtime truth."""
 
     def __init__(
         self,
@@ -199,7 +196,6 @@ class PostgresBookOpeningRecoveryApplication:
         idempotency_key: str,
         principal: Principal,
     ) -> RecoveryReceipt:
-        """Bind legacy durable evidence without guessing semantic progress."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             self._lock_opening(uow, opening_run_id)
@@ -242,12 +238,10 @@ class PostgresBookOpeningRecoveryApplication:
             lifecycle = str(binding["execution_lifecycle"])
             terminal = lifecycle in {"FAILED", "LOST", "ABORTED"}
             terminal_reason = dict(binding.get("terminal_reason") or {})
-            # Migration 0104 validates the execution row against the exact
-            # workflow/execution contract pair at INSERT time.  Advance only
-            # the locked legacy run's contract first, then insert its execution
-            # and publish the current pointer below.  All three mutations stay
-            # inside this UoW, so an insert/final-CAS failure rolls the contract
-            # advance back instead of leaving a partially reconciled Opening.
+            # The execution row validates the exact workflow/execution contract
+            # pair at INSERT time. Advance the locked compatibility run first;
+            # the execution and current pointer remain in this UoW so an
+            # insert/final-CAS failure cannot leave a partial reconciliation.
             uow.cursor.execute(
                 """
                 UPDATE authority_book_opening_run
@@ -454,7 +448,6 @@ class PostgresBookOpeningRecoveryApplication:
         principal: Principal,
         expected_opening_run_id: str = "",
     ) -> RecoveryReceipt:
-        """Converge an invalid generation; never authorize its successor."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             assessment = self._assessment_by_id(uow, recovery_assessment_id)
@@ -647,7 +640,6 @@ class PostgresBookOpeningRecoveryApplication:
         principal: Principal,
         expected_opening_run_id: str = "",
     ) -> RecoveryReceipt:
-        """Atomically authorize generation N+1; this method never runs Provider work."""
 
         if not reason.strip():
             raise ValueError("Book Opening recovery reason is required")
@@ -995,7 +987,6 @@ class PostgresBookOpeningRecoveryApplication:
         evidence_version: int,
         evidence_hash: str,
     ) -> dict[str, Any]:
-        """Append progress for one exact, live and fenced Opening execution."""
 
         self._validate_checkpoint_evidence_identity(
             semantic_work_key=semantic_work_key,
@@ -1037,7 +1028,6 @@ class PostgresBookOpeningRecoveryApplication:
         *,
         runtime_claim: RuntimeJobClaim,
     ) -> dict[str, Any]:
-        """Project one completed Planning-owned search as exact durable evidence."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             run = self._opening(uow, opening_run_id, lock=False)
@@ -1070,7 +1060,7 @@ class PostgresBookOpeningRecoveryApplication:
         execution_generation: int,
         result: dict[str, Any],
     ) -> None:
-        """Prove the complete frozen search graph before terminalization.
+        """INVARIANT: Prove the complete frozen search graph before terminalization.
 
         This assertion deliberately lives inside the Book Opening completion
         transaction.  Calling the application coordinator's checkpoint
@@ -1078,7 +1068,6 @@ class PostgresBookOpeningRecoveryApplication:
         could otherwise submit ``book.opening.complete`` directly and bypass
         every durable semantic work item.
         """
-
         expected_result_fields = {
             "book_design_version",
             "book_plan_version",
@@ -1277,7 +1266,7 @@ class PostgresBookOpeningRecoveryApplication:
         branch_key: str,
         branch_committer: Callable[[AuthorityUnitOfWork], Any],
     ) -> Any:
-        """Atomically register one Planning branch and advance Opening progress.
+        """INVARIANT: Atomically register one Planning branch and advance Opening progress.
 
         Provider execution and Planning generation happen before this short
         transaction.  The transaction only locks the existing execution
@@ -1285,7 +1274,6 @@ class PostgresBookOpeningRecoveryApplication:
         appends immutable checkpoint evidence, and advances the monotonic
         BookOpening checkpoint head.
         """
-
         if not search_id or not branch_key or not branch_key.startswith("future-"):
             raise ValueError("Narrative Search branch identity is invalid")
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1696,7 +1684,6 @@ class PostgresBookOpeningRecoveryApplication:
         *,
         runtime_claim: RuntimeJobClaim,
     ) -> dict[str, dict[str, Any]]:
-        """Return revalidated progress for the exact live execution owner."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             self._lock_opening(uow, opening_run_id)
@@ -1726,7 +1713,6 @@ class PostgresBookOpeningRecoveryApplication:
         idempotency_key: str,
         principal: Principal,
     ) -> RecoveryAssessment:
-        """Freeze one missing cursor projection without authorizing execution."""
 
         evidence = self._checkpoint_evidence_payload(
             semantic_work_key=semantic_work_key,
@@ -1786,7 +1772,6 @@ class PostgresBookOpeningRecoveryApplication:
         principal: Principal,
         expected_opening_run_id: str = "",
     ) -> RecoveryReceipt:
-        """Append assessed durable evidence while keeping execution terminal."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             assessment = self._assessment_by_id(uow, checkpoint_assessment_id)
@@ -2123,7 +2108,6 @@ class PostgresBookOpeningRecoveryApplication:
     def scan_expired_executions(
         self, *, principal: Principal, limit: int = 100
     ) -> tuple[dict[str, Any], ...]:
-        """Bounded sweeper adapter over the same assessment/convergence methods."""
 
         if limit <= 0:
             raise ValueError("execution-loss scan limit must be positive")
@@ -2189,7 +2173,6 @@ class PostgresBookOpeningRecoveryApplication:
         return tuple(converged)
 
     def _execution_loss_scan_key(self, opening_run_id: str) -> str:
-        """Bind automatic loss assessment identity to current durable evidence."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             self._lock_opening(uow, opening_run_id)
@@ -4417,7 +4400,7 @@ class PostgresBookOpeningRecoveryApplication:
     def _semantic_replacement_required(
         *, evaluation: dict[str, Any], disposition: str
     ) -> bool:
-        """Apply the frozen bounded replacement policy before creating Intent.
+        """INVARIANT: Apply the frozen bounded replacement policy before creating Intent.
 
         A non-terminal semantic Operation remains the Command Kernel's
         execution truth.  The successor Opening generation re-enters through
@@ -4425,7 +4408,6 @@ class PostgresBookOpeningRecoveryApplication:
         or fenced takeover converge that same Operation.  Only immutable
         terminal predecessors receive an append-only replacement generation.
         """
-
         operation_id = str(evaluation.get("operation_id") or "")
         if not operation_id:
             return False
@@ -4496,7 +4478,6 @@ class PostgresBookOpeningRecoveryApplication:
 
     @staticmethod
     def _execution_policy_digest() -> str:
-        """Stable policy required to execute an already-admitted generation."""
 
         return _canonical_hash(
             {
@@ -4512,7 +4493,6 @@ class PostgresBookOpeningRecoveryApplication:
         self,
         execution_contract_version: str = BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
     ) -> str:
-        """Stable execution contract shared by rolling-compatible releases."""
 
         payload = {
             "version": BOOK_OPENING_AUTHORITY_VERSION,
@@ -4534,7 +4514,6 @@ class PostgresBookOpeningRecoveryApplication:
         self,
         execution_contract_version: str = BOOK_OPENING_EXECUTION_CONTRACT_VERSION,
     ) -> str:
-        """Exact release identity frozen into immutable assessments."""
 
         return _canonical_hash(
             {

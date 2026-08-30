@@ -1,5 +1,3 @@
-"""Business-oriented read projections for Book production coordination."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -49,7 +47,6 @@ class BookFollowupAdmissionCandidate:
 
 @dataclass(frozen=True, slots=True)
 class BookProgressProjection:
-    """Operational read model; never owns or advances Book production state."""
 
     book_run_id: str
     project_id: str
@@ -85,7 +82,6 @@ class BookProgressProjection:
 
 
 class PostgresBookProductionQuery:
-    """Concrete read model shared by Book supervisors and workers."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -171,7 +167,6 @@ class PostgresBookProductionQuery:
         )
 
     def progress(self, *, book_run_id: str) -> BookProgressProjection:
-        """Project liveness from PostgreSQL Authority without inventing Authority."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -480,7 +475,6 @@ class PostgresBookProductionQuery:
     def governance_action_versions(
         self, *, project_id: str, input_version_ids: tuple[str, ...]
     ) -> tuple[str, ...]:
-        """Project governed overrides inherited by the supplied plan inputs."""
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -515,7 +509,6 @@ class PostgresBookProductionQuery:
     def followup_admission_candidates(
         self, *, limit: int, project_ids: Iterable[str] = ()
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:
-        """Return durable acceptance heads needing advisory follow-up admission."""
 
         if limit <= 0:
             raise ValueError("follow-up admission candidate limit must be positive")
@@ -662,7 +655,6 @@ class PostgresBookProductionQuery:
     def require_accepted_followup_snapshot(
         self, *, chapter_request_id: str
     ) -> dict[str, Any]:
-        """Load the immutable accepted head for a delayed advisory operation."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -1158,7 +1150,6 @@ class PostgresBookProductionQuery:
         chapter_number: int,
         schedule_row: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Derive one bounded Planning input from the latest accepted projection."""
 
         cursor = self.require_cursor_plan_projection(
             snapshot_id=snapshot_id, chapter_cursor=chapter_number

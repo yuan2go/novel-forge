@@ -1,5 +1,3 @@
-"""Rebuildable authoring projections; none of these values own narrative truth."""
-
 from __future__ import annotations
 
 import hashlib
@@ -22,12 +20,6 @@ def build_recent_trail_entry(
     accepted_boundary: Mapping[str, Any],
     chapter_outcome: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Project a compact writing trail from one committed ChapterOutcome.
-
-    The projection deliberately does not infer literary semantics from prose.  It
-    exposes typed accepted observations when present and marks absent dimensions
-    as unobserved.
-    """
 
     chapter = int(accepted_boundary.get("chapter_number") or 0)
     outcome_chapter = int(chapter_outcome.get("chapter_number") or 0)
@@ -136,7 +128,6 @@ def build_hook_debt_projection(
     accepted_boundary: Mapping[str, Any],
     obligation_states: Iterable[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Project accepted Narrative Obligations as author-facing Hook Debt."""
 
     chapter = int(accepted_boundary.get("chapter_number") or 0)
     story_state_version = str(
@@ -249,7 +240,6 @@ def build_chapter_transaction_workspace(
     recent_trail: Mapping[str, Any] | None = None,
     hook_debt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Compose a query-only workbench from existing immutable evidence."""
 
     outputs = [dict(item) for item in chapter_run.get("outputs") or ()]
     by_type: dict[str, list[dict[str, Any]]] = {}

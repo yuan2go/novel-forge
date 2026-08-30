@@ -1,5 +1,3 @@
-"""Authoritative ChapterOutcome and deterministic Story State commit."""
-
 from .application import (
     ChapterOutcomeAdmission,
     ChapterOutcomeAuthorityApplication,

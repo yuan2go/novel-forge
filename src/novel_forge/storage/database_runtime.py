@@ -1,8 +1,5 @@
-"""Bounded PostgreSQL connection, transaction, retry, and health runtime.
+"""CONSTRAINT: migration and bootstrap probes bypass the application pool because they must run before that pool exists."""
 
-Authority services share this entry point. Migration and bootstrap probes remain
-explicit exceptions because they must work before the application pool exists.
-"""
 from __future__ import annotations
 
 import logging
@@ -42,7 +39,7 @@ RECONCILIATION_REQUIRED_SQLSTATES = frozenset(
         "57P01",  # admin_shutdown can interrupt commit acknowledgement
     }
 )
-# Compatibility export now means exactly the SQLSTATEs that are safe for an
+# Compatibility export is limited to SQLSTATEs that are safe for an
 # explicitly idempotent, pure-database transaction replay.
 TRANSIENT_SQLSTATES = SAFE_RETRY_SQLSTATES
 
@@ -110,7 +107,6 @@ _PROCESS_REGISTRY_HMAC_KEY = os.urandom(32)
 
 
 def _password_free_database_identity(database_url: str) -> dict[str, Any]:
-    """Return connection identity without reusable authentication material."""
     if "://" in database_url:
         parsed = urlsplit(database_url)
         query = sorted(
@@ -209,7 +205,6 @@ class DatabaseRuntimeConfig:
 
     @property
     def database_registry_identity(self) -> str:
-        """Return a credential-sensitive, non-exportable process-local key."""
 
         return "hmac-sha256:" + hmac.new(
             _PROCESS_REGISTRY_HMAC_KEY,
@@ -309,7 +304,6 @@ class DatabaseRuntimeMetrics:
 
 
 class DatabaseRuntime:
-    """One process-local pool and the observable transaction boundary around it."""
 
     def __init__(self, config: DatabaseRuntimeConfig) -> None:
         try:
@@ -483,7 +477,6 @@ class DatabaseRuntime:
 
 
 class ConnectionPoolRegistry:
-    """Process-local registry so all repositories share one bounded role pool."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -513,13 +506,12 @@ class ConnectionPoolRegistry:
 
 
 class TransactionExecutor:
-    """Explicit retry boundary for short, idempotent, pure-database work.
+    """INVARIANT: Explicit retry boundary for short, idempotent, pure-database work.
 
     Authority transactions do not opt into whole-transaction retry by default.
     Unknown commit/connection outcomes are surfaced as reconciliation work and
     are never blindly replayed.
     """
-
     def __init__(
         self,
         runtime: DatabaseRuntime,
@@ -622,7 +614,6 @@ def close_all_database_runtimes() -> None:
 def database_runtime_report(
     database_url: str, *, role: str = "api"
 ) -> dict[str, Any]:
-    """Return a lightweight extensible pool and transaction metrics contract."""
 
     runtime = get_database_runtime(database_url, role=role)
     health = runtime.health()

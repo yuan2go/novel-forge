@@ -139,7 +139,6 @@ def cancel_unstarted_operation_in_uow(
     reason: str,
     causation_id: str = "",
 ) -> dict[str, Any]:
-    """Cancel an ADMITTED/READY Operation with no Attempt or ExternalEffect."""
 
     if any(
         not value.strip()
@@ -231,7 +230,6 @@ def cancel_unstarted_operation_in_uow(
 def _propagate_root_cancellation(
     uow: AuthorityUnitOfWork, command: CancelCommand
 ) -> None:
-    """Cancel unstarted children and signal active children in the root graph."""
     uow.cursor.execute(
         """
         SELECT operation_id, status, version

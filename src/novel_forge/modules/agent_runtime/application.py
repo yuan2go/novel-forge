@@ -1,5 +1,3 @@
-"""Application services for PostgreSQL Agent Definition and run admission."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field as dataclass_field, replace
@@ -396,7 +394,6 @@ class AgentRuntimeAuthorityApplication:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
-        """Admit a true autonomous session under the existing durable kernel."""
 
         principal.require("agent.authority.execute", request.project_id)
         if principal.principal_id != request.actor_id:

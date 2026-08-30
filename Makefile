@@ -11,7 +11,7 @@ QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -53,6 +53,7 @@ help:
 	@echo "make architecture-manifests-check - verify module/migration/worker/test/console manifests"
 	@echo "make architecture-fitness-check - enforce import, Legacy, Schema and entry classifications"
 	@echo "make authority-only-config-check - validate the Track B production composition"
+	@echo "make documentation-reality-check - verify canonical docs, evidence references, and comments"
 	@echo "make d0-provider-probe - run the fail-closed D0 Provider qualification probe"
 
 test:
@@ -68,7 +69,7 @@ lint-authority:
 lint-ratchet:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_ruff_ratchet.py --ruff $(RUFF)
 
-validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check
+validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check
 
 demo: authority-demo
 
@@ -105,7 +106,7 @@ authority-smoke: p0-backend-qualification
 authority-logs:
 	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker book-followup-authority-worker outbox-worker maintenance-worker
 
-authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check
+authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check documentation-reality-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests/unit tests/architecture tests/acceptance
 
 authority-postgres-test: postgres-authority-test
@@ -178,6 +179,9 @@ architecture-fitness-check:
 
 authority-only-config-check:
 	$(AUTHORITY_COMPOSE) config --quiet
+
+documentation-reality-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.documentation_reality --repo-root .
 
 d0-provider-probe:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_d0_provider_probe.py

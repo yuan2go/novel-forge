@@ -1,5 +1,3 @@
-"""Deterministic narrative checkpoints owned by Book and Planning Authorities."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -143,7 +141,6 @@ def evaluate_ending_reachability(
 
 
 def required_arc_contributions(content: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    """Normalize ChapterPlan contribution declarations without inventing Arcs."""
     raw = content.get("required_arc_contributions") or ()
     result: dict[str, dict[str, Any]] = {}
     for item in raw:

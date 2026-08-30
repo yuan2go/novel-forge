@@ -1,4 +1,3 @@
-"""OperationDefinitions for governed post-chapter decisions."""
 from __future__ import annotations
 
 from typing import Any

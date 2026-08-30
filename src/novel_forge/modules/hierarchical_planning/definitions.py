@@ -1,5 +1,3 @@
-"""Operation definition for formal Planning binding activation."""
-
 from __future__ import annotations
 
 from typing import Any

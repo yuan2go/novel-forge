@@ -1,5 +1,3 @@
-"""Reader Outcome domain binding for the shared Production Execution Plane."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -29,11 +27,6 @@ from novel_forge.storage.authority_asset_store import (
 class PostgresReaderOutcomeExecutionContractBinder(
     PostgresChapterExecutionContractBinder
 ):
-    """Bind Reader Outcome to its own Pack and Book Followup workflow contract.
-
-    The inherited helpers only materialize backend-neutral PEP contracts. Pack
-    selection, input context and admissible stage remain Reader-owned here.
-    """
 
     workflow_definition_ref = (
         f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}"

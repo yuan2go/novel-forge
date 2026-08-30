@@ -1,5 +1,3 @@
-"""One-step persistent Book scheduler using only Authority command/query ports."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,11 +20,6 @@ class BookAuthorityTick:
 
 
 class PostgresBookAuthorityScheduler:
-    """Advance one production-critical checkpoint.
-
-    Reader Outcome, Longform Recap, analytics, and calibration are deliberately
-    absent. Their admissions and execution are owned by the Book Followup worker.
-    """
 
     _CHAPTER_RECONCILIATION_STATES = frozenset(
         {

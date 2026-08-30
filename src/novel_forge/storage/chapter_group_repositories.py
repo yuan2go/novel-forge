@@ -1,4 +1,3 @@
-"""PostgreSQL mutations for ChapterGroup checkpoints and references."""
 from __future__ import annotations
 
 from typing import Any

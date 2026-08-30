@@ -1,5 +1,3 @@
-"""Versioned execution policies referenced by InputManifest and Capability."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, fields

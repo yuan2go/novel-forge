@@ -1,5 +1,3 @@
-"""Command-Kernel lifecycle for Planning-owned Narrative Realization."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -53,12 +51,6 @@ _REALIZATION_PROOF_CRITERIA = {
 
 
 def _realization_proof_decisions(evaluation: dict[str, Any]) -> dict[str, bool]:
-    """Derive proof gates from the independent, versioned semantic receipt.
-
-    Planning may project an existing evaluation into its causal contract, but it
-    may not mint unsupported success decisions.  Every proof field therefore
-    has one exact criterion with a PASS verdict and attributable evidence.
-    """
 
     criteria = evaluation.get("criteria")
     if not isinstance(criteria, list):
@@ -260,12 +252,6 @@ class PostgresNarrativeRealizationApplication:
         trace_id: str,
         correlation_id: str,
     ) -> dict[str, Any]:
-        """Bind a frozen ChapterGroup event chain to exact current evidence.
-
-        The ChapterGroup remains future intent.  This coordinator only creates
-        Planning-owned qualification/freeze lineage; it never writes Canon or
-        Narrative State.
-        """
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             contract = self._contract_for_group(

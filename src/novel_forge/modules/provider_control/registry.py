@@ -87,7 +87,6 @@ class ProviderCapabilityConformanceReport:
 
 
 class ProviderAdapterRegistry:
-    """Explicit provider-control registry; never discovers adapters implicitly."""
 
     def __init__(self) -> None:
         self._adapters: dict[str, ProviderAdapterV2] = {}
@@ -138,7 +137,6 @@ class ProviderAdapterRegistry:
 
 
 class ProviderAdapterFactory:
-    """Constructs only explicitly registered adapter families."""
 
     def __init__(self) -> None:
         self._builders: dict[str, Callable[[], ProviderAdapterV2]] = {}
@@ -167,7 +165,6 @@ class ChapterProviderV2Route:
 
 
 class ChapterProviderV2Gateway:
-    """ExternalEffect adapter that preserves v2 provider controls per chapter stage."""
 
     def __init__(self, routes: Mapping[str, ChapterProviderV2Route]) -> None:
         if not routes:

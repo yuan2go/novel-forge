@@ -1,4 +1,3 @@
-"""PostgreSQL-only command/query surface for Content Authority Operations."""
 from __future__ import annotations
 
 from typing import Any

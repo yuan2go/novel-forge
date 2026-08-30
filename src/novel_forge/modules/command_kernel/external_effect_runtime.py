@@ -1,5 +1,3 @@
-"""Database-fenced ExternalEffect dispatcher, receipt inbox, and reconciliation."""
-
 from __future__ import annotations
 
 import hashlib
@@ -81,7 +79,6 @@ class EffectRecoveryDisposition(StrEnum):
 
 
 def classify_external_effect_recovery(status: str) -> EffectRecoveryDisposition:
-    """Classify existing Effect facts without creating a second state machine."""
 
     normalized = status.strip().upper()
     if normalized == "READY":
@@ -107,14 +104,13 @@ def read_succeeded_external_effect(
     *,
     effect_id: str,
 ) -> dict[str, Any] | None:
-    """Read one verified synchronous success without dispatching it again.
+    """INVARIANT: Read one verified synchronous success without dispatching it again.
 
     Operation recovery may consume a Provider result that reached the durable
     receipt boundary before the owning Attempt committed its candidate.  This
     read is deliberately narrower than reconciliation: only an already
     terminal SUCCEEDED Effect with a VERIFIED receipt is eligible.
     """
-
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
@@ -204,12 +200,11 @@ def read_external_effect_intent(
     effect_type: str,
     stable_idempotency_key: str,
 ) -> dict[str, Any] | None:
-    """Read an immutable Effect intent owned by the executing Operation.
+    """INVARIANT: Read an immutable Effect intent owned by the executing Operation.
 
     Retry preparation uses this to reuse the first Attempt's frozen Provider
     materialization without weakening the Effect request-hash conflict check.
     """
-
     if not effect_type or not stable_idempotency_key:
         raise KernelError(
             "COMMAND_SCHEMA_INVALID", "external effect lookup identity is incomplete"
@@ -1460,7 +1455,6 @@ def resume_operation_from_completed_effect(
     *,
     effect_id: str,
 ) -> dict[str, Any]:
-    """Repair only the Operation projection from durable SUCCEEDED evidence."""
 
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
@@ -1650,7 +1644,6 @@ def cancel_operation_external_effects(
     correlation_id: str,
     adapters: dict[str, ExternalEffectAdapter],
 ) -> tuple[dict[str, Any], ...]:
-    """Propagate a root cancel to every non-terminal effect using its real adapter."""
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -1810,7 +1803,6 @@ def resolve_external_effect_receipt_budget(
     outcome: str,
     evidence: dict[str, Any],
 ) -> None:
-    """Public idempotent settlement seam for verified callback receipts."""
 
     normalized = dict(evidence)
     usage = normalized.get("usage")

@@ -1,9 +1,5 @@
-"""Build fail-closed, Git-SHA-bound release evidence for GitHub Actions.
+"""INVARIANT: release proof is a CI artifact bound to the tested Git SHA, not a checked-in run narrative."""
 
-Checked-in architecture contracts describe what must be proven.  This module
-creates the volatile proof only inside CI artifacts, so a report or run id can
-never change the implementation identity or require an evidence-only commit.
-"""
 from __future__ import annotations
 
 import argparse
@@ -25,7 +21,7 @@ from novel_forge.tools.backend_qualification_contract import (
 GIT_SHA = re.compile(r"[0-9a-f]{40}")
 CONTENT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 REQUIRED_ARTIFACT_FILES = {
-    "coverage_manifest": "postgresql-authority-coverage-{sha}.json",
+    "reality_inventory": "documentation-reality-{sha}.json",
     "test_result": "test-result-{sha}.json",
     "migration_result": "migration-{sha}.log",
     "compose_evidence": "authority-compose-{sha}.json",
@@ -211,7 +207,6 @@ def build_docker_image_evidence(
     build_metadata: Mapping[str, Any],
     image_id: str,
 ) -> dict[str, Any]:
-    """Select the strongest content address emitted by Docker BuildKit."""
     tested_sha = _validated_sha(commit_sha)
     candidates = (
         ("oci_manifest_digest", build_metadata.get("containerimage.digest")),
@@ -248,7 +243,6 @@ def build_environment_metadata(
     postgres_image: str = "pgvector/pgvector:pg16",
     environment: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Return a secret-free runner description; DSNs and arbitrary env are excluded."""
     tested_sha = _validated_sha(commit_sha)
     env = environment if environment is not None else os.environ
     return {
@@ -274,7 +268,6 @@ def build_environment_metadata(
 def build_ci_test_result(
     *, commit_sha: str, needs: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Summarize required jobs only after every dependency has succeeded."""
     tested_sha = _validated_sha(commit_sha)
     if not needs:
         raise ValueError("required CI job results are empty")
@@ -323,7 +316,6 @@ def _validate_json_sha(path: Path, tested_sha: str) -> None:
 def build_release_qualification(
     *, commit_sha: str, artifact_root: str | Path
 ) -> dict[str, Any]:
-    """Verify all required run-evidence classes and return their immutable hashes."""
     tested_sha = _validated_sha(commit_sha)
     root = Path(artifact_root)
     artifacts: dict[str, Any] = {}

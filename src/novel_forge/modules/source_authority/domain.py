@@ -1,4 +1,5 @@
-"""Deterministic Source Governance rules; raw bytes never enter this domain."""
+"""SECURITY: raw source bytes never enter Source Governance domain objects."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

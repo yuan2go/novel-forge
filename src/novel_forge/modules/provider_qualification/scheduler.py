@@ -1,4 +1,3 @@
-"""PostgreSQL polling boundary for admitted D0 durable jobs."""
 from __future__ import annotations
 
 from typing import Any

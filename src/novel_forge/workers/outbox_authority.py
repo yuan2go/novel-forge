@@ -1,4 +1,3 @@
-"""PostgreSQL outbox dispatcher with durable idempotent internal receipts."""
 from __future__ import annotations
 
 import os
@@ -32,7 +31,6 @@ class OutboxClaim:
 
 
 class PostgresOutboxDispatcher:
-    """Claims globally but commits each delivery receipt in a short transaction."""
 
     def __init__(
         self,

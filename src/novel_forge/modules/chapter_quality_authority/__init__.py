@@ -1,5 +1,3 @@
-"""Storage-free evidence contracts for Chapter Quality Authority."""
-
 from .domain import (
     LONGITUDINAL_QUALITY_DIMENSIONS,
     QUALITY_DIMENSIONS,

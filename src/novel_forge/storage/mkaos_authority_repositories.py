@@ -1,4 +1,3 @@
-"""PostgreSQL projections and locks for MKAOS Authority operations."""
 from __future__ import annotations
 
 from typing import Any

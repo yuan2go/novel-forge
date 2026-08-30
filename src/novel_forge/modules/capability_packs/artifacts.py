@@ -1,5 +1,3 @@
-"""Explicit, local-only Artifact resolution for Capability Pack compilation."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -92,7 +90,6 @@ class ArtifactResolver(Protocol):
 
 
 class ExplicitArtifactResolver:
-    """An immutable exact-key catalog. It never consults network or environment."""
 
     def __init__(self, artifacts: Iterable[ResolvedArtifact]) -> None:
         values: dict[tuple[ArtifactKind, str, str], ResolvedArtifact] = {}
@@ -222,7 +219,6 @@ class ExplicitArtifactResolver:
 
 
 def exact_ref_version(ref: str) -> str:
-    """Return a deterministic explicit version suffix from a governed ref."""
 
     if is_floating_version(ref):
         raise ValueError("floating artifact versions are forbidden")
@@ -271,7 +267,6 @@ def _artifact(
 def default_chapter_artifact_resolver(
     repository_root: str | Path,
 ) -> ExplicitArtifactResolver:
-    """P1A exact catalog backed by repository skills and governed local contracts."""
 
     root = Path(repository_root).resolve()
     artifacts: list[ResolvedArtifact] = []

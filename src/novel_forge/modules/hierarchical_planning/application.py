@@ -1,5 +1,3 @@
-"""Typed planning bindings over active Story Design AssetVersions."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -622,7 +620,6 @@ class PostgresHierarchicalPlanningAuthority:
         actor_id: str,
         asset_version_id: str,
     ) -> None:
-        """Apply the prepared ACTIVATE receipt inside the Planning commit UoW."""
 
         uow.cursor.execute(
             """

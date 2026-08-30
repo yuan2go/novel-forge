@@ -1,4 +1,3 @@
-"""MKAOS Operation definitions over the shared PostgreSQL Command Kernel."""
 from __future__ import annotations
 
 from typing import Any

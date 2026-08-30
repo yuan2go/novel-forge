@@ -1,5 +1,3 @@
-"""Project-scoped provider budget reservation and cost settlement."""
-
 from __future__ import annotations
 
 import hashlib
@@ -26,13 +24,12 @@ class BudgetAssessmentOutcome(StrEnum):
 
 
 def canonical_budget_policy(policy: Mapping[str, Any]) -> dict[str, Any]:
-    """Validate and hash the immutable Provider budget contract.
+    """INVARIANT: Validate and hash the immutable Provider budget contract.
 
     Provider work is accepted only with explicit finite call, token and cost
     limits.  Projection-only work is a separate, zero-Provider contract rather
     than an implicit zero-value budget.
     """
-
     raw = dict(policy)
     execution_mode = str(raw.get("execution_mode") or "").strip().upper()
     if execution_mode not in {"PROVIDER_ALLOWED", "PROJECTION_ONLY"}:
@@ -97,13 +94,12 @@ def canonical_budget_snapshot(
     window_state: str = "ACTIVE",
     request: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the stable Authority snapshot used as a stale precondition.
+    """INVARIANT: Build the stable Authority snapshot used as a stale precondition.
 
     Wall-clock observation time is deliberately excluded.  The persisted
     deadline and its boundary state are authoritative; including a continuously
     changing timestamp would make every otherwise-identical assessment stale.
     """
-
     try:
         normalized_outcome = BudgetAssessmentOutcome(str(outcome)).value
     except ValueError as exc:
@@ -141,7 +137,6 @@ def canonical_budget_snapshot(
 
 
 def next_provider_budget_allowance(policy: Mapping[str, Any]) -> dict[str, Any]:
-    """Return the frozen positive allowance required before recovery queues work."""
 
     canonical = canonical_budget_policy(policy)["policy_snapshot"]
     if str(canonical["execution_mode"]) == "PROJECTION_ONLY":
@@ -177,13 +172,12 @@ def resolve_provider_token_reservation_contract(
     currency: str,
     frozen_request_token_ceiling: int,
 ) -> dict[str, Any]:
-    """Freeze one positive token reservation and Provider output ceiling.
+    """INVARIANT: Freeze one positive token reservation and Provider output ceiling.
 
     Opening work uses the exact same immutable per-call policy allowance used by
     RecoveryAssessment.  Non-Opening work reserves a conservative input plus
     output ceiling from its already-frozen request contract.
     """
-
     if frozen_request_token_ceiling <= 0:
         raise KernelError(
             "PROVIDER_TOKEN_CEILING_REQUIRED",
@@ -326,7 +320,6 @@ def deterministic_budget_effect_binding_id(
 def canonical_budget_reservation_snapshot(
     reservation: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Hash the immutable identity plus current versioned reservation state."""
 
     fields = (
         "reservation_id",
@@ -508,14 +501,13 @@ def acquire_budget_locks_in_uow(
     currencies: Iterable[str],
     budget_scope_ids: Iterable[str] = (),
 ) -> None:
-    """Acquire the Command Kernel's canonical budget advisory lock prefix.
+    """INVARIANT: Acquire the Command Kernel's canonical budget advisory lock prefix.
 
     Every path takes sorted currency locks before sorted scope locks.  Callers
     may then lock the BudgetScope owner row, followed by Operation/Effect and
     Reservation rows.  This order prevents cap-query insert phantoms without
     introducing a recovery-versus-reservation lock inversion.
     """
-
     currency_keys = sorted(
         {
             str(currency).strip().upper()
@@ -554,7 +546,6 @@ def create_or_get_budget_scope(
 def create_or_get_budget_scope_in_uow(
     uow: AuthorityUnitOfWork, request: BudgetScopeRequest
 ) -> dict[str, Any]:
-    """Persist one immutable semantic budget contract for an Opening owner."""
 
     acquire_budget_locks_in_uow(
         uow,
@@ -698,8 +689,7 @@ def lock_budget_scope_in_uow(
     budget_scope_id: str,
     project_id: str,
 ) -> dict[str, Any]:
-    """Lock one scope in canonical currency -> scope -> owner-row order."""
-
+    """INVARIANT: Lock one scope in canonical currency -> scope -> owner-row order."""
     uow.cursor.execute(
         """
         SELECT currency
@@ -738,14 +728,13 @@ def resolve_book_opening_budget_scope_in_uow(
     project_id: str,
     currency: str,
 ) -> dict[str, Any] | None:
-    """Resolve an exact persisted or frozen Opening execution binding.
+    """INVARIANT: Resolve an exact persisted or frozen Opening execution binding.
 
     Book identity alone is never authorization.  A direct frozen execution
     fence or an immutable causation lineage to a persisted binding selects the
     Opening owner.  If a project has live Opening work but neither identity is
     present, Provider work fails closed.
     """
-
     lineage = _operation_opening_lineage_in_uow(
         uow, operation_id=operation_id, project_id=project_id
     )
@@ -981,7 +970,6 @@ def _operation_opening_lineage_in_uow(
     operation_id: str,
     project_id: str,
 ) -> dict[str, Any]:
-    """Read only exact frozen/persisted Opening identities in causal ancestry."""
 
     uow.cursor.execute(
         """
@@ -1093,7 +1081,6 @@ def _recovery_authorizes_successor_binding_in_uow(
     budget_scope_id: str,
     budget_scope_revision: int,
 ) -> bool:
-    """Prove every execution hop was admitted by immutable v2 recovery evidence."""
 
     current_id = successor_execution_id
     current_generation = successor_generation
@@ -1173,7 +1160,6 @@ def _recovery_authorizes_successor_binding_in_uow(
 def revalidate_book_opening_budget_scope_in_uow(
     uow: AuthorityUnitOfWork, binding: Mapping[str, Any]
 ) -> None:
-    """Plain-read validation after Operation/Effect locks are acquired."""
 
     if not binding.get("opening_run_id"):
         return
@@ -1215,8 +1201,7 @@ def assert_provider_execution_authorized(
     project_id: str,
     budget_reservation_id: str = "",
 ) -> dict[str, Any]:
-    """Hard-stop immediately before a Provider request can leave the process."""
-
+    """SECURITY: Hard-stop immediately before a Provider request can leave the process."""
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -1471,7 +1456,6 @@ def _live_book_opening_budget_binding(
     opening_execution_generation: int,
     lock: bool = False,
 ) -> dict[str, Any] | None:
-    """Read the exact execution fence, optionally in canonical owner lock order."""
 
     lock_clause = " FOR UPDATE OF opening,execution,job,attempt,lease" if lock else ""
     uow.cursor.execute(
@@ -1573,7 +1557,6 @@ def assess_budget_scope_in_uow(
     locked_scope: Mapping[str, Any] | None = None,
     use_policy_next_provider_allowance: bool = False,
 ) -> dict[str, Any]:
-    """Assess live Budget Authority without reserving or invoking a Provider."""
 
     amount = _amount(requested_amount)
     if requested_tokens < 0 or requested_calls < 0:
@@ -1984,7 +1967,6 @@ def append_budget_evidence_link_in_uow(
     *,
     locked_scope: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Append one immutable Authority evidence edge without revising policy."""
 
     scope = (
         dict(locked_scope)
@@ -2364,7 +2346,6 @@ def reserve_provider_budget_in_uow(
     uow: AuthorityUnitOfWork,
     request: BudgetReservationRequest,
 ) -> dict[str, Any]:
-    """Reserve Provider capacity inside the caller's Authority transaction."""
 
     amount = _amount(request.estimated_amount)
     if (
@@ -3189,13 +3170,12 @@ def _enforce_agent_session_aggregate(
     amount: Decimal,
     tokens: int,
 ) -> None:
-    """Charge a provider effect to any causal Agent Session ancestor.
+    """INVARIANT: Charge a provider effect to any causal Agent Session ancestor.
 
     Reservations and receipts remain the only ledger.  The Session budget is a
     locked aggregate gate over that existing evidence, including Typed
     Capability child Operations.
     """
-
     cursor.execute(
         """
         WITH RECURSIVE lineage AS (
@@ -3412,8 +3392,7 @@ def _reservation(
 def _reservation_lock_identity(
     uow: AuthorityUnitOfWork, reservation_id: str, project_id: str
 ) -> dict[str, Any]:
-    """Pre-read immutable lock keys; callers must revalidate after locking."""
-
+    """INVARIANT: Pre-read immutable lock keys; callers must revalidate after locking."""
     uow.cursor.execute(
         """
         SELECT currency,budget_scope_id

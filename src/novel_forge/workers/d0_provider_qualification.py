@@ -1,4 +1,3 @@
-"""Development-only worker for the D0 fixture recovery protocol."""
 from __future__ import annotations
 
 import os

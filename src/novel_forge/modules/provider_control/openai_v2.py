@@ -18,7 +18,6 @@ from .contracts import (
 
 
 class OpenAITransportV2(Protocol):
-    """Injectable SDK seam. Tests use a fake; production injects an SDK client."""
 
     def execute(self, request: ProviderInvocationRequest) -> Mapping[str, Any]: ...
     def query(self, request: ProviderQueryRequest) -> Mapping[str, Any]: ...
@@ -29,12 +28,11 @@ class OpenAITransportV2(Protocol):
 
 
 class OpenAIProviderAdapterV2:
-    """Controlled OpenAI SDK boundary with an explicit, mockable transport.
+    """SECURITY: Controlled OpenAI SDK boundary with an explicit, mockable transport.
 
     This class does not read environment variables and never creates a client by
     itself.  The composition root owns credentials and transport construction.
     """
-
     provider = "openai"
 
     def __init__(
@@ -148,7 +146,6 @@ class OpenAIProviderAdapterV2:
 
 
 class OpenAISdkTransport:
-    """Thin optional-SDK transport. Construction is explicit; no call occurs on import."""
 
     def __init__(self, client: Any) -> None:
         self.client = client
@@ -260,7 +257,6 @@ class OpenAISdkTransport:
 
 
 def build_openai_provider_adapter(api_key: str) -> OpenAIProviderAdapterV2:
-    """Build the production OpenAI adapter without invoking the Provider."""
 
     if not api_key:
         raise ValueError("OpenAI adapter requires a resolved credential")

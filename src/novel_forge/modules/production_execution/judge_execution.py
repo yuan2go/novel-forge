@@ -1,9 +1,3 @@
-"""Typed evidence contract for model-backed judges.
-
-Scoring policy remains in Quality/Evaluation domains.  This contract records what an
-uncertain judge execution observed and prevents uncalibrated scores from being named
-probabilities.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass

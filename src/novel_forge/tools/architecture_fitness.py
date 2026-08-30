@@ -1,4 +1,3 @@
-"""Fast architecture fitness checks for the current production boundary."""
 from __future__ import annotations
 
 import argparse
@@ -32,7 +31,6 @@ def _python_paths(root: Path, values: Iterable[str]) -> tuple[Path, ...]:
 
 
 def _source_packages(root: Path) -> tuple[Path, ...]:
-    """Count source-bearing packages, never stale bytecode-only directories."""
     return tuple(
         sorted(
             path

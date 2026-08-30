@@ -47,7 +47,6 @@ def build_provider_adapter_registry(
     provider_ids: set[str] | frozenset[str],
     env: Mapping[str, str] | None = None,
 ) -> ProviderAdapterRegistry:
-    """Build the one explicit Provider registry used by API and workers."""
 
     runtime_environment = RuntimeEnvironment.parse(environment)
     values = os.environ if env is None else env

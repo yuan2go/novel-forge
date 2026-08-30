@@ -1,5 +1,3 @@
-"""Process-owned infrastructure for the Production Execution Plane."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,12 +14,6 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
 
 @dataclass(frozen=True, slots=True)
 class ProductionExecutionComposition:
-    """Shared PEP transport, storage, and provider-budget configuration.
-
-    A process constructs this object once and passes it to peer domain
-    applications. Domain binders and business state remain outside this
-    infrastructure composition.
-    """
 
     gateway: ProductionExecutionGatewayExternalEffectAdapter
     object_store: ExternalEffectAdapter

@@ -1,10 +1,3 @@
-"""Chapter node bridge into the PostgreSQL Agent Definition Authority.
-
-The bridge attaches an Agent work order and immutable runtime evidence to the
-Chapter node's existing Authority Attempt.  It does not execute a second Agent
-Attempt and it never commits the Chapter domain asset.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -82,7 +75,6 @@ class FrozenChapterAgentWorkOrder:
 
 
 class PostgresChapterAgentBindingRecorder:
-    """Freeze and accept Agent candidates on an existing Chapter Attempt."""
 
     production_authority = True
 
@@ -622,7 +614,6 @@ class PostgresChapterAgentBindingRecorder:
         asset_version_id: str,
         content_hash: str,
     ) -> CollaborationCommit | None:
-        """Attach the accepted Candidate to the already materialized Chapter asset."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -688,7 +679,6 @@ class PostgresChapterAgentBindingRecorder:
         attempt_id: str,
         error_code: str,
     ) -> bool:
-        """Record Domain validation failure without creating an AssetVersion."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

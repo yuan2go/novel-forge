@@ -1,4 +1,3 @@
-"""Static transitive module reachability for the PostgreSQL Authority plane."""
 from __future__ import annotations
 
 import ast

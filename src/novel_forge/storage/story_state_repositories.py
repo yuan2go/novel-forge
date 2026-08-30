@@ -1,4 +1,3 @@
-"""Persistence for deterministic Story State reducer application evidence."""
 from __future__ import annotations
 
 from typing import Any

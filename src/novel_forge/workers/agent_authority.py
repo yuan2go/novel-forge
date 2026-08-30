@@ -1,5 +1,3 @@
-"""Standalone bounded PostgreSQL Agent Authority worker."""
-
 from __future__ import annotations
 
 import signal

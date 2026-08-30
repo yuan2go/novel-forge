@@ -1,9 +1,5 @@
-"""Build the repository-wide Production Execution migration inventory.
+"""INVARIANT: inventory scanning cannot import or connect to the inspected runtime."""
 
-The scanner is deliberately static.  It resolves import aliases, constant
-``getattr`` calls, and local/imported wrapper functions without importing the
-application or opening a network/database connection.
-"""
 from __future__ import annotations
 
 import ast
@@ -1253,7 +1249,6 @@ def _entry(
 def scan_repository_execution_boundaries(
     repo_root: str | Path,
 ) -> list[dict[str, Any]]:
-    """Return exact AST violations for business-to-execution boundaries."""
 
     root = Path(repo_root).resolve()
     violations: list[dict[str, Any]] = []
@@ -1401,7 +1396,6 @@ def _boundary_violation(
 
 
 def build_execution_inventory(repo_root: str | Path) -> dict[str, Any]:
-    """Return a deterministic AST-derived migration ledger."""
     root = Path(repo_root).resolve()
     paths = sorted(
         path
@@ -1643,7 +1637,6 @@ def write_execution_inventory(
     json_output: str | Path,
     markdown_output: str | Path,
 ) -> dict[str, Any]:
-    """Write deterministic JSON and Markdown inventory artifacts."""
     manifest = build_execution_inventory(repo_root)
     json_path = Path(json_output)
     markdown_path = Path(markdown_output)

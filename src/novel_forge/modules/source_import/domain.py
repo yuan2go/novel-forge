@@ -1,5 +1,3 @@
-"""Pure identities, policies, normalization, chunking, and manifest diff rules."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

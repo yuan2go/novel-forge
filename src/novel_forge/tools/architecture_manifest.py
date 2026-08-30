@@ -1,8 +1,5 @@
-"""Machine-enforced repository manifests for Architecture Closure Track A.
+"""CONSTRAINT: manifest .yaml files contain JSON syntax so standard-library JSON and YAML-aware tooling validate identical bytes."""
 
-The manifest files use JSON syntax while retaining a ``.yaml`` extension. JSON
-is a strict YAML subset and lets the repository keep a zero-dependency verifier.
-"""
 from __future__ import annotations
 
 import argparse

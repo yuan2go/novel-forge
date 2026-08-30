@@ -1,5 +1,3 @@
-"""Operator and reviewer-safe API for bounded Quality Qualification."""
-
 from __future__ import annotations
 
 from typing import Any

@@ -1,5 +1,3 @@
-"""Capability Pack protocol, governed resolution, and pure compilation boundary."""
-
 from .errors import (
     CapabilityPackCompilationIssue,
     CapabilityPackCompilationReport,

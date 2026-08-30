@@ -1,10 +1,3 @@
-"""Layer-specific deterministic gates for the qualified Story Foundation.
-
-Semantic literary judgment remains independent evidence.  These validators
-prove structural completeness, explicit parent references, and cross-layer
-coherence without copying upstream truth into downstream contracts.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -50,7 +43,6 @@ def validate_foundation_layer(
     parent_bindings: tuple[FoundationBinding, ...],
     parent_contents: Mapping[FoundationRole, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Fail closed on structural or cross-layer drift for one Foundation layer."""
 
     expected_parents = role.required_parents
     if tuple(item.role for item in parent_bindings) != expected_parents:

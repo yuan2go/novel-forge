@@ -1,5 +1,3 @@
-"""Isolated executor for non-blocking Book acceptance follow-up work."""
-
 from __future__ import annotations
 
 import os

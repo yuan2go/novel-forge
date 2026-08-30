@@ -1,5 +1,3 @@
-"""Mutation repository for the persistent Book Authority aggregate."""
-
 from __future__ import annotations
 
 import hashlib
@@ -707,7 +705,6 @@ class BookAuthorityRepository:
         self._commit_narrative_retrieval_documents(projection)
 
     def _commit_narrative_retrieval_documents(self, projection: dict[str, Any]) -> None:
-        """Index accepted evidence deterministically inside Book Acceptance."""
 
         sources = dict(projection["source_versions"])
         chapter = int(projection["accepted_boundary"]["chapter_number"])
@@ -1026,7 +1023,7 @@ class BookAuthorityRepository:
 def _arc_checkpoint_followup(
     projection: dict[str, Any],
 ) -> dict[str, Any] | None:
-    """Aggregate all actionable Arcs at one accepted boundary into one intent.
+    """INVARIANT: Aggregate all actionable Arcs at one accepted boundary into one intent.
 
     A Chapter has one durable Recap/ArcRevision operation.  Persisting one
     follow-up per Arc would strand every row after the first because that
@@ -1034,7 +1031,6 @@ def _arc_checkpoint_followup(
     every checkpoint as evidence and selects the strongest decision without
     mutating any future plan in the Acceptance transaction.
     """
-
     actionable = [
         dict(item)
         for item in projection.get("arc_checkpoints") or ()
@@ -1105,7 +1101,6 @@ def _arc_checkpoint_followup(
 
 
 def _retrieval_graph_metadata(content: Any) -> dict[str, list[str]]:
-    """Extract only graph identities actually present in accepted evidence."""
 
     found = {
         "entity_ids": set(),

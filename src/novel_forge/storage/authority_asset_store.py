@@ -1,4 +1,3 @@
-"""PostgreSQL authority port for versioned JSON asset documents."""
 from __future__ import annotations
 
 import hashlib

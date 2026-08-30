@@ -1,4 +1,3 @@
-"""Accepted-only, as-of-Chapter projections over Narrative State v2 events."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -19,7 +18,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 @dataclass(frozen=True, slots=True)
 class TemporalStateEvent:
-    """A v2 event proven accepted by one committed Book chapter boundary."""
 
     project_id: str
     book_id: str
@@ -70,7 +68,6 @@ def changes_in_range(
     chapter_from: int,
     chapter_to: int,
 ) -> tuple[TemporalStateEvent, ...]:
-    """Return accepted State Events in the left-open, right-closed range."""
 
     if chapter_from < 0 or chapter_to <= chapter_from:
         raise ValueError("chapter range must satisfy 0 <= chapter_from < chapter_to")
@@ -95,7 +92,6 @@ def reduce_entity_state(
     entity_key: str,
     as_of_chapter: int,
 ) -> dict[str, Any]:
-    """Project one entity with the exact same reducers used by current state."""
 
     if not state_kind or not entity_key or as_of_chapter <= 0:
         raise ValueError("state_kind, entity_key and positive as_of_chapter are required")
@@ -117,7 +113,6 @@ def reduce_entity_state(
 
 
 class TemporalQueryService:
-    """Read-only temporal capability rooted in committed Book acceptance."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:

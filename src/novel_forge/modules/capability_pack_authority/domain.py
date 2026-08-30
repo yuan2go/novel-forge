@@ -1,10 +1,3 @@
-"""Immutable Capability Pack Authority contracts.
-
-This module contains configuration/deployment facts only.  Command Kernel
-Operation, Attempt, Lease, Fence, retry, compensation, and ExternalEffect
-state remain owned by their existing authorities.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -76,7 +69,6 @@ def canonical_hash(payload: Any) -> str:
 
 
 def stable_rollout_bucket(rollout_id: str, subject_key: str) -> int:
-    """Return an immutable 0..9999 canary bucket for one subject."""
 
     if not rollout_id.strip() or not subject_key.strip():
         raise ValueError("rollout_id and subject_key are required")
@@ -275,7 +267,6 @@ class CapabilityPackExecutionSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityPackAttemptSnapshot:
-    """One immutable Pack resolution owned by an existing Authority Attempt."""
 
     snapshot_id: str
     operation_id: str
@@ -311,7 +302,6 @@ class CapabilityPackAttemptSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class MaterializedCapabilityArtifact:
-    """Exact immutable Authority content selected by one Pack snapshot."""
 
     kind: str
     ref: str
@@ -358,7 +348,6 @@ class MaterializedCapabilityArtifact:
 
 @dataclass(frozen=True, slots=True)
 class CapabilityPackArtifactMaterialization:
-    """Provider-relevant exact content resolved from one registered Pack Version."""
 
     pack_id: str
     pack_version: str

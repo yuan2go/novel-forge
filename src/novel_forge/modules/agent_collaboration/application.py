@@ -1,5 +1,3 @@
-"""Deterministic application service for scoped Agent deliberation."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -195,7 +193,6 @@ class AgentCollaborationApplication:
         work_order: AgentWorkOrder,
         execution_port: DomainExecutionPort,
     ) -> TurnProcessingResult:
-        """Execute one frozen turn through PEP before domain acceptance."""
 
         replay = self.repository.find_processing_result(work_order.turn_id)
         if replay is not None:
@@ -255,7 +252,6 @@ class AgentCollaborationApplication:
     def validate_execution_evidence(
         work_order: AgentWorkOrder, evidence: DomainExecutionEvidence
     ) -> None:
-        """Validate a PEP result before opening the candidate-write transaction."""
 
         AgentCollaborationApplication._validate_execution_evidence(
             work_order, evidence

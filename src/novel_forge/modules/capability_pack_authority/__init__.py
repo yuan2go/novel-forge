@@ -1,5 +1,3 @@
-"""PostgreSQL authority for Capability Pack configuration and deployment."""
-
 from .domain import (
     ApprovalDecision,
     CapabilityPackAttemptSnapshot,

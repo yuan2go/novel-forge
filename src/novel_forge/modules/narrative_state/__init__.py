@@ -1,5 +1,3 @@
-"""Shared Narrative State v2 contracts, reducers, and read projections."""
-
 from .contracts import (
     NarrativeCausality,
     NarrativeCoordinate,
