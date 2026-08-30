@@ -118,7 +118,7 @@
     "src/novel_forge/modules/chapter_authority/provider_output_contracts.py": "sha256:ae435760d6f253edf82a710f613307ca2400f7ab236e1a170c995bb7e5e30645",
     "src/novel_forge/modules/story_planning_runtime/execution.py": "sha256:523b11c37ecd12859033408d1a8d347b0e1756b403f922e90be2779765de023e",
     "config/capability_packs/artifacts/story_planning_system_instruction.md": "sha256:67ed369708c4726ac0b8a25ba25c10a6b3a02c20ce8b8a1260cab48309c010dd",
-    "src/novel_forge/modules/chapter_authority/execution_gateway.py": "sha256:82aeba1ce810ca8c3524782c66e4e9e28c7a9a97dbc957526c20b2c2538cf575",
+    "src/novel_forge/modules/chapter_authority/execution_gateway.py": "sha256:c0629bff520bbea44be82a1c3083d34f939974ecd50caaa72d2f7c3a577da05f",
     "src/novel_forge/modules/book_followup_authority/handlers.py": "sha256:7d1022133ac05902c38521266ef9df4becd3396766e0c32220680fcee3b507b9"
   },
   "profiles": {
