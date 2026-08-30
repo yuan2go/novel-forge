@@ -575,7 +575,7 @@ class PostgresBookOpeningApplication:
                     "Book Opening idempotency identity belongs to another frozen request",
                 )
             run = self.require(opening_run_id)
-            job = self._latest_job(opening_run_id)
+            job = self._admission_job(opening_run_id)
             return BookOpeningAdmission(
                 opening_run_id=opening_run_id,
                 root_operation_id=str(existing[3]),
@@ -621,7 +621,7 @@ class PostgresBookOpeningApplication:
             handler=self._execute_transaction,
         )
         run = self.require(opening_run_id)
-        job = self._latest_job(opening_run_id)
+        job = self._admission_job(opening_run_id)
         return BookOpeningAdmission(
             opening_run_id=opening_run_id,
             root_operation_id=str(executed["operation_id"]),
@@ -5517,16 +5517,15 @@ class PostgresBookOpeningApplication:
         if execution_probe is not None:
             execution_probe()
 
-    def _latest_job(self, opening_run_id: str) -> dict[str, Any]:
+    def _admission_job(self, opening_run_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT job.runtime_job_id,job.status
                 FROM authority_book_opening_run AS opening
                 JOIN authority_book_opening_execution AS execution
-                  ON execution.opening_execution_id=opening.current_execution_id
-                 AND execution.opening_run_id=opening.opening_run_id
-                 AND execution.generation=opening.current_execution_generation
+                  ON execution.opening_run_id=opening.opening_run_id
+                 AND execution.generation=1
                 JOIN authority_runtime_job AS job
                   ON job.runtime_job_id=execution.runtime_job_id
                  AND job.subject_kind='BOOK_OPENING_RUN'
@@ -5540,6 +5539,7 @@ class PostgresBookOpeningApplication:
                          AND job.job_kind=
                              'BOOK_OPENING_WORKFLOW_NODE_EXECUTE'
                          AND job.runtime_group='book_opening_workflow_v1'
+                         AND execution.workflow_transition_kind='ADMISSION'
                      ) OR (
                          opening.workflow_contract_version=
                              'legacy-monolithic-v2'
@@ -5547,6 +5547,8 @@ class PostgresBookOpeningApplication:
                              'book-opening-execution-v2'
                          AND job.job_kind='BOOK_OPENING_EXECUTE'
                          AND job.runtime_group='book_opening'
+                         AND execution.workflow_transition_kind=
+                             'LEGACY_MONOLITHIC'
                      )
                  )
                 WHERE opening.opening_run_id=%s
@@ -5557,7 +5559,7 @@ class PostgresBookOpeningApplication:
         if row is None:
             raise KernelError(
                 "BOOK_OPENING_JOB_MISSING",
-                "Book opening replay has no durable RuntimeJob lineage",
+                "Book opening admission has no durable initial RuntimeJob lineage",
             )
         return {"runtime_job_id": str(row[0]), "status": str(row[1])}
 

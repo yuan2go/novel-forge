@@ -1823,6 +1823,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             """
             SELECT COUNT(*),
                    COUNT(checkpoint.checkpoint_id),
+                   COUNT(DISTINCT checkpoint.opening_execution_id),
                    BOOL_AND(
                        checkpoint.evidence_version=1
                        AND checkpoint.evidence_hash=candidate.branch_evidence_hash
@@ -1830,25 +1831,29 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
                            'narrative-search-branch:' || candidate.search_id || ':' ||
                            candidate.branch_key
                        )
+                       AND node.node_kind IN (
+                           'BOOK_PLAN','VOLUME_PORTFOLIO','INITIAL_ARC_SCOPE'
+                       )
                    )
             FROM authority_story_narrative_search_candidate AS candidate
             JOIN authority_story_narrative_search AS search
               ON search.search_id=candidate.search_id
             LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
               ON checkpoint.opening_run_id=%s
-             AND checkpoint.opening_execution_id=%s
              AND checkpoint.evidence_type='NARRATIVE_SEARCH_BRANCH'
              AND checkpoint.evidence_id=candidate.membership_id
+            LEFT JOIN authority_book_opening_workflow_node AS node
+              ON node.opening_run_id=checkpoint.opening_run_id
+             AND node.workflow_node_id=checkpoint.workflow_node_id
             WHERE search.project_id=%s AND search.book_id=%s
             """,
             [
                 admission.opening_run_id,
-                opening_run["current_execution_id"],
                 project_id,
                 book_id,
             ],
         )
-        assert uow.cursor.fetchone() == (12, 12, True)
+        assert uow.cursor.fetchone() == (12, 12, 3, True)
         uow.cursor.execute(
             """
             SELECT budget_contract_state,budget_scope_id,budget_scope_revision
