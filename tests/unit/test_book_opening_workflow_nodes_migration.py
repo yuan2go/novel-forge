@@ -3,13 +3,15 @@ from __future__ import annotations
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
 from novel_forge.storage.migrations.versions import (
     v20260829_0104_book_opening_workflow_nodes as migration,
+    v20260830_0105_p0_backend_qualification_repairs as qualification_repairs,
 )
 
 
-def test_workflow_nodes_migration_is_the_forward_only_head() -> None:
+def test_workflow_nodes_migration_is_forward_only_and_precedes_0105() -> None:
     validate_migration_chain()
 
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert qualification_repairs.DOWN_REVISION == migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == qualification_repairs.MIGRATION_ID
     assert migration.MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
     assert (
         migration.DOWN_REVISION

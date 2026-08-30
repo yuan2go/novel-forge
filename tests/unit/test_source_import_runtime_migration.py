@@ -81,7 +81,7 @@ def test_source_import_runtime_is_registered_forward_only_head() -> None:
         semantic_hardening_migration.DOWN_REVISION
         == recovery_closure_migration.MIGRATION_ID
     )
-    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
+    assert LATEST_MIGRATION_ID == "20260830_0105_p0_backend_qualification_repairs"
     assert migration.DOWN_REVISION == "20260811_0075_source_deconstruction_intelligence"
     assert migration.FORWARD_ONLY is True
     sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()

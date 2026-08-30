@@ -13,7 +13,7 @@ def test_quality_qualification_extends_one_forward_head() -> None:
 
     assert successor.DOWN_REVISION == migration.MIGRATION_ID
     assert semantic_hardening.DOWN_REVISION == successor.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == "20260829_0104_book_opening_workflow_nodes"
+    assert LATEST_MIGRATION_ID == "20260830_0105_p0_backend_qualification_repairs"
     assert migration.DOWN_REVISION == "20260825_0100_hierarchy_closure"
     assert migration.FORWARD_ONLY is True
     assert migration.DOWNGRADE_STATEMENTS == []
