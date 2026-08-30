@@ -257,7 +257,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"{context}.observed_at_sha must be a full Git SHA")
             counts = [run.get(field) for field in ("collected", "passed", "failed")]
             valid_counts = not any(
-                not isinstance(value, int) or value < 0 for value in counts
+                type(value) is not int or value < 0 for value in counts
             )
             counts_match = valid_counts and counts[1] + counts[2] == counts[0]
             if not valid_counts:

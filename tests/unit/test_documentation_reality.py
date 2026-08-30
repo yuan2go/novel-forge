@@ -120,6 +120,26 @@ class DocumentationRealityTests(unittest.TestCase):
             self.assertIn("result counts must be non-negative integers", errors)
             self.assertIn("references a run with invalid results", errors)
 
+    def test_boolean_qualification_counts_do_not_qualify_as_integers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            inventory["qualification_runs"][0].update(
+                {"collected": True, "passed": True, "failed": False}
+            )
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            errors = "\n".join(report["errors"])
+            self.assertIn("result counts must be non-negative integers", errors)
+            self.assertIn("references a run with invalid results", errors)
+
     def test_generated_web_dependencies_are_outside_repository_comment_policy(
         self,
     ) -> None:
