@@ -1072,17 +1072,31 @@ def validate_compose_runtime_evidence(
             restart.get("after_forced_restart"), label="after_forced_restart"
         ),
     }
-    updated_at_values = [
-        str(snapshot["updated_at"]) for snapshot in snapshots.values()
-    ]
     if (
         restart.get("projection_changed") is not True
-        or len(set(updated_at_values)) != len(updated_at_values)
-        or snapshots["before_forced_restart"]["last_heartbeat_at"]
-        == snapshots["after_forced_restart"]["last_heartbeat_at"]
+        or snapshots["before_stop"]["updated_at"]
+        == snapshots["stopped"]["updated_at"]
+        or snapshots["stopped"]["updated_at"]
+        == snapshots["after_recovery_start"]["updated_at"]
+        or snapshots["before_forced_restart"]["updated_at"]
+        == snapshots["after_forced_restart"]["updated_at"]
     ):
         raise QualificationContractError(
             "Compose worker restart is not bound to changed health projection evidence"
+        )
+    container_before = restart.get("container_before_forced_restart")
+    container_after = restart.get("container_after_forced_restart")
+    if (
+        not isinstance(container_before, Mapping)
+        or not isinstance(container_after, Mapping)
+        or not str(container_before.get("container_id") or "")
+        or not str(container_after.get("container_id") or "")
+        or not str(container_before.get("started_at") or "")
+        or not str(container_after.get("started_at") or "")
+        or container_before.get("started_at") == container_after.get("started_at")
+    ):
+        raise QualificationContractError(
+            "Compose worker restart lacks changed container lifecycle evidence"
         )
 
     governance = evidence.get("shutdown_database_governance")

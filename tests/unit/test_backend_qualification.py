@@ -102,13 +102,21 @@ def _compose_evidence() -> dict[str, object]:
                 "status": "READY",
                 "drain_status": "ACCEPTING",
                 "updated_at": "2026-08-30T01:03:00Z",
-                "last_heartbeat_at": "2026-08-30T01:03:00Z",
+                "last_heartbeat_at": "2026-08-30T01:02:00Z",
             },
             "after_forced_restart": {
                 "status": "READY",
                 "drain_status": "ACCEPTING",
                 "updated_at": "2026-08-30T01:04:00Z",
-                "last_heartbeat_at": "2026-08-30T01:04:00Z",
+                "last_heartbeat_at": "2026-08-30T01:02:00Z",
+            },
+            "container_before_forced_restart": {
+                "container_id": "container:content",
+                "started_at": "2026-08-30T01:00:00Z",
+            },
+            "container_after_forced_restart": {
+                "container_id": "container:content",
+                "started_at": "2026-08-30T01:03:30Z",
             },
             "projection_changed": True,
         },
@@ -289,6 +297,24 @@ class BackendQualificationCliTests(unittest.TestCase):
         ):
             validate_compose_runtime_evidence(
                 invalid,
+                expected_sha=SHA,
+                expected_run_id="p0-" + "1" * 32,
+                expected_project="nf-p0-" + "1" * 32 + "-runtime",
+            )
+
+    def test_compose_proof_requires_changed_container_start_identity(self) -> None:
+        evidence = _compose_evidence()
+        restart = dict(evidence["worker_restart"])
+        restart["container_after_forced_restart"] = dict(
+            restart["container_before_forced_restart"]
+        )
+        evidence["worker_restart"] = restart
+
+        with self.assertRaisesRegex(
+            QualificationContractError, "container lifecycle"
+        ):
+            validate_compose_runtime_evidence(
+                evidence,
                 expected_sha=SHA,
                 expected_run_id="p0-" + "1" * 32,
                 expected_project="nf-p0-" + "1" * 32 + "-runtime",

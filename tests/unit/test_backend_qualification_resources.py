@@ -169,6 +169,40 @@ class QualificationRunIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "loopback"):
             published_loopback_port(inspect_payload, container_port=5432)
 
+    def test_container_lifecycle_is_read_from_compose_and_inspect_json(self) -> None:
+        def runner(
+            command: Sequence[str], **_kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            parts = tuple(command)
+            if "compose" in parts and "ps" in parts:
+                output = "container-1\n"
+            else:
+                output = json.dumps(
+                    [
+                        {
+                            "Id": "container-1",
+                            "State": {
+                                "StartedAt": "2026-08-30T01:02:03.000000000Z"
+                            },
+                        }
+                    ]
+                )
+            return subprocess.CompletedProcess(command, 0, output, "")
+
+        client = DockerComposeClient(repo_root=Path.cwd(), runner=runner)
+
+        lifecycle = client.container_lifecycle(
+            project_name="nf-p0-owned",
+            compose_files=(Path("compose.yml"),),
+            environment={},
+            service="content-authority-worker",
+        )
+
+        self.assertEqual(lifecycle["container_id"], "container-1")
+        self.assertEqual(
+            lifecycle["started_at"], "2026-08-30T01:02:03.000000000Z"
+        )
+
     def test_docker_inventory_requires_project_and_run_labels(self) -> None:
         responses = {
             ("container", "ls"): "container-1\n",

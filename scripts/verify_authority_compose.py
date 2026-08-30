@@ -243,11 +243,7 @@ def _wait_worker_projection(
             and bool(item.get("last_heartbeat_at"))
             and (
                 changed_from is None
-                or (
-                    item.get("updated_at") != changed_from.get("updated_at")
-                    and item.get("last_heartbeat_at")
-                    != changed_from.get("last_heartbeat_at")
-                )
+                or item.get("updated_at") != changed_from.get("updated_at")
             )
         ),
         timeout_seconds=120,
@@ -610,13 +606,12 @@ def main(argv: list[str] | None = None) -> int:
             "pending_operation_recovered_after_worker_restart"
         )
 
-        before_forced_restart = _wait_worker_projection(
-            client,
+        before_forced_restart = after_recovery_start
+        container_before_forced_restart = client.container_lifecycle(
             project_name=identity.compose_project,
             compose_files=compose_files,
             environment=environment,
-            stopped=False,
-            changed_from=after_recovery_start,
+            service=TARGET_WORKER_SERVICE,
         )
         _compose(
             client,
@@ -641,6 +636,12 @@ def main(argv: list[str] | None = None) -> int:
             ),
             timeout=240,
         )
+        container_after_forced_restart = client.container_lifecycle(
+            project_name=identity.compose_project,
+            compose_files=compose_files,
+            environment=environment,
+            service=TARGET_WORKER_SERVICE,
+        )
         after_forced_restart = _wait_worker_projection(
             client,
             project_name=identity.compose_project,
@@ -657,6 +658,8 @@ def main(argv: list[str] | None = None) -> int:
             "after_recovery_start": after_recovery_start,
             "before_forced_restart": before_forced_restart,
             "after_forced_restart": after_forced_restart,
+            "container_before_forced_restart": container_before_forced_restart,
+            "container_after_forced_restart": container_after_forced_restart,
             "projection_changed": True,
         }
         evidence["steps"].append("forced_worker_restart_ready")

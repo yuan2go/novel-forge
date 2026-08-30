@@ -352,6 +352,44 @@ class DockerComposeClient:
         payload = self._inspect("container", identifiers)
         return published_loopback_port(payload, container_port=container_port)
 
+    def container_lifecycle(
+        self,
+        *,
+        project_name: str,
+        compose_files: Sequence[Path],
+        environment: Mapping[str, str],
+        service: str,
+    ) -> dict[str, str]:
+        container_id = self.run_compose(
+            project_name=project_name,
+            compose_files=compose_files,
+            environment=environment,
+            arguments=("ps", "--quiet", service),
+            timeout=30,
+        )
+        identifiers = tuple(
+            line.strip() for line in container_id.splitlines() if line.strip()
+        )
+        if len(identifiers) != 1:
+            raise DockerCommandError(
+                f"Compose service {service} does not resolve to exactly one container"
+            )
+        payload = self._inspect("container", identifiers)
+        item = payload[0]
+        if not isinstance(item, dict) or str(item.get("Id") or "") != identifiers[0]:
+            raise DockerCommandError(
+                f"Compose service {service} returned an inconsistent container identity"
+            )
+        state = item.get("State")
+        started_at = (
+            str(state.get("StartedAt") or "") if isinstance(state, dict) else ""
+        )
+        if not started_at:
+            raise DockerCommandError(
+                f"Compose service {service} has no container start identity"
+            )
+        return {"container_id": identifiers[0], "started_at": started_at}
+
 
 def _atomic_json(path: Path, payload: Mapping[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
