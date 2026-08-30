@@ -61,6 +61,23 @@ WORKER_IDENTITIES = {
 ALL_SERVICES = tuple(WORKER_SERVICES.values())
 
 
+def _failure_evidence(exc: BaseException) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "type": type(exc).__name__,
+        "message": str(exc),
+    }
+    if isinstance(exc, DockerCommandError):
+        payload["command"] = {
+            "returncode": exc.returncode,
+            "stdout": exc.stdout,
+            "stderr": exc.stderr,
+        }
+    sanitized = sanitize_evidence(payload)
+    if not isinstance(sanitized, dict):
+        raise RuntimeError("failure evidence sanitizer returned invalid output")
+    return sanitized
+
+
 def _run(
     command: list[str], *, env: dict[str, str], timeout: float = 600, check: bool = True
 ) -> str:
@@ -1781,10 +1798,7 @@ def main() -> int:
         }
         close_all_database_runtimes()
     except Exception as exc:
-        failure = {
-            "type": type(exc).__name__,
-            "message": str(sanitize_evidence(exc)),
-        }
+        failure = _failure_evidence(exc)
         try:
             logs = _run(
                 _compose(project, "logs", "--no-color", "--tail", "200"),

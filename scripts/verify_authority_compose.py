@@ -43,6 +43,23 @@ TARGET_WORKER_ID = "content-authority-worker-1"
 TARGET_WORKER_KIND = "content"
 
 
+def _failure_evidence(exc: BaseException) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "type": type(exc).__name__,
+        "message": str(exc),
+    }
+    if isinstance(exc, DockerCommandError):
+        payload["command"] = {
+            "returncode": exc.returncode,
+            "stdout": exc.stdout,
+            "stderr": exc.stderr,
+        }
+    sanitized = sanitize_evidence(payload)
+    if not isinstance(sanitized, dict):
+        raise RuntimeError("failure evidence sanitizer returned invalid output")
+    return sanitized
+
+
 def _json_object(value: str, *, evidence_name: str) -> dict[str, Any]:
     try:
         payload = json.loads(value)
@@ -705,10 +722,7 @@ def main(argv: list[str] | None = None) -> int:
         TypeError,
         ValueError,
     ) as exc:
-        evidence["failure"] = {
-            "type": type(exc).__name__,
-            "message": str(sanitize_evidence(exc)),
-        }
+        evidence["failure"] = _failure_evidence(exc)
         _write_failure_logs(
             client,
             identity=identity,

@@ -223,6 +223,26 @@ class QualificationRunIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(DockerCommandError, "timed out"):
             client.discover("nf-p0-timeout")
 
+    def test_failed_docker_command_preserves_bounded_diagnostic_streams(self) -> None:
+        def runner(
+            command: Sequence[str], **_kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            return subprocess.CompletedProcess(
+                command,
+                17,
+                "compose stdout\n",
+                "compose stderr\n",
+            )
+
+        client = DockerComposeClient(repo_root=Path.cwd(), runner=runner)
+
+        with self.assertRaises(DockerCommandError) as raised:
+            client.discover("nf-p0-failed")
+
+        self.assertEqual(raised.exception.returncode, 17)
+        self.assertEqual(raised.exception.stdout, "compose stdout")
+        self.assertEqual(raised.exception.stderr, "compose stderr")
+
     def test_server_reported_database_name_must_be_disposable(self) -> None:
         self.assertEqual(
             require_disposable_database_name("migration_window_123_test"),

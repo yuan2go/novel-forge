@@ -34,6 +34,19 @@ class ResourceOwnershipError(RuntimeError):
 class DockerCommandError(RuntimeError):
     """Raised when Docker cannot provide a trustworthy resource operation."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        returncode: int | None = None,
+        stdout: str = "",
+        stderr: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.returncode = returncode
+        self.stdout = stdout.strip()[-8_000:]
+        self.stderr = stderr.strip()[-8_000:]
+
 
 @dataclass(frozen=True)
 class QualificationRunIdentity:
@@ -200,7 +213,10 @@ class DockerComposeClient:
         if completed.returncode:
             raise DockerCommandError(
                 "Docker command failed without yielding trustworthy resource evidence: "
-                + " ".join(command[:4])
+                + " ".join(command[:4]),
+                returncode=completed.returncode,
+                stdout=str(completed.stdout or ""),
+                stderr=str(completed.stderr or ""),
             )
         return str(completed.stdout or "").strip()
 
