@@ -75,28 +75,28 @@
       "id": "p0-backend-engineering-qualification",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
-      "observed_at_sha": "652e252987725ef5e39733d76d1798437e3be7ba",
-      "source_tree": "20285e10d566e7ef8e76d43dd5b614be0dcbaa55",
-      "implementation_tree_sha": "sha256:7716fb98349d6dbf74b642fd22488fa54d59ef04216541eb7b4bf8130c7ad722",
-      "dependency_snapshot_digest": "sha256:fc74be1db650fe80910022209c941eda71d70d04b6e8f39030ba5d34d33291a2",
+      "observed_at_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e",
+      "source_tree": "347a7a60992590bfb42c59b7b3bbd77a32c66734",
+      "implementation_tree_sha": "sha256:ce8a2805f1cfbbccaef1ff8f7c06ce6bbec92f7a6ca0813a6195c406fcd95382",
+      "dependency_snapshot_digest": "sha256:7447d4dfaa36954826714985a09e63e663f3d39b7a5080e9b342ee0b54a9a9e7",
       "qualification_report": {
-        "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
-        "artifact_root": "novel-forge-p0-652e25298772-44c3b3ee96b1423095e89634d46dfa10",
-        "artifact": "p0-backend-qualification-652e252987725ef5e39733d76d1798437e3be7ba.json",
-        "repository_path": "architecture/evidence/p0-backend-qualification-652e252987725ef5e39733d76d1798437e3be7ba.json",
-        "sha256": "sha256:98c6abd1a6aab225ab70245bce22d0163c9165ef4f4f7b99af8e309648282bb5",
+        "run_id": "p0-905b66bd9cbd470894636125e739e022",
+        "artifact_root": "novel-forge-p0-7cee62ddda40-905b66bd9cbd470894636125e739e022",
+        "artifact": "p0-backend-qualification-7cee62ddda40686d908871689be8c3cf889e4e2e.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-7cee62ddda40686d908871689be8c3cf889e4e2e.json",
+        "sha256": "sha256:435af99df2cf481d770dbc37b4a7d4ada25367fe4ba6494539334c9556a12d4c",
         "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
       },
       "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
-      "collected": 3701,
-      "passed": 3701,
+      "collected": 3610,
+      "passed": 3610,
       "failed": 0,
       "collections": [
         {
           "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_nodes": 1688,
-          "junit_cases": 3120,
-          "passed": 3120,
+          "collected_nodes": 1597,
+          "junit_cases": 3029,
+          "passed": 3029,
           "skipped": 0,
           "complete": true
         },
@@ -183,21 +183,21 @@
         "remaining_resource_count": 0,
         "phases": [
           {
-            "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10",
+            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022",
             "phase": "postgresql",
-            "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10.json",
+            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022.json",
             "remaining_resource_count": 0,
             "resource_count": 2,
-            "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+            "run_id": "p0-905b66bd9cbd470894636125e739e022",
             "status": "PASS"
           },
           {
-            "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime",
+            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022-runtime",
             "phase": "compose-runtime",
-            "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime.json",
+            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022-runtime.json",
             "remaining_resource_count": 0,
             "resource_count": 18,
-            "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+            "run_id": "p0-905b66bd9cbd470894636125e739e022",
             "status": "PASS"
           }
         ]
@@ -321,7 +321,7 @@
     {
       "concept": "runtime-composition",
       "owner": "Authority API and process composition",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/api/authority_app.py",
@@ -373,7 +373,7 @@
     {
       "concept": "command-attempt-lease-fence",
       "owner": "Command Kernel",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/service.py",
@@ -429,7 +429,7 @@
     {
       "concept": "external-effect-provider-control",
       "owner": "Command Kernel ExternalEffect and Production Execution",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
@@ -494,7 +494,7 @@
     {
       "concept": "story-design-plan-activation",
       "owner": "Story Design and Plan Change Authorities",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
@@ -555,7 +555,7 @@
     {
       "concept": "chapter-production-saga",
       "owner": "Chapter Authority",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_authority/application.py",
@@ -611,7 +611,7 @@
     {
       "concept": "quality-and-release-gates",
       "owner": "Quality Qualification and Chapter Authority",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
@@ -663,7 +663,7 @@
     {
       "concept": "book-opening-workflow",
       "owner": "Book Opening Authority",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
@@ -724,7 +724,7 @@
     {
       "concept": "book-chapter-acceptance",
       "owner": "Book Authority",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
@@ -777,7 +777,7 @@
     {
       "concept": "canon-and-narrative-state",
       "owner": "Canon approval and Book-accepted Narrative State projection",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/canon_graph/domain.py",
@@ -829,7 +829,7 @@
     {
       "concept": "source-import-and-knowledge",
       "owner": "Source Import and MKAOS Authorities",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/source_import/application.py",
@@ -890,7 +890,7 @@
     {
       "concept": "agent-runtime",
       "owner": "Agent Runtime Authority",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/agent_runtime/application.py",
@@ -947,7 +947,7 @@
     {
       "concept": "postgresql-persistence-and-migrations",
       "owner": "Authority Unit of Work and migration runner",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/storage/authority_uow.py",
@@ -1004,7 +1004,7 @@
     {
       "concept": "retry-recovery-and-replay",
       "owner": "Owning Authority recovery applications with Command Kernel fencing",
-      "status": "EXECUTABLE",
+      "status": "QUALIFIED",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/recovery.py",
@@ -1069,10 +1069,10 @@
       "claim": "credentialed real Provider is qualified or proven",
       "value": false,
       "evidence": [
-      {
-        "path": "src/novel_forge/api/authority_app.py",
-        "locator": "\"real_provider_proven\": False"
-      }
+        {
+          "path": "src/novel_forge/api/authority_app.py",
+          "locator": "\"real_provider_proven\": False"
+        }
       ]
     },
     {
