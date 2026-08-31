@@ -1,16 +1,67 @@
 from __future__ import annotations
 
 import tempfile
+import subprocess
 import unittest
 from pathlib import Path
 
 from novel_forge.tools.implementation_tree_identity import (
+    build_git_implementation_tree_identity,
     build_implementation_tree_identity,
     select_implementation_paths,
 )
 
 
 class ImplementationTreeIdentityTests(unittest.TestCase):
+    def test_historical_git_identity_matches_the_clean_worktree_algorithm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source = root / "src/novel_forge/example.py"
+            source.parent.mkdir(parents=True)
+            source.write_text("VALUE = 1\n", encoding="utf-8")
+            link = root / "src/novel_forge/example-link.py"
+            link.symlink_to("example.py")
+            (root / "pyproject.toml").write_text(
+                "[project]\nname='example'\n", encoding="utf-8"
+            )
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Novel Forge Test",
+                    "-c",
+                    "user.email=novel-forge-test@example.invalid",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "fixture",
+                ],
+                cwd=root,
+                check=True,
+            )
+            commit_sha = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+
+            clean = build_implementation_tree_identity(root)
+            historical = build_git_implementation_tree_identity(root, commit_sha)
+
+            self.assertEqual(historical, clean)
+            source.write_text("VALUE = 2\n", encoding="utf-8")
+            self.assertEqual(
+                build_git_implementation_tree_identity(root, commit_sha), historical
+            )
+            self.assertNotEqual(
+                build_implementation_tree_identity(root)["implementation_tree_sha"],
+                historical["implementation_tree_sha"],
+            )
+
     def test_identity_is_deterministic_and_only_tracks_semantic_inputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()

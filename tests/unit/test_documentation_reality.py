@@ -578,9 +578,31 @@ class DocumentationRealityTests(unittest.TestCase):
             )
             inventory_path = root / "architecture/reality-evidence.json"
             inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-            inventory["qualification_runs"][0]["implementation_tree_sha"] = (
-                build_implementation_tree_identity(root)["implementation_tree_sha"]
+            run = inventory["qualification_runs"][0]
+            implementation_tree_sha = build_implementation_tree_identity(root)[
+                "implementation_tree_sha"
+            ]
+            run["implementation_tree_sha"] = implementation_tree_sha
+            artifact = run["qualification_report"]
+            report_path = root / artifact["repository_path"]
+            retained = json.loads(report_path.read_text(encoding="utf-8"))
+            retained["implementation_tree_sha"] = implementation_tree_sha
+            retained["source_identity"][
+                "implementation_tree_sha"
+            ] = implementation_tree_sha
+            source_preflight = next(
+                gate
+                for gate in retained["gates"]
+                if gate["gate_id"] == "source-preflight"
             )
+            source_preflight["evidence"][
+                "implementation_tree_sha"
+            ] = implementation_tree_sha
+            report_bytes = (
+                json.dumps(retained, indent=2, sort_keys=True) + "\n"
+            ).encode()
+            report_path.write_bytes(report_bytes)
+            artifact["sha256"] = "sha256:" + hashlib.sha256(report_bytes).hexdigest()
             inventory_path.write_text(
                 json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
             )
@@ -589,7 +611,7 @@ class DocumentationRealityTests(unittest.TestCase):
 
             self.assertEqual(report["status"], "FAIL")
             self.assertIn(
-                "implementation_tree_sha differs from the retained qualification report",
+                "does not match the observed Git implementation tree",
                 "\n".join(report["errors"]),
             )
 
