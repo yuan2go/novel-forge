@@ -64,168 +64,42 @@
   },
   "qualification_runs": [
     {
-      "id": "p0-backend-engineering-qualification",
-      "gate": "P0_PROFILE=local make p0-backend-qualification",
-      "observed_at_sha": "a0fe3624f9c63383586f3b66e15f4c8aec5c14d4",
-      "source_tree": "796edf2d7a4e20b74f8bc088bfc9ce5637ec11a6",
-      "implementation_tree_sha": "sha256:58cda3d29d9f500fb0c5c5fddf8ffbada1a655eba00764f7e4bfa6cdac625a71",
-      "dependency_snapshot_digest": "sha256:fc74be1db650fe80910022209c941eda71d70d04b6e8f39030ba5d34d33291a2",
-      "qualification_report_sha256": "sha256:d8fe02307c945cf3454b8ee176d34479d247965e1accac325c83fb5e542fd99a",
-      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
-      "collected": 3667,
-      "passed": 3667,
+      "id": "focused-qualification-contracts",
+      "evidence_class": "focused_qualification_contracts",
+      "gate": "focused qualification and governance contract pytest suite",
+      "observed_at_sha": "71b3cacec65437939097d7b5524abbb59210b3a2",
+      "source_tree": "283a61042ece1b26e7e144885d38bc8fb0de280d",
+      "implementation_tree_sha": "sha256:7127d6df4705ad1d9b2180c258563c26d8f2902c75a5fa13195bb3f587c2dbbc",
+      "junit_sha256": "sha256:b82d480b6be79778d8f7e3437170045474bcabb8f1638e1b318768926c7138a1",
+      "result_count_scope": "FOCUSED_JUNIT_CASES_NOT_P0_QUALIFICATION",
+      "collected": 69,
+      "passed": 69,
       "failed": 0,
-      "collections": [
-        {
-          "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_nodes": 1678,
-          "junit_cases": 3086,
-          "passed": 3086,
-          "skipped": 0,
-          "complete": true
-        },
-        {
-          "classification": "MIGRATION_COMPATIBILITY",
-          "collected_nodes": 67,
-          "junit_cases": 80,
-          "passed": 80,
-          "skipped": 0,
-          "complete": true,
-          "repeated_in_postgresql_collection": true
-        },
-        {
-          "classification": "POSTGRESQL_REQUIRED",
-          "collected_nodes": 499,
-          "junit_cases": 581,
-          "passed": 581,
-          "skipped": 0,
-          "complete": true
-        }
-      ],
-      "gates": [
-        {"id": "source-preflight", "status": "PASS"},
-        {"id": "documentation-reality", "status": "PASS"},
-        {"id": "static-and-manifests", "status": "PASS"},
-        {"id": "pytest-backend", "status": "PASS"},
-        {"id": "postgresql-start", "status": "PASS"},
-        {"id": "migration-fresh", "status": "PASS"},
-        {"id": "migration-compatibility", "status": "PASS"},
-        {"id": "pytest-postgresql-integration", "status": "PASS"},
-        {"id": "migration-head", "status": "PASS"},
-        {"id": "query-plan-release", "status": "PASS"},
-        {"id": "compose-runtime", "status": "PASS"},
-        {"id": "evidence-finalization", "status": "PASS"}
-      ],
-      "migration": {
-        "applied_count": 105,
-        "expected_head": "20260830_0105_p0_backend_qualification_repairs",
-        "observed_head": "20260830_0105_p0_backend_qualification_repairs"
-      },
-      "cleanup": {
-        "status": "PASS",
-        "owned_resource_count": 20,
-        "remaining_resource_count": 0
-      },
+      "deselected": 1,
       "qualification_evidence": [
         {
-          "path": "tests/architecture/test_narrative_state_boundaries.py",
-          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
+          "path": "tests/unit/test_documentation_reality.py",
+          "symbol": "DocumentationRealityTests.test_qualified_status_fails_closed_on_invalid_p0_projection"
         },
         {
-          "path": "tests/integration/test_authority_attempt_lease_schema_postgres.py",
-          "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
+          "path": "tests/unit/test_backend_qualification.py",
+          "symbol": "BackendQualificationCliTests.test_migration_compatibility_passes_before_complete_postgresql_failure"
         },
         {
-          "path": "tests/integration/test_authority_migrations_postgres.py",
-          "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
+          "path": "tests/unit/test_backend_qualification.py",
+          "symbol": "BackendQualificationCliTests.test_unexpected_gate_exception_writes_failure_and_cleans_owned_resources"
         },
         {
-          "path": "tests/integration/test_book_opening_recovery_protocol_postgres.py",
-          "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
+          "path": "tests/unit/test_backend_qualification_resources.py",
+          "symbol": "QualificationRunIdentityTests.test_cleanup_discovers_resources_created_before_initial_capture"
         },
         {
-          "path": "tests/integration/test_book_opening_recovery_regression_postgres.py",
-          "symbol": "test_book_opening_process_loss_converges_and_admits_one_replacement"
+          "path": "tests/unit/test_release_run_evidence.py",
+          "symbol": "ReleaseRunEvidenceTests.test_p0_report_requires_dependency_migration_gate_and_cleanup_identity"
         },
         {
-          "path": "tests/integration/test_book_opening_workflow_failures_postgres.py",
-          "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
-        },
-        {
-          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
-          "symbol": "test_opening_advances_five_durable_layers_before_book_run_admission"
-        },
-        {
-          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
-          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
-        },
-        {
-          "path": "tests/integration/test_chapter_authority_scheduler_postgres.py",
-          "symbol": "ChapterAuthoritySchedulerPostgresTests.test_admission_does_not_execute_and_ticks_rebuild_full_saga"
-        },
-        {
-          "path": "tests/integration/test_external_effect_runtime_postgres.py",
-          "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
-        },
-        {
-          "path": "tests/integration/test_mkaos_authority_postgres.py",
-          "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
-        },
-        {
-          "path": "tests/integration/test_narrative_state_v2_postgres.py",
-          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
-        },
-        {
-          "path": "tests/integration/test_plan_change_authority_postgres.py",
-          "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
-        },
-        {
-          "path": "tests/integration/test_quality_qualification_postgres.py",
-          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
-        },
-        {
-          "path": "tests/integration/test_source_import_runtime_postgres.py",
-          "symbol": "SourceImportRuntimePostgresTests.test_production_composition_runs_automatic_document_routing"
-        },
-        {
-          "path": "tests/integration/test_story_design_authority_postgres.py",
-          "symbol": "StoryDesignAuthorityPostgresTests.test_activation_supersedes_old_version"
-        },
-        {
-          "path": "tests/integration/test_unified_agent_runtime_postgres.py",
-          "symbol": "UnifiedAgentRuntimePostgresTests.test_runtime_projection_reuses_kernel_attempt_and_lease_tables"
-        },
-        {
-          "path": "tests/unit/test_agent_authority_scheduler.py",
-          "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
-        },
-        {
-          "path": "tests/unit/test_authority_api_surface.py",
-          "symbol": "AuthorityApiSurfaceTests.test_required_product_reads_are_exposed_by_postgresql_app"
-        },
-        {
-          "path": "tests/unit/test_chapter_authority_dependencies.py",
-          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
-        },
-        {
-          "path": "tests/unit/test_chapter_authority_domain_handlers.py",
-          "symbol": "ChapterAuthorityDomainHandlerTests.test_post_blob_final_release_fails_closed_and_binds_receipt"
-        },
-        {
-          "path": "tests/unit/test_command_kernel_admission.py",
-          "symbol": "CommandKernelAdmissionTests.test_missing_command_identity_is_rejected_before_uow"
-        },
-        {
-          "path": "tests/unit/test_postgres_migrations.py",
-          "symbol": "PostgresMigrationTests.test_migration_chain_is_ordered_and_pending_is_deterministic"
-        },
-        {
-          "path": "tests/unit/test_postgresql_authority_cli_boundary.py",
-          "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
-        },
-        {
-          "path": "tests/unit/test_provider_adapter_v2.py",
-          "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
+          "path": "tests/architecture/test_backend_qualification_boundaries.py",
+          "symbol": "BackendQualificationBoundaryTests.test_manual_postgresql_entry_requires_isolated_identity_and_evidence"
         }
       ]
     }
@@ -235,7 +109,7 @@
     {
       "concept": "runtime-composition",
       "owner": "Authority API and process composition",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/api/authority_app.py",
@@ -279,13 +153,13 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "proof_ceiling": "LOCAL_FIXTURE_BACKEND_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "command-attempt-lease-fence",
       "owner": "Command Kernel",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/service.py",
@@ -333,13 +207,13 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "external-effect-provider-control",
       "owner": "Command Kernel ExternalEffect and Production Execution",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
@@ -396,13 +270,13 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_EFFECT_ENGINEERING_QUALIFIED_REAL_PROVIDER_NOT_RUN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "story-design-plan-activation",
       "owner": "Story Design and Plan Change Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
@@ -455,13 +329,13 @@
           "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "chapter-production-saga",
       "owner": "Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_authority/application.py",
@@ -509,13 +383,13 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "quality-and-release-gates",
       "owner": "Quality Qualification and Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
@@ -559,13 +433,13 @@
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "proof_ceiling": "FIXTURE_ENGINEERING_QUALIFIED_HUMAN_REVIEW_NOT_RUN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "book-opening-workflow",
       "owner": "Book Opening Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
@@ -618,13 +492,13 @@
           "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
         }
       ],
-      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "book-chapter-acceptance",
       "owner": "Book Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
@@ -669,13 +543,13 @@
           "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
         }
       ],
-      "proof_ceiling": "LOCAL_VERTICAL_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "canon-and-narrative-state",
       "owner": "Canon approval and Book-accepted Narrative State projection",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/canon_graph/domain.py",
@@ -719,13 +593,13 @@
           "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "source-import-and-knowledge",
       "owner": "Source Import and MKAOS Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/source_import/application.py",
@@ -778,13 +652,13 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "proof_ceiling": "LOCAL_OBJECT_AND_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "agent-runtime",
       "owner": "Agent Runtime Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/agent_runtime/application.py",
@@ -833,13 +707,13 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "proof_ceiling": "LOCAL_FIXTURE_BACKEND_ENGINEERING_QUALIFIED_AUTONOMOUS_BOOK_NOT_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "postgresql-persistence-and-migrations",
       "owner": "Authority Unit of Work and migration runner",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/storage/authority_uow.py",
@@ -888,13 +762,13 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "proof_ceiling": "LOCAL_FRESH_AND_UPGRADE_MATRIX_QUALIFIED_BACKUP_PITR_NOT_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     },
     {
       "concept": "retry-recovery-and-replay",
       "owner": "Owning Authority recovery applications with Command Kernel fencing",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/recovery.py",
@@ -938,8 +812,8 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_AND_COMPOSE_RECOVERY_QUALIFIED_NOT_PRODUCTION_PROVEN",
-      "qualification_run_ids": ["p0-backend-engineering-qualification"]
+      "proof_ceiling": "EXECUTABLE_PENDING_EXACT_SHA_P0_QUALIFICATION",
+      "qualification_run_ids": []
     }
   ],
   "negative_boundaries": [

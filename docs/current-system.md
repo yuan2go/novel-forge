@@ -151,10 +151,9 @@ finalization. No partial subset promotes a capability.
 revision and binds each passing run to the current implementation-tree identity. A test
 file, fixture or historical result cannot establish `QUALIFIED` by itself. The P0
 Provider route is scripted and its evidence remains fixture engineering proof. The
-inventory records the passing P0 run's exact observed SHA, source tree, implementation
-identity, dependency digest, complete-collection accounting, gate results and cleanup
-result; those machine fields, rather than prose test totals, support its current
-`QUALIFIED` statuses.
+current inventory records a passing focused governance suite, but keeps all 13
+capabilities at `EXECUTABLE` until the revised implementation tree obtains a clean
+exact-SHA P0 result. Focused evidence cannot promote a capability to `QUALIFIED`.
 
 Current boundaries, encoded in executable readiness and release-evidence code, are:
 
