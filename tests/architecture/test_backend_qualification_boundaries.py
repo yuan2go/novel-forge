@@ -10,8 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 RUN_LABEL = "novel-forge.qualification.run-id"
 OPERATOR_DOCS = (
     ROOT / "README.md",
-    ROOT / "docs/operations/local-development.md",
-    ROOT / "docs/development/testing.md",
+    ROOT / "docs/current-system.md",
+    ROOT / "docs/runtime-operations.md",
+    ROOT / "docs/development.md",
 )
 
 
@@ -30,6 +31,8 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertIn("resolved dependency digest", docs)
         self.assertIn("branch governance", docs)
         self.assertIn("OPEN / NOT_CLOSED", docs)
+        self.assertIn("documentation-reality", docs)
+        self.assertIn("migration-compatibility", docs)
         for ceiling in (
             "REAL_PROVIDER",
             "HISTORICAL_ORPHAN_MUTATION",
@@ -167,6 +170,25 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertNotIn(".glob(", source)
         self.assertNotIn("pytest.main", source)
         self.assertNotIn("55432", source)
+
+    def test_manual_postgresql_entry_requires_isolated_identity_and_evidence(
+        self,
+    ) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        recipe = makefile.split("postgres-authority-test:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+
+        for required in (
+            "NOVEL_FORGE_DATABASE_URL",
+            "NOVEL_FORGE_QUALIFICATION_DATABASE_NAME",
+            "NOVEL_FORGE_POSTGRES_EVIDENCE_DIR",
+            "--junit-xml",
+            "--collection-report",
+        ):
+            self.assertIn(required, recipe)
+        self.assertNotIn("postgres-authority-test-up", makefile)
+        self.assertNotIn("postgres-authority-test-down", makefile)
 
 
 if __name__ == "__main__":

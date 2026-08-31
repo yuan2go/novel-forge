@@ -95,7 +95,9 @@ release gates do not accept a missing or failed prerequisite.
 PostgreSQL constraints introduced by migration
 `20260829_0104_book_opening_workflow_nodes` bind graph, execution, semantic checkpoint,
 receipt and input-snapshot identities. Parent completion exposes only the next eligible
-layer.
+layer. Migration `20260830_0105_p0_backend_qualification_repairs` adds the complete
+left-prefix indexes required by those foreign-key relationships; it does not change the
+Book Opening ownership model.
 
 Book production delegates chapter execution to Chapter Authority. `PostgresBookAuthority`
 accepts a chapter only after exact Chapter evidence exists. One acceptance transaction
@@ -111,8 +113,9 @@ network I/O is kept outside business transactions.
 
 `src/novel_forge/storage/migrations/runner.py` owns the linear migration registry and
 the `nf_schema_migrations` table. The current registered head is
-`20260829_0104_book_opening_workflow_nodes`. Migration preflight rows fail closed when a
-non-zero blocker count is returned.
+`20260830_0105_p0_backend_qualification_repairs`, matching
+`architecture/manifests/migration-manifest.yaml`. Migration preflight rows fail closed
+when a non-zero blocker count is returned.
 
 MinIO-compatible storage is reached through an ExternalEffect adapter. PostgreSQL stores
 immutable object identity, hash, size and receipt evidence rather than treating a local
@@ -136,20 +139,22 @@ path as authority.
 
 ## Current qualification and gaps
 
-The repository contains unit, architecture, acceptance and PostgreSQL integration tests,
-Compose fixture/recovery checks, worker scenario checks, query-plan checks and web tests.
-Passing them establishes engineering qualification only for their fixtures and scope.
+`make p0-backend-qualification` is the only high-level backend engineering
+qualification entry. After exact-SHA and clean-tree preflight it fails fast through
+Documentation Reality, static and manifest checks, complete non-PostgreSQL tests, a
+run-owned PostgreSQL service, fresh migration, the declared migration-compatibility
+matrix, the complete PostgreSQL integration collection, migration-head and query-plan
+verification, scripted Compose recovery, resource cleanup and atomic evidence
+finalization. No partial subset promotes a capability.
 
-The non-skippable PostgreSQL gate currently has 35 reproducible failures even on a newly created tmpfs
-database: 20 migration/constraint tests, two legacy-planning lineage tests, 11 Book
-production tests and two Book Opening hardening/replay tests. The exact groups and
-representative executable tests are recorded in `architecture/reality-evidence.json`.
-The complete 2,130-test repository run has 55 failures: 11 are duplicate collection of
-the same Book vertical failures, while six Chapter model-effect, one Plan Change and two
-Story Design tests add independent failing symbols. Consequently Provider effect control,
-Story Design/Plan Change activation, Book Opening, Book acceptance, migration and their
-combined recovery claims remain `EXECUTABLE`, not `QUALIFIED`. This documentation reset
-does not change those business paths.
+`architecture/reality-evidence.json` records only runs actually observed on a named
+revision and binds each passing run to the current implementation-tree identity. A test
+file, fixture or historical result cannot establish `QUALIFIED` by itself. The P0
+Provider route is scripted and its evidence remains fixture engineering proof. The
+current inventory retains one validated exact-revision P0 report and projects each
+listed capability as `QUALIFIED` only to the local or scripted engineering ceiling
+recorded beside it. Exact SHA, implementation identity, collection, migration and
+cleanup facts remain in machine evidence rather than duplicated as prose.
 
 Current boundaries, encoded in executable readiness and release-evidence code, are:
 
@@ -160,6 +165,6 @@ Current boundaries, encoded in executable readiness and release-evidence code, a
 - production deployment verification: not established;
 - backup restore and point-in-time recovery proof: not established.
 
-The only next architecture work should begin from a failing executable gate or a missing
-runtime path in `architecture/reality-evidence.json`. Future design text cannot change
-these boundaries.
+The next engineering work must begin from a failure actually emitted by the current
+exact-revision gate or a missing runtime path in the machine inventory. Future design
+text cannot change these boundaries.

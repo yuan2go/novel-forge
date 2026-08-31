@@ -1,12 +1,12 @@
-"""Exact-revision orchestration for P0 backend engineering qualification."""
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -15,8 +15,10 @@ import time
 from typing import Callable, Mapping, Protocol, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
+    PytestCollectionContract,
     QualificationContractError,
     build_backend_pytest_command,
+    build_postgres_pytest_command,
     expected_migration_head,
     load_qualification_manifest,
     resolved_dependency_snapshot,
@@ -31,6 +33,9 @@ from novel_forge.tools.backend_qualification_resources import (
     QualificationRunIdentity,
     ResourceOwnershipError,
     validate_disposable_database_url,
+)
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
 )
 from novel_forge.tools.release_run_evidence import (
     build_p0_backend_qualification_report,
@@ -243,6 +248,11 @@ def _source_identity(
     workflow_sha = environment.get("GITHUB_SHA", "").strip().lower()
     if workflow_sha and workflow_sha != commit_sha:
         raise ValueError("checked-out revision differs from GITHUB_SHA")
+    implementation_tree_sha = str(
+        build_implementation_tree_identity(root).get("implementation_tree_sha") or ""
+    )
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", implementation_tree_sha):
+        raise ValueError("source preflight did not resolve an implementation identity")
     return (
         {
             "commit_sha": commit_sha,
@@ -250,6 +260,7 @@ def _source_identity(
             "branch": branch,
             "dirty": False,
             "workflow_sha": workflow_sha,
+            "implementation_tree_sha": implementation_tree_sha,
         },
         time.monotonic() - started,
     )
@@ -271,16 +282,16 @@ def _manifest_evidence(root: Path, manifest: object) -> dict[str, object]:
 def _fill_remaining_gates(
     gates: list[dict[str, object]], required_gates: Sequence[str]
 ) -> None:
-    completed = {str(item["gate_id"]) for item in gates}
-    for gate_id in required_gates:
-        if gate_id not in completed:
-            gates.append(
-                _gate_result(
-                    gate_id,
-                    "NOT_RUN",
-                    evidence={"reason": "DEPENDENCY_GATE_FAILED"},
-                )
-            )
+    completed = {str(item["gate_id"]): item for item in gates}
+    gates[:] = [
+        completed.get(gate_id)
+        or _gate_result(
+            gate_id,
+            "NOT_RUN",
+            evidence={"reason": "DEPENDENCY_GATE_FAILED"},
+        )
+        for gate_id in required_gates
+    ]
 
 
 def _migration_evidence(database_url: str, expected_head: str) -> dict[str, object]:
@@ -327,7 +338,7 @@ def _cleanup_owned_project(
             "resource_count": 0,
         }
     try:
-        result = owned.cleanup()
+        result = owned.cleanup_discovered()
     except (ResourceOwnershipError, RuntimeError, ValueError) as exc:
         return {
             "phase": phase,
@@ -342,13 +353,41 @@ def _cleanup_owned_project(
     return {"phase": phase, **result}
 
 
+def _record_resource_cleanup_gate(
+    gates: list[dict[str, object]], cleanup: Mapping[str, object]
+) -> None:
+    passed = (
+        cleanup.get("status") == "PASS"
+        and type(cleanup.get("remaining_resource_count")) is int
+        and cleanup.get("remaining_resource_count") == 0
+    )
+    gates[:] = [
+        item for item in gates if item.get("gate_id") != "resource-cleanup"
+    ]
+    gates.append(
+        _gate_result(
+            "resource-cleanup",
+            "PASS" if passed else "FAIL",
+            evidence=dict(cleanup),
+        )
+    )
+
+
 def _aggregate_cleanup(phases: Sequence[Mapping[str, object]]) -> dict[str, object]:
-    failed = [item for item in phases if item.get("status") != "PASS"]
+    failed = [
+        item
+        for item in phases
+        if item.get("status") != "PASS"
+        or type(item.get("remaining_resource_count")) is not int
+        or item.get("remaining_resource_count") != 0
+        or type(item.get("resource_count")) is not int
+        or item.get("resource_count") < 0
+    ]
     remaining = sum(
         int(item.get("remaining_resource_count") or 0)
         for item in phases
-        if isinstance(item.get("remaining_resource_count"), int)
-        and int(item.get("remaining_resource_count") or 0) > 0
+        if type(item.get("remaining_resource_count")) is int
+        and item.get("remaining_resource_count") > 0
     )
     return {
         "status": "FAIL" if failed else "PASS",
@@ -370,6 +409,7 @@ def _failure_report(
     cleanup: Mapping[str, object],
     failure_reason: str,
 ) -> int:
+    _record_resource_cleanup_gate(gates, cleanup)
     _fill_remaining_gates(gates, required_gates)
     report = build_p0_backend_qualification_failure_report(
         tested_sha=str(source["commit_sha"]),
@@ -392,10 +432,129 @@ def _failure_report(
     return QUALIFICATION_FAIL
 
 
-def run_qualification(
+@dataclass
+class _QualificationRunState:
+    output: Path | None = None
+    source: Mapping[str, object] | None = None
+    manifest_evidence: Mapping[str, object] | None = None
+    dependency_snapshot: Mapping[str, object] | None = None
+    identity: QualificationRunIdentity | None = None
+    profile: str = ""
+    required_gates: Sequence[str] = ()
+    gates: list[dict[str, object]] = field(default_factory=list)
+    cleanup_phases: list[dict[str, object]] = field(default_factory=list)
+    projects: list[tuple[str, OwnedComposeProject]] = field(default_factory=list)
+
+    def bind(
+        self,
+        *,
+        output: Path,
+        source: Mapping[str, object],
+        manifest_evidence: Mapping[str, object],
+        dependency_snapshot: Mapping[str, object],
+        identity: QualificationRunIdentity,
+        profile: str,
+        required_gates: Sequence[str],
+        gates: list[dict[str, object]],
+        cleanup_phases: list[dict[str, object]],
+    ) -> None:
+        self.output = output
+        self.source = source
+        self.manifest_evidence = manifest_evidence
+        self.dependency_snapshot = dependency_snapshot
+        self.identity = identity
+        self.profile = profile
+        self.required_gates = required_gates
+        self.gates = gates
+        self.cleanup_phases = cleanup_phases
+
+    def register(self, phase: str, owned: OwnedComposeProject) -> None:
+        self.projects.append((phase, owned))
+
+    def cleanup_remaining(self) -> dict[str, object]:
+        for phase, owned in self.projects:
+            result = _cleanup_owned_project(owned, phase=phase)
+            existing = next(
+                (
+                    index
+                    for index, item in enumerate(self.cleanup_phases)
+                    if item.get("phase") == phase
+                ),
+                None,
+            )
+            if existing is None:
+                self.cleanup_phases.append(result)
+            elif (
+                self.cleanup_phases[existing].get("status") != "PASS"
+                and result.get("status") == "PASS"
+            ):
+                self.cleanup_phases[existing] = result
+        return _aggregate_cleanup(self.cleanup_phases)
+
+    @property
+    def can_write_failure(self) -> bool:
+        return all(
+            value is not None
+            for value in (
+                self.output,
+                self.source,
+                self.manifest_evidence,
+                self.dependency_snapshot,
+                self.identity,
+            )
+        )
+
+    def write_unexpected_failure(self, exc: Exception) -> int:
+        assert self.output is not None
+        assert self.source is not None
+        assert self.manifest_evidence is not None
+        assert self.dependency_snapshot is not None
+        assert self.identity is not None
+        cleanup = self.cleanup_remaining()
+        completed = {str(item.get("gate_id") or "") for item in self.gates}
+        failed_gate = next(
+            (
+                gate_id
+                for gate_id in self.required_gates
+                if gate_id not in completed
+                and gate_id not in {"resource-cleanup", "evidence-finalization"}
+            ),
+            "evidence-finalization",
+        )
+        self.gates[:] = [
+            item for item in self.gates if item.get("gate_id") != failed_gate
+        ]
+        self.gates.append(
+            _gate_result(
+                failed_gate,
+                "FAIL",
+                evidence={
+                    "error_type": type(exc).__name__,
+                    "error": str(sanitize_evidence(exc)),
+                },
+            )
+        )
+        return _failure_report(
+            output=self.output,
+            source=self.source,
+            manifest_evidence=self.manifest_evidence,
+            dependency_snapshot=self.dependency_snapshot,
+            identity=self.identity,
+            profile=self.profile,
+            gates=self.gates,
+            required_gates=self.required_gates,
+            cleanup=cleanup,
+            failure_reason=(
+                f"{failed_gate} raised an unexpected {type(exc).__name__}"
+            ),
+        )
+
+
+def _run_qualification(
     argv: Sequence[str] | None = None,
     *,
     process_runner: ProcessRunner | None = None,
+    run_state: _QualificationRunState,
 ) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, default=ROOT)
@@ -461,6 +620,7 @@ def run_qualification(
         )
         return max(0.001, min(limit, remaining))
     gates: list[dict[str, object]] = []
+    cleanup_phases: list[dict[str, object]] = []
     try:
         source, source_duration = _source_identity(
             runner,
@@ -482,9 +642,102 @@ def run_qualification(
     identity = QualificationRunIdentity.create(
         commit_sha=str(source["commit_sha"]), artifact_parent=output.parent
     )
+    identity.artifact_root.mkdir(parents=True, exist_ok=True)
     manifest_evidence = _manifest_evidence(root, manifest)
     dependency_snapshot = resolved_dependency_snapshot(
         args.python, repo_root=root
+    )
+    run_state.bind(
+        output=output,
+        source=source,
+        manifest_evidence=manifest_evidence,
+        dependency_snapshot=dependency_snapshot,
+        identity=identity,
+        profile=args.profile,
+        required_gates=manifest.required_gates,
+        gates=gates,
+        cleanup_phases=cleanup_phases,
+    )
+    documentation = _run_process(
+        runner,
+        (
+            args.python,
+            "-m",
+            "novel_forge.tools.documentation_reality",
+            "--repo-root",
+            str(root),
+            "--expected-sha",
+            str(source["commit_sha"]),
+        ),
+        root=root,
+        environment=environment,
+        timeout=timeout(300),
+        log_path=identity.artifact_root / "documentation-reality-process.json",
+    )
+    documentation_output = identity.artifact_root / "documentation-reality.json"
+    documentation_payload: object = None
+    try:
+        documentation_payload = json.loads(documentation.stdout)
+        if not isinstance(documentation_payload, dict):
+            raise ValueError("documentation reality output is not an object")
+        if (
+            documentation_payload.get("schema_version")
+            != "novel-forge.documentation-reality-check.v1"
+            or documentation_payload.get("evidence_class") != "reality_inventory"
+            or documentation_payload.get("status") != "PASS"
+            or documentation_payload.get("tested_sha") != source["commit_sha"]
+            or documentation_payload.get("errors") != []
+        ):
+            raise ValueError("documentation reality evidence is not exact-SHA PASS")
+        write_atomic_evidence(documentation_output, documentation_payload)
+        documentation_evidence: dict[str, object] = {
+            **documentation_payload,
+            "artifact": documentation_output.name,
+            "digest": _digest(documentation_output),
+        }
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        documentation_evidence = {
+            "error": str(sanitize_evidence(exc)),
+            "report": (
+                sanitize_evidence(documentation_payload)
+                if isinstance(documentation_payload, Mapping)
+                else {}
+            ),
+            "returncode": documentation.returncode,
+            "timed_out": documentation.timed_out,
+        }
+    if documentation.returncode or "error" in documentation_evidence:
+        gates.append(
+            _gate_result(
+                "documentation-reality",
+                "FAIL",
+                duration_seconds=documentation.duration_seconds,
+                evidence=documentation_evidence,
+            )
+        )
+        return _failure_report(
+            output=output,
+            source=source,
+            manifest_evidence=manifest_evidence,
+            dependency_snapshot=dependency_snapshot,
+            identity=identity,
+            profile=args.profile,
+            gates=gates,
+            required_gates=manifest.required_gates,
+            cleanup={
+                "status": "PASS",
+                "remaining_resource_count": 0,
+                "phases": [],
+            },
+            failure_reason="documentation-reality failed",
+        )
+    gates.append(
+        _gate_result(
+            "documentation-reality",
+            "PASS",
+            duration_seconds=documentation.duration_seconds,
+            evidence=documentation_evidence,
+        )
     )
     static = _run_process(
         runner,
@@ -507,31 +760,22 @@ def run_qualification(
                 },
             )
         )
-        _fill_remaining_gates(gates, manifest.required_gates)
-        cleanup = {
-            "status": "PASS",
-            "remaining_resource_count": 0,
-            "phases": [],
-        }
-        report = build_p0_backend_qualification_failure_report(
-            tested_sha=str(source["commit_sha"]),
-            source_tree=str(source["source_tree"]),
-            source_identity=source,
-            manifest=manifest_evidence,
+        return _failure_report(
+            output=output,
+            source=source,
+            manifest_evidence=manifest_evidence,
             dependency_snapshot=dependency_snapshot,
+            identity=identity,
+            profile=args.profile,
             gates=gates,
-            cleanup=cleanup,
-            run_identity={
-                "run_id": identity.run_id,
-                "compose_project": identity.compose_project,
-                "database_name": identity.database_name,
-                "artifact_root": identity.artifact_root.name,
-                "profile": args.profile,
+            required_gates=manifest.required_gates,
+            cleanup={
+                "status": "PASS",
+                "remaining_resource_count": 0,
+                "phases": [],
             },
             failure_reason="static-and-manifests failed",
         )
-        write_atomic_evidence(output, report)
-        return QUALIFICATION_FAIL
     gates.append(
         _gate_result(
             "static-and-manifests",
@@ -540,9 +784,6 @@ def run_qualification(
             evidence={"returncode": 0},
         )
     )
-
-    cleanup_phases: list[dict[str, object]] = []
-    identity.artifact_root.mkdir(parents=True, exist_ok=True)
 
     backend_junit = identity.artifact_root / "backend-pytest.xml"
     backend_collection = identity.artifact_root / "backend-pytest-collection.json"
@@ -625,8 +866,8 @@ def run_qualification(
         environment=postgres_environment,
         client=docker,
     )
+    run_state.register("postgresql", postgres_owned)
     postgres_started = time.monotonic()
-    postgres_captured = False
     try:
         postgres_owned.assert_unclaimed()
         docker.run_compose(
@@ -644,7 +885,6 @@ def run_qualification(
             timeout=timeout(300),
         )
         ownership_receipt = postgres_owned.capture()
-        postgres_captured = True
         postgres_port = docker.published_port(
             project_name=identity.compose_project,
             compose_files=postgres_files,
@@ -660,17 +900,8 @@ def run_qualification(
             database_url,
             expected_database=identity.database_name,
         )
-    except (RuntimeError, ValueError, TimeoutError) as exc:
-        cleanup = (
-            _cleanup_owned_project(postgres_owned, phase="postgresql")
-            if postgres_captured
-            else {
-                "phase": "postgresql",
-                "status": "FAIL",
-                "remaining_resource_count": -1,
-                "error": "PostgreSQL start failed before ownership capture",
-            }
-        )
+    except Exception as exc:
+        cleanup = _cleanup_owned_project(postgres_owned, phase="postgresql")
         cleanup_phases.append(cleanup)
         gates.append(
             _gate_result(
@@ -731,7 +962,7 @@ def run_qualification(
         fresh_migration = _migration_evidence(
             database_url, str(manifest_evidence["expected_migration_head"])
         )
-    except (RuntimeError, ValueError) as exc:
+    except Exception as exc:
         fresh_migration = {"error": str(sanitize_evidence(exc))}
     if migration_process.returncode or "error" in fresh_migration:
         cleanup_phases.append(
@@ -767,6 +998,86 @@ def run_qualification(
             "PASS",
             duration_seconds=time.monotonic() - migration_started,
             evidence=fresh_migration,
+        )
+    )
+
+    migration_compatibility_paths = manifest.semantic_slices["migration_matrix"]
+    migration_compatibility_contract = PytestCollectionContract(
+        name="migration-compatibility",
+        paths=migration_compatibility_paths,
+        classification="POSTGRESQL_REQUIRED",
+        complete_collection=True,
+        allow_skips=False,
+    )
+    migration_compatibility_junit = (
+        identity.artifact_root / "migration-compatibility-pytest.xml"
+    )
+    migration_compatibility_collection = (
+        identity.artifact_root / "migration-compatibility-collection.json"
+    )
+    migration_compatibility_command = build_postgres_pytest_command(
+        contract=migration_compatibility_contract,
+        python=args.python,
+        junit_xml=migration_compatibility_junit,
+        collection_report=migration_compatibility_collection,
+    )
+    migration_compatibility_process = _run_process(
+        runner,
+        migration_compatibility_command,
+        root=root,
+        environment=database_environment,
+        timeout=timeout(3_600),
+        log_path=identity.artifact_root / "migration-compatibility-process.json",
+    )
+    try:
+        migration_compatibility_evidence = validate_postgres_test_evidence(
+            contract=migration_compatibility_contract,
+            junit_xml=migration_compatibility_junit,
+            collection_report=migration_compatibility_collection,
+            repo_root=root,
+            semantic_slices={
+                "migration_matrix": migration_compatibility_paths,
+            },
+        )
+    except (QualificationContractError, ValueError) as exc:
+        migration_compatibility_evidence = {
+            "error": str(sanitize_evidence(exc)),
+            "returncode": migration_compatibility_process.returncode,
+            "timed_out": migration_compatibility_process.timed_out,
+        }
+    if (
+        migration_compatibility_process.returncode
+        or migration_compatibility_evidence.get("status") != "PASS"
+    ):
+        cleanup_phases.append(
+            _cleanup_owned_project(postgres_owned, phase="postgresql")
+        )
+        gates.append(
+            _gate_result(
+                "migration-compatibility",
+                "FAIL",
+                duration_seconds=migration_compatibility_process.duration_seconds,
+                evidence=migration_compatibility_evidence,
+            )
+        )
+        return _failure_report(
+            output=output,
+            source=source,
+            manifest_evidence=manifest_evidence,
+            dependency_snapshot=dependency_snapshot,
+            identity=identity,
+            profile=args.profile,
+            gates=gates,
+            required_gates=manifest.required_gates,
+            cleanup=_aggregate_cleanup(cleanup_phases),
+            failure_reason="migration-compatibility failed",
+        )
+    gates.append(
+        _gate_result(
+            "migration-compatibility",
+            "PASS",
+            duration_seconds=migration_compatibility_process.duration_seconds,
+            evidence=migration_compatibility_evidence,
         )
     )
 
@@ -853,7 +1164,7 @@ def run_qualification(
         current_migration = _migration_evidence(
             database_url, str(manifest_evidence["expected_migration_head"])
         )
-    except (RuntimeError, ValueError) as exc:
+    except Exception as exc:
         current_migration = {"error": str(sanitize_evidence(exc))}
     if "error" in current_migration:
         cleanup_phases.append(
@@ -964,7 +1275,7 @@ def run_qualification(
     if postgres_cleanup["status"] != "PASS":
         gates.append(
             _gate_result(
-                "compose-runtime",
+                "resource-cleanup",
                 "FAIL",
                 evidence={"error": "PostgreSQL qualification cleanup failed"},
             )
@@ -991,6 +1302,21 @@ def run_qualification(
         "NOVEL_FORGE_AUTHORITY_API_HOST_IP": "127.0.0.1",
         "NOVEL_FORGE_QUALIFICATION_RUN_ID": identity.run_id,
     }
+    runtime_identity = QualificationRunIdentity.bind(
+        commit_sha=str(source["commit_sha"]),
+        run_id=identity.run_id,
+        compose_project=compose_project,
+        artifact_root=identity.artifact_root,
+    )
+    runtime_owned = OwnedComposeProject(
+        identity=runtime_identity,
+        repo_root=root,
+        compose_files=(root / "compose.yml", root / "compose.qualification.yml"),
+        environment=compose_environment,
+        client=docker,
+    )
+    run_state.register("compose-runtime", runtime_owned)
+    runtime_owned.assert_unclaimed()
     compose_process = _run_process(
         runner,
         (
@@ -1024,6 +1350,7 @@ def run_qualification(
         if (
             not isinstance(compose_cleanup, Mapping)
             or compose_cleanup.get("status") != "PASS"
+            or type(compose_cleanup.get("remaining_resource_count")) is not int
             or compose_cleanup.get("remaining_resource_count") != 0
         ):
             raise ValueError("Compose runtime ownership-checked cleanup did not pass")
@@ -1042,17 +1369,26 @@ def run_qualification(
             ).get("operation_id"),
             "authoritative_side_effect": True,
         }
-    except (TypeError, ValueError) as exc:
+    except Exception as exc:
         compose_gate_evidence = {"error": str(sanitize_evidence(exc))}
-        if not any(item.get("phase") == "compose-runtime" for item in cleanup_phases):
-            cleanup_phases.append(
-                {
-                    "phase": "compose-runtime",
-                    "status": "FAIL",
-                    "remaining_resource_count": -1,
-                    "error": "Compose proof did not emit successful cleanup evidence",
-                }
-            )
+    runtime_cleanup_verification = _cleanup_owned_project(
+        runtime_owned, phase="compose-runtime"
+    )
+    if (
+        type(runtime_cleanup_verification.get("resource_count")) is not int
+        or runtime_cleanup_verification.get("resource_count") != 0
+    ):
+        compose_gate_evidence = {
+            **compose_gate_evidence,
+            "error": "Compose proof required orchestrator emergency cleanup",
+        }
+    if "error" in compose_gate_evidence:
+        cleanup_phases[:] = [
+            item
+            for item in cleanup_phases
+            if item.get("phase") != "compose-runtime"
+        ]
+        cleanup_phases.append(runtime_cleanup_verification)
     if compose_process.returncode or "error" in compose_gate_evidence:
         gates.append(
             _gate_result(
@@ -1088,15 +1424,9 @@ def run_qualification(
     )
 
     cleanup = _aggregate_cleanup(cleanup_phases)
+    _record_resource_cleanup_gate(gates, cleanup)
     finalization_started = time.monotonic()
     if cleanup["status"] != "PASS":
-        gates.append(
-            _gate_result(
-                "evidence-finalization",
-                "FAIL",
-                evidence={"error": "qualification cleanup did not pass"},
-            )
-        )
         return _failure_report(
             output=output,
             source=source,
@@ -1107,7 +1437,7 @@ def run_qualification(
             gates=gates,
             required_gates=manifest.required_gates,
             cleanup=cleanup,
-            failure_reason="evidence-finalization failed",
+            failure_reason="resource-cleanup failed",
         )
     gates.append(
         _gate_result(
@@ -1148,6 +1478,28 @@ def run_qualification(
         )
     )
     return PASS
+
+
+def run_qualification(
+    argv: Sequence[str] | None = None,
+    *,
+    process_runner: ProcessRunner | None = None,
+) -> int:
+    run_state = _QualificationRunState()
+    try:
+        return _run_qualification(
+            argv,
+            process_runner=process_runner,
+            run_state=run_state,
+        )
+    except Exception as exc:
+        if run_state.can_write_failure:
+            return run_state.write_unexpected_failure(exc)
+        print(str(sanitize_evidence(exc)), file=sys.stderr)
+        return PREFLIGHT_FAIL
+    except BaseException:
+        run_state.cleanup_remaining()
+        raise
 
 
 def main() -> int:

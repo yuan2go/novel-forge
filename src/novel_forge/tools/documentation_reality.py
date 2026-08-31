@@ -12,7 +12,12 @@ import subprocess
 import tokenize
 from typing import Any, Iterable, Mapping
 
+from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
+)
 from novel_forge.tools.implementation_tree_identity import (
+    build_git_implementation_tree_identity,
     build_implementation_tree_identity,
 )
 
@@ -54,6 +59,14 @@ HISTORICAL_OR_SPECULATIVE = re.compile(
 CONCEPT_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 INLINE_CODE = re.compile(r"`([^`\n]+)`")
 WEB_COMMENT = re.compile(r"^\s*(?://|/\*|\*|<!--)\s?(.*)$")
+FULL_SHA = re.compile(r"[0-9a-f]{40}")
+CONTENT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+P0_EVIDENCE_CLASS = "p0_backend_engineering_qualification"
+P0_COLLECTIONS = (
+    "BACKEND_NON_POSTGRESQL",
+    "MIGRATION_COMPATIBILITY",
+    "POSTGRESQL_REQUIRED",
+)
 
 
 def _error(errors: list[str], message: str) -> None:
@@ -211,6 +224,398 @@ def _validate_migrations(
     return migration_ids
 
 
+def _is_nonnegative_integer(value: object) -> bool:
+    return type(value) is int and value >= 0
+
+
+def _git_tree_for_ancestor_commit(
+    root: Path,
+    commit_sha: str,
+    errors: list[str],
+    *,
+    context: str,
+) -> str:
+    if not FULL_SHA.fullmatch(commit_sha):
+        return ""
+    try:
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        tree = subprocess.run(
+            ["git", "rev-parse", "--verify", f"{commit_sha}^{{tree}}"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _error(errors, f"{context}.observed_at_sha cannot be verified by Git: {exc}")
+        return ""
+    resolved_tree = tree.stdout.strip().lower()
+    if ancestor.returncode != 0 or tree.returncode != 0 or not FULL_SHA.fullmatch(
+        resolved_tree
+    ):
+        _error(
+            errors,
+            f"{context}.observed_at_sha is not an ancestor Git commit",
+        )
+        return ""
+    return resolved_tree
+
+
+def _p0_report_projection(report: Mapping[str, Any]) -> dict[str, Any]:
+    gates = report.get("gates")
+    if not isinstance(gates, list):
+        raise ValueError("P0 report gates are not a list")
+    by_id = {
+        str(gate.get("gate_id") or ""): gate
+        for gate in gates
+        if isinstance(gate, Mapping)
+    }
+
+    def collection(
+        gate_id: str,
+        classification: str,
+        *,
+        repeated: bool = False,
+    ) -> dict[str, Any]:
+        gate = by_id.get(gate_id)
+        evidence = gate.get("evidence") if isinstance(gate, Mapping) else None
+        if not isinstance(evidence, Mapping):
+            raise ValueError(f"P0 report gate evidence is missing: {gate_id}")
+        collected = evidence.get("collection")
+        junit = evidence.get("junit")
+        if not isinstance(collected, Mapping) or not isinstance(junit, Mapping):
+            raise ValueError(f"P0 report collection evidence is missing: {gate_id}")
+        projection = {
+            "classification": classification,
+            "collected_nodes": collected.get("collected_count"),
+            "junit_cases": junit.get("tests"),
+            "passed": junit.get("passed"),
+            "skipped": junit.get("skipped"),
+            "complete": collected.get("complete_collection"),
+        }
+        if repeated:
+            projection["repeated_in_postgresql_collection"] = True
+        return projection
+
+    collections = [
+        collection("pytest-backend", "BACKEND_NON_POSTGRESQL"),
+        collection(
+            "migration-compatibility",
+            "MIGRATION_COMPATIBILITY",
+            repeated=True,
+        ),
+        collection("pytest-postgresql-integration", "POSTGRESQL_REQUIRED"),
+    ]
+    migration_fresh = by_id.get("migration-fresh")
+    migration_evidence = (
+        migration_fresh.get("evidence")
+        if isinstance(migration_fresh, Mapping)
+        else None
+    )
+    migration = report.get("migration")
+    cleanup = report.get("cleanup")
+    if not isinstance(migration_evidence, Mapping) or not isinstance(
+        migration, Mapping
+    ):
+        raise ValueError("P0 report migration evidence is missing")
+    if not isinstance(cleanup, Mapping) or not isinstance(cleanup.get("phases"), list):
+        raise ValueError("P0 report cleanup evidence is missing")
+    phases = [dict(phase) for phase in cleanup["phases"]]
+    owned_resource_count = sum(
+        int(phase.get("resource_count") or 0)
+        for phase in phases
+        if type(phase.get("resource_count")) is int
+    )
+    unique_collections = (collections[0], collections[2])
+    return {
+        "source_tree": report.get("source_tree"),
+        "implementation_tree_sha": report.get("implementation_tree_sha"),
+        "dependency_snapshot_digest": (
+            report.get("dependency_snapshot") or {}
+        ).get("digest"),
+        "collected": sum(int(item["junit_cases"]) for item in unique_collections),
+        "passed": sum(int(item["passed"]) for item in unique_collections),
+        "failed": 0,
+        "collections": collections,
+        "gates": [
+            {"id": gate.get("gate_id"), "status": gate.get("status")}
+            for gate in gates
+            if isinstance(gate, Mapping)
+        ],
+        "migration": {
+            "applied_count": migration_evidence.get("applied_count"),
+            "expected_head": migration.get("expected_head"),
+            "observed_head": migration.get("observed_head"),
+        },
+        "cleanup": {
+            "status": cleanup.get("status"),
+            "owned_resource_count": owned_resource_count,
+            "remaining_resource_count": cleanup.get("remaining_resource_count"),
+            "phases": phases,
+        },
+        "evidence_ceilings": report.get("evidence_ceilings"),
+    }
+
+
+def _validate_p0_run_projection(
+    root: Path,
+    run: Mapping[str, Any],
+    errors: list[str],
+    *,
+    context: str,
+    migration_head: str,
+) -> bool:
+    initial_error_count = len(errors)
+    observed_at_sha = str(run.get("observed_at_sha") or "")
+    for field in ("dependency_snapshot_digest",):
+        if not CONTENT_DIGEST.fullmatch(str(run.get(field) or "")):
+            _error(errors, f"{context}.{field} must be a SHA-256 digest")
+
+    artifact = run.get("qualification_report")
+    qualification_run_id = ""
+    retained_report: Mapping[str, Any] | None = None
+    if not isinstance(artifact, Mapping):
+        _error(errors, f"{context}.qualification_report must be an object")
+    else:
+        qualification_run_id = str(artifact.get("run_id") or "")
+        token = qualification_run_id.removeprefix("p0-")
+        if not re.fullmatch(r"p0-[0-9a-f]{32}", qualification_run_id):
+            _error(errors, f"{context}.qualification_report.run_id is invalid")
+        expected_root = f"novel-forge-p0-{observed_at_sha[:12]}-{token}"
+        if artifact.get("artifact_root") != expected_root:
+            _error(
+                errors,
+                f"{context}.qualification_report.artifact_root differs from the run identity",
+            )
+        expected_report = f"p0-backend-qualification-{observed_at_sha}.json"
+        if artifact.get("artifact") != expected_report:
+            _error(
+                errors,
+                f"{context}.qualification_report.artifact differs from the observed SHA",
+            )
+        if not CONTENT_DIGEST.fullmatch(str(artifact.get("sha256") or "")):
+            _error(
+                errors,
+                f"{context}.qualification_report.sha256 must be a SHA-256 digest",
+            )
+        if artifact.get("retention") != "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT":
+            _error(
+                errors,
+                f"{context}.qualification_report.retention is not explicit",
+            )
+        expected_path = f"architecture/evidence/{expected_report}"
+        repository_path = str(artifact.get("repository_path") or "")
+        if repository_path != expected_path:
+            _error(
+                errors,
+                f"{context}.qualification_report.repository_path is not canonical",
+            )
+        report_path = _inside_root(root, repository_path, errors)
+        if report_path is None or not report_path.is_file():
+            _error(errors, f"{context}.qualification_report artifact is missing")
+        else:
+            try:
+                report_bytes = report_path.read_bytes()
+                parsed_report = json.loads(report_bytes.decode("utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                _error(
+                    errors,
+                    f"{context}.qualification_report artifact is invalid: {exc}",
+                )
+            else:
+                observed_digest = "sha256:" + hashlib.sha256(report_bytes).hexdigest()
+                if artifact.get("sha256") != observed_digest:
+                    _error(
+                        errors,
+                        f"{context}.qualification_report artifact digest differs",
+                    )
+                if not isinstance(parsed_report, Mapping):
+                    _error(
+                        errors,
+                        f"{context}.qualification_report artifact must be an object",
+                    )
+                else:
+                    try:
+                        from novel_forge.tools.release_run_evidence import (
+                            validate_p0_backend_qualification_report,
+                        )
+
+                        validate_p0_backend_qualification_report(
+                            parsed_report,
+                            expected_sha=observed_at_sha,
+                        )
+                    except ValueError as exc:
+                        _error(
+                            errors,
+                            f"{context}.qualification_report artifact fails validation: {exc}",
+                        )
+                    else:
+                        retained_report = parsed_report
+                        report_identity = parsed_report.get("run_identity")
+                        if not isinstance(report_identity, Mapping) or (
+                            report_identity.get("run_id") != qualification_run_id
+                            or report_identity.get("artifact_root")
+                            != artifact.get("artifact_root")
+                        ):
+                            _error(
+                                errors,
+                                f"{context}.qualification_report run identity differs",
+                            )
+
+    collections = run.get("collections")
+    collections_by_class: dict[str, Mapping[str, Any]] = {}
+    if not isinstance(collections, list):
+        _error(errors, f"{context}.collections must be a list")
+    else:
+        for index, collection in enumerate(collections):
+            collection_context = f"{context}.collections[{index}]"
+            if not isinstance(collection, Mapping):
+                _error(errors, f"{collection_context} must be an object")
+                continue
+            classification = str(collection.get("classification") or "")
+            if classification in collections_by_class:
+                _error(errors, f"{context} duplicates collection {classification}")
+            collections_by_class[classification] = collection
+            for field in ("collected_nodes", "junit_cases", "passed", "skipped"):
+                if not _is_nonnegative_integer(collection.get(field)):
+                    _error(
+                        errors,
+                        f"{collection_context}.{field} must be a non-negative integer",
+                    )
+            if collection.get("complete") is not True:
+                _error(errors, f"{collection_context} is not a complete collection")
+            if collection.get("skipped") != 0:
+                _error(errors, f"{collection_context} contains skipped cases")
+            if collection.get("passed") != collection.get("junit_cases"):
+                _error(errors, f"{collection_context} is not an all-passing collection")
+            if (
+                _is_nonnegative_integer(collection.get("junit_cases"))
+                and _is_nonnegative_integer(collection.get("collected_nodes"))
+                and collection["junit_cases"] < collection["collected_nodes"]
+            ):
+                _error(errors, f"{collection_context} has fewer JUnit cases than nodes")
+        if tuple(collections_by_class) != P0_COLLECTIONS:
+            _error(errors, f"{context}.collections differ from the canonical P0 classes")
+        migration_collection = collections_by_class.get("MIGRATION_COMPATIBILITY")
+        if (
+            migration_collection is not None
+            and migration_collection.get("repeated_in_postgresql_collection") is not True
+        ):
+            _error(errors, f"{context} does not mark the repeated migration matrix")
+        unique_classes = ("BACKEND_NON_POSTGRESQL", "POSTGRESQL_REQUIRED")
+        if all(
+            classification in collections_by_class
+            and _is_nonnegative_integer(
+                collections_by_class[classification].get("junit_cases")
+            )
+            for classification in unique_classes
+        ):
+            unique_total = sum(
+                int(collections_by_class[classification]["junit_cases"])
+                for classification in unique_classes
+            )
+            if run.get("collected") != unique_total or run.get("passed") != unique_total:
+                _error(errors, f"{context} aggregate counts duplicate or omit cases")
+    if run.get("result_count_scope") != "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES":
+        _error(errors, f"{context}.result_count_scope is not canonical")
+
+    gates = run.get("gates")
+    if not isinstance(gates, list):
+        _error(errors, f"{context}.gates must be a list")
+    else:
+        gate_ids = [
+            str(gate.get("id") or "") if isinstance(gate, Mapping) else ""
+            for gate in gates
+        ]
+        if tuple(gate_ids) != REQUIRED_GATE_ORDER:
+            _error(errors, f"{context}.gates differ from the canonical P0 order")
+        if any(
+            not isinstance(gate, Mapping) or gate.get("status") != "PASS"
+            for gate in gates
+        ):
+            _error(errors, f"{context}.gates contain a non-passing result")
+
+    migration = run.get("migration")
+    if not isinstance(migration, Mapping):
+        _error(errors, f"{context}.migration must be an object")
+    elif (
+        migration.get("expected_head") != migration_head
+        or migration.get("observed_head") != migration_head
+        or not _is_nonnegative_integer(migration.get("applied_count"))
+        or migration.get("applied_count") < 1
+    ):
+        _error(errors, f"{context}.migration does not prove the inventory head")
+
+    cleanup = run.get("cleanup")
+    if not isinstance(cleanup, Mapping):
+        _error(errors, f"{context}.cleanup must be an object")
+    else:
+        token = qualification_run_id.removeprefix("p0-")
+        expected_phases = (
+            ("postgresql", f"nf-p0-{token}"),
+            ("compose-runtime", f"nf-p0-{token}-runtime"),
+        )
+        phases = cleanup.get("phases")
+        phase_resource_count = 0
+        valid_phases = isinstance(phases, list) and len(phases) == len(
+            expected_phases
+        )
+        if valid_phases:
+            for phase, (expected_phase, expected_project) in zip(
+                phases, expected_phases, strict=True
+            ):
+                if (
+                    not isinstance(phase, Mapping)
+                    or phase.get("phase") != expected_phase
+                    or phase.get("status") != "PASS"
+                    or not _is_nonnegative_integer(phase.get("resource_count"))
+                    or phase.get("resource_count") < 1
+                    or not _is_nonnegative_integer(
+                        phase.get("remaining_resource_count")
+                    )
+                    or phase.get("remaining_resource_count") != 0
+                    or phase.get("run_id") != qualification_run_id
+                    or phase.get("compose_project") != expected_project
+                    or phase.get("receipt")
+                    != f"compose-resource-ownership-{expected_project}.json"
+                ):
+                    valid_phases = False
+                    break
+                phase_resource_count += int(phase["resource_count"])
+        if (
+            cleanup.get("status") != "PASS"
+            or not _is_nonnegative_integer(cleanup.get("remaining_resource_count"))
+            or cleanup.get("remaining_resource_count") != 0
+            or not _is_nonnegative_integer(cleanup.get("owned_resource_count"))
+            or cleanup.get("owned_resource_count") != phase_resource_count
+            or not valid_phases
+        ):
+            _error(errors, f"{context}.cleanup is not zero-residue receipt-bound PASS")
+    if run.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
+        _error(errors, f"{context}.evidence_ceilings differ from P0 policy")
+    if retained_report is not None:
+        try:
+            report_projection = _p0_report_projection(retained_report)
+        except (TypeError, ValueError) as exc:
+            _error(errors, f"{context}.qualification_report cannot be projected: {exc}")
+        else:
+            for field, expected in report_projection.items():
+                if run.get(field) != expected:
+                    _error(
+                        errors,
+                        f"{context}.{field} differs from the retained qualification report",
+                    )
+    return len(errors) == initial_error_count
+
+
 def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int:
     if not isinstance(inventory, Mapping):
         _error(errors, "reality inventory must be a JSON object")
@@ -235,6 +640,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     runs_by_id: dict[str, Mapping[str, Any]] = {}
     run_results: dict[str, tuple[int, int, int]] = {}
     run_evidence: dict[str, set[tuple[str, str, str]]] = {}
+    run_classes: dict[str, str] = {}
+    historical_implementation_identities: dict[str, str] = {}
     if not isinstance(qualification_runs, list) or not qualification_runs:
         _error(errors, "reality inventory qualification_runs must be a non-empty list")
     else:
@@ -243,6 +650,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             if not isinstance(run, Mapping):
                 _error(errors, f"{context} must be an object")
                 continue
+            run_error_count = len(errors)
             run_id = str(run.get("id") or "").strip()
             if not CONCEPT_NAME.fullmatch(run_id):
                 _error(errors, f"{context}.id must be lowercase kebab-case")
@@ -250,11 +658,51 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"duplicate qualification run id: {run_id}")
             else:
                 runs_by_id[run_id] = run
+            evidence_class = str(run.get("evidence_class") or "").strip()
+            if evidence_class not in {
+                P0_EVIDENCE_CLASS,
+                "focused_qualification_contracts",
+            }:
+                _error(errors, f"{context}.evidence_class is not recognized")
+            elif run_id in runs_by_id and runs_by_id[run_id] is run:
+                run_classes[run_id] = evidence_class
             if not str(run.get("gate") or "").strip():
                 _error(errors, f"{context}.gate is missing")
             observed_at_sha = str(run.get("observed_at_sha") or "").strip()
             if not re.fullmatch(r"[0-9a-f]{40}", observed_at_sha):
                 _error(errors, f"{context}.observed_at_sha must be a full Git SHA")
+            source_tree = str(run.get("source_tree") or "").strip()
+            if not FULL_SHA.fullmatch(source_tree):
+                _error(errors, f"{context}.source_tree must be a full Git tree SHA")
+            resolved_tree = _git_tree_for_ancestor_commit(
+                root,
+                observed_at_sha,
+                errors,
+                context=context,
+            )
+            if resolved_tree and source_tree != resolved_tree:
+                _error(
+                    errors,
+                    f"{context}.source_tree differs from the observed Git commit",
+                )
+            observed_implementation_tree_sha = ""
+            if resolved_tree:
+                try:
+                    if observed_at_sha not in historical_implementation_identities:
+                        historical_implementation_identities[observed_at_sha] = str(
+                            build_git_implementation_tree_identity(
+                                root, observed_at_sha
+                            ).get("implementation_tree_sha")
+                            or ""
+                        )
+                    observed_implementation_tree_sha = (
+                        historical_implementation_identities[observed_at_sha]
+                    )
+                except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                    _error(
+                        errors,
+                        f"{context} cannot reconstruct the observed implementation tree: {exc}",
+                    )
             counts = [run.get(field) for field in ("collected", "passed", "failed")]
             valid_counts = not any(
                 type(value) is not int or value < 0 for value in counts
@@ -264,8 +712,6 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"{context} result counts must be non-negative integers")
             elif not counts_match:
                 _error(errors, f"{context} passed plus failed must equal collected")
-            elif run_id in runs_by_id and runs_by_id[run_id] is run:
-                run_results[run_id] = (counts[0], counts[1], counts[2])
             if counts_match and counts[2] == 0:
                 implementation_tree_sha = str(
                     run.get("implementation_tree_sha") or ""
@@ -280,6 +726,15 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                         errors,
                         f"{context} does not qualify the current implementation tree",
                     )
+                if (
+                    observed_implementation_tree_sha
+                    and implementation_tree_sha
+                    != observed_implementation_tree_sha
+                ):
+                    _error(
+                        errors,
+                        f"{context} does not match the observed Git implementation tree",
+                    )
                 evidence = _validate_reference_list(
                     root,
                     run,
@@ -288,11 +743,48 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     context=context,
                     required=True,
                 )
-                run_evidence[run_id] = {
-                    key
-                    for item in evidence
-                    if (key := _reference_key(item)) is not None
+                if evidence_class == P0_EVIDENCE_CLASS:
+                    _validate_p0_run_projection(
+                        root,
+                        run,
+                        errors,
+                        context=context,
+                        migration_head=migration_head,
+                    )
+                if (
+                    len(errors) == run_error_count
+                    and run_id in runs_by_id
+                    and runs_by_id[run_id] is run
+                ):
+                    run_results[run_id] = (counts[0], counts[1], counts[2])
+                    run_evidence[run_id] = {
+                        key
+                        for item in evidence
+                        if (key := _reference_key(item)) is not None
+                    }
+            elif (
+                counts_match
+                and run_id in runs_by_id
+                and runs_by_id[run_id] is run
+                and evidence_class in {
+                    P0_EVIDENCE_CLASS,
+                    "focused_qualification_contracts",
                 }
+            ):
+                run_results[run_id] = (counts[0], counts[1], counts[2])
+
+    retained_artifacts = {
+        str(report.get("repository_path") or "")
+        for run in runs_by_id.values()
+        if run_classes.get(str(run.get("id") or "")) == P0_EVIDENCE_CLASS
+        and isinstance((report := run.get("qualification_report")), Mapping)
+    }
+    retained_root = root / "architecture/evidence"
+    if retained_root.is_dir():
+        for path in sorted(item for item in retained_root.rglob("*") if item.is_file()):
+            relative = _relative(root, path)
+            if relative not in retained_artifacts:
+                _error(errors, f"unreferenced retained qualification artifact: {relative}")
 
     capabilities = inventory.get("capabilities")
     if not isinstance(capabilities, list):
@@ -370,6 +862,12 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 run = runs_by_id.get(str(run_id))
                 if run is None:
                     _error(errors, f"{context} references unknown run: {run_id}")
+                    continue
+                if run_classes.get(str(run_id)) != P0_EVIDENCE_CLASS:
+                    _error(
+                        errors,
+                        f"{context} references a run below the P0 qualification class: {run_id}",
+                    )
                     continue
                 result_counts = run_results.get(str(run_id))
                 if result_counts is None:

@@ -14,8 +14,11 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
     validate_resolved_dependency_snapshot,
 )
+from novel_forge.tools.documentation_reality import CANONICAL_DOCUMENTS
 
 
 GIT_SHA = re.compile(r"[0-9a-f]{40}")
@@ -30,18 +33,6 @@ REQUIRED_ARTIFACT_FILES = {
     "docker_image_digest": "docker-image-digest-{sha}.json",
     "environment_metadata": "environment-metadata-{sha}.json",
 }
-P0_EVIDENCE_CEILINGS = {
-    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-    "LONGFORM": "NOT_PROVEN",
-    "MULTIBOOK": "NOT_PROVEN",
-    "PRODUCTION": "NOT_PROVEN",
-}
-
-
 def _validated_sha(commit_sha: str) -> str:
     value = commit_sha.strip().lower()
     if not GIT_SHA.fullmatch(value):
@@ -73,6 +64,49 @@ def _required_artifact_evidence(
         str(evidence.get("digest") or "")
     ):
         raise ValueError(f"{evidence_name} artifact identity is invalid")
+
+
+def _validate_cleanup_evidence(
+    cleanup: Mapping[str, Any], *, run_identity: Mapping[str, Any]
+) -> None:
+    run_id = str(run_identity.get("run_id") or "")
+    token = run_id.removeprefix("p0-")
+    compose_project = str(run_identity.get("compose_project") or "")
+    runtime_project = str(run_identity.get("compose_runtime_project") or "")
+    if (
+        not re.fullmatch(r"p0-[0-9a-f]{32}", run_id)
+        or compose_project != f"nf-p0-{token}"
+        or runtime_project != f"nf-p0-{token}-runtime"
+    ):
+        raise ValueError("P0 cleanup run identity is invalid")
+    phases = cleanup.get("phases")
+    expected = (
+        ("postgresql", compose_project),
+        ("compose-runtime", runtime_project),
+    )
+    if (
+        cleanup.get("status") != "PASS"
+        or type(cleanup.get("remaining_resource_count")) is not int
+        or cleanup.get("remaining_resource_count") != 0
+        or not isinstance(phases, list)
+        or len(phases) != len(expected)
+    ):
+        raise ValueError("P0 resource cleanup evidence is incomplete")
+    for phase, (expected_phase, expected_project) in zip(phases, expected, strict=True):
+        if (
+            not isinstance(phase, Mapping)
+            or phase.get("phase") != expected_phase
+            or phase.get("status") != "PASS"
+            or type(phase.get("resource_count")) is not int
+            or phase.get("resource_count") < 1
+            or type(phase.get("remaining_resource_count")) is not int
+            or phase.get("remaining_resource_count") != 0
+            or phase.get("run_id") != run_id
+            or phase.get("compose_project") != expected_project
+            or phase.get("receipt")
+            != f"compose-resource-ownership-{expected_project}.json"
+        ):
+            raise ValueError("P0 resource cleanup phase evidence is invalid")
 
 
 def _validate_pytest_gate_evidence(
@@ -133,20 +167,86 @@ def _validate_pytest_gate_evidence(
         raise ValueError(f"{evidence_name} JUnit/collection accounting is invalid")
 
 
+def _validate_migration_gate_evidence(
+    evidence: Mapping[str, Any],
+    *,
+    expected_head: str,
+    evidence_name: str,
+) -> None:
+    applied_count = evidence.get("applied_count")
+    if (
+        not expected_head
+        or type(applied_count) is not int
+        or applied_count < 1
+        or evidence.get("expected_head") != expected_head
+        or evidence.get("observed_head") != expected_head
+        or evidence.get("missing") != []
+        or evidence.get("extra") != []
+    ):
+        raise ValueError(f"{evidence_name} does not prove the canonical migration head")
+
+
 def _validate_p0_gate_evidence(
     *,
     gates: Sequence[Mapping[str, Any]],
     tested_sha: str,
     source_tree: str,
+    implementation_tree_sha: str,
     expected_migration_head: str,
+    run_identity: Mapping[str, Any],
 ) -> None:
     source = _required_gate_evidence(gates, "source-preflight")
     if (
         source.get("commit_sha") != tested_sha
         or source.get("source_tree") != source_tree
         or source.get("dirty") is not False
+        or source.get("implementation_tree_sha") != implementation_tree_sha
     ):
         raise ValueError("P0 source-preflight evidence identity differs")
+
+    documentation = _required_gate_evidence(gates, "documentation-reality")
+    documentation_counts = {
+        field: documentation.get(field)
+        for field in (
+            "canonical_document_count",
+            "capability_count",
+            "source_comment_count",
+            "module_docstring_count",
+            "source_docstring_count",
+        )
+    }
+    if (
+        documentation.get("schema_version")
+        != "novel-forge.documentation-reality-check.v1"
+        or documentation.get("evidence_class") != "reality_inventory"
+        or documentation.get("status") != "PASS"
+        or documentation.get("tested_sha") != tested_sha
+        or documentation.get("errors") != []
+        or not CONTENT_DIGEST.fullmatch(
+            str(documentation.get("inventory_sha256") or "")
+        )
+        or documentation_counts["canonical_document_count"]
+        != len(CANONICAL_DOCUMENTS)
+        or not isinstance(documentation_counts["capability_count"], int)
+        or isinstance(documentation_counts["capability_count"], bool)
+        or documentation_counts["capability_count"] < 1
+        or any(
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < 0
+            for field, value in documentation_counts.items()
+            if field not in {"canonical_document_count", "capability_count"}
+        )
+    ):
+        raise ValueError("Documentation Reality evidence is not exact-SHA PASS")
+    _required_artifact_evidence(
+        documentation,
+        evidence_name="Documentation Reality",
+    )
+
+    static = _required_gate_evidence(gates, "static-and-manifests")
+    if type(static.get("returncode")) is not int or static.get("returncode") != 0:
+        raise ValueError("static and manifest evidence is not zero-exit PASS")
 
     backend = _required_gate_evidence(gates, "pytest-backend")
     _validate_pytest_gate_evidence(
@@ -154,6 +254,21 @@ def _validate_p0_gate_evidence(
         expected_schema="novel-forge.backend-pytest-evidence.v1",
         evidence_name="backend pytest",
     )
+    migration_compatibility = _required_gate_evidence(
+        gates, "migration-compatibility"
+    )
+    _validate_pytest_gate_evidence(
+        migration_compatibility,
+        expected_schema="novel-forge.postgresql-pytest-evidence.v1",
+        evidence_name="migration compatibility pytest",
+    )
+    migration_slices = migration_compatibility.get("semantic_slices")
+    if (
+        not isinstance(migration_slices, Mapping)
+        or not isinstance(migration_slices.get("migration_matrix"), list)
+        or not migration_slices["migration_matrix"]
+    ):
+        raise ValueError("migration compatibility matrix evidence is incomplete")
     if any(gate.get("gate_id") == "pytest-postgresql-integration" for gate in gates):
         postgresql = _required_gate_evidence(
             gates, "pytest-postgresql-integration"
@@ -164,15 +279,42 @@ def _validate_p0_gate_evidence(
             evidence_name="PostgreSQL pytest",
         )
 
-    migration = _required_gate_evidence(gates, "migration-head")
+    postgresql_start = _required_gate_evidence(gates, "postgresql-start")
+    database_identity = postgresql_start.get("database_identity")
+    ownership_count = postgresql_start.get("ownership_resource_count")
+    run_id = str(run_identity.get("run_id") or "")
+    run_token = run_id.removeprefix("p0-")
+    expected_database_name = f"nf_p0_{run_token}_test"
     if (
-        not expected_migration_head
-        or migration.get("expected_head") != expected_migration_head
-        or migration.get("observed_head") != expected_migration_head
-    ):
-        raise ValueError(
-            "P0 qualification migration head is not bound to the canonical manifest"
+        not re.fullmatch(r"p0-[0-9a-f]{32}", run_id)
+        or run_identity.get("database_name") != expected_database_name
+        or not isinstance(database_identity, Mapping)
+        or database_identity.get("database_name") != expected_database_name
+        or database_identity.get("host_class") != "LOOPBACK"
+        or type(database_identity.get("port")) is not int
+        or not 1 <= database_identity["port"] <= 65535
+        or not CONTENT_DIGEST.fullmatch(
+            str(database_identity.get("server_identity_digest") or "")
         )
+        or postgresql_start.get("dynamic_port") is not True
+        or type(ownership_count) is not int
+        or ownership_count < 1
+    ):
+        raise ValueError("PostgreSQL start evidence is not run-owned and isolated")
+
+    migration_fresh = _required_gate_evidence(gates, "migration-fresh")
+    _validate_migration_gate_evidence(
+        migration_fresh,
+        expected_head=expected_migration_head,
+        evidence_name="fresh migration",
+    )
+
+    migration = _required_gate_evidence(gates, "migration-head")
+    _validate_migration_gate_evidence(
+        migration,
+        expected_head=expected_migration_head,
+        evidence_name="migration head verification",
+    )
     query_plan = _required_gate_evidence(gates, "query-plan-release")
     _required_artifact_evidence(query_plan, evidence_name="query-plan")
 
@@ -192,6 +334,9 @@ def _validate_p0_gate_evidence(
         )
     if compose.get("authoritative_side_effect") is not True:
         raise ValueError("Compose runtime evidence lacks an authoritative side effect")
+
+    cleanup = _required_gate_evidence(gates, "resource-cleanup")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
 
     finalization = _required_gate_evidence(gates, "evidence-finalization")
     if finalization.get("atomic_write") is not True or not str(
@@ -359,15 +504,18 @@ def build_p0_backend_qualification_report(
     cleanup: Mapping[str, Any],
     run_identity: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Build one fail-closed P0 report from exact-revision gate evidence."""
     commit_sha = _validated_sha(tested_sha)
     tree_sha = _validated_sha(source_tree)
     workflow_sha = str(source_identity.get("workflow_sha") or "")
+    implementation_tree_sha = str(
+        source_identity.get("implementation_tree_sha") or ""
+    )
     if (
         source_identity.get("dirty") is not False
         or source_identity.get("commit_sha") != commit_sha
         or source_identity.get("source_tree") != tree_sha
         or (workflow_sha and workflow_sha != commit_sha)
+        or not CONTENT_DIGEST.fullmatch(implementation_tree_sha)
     ):
         raise ValueError("P0 qualification source identity must be exact and clean")
     if (
@@ -382,6 +530,8 @@ def build_p0_backend_qualification_report(
         raise ValueError("P0 qualification required gate IDs are invalid")
     if len(set(required_gates)) != len(required_gates):
         raise ValueError("P0 qualification required gate IDs are duplicated")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("P0 qualification required gate order is not canonical")
     gate_ids = [str(item.get("gate_id") or "") for item in gates]
     if gate_ids != required_gates:
         raise ValueError("P0 qualification gates are missing, extra, or out of order")
@@ -409,7 +559,9 @@ def build_p0_backend_qualification_report(
         gates=gates,
         tested_sha=commit_sha,
         source_tree=tree_sha,
+        implementation_tree_sha=implementation_tree_sha,
         expected_migration_head=expected_head,
+        run_identity=run_identity,
     )
     migration_gate = next(
         gate for gate in gates if gate.get("gate_id") == "migration-head"
@@ -435,12 +587,11 @@ def build_p0_backend_qualification_report(
         raise ValueError("P0 qualification manifest digest entry is invalid")
     if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
         raise ValueError("P0 qualification evidence ceilings differ from policy")
-    if cleanup.get("status") != "PASS" or cleanup.get(
-        "remaining_resource_count"
-    ) != 0:
-        raise ValueError("P0 qualification cleanup is incomplete")
-    if not str(run_identity.get("run_id") or ""):
-        raise ValueError("P0 qualification run identity is empty")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
+    if dict(cleanup) != dict(
+        _required_gate_evidence(gates, "resource-cleanup")
+    ):
+        raise ValueError("P0 qualification cleanup differs from its gate evidence")
 
     from novel_forge.tools.backend_qualification_contract import sanitize_evidence
 
@@ -451,6 +602,7 @@ def build_p0_backend_qualification_report(
         "decision": "PASS",
         "tested_sha": commit_sha,
         "source_tree": tree_sha,
+        "implementation_tree_sha": implementation_tree_sha,
         "source_identity": dict(source_identity),
         "run_identity": dict(run_identity),
         "qualification_manifest": {
@@ -487,7 +639,6 @@ def build_p0_backend_qualification_failure_report(
     run_identity: Mapping[str, Any],
     failure_reason: str,
 ) -> dict[str, Any]:
-    """Preserve partial exact-SHA evidence without promoting a failed run."""
     commit_sha = _validated_sha(tested_sha)
     tree_sha = _validated_sha(source_tree)
     required_gates = manifest.get("required_gates")
@@ -495,6 +646,8 @@ def build_p0_backend_qualification_failure_report(
         str(gate.get("gate_id") or "") for gate in gates
     ] != required_gates:
         raise ValueError("failed P0 report gates differ from the manifest")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("failed P0 report gate order is not canonical")
     allowed_statuses = {"PASS", "FAIL", "BLOCKED", "NOT_RUN"}
     if not any(gate.get("status") in {"FAIL", "BLOCKED"} for gate in gates):
         raise ValueError("failed P0 report has no failed or blocked gate")
@@ -518,6 +671,9 @@ def build_p0_backend_qualification_failure_report(
         "failure_reason": failure_reason,
         "tested_sha": commit_sha,
         "source_tree": tree_sha,
+        "implementation_tree_sha": str(
+            source_identity.get("implementation_tree_sha") or ""
+        ),
         "source_identity": dict(source_identity),
         "run_identity": dict(run_identity),
         "qualification_manifest": {
@@ -547,7 +703,6 @@ def validate_p0_backend_qualification_report(
     *,
     expected_sha: str,
 ) -> dict[str, Any]:
-    """Independently validate the persisted success report's binding and ceilings."""
     tested_sha = _validated_sha(expected_sha)
     if report.get("schema_version") != (
         "novel-forge.p0-backend-qualification-report.v1"
@@ -559,12 +714,16 @@ def validate_p0_backend_qualification_report(
         raise ValueError("P0 backend qualification report targets another SHA")
     if not GIT_SHA.fullmatch(str(report.get("source_tree") or "")):
         raise ValueError("P0 backend qualification source tree is invalid")
+    implementation_tree_sha = str(report.get("implementation_tree_sha") or "")
     source_identity = report.get("source_identity")
     if (
         not isinstance(source_identity, Mapping)
         or source_identity.get("dirty") is not False
         or source_identity.get("commit_sha") != tested_sha
         or source_identity.get("source_tree") != report.get("source_tree")
+        or not CONTENT_DIGEST.fullmatch(implementation_tree_sha)
+        or source_identity.get("implementation_tree_sha")
+        != implementation_tree_sha
         or (
             source_identity.get("workflow_sha")
             and source_identity.get("workflow_sha") != tested_sha
@@ -575,6 +734,9 @@ def validate_p0_backend_qualification_report(
     if not isinstance(dependency, Mapping):
         raise ValueError("P0 backend qualification dependency snapshot is invalid")
     validated_dependency = validate_resolved_dependency_snapshot(dependency)
+    run_identity = report.get("run_identity")
+    if not isinstance(run_identity, Mapping):
+        raise ValueError("P0 backend qualification run identity is invalid")
     migration = report.get("migration")
     if (
         not isinstance(migration, Mapping)
@@ -593,6 +755,8 @@ def validate_p0_backend_qualification_report(
         item.get("gate_id") if isinstance(item, Mapping) else "" for item in gates
     ] != required_gates:
         raise ValueError("P0 backend qualification gate order differs")
+    if tuple(required_gates) != REQUIRED_GATE_ORDER:
+        raise ValueError("P0 backend qualification gate order is not canonical")
     if any(
         not isinstance(item, Mapping) or item.get("status") != "PASS"
         for item in gates
@@ -602,15 +766,18 @@ def validate_p0_backend_qualification_report(
         gates=gates,
         tested_sha=tested_sha,
         source_tree=str(report["source_tree"]),
+        implementation_tree_sha=implementation_tree_sha,
         expected_migration_head=str(migration["expected_head"]),
+        run_identity=run_identity,
     )
     cleanup = report.get("cleanup")
-    if (
-        not isinstance(cleanup, Mapping)
-        or cleanup.get("status") != "PASS"
-        or cleanup.get("remaining_resource_count") != 0
-    ):
+    if not isinstance(cleanup, Mapping):
         raise ValueError("P0 backend qualification cleanup evidence is invalid")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
+    if dict(cleanup) != dict(
+        _required_gate_evidence(gates, "resource-cleanup")
+    ):
+        raise ValueError("P0 backend qualification cleanup differs from its gate")
     if report.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
         raise ValueError("P0 backend qualification evidence ceilings differ")
     return {
@@ -618,6 +785,7 @@ def validate_p0_backend_qualification_report(
         "status": "PASS",
         "tested_sha": tested_sha,
         "source_tree": report["source_tree"],
+        "implementation_tree_sha": implementation_tree_sha,
         "dependency_digest": validated_dependency["digest"],
         "migration_head": migration["observed_head"],
         "gate_count": len(gates),
@@ -626,7 +794,6 @@ def validate_p0_backend_qualification_report(
 
 
 def write_atomic_evidence(path: str | Path, payload: Mapping[str, Any]) -> None:
-    """Persist JSON evidence with fsync and same-directory atomic replacement."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary_name = ""

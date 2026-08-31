@@ -10,6 +10,8 @@ from unittest.mock import patch
 from novel_forge.tools.backend_qualification_contract import (
     PytestCollectionContract,
     QualificationContractError,
+    REQUIRED_GATE_ORDER,
+    REQUIRED_SEMANTIC_SLICES,
     expected_migration_head,
     load_qualification_manifest,
     parse_junit_xml,
@@ -25,6 +27,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendQualificationManifestTests(unittest.TestCase):
+    def test_required_gates_make_reality_and_migration_compatibility_explicit(
+        self,
+    ) -> None:
+        manifest = load_qualification_manifest(ROOT)
+
+        self.assertEqual(manifest.required_gates, REQUIRED_GATE_ORDER)
+        self.assertTrue(
+            REQUIRED_SEMANTIC_SLICES.issubset(manifest.semantic_slices.keys())
+        )
+        discovered = {
+            path.relative_to(ROOT).as_posix()
+            for pattern in ("test_*migration*.py", "test_*upgrade*.py")
+            for path in (ROOT / "tests" / "integration").glob(pattern)
+        }
+        self.assertTrue(
+            discovered.issubset(manifest.semantic_slices["migration_matrix"])
+        )
+
     def test_integration_collection_is_complete_and_postgresql_required(self) -> None:
         manifest = load_qualification_manifest(ROOT)
 
@@ -203,6 +223,55 @@ class BackendQualificationManifestTests(unittest.TestCase):
                 validate_collection_report(
                     contract=contract, report_path=report, repo_root=root
                 )
+
+    def test_complete_collection_accepts_an_explicit_file_matrix(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tests = root / "tests" / "integration"
+            tests.mkdir(parents=True)
+            first = tests / "test_first.py"
+            second = tests / "test_second.py"
+            first.write_text("def test_first():\n    pass\n", encoding="utf-8")
+            second.write_text("def test_second():\n    pass\n", encoding="utf-8")
+            contract = PytestCollectionContract(
+                name="migration-compatibility",
+                paths=(
+                    "tests/integration/test_first.py",
+                    "tests/integration/test_second.py",
+                ),
+                classification="POSTGRESQL_REQUIRED",
+                complete_collection=True,
+                allow_skips=False,
+            )
+            report = root / "collection.json"
+            report.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "novel-forge.pytest-collection.v1",
+                        "collected_count": 2,
+                        "node_ids": [
+                            "tests/integration/test_first.py::test_first",
+                            "tests/integration/test_second.py::test_second",
+                        ],
+                        "source_files": [
+                            "tests/integration/test_first.py",
+                            "tests/integration/test_second.py",
+                        ],
+                        "collection_errors": [],
+                        "pytest_exit_status": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            evidence = validate_collection_report(
+                contract=contract,
+                report_path=report,
+                repo_root=root,
+            )
+
+        self.assertEqual(evidence["source_file_count"], 2)
+        self.assertEqual(evidence["source_files"], list(contract.paths))
 
 
 if __name__ == "__main__":

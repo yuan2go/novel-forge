@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -14,6 +15,10 @@ from novel_forge.tools.release_run_evidence import (
     validate_p0_backend_qualification_report,
     write_atomic_evidence,
     main as release_evidence_main,
+)
+from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
 )
 
 
@@ -81,14 +86,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
     def test_p0_report_requires_dependency_migration_gate_and_cleanup_identity(
         self,
     ) -> None:
-        required_gates = (
-            "source-preflight",
-            "pytest-backend",
-            "migration-head",
-            "query-plan-release",
-            "compose-runtime",
-            "evidence-finalization",
-        )
+        required_gates = REQUIRED_GATE_ORDER
         manifest = {
             "schema_version": "novel-forge.backend-qualification-manifest.v1",
             "required_gates": list(required_gates),
@@ -96,16 +94,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             "manifest_digests": {
                 "architecture/manifests/migration-manifest.yaml": DIGEST
             },
-            "evidence_ceilings": {
-                "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-                "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-                "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-                "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-                "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-                "LONGFORM": "NOT_PROVEN",
-                "MULTIBOOK": "NOT_PROVEN",
-                "PRODUCTION": "NOT_PROVEN",
-            },
+            "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
         }
         pytest_evidence = {
             "schema_version": "novel-forge.backend-pytest-evidence.v1",
@@ -134,6 +123,69 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 "additional_junit_case_count": 1,
             },
         }
+        postgres_evidence = {
+            **pytest_evidence,
+            "schema_version": "novel-forge.postgresql-pytest-evidence.v1",
+            "semantic_slices": {
+                "migration_matrix": [
+                    "tests/integration/test_authority_migrations_postgres.py"
+                ]
+            },
+        }
+        documentation_evidence = {
+            "schema_version": "novel-forge.documentation-reality-check.v1",
+            "evidence_class": "reality_inventory",
+            "status": "PASS",
+            "tested_sha": SHA,
+            "inventory_sha256": DIGEST,
+            "canonical_document_count": 5,
+            "capability_count": 13,
+            "source_comment_count": 1,
+            "module_docstring_count": 1,
+            "source_docstring_count": 1,
+            "errors": [],
+            "artifact": "documentation-reality.json",
+            "digest": DIGEST,
+        }
+        run_id = "p0-" + "1" * 32
+        compose_project = "nf-p0-" + "1" * 32
+        runtime_project = compose_project + "-runtime"
+        database_name = "nf_p0_" + "1" * 32 + "_test"
+        run_identity = {
+            "run_id": run_id,
+            "compose_project": compose_project,
+            "compose_runtime_project": runtime_project,
+            "database_name": database_name,
+        }
+        cleanup_evidence = {
+            "status": "PASS",
+            "owned_resource_count": 4,
+            "remaining_resource_count": 0,
+            "phases": [
+                {
+                    "phase": "postgresql",
+                    "status": "PASS",
+                    "resource_count": 2,
+                    "remaining_resource_count": 0,
+                    "run_id": run_id,
+                    "compose_project": compose_project,
+                    "receipt": (
+                        f"compose-resource-ownership-{compose_project}.json"
+                    ),
+                },
+                {
+                    "phase": "compose-runtime",
+                    "status": "PASS",
+                    "resource_count": 2,
+                    "remaining_resource_count": 0,
+                    "run_id": run_id,
+                    "compose_project": runtime_project,
+                    "receipt": (
+                        f"compose-resource-ownership-{runtime_project}.json"
+                    ),
+                },
+            ],
+        }
         gates = [
             {
                 "gate_id": gate_id,
@@ -144,15 +196,40 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         "commit_sha": SHA,
                         "source_tree": "c" * 40,
                         "dirty": False,
+                        "implementation_tree_sha": DIGEST,
                     }
                     if gate_id == "source-preflight"
+                    else documentation_evidence
+                    if gate_id == "documentation-reality"
                     else pytest_evidence
                     if gate_id == "pytest-backend"
+                    else {"returncode": 0}
+                    if gate_id == "static-and-manifests"
+                    else {
+                        "database_identity": {
+                            "database_name": database_name,
+                            "host_class": "LOOPBACK",
+                            "port": 55432,
+                            "server_identity_digest": DIGEST,
+                        },
+                        "dynamic_port": True,
+                        "ownership_resource_count": 2,
+                    }
+                    if gate_id == "postgresql-start"
+                    else postgres_evidence
+                    if gate_id
+                    in {
+                        "migration-compatibility",
+                        "pytest-postgresql-integration",
+                    }
                     else {
                         "expected_head": "manifest-head",
                         "observed_head": "manifest-head",
+                        "applied_count": 1,
+                        "missing": [],
+                        "extra": [],
                     }
-                    if gate_id == "migration-head"
+                    if gate_id in {"migration-fresh", "migration-head"}
                     else {"artifact": "query-plan.json", "digest": DIGEST}
                     if gate_id == "query-plan-release"
                     else {
@@ -164,6 +241,8 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         "authoritative_side_effect": True,
                     }
                     if gate_id == "compose-runtime"
+                    else cleanup_evidence
+                    if gate_id == "resource-cleanup"
                     else {"artifact": "p0.json", "atomic_write": True}
                 ),
             }
@@ -190,15 +269,17 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 "dirty": False,
                 "branch": "feature",
                 "workflow_sha": "",
+                "implementation_tree_sha": DIGEST,
             },
             manifest=manifest,
             dependency_snapshot=dependency,
             gates=gates,
-            cleanup={"status": "PASS", "remaining_resource_count": 0},
-            run_identity={"run_id": "p0-run", "compose_project": "nf-p0-run"},
+            cleanup=cleanup_evidence,
+            run_identity=run_identity,
         )
 
         self.assertEqual(report["decision"], "PASS")
+        self.assertEqual(report["implementation_tree_sha"], DIGEST)
         self.assertEqual(report["migration"]["expected_head"], "manifest-head")
         self.assertEqual(report["migration"]["observed_head"], "manifest-head")
         self.assertFalse(report["dependency_snapshot"]["git_sha_alone_reproducible"])
@@ -214,21 +295,23 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "dirty": False,
                     "branch": "feature",
                     "workflow_sha": "",
+                    "implementation_tree_sha": DIGEST,
                 },
                 manifest=manifest,
                 dependency_snapshot=tampered_dependency,
                 gates=gates,
-                cleanup={"status": "PASS", "remaining_resource_count": 0},
-                run_identity={"run_id": "p0-run"},
+                cleanup=cleanup_evidence,
+                run_identity=run_identity,
             )
 
         invalid_compose_gates = [dict(item) for item in gates]
-        compose_gate = dict(invalid_compose_gates[4])
+        compose_index = required_gates.index("compose-runtime")
+        compose_gate = dict(invalid_compose_gates[compose_index])
         compose_gate["evidence"] = {
             **compose_gate["evidence"],
             "post_restart_operation_id": "operation-pre",
         }
-        invalid_compose_gates[4] = compose_gate
+        invalid_compose_gates[compose_index] = compose_gate
         with self.assertRaisesRegex(ValueError, "distinct operation"):
             build_p0_backend_qualification_report(
                 tested_sha=SHA,
@@ -239,12 +322,108 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "dirty": False,
                     "branch": "feature",
                     "workflow_sha": "",
+                    "implementation_tree_sha": DIGEST,
                 },
                 manifest=manifest,
                 dependency_snapshot=dependency,
                 gates=invalid_compose_gates,
-                cleanup={"status": "PASS", "remaining_resource_count": 0},
-                run_identity={"run_id": "p0-run"},
+                cleanup=cleanup_evidence,
+                run_identity=run_identity,
+            )
+
+        cleanup_mutations = (
+            (
+                "boolean-remaining-count",
+                lambda payload: payload.update(remaining_resource_count=False),
+            ),
+            (
+                "duplicate-phase",
+                lambda payload: payload["phases"].__setitem__(
+                    1, copy.deepcopy(payload["phases"][0])
+                ),
+            ),
+            (
+                "missing-receipt",
+                lambda payload: payload["phases"][1].pop("receipt"),
+            ),
+            (
+                "boolean-resource-count",
+                lambda payload: payload["phases"][0].update(resource_count=False),
+            ),
+        )
+        for label, mutate in cleanup_mutations:
+            with self.subTest(cleanup=label):
+                malformed = copy.deepcopy(report)
+                mutate(malformed["cleanup"])
+                malformed_cleanup_gate = next(
+                    gate
+                    for gate in malformed["gates"]
+                    if gate["gate_id"] == "resource-cleanup"
+                )
+                malformed_cleanup_gate["evidence"] = copy.deepcopy(
+                    malformed["cleanup"]
+                )
+                with self.assertRaisesRegex(ValueError, "cleanup"):
+                    validate_p0_backend_qualification_report(
+                        malformed,
+                        expected_sha=SHA,
+                    )
+
+        gate_mutations = (
+            (
+                "static-and-manifests",
+                lambda evidence: evidence.update(returncode=False),
+                "static and manifest",
+            ),
+            (
+                "postgresql-start",
+                lambda evidence: evidence["database_identity"].update(
+                    database_name="shared_database"
+                ),
+                "run-owned and isolated",
+            ),
+            (
+                "migration-fresh",
+                lambda evidence: evidence.update(
+                    observed_head="wrong-head",
+                    missing=["manifest-head"],
+                    extra=["wrong-head"],
+                ),
+                "fresh migration",
+            ),
+        )
+        for gate_id, mutate, expected in gate_mutations:
+            with self.subTest(gate=gate_id):
+                malformed = copy.deepcopy(report)
+                gate = next(
+                    item for item in malformed["gates"] if item["gate_id"] == gate_id
+                )
+                mutate(gate["evidence"])
+                with self.assertRaisesRegex(ValueError, expected):
+                    validate_p0_backend_qualification_report(
+                        malformed,
+                        expected_sha=SHA,
+                    )
+
+        rebound = copy.deepcopy(report)
+        rebound["implementation_tree_sha"] = "sha256:" + "f" * 64
+        with self.assertRaisesRegex(ValueError, "source identity"):
+            validate_p0_backend_qualification_report(rebound, expected_sha=SHA)
+
+        shared_database = copy.deepcopy(report)
+        shared_database["run_identity"]["database_name"] = "shared_database"
+        postgresql_start = next(
+            gate
+            for gate in shared_database["gates"]
+            if gate["gate_id"] == "postgresql-start"
+        )
+        postgresql_start["evidence"]["database_identity"][
+            "database_name"
+        ] = "shared_database"
+        with self.assertRaisesRegex(ValueError, "run-owned and isolated"):
+            validate_p0_backend_qualification_report(
+                shared_database,
+                expected_sha=SHA,
             )
 
         with TemporaryDirectory() as temporary:

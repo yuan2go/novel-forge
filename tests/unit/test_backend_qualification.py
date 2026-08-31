@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,24 @@ from scripts import run_authority_postgres_tests
 
 ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
+
+
+def _documentation_report() -> str:
+    return json.dumps(
+        {
+            "schema_version": "novel-forge.documentation-reality-check.v1",
+            "evidence_class": "reality_inventory",
+            "status": "PASS",
+            "tested_sha": SHA,
+            "inventory_sha256": "sha256:" + "d" * 64,
+            "canonical_document_count": 5,
+            "capability_count": 13,
+            "source_comment_count": 1,
+            "module_docstring_count": 1,
+            "source_docstring_count": 1,
+            "errors": [],
+        }
+    )
 
 
 def _compose_operation(operation_id: str, *, fencing_token: int = 1) -> dict[str, object]:
@@ -126,7 +145,18 @@ def _compose_evidence() -> dict[str, object]:
             "worker_connections": 0,
         },
         "drained_worker_count": 10,
-        "cleanup": {"status": "PASS", "remaining_resource_count": 0},
+        "cleanup": {
+            "status": "PASS",
+            "resource_count": 2,
+            "remaining_resource_count": 0,
+            "run_id": "p0-" + "1" * 32,
+            "compose_project": "nf-p0-" + "1" * 32 + "-runtime",
+            "receipt": (
+                "compose-resource-ownership-nf-p0-"
+                + "1" * 32
+                + "-runtime.json"
+            ),
+        },
         "fixture": True,
         "real_provider_proven": False,
         "longform_proven": False,
@@ -302,6 +332,24 @@ class BackendQualificationCliTests(unittest.TestCase):
                 expected_project="nf-p0-" + "1" * 32 + "-runtime",
             )
 
+        for field, value in (
+            ("remaining_resource_count", False),
+            ("resource_count", False),
+            ("receipt", ""),
+        ):
+            with self.subTest(cleanup_field=field):
+                malformed_cleanup = copy.deepcopy(_compose_evidence())
+                malformed_cleanup["cleanup"][field] = value
+                with self.assertRaisesRegex(
+                    QualificationContractError, "cleanup"
+                ):
+                    validate_compose_runtime_evidence(
+                        malformed_cleanup,
+                        expected_sha=SHA,
+                        expected_run_id="p0-" + "1" * 32,
+                        expected_project="nf-p0-" + "1" * 32 + "-runtime",
+                    )
+
     def test_compose_proof_requires_changed_container_start_identity(self) -> None:
         evidence = _compose_evidence()
         restart = dict(evidence["worker_restart"])
@@ -358,6 +406,62 @@ class BackendQualificationCliTests(unittest.TestCase):
         self.assertEqual(payload["gates"], list(manifest.required_gates))
         self.assertEqual(payload["profile"], "inspection")
 
+    def test_documentation_reality_failure_is_an_explicit_fail_fast_gate(
+        self,
+    ) -> None:
+        commands: list[tuple[str, ...]] = []
+
+        class FailingDocumentationRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                parts = tuple(command)
+                commands.append(parts)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult(
+                        command=parts,
+                        returncode=1,
+                        stdout=json.dumps(
+                            {
+                                **json.loads(_documentation_report()),
+                                "status": "FAIL",
+                                "errors": ["stale reality inventory"],
+                            }
+                        ),
+                        stderr="",
+                        duration_seconds=0.1,
+                        timed_out=False,
+                    )
+                raise AssertionError(f"gate ran after documentation failure: {parts}")
+
+        with TemporaryDirectory() as temporary:
+            output = Path(temporary) / "p0-report.json"
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(output),
+                ],
+                process_runner=FailingDocumentationRunner(),
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 1)
+        statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
+        self.assertEqual(statuses["source-preflight"], "PASS")
+        self.assertEqual(statuses["documentation-reality"], "FAIL")
+        self.assertEqual(statuses["static-and-manifests"], "NOT_RUN")
+        self.assertFalse(any("p0-backend-static" in command for command in commands))
+
     def test_failed_static_gate_writes_partial_report_and_marks_dependents_not_run(
         self,
     ) -> None:
@@ -375,6 +479,8 @@ class BackendQualificationCliTests(unittest.TestCase):
                     return ProcessResult.success(parts, "")
                 if "--show-current" in parts:
                     return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
                 return ProcessResult(
                     command=parts,
                     returncode=1,
@@ -403,6 +509,7 @@ class BackendQualificationCliTests(unittest.TestCase):
         self.assertEqual(report["decision"], "FAIL")
         statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
         self.assertEqual(statuses["source-preflight"], "PASS")
+        self.assertEqual(statuses["documentation-reality"], "PASS")
         self.assertEqual(statuses["static-and-manifests"], "FAIL")
         self.assertEqual(statuses["pytest-backend"], "NOT_RUN")
         self.assertEqual(report["cleanup"]["status"], "PASS")
@@ -411,6 +518,214 @@ class BackendQualificationCliTests(unittest.TestCase):
             "DEFERRED / NOT_RUN_BY_SCOPE",
         )
         self.assertTrue(any("p0-backend-static" in command for command in commands))
+
+    def test_migration_compatibility_passes_before_complete_postgresql_failure(
+        self,
+    ) -> None:
+        commands: list[tuple[str, ...]] = []
+
+        class FakeRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                parts = tuple(command)
+                commands.append(parts)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
+                if "scripts/run_authority_postgres_tests.py" in parts:
+                    return ProcessResult(
+                        command=parts,
+                        returncode=1,
+                        stdout="",
+                        stderr="current PostgreSQL failure",
+                        duration_seconds=0.1,
+                        timed_out=False,
+                    )
+                return ProcessResult.success(parts)
+
+        class FakeDocker:
+            def run_compose(self, **_kwargs: object) -> None:
+                return None
+
+            def published_port(self, **_kwargs: object) -> int:
+                return 49152
+
+        class FakeOwned:
+            instances: list["FakeOwned"] = []
+
+            def __init__(self, **_kwargs: object) -> None:
+                self.cleanup_calls = 0
+                self.__class__.instances.append(self)
+
+            def assert_unclaimed(self) -> None:
+                return None
+
+            def capture(self) -> dict[str, object]:
+                return {"resources": [{"id": "postgres"}]}
+
+            def cleanup_discovered(self) -> dict[str, object]:
+                self.cleanup_calls += 1
+                return {
+                    "status": "PASS",
+                    "resource_count": 1,
+                    "remaining_resource_count": 0,
+                }
+
+        manifest = load_qualification_manifest(ROOT)
+        migration_paths = tuple(manifest.semantic_slices["migration_matrix"])
+        migration_evidence = {
+            "status": "PASS",
+            "junit": {"tests": 1, "passed": 1, "skipped": 0},
+            "collection": {"complete_collection": True},
+        }
+        with TemporaryDirectory() as temporary, patch.dict(
+            os.environ,
+            {"NOVEL_FORGE_MODEL_PROVIDER": "scripted"},
+            clear=True,
+        ), patch(
+            "novel_forge.tools.backend_qualification.DockerComposeClient.from_environment",
+            return_value=FakeDocker(),
+        ), patch(
+            "novel_forge.tools.backend_qualification.OwnedComposeProject", FakeOwned
+        ), patch(
+            "novel_forge.tools.backend_qualification._migration_evidence",
+            side_effect=lambda _database_url, head: {
+                "expected_head": head,
+                "observed_head": head,
+                "applied_count": 1,
+                "missing": [],
+                "extra": [],
+            },
+        ), patch(
+            "novel_forge.tools.backend_qualification.validate_backend_test_evidence",
+            return_value={"status": "PASS"},
+        ), patch(
+            "novel_forge.tools.backend_qualification.validate_postgres_test_evidence",
+            side_effect=(migration_evidence, {"status": "FAIL"}),
+        ):
+            output = Path(temporary) / "p0-report.json"
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(output),
+                ],
+                process_runner=FakeRunner(),
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        migration_command = next(
+            command
+            for command in commands
+            if set(migration_paths).issubset(set(command))
+        )
+        self.assertTrue(set(migration_paths).issubset(migration_command))
+        statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
+        self.assertEqual(result, 1)
+        self.assertEqual(statuses["migration-compatibility"], "PASS")
+        self.assertEqual(statuses["pytest-postgresql-integration"], "FAIL")
+        self.assertEqual(statuses["resource-cleanup"], "PASS")
+        self.assertEqual(FakeOwned.instances[0].cleanup_calls, 1)
+
+    def test_unexpected_gate_exception_writes_failure_and_cleans_owned_resources(
+        self,
+    ) -> None:
+        class FakeRunner:
+            def run(self, command: Sequence[str], **_kwargs: object) -> ProcessResult:
+                parts = tuple(command)
+                if parts[-2:] == ("rev-parse", "HEAD"):
+                    return ProcessResult.success(parts, SHA + "\n")
+                if parts[-2:] == ("rev-parse", "HEAD^{tree}"):
+                    return ProcessResult.success(parts, "c" * 40 + "\n")
+                if "status" in parts:
+                    return ProcessResult.success(parts, "")
+                if "--show-current" in parts:
+                    return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
+                return ProcessResult.success(parts)
+
+        class FakeDocker:
+            def run_compose(self, **_kwargs: object) -> None:
+                return None
+
+            def published_port(self, **_kwargs: object) -> int:
+                return 49152
+
+        class FakeOwned:
+            cleanup_calls = 0
+
+            def __init__(self, **_kwargs: object) -> None:
+                return None
+
+            def assert_unclaimed(self) -> None:
+                return None
+
+            def capture(self) -> dict[str, object]:
+                return {"resources": [{"id": "postgres"}]}
+
+            def cleanup_discovered(self) -> dict[str, object]:
+                self.__class__.cleanup_calls += 1
+                return {
+                    "status": "PASS",
+                    "resource_count": 1,
+                    "remaining_resource_count": 0,
+                }
+
+        with TemporaryDirectory() as temporary, patch.dict(
+            os.environ,
+            {"NOVEL_FORGE_MODEL_PROVIDER": "scripted"},
+            clear=True,
+        ), patch(
+            "novel_forge.tools.backend_qualification.DockerComposeClient.from_environment",
+            return_value=FakeDocker(),
+        ), patch(
+            "novel_forge.tools.backend_qualification.OwnedComposeProject", FakeOwned
+        ), patch(
+            "novel_forge.tools.backend_qualification._migration_evidence",
+            side_effect=lambda _database_url, head: {
+                "expected_head": head,
+                "observed_head": head,
+                "applied_count": 1,
+                "missing": [],
+                "extra": [],
+            },
+        ), patch(
+            "novel_forge.tools.backend_qualification.validate_backend_test_evidence",
+            return_value={"status": "PASS"},
+        ), patch(
+            "novel_forge.tools.backend_qualification.validate_postgres_test_evidence",
+            side_effect=LookupError("unexpected validator failure"),
+        ):
+            output = Path(temporary) / "p0-report.json"
+            result = run_qualification(
+                [
+                    "--repo-root",
+                    str(ROOT),
+                    "--profile",
+                    "local",
+                    "--output",
+                    str(output),
+                ],
+                process_runner=FakeRunner(),
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        statuses = {item["gate_id"]: item["status"] for item in report["gates"]}
+        self.assertEqual(result, 1)
+        self.assertEqual(statuses["migration-compatibility"], "FAIL")
+        self.assertEqual(statuses["resource-cleanup"], "PASS")
+        self.assertIn("unexpected LookupError", report["failure_reason"])
+        self.assertEqual(FakeOwned.cleanup_calls, 1)
 
     def test_backend_pytest_gate_is_complete_machine_readable_and_non_postgresql(
         self,
@@ -451,6 +766,8 @@ class BackendQualificationCliTests(unittest.TestCase):
                     return ProcessResult.success(parts, "")
                 if "--show-current" in parts:
                     return ProcessResult.success(parts, "feature\n")
+                if "novel_forge.tools.documentation_reality" in parts:
+                    return ProcessResult.success(parts, _documentation_report())
                 return ProcessResult(
                     command=parts,
                     returncode=1,

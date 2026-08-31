@@ -63,39 +63,69 @@ activation.
 
 ## Validation matrix
 
-Run from the repository root:
+The only high-level backend engineering qualification entry is:
+
+```bash
+P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
+  make p0-backend-qualification
+```
+
+It executes this fail-fast chain:
+
+```text
+source-preflight
+-> documentation-reality
+-> static-and-manifests
+-> pytest-backend
+-> postgresql-start
+-> migration-fresh
+-> migration-compatibility
+-> pytest-postgresql-integration
+-> migration-head
+-> query-plan-release
+-> compose-runtime
+-> resource-cleanup
+-> evidence-finalization
+```
+
+The PostgreSQL database, Compose projects and evidence directory receive one run UUID.
+Published service ports are Docker-assigned loopback ports. Cleanup is scoped to the
+captured run labels and a PASS requires no remaining owned container, network, volume or
+database service. The runner forbids Provider credentials, real-Provider routes, skipped
+tests and incomplete declared collections.
+
+The final JSON report binds the exact commit, source tree, manifest digests, migration
+head, collection/JUnit artifacts and resolved dependency digest. Git SHA alone is not a
+dependency lock. A local run does not close remote branch governance; without required
+same-SHA CI evidence its state is `OPEN / NOT_CLOSED`.
+
+The current accepted local report is retained under `architecture/evidence/` and is
+referenced by `architecture/reality-evidence.json` with its content digest. The
+Documentation Reality gate rejects missing, altered, stale or unreferenced retained
+reports; detailed transient gate artifacts remain outside the repository.
+
+These lower-level targets remain useful diagnostics, not alternate qualification
+authorities:
 
 ```bash
 make documentation-reality-check
 make validate
 make authority-test
 make authority-compose-config-check
-make postgres-authority-test-up
-make postgres-authority-test
 make authority-query-plan-release
-make authority-smoke
-npm --prefix web/admin test
-npm --prefix web/admin run build
-make sync-skills
-make check-skills
-git diff --check
 ```
 
-`make postgres-authority-test` uses the isolated default database at port 55432 unless
-`NOVEL_FORGE_DATABASE_URL` is explicitly provided. Its runner rejects skipped tests.
-The current implementation produces 35 failures in that gate on a new tmpfs
-database; `architecture/reality-evidence.json` records the affected scopes. Do not treat
-the passing subsets as full PostgreSQL, migration, Book or recovery qualification.
-The broader `pytest tests` run reports 55 failures because it also collects additional
-integration files and duplicates 11 Book vertical failures through another module.
-Stop the isolated service after validation:
+The complete PostgreSQL collection can be run only as a caller-owned diagnostic by
+providing `NOVEL_FORGE_DATABASE_URL`, `NOVEL_FORGE_QUALIFICATION_DATABASE_NAME`, and an
+absolute `NOVEL_FORGE_POSTGRES_EVIDENCE_DIR` to `make postgres-authority-test`. The
+runner rejects fixed/shared database identity and repository-local evidence paths. This
+diagnostic is not an alternate qualification authority; the P0 gate already executes
+the complete architecture, unit, acceptance and PostgreSQL collections.
 
-```bash
-make postgres-authority-test-down
-```
-
-The complete Python suite is `PYTHONPATH=src .venv/bin/python -m pytest tests`. The
-Makefile `test` target also runs the web tests.
+P0 evidence ceilings are explicit: `CURRENT_UI` is
+`DEFERRED / NOT_RUN_BY_SCOPE`; `REAL_PROVIDER`, `HISTORICAL_ORPHAN_MUTATION`,
+`EIGHT_CHAPTER`, and `HUMAN_REVIEW` are `NOT_RUN_BY_SCOPE`; `LONGFORM`, `MULTIBOOK`, and
+`PRODUCTION` are `NOT_PROVEN`.
 
 ## Failure and recovery procedure
 
