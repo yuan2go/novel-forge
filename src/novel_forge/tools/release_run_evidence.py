@@ -282,9 +282,14 @@ def _validate_p0_gate_evidence(
     postgresql_start = _required_gate_evidence(gates, "postgresql-start")
     database_identity = postgresql_start.get("database_identity")
     ownership_count = postgresql_start.get("ownership_resource_count")
+    run_id = str(run_identity.get("run_id") or "")
+    run_token = run_id.removeprefix("p0-")
+    expected_database_name = f"nf_p0_{run_token}_test"
     if (
-        not isinstance(database_identity, Mapping)
-        or database_identity.get("database_name") != run_identity.get("database_name")
+        not re.fullmatch(r"p0-[0-9a-f]{32}", run_id)
+        or run_identity.get("database_name") != expected_database_name
+        or not isinstance(database_identity, Mapping)
+        or database_identity.get("database_name") != expected_database_name
         or database_identity.get("host_class") != "LOOPBACK"
         or type(database_identity.get("port")) is not int
         or not 1 <= database_identity["port"] <= 65535

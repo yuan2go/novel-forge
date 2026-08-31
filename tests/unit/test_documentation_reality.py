@@ -40,6 +40,7 @@ def _build_valid_p0_report(
     run_id = "p0-" + "2" * 32
     compose_project = "nf-p0-" + "2" * 32
     runtime_project = compose_project + "-runtime"
+    database_name = "nf_p0_" + "2" * 32 + "_test"
     manifest = {
         "schema_version": "novel-forge.backend-qualification-manifest.v1",
         "required_gates": list(REQUIRED_GATE_ORDER),
@@ -145,7 +146,7 @@ def _build_valid_p0_report(
                 if gate_id == "static-and-manifests"
                 else {
                     "database_identity": {
-                        "database_name": "nf_p0_test",
+                        "database_name": database_name,
                         "host_class": "LOOPBACK",
                         "port": 55432,
                         "server_identity_digest": _DIGEST,
@@ -217,7 +218,7 @@ def _build_valid_p0_report(
             "run_id": run_id,
             "compose_project": compose_project,
             "compose_runtime_project": runtime_project,
-            "database_name": "nf_p0_test",
+            "database_name": database_name,
             "artifact_root": artifact_root,
         },
     )

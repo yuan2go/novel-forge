@@ -150,11 +150,12 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
         run_id = "p0-" + "1" * 32
         compose_project = "nf-p0-" + "1" * 32
         runtime_project = compose_project + "-runtime"
+        database_name = "nf_p0_" + "1" * 32 + "_test"
         run_identity = {
             "run_id": run_id,
             "compose_project": compose_project,
             "compose_runtime_project": runtime_project,
-            "database_name": "nf_p0_test",
+            "database_name": database_name,
         }
         cleanup_evidence = {
             "status": "PASS",
@@ -206,7 +207,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     if gate_id == "static-and-manifests"
                     else {
                         "database_identity": {
-                            "database_name": "nf_p0_test",
+                            "database_name": database_name,
                             "host_class": "LOOPBACK",
                             "port": 55432,
                             "server_identity_digest": DIGEST,
@@ -408,6 +409,22 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
         rebound["implementation_tree_sha"] = "sha256:" + "f" * 64
         with self.assertRaisesRegex(ValueError, "source identity"):
             validate_p0_backend_qualification_report(rebound, expected_sha=SHA)
+
+        shared_database = copy.deepcopy(report)
+        shared_database["run_identity"]["database_name"] = "shared_database"
+        postgresql_start = next(
+            gate
+            for gate in shared_database["gates"]
+            if gate["gate_id"] == "postgresql-start"
+        )
+        postgresql_start["evidence"]["database_identity"][
+            "database_name"
+        ] = "shared_database"
+        with self.assertRaisesRegex(ValueError, "run-owned and isolated"):
+            validate_p0_backend_qualification_report(
+                shared_database,
+                expected_sha=SHA,
+            )
 
         with TemporaryDirectory() as temporary:
             output = Path(temporary) / "evidence" / "p0.json"
