@@ -99,6 +99,11 @@ head, collection/JUnit artifacts and resolved dependency digest. Git SHA alone i
 dependency lock. A local run does not close remote branch governance; without required
 same-SHA CI evidence its state is `OPEN / NOT_CLOSED`.
 
+The current accepted local report is retained under `architecture/evidence/` and is
+referenced by `architecture/reality-evidence.json` with its content digest. The
+Documentation Reality gate rejects missing, altered, stale or unreferenced retained
+reports; detailed transient gate artifacts remain outside the repository.
+
 These lower-level targets remain useful diagnostics, not alternate qualification
 authorities:
 
