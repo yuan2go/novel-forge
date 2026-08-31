@@ -17,6 +17,7 @@ from novel_forge.tools.backend_qualification_contract import (
     REQUIRED_GATE_ORDER,
 )
 from novel_forge.tools.implementation_tree_identity import (
+    build_git_implementation_tree_identity,
     build_implementation_tree_identity,
 )
 
@@ -640,6 +641,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     run_results: dict[str, tuple[int, int, int]] = {}
     run_evidence: dict[str, set[tuple[str, str, str]]] = {}
     run_classes: dict[str, str] = {}
+    historical_implementation_identities: dict[str, str] = {}
     if not isinstance(qualification_runs, list) or not qualification_runs:
         _error(errors, "reality inventory qualification_runs must be a non-empty list")
     else:
@@ -683,6 +685,24 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     errors,
                     f"{context}.source_tree differs from the observed Git commit",
                 )
+            observed_implementation_tree_sha = ""
+            if resolved_tree:
+                try:
+                    if observed_at_sha not in historical_implementation_identities:
+                        historical_implementation_identities[observed_at_sha] = str(
+                            build_git_implementation_tree_identity(
+                                root, observed_at_sha
+                            ).get("implementation_tree_sha")
+                            or ""
+                        )
+                    observed_implementation_tree_sha = (
+                        historical_implementation_identities[observed_at_sha]
+                    )
+                except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                    _error(
+                        errors,
+                        f"{context} cannot reconstruct the observed implementation tree: {exc}",
+                    )
             counts = [run.get(field) for field in ("collected", "passed", "failed")]
             valid_counts = not any(
                 type(value) is not int or value < 0 for value in counts
@@ -705,6 +725,15 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     _error(
                         errors,
                         f"{context} does not qualify the current implementation tree",
+                    )
+                if (
+                    observed_implementation_tree_sha
+                    and implementation_tree_sha
+                    != observed_implementation_tree_sha
+                ):
+                    _error(
+                        errors,
+                        f"{context} does not match the observed Git implementation tree",
                     )
                 evidence = _validate_reference_list(
                     root,
