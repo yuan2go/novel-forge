@@ -32,15 +32,15 @@ class ArchitectureManifestTests(unittest.TestCase):
         }
         self.assertEqual(set(counts), {"architecture", "unit", "acceptance", "integration"})
         self.assertTrue(all(count > 0 for count in counts.values()))
-        module_counts = {
-            str(item["path"]): int(item["count"])
-            for item in report["module_collections"]
-        }
-        self.assertGreater(
-            module_counts["tests/integration/test_core_functional_loops_postgres.py"],
+        reality = report["reality"]
+        self.assertEqual(
+            sum(reality["classification_file_counts"].values()),
+            reality["test_file_count"],
+        )
+        self.assertEqual(
+            reality["classification_file_counts"]["HISTORICAL_REDUNDANT"],
             0,
         )
-        self.assertTrue(all(count > 0 for count in module_counts.values()))
 
     def test_backend_static_regenerates_runtime_skills_before_drift_check(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")

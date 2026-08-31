@@ -412,7 +412,7 @@ def _promise_payoff(rows: Sequence[Mapping[str, Any]]) -> PromisePayoffEvidence:
             if status in {"FULFILLED", "PAID"}:
                 partial = actual_payoff.get("complete") is False
                 primary = "PARTIALLY_PAID" if partial else "PAID"
-                # Accepted Story State carries terminal obligations forward.
+                # INVARIANT: Accepted Story State carries terminal obligations forward.
                 # Setup-to-payoff latency binds the first observed payment,
                 # never the latest snapshot that still contains PAID.
                 if payoff_chapter is None:
@@ -446,7 +446,7 @@ def _promise_payoff(rows: Sequence[Mapping[str, Any]]) -> PromisePayoffEvidence:
                 str(item) for item in state.get("linked_arc_ids") or () if str(item)
             )
             if primary in {"PAID", "PARTIALLY_PAID"} and not payoff:
-                # A terminal state without immutable payoff evidence is not a
+                # INVARIANT: A terminal state without immutable payoff evidence is not a
                 # qualified payoff; preserve it as unresolved debt.
                 unresolved.append(identity)
         terminal = transitions[-1]

@@ -624,7 +624,7 @@ def _validate_asset_flow(
         if node_id in ancestors:
             return ancestors[node_id]
         if node_id in visiting:
-            return set()  # the static DAG validator reports the cycle
+            return set()  # WHY: the static DAG validator reports the cycle
         visiting.add(node_id)
         value: set[str] = set()
         for dependency in nodes[node_id].depends_on:

@@ -2030,7 +2030,7 @@ class PostgresBookAuthority:
             )
             is not None
         ):
-            # Acceptance and the Book narrative cursor commit atomically. A
+            # INVARIANT: Acceptance and the Book narrative cursor commit atomically. A
             # ChapterGroup replay may still need to consume that acceptance,
             # but reconciliation must never regress the accepted Book state.
             return request

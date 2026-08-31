@@ -168,7 +168,7 @@ def narrative_realization_definitions(
                 "execution_mode": "transactional",
                 "permissions": ["book.authority.execute"],
                 "approval_policy": {
-                    # The explicit approve Operation is the Planning Authority
+                    # INVARIANT: The explicit approve Operation is the Planning Authority
                     # decision and can only follow a qualified immutable proof.
                     # Command-Kernel admission approval is reserved for an
                     # external governance gate, not duplicated here.

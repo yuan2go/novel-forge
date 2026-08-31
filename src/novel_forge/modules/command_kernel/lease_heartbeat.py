@@ -71,7 +71,7 @@ class LeaseHeartbeatGuard:
                 if self._probe is not None:
                     self._probe()
                 self._renew()
-            except Exception as exc:  # recorded and re-raised on the owning thread
+            except Exception as exc:  # WHY: recorded and re-raised on the owning thread
                 self._failure = exc
                 self._stop.set()
                 return

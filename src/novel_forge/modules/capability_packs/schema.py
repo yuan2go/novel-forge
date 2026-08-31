@@ -91,7 +91,7 @@ def _items(value: Any) -> tuple[Any, ...]:
 
 
 def _strings(value: Any) -> tuple[Any, ...]:
-    # Preserve invalid elements for the structured Validator. Silently
+    # WHY: Preserve invalid elements for the structured Validator. Silently
     # filtering them would repair author input and could bypass fail-closed
     # capability, dependency, or source-isolation checks.
     return _items(value)
@@ -562,7 +562,7 @@ class CapabilityPackManifest:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        # JSON round-trip produces a detached standard-library-only object while
+        # WHY: JSON round-trip produces a detached standard-library-only object while
         # retaining the exact JSON value model used to compute the identity.
         return _plain_json(self._source_payload)
 

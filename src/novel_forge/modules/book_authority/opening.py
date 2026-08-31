@@ -2179,7 +2179,7 @@ class PostgresBookOpeningApplication:
                 self._frozen_request(str(run["opening_run_id"]))
             )
         elif definition_name in _BOOK_OPENING_RUNTIME_LINEAGE_CONTROL_OPERATIONS:
-            # Abort does not consume the original Planning inputs.  Its
+            # WHY: Abort does not consume the original Planning inputs.  Its
             # transaction handler locks the current Opening/Execution and then
             # validates the exact RuntimeJob/Attempt/Lease/fence lineage.  A
             # migrated legacy run must therefore remain governable even when

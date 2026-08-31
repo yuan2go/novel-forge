@@ -405,7 +405,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
                 capability=definition.capability,
                 operation=DomainModelOperation.GENERATE,
                 candidate_kind=CandidateKind.GENERATION,
-                # The actual prompt is the frozen Pack prompt bundle.  The
+                # WHY: The actual prompt is the frozen Pack prompt bundle.  The
                 # Domain port receives only its immutable reference here.
                 prompt=bundle.attempt_snapshot.execution_snapshot.prompt_bundle_ref,
                 context={

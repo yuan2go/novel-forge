@@ -43,13 +43,13 @@ _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
 _FINAL_FAILURE_CODES = frozenset(
     {
         "CHAPTER_QUALITY_GATE_FAILED",
-        # Once a semantic Provider attempt has reached the final send gate,
+        # WHY: Once a semantic Provider attempt has reached the final send gate,
         # loss/abort of its exact outer Opening fence is permanent for that
         # Operation generation.  Retrying the same generation can never
         # acquire a different owner and would only create a retry poison loop.
         "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
         "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
-        # These denials are evaluated at the final Provider authorization
+        # WHY: These denials are evaluated at the final Provider authorization
         # boundary.  They are immutable identity/lifecycle failures for the
         # frozen Effect generation, so retrying the same Operation cannot
         # make it executable and would split a terminal ExternalEffect from a
@@ -301,7 +301,7 @@ class AuthorityWorkerExecutionBoundary:
                 execute(task)
             except (
                 Exception
-            ) as exc:  # signals and explicit process exits must propagate
+            ) as exc:  # INVARIANT: signals and explicit process exits must propagate
                 classification = WorkerFailureClassifier.classify(exc)
                 failure = WorkerTaskFailure(
                     task_id=task_id,

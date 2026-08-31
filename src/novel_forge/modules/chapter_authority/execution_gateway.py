@@ -1611,7 +1611,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             "operation_id": operation_id,
             "attempt_id": attempt_id,
             "execution_fencing_token": execution_fencing_token,
-            # A recovery worker's newer fence authorizes takeover but must not
+            # INVARIANT: A recovery worker's newer fence authorizes takeover but must not
             # alter the original Provider execution semantics.
             "snapshot_creation_fencing_token": execution_fencing_token,
             "source_asset_version_id": source_asset_version_id,
@@ -3136,8 +3136,8 @@ def _materialize_source_intelligence_prompt(
     }
 
 
-# Compatibility names for Chapter callers and existing evidence/tests.  New
-# cross-domain composition uses the production-semantic name above.
+# COMPATIBILITY: Chapter callers retain these aliases; cross-domain composition
+# uses the production-semantic name.
 PostgresChapterExecutionPayloadResolver = PostgresProductionExecutionPayloadResolver
 _materialize_chapter_codex_prompt = _materialize_production_codex_prompt
 
@@ -3250,7 +3250,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         all_real = all(
             item.real_provider_validation_eligible for item in routes.values()
         )
-        # This is the ExternalEffect-facing composite adapter capability.  Its
+        # WHY: This is the ExternalEffect-facing composite adapter capability.  Its
         # stable execution id plus persistent local receipt prevents duplicate
         # submission even though Codex itself exposes no remote idempotency key.
         gateway_submission_idempotent = True

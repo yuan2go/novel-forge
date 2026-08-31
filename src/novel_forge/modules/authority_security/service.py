@@ -79,7 +79,7 @@ class TrustedPrincipalResolver:
     def resolve_api_principal(self, *, claimed_actor_id: str = "") -> Principal:
         del (
             claimed_actor_id
-        )  # compatibility input is deliberately not an identity source
+        )  # COMPATIBILITY: compatibility input is deliberately not an identity source
         principal_id = self.configured_local_operator_id
         if not principal_id and self.environment == "production":
             raise RuntimeError(

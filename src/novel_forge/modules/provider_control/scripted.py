@@ -295,8 +295,8 @@ class ScriptedProviderAdapterV2:
             self.callbacks[receipt.message_id] = receipt
             return receipt
 
-    # Generic ExternalEffect compatibility surface.  It preserves the v2
-    # request identity instead of dropping the stable provider key.
+    # COMPATIBILITY: preserve the stable provider key on the ExternalEffect
+    # request identity.
     def execute(
         self,
         *,

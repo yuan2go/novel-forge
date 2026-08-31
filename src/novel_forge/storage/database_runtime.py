@@ -32,15 +32,15 @@ class DatabaseRetryClass(StrEnum):
 SAFE_RETRY_SQLSTATES = frozenset({"40001", "40P01"})
 RECONCILIATION_REQUIRED_SQLSTATES = frozenset(
     {
-        "08000",  # connection_exception after transaction start is ambiguous
-        "08003",  # connection_does_not_exist
-        "08006",  # connection_failure
-        "08007",  # transaction_resolution_unknown
-        "57P01",  # admin_shutdown can interrupt commit acknowledgement
+        "08000",  # WHY: connection_exception after transaction start is ambiguous
+        "08003",  # WHY: connection_does_not_exist
+        "08006",  # WHY: connection_failure
+        "08007",  # WHY: transaction_resolution_unknown
+        "57P01",  # WHY: admin_shutdown can interrupt commit acknowledgement
     }
 )
-# Compatibility export is limited to SQLSTATEs that are safe for an
-# explicitly idempotent, pure-database transaction replay.
+# COMPATIBILITY: exported SQLSTATEs are limited to safe, explicitly idempotent
+# pure-database transaction replay.
 TRANSIENT_SQLSTATES = SAFE_RETRY_SQLSTATES
 
 
@@ -99,10 +99,8 @@ DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
 _SECRET_DSN_KEYS = frozenset(
     {"password", "passfile", "sslpassword", "sslkey", "sslcert"}
 )
-# Registry identity is process-local and must distinguish credential rotation
-# without putting a reusable or offline-verifiable DSN digest into logs,
-# metrics, reprs, or persisted evidence.  Public telemetry continues to use the
-# password-free database identity below.
+# SECURITY: process-local registry identity distinguishes credential rotation
+# without exposing a reusable DSN digest; telemetry uses password-free identity.
 _PROCESS_REGISTRY_HMAC_KEY = os.urandom(32)
 
 

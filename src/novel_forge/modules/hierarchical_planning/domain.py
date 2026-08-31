@@ -223,7 +223,7 @@ TYPE_FIELDS = {
     ),
 }
 
-# Only state kinds that the Canon extraction boundary can materialize and the
+# WHY: Only state kinds that the Canon extraction boundary can materialize and the
 # deterministic execution reconciler can identify are valid Chapter commitments.
 CHAPTER_EXECUTION_STATE_KINDS = frozenset(
     {

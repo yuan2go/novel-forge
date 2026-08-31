@@ -115,7 +115,7 @@ class NarrativeScope:
         required = {
             NarrativeScopeType.BOOK: {"book_id"},
             NarrativeScopeType.VOLUME: {"book_id", "volume_id"},
-            # Arc is a semantic graph dimension and is not a Volume ancestor.
+            # INVARIANT: Arc is a semantic graph dimension, not a Volume ancestor.
             NarrativeScopeType.ARC: {"book_id", "arc_id"},
             NarrativeScopeType.CHAPTER_GROUP: {
                 "book_id",

@@ -362,5 +362,5 @@ class AuthorityHandlerRepository:
         return created
 
 
-# Backwards-compatible public name used by the established chapter runtime.
+# COMPATIBILITY: retain the public name consumed by Chapter runtime callers.
 ChapterAuthorityRepository = AuthorityHandlerRepository

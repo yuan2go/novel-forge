@@ -220,7 +220,7 @@ def build_arc_checkpoint(
         decision = ArcCheckpointDecision.REPLAN_REQUIRED
         reasons.append("DEPENDENCY_BLOCKED")
     elif blockers:
-        # A future Arc is expected to remain dependency-ineligible until its
+        # WHY: A future Arc is expected to remain dependency-ineligible until its
         # target window opens. Recording the blocker preserves scheduling
         # legality; escalating it before the window would turn an ordinary
         # planned dependency into semantic plan drift.

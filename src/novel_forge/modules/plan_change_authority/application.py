@@ -875,7 +875,7 @@ def _definition(
         "commit_sha": commit_sha,
         "execution_mode": "worker",
         "permissions": ["book.authority.execute"],
-        # The formal decision is an Authority asset consumed by activate; the
+        # INVARIANT: The formal decision is an Authority asset consumed by activate; the
         # generic admission approval field would duplicate that authority.
         "approval_policy": {"required": False},
         "idempotency_scope": "project:plan-change",

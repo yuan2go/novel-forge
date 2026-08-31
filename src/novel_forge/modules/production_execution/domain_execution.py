@@ -111,10 +111,8 @@ class DomainExecutionPort(Protocol):
 class GatewayDomainExecutionPort:
 
     production_execution_gateway_backed = True
-    # A GatewayDomainExecutionPort is only admissible after its request has
-    # been frozen and dispatched by the Command Kernel ExternalEffect runtime.
-    # Bare gateway callers must not claim this marker; Planning binds the
-    # ExternalEffect-aware port exposed by Agent Runtime instead.
+    # INVARIANT: this marker is admissible only after Command Kernel freezes and
+    # dispatches the request; bare gateway callers cannot claim it.
     external_effect_backed = False
 
     def __init__(

@@ -306,7 +306,7 @@ class CapabilityPackCompiler:
             definition_name, separator, definition_version = str(
                 node.operation_definition_ref
             ).rpartition("@")
-            if not separator:  # guarded by semantic validation
+            if not separator:  # WHY: guarded by semantic validation
                 raise ValueError("compiled node has no exact OperationDefinition ref")
             operation = operation_by_identity[(definition_name, definition_version)]
             capability = capability_definitions[str(node.capability_id)]

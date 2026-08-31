@@ -275,11 +275,9 @@ def _codec(
     )
 
 
-# This set is derived from the current schema validators and PostgreSQL
-# Authority modules.  Rebuildable runtime/cache types intentionally do not get
-# codecs; the scanner marks them for rebuild instead.
+# INVARIANT: only schema-backed Authority assets receive codecs; rebuildable
+# runtime/cache records are marked for rebuild.
 _TYPE_TARGETS = {
-    # Project / book / Story Design
     "project_workspace_state": "project_record",
     "book": "book_record",
     "book_record": "book_record",
@@ -287,7 +285,6 @@ _TYPE_TARGETS = {
     "book_design_candidate": "book_design",
     "story_design": "story_design",
     "story_design_candidate": "story_design",
-    # Typed planning and design assets
     "book_plan": "book_plan",
     "volume_plan": "volume_plan",
     "arc_plan": "arc_plan",
@@ -300,7 +297,6 @@ _TYPE_TARGETS = {
     "character_card": "character_card",
     "faction_card": "faction_card",
     "location_card": "location_card",
-    # Context, content and editorial state
     "context_build_plan": "context_build_plan",
     "context_bundle": "context_bundle",
     "draft": "draft_chapter",
@@ -312,13 +308,11 @@ _TYPE_TARGETS = {
     "revision_task": "revision_task",
     "editor_patch": "editor_patch",
     "draft_diff_report": "draft_diff_report",
-    # Canon and story state
     "canon_database": "canon_snapshot",
     "canon_graph_snapshot": "canon_graph_snapshot",
     "story_state_snapshot": "story_state_snapshot",
     "continuity_bible": "continuity_bible",
     "fact_ledger": "fact_ledger",
-    # Source, material and MKAOS
     "source_document": "source_document",
     "source_chunk": "source_chunk",
     "cleaned_text": "cleaned_text",
@@ -329,18 +323,15 @@ _TYPE_TARGETS = {
     "rule_card": "rule_card",
     "template_card": "template_card",
     "knowledge_pack": "knowledge_pack",
-    # Durable business workflow definitions/checkpoints
     "workflow_definition": "workflow_definition",
     "workflow_run": "workflow_run_snapshot",
     "agent_contract": "agent_contract",
     "agent_run": "agent_run_snapshot",
     "agent_checkpoint": "agent_checkpoint",
-    # Reader / feedback
     "feedback_import_batch": "feedback_import_batch",
     "feedback_insight": "feedback_insight",
     "reader_sentiment_report": "reader_sentiment_report",
     "reader_outcome": "reader_outcome",
-    # Publishing evidence
     "publish_gate_report": "publish_gate_report",
     "release_package": "release_package",
     "publishing_plan": "publishing_plan",

@@ -82,10 +82,9 @@ class PostgresWorkerHealthObserver:
             database = database_runtime_report(self.database_url, role=role)
             self._persist(snapshot, database)
         except Exception as exc:
-            # A fully unavailable database cannot update its own projection.
-            # Retain only a non-sensitive process-local failure classification;
-            # the API derives UNAVAILABLE from projection staleness. A later
-            # successful observation persists this failure as DEGRADED evidence.
+            # SECURITY: an unavailable database cannot update its own projection;
+            # retain only a non-sensitive local failure class and let projection
+            # staleness determine API availability.
             self._last_database_failure_at = datetime.now(timezone.utc)
             self._last_database_error = type(exc).__name__
 

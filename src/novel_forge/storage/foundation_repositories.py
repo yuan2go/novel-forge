@@ -18,9 +18,7 @@ def require_current_foundation_set(
     require_ready: bool = False,
     lock: bool = False,
 ) -> QualifiedFoundationSet:
-    # Keep the storage module loadable while Book Design Authority composes its
-    # application package.  Runtime construction happens only after both
-    # modules have completed initialization.
+    # WORKAROUND: defer construction until both sides of the import cycle load.
     from novel_forge.modules.book_design_authority.foundation import (
         FoundationBinding,
         FoundationRole,

@@ -125,8 +125,7 @@ class PostgresBookNarrativeCheckpointAuthority:
             project_id=str(row[0]),
             asset_version_ids=tuple(str(item) for item in row[16]),
         )
-        # Imported lazily to keep the Book production package independent from
-        # Book Authority package initialization.
+        # WORKAROUND: lazy import avoids the Book Authority initialization cycle.
         from novel_forge.modules.book_authority.input_resolver import (
             project_current_plan_cursor,
         )

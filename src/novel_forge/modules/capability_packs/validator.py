@@ -288,7 +288,7 @@ def _validate_lifecycle_policy(
             str(manifest.identity.capability_type)
         )
     except KeyError:
-        return  # identity validation already reports the unknown type
+        return  # WHY: identity validation already reports the unknown type
     triple = (
         str(manifest.identity.status),
         str(manifest.identity.lifecycle),
@@ -823,7 +823,7 @@ def _validate_workflow(
 
 
 def _has_cycle(graph: Mapping[str, tuple[str, ...]]) -> bool:
-    # Deterministic Kahn traversal. Unknown edges are reported separately and
+    # WHY: Deterministic Kahn traversal. Unknown edges are reported separately and
     # omitted here so a missing reference is not misreported as a cycle.
     indegree = {node: 0 for node in graph}
     outgoing = {node: [] for node in graph}

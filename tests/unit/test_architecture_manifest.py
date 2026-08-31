@@ -19,20 +19,45 @@ class ArchitectureManifestTestCollectionTests(unittest.TestCase):
             (manifest_dir / "test-manifest.yaml").write_text(
                 json.dumps(
                     {
-                        "schema_version": "architecture-manifest.v1",
-                        "collections": [
+                        "schema_version": "novel-forge.test-reality-manifest.v1",
+                        "collections": ["tests/architecture"],
+                        "classification_rules": [
                             {
-                                "name": "architecture",
-                                "start_dir": "tests/architecture",
-                                "pattern": "test_*.py",
-                                "minimum_count": 1,
+                                "id": "fixture",
+                                "patterns": ["tests/architecture/test_*.py"],
+                                "classification": "QUALIFICATION_INFRASTRUCTURE",
+                                "owner": "repository-qualification",
+                                "capability": "collection",
+                                "production_target": "src/novel_forge/tools/backend_qualification.py",
+                                "qualification_role": "QUALIFICATION_MECHANICS_ONLY",
+                                "proof_ceiling": "INFRASTRUCTURE_ONLY",
                             }
                         ],
-                        "required_modules": [],
+                        "semantic_slice_policy": {},
                     }
                 ),
                 encoding="utf-8",
             )
+            (manifest_dir / "backend-qualification-manifest.yaml").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "novel-forge.backend-qualification-manifest.v1",
+                        "pytest_collections": [
+                            {
+                                "name": "architecture",
+                                "paths": ["tests/architecture"],
+                                "classification": "BACKEND_NON_POSTGRESQL",
+                                "complete_collection": True,
+                            }
+                        ],
+                        "semantic_slices": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            target = root / "src/novel_forge/tools/backend_qualification.py"
+            target.parent.mkdir(parents=True)
+            target.write_text("pass\n", encoding="utf-8")
             (test_dir / "test_broken_import.py").write_text(
                 "raise ModuleNotFoundError('deterministic missing dependency')\n",
                 encoding="utf-8",

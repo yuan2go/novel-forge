@@ -618,7 +618,7 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
             )
         )
     ):
-        # Domain service names such as ``review`` and ``revise`` are not model
+        # WHY: domain methods such as ``review`` and ``revise`` are not model
         # adapter methods. Their implementations are scanned independently.
         return None
     if model_prefix or model_chain or method in _MODEL_METHODS:

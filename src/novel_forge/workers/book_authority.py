@@ -329,7 +329,7 @@ def _execute_book_opening_claim(
 ) -> dict[str, object]:
     expected_version = int(claim.input_snapshot.get("observed_version", -1))
     try:
-        # Opening.execute_run atomically moves RuntimeJob/Attempt and the
+        # INVARIANT: Opening.execute_run atomically moves RuntimeJob/Attempt and the
         # BookOpening execution chain to RUNNING before releasing any semantic
         # replacement.  A separate start/checkpoint transaction here would
         # recreate the orphan window this worker is meant to close.
@@ -338,7 +338,7 @@ def _execute_book_opening_claim(
             lease_seconds=lease_seconds,
             label=f"runtime-job:{claim.attempt_id}",
             probe=lambda: runtime_jobs.assert_live(claim),
-            # execute_run terminalizes the exact claim in its completion UoW.
+            # INVARIANT: execute_run terminalizes the exact claim in its completion UoW.
             # Re-probing an already RELEASED lease on context exit would turn
             # every successful completion into a false response-loss path.
             probe_on_exit=False,
@@ -370,7 +370,7 @@ def _execute_book_opening_claim(
                 if durable_exc.code != "BOOK_OPENING_NODE_RESULT_NOT_FOUND":
                     raise
         if str(durable["lifecycle"]) == "COMPLETE":
-            # The Authority completion UoW committed and only its response (or
+            # INVARIANT: The Authority completion UoW committed and only its response (or
             # a racing heartbeat response) was lost.  Return durable truth;
             # never rewrite the terminal execution or RuntimeJob history.
             return dict(durable["result"])
@@ -503,7 +503,7 @@ def execute_book_opening_claim(
             final = result.get("book_opening_result")
             if not isinstance(final, dict):
                 raise RuntimeError("completed Book Opening has no workflow result")
-            # Compatibility callers require the v2 response keys; project them
+            # COMPATIBILITY: Compatibility callers require the v2 response keys; project them
             # without mutating the immutable PostgreSQL aggregate.
             compatible = dict(final)
             compatible["volume_plan_version"] = str(
@@ -694,7 +694,7 @@ def main() -> int:
                 time.sleep(poll_seconds)
                 continue
             supervisor.polled(idle=False)
-            # Claim only work that is about to execute. Pre-claiming a serial
+            # WHY: Claim only work that is about to execute. Pre-claiming a serial
             # batch allows later leases to expire before their heartbeat starts.
             batch = (claim,)
             try:

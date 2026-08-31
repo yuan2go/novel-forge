@@ -319,7 +319,7 @@ def resolve_cancellation(
             "CANCELLATION_RESOLUTION_INVALID", "unknown cancel resolution"
         )
     with AuthorityUnitOfWork(database_url) as uow:
-        # ExternalEffect planning takes this same Operation row lock and
+        # INVARIANT: ExternalEffect planning takes this same Operation row lock and
         # requires EXECUTING.  Locking it before inspecting evidence makes the
         # no-effect proof stable through the terminal CAS: a concurrent plan
         # either committed first and is observed here, or resumes after this

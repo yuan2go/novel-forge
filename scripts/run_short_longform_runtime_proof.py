@@ -3244,7 +3244,7 @@ def _drive_to_chapter_dispatch(
             SupervisorAction.CONTINUE,
             SupervisorAction.NO_ACTION,
         }:
-            # These are durable Supervisor-owned transitions. A long-form
+            # INVARIANT: these are durable Supervisor-owned transitions. A long-form
             # driver observes and advances them; it does not duplicate their
             # state or write Planning/Book projections directly.
             continue
@@ -3485,7 +3485,7 @@ def _run_book_phase(
         if stop_after_chapter == chapter_number:
             return stopped_result(chapter_number)
 
-    # The next-Chapter critical path above never waits for advisory work.  This
+    # INVARIANT: the next-Chapter critical path never waits for advisory work. This
     # full three-Chapter proof explicitly consumes the already admitted Reader
     # evidence only after Chapter 2 is durably accepted; it is not a Book
     # progression precondition.

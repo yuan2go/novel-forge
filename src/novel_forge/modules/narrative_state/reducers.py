@@ -53,10 +53,8 @@ TERMINAL_STATUSES = frozenset(
     }
 )
 
-# These fields govern extraction and approval, but they are not part of the
-# narrative truth a model needs to continue the story.  The immutable accepted
-# AssetVersion retains them in full; Context carries the exact source event and
-# a digest of its evidence instead of repeating this metadata for every fact.
+# INVARIANT: extraction metadata is not narrative truth; Context carries source
+# event identity and an evidence digest rather than duplicating it per fact.
 CONTEXT_OMITTED_OPERATIONAL_STATE_FIELDS = frozenset(
     {
         "approval_resolution",
@@ -298,7 +296,7 @@ def compact_current_state_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]
     facts: list[dict[str, Any]] = []
     current = snapshot.get("current_state") or {}
     for kind in NarrativeStateKind:
-        # Canon has its own accepted snapshot in every continuing Context, and
+        # INVARIANT: Canon has its own accepted snapshot in every continuing Context, and
         # event-ledger dimensions are requested explicitly through Temporal
         # Query.  Repeating either here would reintroduce unbounded history and
         # duplicate truth into the normal generation context.

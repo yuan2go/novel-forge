@@ -58,7 +58,7 @@ class _ExternalSemanticAdapter:
         }
 
 
-class LongformExecutionMigrationTests(unittest.TestCase):
+class LongformExecutionContractTests(unittest.TestCase):
     def test_uncertain_longform_kinds_resolve_to_governed_capabilities(self) -> None:
         port = _RecordingLongformPort()
         for kind in LongformAnalysisKind:

@@ -732,9 +732,8 @@ class BookAuthorityRepository:
             }
         )
         chapter_outcome = dict(projection.get("source_chapter_outcome") or {})
-        # The canonical projector retains the accepted outcome in provenance;
-        # older projections may not, so the exact accepted outcome is loaded
-        # below when needed.
+        # COMPATIBILITY: load the accepted outcome when a projection lacks the
+        # provenance copy.
         if not chapter_outcome:
             self.cursor.execute(
                 """

@@ -7,9 +7,8 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 from .contracts import ResolvedProductionAsset
 
-# Historical compatibility only. Production Preparation no longer selects or
-# projects these records; Narrative State v2 starts from accepted ChapterOutcome
-# and Book acceptance evidence instead of an operator-declared empty surrogate.
+# COMPATIBILITY: these records remain readable but are not selected or projected;
+# accepted ChapterOutcome and Book acceptance evidence seed Narrative State.
 TYPED_EMPTY_STATE_ASSET_TYPE = "typed_empty_state_snapshot"
 LEGACY_INITIALIZABLE_STATE_KINDS = frozenset(
     {

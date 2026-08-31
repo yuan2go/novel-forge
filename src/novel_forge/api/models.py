@@ -163,7 +163,7 @@ class AuthorityOperationCancelRequest(BaseModel):
     expected_version: int
     idempotency_key: str
     reason: str
-    # Compatibility-only. The route deliberately uses its trusted server principal.
+    # SECURITY: compatibility input never overrides the trusted server principal.
     actor_id: str = ""
     trace_id: str
     correlation_id: str
@@ -174,7 +174,7 @@ class AuthorityOutboxRecoveryRequest(BaseModel):
     expected_attempt_count: int = Field(ge=0)
     idempotency_key: str
     reason: str
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -190,7 +190,7 @@ class AuthoritySourceDocumentRegisterRequest(BaseModel):
     license_name: str = ""
     copyright_boundary: str = ""
     idempotency_key: str = Field(min_length=1)
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -216,7 +216,7 @@ class AuthoritySourceTransformCommitRequest(BaseModel):
         min_length=1, max_length=10_000
     )
     idempotency_key: str = Field(min_length=1)
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -416,7 +416,7 @@ class AuthorityMkaosKnowledgeCandidateRequest(BaseModel):
     )
     abstraction_policy_version: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -427,7 +427,7 @@ class AuthorityMkaosKnowledgeApprovalRequest(BaseModel):
     policy_version: str = Field(min_length=1)
     rationale: str = Field(min_length=1, max_length=4_000)
     idempotency_key: str = Field(min_length=1)
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -448,7 +448,7 @@ class AuthorityMkaosKnowledgePackRequest(BaseModel):
         min_length=1, max_length=500
     )
     idempotency_key: str = Field(min_length=1)
-    actor_id: str = ""  # compatibility-only; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
     supersedes_pack_asset_version_id: str = ""
@@ -891,7 +891,7 @@ class AuthorityChapterCommandRequest(BaseModel):
     requested_platform_profile: str = "default"
     operator_decision: dict[str, Any] = Field(default_factory=dict)
     context_token_budget: int = Field(default=6000, ge=1)
-    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -900,7 +900,7 @@ class AuthorityOperationControlRequest(BaseModel):
     project_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
     reason: str = Field(min_length=1)
-    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
     expected_version: int | None = Field(default=None, ge=0)
@@ -915,7 +915,7 @@ class ContentAuthorityCommandRequest(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     idempotency_key: str = Field(min_length=1)
     approval: dict[str, Any] | None = None
-    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""
 

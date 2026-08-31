@@ -13,8 +13,8 @@ import subprocess
 from typing import Any
 
 
-SCHEMA_VERSION = "implementation-tree-identity.v2"
-ALGORITHM = "sha256-canonical-file-records-v1"
+SCHEMA_VERSION = "implementation-tree-identity.v3"
+ALGORITHM = "sha256-canonical-file-records-v2"
 
 INCLUDED_PREFIXES = (
     "src",
@@ -24,8 +24,11 @@ INCLUDED_PREFIXES = (
     "skills",
     "architecture/manifests",
     ".github/workflows",
+    ".claude/commands",
 )
 ROOT_FILE_PATTERNS = (
+    "AGENTS.md",
+    "CLAUDE.md",
     "compose*.yml",
     "compose*.yaml",
     "docker-compose*.yml",
@@ -52,6 +55,24 @@ EXCLUDED_FILE_PATTERNS = (
     "junit*.xml",
     "*.log",
 )
+INSTRUCTION_MANIFEST = "architecture/manifests/ai-instruction-manifest.yaml"
+
+
+def _instruction_patterns(content: bytes) -> tuple[str, ...]:
+    try:
+        payload = json.loads(content.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return ()
+    sources = payload.get("sources") if isinstance(payload, dict) else None
+    if not isinstance(sources, list):
+        return ()
+    return tuple(
+        str(pattern)
+        for source in sources
+        if isinstance(source, dict) and isinstance(source.get("patterns"), list)
+        for pattern in source["patterns"]
+        if isinstance(pattern, str) and pattern
+    )
 
 
 def _is_excluded(path: Path, root: Path) -> bool:
@@ -85,6 +106,15 @@ def select_implementation_paths(repo_root: str | Path) -> list[Path]:
             ):
                 if not _is_excluded(path, root):
                     selected.add(path)
+    instruction_manifest = root / INSTRUCTION_MANIFEST
+    if instruction_manifest.is_file():
+        for pattern in _instruction_patterns(instruction_manifest.read_bytes()):
+            selected.update(
+                path
+                for path in root.glob(pattern)
+                if (path.is_file() or path.is_symlink())
+                and not _is_excluded(path, root)
+            )
     return sorted(
         selected, key=lambda path: path.relative_to(root).as_posix().encode("utf-8")
     )
@@ -133,6 +163,8 @@ def _build_identity(records: list[dict[str, Any]]) -> dict[str, Any]:
                 "skills/**",
                 "architecture/manifests/**",
                 ".github/workflows/**",
+                ".claude/commands/**",
+                "AI instruction sources declared by architecture/manifests/ai-instruction-manifest.yaml",
                 *ROOT_FILE_PATTERNS,
             ],
             "excluded": [
@@ -156,7 +188,7 @@ def build_implementation_tree_identity(repo_root: str | Path) -> dict[str, Any]:
     return _build_identity(records)
 
 
-def _select_git_path(relative: str) -> bool:
+def _select_git_path(relative: str, instruction_patterns: tuple[str, ...] = ()) -> bool:
     path = PurePosixPath(relative)
     if any(
         part in EXCLUDED_DIRECTORY_NAMES or part.endswith(".egg-info")
@@ -166,6 +198,8 @@ def _select_git_path(relative: str) -> bool:
     if any(fnmatch.fnmatch(path.name, pattern) for pattern in EXCLUDED_FILE_PATTERNS):
         return False
     if any(relative == prefix or relative.startswith(prefix + "/") for prefix in INCLUDED_PREFIXES):
+        return True
+    if any(fnmatch.fnmatchcase(relative, pattern) for pattern in instruction_patterns):
         return True
     return len(path.parts) == 1 and any(
         fnmatch.fnmatch(path.name, pattern) for pattern in ROOT_FILE_PATTERNS
@@ -188,6 +222,16 @@ def build_git_implementation_tree_identity(
     )
     if tree.returncode != 0:
         raise ValueError("cannot read the observed Git implementation tree")
+    manifest = subprocess.run(
+        ["git", "show", f"{commit_sha}:{INSTRUCTION_MANIFEST}"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        timeout=10,
+    )
+    instruction_patterns = (
+        _instruction_patterns(manifest.stdout) if manifest.returncode == 0 else ()
+    )
     selected: list[tuple[str, str, bytes]] = []
     for raw_entry in tree.stdout.split(b"\0"):
         if not raw_entry:
@@ -198,7 +242,9 @@ def build_git_implementation_tree_identity(
             relative = raw_path.decode("utf-8")
         except (UnicodeDecodeError, ValueError) as exc:
             raise ValueError("observed Git tree contains an invalid entry") from exc
-        if object_type != b"blob" or not _select_git_path(relative):
+        if object_type != b"blob" or not _select_git_path(
+            relative, instruction_patterns
+        ):
             continue
         kind = "symlink" if mode == b"120000" else "file"
         selected.append((relative, kind, object_id))

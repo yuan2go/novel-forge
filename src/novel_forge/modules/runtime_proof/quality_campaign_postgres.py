@@ -374,7 +374,7 @@ class PostgresBoundedQualityCampaignRuntime:
             if action == "DISPATCH_CHAPTER":
                 self._run_chapter(str(tick["operation_id"]))
             elif action == "RECONCILE_CHAPTER":
-                # A resumed campaign may already own an admitted/running child.
+                # WHY: A resumed campaign may already own an admitted/running child.
                 # Book reconciliation observes it but does not execute the
                 # Chapter worker. Continue the exact frozen child operation;
                 # never submit a replacement or mutate its input snapshot.

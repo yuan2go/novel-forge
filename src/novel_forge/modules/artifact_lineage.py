@@ -34,7 +34,7 @@ ACCEPTED_HISTORY_TYPES = frozenset(
     }
 )
 
-# These observations and decisions are immutable evidence about an accepted
+# INVARIANT: These observations and decisions are immutable evidence about an accepted
 # boundary.  They are not Story Authority, but a future PlanChange must not
 # retroactively invalidate them or propagate through them into the replacement
 # future that they justified.

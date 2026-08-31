@@ -1144,7 +1144,7 @@ class RuntimeJobAuthority:
         if str(terminal[0]) not in ACTIVE_JOB_STATUSES:
             self._raise_stale_claim()
 
-        # Recheck temporal validity after acquiring the exact relational locks.
+        # INVARIANT: temporal validity is rechecked under the exact relational locks.
         self._lock_and_assert_claim(uow, claim)
         result_id = (
             "runtime-result:success:"

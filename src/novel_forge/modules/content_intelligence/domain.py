@@ -179,8 +179,8 @@ def build_pacing_observation(
             if isinstance(items, list)
         }
     else:
-        # Compatibility patches remain readable during deterministic rebuild;
-        # current production Canon emits only ``state_changes``.
+        # COMPATIBILITY: rebuild may read compatibility patches, while Canon emits
+        # only ``state_changes``.
         snapshots = {
             str(item.get("state_kind") or ""): list(item.get("changes") or [])
             for item in canon.get("snapshot_candidates", [])

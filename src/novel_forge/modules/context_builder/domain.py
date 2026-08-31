@@ -168,9 +168,8 @@ def _validate_context_class_invariants(candidate: ContextCandidate) -> None:
     if context_class is ContextClass.PROTECTED:
         if candidate.compression_trace or method not in {
             *_NON_LOSSY_COMPRESSION_METHODS,
-            # ``safe_summary`` is historical metadata for an already-versioned
-            # Authority projection. It is not permission to compress during
-            # Context assembly.
+            # COMPATIBILITY: ``safe_summary`` is metadata on a versioned projection,
+            # not permission to compress during Context assembly.
             "safe_summary",
         }:
             raise ValueError(
@@ -812,7 +811,7 @@ def _context_correctness_receipt(
             or ""
         )
         if not semantic_identity:
-            # Profile and policy metadata are structured facts too, but do not
+            # INVARIANT: profile and policy metadata are structured facts but do not
             # represent Authority state and therefore cannot be semantic
             # duplicates of one another.
             continue
@@ -1011,7 +1010,7 @@ def _context_segment(
     safe_summary = candidate.safe_summary.strip()
     facts = tuple(dict(item) for item in candidate.structured_facts)
     if not safe_summary and not facts:
-        # Version identity alone is not usable model context.  The caller must provide
+        # INVARIANT: version identity alone is not usable model context. The caller provides
         # safe material, while project-owned planning assets may use a concise marker.
         safe_summary = f"[{candidate.asset_type}:{candidate.asset_version_id}]"
     allowed_use = (

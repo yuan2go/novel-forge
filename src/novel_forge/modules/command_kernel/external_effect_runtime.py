@@ -357,7 +357,7 @@ def plan_external_effect(
                     "capability": capability,
                 },
             )
-        # Repository.plan intentionally returns only admission identity.  The
+        # WHY: Repository.plan intentionally returns only admission identity.  The
         # caller must nevertheless settle and recover against the capability
         # profile frozen on the authoritative Effect, especially on replay
         # where the current Adapter declaration is not the source of truth.
@@ -575,7 +575,7 @@ def dispatch_external_effect(
                 project_id=context.project_id,
             ),
         ):
-            # This is the last executable statement before entering the
+            # WHY: This is the last executable statement before entering the
             # adapter.  The Effect dispatch lease is already held and its
             # heartbeat guard is active; a stale outer owner cannot exploit a
             # gap between its final Authority check and Provider send.

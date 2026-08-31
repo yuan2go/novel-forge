@@ -87,10 +87,8 @@ def atomize_character_knowledge_changes(
                 "NARRATIVE_CHARACTER_KNOWLEDGE_STATUS_INVALID",
                 "character knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",
             )
-        # ``state`` was emitted by the v5 Provider schema even though the durable
-        # Narrative State vocabulary has always named this field ``status``.  Make
-        # the read-boundary upgrade deterministic, then persist only one canonical
-        # representation for new extraction and Canon assets.
+        # COMPATIBILITY: normalize the accepted Provider ``state`` alias to
+        # durable ``status`` at the read boundary and persist one representation.
         change["status"] = status
         change.pop("state", None)
         character_id = str(change.get("character_id") or "").strip()
@@ -967,9 +965,8 @@ def events_from_canon_patch(
             else:
                 changes[kind].extend(items)
 
-    # Recover Canon patches created before Character Knowledge became an atomic
-    # character/proposition event.  This is a deterministic read-boundary upgrade;
-    # the immutable source patch remains untouched and event identities stay stable.
+    # COMPATIBILITY: upgrade non-atomic Character Knowledge patches at the read
+    # boundary without mutating source patches or event identities.
     changes[NarrativeStateKind.CHARACTER_KNOWLEDGE] = (
         atomize_character_knowledge_changes(
             changes[NarrativeStateKind.CHARACTER_KNOWLEDGE]
@@ -1606,7 +1603,7 @@ def _normalize_obligation(
     status_map = {
         "PLANTED": "OPEN",
         "PROMISED": "OPEN",
-        # Legacy plot-thread ACTIVE means that the thread remains open.  It is
+        # COMPATIBILITY: plot-thread ACTIVE means that the thread remains open. It is
         # not evidence that the unified obligation has already advanced from
         # OPEN to DEVELOPING; mapping it to DEVELOPING makes a Chapter 1
         # obligation violate the fail-closed initial-transition invariant.

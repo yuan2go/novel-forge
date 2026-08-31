@@ -369,7 +369,6 @@ def resolve_canon_extraction(
             ),
         }
         proposed_by_field[field].append(payload)
-    # Preserve the digest assertion, then replace proposal-governed semantic items.
     for field, values in proposed_by_field.items():
         if values or any(
             item.get("change_field") == field for item in proposal.get("changes", [])

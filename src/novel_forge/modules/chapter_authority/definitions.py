@@ -147,7 +147,7 @@ def _definition(
     model_effects_required: bool,
     semantic_retrieval_available: bool,
 ) -> dict[str, Any]:
-    # Provider availability is runtime policy, not OperationDefinition
+    # WHY: Provider availability is runtime policy, not OperationDefinition
     # identity.  In particular Retrieval may use its declared model capability
     # when semantic projection is ready, or complete under an explicitly
     # frozen FTS/graph/temporal fallback policy without a model effect.

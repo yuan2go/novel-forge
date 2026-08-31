@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str) -> Any:
-    # Narrative Realization persistence imports its domain through this
+    # WHY: Narrative Realization persistence imports its domain through this
     # package.  Load the PostgreSQL application only on demand so the package
     # remains acyclic for Book Authority and migration tooling.
     if name in {

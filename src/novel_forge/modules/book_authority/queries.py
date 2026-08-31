@@ -770,7 +770,7 @@ class PostgresBookProductionQuery:
                 "chapter_root_operation_id": str(row[12]),
             }
         elif "context_token_budget" not in frozen:
-            # v1 snapshots predate the explicit Provider ceiling. The Chapter
+            # COMPATIBILITY: v1 snapshots predate the explicit Provider ceiling. The Chapter
             # request command is immutable Authority evidence, so its frozen
             # value is the only legal compatibility source.
             frozen["context_token_budget"] = request_context_token_budget
@@ -1325,7 +1325,7 @@ class PostgresBookProductionQuery:
                     "projection_hash": str(projection_row[1]),
                     "accepted_boundary": {"chapter_number": chapter_number - 1},
                     "arc_states": list(projection_row[2] or ()),
-                    # The persisted projection records the obligation at the
+                    # WHY: The persisted projection records the obligation at the
                     # accepted Chapter N boundary.  Scheduling Chapter N+1
                     # must preserve that state while evaluating due/overdue
                     # debt at the new planning coordinate.

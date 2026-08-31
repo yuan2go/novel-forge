@@ -500,7 +500,7 @@ class ChapterAuthorityScheduler:
                 )
             if operation["status"] != "SUCCEEDED":
                 return node, operation
-        # coordinate_saga should have made the Saga terminal after all children succeeded.
+        # INVARIANT: coordinate_saga should have made the Saga terminal after all children succeeded.
         raise KernelError(
             "CHAPTER_SAGA_COORDINATION_LAG", "completed graph is not terminal"
         )
@@ -574,7 +574,7 @@ class ChapterAuthorityScheduler:
                     in {"story_state_snapshot", "canon_snapshot"}
                 )
             else:
-                # The typed PLAN output is the exact authoritative execution
+                # WHY: The typed PLAN output is the exact authoritative execution
                 # plan.  The original planning candidate may remain in the
                 # root input snapshot for lineage, but cannot become a second
                 # chapter_plan input to Context compilation.

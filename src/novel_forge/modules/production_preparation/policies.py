@@ -146,7 +146,7 @@ _STAGE_EXCLUDED = {
         "re_review_report",
         "canon_patch",
     },
-    # Quality reports are frozen as evidence-only inputs for the downstream
+    # INVARIANT: quality reports are evidence-only inputs for downstream
     # quality fan-in.  DraftContextView still excludes their expression.
     "draft": {
         "draft_version",

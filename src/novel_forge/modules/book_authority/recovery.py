@@ -238,7 +238,7 @@ class PostgresBookOpeningRecoveryApplication:
             lifecycle = str(binding["execution_lifecycle"])
             terminal = lifecycle in {"FAILED", "LOST", "ABORTED"}
             terminal_reason = dict(binding.get("terminal_reason") or {})
-            # The execution row validates the exact workflow/execution contract
+            # WHY: The execution row validates the exact workflow/execution contract
             # pair at INSERT time. Advance the locked compatibility run first;
             # the execution and current pointer remain in this UoW so an
             # insert/final-CAS failure cannot leave a partial reconciliation.
@@ -1277,7 +1277,7 @@ class PostgresBookOpeningRecoveryApplication:
         if not search_id or not branch_key or not branch_key.startswith("future-"):
             raise ValueError("Narrative Search branch identity is invalid")
         with AuthorityUnitOfWork(self.database_url) as uow:
-            # Canonical order: Opening advisory/row -> OpeningExecution ->
+            # WHY: Canonical order: Opening advisory/row -> OpeningExecution ->
             # RuntimeJob -> RuntimeAttempt -> RuntimeLease -> Planning rows.
             self._lock_opening(uow, opening_run_id)
             run = self._opening(uow, opening_run_id, lock=True)
@@ -2164,7 +2164,7 @@ class PostgresBookOpeningRecoveryApplication:
                     "BOOK_OPENING_RECOVERY_REASSESSMENT_REQUIRED",
                 }:
                     raise
-                # Heartbeat, completion, abort, or another loss sweeper won
+                # WHY: Heartbeat, completion, abort, or another loss sweeper won
                 # after this bounded scan.  That candidate has already moved
                 # to an authoritative state; continue so it cannot starve the
                 # remaining expired executions in the batch.
@@ -2212,7 +2212,7 @@ class PostgresBookOpeningRecoveryApplication:
                 evidence_version=int(pending_checkpoint_evidence["evidence_version"]),
                 evidence_hash=str(pending_checkpoint_evidence["evidence_hash"]),
             )
-        # Canonical cross-Authority order is Opening/Execution/Runtime ->
+        # INVARIANT: Canonical cross-Authority order is Opening/Execution/Runtime ->
         # Budget -> semantic Operation/ExternalEffect.  Reservation takes the
         # Budget prefix before locking its Operation/Effect; keeping recovery
         # in the same order prevents an AB/BA deadlock during assessment.
@@ -2280,7 +2280,7 @@ class PostgresBookOpeningRecoveryApplication:
             "external_effect": external,
             "budget": budget,
             "policy_config_digest": self._policy_digest(),
-            # The execution contract is release-stable so a rolling deployment
+            # INVARIANT: The execution contract is release-stable so a rolling deployment
             # cannot strand an unclaimed generation.  RecoveryAssessment is
             # intentionally release-bound and therefore uses the exact running
             # application identity instead.
@@ -2489,7 +2489,7 @@ class PostgresBookOpeningRecoveryApplication:
         if search_row is None:
             return self._empty_semantic_evaluation()
         if str(search_row[0]) in {"SELECTED", "ACTIVATED"}:
-            # Planning already owns a complete durable result.  The missing
+            # INVARIANT: Planning already owns a complete durable result.  The missing
             # outer cursor is replayed/reconciled from that Authority; creating
             # a semantic replacement here would orphan executable READY work.
             return self._empty_semantic_evaluation()
@@ -2518,11 +2518,11 @@ class PostgresBookOpeningRecoveryApplication:
             "",
         )
         if not current_branch:
-            # Every branch has durable Planning membership.  Search selection
+            # INVARIANT: Every branch has durable Planning membership.  Search selection
             # itself is the next idempotent step; no semantic generation is
             # authorized here.
             return self._empty_semantic_evaluation()
-        # Select the exact Planning-owned search lineage first, then take the same
+        # WHY: Select the exact Planning-owned search lineage first, then take the same
         # candidate advisory lock used by normal semantic admission before any
         # Evaluation/head row lock.  This preserves the canonical
         # candidate-lock -> head/evaluation-lock order during recovery.
@@ -4421,7 +4421,7 @@ class PostgresBookOpeningRecoveryApplication:
             "COMPENSATION_FAILED",
         }
         if operation_status not in terminal_statuses:
-            # The successor Opening re-enters the same deterministic semantic
+            # WHY: The successor Opening re-enters the same deterministic semantic
             # command.  Its governed scheduler owns Attempt/effect/output
             # replay, including a durable success receipt that has not yet
             # materialized output.  UNKNOWN was rejected before this policy

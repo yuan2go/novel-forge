@@ -401,7 +401,7 @@ def _is_recovery_bound(
     generation: int,
 ) -> bool:
 
-    # Deliberately do not join through the outer lineage here.  Any durable
+    # INVARIANT: Deliberately do not join through the outer lineage here.  Any durable
     # RuntimeJob that claims this exact semantic execution as NEW/RESUME makes
     # the ordinary generation-one path unavailable.  Broken outer lineage must
     # therefore reach the full gate and fail closed instead of disappearing
@@ -706,7 +706,7 @@ def assert_narrative_replacement_execution_gate_in_uow(
                     != "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED"
                 ):
                     raise
-                # A failed original Opening may formally recover by resuming
+                # WHY: A failed original Opening may formally recover by resuming
                 # the still-current generation-one Evaluation.  In that case
                 # the immutable Planning binding names history while the new
                 # RuntimeJob and its RecoveryAssessment own current liveness.

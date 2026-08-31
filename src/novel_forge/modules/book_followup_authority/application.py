@@ -140,7 +140,7 @@ class BookFollowupAuthorityApplication:
                 ),
             )
         if request.root_operation_id is None:
-            # Follow-ups intentionally own a sidecar Saga. They retain acceptance
+            # INVARIANT: follow-ups own a sidecar Saga. They retain acceptance
             # causation but cannot join or delay the production-critical Book Saga.
             start_saga(
                 self.database_url,
@@ -161,7 +161,7 @@ class BookFollowupAuthorityApplication:
     def run_or_recover(self, admission: BookFollowupAdmission):
         return ContentAuthorityScheduler(
             self.database_url,
-            registry=self.registry,  # shared scheduler protocol; no new Attempt runtime
+            registry=self.registry,  # INVARIANT: shared scheduling cannot create another Attempt runtime.
             worker_id=self.worker_id,
         ).run_or_recover(
             operation_id=admission.operation_id,
