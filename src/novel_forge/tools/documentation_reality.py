@@ -227,7 +227,144 @@ def _is_nonnegative_integer(value: object) -> bool:
     return type(value) is int and value >= 0
 
 
+def _git_tree_for_ancestor_commit(
+    root: Path,
+    commit_sha: str,
+    errors: list[str],
+    *,
+    context: str,
+) -> str:
+    if not FULL_SHA.fullmatch(commit_sha):
+        return ""
+    try:
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        tree = subprocess.run(
+            ["git", "rev-parse", "--verify", f"{commit_sha}^{{tree}}"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _error(errors, f"{context}.observed_at_sha cannot be verified by Git: {exc}")
+        return ""
+    resolved_tree = tree.stdout.strip().lower()
+    if ancestor.returncode != 0 or tree.returncode != 0 or not FULL_SHA.fullmatch(
+        resolved_tree
+    ):
+        _error(
+            errors,
+            f"{context}.observed_at_sha is not an ancestor Git commit",
+        )
+        return ""
+    return resolved_tree
+
+
+def _p0_report_projection(report: Mapping[str, Any]) -> dict[str, Any]:
+    gates = report.get("gates")
+    if not isinstance(gates, list):
+        raise ValueError("P0 report gates are not a list")
+    by_id = {
+        str(gate.get("gate_id") or ""): gate
+        for gate in gates
+        if isinstance(gate, Mapping)
+    }
+
+    def collection(
+        gate_id: str,
+        classification: str,
+        *,
+        repeated: bool = False,
+    ) -> dict[str, Any]:
+        gate = by_id.get(gate_id)
+        evidence = gate.get("evidence") if isinstance(gate, Mapping) else None
+        if not isinstance(evidence, Mapping):
+            raise ValueError(f"P0 report gate evidence is missing: {gate_id}")
+        collected = evidence.get("collection")
+        junit = evidence.get("junit")
+        if not isinstance(collected, Mapping) or not isinstance(junit, Mapping):
+            raise ValueError(f"P0 report collection evidence is missing: {gate_id}")
+        projection = {
+            "classification": classification,
+            "collected_nodes": collected.get("collected_count"),
+            "junit_cases": junit.get("tests"),
+            "passed": junit.get("passed"),
+            "skipped": junit.get("skipped"),
+            "complete": collected.get("complete_collection"),
+        }
+        if repeated:
+            projection["repeated_in_postgresql_collection"] = True
+        return projection
+
+    collections = [
+        collection("pytest-backend", "BACKEND_NON_POSTGRESQL"),
+        collection(
+            "migration-compatibility",
+            "MIGRATION_COMPATIBILITY",
+            repeated=True,
+        ),
+        collection("pytest-postgresql-integration", "POSTGRESQL_REQUIRED"),
+    ]
+    migration_fresh = by_id.get("migration-fresh")
+    migration_evidence = (
+        migration_fresh.get("evidence")
+        if isinstance(migration_fresh, Mapping)
+        else None
+    )
+    migration = report.get("migration")
+    cleanup = report.get("cleanup")
+    if not isinstance(migration_evidence, Mapping) or not isinstance(
+        migration, Mapping
+    ):
+        raise ValueError("P0 report migration evidence is missing")
+    if not isinstance(cleanup, Mapping) or not isinstance(cleanup.get("phases"), list):
+        raise ValueError("P0 report cleanup evidence is missing")
+    phases = [dict(phase) for phase in cleanup["phases"]]
+    owned_resource_count = sum(
+        int(phase.get("resource_count") or 0)
+        for phase in phases
+        if type(phase.get("resource_count")) is int
+    )
+    unique_collections = (collections[0], collections[2])
+    return {
+        "source_tree": report.get("source_tree"),
+        "dependency_snapshot_digest": (
+            report.get("dependency_snapshot") or {}
+        ).get("digest"),
+        "collected": sum(int(item["junit_cases"]) for item in unique_collections),
+        "passed": sum(int(item["passed"]) for item in unique_collections),
+        "failed": 0,
+        "collections": collections,
+        "gates": [
+            {"id": gate.get("gate_id"), "status": gate.get("status")}
+            for gate in gates
+            if isinstance(gate, Mapping)
+        ],
+        "migration": {
+            "applied_count": migration_evidence.get("applied_count"),
+            "expected_head": migration.get("expected_head"),
+            "observed_head": migration.get("observed_head"),
+        },
+        "cleanup": {
+            "status": cleanup.get("status"),
+            "owned_resource_count": owned_resource_count,
+            "remaining_resource_count": cleanup.get("remaining_resource_count"),
+            "phases": phases,
+        },
+        "evidence_ceilings": report.get("evidence_ceilings"),
+    }
+
+
 def _validate_p0_run_projection(
+    root: Path,
     run: Mapping[str, Any],
     errors: list[str],
     *,
@@ -236,14 +373,24 @@ def _validate_p0_run_projection(
 ) -> bool:
     initial_error_count = len(errors)
     observed_at_sha = str(run.get("observed_at_sha") or "")
-    if not FULL_SHA.fullmatch(str(run.get("source_tree") or "")):
+    source_tree = str(run.get("source_tree") or "")
+    if not FULL_SHA.fullmatch(source_tree):
         _error(errors, f"{context}.source_tree must be a full Git tree SHA")
+    resolved_tree = _git_tree_for_ancestor_commit(
+        root,
+        observed_at_sha,
+        errors,
+        context=context,
+    )
+    if resolved_tree and source_tree != resolved_tree:
+        _error(errors, f"{context}.source_tree differs from the observed Git commit")
     for field in ("dependency_snapshot_digest",):
         if not CONTENT_DIGEST.fullmatch(str(run.get(field) or "")):
             _error(errors, f"{context}.{field} must be a SHA-256 digest")
 
     artifact = run.get("qualification_report")
     qualification_run_id = ""
+    retained_report: Mapping[str, Any] | None = None
     if not isinstance(artifact, Mapping):
         _error(errors, f"{context}.qualification_report must be an object")
     else:
@@ -268,11 +415,69 @@ def _validate_p0_run_projection(
                 errors,
                 f"{context}.qualification_report.sha256 must be a SHA-256 digest",
             )
-        if artifact.get("retention") != "EXTERNAL_QUALIFICATION_ARTIFACT":
+        if artifact.get("retention") != "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT":
             _error(
                 errors,
                 f"{context}.qualification_report.retention is not explicit",
             )
+        expected_path = f"architecture/evidence/{expected_report}"
+        repository_path = str(artifact.get("repository_path") or "")
+        if repository_path != expected_path:
+            _error(
+                errors,
+                f"{context}.qualification_report.repository_path is not canonical",
+            )
+        report_path = _inside_root(root, repository_path, errors)
+        if report_path is None or not report_path.is_file():
+            _error(errors, f"{context}.qualification_report artifact is missing")
+        else:
+            try:
+                report_bytes = report_path.read_bytes()
+                parsed_report = json.loads(report_bytes.decode("utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                _error(
+                    errors,
+                    f"{context}.qualification_report artifact is invalid: {exc}",
+                )
+            else:
+                observed_digest = "sha256:" + hashlib.sha256(report_bytes).hexdigest()
+                if artifact.get("sha256") != observed_digest:
+                    _error(
+                        errors,
+                        f"{context}.qualification_report artifact digest differs",
+                    )
+                if not isinstance(parsed_report, Mapping):
+                    _error(
+                        errors,
+                        f"{context}.qualification_report artifact must be an object",
+                    )
+                else:
+                    try:
+                        from novel_forge.tools.release_run_evidence import (
+                            validate_p0_backend_qualification_report,
+                        )
+
+                        validate_p0_backend_qualification_report(
+                            parsed_report,
+                            expected_sha=observed_at_sha,
+                        )
+                    except ValueError as exc:
+                        _error(
+                            errors,
+                            f"{context}.qualification_report artifact fails validation: {exc}",
+                        )
+                    else:
+                        retained_report = parsed_report
+                        report_identity = parsed_report.get("run_identity")
+                        if not isinstance(report_identity, Mapping) or (
+                            report_identity.get("run_id") != qualification_run_id
+                            or report_identity.get("artifact_root")
+                            != artifact.get("artifact_root")
+                        ):
+                            _error(
+                                errors,
+                                f"{context}.qualification_report run identity differs",
+                            )
 
     collections = run.get("collections")
     collections_by_class: dict[str, Mapping[str, Any]] = {}
@@ -405,6 +610,18 @@ def _validate_p0_run_projection(
             _error(errors, f"{context}.cleanup is not zero-residue receipt-bound PASS")
     if run.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
         _error(errors, f"{context}.evidence_ceilings differ from P0 policy")
+    if retained_report is not None:
+        try:
+            report_projection = _p0_report_projection(retained_report)
+        except (TypeError, ValueError) as exc:
+            _error(errors, f"{context}.qualification_report cannot be projected: {exc}")
+        else:
+            for field, expected in report_projection.items():
+                if run.get(field) != expected:
+                    _error(
+                        errors,
+                        f"{context}.{field} differs from the retained qualification report",
+                    )
     return len(errors) == initial_error_count
 
 
@@ -495,6 +712,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 )
                 if evidence_class == P0_EVIDENCE_CLASS:
                     _validate_p0_run_projection(
+                        root,
                         run,
                         errors,
                         context=context,
@@ -521,6 +739,19 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 }
             ):
                 run_results[run_id] = (counts[0], counts[1], counts[2])
+
+    retained_artifacts = {
+        str(report.get("repository_path") or "")
+        for run in runs_by_id.values()
+        if run_classes.get(str(run.get("id") or "")) == P0_EVIDENCE_CLASS
+        and isinstance((report := run.get("qualification_report")), Mapping)
+    }
+    retained_root = root / "architecture/evidence"
+    if retained_root.is_dir():
+        for path in sorted(item for item in retained_root.rglob("*") if item.is_file()):
+            relative = _relative(root, path)
+            if relative not in retained_artifacts:
+                _error(errors, f"unreferenced retained qualification artifact: {relative}")
 
     capabilities = inventory.get("capabilities")
     if not isinstance(capabilities, list):

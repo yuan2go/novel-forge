@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -18,6 +20,258 @@ from novel_forge.tools.documentation_reality import (
 from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
 )
+from novel_forge.tools.release_run_evidence import (
+    build_p0_backend_qualification_report,
+)
+
+
+_DIGEST = "sha256:" + "b" * 64
+
+
+def _build_valid_p0_report(
+    *,
+    tested_sha: str,
+    source_tree: str,
+    migration_head: str,
+    artifact_root: str,
+    artifact_name: str,
+) -> dict[str, object]:
+    run_id = "p0-" + "2" * 32
+    compose_project = "nf-p0-" + "2" * 32
+    runtime_project = compose_project + "-runtime"
+    manifest = {
+        "schema_version": "novel-forge.backend-qualification-manifest.v1",
+        "required_gates": list(REQUIRED_GATE_ORDER),
+        "expected_migration_head": migration_head,
+        "manifest_digests": {
+            "architecture/manifests/migration-manifest.yaml": _DIGEST
+        },
+        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+    }
+    pytest_evidence = {
+        "schema_version": "novel-forge.backend-pytest-evidence.v1",
+        "status": "PASS",
+        "junit": {
+            "tests": 1,
+            "passed": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "duration_seconds": 0.1,
+            "artifact": "backend.xml",
+            "digest": _DIGEST,
+        },
+        "collection": {
+            "complete_collection": True,
+            "collected_count": 1,
+            "source_file_count": 1,
+            "pytest_exit_status": 0,
+            "report_digest": _DIGEST,
+        },
+        "case_accounting": {
+            "authority": "JUNIT_XML",
+            "junit_case_count": 1,
+            "collected_node_count": 1,
+            "additional_junit_case_count": 0,
+        },
+    }
+    postgres_evidence = {
+        **pytest_evidence,
+        "schema_version": "novel-forge.postgresql-pytest-evidence.v1",
+        "semantic_slices": {
+            "migration_matrix": [
+                "tests/integration/test_authority_migrations_postgres.py"
+            ]
+        },
+    }
+    documentation_evidence = {
+        "schema_version": "novel-forge.documentation-reality-check.v1",
+        "evidence_class": "reality_inventory",
+        "status": "PASS",
+        "tested_sha": tested_sha,
+        "inventory_sha256": _DIGEST,
+        "canonical_document_count": len(CANONICAL_DOCUMENTS),
+        "capability_count": 1,
+        "source_comment_count": 0,
+        "module_docstring_count": 0,
+        "source_docstring_count": 0,
+        "errors": [],
+        "artifact": "documentation-reality.json",
+        "digest": _DIGEST,
+    }
+    cleanup = {
+        "status": "PASS",
+        "remaining_resource_count": 0,
+        "phases": [
+            {
+                "phase": "postgresql",
+                "status": "PASS",
+                "resource_count": 1,
+                "remaining_resource_count": 0,
+                "run_id": run_id,
+                "compose_project": compose_project,
+                "receipt": f"compose-resource-ownership-{compose_project}.json",
+            },
+            {
+                "phase": "compose-runtime",
+                "status": "PASS",
+                "resource_count": 1,
+                "remaining_resource_count": 0,
+                "run_id": run_id,
+                "compose_project": runtime_project,
+                "receipt": f"compose-resource-ownership-{runtime_project}.json",
+            },
+        ],
+    }
+    gates = [
+        {
+            "gate_id": gate_id,
+            "status": "PASS",
+            "duration_seconds": 0.1,
+            "evidence": (
+                {
+                    "commit_sha": tested_sha,
+                    "source_tree": source_tree,
+                    "dirty": False,
+                }
+                if gate_id == "source-preflight"
+                else documentation_evidence
+                if gate_id == "documentation-reality"
+                else pytest_evidence
+                if gate_id == "pytest-backend"
+                else postgres_evidence
+                if gate_id
+                in {"migration-compatibility", "pytest-postgresql-integration"}
+                else {
+                    "expected_head": migration_head,
+                    "observed_head": migration_head,
+                    "applied_count": 1,
+                }
+                if gate_id in {"migration-fresh", "migration-head"}
+                else {"artifact": "query-plan.json", "digest": _DIGEST}
+                if gate_id == "query-plan-release"
+                else {
+                    "artifact": "compose-runtime.json",
+                    "digest": _DIGEST,
+                    "pre_restart_operation_id": "operation-pre",
+                    "recovered_operation_id": "operation-recovered",
+                    "post_restart_operation_id": "operation-post",
+                    "authoritative_side_effect": True,
+                }
+                if gate_id == "compose-runtime"
+                else cleanup
+                if gate_id == "resource-cleanup"
+                else {"artifact": artifact_name, "atomic_write": True}
+                if gate_id == "evidence-finalization"
+                else {}
+            ),
+        }
+        for gate_id in REQUIRED_GATE_ORDER
+    ]
+    dependency = {
+        "schema_version": "novel-forge.resolved-dependency-snapshot.v1",
+        "python_implementation": "CPython",
+        "python_version": "3.12.2",
+        "package_count": 2,
+        "packages": ["alpha==1", "beta==2"],
+        "provenance_files": [],
+        "digest": (
+            "sha256:da996a55bccd5c2080004a0d3c9636153d5a8980cb1aebbeb9d2e0e466a5f78d"
+        ),
+        "git_sha_alone_reproducible": False,
+        "reproducibility_class": "RESOLVED_SNAPSHOT",
+    }
+    return build_p0_backend_qualification_report(
+        tested_sha=tested_sha,
+        source_tree=source_tree,
+        source_identity={
+            "commit_sha": tested_sha,
+            "source_tree": source_tree,
+            "dirty": False,
+            "branch": "test",
+            "workflow_sha": "",
+        },
+        manifest=manifest,
+        dependency_snapshot=dependency,
+        gates=gates,
+        cleanup=cleanup,
+        run_identity={
+            "run_id": run_id,
+            "compose_project": compose_project,
+            "compose_runtime_project": runtime_project,
+            "artifact_root": artifact_root,
+        },
+    )
+
+
+def _bind_retained_p0_report(root: Path, inventory_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Novel Forge Test",
+            "-c",
+            "user.email=novel-forge-test@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "fixture",
+        ],
+        cwd=root,
+        check=True,
+    )
+    tested_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    source_tree = subprocess.run(
+        ["git", "rev-parse", "HEAD^{tree}"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    token = "2" * 32
+    artifact_name = f"p0-backend-qualification-{tested_sha}.json"
+    artifact_root = f"novel-forge-p0-{tested_sha[:12]}-{token}"
+    report = _build_valid_p0_report(
+        tested_sha=tested_sha,
+        source_tree=source_tree,
+        migration_head="0001",
+        artifact_root=artifact_root,
+        artifact_name=artifact_name,
+    )
+    report_path = root / "architecture/evidence" / artifact_name
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_bytes = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode()
+    report_path.write_bytes(report_bytes)
+
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    run = inventory["qualification_runs"][0]
+    run.update(
+        {
+            "observed_at_sha": tested_sha,
+            "source_tree": source_tree,
+            "dependency_snapshot_digest": report["dependency_snapshot"]["digest"],
+            "qualification_report": {
+                "run_id": "p0-" + token,
+                "artifact_root": artifact_root,
+                "artifact": artifact_name,
+                "repository_path": f"architecture/evidence/{artifact_name}",
+                "sha256": "sha256:" + hashlib.sha256(report_bytes).hexdigest(),
+                "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT",
+            },
+            "implementation_tree_sha": build_implementation_tree_identity(root)[
+                "implementation_tree_sha"
+            ],
+        }
+    )
+    inventory_path.write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
 
 
 class DocumentationRealityTests(unittest.TestCase):
@@ -198,6 +452,31 @@ class DocumentationRealityTests(unittest.TestCase):
                 lambda run: run["qualification_report"].update(sha256="bad"),
                 "qualification_report.sha256 must be a SHA-256 digest",
             ),
+            (
+                "report-digest-mismatch",
+                lambda run: run["qualification_report"].update(
+                    sha256="sha256:" + "c" * 64
+                ),
+                "qualification_report artifact digest differs",
+            ),
+            (
+                "git-tree-mismatch",
+                lambda run: run.update(source_tree="f" * 40),
+                "source_tree differs from the observed Git commit",
+            ),
+            (
+                "fabricated-git-commit",
+                lambda run: run.update(observed_at_sha="f" * 40),
+                "observed_at_sha is not an ancestor Git commit",
+            ),
+            (
+                "report-projection-mismatch",
+                lambda run: (
+                    run["cleanup"]["phases"][0].update(resource_count=2),
+                    run["cleanup"].update(owned_resource_count=3),
+                ),
+                "cleanup differs from the retained qualification report",
+            ),
         )
         for label, mutate, expected in mutations:
             with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
@@ -216,6 +495,42 @@ class DocumentationRealityTests(unittest.TestCase):
                 errors = "\n".join(report["errors"])
                 self.assertIn(expected, errors)
                 self.assertIn("references a run with invalid results", errors)
+
+    def test_missing_or_unreferenced_retained_report_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory = json.loads(
+                (root / "architecture/reality-evidence.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            repository_path = inventory["qualification_runs"][0][
+                "qualification_report"
+            ]["repository_path"]
+            (root / repository_path).unlink()
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "qualification_report artifact is missing",
+                "\n".join(report["errors"]),
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            stale = root / "architecture/evidence/stale.json"
+            stale.write_text("{}\n", encoding="utf-8")
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "unreferenced retained qualification artifact",
+                "\n".join(report["errors"]),
+            )
 
     def test_generated_web_dependencies_are_outside_repository_comment_policy(
         self,
@@ -405,6 +720,7 @@ class DocumentationRealityTests(unittest.TestCase):
         inventory_path.write_text(
             json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
         )
+        _bind_retained_p0_report(root, inventory_path)
 
 
 if __name__ == "__main__":
