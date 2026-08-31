@@ -14,9 +14,11 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
     REQUIRED_GATE_ORDER,
     validate_resolved_dependency_snapshot,
 )
+from novel_forge.tools.documentation_reality import CANONICAL_DOCUMENTS
 
 
 GIT_SHA = re.compile(r"[0-9a-f]{40}")
@@ -31,18 +33,6 @@ REQUIRED_ARTIFACT_FILES = {
     "docker_image_digest": "docker-image-digest-{sha}.json",
     "environment_metadata": "environment-metadata-{sha}.json",
 }
-P0_EVIDENCE_CEILINGS = {
-    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-    "LONGFORM": "NOT_PROVEN",
-    "MULTIBOOK": "NOT_PROVEN",
-    "PRODUCTION": "NOT_PROVEN",
-}
-
-
 def _validated_sha(commit_sha: str) -> str:
     value = commit_sha.strip().lower()
     if not GIT_SHA.fullmatch(value):
@@ -170,7 +160,8 @@ def _validate_p0_gate_evidence(
         or not CONTENT_DIGEST.fullmatch(
             str(documentation.get("inventory_sha256") or "")
         )
-        or documentation_counts["canonical_document_count"] != 5
+        or documentation_counts["canonical_document_count"]
+        != len(CANONICAL_DOCUMENTS)
         or not isinstance(documentation_counts["capability_count"], int)
         or isinstance(documentation_counts["capability_count"], bool)
         or documentation_counts["capability_count"] < 1
@@ -247,6 +238,21 @@ def _validate_p0_gate_evidence(
         )
     if compose.get("authoritative_side_effect") is not True:
         raise ValueError("Compose runtime evidence lacks an authoritative side effect")
+
+    cleanup = _required_gate_evidence(gates, "resource-cleanup")
+    if (
+        cleanup.get("status") != "PASS"
+        or cleanup.get("remaining_resource_count") != 0
+        or not isinstance(cleanup.get("phases"), list)
+        or len(cleanup["phases"]) < 2
+        or any(
+            not isinstance(phase, Mapping)
+            or phase.get("status") != "PASS"
+            or phase.get("remaining_resource_count") != 0
+            for phase in cleanup["phases"]
+        )
+    ):
+        raise ValueError("P0 resource cleanup evidence is incomplete")
 
     finalization = _required_gate_evidence(gates, "evidence-finalization")
     if finalization.get("atomic_write") is not True or not str(

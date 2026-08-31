@@ -11,7 +11,7 @@ QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -41,8 +41,7 @@ help:
 	@echo "make p0-backend-static - run backend-only static and manifest checks"
 	@echo "make p0-backend-qualification - run exact-SHA backend qualification without Admin UI"
 	@echo "make infra-up  - start Authority PostgreSQL and object storage"
-	@echo "make postgres-authority-test-up - start isolated PostgreSQL authority test service"
-	@echo "make postgres-authority-test - run non-skippable authority PostgreSQL tests"
+	@echo "make postgres-authority-test - run the complete collection against a caller-owned isolated database"
 	@echo "make api       - run FastAPI backend"
 	@echo "make worker    - run the Chapter Authority worker"
 	@echo "make web-dev   - run Next.js admin console"
@@ -81,16 +80,15 @@ infra-up:
 infra-down:
 	$(AUTHORITY_COMPOSE) stop postgresql object-store
 
-postgres-authority-test-up:
-	docker compose -f compose.postgres-test.yml up -d --wait authority-postgres-test
-
-postgres-authority-test-down:
-	docker compose -f compose.postgres-test.yml down
-
 postgres-authority-test:
 	@test -n "$${NOVEL_FORGE_DATABASE_URL:-}" || { echo "NOVEL_FORGE_DATABASE_URL is required; fixed qualification ports are forbidden" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_QUALIFICATION_DATABASE_NAME:-}" || { echo "NOVEL_FORGE_QUALIFICATION_DATABASE_NAME is required" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR:-}" || { echo "NOVEL_FORGE_POSTGRES_EVIDENCE_DIR is required" >&2; exit 2; }
 	NOVEL_FORGE_DATABASE_URL="$${NOVEL_FORGE_DATABASE_URL}" \
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_authority_postgres_tests.py
+	NOVEL_FORGE_QUALIFICATION_DATABASE_NAME="$${NOVEL_FORGE_QUALIFICATION_DATABASE_NAME}" \
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_authority_postgres_tests.py \
+		--junit-xml "$${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest.xml" \
+		--collection-report "$${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest-collection.json"
 
 authority-up:
 	$(AUTHORITY_COMPOSE) up -d --build --wait --wait-timeout 300

@@ -147,6 +147,65 @@ class QualificationRunIdentityTests(unittest.TestCase):
 
         self.assertEqual(client.down_calls, [])
 
+    def test_cleanup_discovers_resources_created_before_initial_capture(self) -> None:
+        with TemporaryDirectory() as temporary:
+            identity = QualificationRunIdentity.create(
+                commit_sha=SHA, artifact_parent=Path(temporary)
+            )
+            client = FakeComposeClient()
+            owned = OwnedComposeProject(
+                identity=identity,
+                repo_root=Path(temporary),
+                compose_files=(Path("compose.yml"),),
+                environment={"NOVEL_FORGE_QUALIFICATION_RUN_ID": identity.run_id},
+                client=client,
+            )
+            owned.assert_unclaimed()
+            client.resources.append(
+                ComposeResource(
+                    kind="network",
+                    resource_id="partial-network",
+                    project_name=identity.compose_project,
+                    run_id=identity.run_id,
+                )
+            )
+
+            result = owned.cleanup_discovered()
+
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["resource_count"], 1)
+        self.assertEqual(result["remaining_resource_count"], 0)
+        self.assertEqual(len(client.down_calls), 1)
+
+    def test_cleanup_discovered_refuses_resources_without_empty_preflight(self) -> None:
+        with TemporaryDirectory() as temporary:
+            identity = QualificationRunIdentity.create(
+                commit_sha=SHA, artifact_parent=Path(temporary)
+            )
+            client = FakeComposeClient()
+            client.resources.append(
+                ComposeResource(
+                    kind="container",
+                    resource_id="unclaimed-container",
+                    project_name=identity.compose_project,
+                    run_id=identity.run_id,
+                )
+            )
+            owned = OwnedComposeProject(
+                identity=identity,
+                repo_root=Path(temporary),
+                compose_files=(Path("compose.yml"),),
+                environment={"NOVEL_FORGE_QUALIFICATION_RUN_ID": identity.run_id},
+                client=client,
+            )
+
+            with self.assertRaisesRegex(
+                ResourceOwnershipError, "successful empty-project preflight"
+            ):
+                owned.cleanup_discovered()
+
+        self.assertEqual(client.down_calls, [])
+
     def test_published_port_is_read_from_docker_inspect_json(self) -> None:
         inspect_payload = [
             {

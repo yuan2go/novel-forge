@@ -171,6 +171,25 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertNotIn("pytest.main", source)
         self.assertNotIn("55432", source)
 
+    def test_manual_postgresql_entry_requires_isolated_identity_and_evidence(
+        self,
+    ) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        recipe = makefile.split("postgres-authority-test:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+
+        for required in (
+            "NOVEL_FORGE_DATABASE_URL",
+            "NOVEL_FORGE_QUALIFICATION_DATABASE_NAME",
+            "NOVEL_FORGE_POSTGRES_EVIDENCE_DIR",
+            "--junit-xml",
+            "--collection-report",
+        ):
+            self.assertIn(required, recipe)
+        self.assertNotIn("postgres-authority-test-up", makefile)
+        self.assertNotIn("postgres-authority-test-down", makefile)
+
 
 if __name__ == "__main__":
     unittest.main()
