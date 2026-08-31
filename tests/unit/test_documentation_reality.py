@@ -32,6 +32,7 @@ def _build_valid_p0_report(
     *,
     tested_sha: str,
     source_tree: str,
+    implementation_tree_sha: str,
     migration_head: str,
     artifact_root: str,
     artifact_name: str,
@@ -133,12 +134,26 @@ def _build_valid_p0_report(
                     "commit_sha": tested_sha,
                     "source_tree": source_tree,
                     "dirty": False,
+                    "implementation_tree_sha": implementation_tree_sha,
                 }
                 if gate_id == "source-preflight"
                 else documentation_evidence
                 if gate_id == "documentation-reality"
                 else pytest_evidence
                 if gate_id == "pytest-backend"
+                else {"returncode": 0}
+                if gate_id == "static-and-manifests"
+                else {
+                    "database_identity": {
+                        "database_name": "nf_p0_test",
+                        "host_class": "LOOPBACK",
+                        "port": 55432,
+                        "server_identity_digest": _DIGEST,
+                    },
+                    "dynamic_port": True,
+                    "ownership_resource_count": 2,
+                }
+                if gate_id == "postgresql-start"
                 else postgres_evidence
                 if gate_id
                 in {"migration-compatibility", "pytest-postgresql-integration"}
@@ -146,6 +161,8 @@ def _build_valid_p0_report(
                     "expected_head": migration_head,
                     "observed_head": migration_head,
                     "applied_count": 1,
+                    "missing": [],
+                    "extra": [],
                 }
                 if gate_id in {"migration-fresh", "migration-head"}
                 else {"artifact": "query-plan.json", "digest": _DIGEST}
@@ -190,6 +207,7 @@ def _build_valid_p0_report(
             "dirty": False,
             "branch": "test",
             "workflow_sha": "",
+            "implementation_tree_sha": implementation_tree_sha,
         },
         manifest=manifest,
         dependency_snapshot=dependency,
@@ -199,6 +217,7 @@ def _build_valid_p0_report(
             "run_id": run_id,
             "compose_project": compose_project,
             "compose_runtime_project": runtime_project,
+            "database_name": "nf_p0_test",
             "artifact_root": artifact_root,
         },
     )
@@ -239,9 +258,13 @@ def _bind_retained_p0_report(root: Path, inventory_path: Path) -> None:
     token = "2" * 32
     artifact_name = f"p0-backend-qualification-{tested_sha}.json"
     artifact_root = f"novel-forge-p0-{tested_sha[:12]}-{token}"
+    implementation_tree_sha = build_implementation_tree_identity(root)[
+        "implementation_tree_sha"
+    ]
     report = _build_valid_p0_report(
         tested_sha=tested_sha,
         source_tree=source_tree,
+        implementation_tree_sha=implementation_tree_sha,
         migration_head="0001",
         artifact_root=artifact_root,
         artifact_name=artifact_name,
@@ -266,9 +289,7 @@ def _bind_retained_p0_report(root: Path, inventory_path: Path) -> None:
                 "sha256": "sha256:" + hashlib.sha256(report_bytes).hexdigest(),
                 "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT",
             },
-            "implementation_tree_sha": build_implementation_tree_identity(root)[
-                "implementation_tree_sha"
-            ],
+            "implementation_tree_sha": implementation_tree_sha,
         }
     )
     inventory_path.write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
@@ -529,6 +550,82 @@ class DocumentationRealityTests(unittest.TestCase):
             self.assertEqual(report["status"], "FAIL")
             self.assertIn(
                 "unreferenced retained qualification artifact",
+                "\n".join(report["errors"]),
+            )
+
+    def test_old_report_cannot_be_rebound_to_a_new_implementation_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            (root / "src/example.py").write_text(
+                "def run() -> str:\n    return 'changed'\n", encoding="utf-8"
+            )
+            subprocess.run(["git", "add", "src/example.py"], cwd=root, check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Novel Forge Test",
+                    "-c",
+                    "user.email=novel-forge-test@example.invalid",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "implementation change",
+                ],
+                cwd=root,
+                check=True,
+            )
+            inventory_path = root / "architecture/reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            inventory["qualification_runs"][0]["implementation_tree_sha"] = (
+                build_implementation_tree_identity(root)["implementation_tree_sha"]
+            )
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "implementation_tree_sha differs from the retained qualification report",
+                "\n".join(report["errors"]),
+            )
+
+    def test_retained_report_must_prove_a_clean_fresh_migration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture/reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            artifact = inventory["qualification_runs"][0]["qualification_report"]
+            report_path = root / artifact["repository_path"]
+            retained = json.loads(report_path.read_text(encoding="utf-8"))
+            migration_fresh = next(
+                gate
+                for gate in retained["gates"]
+                if gate["gate_id"] == "migration-fresh"
+            )
+            migration_fresh["evidence"].update(
+                observed_head="wrong-head",
+                missing=["0001"],
+                extra=["wrong-head"],
+            )
+            report_bytes = (
+                json.dumps(retained, indent=2, sort_keys=True) + "\n"
+            ).encode()
+            report_path.write_bytes(report_bytes)
+            artifact["sha256"] = "sha256:" + hashlib.sha256(report_bytes).hexdigest()
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "fresh migration does not prove the canonical migration head",
                 "\n".join(report["errors"]),
             )
 

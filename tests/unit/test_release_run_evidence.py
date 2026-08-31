@@ -154,6 +154,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             "run_id": run_id,
             "compose_project": compose_project,
             "compose_runtime_project": runtime_project,
+            "database_name": "nf_p0_test",
         }
         cleanup_evidence = {
             "status": "PASS",
@@ -194,12 +195,26 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         "commit_sha": SHA,
                         "source_tree": "c" * 40,
                         "dirty": False,
+                        "implementation_tree_sha": DIGEST,
                     }
                     if gate_id == "source-preflight"
                     else documentation_evidence
                     if gate_id == "documentation-reality"
                     else pytest_evidence
                     if gate_id == "pytest-backend"
+                    else {"returncode": 0}
+                    if gate_id == "static-and-manifests"
+                    else {
+                        "database_identity": {
+                            "database_name": "nf_p0_test",
+                            "host_class": "LOOPBACK",
+                            "port": 55432,
+                            "server_identity_digest": DIGEST,
+                        },
+                        "dynamic_port": True,
+                        "ownership_resource_count": 2,
+                    }
+                    if gate_id == "postgresql-start"
                     else postgres_evidence
                     if gate_id
                     in {
@@ -209,8 +224,11 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     else {
                         "expected_head": "manifest-head",
                         "observed_head": "manifest-head",
+                        "applied_count": 1,
+                        "missing": [],
+                        "extra": [],
                     }
-                    if gate_id == "migration-head"
+                    if gate_id in {"migration-fresh", "migration-head"}
                     else {"artifact": "query-plan.json", "digest": DIGEST}
                     if gate_id == "query-plan-release"
                     else {
@@ -250,6 +268,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 "dirty": False,
                 "branch": "feature",
                 "workflow_sha": "",
+                "implementation_tree_sha": DIGEST,
             },
             manifest=manifest,
             dependency_snapshot=dependency,
@@ -259,6 +278,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
         )
 
         self.assertEqual(report["decision"], "PASS")
+        self.assertEqual(report["implementation_tree_sha"], DIGEST)
         self.assertEqual(report["migration"]["expected_head"], "manifest-head")
         self.assertEqual(report["migration"]["observed_head"], "manifest-head")
         self.assertFalse(report["dependency_snapshot"]["git_sha_alone_reproducible"])
@@ -274,6 +294,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "dirty": False,
                     "branch": "feature",
                     "workflow_sha": "",
+                    "implementation_tree_sha": DIGEST,
                 },
                 manifest=manifest,
                 dependency_snapshot=tampered_dependency,
@@ -300,6 +321,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "dirty": False,
                     "branch": "feature",
                     "workflow_sha": "",
+                    "implementation_tree_sha": DIGEST,
                 },
                 manifest=manifest,
                 dependency_snapshot=dependency,
@@ -345,6 +367,47 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         malformed,
                         expected_sha=SHA,
                     )
+
+        gate_mutations = (
+            (
+                "static-and-manifests",
+                lambda evidence: evidence.update(returncode=False),
+                "static and manifest",
+            ),
+            (
+                "postgresql-start",
+                lambda evidence: evidence["database_identity"].update(
+                    database_name="shared_database"
+                ),
+                "run-owned and isolated",
+            ),
+            (
+                "migration-fresh",
+                lambda evidence: evidence.update(
+                    observed_head="wrong-head",
+                    missing=["manifest-head"],
+                    extra=["wrong-head"],
+                ),
+                "fresh migration",
+            ),
+        )
+        for gate_id, mutate, expected in gate_mutations:
+            with self.subTest(gate=gate_id):
+                malformed = copy.deepcopy(report)
+                gate = next(
+                    item for item in malformed["gates"] if item["gate_id"] == gate_id
+                )
+                mutate(gate["evidence"])
+                with self.assertRaisesRegex(ValueError, expected):
+                    validate_p0_backend_qualification_report(
+                        malformed,
+                        expected_sha=SHA,
+                    )
+
+        rebound = copy.deepcopy(report)
+        rebound["implementation_tree_sha"] = "sha256:" + "f" * 64
+        with self.assertRaisesRegex(ValueError, "source identity"):
+            validate_p0_backend_qualification_report(rebound, expected_sha=SHA)
 
         with TemporaryDirectory() as temporary:
             output = Path(temporary) / "evidence" / "p0.json"

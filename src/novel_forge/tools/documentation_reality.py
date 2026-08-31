@@ -336,6 +336,7 @@ def _p0_report_projection(report: Mapping[str, Any]) -> dict[str, Any]:
     unique_collections = (collections[0], collections[2])
     return {
         "source_tree": report.get("source_tree"),
+        "implementation_tree_sha": report.get("implementation_tree_sha"),
         "dependency_snapshot_digest": (
             report.get("dependency_snapshot") or {}
         ).get("digest"),
