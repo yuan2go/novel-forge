@@ -66,6 +66,49 @@ def _required_artifact_evidence(
         raise ValueError(f"{evidence_name} artifact identity is invalid")
 
 
+def _validate_cleanup_evidence(
+    cleanup: Mapping[str, Any], *, run_identity: Mapping[str, Any]
+) -> None:
+    run_id = str(run_identity.get("run_id") or "")
+    token = run_id.removeprefix("p0-")
+    compose_project = str(run_identity.get("compose_project") or "")
+    runtime_project = str(run_identity.get("compose_runtime_project") or "")
+    if (
+        not re.fullmatch(r"p0-[0-9a-f]{32}", run_id)
+        or compose_project != f"nf-p0-{token}"
+        or runtime_project != f"nf-p0-{token}-runtime"
+    ):
+        raise ValueError("P0 cleanup run identity is invalid")
+    phases = cleanup.get("phases")
+    expected = (
+        ("postgresql", compose_project),
+        ("compose-runtime", runtime_project),
+    )
+    if (
+        cleanup.get("status") != "PASS"
+        or type(cleanup.get("remaining_resource_count")) is not int
+        or cleanup.get("remaining_resource_count") != 0
+        or not isinstance(phases, list)
+        or len(phases) != len(expected)
+    ):
+        raise ValueError("P0 resource cleanup evidence is incomplete")
+    for phase, (expected_phase, expected_project) in zip(phases, expected, strict=True):
+        if (
+            not isinstance(phase, Mapping)
+            or phase.get("phase") != expected_phase
+            or phase.get("status") != "PASS"
+            or type(phase.get("resource_count")) is not int
+            or phase.get("resource_count") < 1
+            or type(phase.get("remaining_resource_count")) is not int
+            or phase.get("remaining_resource_count") != 0
+            or phase.get("run_id") != run_id
+            or phase.get("compose_project") != expected_project
+            or phase.get("receipt")
+            != f"compose-resource-ownership-{expected_project}.json"
+        ):
+            raise ValueError("P0 resource cleanup phase evidence is invalid")
+
+
 def _validate_pytest_gate_evidence(
     evidence: Mapping[str, Any], *, expected_schema: str, evidence_name: str
 ) -> None:
@@ -130,6 +173,7 @@ def _validate_p0_gate_evidence(
     tested_sha: str,
     source_tree: str,
     expected_migration_head: str,
+    run_identity: Mapping[str, Any],
 ) -> None:
     source = _required_gate_evidence(gates, "source-preflight")
     if (
@@ -240,19 +284,7 @@ def _validate_p0_gate_evidence(
         raise ValueError("Compose runtime evidence lacks an authoritative side effect")
 
     cleanup = _required_gate_evidence(gates, "resource-cleanup")
-    if (
-        cleanup.get("status") != "PASS"
-        or cleanup.get("remaining_resource_count") != 0
-        or not isinstance(cleanup.get("phases"), list)
-        or len(cleanup["phases"]) < 2
-        or any(
-            not isinstance(phase, Mapping)
-            or phase.get("status") != "PASS"
-            or phase.get("remaining_resource_count") != 0
-            for phase in cleanup["phases"]
-        )
-    ):
-        raise ValueError("P0 resource cleanup evidence is incomplete")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
 
     finalization = _required_gate_evidence(gates, "evidence-finalization")
     if finalization.get("atomic_write") is not True or not str(
@@ -472,6 +504,7 @@ def build_p0_backend_qualification_report(
         tested_sha=commit_sha,
         source_tree=tree_sha,
         expected_migration_head=expected_head,
+        run_identity=run_identity,
     )
     migration_gate = next(
         gate for gate in gates if gate.get("gate_id") == "migration-head"
@@ -497,12 +530,11 @@ def build_p0_backend_qualification_report(
         raise ValueError("P0 qualification manifest digest entry is invalid")
     if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
         raise ValueError("P0 qualification evidence ceilings differ from policy")
-    if cleanup.get("status") != "PASS" or cleanup.get(
-        "remaining_resource_count"
-    ) != 0:
-        raise ValueError("P0 qualification cleanup is incomplete")
-    if not str(run_identity.get("run_id") or ""):
-        raise ValueError("P0 qualification run identity is empty")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
+    if dict(cleanup) != dict(
+        _required_gate_evidence(gates, "resource-cleanup")
+    ):
+        raise ValueError("P0 qualification cleanup differs from its gate evidence")
 
     from novel_forge.tools.backend_qualification_contract import sanitize_evidence
 
@@ -637,6 +669,9 @@ def validate_p0_backend_qualification_report(
     if not isinstance(dependency, Mapping):
         raise ValueError("P0 backend qualification dependency snapshot is invalid")
     validated_dependency = validate_resolved_dependency_snapshot(dependency)
+    run_identity = report.get("run_identity")
+    if not isinstance(run_identity, Mapping):
+        raise ValueError("P0 backend qualification run identity is invalid")
     migration = report.get("migration")
     if (
         not isinstance(migration, Mapping)
@@ -667,14 +702,16 @@ def validate_p0_backend_qualification_report(
         tested_sha=tested_sha,
         source_tree=str(report["source_tree"]),
         expected_migration_head=str(migration["expected_head"]),
+        run_identity=run_identity,
     )
     cleanup = report.get("cleanup")
-    if (
-        not isinstance(cleanup, Mapping)
-        or cleanup.get("status") != "PASS"
-        or cleanup.get("remaining_resource_count") != 0
-    ):
+    if not isinstance(cleanup, Mapping):
         raise ValueError("P0 backend qualification cleanup evidence is invalid")
+    _validate_cleanup_evidence(cleanup, run_identity=run_identity)
+    if dict(cleanup) != dict(
+        _required_gate_evidence(gates, "resource-cleanup")
+    ):
+        raise ValueError("P0 backend qualification cleanup differs from its gate")
     if report.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
         raise ValueError("P0 backend qualification evidence ceilings differ")
     return {

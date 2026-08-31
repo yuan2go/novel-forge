@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -146,6 +147,14 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             "artifact": "documentation-reality.json",
             "digest": DIGEST,
         }
+        run_id = "p0-" + "1" * 32
+        compose_project = "nf-p0-" + "1" * 32
+        runtime_project = compose_project + "-runtime"
+        run_identity = {
+            "run_id": run_id,
+            "compose_project": compose_project,
+            "compose_runtime_project": runtime_project,
+        }
         cleanup_evidence = {
             "status": "PASS",
             "owned_resource_count": 4,
@@ -156,12 +165,22 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "status": "PASS",
                     "resource_count": 2,
                     "remaining_resource_count": 0,
+                    "run_id": run_id,
+                    "compose_project": compose_project,
+                    "receipt": (
+                        f"compose-resource-ownership-{compose_project}.json"
+                    ),
                 },
                 {
-                    "phase": "runtime",
+                    "phase": "compose-runtime",
                     "status": "PASS",
                     "resource_count": 2,
                     "remaining_resource_count": 0,
+                    "run_id": run_id,
+                    "compose_project": runtime_project,
+                    "receipt": (
+                        f"compose-resource-ownership-{runtime_project}.json"
+                    ),
                 },
             ],
         }
@@ -235,8 +254,8 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             manifest=manifest,
             dependency_snapshot=dependency,
             gates=gates,
-            cleanup={"status": "PASS", "remaining_resource_count": 0},
-            run_identity={"run_id": "p0-run", "compose_project": "nf-p0-run"},
+            cleanup=cleanup_evidence,
+            run_identity=run_identity,
         )
 
         self.assertEqual(report["decision"], "PASS")
@@ -259,8 +278,8 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 manifest=manifest,
                 dependency_snapshot=tampered_dependency,
                 gates=gates,
-                cleanup={"status": "PASS", "remaining_resource_count": 0},
-                run_identity={"run_id": "p0-run"},
+                cleanup=cleanup_evidence,
+                run_identity=run_identity,
             )
 
         invalid_compose_gates = [dict(item) for item in gates]
@@ -285,9 +304,47 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 manifest=manifest,
                 dependency_snapshot=dependency,
                 gates=invalid_compose_gates,
-                cleanup={"status": "PASS", "remaining_resource_count": 0},
-                run_identity={"run_id": "p0-run"},
+                cleanup=cleanup_evidence,
+                run_identity=run_identity,
             )
+
+        cleanup_mutations = (
+            (
+                "boolean-remaining-count",
+                lambda payload: payload.update(remaining_resource_count=False),
+            ),
+            (
+                "duplicate-phase",
+                lambda payload: payload["phases"].__setitem__(
+                    1, copy.deepcopy(payload["phases"][0])
+                ),
+            ),
+            (
+                "missing-receipt",
+                lambda payload: payload["phases"][1].pop("receipt"),
+            ),
+            (
+                "boolean-resource-count",
+                lambda payload: payload["phases"][0].update(resource_count=False),
+            ),
+        )
+        for label, mutate in cleanup_mutations:
+            with self.subTest(cleanup=label):
+                malformed = copy.deepcopy(report)
+                mutate(malformed["cleanup"])
+                malformed_cleanup_gate = next(
+                    gate
+                    for gate in malformed["gates"]
+                    if gate["gate_id"] == "resource-cleanup"
+                )
+                malformed_cleanup_gate["evidence"] = copy.deepcopy(
+                    malformed["cleanup"]
+                )
+                with self.assertRaisesRegex(ValueError, "cleanup"):
+                    validate_p0_backend_qualification_report(
+                        malformed,
+                        expected_sha=SHA,
+                    )
 
         with TemporaryDirectory() as temporary:
             output = Path(temporary) / "evidence" / "p0.json"

@@ -243,12 +243,13 @@ def _validate_p0_run_projection(
             _error(errors, f"{context}.{field} must be a SHA-256 digest")
 
     artifact = run.get("qualification_report")
+    qualification_run_id = ""
     if not isinstance(artifact, Mapping):
         _error(errors, f"{context}.qualification_report must be an object")
     else:
-        run_id = str(artifact.get("run_id") or "")
-        token = run_id.removeprefix("p0-")
-        if not re.fullmatch(r"p0-[0-9a-f]{32}", run_id):
+        qualification_run_id = str(artifact.get("run_id") or "")
+        token = qualification_run_id.removeprefix("p0-")
+        if not re.fullmatch(r"p0-[0-9a-f]{32}", qualification_run_id):
             _error(errors, f"{context}.qualification_report.run_id is invalid")
         expected_root = f"novel-forge-p0-{observed_at_sha[:12]}-{token}"
         if artifact.get("artifact_root") != expected_root:
@@ -360,13 +361,48 @@ def _validate_p0_run_projection(
     cleanup = run.get("cleanup")
     if not isinstance(cleanup, Mapping):
         _error(errors, f"{context}.cleanup must be an object")
-    elif (
-        cleanup.get("status") != "PASS"
-        or cleanup.get("remaining_resource_count") != 0
-        or not _is_nonnegative_integer(cleanup.get("owned_resource_count"))
-        or cleanup.get("owned_resource_count") < 1
-    ):
-        _error(errors, f"{context}.cleanup is not zero-residue PASS")
+    else:
+        token = qualification_run_id.removeprefix("p0-")
+        expected_phases = (
+            ("postgresql", f"nf-p0-{token}"),
+            ("compose-runtime", f"nf-p0-{token}-runtime"),
+        )
+        phases = cleanup.get("phases")
+        phase_resource_count = 0
+        valid_phases = isinstance(phases, list) and len(phases) == len(
+            expected_phases
+        )
+        if valid_phases:
+            for phase, (expected_phase, expected_project) in zip(
+                phases, expected_phases, strict=True
+            ):
+                if (
+                    not isinstance(phase, Mapping)
+                    or phase.get("phase") != expected_phase
+                    or phase.get("status") != "PASS"
+                    or not _is_nonnegative_integer(phase.get("resource_count"))
+                    or phase.get("resource_count") < 1
+                    or not _is_nonnegative_integer(
+                        phase.get("remaining_resource_count")
+                    )
+                    or phase.get("remaining_resource_count") != 0
+                    or phase.get("run_id") != qualification_run_id
+                    or phase.get("compose_project") != expected_project
+                    or phase.get("receipt")
+                    != f"compose-resource-ownership-{expected_project}.json"
+                ):
+                    valid_phases = False
+                    break
+                phase_resource_count += int(phase["resource_count"])
+        if (
+            cleanup.get("status") != "PASS"
+            or not _is_nonnegative_integer(cleanup.get("remaining_resource_count"))
+            or cleanup.get("remaining_resource_count") != 0
+            or not _is_nonnegative_integer(cleanup.get("owned_resource_count"))
+            or cleanup.get("owned_resource_count") != phase_resource_count
+            or not valid_phases
+        ):
+            _error(errors, f"{context}.cleanup is not zero-residue receipt-bound PASS")
     if run.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
         _error(errors, f"{context}.evidence_ceilings differ from P0 policy")
     return len(errors) == initial_error_count

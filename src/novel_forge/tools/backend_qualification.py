@@ -348,6 +348,7 @@ def _record_resource_cleanup_gate(
 ) -> None:
     passed = (
         cleanup.get("status") == "PASS"
+        and type(cleanup.get("remaining_resource_count")) is int
         and cleanup.get("remaining_resource_count") == 0
     )
     gates[:] = [
@@ -363,12 +364,20 @@ def _record_resource_cleanup_gate(
 
 
 def _aggregate_cleanup(phases: Sequence[Mapping[str, object]]) -> dict[str, object]:
-    failed = [item for item in phases if item.get("status") != "PASS"]
+    failed = [
+        item
+        for item in phases
+        if item.get("status") != "PASS"
+        or type(item.get("remaining_resource_count")) is not int
+        or item.get("remaining_resource_count") != 0
+        or type(item.get("resource_count")) is not int
+        or item.get("resource_count") < 0
+    ]
     remaining = sum(
         int(item.get("remaining_resource_count") or 0)
         for item in phases
-        if isinstance(item.get("remaining_resource_count"), int)
-        and int(item.get("remaining_resource_count") or 0) > 0
+        if type(item.get("remaining_resource_count")) is int
+        and item.get("remaining_resource_count") > 0
     )
     return {
         "status": "FAIL" if failed else "PASS",
@@ -1331,6 +1340,7 @@ def _run_qualification(
         if (
             not isinstance(compose_cleanup, Mapping)
             or compose_cleanup.get("status") != "PASS"
+            or type(compose_cleanup.get("remaining_resource_count")) is not int
             or compose_cleanup.get("remaining_resource_count") != 0
         ):
             raise ValueError("Compose runtime ownership-checked cleanup did not pass")
@@ -1354,7 +1364,10 @@ def _run_qualification(
     runtime_cleanup_verification = _cleanup_owned_project(
         runtime_owned, phase="compose-runtime"
     )
-    if runtime_cleanup_verification.get("resource_count") != 0:
+    if (
+        type(runtime_cleanup_verification.get("resource_count")) is not int
+        or runtime_cleanup_verification.get("resource_count") != 0
+    ):
         compose_gate_evidence = {
             **compose_gate_evidence,
             "error": "Compose proof required orchestrator emergency cleanup",

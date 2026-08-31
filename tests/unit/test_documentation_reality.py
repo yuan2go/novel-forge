@@ -169,7 +169,24 @@ class DocumentationRealityTests(unittest.TestCase):
             (
                 "cleanup",
                 lambda run: run["cleanup"].update(remaining_resource_count=1),
-                "cleanup is not zero-residue PASS",
+                "cleanup is not zero-residue receipt-bound PASS",
+            ),
+            (
+                "boolean-cleanup-count",
+                lambda run: run["cleanup"].update(remaining_resource_count=False),
+                "cleanup is not zero-residue receipt-bound PASS",
+            ),
+            (
+                "duplicate-cleanup-phase",
+                lambda run: run["cleanup"]["phases"].__setitem__(
+                    1, dict(run["cleanup"]["phases"][0])
+                ),
+                "cleanup is not zero-residue receipt-bound PASS",
+            ),
+            (
+                "missing-cleanup-receipt",
+                lambda run: run["cleanup"]["phases"][1].pop("receipt"),
+                "cleanup is not zero-residue receipt-bound PASS",
             ),
             (
                 "dependency-digest",
@@ -316,6 +333,36 @@ class DocumentationRealityTests(unittest.TestCase):
                         "status": "PASS",
                         "owned_resource_count": 2,
                         "remaining_resource_count": 0,
+                        "phases": [
+                            {
+                                "phase": "postgresql",
+                                "status": "PASS",
+                                "resource_count": 1,
+                                "remaining_resource_count": 0,
+                                "run_id": "p0-" + "2" * 32,
+                                "compose_project": "nf-p0-" + "2" * 32,
+                                "receipt": (
+                                    "compose-resource-ownership-nf-p0-"
+                                    + "2" * 32
+                                    + ".json"
+                                ),
+                            },
+                            {
+                                "phase": "compose-runtime",
+                                "status": "PASS",
+                                "resource_count": 1,
+                                "remaining_resource_count": 0,
+                                "run_id": "p0-" + "2" * 32,
+                                "compose_project": (
+                                    "nf-p0-" + "2" * 32 + "-runtime"
+                                ),
+                                "receipt": (
+                                    "compose-resource-ownership-nf-p0-"
+                                    + "2" * 32
+                                    + "-runtime.json"
+                                ),
+                            },
+                        ],
                     },
                     "evidence_ceilings": P0_EVIDENCE_CEILINGS,
                     "implementation_tree_sha": build_implementation_tree_identity(root)[
