@@ -67,19 +67,27 @@
       "id": "focused-qualification-contracts",
       "evidence_class": "focused_qualification_contracts",
       "gate": "focused qualification and governance contract pytest suite",
-      "observed_at_sha": "7578dc6f6bf4296f400af6bb895e4bd47b7424a9",
-      "source_tree": "b96c0b1ddcaf11d60ab9e9e071254d5bcbb5b951",
-      "implementation_tree_sha": "sha256:b160668cb1e532f12b24d997a17592975b3578de6e6b64ea1fda8a441e332865",
-      "junit_sha256": "sha256:ef28ba8288f36f5fadd4c12b5acc73792115df9acfa3120e5e865f9aa15e0a5f",
+      "observed_at_sha": "282eccf5286d57a9600e1b8b6c3a5d3c63b51185",
+      "source_tree": "17b04e099929fdc5ce78ee80a4a44f0a45fea346",
+      "implementation_tree_sha": "sha256:7716fb98349d6dbf74b642fd22488fa54d59ef04216541eb7b4bf8130c7ad722",
+      "junit_sha256": "sha256:c669244a394498b7c71c29ba90f2a5e083d2ed7490b0579e4b6223722646e559",
       "result_count_scope": "FOCUSED_JUNIT_CASES_NOT_P0_QUALIFICATION",
-      "collected": 84,
-      "passed": 84,
+      "collected": 92,
+      "passed": 92,
       "failed": 0,
       "deselected": 1,
       "qualification_evidence": [
         {
           "path": "tests/unit/test_documentation_reality.py",
           "symbol": "DocumentationRealityTests.test_qualified_status_fails_closed_on_invalid_p0_projection"
+        },
+        {
+          "path": "tests/unit/test_documentation_reality.py",
+          "symbol": "DocumentationRealityTests.test_old_report_cannot_be_rebound_to_a_new_implementation_tree"
+        },
+        {
+          "path": "tests/unit/test_implementation_tree_identity.py",
+          "symbol": "ImplementationTreeIdentityTests.test_historical_git_identity_matches_the_clean_worktree_algorithm"
         },
         {
           "path": "tests/unit/test_backend_qualification.py",
