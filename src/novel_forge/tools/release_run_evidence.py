@@ -167,11 +167,31 @@ def _validate_pytest_gate_evidence(
         raise ValueError(f"{evidence_name} JUnit/collection accounting is invalid")
 
 
+def _validate_migration_gate_evidence(
+    evidence: Mapping[str, Any],
+    *,
+    expected_head: str,
+    evidence_name: str,
+) -> None:
+    applied_count = evidence.get("applied_count")
+    if (
+        not expected_head
+        or type(applied_count) is not int
+        or applied_count < 1
+        or evidence.get("expected_head") != expected_head
+        or evidence.get("observed_head") != expected_head
+        or evidence.get("missing") != []
+        or evidence.get("extra") != []
+    ):
+        raise ValueError(f"{evidence_name} does not prove the canonical migration head")
+
+
 def _validate_p0_gate_evidence(
     *,
     gates: Sequence[Mapping[str, Any]],
     tested_sha: str,
     source_tree: str,
+    implementation_tree_sha: str,
     expected_migration_head: str,
     run_identity: Mapping[str, Any],
 ) -> None:
@@ -180,6 +200,7 @@ def _validate_p0_gate_evidence(
         source.get("commit_sha") != tested_sha
         or source.get("source_tree") != source_tree
         or source.get("dirty") is not False
+        or source.get("implementation_tree_sha") != implementation_tree_sha
     ):
         raise ValueError("P0 source-preflight evidence identity differs")
 
@@ -223,6 +244,10 @@ def _validate_p0_gate_evidence(
         evidence_name="Documentation Reality",
     )
 
+    static = _required_gate_evidence(gates, "static-and-manifests")
+    if type(static.get("returncode")) is not int or static.get("returncode") != 0:
+        raise ValueError("static and manifest evidence is not zero-exit PASS")
+
     backend = _required_gate_evidence(gates, "pytest-backend")
     _validate_pytest_gate_evidence(
         backend,
@@ -254,15 +279,37 @@ def _validate_p0_gate_evidence(
             evidence_name="PostgreSQL pytest",
         )
 
-    migration = _required_gate_evidence(gates, "migration-head")
+    postgresql_start = _required_gate_evidence(gates, "postgresql-start")
+    database_identity = postgresql_start.get("database_identity")
+    ownership_count = postgresql_start.get("ownership_resource_count")
     if (
-        not expected_migration_head
-        or migration.get("expected_head") != expected_migration_head
-        or migration.get("observed_head") != expected_migration_head
-    ):
-        raise ValueError(
-            "P0 qualification migration head is not bound to the canonical manifest"
+        not isinstance(database_identity, Mapping)
+        or database_identity.get("database_name") != run_identity.get("database_name")
+        or database_identity.get("host_class") != "LOOPBACK"
+        or type(database_identity.get("port")) is not int
+        or not 1 <= database_identity["port"] <= 65535
+        or not CONTENT_DIGEST.fullmatch(
+            str(database_identity.get("server_identity_digest") or "")
         )
+        or postgresql_start.get("dynamic_port") is not True
+        or type(ownership_count) is not int
+        or ownership_count < 1
+    ):
+        raise ValueError("PostgreSQL start evidence is not run-owned and isolated")
+
+    migration_fresh = _required_gate_evidence(gates, "migration-fresh")
+    _validate_migration_gate_evidence(
+        migration_fresh,
+        expected_head=expected_migration_head,
+        evidence_name="fresh migration",
+    )
+
+    migration = _required_gate_evidence(gates, "migration-head")
+    _validate_migration_gate_evidence(
+        migration,
+        expected_head=expected_migration_head,
+        evidence_name="migration head verification",
+    )
     query_plan = _required_gate_evidence(gates, "query-plan-release")
     _required_artifact_evidence(query_plan, evidence_name="query-plan")
 
@@ -455,11 +502,15 @@ def build_p0_backend_qualification_report(
     commit_sha = _validated_sha(tested_sha)
     tree_sha = _validated_sha(source_tree)
     workflow_sha = str(source_identity.get("workflow_sha") or "")
+    implementation_tree_sha = str(
+        source_identity.get("implementation_tree_sha") or ""
+    )
     if (
         source_identity.get("dirty") is not False
         or source_identity.get("commit_sha") != commit_sha
         or source_identity.get("source_tree") != tree_sha
         or (workflow_sha and workflow_sha != commit_sha)
+        or not CONTENT_DIGEST.fullmatch(implementation_tree_sha)
     ):
         raise ValueError("P0 qualification source identity must be exact and clean")
     if (
@@ -503,6 +554,7 @@ def build_p0_backend_qualification_report(
         gates=gates,
         tested_sha=commit_sha,
         source_tree=tree_sha,
+        implementation_tree_sha=implementation_tree_sha,
         expected_migration_head=expected_head,
         run_identity=run_identity,
     )
@@ -545,6 +597,7 @@ def build_p0_backend_qualification_report(
         "decision": "PASS",
         "tested_sha": commit_sha,
         "source_tree": tree_sha,
+        "implementation_tree_sha": implementation_tree_sha,
         "source_identity": dict(source_identity),
         "run_identity": dict(run_identity),
         "qualification_manifest": {
@@ -613,6 +666,9 @@ def build_p0_backend_qualification_failure_report(
         "failure_reason": failure_reason,
         "tested_sha": commit_sha,
         "source_tree": tree_sha,
+        "implementation_tree_sha": str(
+            source_identity.get("implementation_tree_sha") or ""
+        ),
         "source_identity": dict(source_identity),
         "run_identity": dict(run_identity),
         "qualification_manifest": {
@@ -653,12 +709,16 @@ def validate_p0_backend_qualification_report(
         raise ValueError("P0 backend qualification report targets another SHA")
     if not GIT_SHA.fullmatch(str(report.get("source_tree") or "")):
         raise ValueError("P0 backend qualification source tree is invalid")
+    implementation_tree_sha = str(report.get("implementation_tree_sha") or "")
     source_identity = report.get("source_identity")
     if (
         not isinstance(source_identity, Mapping)
         or source_identity.get("dirty") is not False
         or source_identity.get("commit_sha") != tested_sha
         or source_identity.get("source_tree") != report.get("source_tree")
+        or not CONTENT_DIGEST.fullmatch(implementation_tree_sha)
+        or source_identity.get("implementation_tree_sha")
+        != implementation_tree_sha
         or (
             source_identity.get("workflow_sha")
             and source_identity.get("workflow_sha") != tested_sha
@@ -701,6 +761,7 @@ def validate_p0_backend_qualification_report(
         gates=gates,
         tested_sha=tested_sha,
         source_tree=str(report["source_tree"]),
+        implementation_tree_sha=implementation_tree_sha,
         expected_migration_head=str(migration["expected_head"]),
         run_identity=run_identity,
     )
@@ -719,6 +780,7 @@ def validate_p0_backend_qualification_report(
         "status": "PASS",
         "tested_sha": tested_sha,
         "source_tree": report["source_tree"],
+        "implementation_tree_sha": implementation_tree_sha,
         "dependency_digest": validated_dependency["digest"],
         "migration_head": migration["observed_head"],
         "gate_count": len(gates),

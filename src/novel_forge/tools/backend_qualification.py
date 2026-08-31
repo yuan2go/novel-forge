@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -32,6 +33,9 @@ from novel_forge.tools.backend_qualification_resources import (
     QualificationRunIdentity,
     ResourceOwnershipError,
     validate_disposable_database_url,
+)
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
 )
 from novel_forge.tools.release_run_evidence import (
     build_p0_backend_qualification_report,
@@ -244,6 +248,11 @@ def _source_identity(
     workflow_sha = environment.get("GITHUB_SHA", "").strip().lower()
     if workflow_sha and workflow_sha != commit_sha:
         raise ValueError("checked-out revision differs from GITHUB_SHA")
+    implementation_tree_sha = str(
+        build_implementation_tree_identity(root).get("implementation_tree_sha") or ""
+    )
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", implementation_tree_sha):
+        raise ValueError("source preflight did not resolve an implementation identity")
     return (
         {
             "commit_sha": commit_sha,
@@ -251,6 +260,7 @@ def _source_identity(
             "branch": branch,
             "dirty": False,
             "workflow_sha": workflow_sha,
+            "implementation_tree_sha": implementation_tree_sha,
         },
         time.monotonic() - started,
     )
