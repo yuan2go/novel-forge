@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -144,7 +145,18 @@ def _compose_evidence() -> dict[str, object]:
             "worker_connections": 0,
         },
         "drained_worker_count": 10,
-        "cleanup": {"status": "PASS", "remaining_resource_count": 0},
+        "cleanup": {
+            "status": "PASS",
+            "resource_count": 2,
+            "remaining_resource_count": 0,
+            "run_id": "p0-" + "1" * 32,
+            "compose_project": "nf-p0-" + "1" * 32 + "-runtime",
+            "receipt": (
+                "compose-resource-ownership-nf-p0-"
+                + "1" * 32
+                + "-runtime.json"
+            ),
+        },
         "fixture": True,
         "real_provider_proven": False,
         "longform_proven": False,
@@ -319,6 +331,24 @@ class BackendQualificationCliTests(unittest.TestCase):
                 expected_run_id="p0-" + "1" * 32,
                 expected_project="nf-p0-" + "1" * 32 + "-runtime",
             )
+
+        for field, value in (
+            ("remaining_resource_count", False),
+            ("resource_count", False),
+            ("receipt", ""),
+        ):
+            with self.subTest(cleanup_field=field):
+                malformed_cleanup = copy.deepcopy(_compose_evidence())
+                malformed_cleanup["cleanup"][field] = value
+                with self.assertRaisesRegex(
+                    QualificationContractError, "cleanup"
+                ):
+                    validate_compose_runtime_evidence(
+                        malformed_cleanup,
+                        expected_sha=SHA,
+                        expected_run_id="p0-" + "1" * 32,
+                        expected_project="nf-p0-" + "1" * 32 + "-runtime",
+                    )
 
     def test_compose_proof_requires_changed_container_start_identity(self) -> None:
         evidence = _compose_evidence()

@@ -1202,11 +1202,19 @@ def validate_compose_runtime_evidence(
     if (
         not isinstance(cleanup, Mapping)
         or cleanup.get("status") != "PASS"
+        or type(cleanup.get("remaining_resource_count")) is not int
         or cleanup.get("remaining_resource_count") != 0
+        or cleanup.get("run_id") != expected_run_id
+        or cleanup.get("compose_project") != expected_project
+        or cleanup.get("receipt")
+        != f"compose-resource-ownership-{expected_project}.json"
     ):
         raise QualificationContractError(
             "Compose runtime ownership-checked cleanup is incomplete"
         )
+    _positive_compose_counter(
+        cleanup.get("resource_count"), field="cleanup.resource_count"
+    )
     if (
         evidence.get("fixture") is not True
         or evidence.get("real_provider_proven") is not False
