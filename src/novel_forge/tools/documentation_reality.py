@@ -373,17 +373,6 @@ def _validate_p0_run_projection(
 ) -> bool:
     initial_error_count = len(errors)
     observed_at_sha = str(run.get("observed_at_sha") or "")
-    source_tree = str(run.get("source_tree") or "")
-    if not FULL_SHA.fullmatch(source_tree):
-        _error(errors, f"{context}.source_tree must be a full Git tree SHA")
-    resolved_tree = _git_tree_for_ancestor_commit(
-        root,
-        observed_at_sha,
-        errors,
-        context=context,
-    )
-    if resolved_tree and source_tree != resolved_tree:
-        _error(errors, f"{context}.source_tree differs from the observed Git commit")
     for field in ("dependency_snapshot_digest",):
         if not CONTENT_DIGEST.fullmatch(str(run.get(field) or "")):
             _error(errors, f"{context}.{field} must be a SHA-256 digest")
@@ -679,6 +668,20 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             observed_at_sha = str(run.get("observed_at_sha") or "").strip()
             if not re.fullmatch(r"[0-9a-f]{40}", observed_at_sha):
                 _error(errors, f"{context}.observed_at_sha must be a full Git SHA")
+            source_tree = str(run.get("source_tree") or "").strip()
+            if not FULL_SHA.fullmatch(source_tree):
+                _error(errors, f"{context}.source_tree must be a full Git tree SHA")
+            resolved_tree = _git_tree_for_ancestor_commit(
+                root,
+                observed_at_sha,
+                errors,
+                context=context,
+            )
+            if resolved_tree and source_tree != resolved_tree:
+                _error(
+                    errors,
+                    f"{context}.source_tree differs from the observed Git commit",
+                )
             counts = [run.get(field) for field in ("collected", "passed", "failed")]
             valid_counts = not any(
                 type(value) is not int or value < 0 for value in counts
