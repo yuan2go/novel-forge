@@ -44,10 +44,9 @@ make authority-up
 The default `mock` Provider route is a fixture. It does not establish real-Provider,
 long-form, human/editorial or production proof.
 
-## Deferred Admin UI
+## Admin UI boundary
 
-The current `web/admin` tree is an unsupported historical snapshot pending a
-dedicated reconstruction. It is not part of backend qualification, and a backend
+`web/admin` is outside the canonical backend qualification collection. A backend
 PASS is not UI or product-experience evidence.
 
 Validate documentation and evidence references with:

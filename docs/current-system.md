@@ -150,7 +150,11 @@ finalization. No partial subset promotes a capability.
 `architecture/reality-evidence.json` records only runs actually observed on a named
 revision and binds each passing run to the current implementation-tree identity. A test
 file, fixture or historical result cannot establish `QUALIFIED` by itself. The P0
-Provider route is scripted and its evidence remains fixture engineering proof.
+Provider route is scripted and its evidence remains fixture engineering proof. The
+inventory records the passing P0 run's exact observed SHA, source tree, implementation
+identity, dependency digest, complete-collection accounting, gate results and cleanup
+result; those machine fields, rather than prose test totals, support its current
+`QUALIFIED` statuses.
 
 Current boundaries, encoded in executable readiness and release-evidence code, are:
 
