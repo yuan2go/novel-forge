@@ -12,6 +12,10 @@ import subprocess
 import tokenize
 from typing import Any, Iterable, Mapping
 
+from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
+)
 from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
 )
@@ -54,6 +58,14 @@ HISTORICAL_OR_SPECULATIVE = re.compile(
 CONCEPT_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 INLINE_CODE = re.compile(r"`([^`\n]+)`")
 WEB_COMMENT = re.compile(r"^\s*(?://|/\*|\*|<!--)\s?(.*)$")
+FULL_SHA = re.compile(r"[0-9a-f]{40}")
+CONTENT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+P0_EVIDENCE_CLASS = "p0_backend_engineering_qualification"
+P0_COLLECTIONS = (
+    "BACKEND_NON_POSTGRESQL",
+    "MIGRATION_COMPATIBILITY",
+    "POSTGRESQL_REQUIRED",
+)
 
 
 def _error(errors: list[str], message: str) -> None:
@@ -211,6 +223,155 @@ def _validate_migrations(
     return migration_ids
 
 
+def _is_nonnegative_integer(value: object) -> bool:
+    return type(value) is int and value >= 0
+
+
+def _validate_p0_run_projection(
+    run: Mapping[str, Any],
+    errors: list[str],
+    *,
+    context: str,
+    migration_head: str,
+) -> bool:
+    initial_error_count = len(errors)
+    observed_at_sha = str(run.get("observed_at_sha") or "")
+    if not FULL_SHA.fullmatch(str(run.get("source_tree") or "")):
+        _error(errors, f"{context}.source_tree must be a full Git tree SHA")
+    for field in ("dependency_snapshot_digest",):
+        if not CONTENT_DIGEST.fullmatch(str(run.get(field) or "")):
+            _error(errors, f"{context}.{field} must be a SHA-256 digest")
+
+    artifact = run.get("qualification_report")
+    if not isinstance(artifact, Mapping):
+        _error(errors, f"{context}.qualification_report must be an object")
+    else:
+        run_id = str(artifact.get("run_id") or "")
+        token = run_id.removeprefix("p0-")
+        if not re.fullmatch(r"p0-[0-9a-f]{32}", run_id):
+            _error(errors, f"{context}.qualification_report.run_id is invalid")
+        expected_root = f"novel-forge-p0-{observed_at_sha[:12]}-{token}"
+        if artifact.get("artifact_root") != expected_root:
+            _error(
+                errors,
+                f"{context}.qualification_report.artifact_root differs from the run identity",
+            )
+        expected_report = f"p0-backend-qualification-{observed_at_sha}.json"
+        if artifact.get("artifact") != expected_report:
+            _error(
+                errors,
+                f"{context}.qualification_report.artifact differs from the observed SHA",
+            )
+        if not CONTENT_DIGEST.fullmatch(str(artifact.get("sha256") or "")):
+            _error(
+                errors,
+                f"{context}.qualification_report.sha256 must be a SHA-256 digest",
+            )
+        if artifact.get("retention") != "EXTERNAL_QUALIFICATION_ARTIFACT":
+            _error(
+                errors,
+                f"{context}.qualification_report.retention is not explicit",
+            )
+
+    collections = run.get("collections")
+    collections_by_class: dict[str, Mapping[str, Any]] = {}
+    if not isinstance(collections, list):
+        _error(errors, f"{context}.collections must be a list")
+    else:
+        for index, collection in enumerate(collections):
+            collection_context = f"{context}.collections[{index}]"
+            if not isinstance(collection, Mapping):
+                _error(errors, f"{collection_context} must be an object")
+                continue
+            classification = str(collection.get("classification") or "")
+            if classification in collections_by_class:
+                _error(errors, f"{context} duplicates collection {classification}")
+            collections_by_class[classification] = collection
+            for field in ("collected_nodes", "junit_cases", "passed", "skipped"):
+                if not _is_nonnegative_integer(collection.get(field)):
+                    _error(
+                        errors,
+                        f"{collection_context}.{field} must be a non-negative integer",
+                    )
+            if collection.get("complete") is not True:
+                _error(errors, f"{collection_context} is not a complete collection")
+            if collection.get("skipped") != 0:
+                _error(errors, f"{collection_context} contains skipped cases")
+            if collection.get("passed") != collection.get("junit_cases"):
+                _error(errors, f"{collection_context} is not an all-passing collection")
+            if (
+                _is_nonnegative_integer(collection.get("junit_cases"))
+                and _is_nonnegative_integer(collection.get("collected_nodes"))
+                and collection["junit_cases"] < collection["collected_nodes"]
+            ):
+                _error(errors, f"{collection_context} has fewer JUnit cases than nodes")
+        if tuple(collections_by_class) != P0_COLLECTIONS:
+            _error(errors, f"{context}.collections differ from the canonical P0 classes")
+        migration_collection = collections_by_class.get("MIGRATION_COMPATIBILITY")
+        if (
+            migration_collection is not None
+            and migration_collection.get("repeated_in_postgresql_collection") is not True
+        ):
+            _error(errors, f"{context} does not mark the repeated migration matrix")
+        unique_classes = ("BACKEND_NON_POSTGRESQL", "POSTGRESQL_REQUIRED")
+        if all(
+            classification in collections_by_class
+            and _is_nonnegative_integer(
+                collections_by_class[classification].get("junit_cases")
+            )
+            for classification in unique_classes
+        ):
+            unique_total = sum(
+                int(collections_by_class[classification]["junit_cases"])
+                for classification in unique_classes
+            )
+            if run.get("collected") != unique_total or run.get("passed") != unique_total:
+                _error(errors, f"{context} aggregate counts duplicate or omit cases")
+    if run.get("result_count_scope") != "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES":
+        _error(errors, f"{context}.result_count_scope is not canonical")
+
+    gates = run.get("gates")
+    if not isinstance(gates, list):
+        _error(errors, f"{context}.gates must be a list")
+    else:
+        gate_ids = [
+            str(gate.get("id") or "") if isinstance(gate, Mapping) else ""
+            for gate in gates
+        ]
+        if tuple(gate_ids) != REQUIRED_GATE_ORDER:
+            _error(errors, f"{context}.gates differ from the canonical P0 order")
+        if any(
+            not isinstance(gate, Mapping) or gate.get("status") != "PASS"
+            for gate in gates
+        ):
+            _error(errors, f"{context}.gates contain a non-passing result")
+
+    migration = run.get("migration")
+    if not isinstance(migration, Mapping):
+        _error(errors, f"{context}.migration must be an object")
+    elif (
+        migration.get("expected_head") != migration_head
+        or migration.get("observed_head") != migration_head
+        or not _is_nonnegative_integer(migration.get("applied_count"))
+        or migration.get("applied_count") < 1
+    ):
+        _error(errors, f"{context}.migration does not prove the inventory head")
+
+    cleanup = run.get("cleanup")
+    if not isinstance(cleanup, Mapping):
+        _error(errors, f"{context}.cleanup must be an object")
+    elif (
+        cleanup.get("status") != "PASS"
+        or cleanup.get("remaining_resource_count") != 0
+        or not _is_nonnegative_integer(cleanup.get("owned_resource_count"))
+        or cleanup.get("owned_resource_count") < 1
+    ):
+        _error(errors, f"{context}.cleanup is not zero-residue PASS")
+    if run.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
+        _error(errors, f"{context}.evidence_ceilings differ from P0 policy")
+    return len(errors) == initial_error_count
+
+
 def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int:
     if not isinstance(inventory, Mapping):
         _error(errors, "reality inventory must be a JSON object")
@@ -235,6 +396,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     runs_by_id: dict[str, Mapping[str, Any]] = {}
     run_results: dict[str, tuple[int, int, int]] = {}
     run_evidence: dict[str, set[tuple[str, str, str]]] = {}
+    run_classes: dict[str, str] = {}
     if not isinstance(qualification_runs, list) or not qualification_runs:
         _error(errors, "reality inventory qualification_runs must be a non-empty list")
     else:
@@ -243,6 +405,7 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             if not isinstance(run, Mapping):
                 _error(errors, f"{context} must be an object")
                 continue
+            run_error_count = len(errors)
             run_id = str(run.get("id") or "").strip()
             if not CONCEPT_NAME.fullmatch(run_id):
                 _error(errors, f"{context}.id must be lowercase kebab-case")
@@ -250,6 +413,14 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"duplicate qualification run id: {run_id}")
             else:
                 runs_by_id[run_id] = run
+            evidence_class = str(run.get("evidence_class") or "").strip()
+            if evidence_class not in {
+                P0_EVIDENCE_CLASS,
+                "focused_qualification_contracts",
+            }:
+                _error(errors, f"{context}.evidence_class is not recognized")
+            elif run_id in runs_by_id and runs_by_id[run_id] is run:
+                run_classes[run_id] = evidence_class
             if not str(run.get("gate") or "").strip():
                 _error(errors, f"{context}.gate is missing")
             observed_at_sha = str(run.get("observed_at_sha") or "").strip()
@@ -264,8 +435,6 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"{context} result counts must be non-negative integers")
             elif not counts_match:
                 _error(errors, f"{context} passed plus failed must equal collected")
-            elif run_id in runs_by_id and runs_by_id[run_id] is run:
-                run_results[run_id] = (counts[0], counts[1], counts[2])
             if counts_match and counts[2] == 0:
                 implementation_tree_sha = str(
                     run.get("implementation_tree_sha") or ""
@@ -288,11 +457,34 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     context=context,
                     required=True,
                 )
-                run_evidence[run_id] = {
-                    key
-                    for item in evidence
-                    if (key := _reference_key(item)) is not None
+                if evidence_class == P0_EVIDENCE_CLASS:
+                    _validate_p0_run_projection(
+                        run,
+                        errors,
+                        context=context,
+                        migration_head=migration_head,
+                    )
+                if (
+                    len(errors) == run_error_count
+                    and run_id in runs_by_id
+                    and runs_by_id[run_id] is run
+                ):
+                    run_results[run_id] = (counts[0], counts[1], counts[2])
+                    run_evidence[run_id] = {
+                        key
+                        for item in evidence
+                        if (key := _reference_key(item)) is not None
+                    }
+            elif (
+                counts_match
+                and run_id in runs_by_id
+                and runs_by_id[run_id] is run
+                and evidence_class in {
+                    P0_EVIDENCE_CLASS,
+                    "focused_qualification_contracts",
                 }
+            ):
+                run_results[run_id] = (counts[0], counts[1], counts[2])
 
     capabilities = inventory.get("capabilities")
     if not isinstance(capabilities, list):
@@ -370,6 +562,12 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 run = runs_by_id.get(str(run_id))
                 if run is None:
                     _error(errors, f"{context} references unknown run: {run_id}")
+                    continue
+                if run_classes.get(str(run_id)) != P0_EVIDENCE_CLASS:
+                    _error(
+                        errors,
+                        f"{context} references a run below the P0 qualification class: {run_id}",
+                    )
                     continue
                 result_counts = run_results.get(str(run_id))
                 if result_counts is None:

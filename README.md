@@ -26,9 +26,10 @@ P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
 in CI. It requires a clean exact-revision worktree, makes Documentation Reality
 an explicit fail-fast gate, executes every declared backend and PostgreSQL
 collection, proves fresh and upgrade migration paths, performs query-plan checks,
-and runs the scripted Authority Compose recovery proof. PostgreSQL and Compose
-use run-scoped identities and Docker-assigned loopback ports; successful
-finalization requires zero owned resources left behind.
+and runs the scripted Authority Compose recovery proof. A separate resource-cleanup
+gate verifies the PostgreSQL and Compose ownership receipts before evidence
+finalization. PostgreSQL and Compose use run-scoped identities and Docker-assigned
+loopback ports; successful finalization requires zero owned resources left behind.
 
 The machine report binds the tested commit, source tree, manifest digests and
 resolved dependency digest. Git SHA alone does not freeze unlocked dependency

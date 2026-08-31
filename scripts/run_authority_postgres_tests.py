@@ -60,6 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     if junit_xml == collection_report:
         _error("JUnit XML and collection report paths must differ")
         return PREFLIGHT_FAIL
+    if junit_xml.is_relative_to(root) or collection_report.is_relative_to(root):
+        _error("PostgreSQL diagnostic evidence must be outside the repository")
+        return PREFLIGHT_FAIL
     try:
         safe_database_identity = validate_disposable_database_url(
             database_url,

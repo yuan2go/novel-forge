@@ -32,8 +32,19 @@ REQUIRED_GATE_ORDER = (
     "migration-head",
     "query-plan-release",
     "compose-runtime",
+    "resource-cleanup",
     "evidence-finalization",
 )
+P0_EVIDENCE_CEILINGS = {
+    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
+    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
+    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
+    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
+    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
+    "LONGFORM": "NOT_PROVEN",
+    "MULTIBOOK": "NOT_PROVEN",
+    "PRODUCTION": "NOT_PROVEN",
+}
 REQUIRED_SEMANTIC_SLICES = frozenset(
     {
         "migration_matrix",
@@ -281,6 +292,10 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
         )
         for key, value in raw_ceilings.items()
     }
+    if evidence_ceilings != P0_EVIDENCE_CEILINGS:
+        raise QualificationContractError(
+            "evidence_ceilings differ from the canonical P0 proof ceiling"
+        )
     return QualificationManifest(
         schema_version=schema_version,
         migration_manifest=migration_manifest,
@@ -1208,6 +1223,7 @@ __all__ = [
     "QUALIFICATION_MANIFEST",
     "QUALIFICATION_SCHEMA_VERSION",
     "PytestCollectionContract",
+    "P0_EVIDENCE_CEILINGS",
     "QualificationContractError",
     "QualificationManifest",
     "REQUIRED_GATE_ORDER",

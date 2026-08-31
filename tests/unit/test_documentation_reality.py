@@ -5,6 +5,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
+)
 from novel_forge.tools.documentation_reality import (
     CANONICAL_DOCUMENTS,
     SCHEMA_VERSION,
@@ -140,6 +144,62 @@ class DocumentationRealityTests(unittest.TestCase):
             self.assertIn("result counts must be non-negative integers", errors)
             self.assertIn("references a run with invalid results", errors)
 
+    def test_qualified_status_fails_closed_on_invalid_p0_projection(self) -> None:
+        mutations = (
+            (
+                "gate",
+                lambda run: run["gates"][1].update(status="FAIL"),
+                "gates contain a non-passing result",
+            ),
+            (
+                "collection-completeness",
+                lambda run: run["collections"][0].update(complete=False),
+                "is not a complete collection",
+            ),
+            (
+                "unexpected-skip",
+                lambda run: run["collections"][2].update(skipped=1),
+                "contains skipped cases",
+            ),
+            (
+                "migration-head",
+                lambda run: run["migration"].update(observed_head="0002"),
+                "migration does not prove the inventory head",
+            ),
+            (
+                "cleanup",
+                lambda run: run["cleanup"].update(remaining_resource_count=1),
+                "cleanup is not zero-residue PASS",
+            ),
+            (
+                "dependency-digest",
+                lambda run: run.update(dependency_snapshot_digest="not-a-digest"),
+                "dependency_snapshot_digest must be a SHA-256 digest",
+            ),
+            (
+                "report-digest",
+                lambda run: run["qualification_report"].update(sha256="bad"),
+                "qualification_report.sha256 must be a SHA-256 digest",
+            ),
+        )
+        for label, mutate, expected in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self._write_valid_repository(root)
+                inventory_path = root / "architecture" / "reality-evidence.json"
+                inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+                mutate(inventory["qualification_runs"][0])
+                inventory_path.write_text(
+                    json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+                )
+
+                report = check_repository(root)
+
+                self.assertEqual(report["status"], "FAIL")
+                errors = "\n".join(report["errors"])
+                self.assertIn(expected, errors)
+                self.assertIn("references a run with invalid results", errors)
+
     def test_generated_web_dependencies_are_outside_repository_comment_policy(
         self,
     ) -> None:
@@ -199,10 +259,65 @@ class DocumentationRealityTests(unittest.TestCase):
                 {
                     "id": "example-qualification",
                     "gate": "pytest",
+                    "evidence_class": "p0_backend_engineering_qualification",
                     "observed_at_sha": "0" * 40,
-                    "collected": 1,
-                    "passed": 1,
+                    "source_tree": "1" * 40,
+                    "dependency_snapshot_digest": "sha256:" + "d" * 64,
+                    "qualification_report": {
+                        "run_id": "p0-" + "2" * 32,
+                        "artifact_root": (
+                            "novel-forge-p0-000000000000-" + "2" * 32
+                        ),
+                        "artifact": "p0-backend-qualification-" + "0" * 40 + ".json",
+                        "sha256": "sha256:" + "e" * 64,
+                        "retention": "EXTERNAL_QUALIFICATION_ARTIFACT",
+                    },
+                    "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+                    "collected": 2,
+                    "passed": 2,
                     "failed": 0,
+                    "collections": [
+                        {
+                            "classification": "BACKEND_NON_POSTGRESQL",
+                            "collected_nodes": 1,
+                            "junit_cases": 1,
+                            "passed": 1,
+                            "skipped": 0,
+                            "complete": True,
+                        },
+                        {
+                            "classification": "MIGRATION_COMPATIBILITY",
+                            "collected_nodes": 1,
+                            "junit_cases": 1,
+                            "passed": 1,
+                            "skipped": 0,
+                            "complete": True,
+                            "repeated_in_postgresql_collection": True,
+                        },
+                        {
+                            "classification": "POSTGRESQL_REQUIRED",
+                            "collected_nodes": 1,
+                            "junit_cases": 1,
+                            "passed": 1,
+                            "skipped": 0,
+                            "complete": True,
+                        },
+                    ],
+                    "gates": [
+                        {"id": gate_id, "status": "PASS"}
+                        for gate_id in REQUIRED_GATE_ORDER
+                    ],
+                    "migration": {
+                        "applied_count": 1,
+                        "expected_head": "0001",
+                        "observed_head": "0001",
+                    },
+                    "cleanup": {
+                        "status": "PASS",
+                        "owned_resource_count": 2,
+                        "remaining_resource_count": 0,
+                    },
+                    "evidence_ceilings": P0_EVIDENCE_CEILINGS,
                     "implementation_tree_sha": build_implementation_tree_identity(root)[
                         "implementation_tree_sha"
                     ],

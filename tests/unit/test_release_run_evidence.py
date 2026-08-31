@@ -15,7 +15,10 @@ from novel_forge.tools.release_run_evidence import (
     write_atomic_evidence,
     main as release_evidence_main,
 )
-from novel_forge.tools.backend_qualification_contract import REQUIRED_GATE_ORDER
+from novel_forge.tools.backend_qualification_contract import (
+    P0_EVIDENCE_CEILINGS,
+    REQUIRED_GATE_ORDER,
+)
 
 
 SHA = "a" * 40
@@ -90,16 +93,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             "manifest_digests": {
                 "architecture/manifests/migration-manifest.yaml": DIGEST
             },
-            "evidence_ceilings": {
-                "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-                "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-                "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-                "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-                "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-                "LONGFORM": "NOT_PROVEN",
-                "MULTIBOOK": "NOT_PROVEN",
-                "PRODUCTION": "NOT_PROVEN",
-            },
+            "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
         }
         pytest_evidence = {
             "schema_version": "novel-forge.backend-pytest-evidence.v1",
@@ -152,6 +146,25 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             "artifact": "documentation-reality.json",
             "digest": DIGEST,
         }
+        cleanup_evidence = {
+            "status": "PASS",
+            "owned_resource_count": 4,
+            "remaining_resource_count": 0,
+            "phases": [
+                {
+                    "phase": "postgresql",
+                    "status": "PASS",
+                    "resource_count": 2,
+                    "remaining_resource_count": 0,
+                },
+                {
+                    "phase": "runtime",
+                    "status": "PASS",
+                    "resource_count": 2,
+                    "remaining_resource_count": 0,
+                },
+            ],
+        }
         gates = [
             {
                 "gate_id": gate_id,
@@ -190,6 +203,8 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                         "authoritative_side_effect": True,
                     }
                     if gate_id == "compose-runtime"
+                    else cleanup_evidence
+                    if gate_id == "resource-cleanup"
                     else {"artifact": "p0.json", "atomic_write": True}
                 ),
             }

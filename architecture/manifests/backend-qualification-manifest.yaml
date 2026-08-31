@@ -19,6 +19,7 @@
     "migration-head",
     "query-plan-release",
     "compose-runtime",
+    "resource-cleanup",
     "evidence-finalization"
   ],
   "semantic_slices": {

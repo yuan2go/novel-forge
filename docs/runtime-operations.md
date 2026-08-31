@@ -84,6 +84,7 @@ source-preflight
 -> migration-head
 -> query-plan-release
 -> compose-runtime
+-> resource-cleanup
 -> evidence-finalization
 ```
 
@@ -106,13 +107,15 @@ make documentation-reality-check
 make validate
 make authority-test
 make authority-compose-config-check
-make postgres-authority-test
 make authority-query-plan-release
 ```
 
-`make postgres-authority-test` requires an explicit run-owned
-`NOVEL_FORGE_DATABASE_URL`; fixed shared qualification ports are rejected. The complete
-Python cross-check is `PYTHONPATH=src .venv/bin/python -m pytest tests`.
+The complete PostgreSQL collection can be run only as a caller-owned diagnostic by
+providing `NOVEL_FORGE_DATABASE_URL`, `NOVEL_FORGE_QUALIFICATION_DATABASE_NAME`, and an
+absolute `NOVEL_FORGE_POSTGRES_EVIDENCE_DIR` to `make postgres-authority-test`. The
+runner rejects fixed/shared database identity and repository-local evidence paths. This
+diagnostic is not an alternate qualification authority; the P0 gate already executes
+the complete architecture, unit, acceptance and PostgreSQL collections.
 
 P0 evidence ceilings are explicit: `CURRENT_UI` is
 `DEFERRED / NOT_RUN_BY_SCOPE`; `REAL_PROVIDER`, `HISTORICAL_ORPHAN_MUTATION`,

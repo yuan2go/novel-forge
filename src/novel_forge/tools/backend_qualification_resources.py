@@ -481,6 +481,7 @@ class OwnedComposeProject:
             identity.artifact_root
             / f"compose-resource-ownership-{identity.compose_project}.json"
         )
+        self._claim_asserted = False
         self._captured: ComposeResourceSnapshot | None = None
 
     def assert_unclaimed(self) -> None:
@@ -489,6 +490,7 @@ class OwnedComposeProject:
             raise ResourceOwnershipError(
                 "qualification Compose project already has resources; refusing ownership"
             )
+        self._claim_asserted = True
 
     def _assert_labels(self, snapshot: ComposeResourceSnapshot) -> None:
         for resource in snapshot.resources:
@@ -502,6 +504,10 @@ class OwnedComposeProject:
                 )
 
     def capture(self) -> dict[str, object]:
+        if not self._claim_asserted:
+            raise ResourceOwnershipError(
+                "qualification Compose ownership was not preflighted"
+            )
         snapshot = self.client.discover(self.identity.compose_project)
         if not snapshot.resources:
             raise ResourceOwnershipError(
@@ -551,6 +557,26 @@ class OwnedComposeProject:
             )
         self._captured = None
         return {**ownership, "status": "PASS", "remaining_resource_count": 0}
+
+    def cleanup_discovered(self) -> dict[str, object]:
+        current = self.client.discover(self.identity.compose_project)
+        if not current.resources:
+            self._captured = None
+            return {
+                "status": "PASS",
+                "run_id": self.identity.run_id,
+                "compose_project": self.identity.compose_project,
+                "resource_count": 0,
+                "remaining_resource_count": 0,
+                "ownership_capture": "NO_RESOURCES_PRESENT",
+            }
+        if self._captured is None:
+            if not self._claim_asserted:
+                raise ResourceOwnershipError(
+                    "refusing cleanup without a successful empty-project preflight"
+                )
+            self.capture()
+        return self.cleanup()
 
 
 def validate_disposable_database_url(
