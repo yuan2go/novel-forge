@@ -314,6 +314,31 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ]
+    },
+    {
+      "id": "real-provider-runtime-qualification",
+      "evidence_class": "focused_qualification_contracts",
+      "gate": "make real-provider-qualification",
+      "observed_at_sha": "197f84c354ebdf12d6e971ab9a7d69c4fe20e91e",
+      "source_tree": "de3c8537f5314449b44b9c6c3c0d78aed8752039",
+      "implementation_tree_sha": "sha256:047a5e204dadccd2983f352862b319b6f162e7bce6164ce80399b0d88ffac15f",
+      "collected": 1,
+      "passed": 1,
+      "failed": 0,
+      "qualification_evidence": [
+        {
+          "path": "architecture/live-evidence/real-provider-qualification-197f84c354ebdf12d6e971ab9a7d69c4fe20e91e.json",
+          "locator": "\"REAL_PROVIDER_QUALIFIED\": true"
+        },
+        {
+          "path": "scripts/run_real_provider_qualification.py",
+          "symbol": "main"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_qualification/authority.py",
+          "symbol": "D0QualificationAuthority.execute_live"
+        }
+      ]
     }
   ],
   "qualification_failures": [],
@@ -321,7 +346,7 @@
     {
       "concept": "runtime-composition",
       "owner": "Authority API and process composition",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/api/authority_app.py",
@@ -373,7 +398,7 @@
     {
       "concept": "command-attempt-lease-fence",
       "owner": "Command Kernel",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/service.py",
@@ -429,7 +454,7 @@
     {
       "concept": "external-effect-provider-control",
       "owner": "Command Kernel ExternalEffect and Production Execution",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
@@ -486,15 +511,18 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_EFFECT_ENGINEERING_QUALIFIED_REAL_PROVIDER_NOT_RUN",
+      "proof_ceiling": "REAL_PROVIDER_RUNTIME_QUALIFIED_NOT_CHAPTER_OR_PRODUCTION_PROVEN",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
+      ],
+      "focused_qualification_run_ids": [
+        "real-provider-runtime-qualification"
       ]
     },
     {
       "concept": "story-design-plan-activation",
       "owner": "Story Design and Plan Change Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
@@ -555,7 +583,7 @@
     {
       "concept": "chapter-production-saga",
       "owner": "Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_authority/application.py",
@@ -611,7 +639,7 @@
     {
       "concept": "quality-and-release-gates",
       "owner": "Quality Qualification and Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
@@ -663,7 +691,7 @@
     {
       "concept": "book-opening-workflow",
       "owner": "Book Opening Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
@@ -724,7 +752,7 @@
     {
       "concept": "book-chapter-acceptance",
       "owner": "Book Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
@@ -777,7 +805,7 @@
     {
       "concept": "canon-and-narrative-state",
       "owner": "Canon approval and Book-accepted Narrative State projection",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/canon_graph/domain.py",
@@ -829,7 +857,7 @@
     {
       "concept": "source-import-and-knowledge",
       "owner": "Source Import and MKAOS Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/source_import/application.py",
@@ -890,7 +918,7 @@
     {
       "concept": "agent-runtime",
       "owner": "Agent Runtime Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/agent_runtime/application.py",
@@ -947,7 +975,7 @@
     {
       "concept": "postgresql-persistence-and-migrations",
       "owner": "Authority Unit of Work and migration runner",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/storage/authority_uow.py",
@@ -1004,7 +1032,7 @@
     {
       "concept": "retry-recovery-and-replay",
       "owner": "Owning Authority recovery applications with Command Kernel fencing",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/recovery.py",
@@ -1066,12 +1094,12 @@
       ]
     },
     {
-      "claim": "credentialed real Provider is qualified or proven",
+      "claim": "credentialed real Provider chapter or production is proven",
       "value": false,
       "evidence": [
         {
-          "path": "src/novel_forge/api/authority_app.py",
-          "locator": "\"real_provider_proven\": False"
+          "path": "architecture/live-evidence/real-provider-qualification-197f84c354ebdf12d6e971ab9a7d69c4fe20e91e.json",
+          "locator": "\"CHAPTER_VERTICAL_PROVEN\": false"
         }
       ]
     },
