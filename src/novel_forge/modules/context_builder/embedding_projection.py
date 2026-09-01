@@ -68,6 +68,9 @@ from novel_forge.modules.context_builder.embedding_contracts import (
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
+EMBEDDING_PROVIDER_TOKEN_CEILING = 32_768
+
+
 @dataclass(frozen=True, slots=True)
 class EmbeddingProjectionTick:
     operation_id: str
@@ -107,7 +110,10 @@ class _EmbeddingHandler:
                 "payload": {
                     **payload,
                     "chapter_number": int(payload.get("accepted_from_chapter") or 0),
-                    "context_token_budget": int(payload.get("token_budget") or 8_192),
+                    "context_token_budget": max(
+                        int(payload.get("token_budget") or 0),
+                        EMBEDDING_PROVIDER_TOKEN_CEILING,
+                    ),
                 },
             },
             inputs=(

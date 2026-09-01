@@ -390,6 +390,18 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 [target],
             )
             saga = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT budget.estimated_tokens
+                FROM authority_budget_reservation AS budget
+                JOIN authority_external_effect AS effect
+                  ON effect.external_effect_id=budget.external_effect_id
+                WHERE effect.operation_id=%s
+                  AND effect.capability='model.retrieval'
+                """,
+                [target],
+            )
+            reserved_tokens = int(cursor.fetchone()[0])
         self.assertEqual(row[0], "READY")
         self.assertEqual(row[1], "deterministic-fixture-embedding-v1")
         self.assertEqual(row[2], 8)
@@ -398,6 +410,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
         self.assertTrue(row[5])
         self.assertEqual(row[6:9], ("SUCCEEDED", "SUCCEEDED", "model.retrieval"))
         self.assertEqual(saga, ("SUCCEEDED", 1))
+        self.assertEqual(reserved_tokens, 32_768)
 
     def test_unknown_effect_reconciles_without_blind_redispatch(self) -> None:
         cases = (
