@@ -15,6 +15,7 @@ from novel_forge.tools.documentation_reality import (
     CANONICAL_DOCUMENTS,
     SCHEMA_VERSION,
     STATUS_VOCABULARY,
+    _validate_comment_ratchet,
     check_repository,
 )
 from novel_forge.tools.implementation_tree_identity import (
@@ -361,6 +362,101 @@ class DocumentationRealityTests(unittest.TestCase):
             self.assertIn("historical or speculative comment", errors)
             self.assertIn("module docstring is not allowlisted", errors)
 
+    def test_comment_ratchet_uses_merge_base_and_rejects_unlabeled_additions(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "src/example.py"
+            source.parent.mkdir(parents=True)
+            source.write_text("# WHY: baseline reason.\nVALUE = 1\n", encoding="utf-8")
+            web = root / "web/example.ts"
+            web.parent.mkdir(parents=True)
+            web.write_text("export const value = 1;\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Novel Forge Test",
+                    "-c",
+                    "user.email=novel-forge-test@example.invalid",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "baseline",
+                ],
+                cwd=root,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "remote", "add", "origin", str(root)], cwd=root, check=True
+            )
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            subprocess.run(
+                ["git", "update-ref", "refs/remotes/origin/main", head],
+                cwd=root,
+                check=True,
+            )
+            source.write_text(
+                "# WHY: baseline reason.\nVALUE = 1\n# describes the next assignment.\n",
+                encoding="utf-8",
+            )
+            errors: list[str] = []
+
+            report = _validate_comment_ratchet(
+                root,
+                python_comments=2,
+                script_comments=0,
+                docstrings=0,
+                web_comments=0,
+                errors=errors,
+            )
+
+            self.assertEqual(report["base_source_comment_count"], 1)
+            self.assertIn("comment ratchet increased source comments: 2 > 1", errors)
+            self.assertIn("new comment lacks policy label: src/example.py:3", errors)
+
+    def test_existing_non_migration_comment_requires_a_policy_label(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            (root / "src/example.py").write_text(
+                "# describes the assignment\nVALUE = 1\n",
+                encoding="utf-8",
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "production comment lacks policy label: src/example.py:1",
+                report["errors"],
+            )
+
+    def test_executable_script_comment_requires_a_policy_label(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            script = root / "scripts/check.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("# describes the command\n", encoding="utf-8")
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "production comment lacks policy label: scripts/check.py:1",
+                report["errors"],
+            )
+
     def test_qualified_status_requires_a_current_passing_run(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -703,8 +799,16 @@ class DocumentationRealityTests(unittest.TestCase):
             "canonical_documents": CANONICAL_DOCUMENTS,
             "migration_head": "0001",
             "comment_policy": {
-                "max_source_comments": 0,
-                "max_source_docstrings": 0,
+                "ratchet": "GIT_MERGE_BASE_NONINCREASING",
+                "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
+                "new_comment_prefixes": [
+                    "WHY:",
+                    "INVARIANT:",
+                    "CONSTRAINT:",
+                    "WORKAROUND:",
+                    "SECURITY:",
+                    "COMPATIBILITY:",
+                ],
                 "allowed_module_docstrings": [],
             },
             "qualification_runs": [

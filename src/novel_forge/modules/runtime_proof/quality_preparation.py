@@ -1188,7 +1188,7 @@ class BoundedQualityCampaignPreparer:
             "qualification_evidence_asset_version_id": (
                 semantic.lineage.evaluation_asset_version_id
             ),
-            # Story Design's qualification_hash summarizes the semantic
+            # WHY: Story Design's qualification_hash summarizes the semantic
             # receipts. Formation binds the complete immutable evaluation
             # AssetVersion and therefore requires its distinct content hash.
             "qualification_hash": str(row[1]),

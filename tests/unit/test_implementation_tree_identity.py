@@ -72,11 +72,17 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
                 "config/capability_packs/example.json": '{"enabled":true}\n',
                 "skills/example/SKILL.md": "# Example runtime skill\n",
                 "architecture/manifests/example.yaml": '{"schema_version":"architecture-manifest.v1"}\n',
+                "architecture/manifests/ai-instruction-manifest.yaml": (
+                    '{"sources":[{"patterns":["web/prompt.ts"]}]}\n'
+                ),
                 ".github/workflows/ci.yml": "name: CI\n",
+                "AGENTS.md": "# Repository policy\n",
+                "CLAUDE.md": "Follow AGENTS.md.\n",
                 "compose.authority-only.yml": "services: {}\n",
                 "Dockerfile": "FROM scratch\n",
                 "Makefile": "check:\n\ttrue\n",
                 "pyproject.toml": "[project]\nname='example'\n",
+                "web/prompt.ts": 'const value = {prompt: "Current instruction"};\n',
             }
             for relative, content in semantic_files.items():
                 path = root / relative
@@ -111,16 +117,30 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
                 first["implementation_tree_sha"],
             )
 
+            (root / "src/novel_forge/example.py").write_text(
+                "VALUE = 1\n", encoding="utf-8"
+            )
+            (root / "web/prompt.ts").write_text(
+                'const value = {prompt: "Changed instruction"};\n',
+                encoding="utf-8",
+            )
+            self.assertNotEqual(
+                build_implementation_tree_identity(root)["implementation_tree_sha"],
+                first["implementation_tree_sha"],
+            )
+
     def test_identity_scope_is_explicit_and_self_describing(self) -> None:
         root = Path(__file__).resolve().parents[2]
         identity = build_implementation_tree_identity(root)
-        self.assertEqual(identity["schema_version"], "implementation-tree-identity.v2")
-        self.assertEqual(identity["algorithm"], "sha256-canonical-file-records-v1")
+        self.assertEqual(identity["schema_version"], "implementation-tree-identity.v3")
+        self.assertEqual(identity["algorithm"], "sha256-canonical-file-records-v2")
         self.assertTrue(identity["implementation_tree_sha"].startswith("sha256:"))
         self.assertGreater(identity["path_count"], 0)
         self.assertIn("src/**", identity["scope"]["included"])
         self.assertIn("config/**", identity["scope"]["included"])
         self.assertIn("skills/**", identity["scope"]["included"])
+        self.assertIn("AGENTS.md", identity["scope"]["included"])
+        self.assertIn("CLAUDE.md", identity["scope"]["included"])
         self.assertIn("docs/**", identity["scope"]["excluded"])
         self.assertNotIn(
             "docs/generated-coverage-baseline.json",

@@ -306,7 +306,7 @@ class PostgresNarrativeSearchApplication:
                         request.desired_transformation
                     ),
                     narrative_search_hard_constraints=(request.hard_constraints),
-                    # Keep the exact outer Authority fence explicit at the
+                    # INVARIANT: Keep the exact outer Authority fence explicit at the
                     # branch boundary.  ``replace`` currently preserves it,
                     # but naming it here makes every future-N command's
                     # persisted lineage independent of dataclass defaults.
@@ -667,7 +667,7 @@ class PostgresNarrativeSearchApplication:
     def _parent_state_hash(self, project_id: str, asset_version_id: str) -> str:
         if not asset_version_id:
             return ""
-        asset = self.planning._require_asset(  # same Planning application boundary
+        asset = self.planning._require_asset(  # WHY: same Planning application boundary
             project_id=project_id, asset_version_id=asset_version_id
         )
         return str(asset["content_hash"])

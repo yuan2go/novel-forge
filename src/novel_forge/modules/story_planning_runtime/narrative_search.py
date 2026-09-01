@@ -198,7 +198,7 @@ class NarrativeSearchProjection:
             for dimension, weight in _DIMENSION_WEIGHTS.items()
         )
         denominator = sum(_DIMENSION_WEIGHTS.values())
-        # Risk and irreversibility remain explainable soft pressure.  They do
+        # WHY: Risk and irreversibility remain explainable soft pressure.  They do
         # not become universal literary prohibitions.
         risk_pressure = min(0.10, len(self.narrative_risks) * 0.01)
         irreversible_pressure = min(0.05, len(self.irreversible_decisions) * 0.01)

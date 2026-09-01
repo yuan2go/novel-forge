@@ -16,7 +16,12 @@ from typing import Any, Callable
 MANIFEST_DIR = Path("architecture/manifests")
 
 
-def _load(root: Path, name: str) -> dict[str, Any]:
+def _load(
+    root: Path,
+    name: str,
+    *,
+    schema_version: str = "architecture-manifest.v1",
+) -> dict[str, Any]:
     path = root / MANIFEST_DIR / name
     if not path.is_file():
         raise ValueError(f"manifest is missing: {path.relative_to(root)}")
@@ -24,7 +29,7 @@ def _load(root: Path, name: str) -> dict[str, Any]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise ValueError(f"manifest is not valid JSON-compatible YAML: {path}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "architecture-manifest.v1":
+    if not isinstance(payload, dict) or payload.get("schema_version") != schema_version:
         raise ValueError(f"unsupported manifest schema: {path}")
     return payload
 
@@ -112,56 +117,37 @@ def check_workers(root: Path) -> dict[str, Any]:
 
 
 def check_tests(root: Path) -> dict[str, Any]:
-    manifest = _load(root, "test-manifest.yaml")
-    collections = list(manifest.get("collections", []))
-    from novel_forge.tools.backend_qualification_contract import (
-        load_qualification_manifest,
+    manifest = _load(
+        root,
+        "test-manifest.yaml",
+        schema_version="novel-forge.test-reality-manifest.v1",
     )
+    from novel_forge.tools.test_reality import check_test_reality
 
-    qualification_required = any(
-        "qualification_class" in item or "complete_collection" in item
-        for item in collections
-        if isinstance(item, dict)
-    )
-    qualification_collections = {}
-    if qualification_required:
-        qualification = load_qualification_manifest(root)
-        qualification_collections = {
-            item.name: item for item in qualification.pytest_collections
-        }
-    required_modules = [str(item) for item in manifest.get("required_modules", [])]
-    manifest_names = {str(item.get("name") or "") for item in collections}
-    if qualification_required and manifest_names != set(qualification_collections):
+    reality = check_test_reality(root)
+    if reality["status"] != "PASS":
         raise ValueError(
-            "test manifest and backend qualification collections differ"
+            "test reality inventory failed: " + "; ".join(reality["errors"])
         )
+    collections = [str(item) for item in manifest.get("collections", [])]
+    qualification = _load(
+        root,
+        "backend-qualification-manifest.yaml",
+        schema_version="novel-forge.backend-qualification-manifest.v1",
+    )
+    qualification_collections = {
+        str(path): item
+        for item in qualification.get("pytest_collections", [])
+        for path in item.get("paths", [])
+    }
+    if set(collections) != set(qualification_collections):
+        raise ValueError("test reality and backend qualification collections differ")
     collection_paths: list[str] = []
-    for item in collections:
-        name = str(item["name"])
-        relative = str(item["start_dir"])
+    for relative in collections:
         start = root / relative
         if not start.is_dir():
             raise ValueError(f"test directory does not exist: {start.relative_to(root)}")
-        if qualification_required:
-            contract = qualification_collections[name]
-            if contract.paths != (relative,):
-                raise ValueError(
-                    f"qualification collection {name} does not match {relative}"
-                )
-            qualification_class = str(item.get("qualification_class") or "")
-            if qualification_class != contract.classification:
-                raise ValueError(
-                    f"qualification class differs for collection {name}"
-                )
-            complete_collection = item.get("complete_collection")
-            if complete_collection is not contract.complete_collection:
-                raise ValueError(
-                    f"complete collection policy differs for collection {name}"
-                )
         collection_paths.append(relative)
-    for relative in required_modules:
-        if not (root / relative).is_file():
-            raise ValueError(f"required test module is missing: {relative}")
 
     with tempfile.TemporaryDirectory(prefix="novel-forge-test-manifest-") as temporary:
         collection_report = Path(temporary) / "collection.json"
@@ -208,28 +194,27 @@ def check_tests(root: Path) -> dict[str, Any]:
     node_ids = tuple(raw_node_ids)
 
     results: list[dict[str, Any]] = []
-    for item in collections:
-        name = str(item["name"])
-        prefix = str(item["start_dir"]).rstrip("/") + "/"
+    for relative in collections:
+        contract = qualification_collections[relative]
+        name = str(contract.get("name") or Path(relative).name)
+        prefix = relative.rstrip("/") + "/"
         collection_node_ids = tuple(
             node_id for node_id in node_ids if node_id.startswith(prefix)
         )
         count = len(collection_node_ids)
-        minimum = int(item.get("minimum_count", 1))
-        if count < minimum:
+        if count < 1:
             raise ValueError(
-                f"required test collection {item['name']} found {count}; minimum is {minimum}"
+                f"required test collection {name} found {count}; minimum is 1"
             )
-        pattern = str(item.get("pattern") or "test_*.py")
         source_files = {
             path.relative_to(root).as_posix()
-            for path in (root / str(item["start_dir"])).rglob(pattern)
+            for path in (root / relative).rglob("test_*.py")
             if path.is_file()
         }
         collected_files = {
             node_id.partition("::")[0] for node_id in collection_node_ids
         }
-        if item.get("complete_collection") is True and source_files != collected_files:
+        if contract.get("complete_collection") is True and source_files != collected_files:
             missing = sorted(source_files - collected_files)
             unexpected = sorted(collected_files - source_files)
             raise ValueError(
@@ -240,27 +225,22 @@ def check_tests(root: Path) -> dict[str, Any]:
             {
                 "name": name,
                 "count": count,
-                "qualification_class": str(
-                    item.get("qualification_class") or "LEGACY_UNCLASSIFIED"
-                ),
-                "complete_collection": bool(item.get("complete_collection", False)),
+                "qualification_class": str(contract.get("classification") or ""),
+                "complete_collection": bool(contract.get("complete_collection", False)),
                 "source_file_count": len(source_files),
                 "collected_file_count": len(collected_files),
             }
         )
-
-    module_results: list[dict[str, Any]] = []
-    for relative in required_modules:
-        prefix = relative + "::"
-        count = sum(node_id.startswith(prefix) for node_id in node_ids)
-        if count < 1:
-            raise ValueError(f"required test module collected zero tests: {relative}")
-        module_results.append({"path": relative, "count": count})
     return {
         "kind": "tests",
         "checked": len(results),
         "collections": results,
-        "module_collections": module_results,
+        "reality": {
+            "test_file_count": reality["test_file_count"],
+            "test_definition_count": reality["test_definition_count"],
+            "classification_file_counts": reality["classification_file_counts"],
+            "classification_test_counts": reality["classification_test_counts"],
+        },
     }
 
 

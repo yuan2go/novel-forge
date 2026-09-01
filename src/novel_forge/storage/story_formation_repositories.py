@@ -531,7 +531,7 @@ class StoryFormationRepository:
                 "CREATIVE_SEARCH_SELECTION_DRIFT",
                 "selected Creative Foundation is not the exact active Authority version",
             )
-        # This is comparison lineage, not Planning scope or a Story authority.
+        # INVARIANT: comparison lineage is neither Planning scope nor Story authority.
         self.cursor.execute(
             """
             INSERT INTO authority_story_formation_stage(

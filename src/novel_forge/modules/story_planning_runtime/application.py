@@ -194,7 +194,7 @@ class _PlanningGenerationHandler:
                 "PEP candidate evidence differs from the current Authority Attempt",
             )
         return AuthorityHandlerOutput(
-            # One generic worker Operation has one frozen output contract.
+            # WHY: One generic worker Operation has one frozen output contract.
             # The concrete candidate kind remains frozen in the Generator
             # Definition and candidate content; it cannot change the admitted
             # OperationDefinition output selector mid-Attempt.
@@ -224,7 +224,7 @@ class _PlanningGenerationHandler:
                 *command.change_evidence_version_ids,
             ),
             evidence=evidence,
-            # Generation only creates an immutable candidate.  Semantic
+            # INVARIANT: Generation only creates an immutable candidate.  Semantic
             # Evaluation and activation own the two later transitions.
             lifecycle="CANDIDATE",
             eligibility="INELIGIBLE",

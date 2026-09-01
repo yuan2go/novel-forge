@@ -13,7 +13,7 @@ STATE_ASSET_TYPES = (
     "story_state_snapshot",
 )
 
-# Provider quality judges need narrative meaning and stable identity, not the
+# WHY: Provider quality judges need narrative meaning and stable identity, not the
 # extraction transport/evidence envelope retained by PostgreSQL Authority.  The
 # full candidate remains addressable through its Canon Patch AssetVersion and
 # the digests emitted by this view.
@@ -267,7 +267,7 @@ def build_quality_context_view(
             **common,
             "revision_text": str(revision.get("text") or ""),
             "source_governance": manifest.get("source_governance", {}),
-            # Quality consumes a provenance projection, not a second copy of
+            # WHY: Quality consumes a provenance projection, not a second copy of
             # the full Context Manifest (which remains persisted on the
             # ContextBundle).  This keeps source evidence exact without
             # spending the quality budget on duplicated retrieval traces.
@@ -453,7 +453,7 @@ def _group_state_segments(
                 isinstance(fact, dict) and fact.get("declared_empty") for fact in facts
             )
         )
-        # The row-level flag is the canonical empty-state fact. Keeping the
+        # WHY: The row-level flag is the canonical empty-state fact. Keeping the
         # ContextSegment's duplicate structured marker wastes scarce judge
         # budget without adding evidence identity.
         if declared_empty:
@@ -599,7 +599,7 @@ def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
         for scene in chapter_plan.get("scene_plan") or []
         if isinstance(scene, dict)
     ]
-    # Older accepted plans remain readable without duplicating their legacy
+    # COMPATIBILITY: Older accepted plans remain readable without duplicating their legacy
     # aliases into plans that already carry the canonical execution contract.
     if not chapter_plan.get("narrative_architecture_version"):
         for field in (
@@ -701,7 +701,7 @@ def _fit_quality_context(
             )
         rows = list(_state_rows(body))
 
-    # The coverage report is variable-sized because entity coverage is explicit.
+    # WHY: The coverage report is variable-sized because entity coverage is explicit.
     # A fixed reserve can therefore fit the evidence body yet overflow once the
     # report, contract version, and digest are serialized. Re-evaluate the actual
     # final envelope and only remove additional noncritical facts. Identity rows,
@@ -758,7 +758,7 @@ def _quality_context_coverage_report(
     estimator: TokenEstimator,
     token_budget: int,
 ) -> dict[str, Any]:
-    # One accepted snapshot may be expanded into many entity-scoped rows. The
+    # WHY: One accepted snapshot may be expanded into many entity-scoped rows. The
     # coverage report records the selected AssetVersion identity, not a second
     # copy of the row-to-version relationship, so keep it set-valued. Entity
     # coverage remains explicit in ``included_entities`` below.
@@ -801,7 +801,7 @@ def _estimate_final_quality_context(
         **body,
         "coverage_report": coverage,
         "contract_version": "stage-quality-context-v4",
-        # The digest value is fixed-width. Its value does not affect the token
+        # WHY: The digest value is fixed-width. Its value does not affect the token
         # estimate, so a placeholder avoids a circular digest dependency.
         "context_digest": "sha256:" + ("0" * 64),
     }

@@ -21,7 +21,6 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
 )
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
-    accept_external_effect_receipt,
     cancel_external_effect,
     dispatch_external_effect,
     plan_external_effect,
@@ -139,7 +138,7 @@ class D0QualificationAuthority:
         existing = self._existing_result(operation_id, command.project_id)
         if existing is not None:
             return {**existing, "replayed": True}
-        state = self._operation(operation_id, command.project_id)
+        self._operation(operation_id, command.project_id)
         attempt = create_attempt(
             self.database_url,
             operation_id=operation_id,
@@ -263,7 +262,7 @@ class D0QualificationAuthority:
             lease_seconds=60,
             adapter=adapter,
         )
-        # A new adapter instance models process loss. Scripted request identity is
+        # WHY: a new adapter instance models process loss. Scripted request identity is
         # deterministic and queryable without an in-memory invocation registry.
         restarted_adapter = ScriptedProviderAdapterV2("unknown_after_send")
         reconciled = reconcile_external_effect(

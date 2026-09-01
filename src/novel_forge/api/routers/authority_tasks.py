@@ -226,7 +226,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def authority_health(project_id: str = "") -> dict[str, Any]:
         return system_health(project_id=project_id)
 
-    # Keep the dynamic path after all fixed /product/tasks/* routes.
+    # CONSTRAINT: the dynamic path follows fixed /product/tasks/* routes.
     @router.get("/product/tasks/{operation_id}")
     def task(operation_id: str, project_id: str) -> dict[str, Any]:
         _authorize("task.authority.query", project_id)

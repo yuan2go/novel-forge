@@ -30,7 +30,7 @@ def load_capability_pack(path: str | Path) -> CapabilityPackManifest:
             f"pack file exceeds {MAX_CAPABILITY_PACK_BYTES} bytes",
         )
     try:
-        # Bound the read itself as well as the preflight stat. This closes the
+        # WHY: Bound the read itself as well as the preflight stat. This closes the
         # time-of-check/time-of-use window if a file grows after stat().
         with target.open("rb") as stream:
             raw = stream.read(MAX_CAPABILITY_PACK_BYTES + 1)

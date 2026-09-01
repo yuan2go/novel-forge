@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
+import tarfile
 import tokenize
 from typing import Any, Iterable, Mapping
 
@@ -49,6 +52,21 @@ DOCSTRING_PREFIXES = (
     "SECURITY:",
     "COMPATIBILITY:",
 )
+COMMENT_PREFIXES = (
+    "WHY:",
+    "INVARIANT:",
+    "CONSTRAINT:",
+    "WORKAROUND:",
+    "SECURITY:",
+    "COMPATIBILITY:",
+)
+COMMENT_RATCHET = "GIT_MERGE_BASE_NONINCREASING"
+COMMENT_POLICY_SCOPE = "ALL_NON_MIGRATION_PRODUCTION_COMMENTS"
+TOOLING_COMMENT = re.compile(
+    r"^(?:#!|#\s*(?:type:\s*ignore|noqa\b|pragma:\s*no cover|nosec\b|"
+    r"fmt:|ruff:|pyright:|mypy:|coding[:=]))",
+    re.IGNORECASE,
+)
 HISTORICAL_OR_SPECULATIVE = re.compile(
     r"(?:\b(?:TODO|FIXME|HACK|XXX)\b|\bWP-[A-Z0-9_-]+\b|"
     r"\bwork[ -]package\b|\bpull request\b|\bPR\s*#\d+\b|"
@@ -59,6 +77,7 @@ HISTORICAL_OR_SPECULATIVE = re.compile(
 CONCEPT_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 INLINE_CODE = re.compile(r"`([^`\n]+)`")
 WEB_COMMENT = re.compile(r"^\s*(?://|/\*|\*|<!--)\s?(.*)$")
+WEB_TOOLING_COMMENT = re.compile(r"^\s*(?:/\*\*\s*@type|///\s*<reference)")
 FULL_SHA = re.compile(r"[0-9a-f]{40}")
 CONTENT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 P0_EVIDENCE_CLASS = "p0_backend_engineering_qualification"
@@ -641,6 +660,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     run_results: dict[str, tuple[int, int, int]] = {}
     run_evidence: dict[str, set[tuple[str, str, str]]] = {}
     run_classes: dict[str, str] = {}
+    run_is_current: dict[str, bool] = {}
+    runs_with_invalid_results: set[str] = set()
     historical_implementation_identities: dict[str, str] = {}
     if not isinstance(qualification_runs, list) or not qualification_runs:
         _error(errors, "reality inventory qualification_runs must be a non-empty list")
@@ -710,8 +731,10 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             counts_match = valid_counts and counts[1] + counts[2] == counts[0]
             if not valid_counts:
                 _error(errors, f"{context} result counts must be non-negative integers")
+                runs_with_invalid_results.add(run_id)
             elif not counts_match:
                 _error(errors, f"{context} passed plus failed must equal collected")
+                runs_with_invalid_results.add(run_id)
             if counts_match and counts[2] == 0:
                 implementation_tree_sha = str(
                     run.get("implementation_tree_sha") or ""
@@ -721,15 +744,12 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                         errors,
                         f"{context}.implementation_tree_sha must be a SHA-256 digest",
                     )
-                elif implementation_tree_sha != current_tree_sha:
-                    _error(
-                        errors,
-                        f"{context} does not qualify the current implementation tree",
-                    )
+                else:
+                    run_is_current[run_id] = implementation_tree_sha == current_tree_sha
                 if (
-                    observed_implementation_tree_sha
-                    and implementation_tree_sha
-                    != observed_implementation_tree_sha
+                    run_is_current.get(run_id, False)
+                    and observed_implementation_tree_sha
+                    and implementation_tree_sha != observed_implementation_tree_sha
                 ):
                     _error(
                         errors,
@@ -871,9 +891,26 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     continue
                 result_counts = run_results.get(str(run_id))
                 if result_counts is None:
+                    if str(run_id) in runs_with_invalid_results:
+                        _error(
+                            errors,
+                            f"{context} references a run with invalid results: {run_id}",
+                        )
+                    elif not run_is_current.get(str(run_id), False):
+                        _error(
+                            errors,
+                            f"{context} references a run that does not qualify the current implementation tree",
+                        )
+                    else:
+                        _error(
+                            errors,
+                            f"{context} references a run with invalid results: {run_id}",
+                        )
+                    continue
+                if not run_is_current.get(str(run_id), False):
                     _error(
                         errors,
-                        f"{context} references a run with invalid results: {run_id}",
+                        f"{context} references a run that does not qualify the current implementation tree",
                     )
                     continue
                 _, passed, failed = result_counts
@@ -1086,6 +1123,16 @@ def _validate_python_comments(
         except (OSError, SyntaxError, tokenize.TokenError) as exc:
             _error(errors, f"cannot tokenize {relative}: {exc}")
             continue
+        accepted_comment_lines: set[int] = set()
+        comments_by_line = {
+            token.start[0]: token
+            for token in tokens
+            if token.type == tokenize.COMMENT
+        }
+        source_lines = path.read_text(encoding="utf-8").splitlines()
+        immutable_migration = relative.startswith(
+            "src/novel_forge/storage/migrations/versions/"
+        )
         for token in tokens:
             if token.type != tokenize.COMMENT:
                 continue
@@ -1094,6 +1141,24 @@ def _validate_python_comments(
                 _error(
                     errors,
                     f"historical or speculative comment: {relative}:{token.start[0]}",
+                )
+            if immutable_migration:
+                continue
+            line = source_lines[token.start[0] - 1]
+            full_line = not line[: token.start[1]].strip()
+            previous = comments_by_line.get(token.start[0] - 1)
+            continuation = (
+                full_line
+                and previous is not None
+                and previous.start[1] == token.start[1]
+                and previous.start[0] in accepted_comment_lines
+            )
+            if _comment_is_policy_labeled(token.string) or continuation:
+                accepted_comment_lines.add(token.start[0])
+            else:
+                _error(
+                    errors,
+                    f"production comment lacks policy label: {relative}:{token.start[0]}",
                 )
         tree = _load_python(path, errors, root)
         if tree is None:
@@ -1117,10 +1182,56 @@ def _validate_python_comments(
     return comment_count, module_docstrings, docstring_count
 
 
-def _validate_web_comments(root: Path, errors: list[str]) -> None:
+def _validate_script_comments(root: Path, errors: list[str]) -> int:
+    scripts_root = root / "scripts"
+    if not scripts_root.is_dir():
+        return 0
+    comment_count = 0
+    for path in sorted(scripts_root.rglob("*.py")):
+        relative = _relative(root, path)
+        try:
+            with path.open("rb") as handle:
+                tokens = list(tokenize.tokenize(handle.readline))
+            source_lines = path.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError, SyntaxError, tokenize.TokenError) as exc:
+            _error(errors, f"cannot tokenize {relative}: {exc}")
+            continue
+        comments_by_line = {
+            token.start[0]: token
+            for token in tokens
+            if token.type == tokenize.COMMENT
+        }
+        accepted_comment_lines: set[int] = set()
+        for token in comments_by_line.values():
+            comment_count += 1
+            if HISTORICAL_OR_SPECULATIVE.search(token.string):
+                _error(
+                    errors,
+                    f"historical or speculative comment: {relative}:{token.start[0]}",
+                )
+            line = source_lines[token.start[0] - 1]
+            previous = comments_by_line.get(token.start[0] - 1)
+            continuation = (
+                not line[: token.start[1]].strip()
+                and previous is not None
+                and previous.start[1] == token.start[1]
+                and previous.start[0] in accepted_comment_lines
+            )
+            if _comment_is_policy_labeled(token.string) or continuation:
+                accepted_comment_lines.add(token.start[0])
+            else:
+                _error(
+                    errors,
+                    f"production comment lacks policy label: {relative}:{token.start[0]}",
+                )
+    return comment_count
+
+
+def _validate_web_comments(root: Path, errors: list[str]) -> int:
     web_root = root / "web"
     if not web_root.is_dir():
-        return
+        return 0
+    comment_count = 0
     for suffix in ("*.js", "*.mjs", "*.ts", "*.tsx"):
         for path in sorted(web_root.rglob(suffix)):
             if any(part in {"node_modules", ".next"} for part in path.parts):
@@ -1131,13 +1242,276 @@ def _validate_web_comments(root: Path, errors: list[str]) -> None:
             except (OSError, UnicodeDecodeError) as exc:
                 _error(errors, f"cannot read web source {relative}: {exc}")
                 continue
+            accepted_comment_lines: set[int] = set()
+            generated_next_types = relative == "web/admin/next-env.d.ts"
             for line_number, line in enumerate(lines, start=1):
                 match = WEB_COMMENT.match(line)
-                if match and HISTORICAL_OR_SPECULATIVE.search(match.group(1)):
+                if match:
+                    comment_count += 1
+                    if HISTORICAL_OR_SPECULATIVE.search(match.group(1)):
+                        _error(
+                            errors,
+                            f"historical or speculative comment: {relative}:{line_number}",
+                        )
+                    continuation = line_number - 1 in accepted_comment_lines
+                    if (
+                        generated_next_types
+                        or WEB_TOOLING_COMMENT.match(line)
+                        or _comment_is_policy_labeled(line)
+                        or continuation
+                    ):
+                        accepted_comment_lines.add(line_number)
+                    else:
+                        _error(
+                            errors,
+                            f"production comment lacks policy label: {relative}:{line_number}",
+                        )
+    return comment_count
+
+
+def _archive_comment_counts(root: Path, commit_sha: str) -> tuple[int, int, int, int]:
+    archived = subprocess.run(
+        ["git", "archive", "--format=tar", commit_sha],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        timeout=30,
+    )
+    if archived.returncode:
+        raise ValueError("cannot read comment ratchet base tree")
+    python_comments = 0
+    script_comments = 0
+    docstrings = 0
+    web_comments = 0
+    with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
+        for member in archive.getmembers():
+            if not member.isfile():
+                continue
+            extracted = archive.extractfile(member)
+            if extracted is None:
+                continue
+            content = extracted.read()
+            if member.name.startswith("src/") and member.name.endswith(".py"):
+                try:
+                    tokens = tokenize.tokenize(io.BytesIO(content).readline)
+                    python_comments += sum(
+                        token.type == tokenize.COMMENT for token in tokens
+                    )
+                    tree = ast.parse(content.decode("utf-8"), filename=member.name)
+                except (SyntaxError, UnicodeDecodeError, tokenize.TokenError) as exc:
+                    raise ValueError(
+                        f"cannot inspect comment ratchet base: {member.name}: {exc}"
+                    ) from exc
+                docstrings += sum(1 for _node, _name, _text in _docstring_nodes(tree))
+            elif member.name.startswith("scripts/") and member.name.endswith(".py"):
+                try:
+                    tokens = tokenize.tokenize(io.BytesIO(content).readline)
+                    script_comments += sum(
+                        token.type == tokenize.COMMENT for token in tokens
+                    )
+                except (SyntaxError, tokenize.TokenError) as exc:
+                    raise ValueError(
+                        f"cannot inspect comment ratchet base: {member.name}: {exc}"
+                    ) from exc
+            elif member.name.startswith("web/") and member.name.endswith(
+                (".js", ".mjs", ".ts", ".tsx")
+            ):
+                if any(part in {"node_modules", ".next"} for part in Path(member.name).parts):
+                    continue
+                try:
+                    lines = content.decode("utf-8").splitlines()
+                except UnicodeDecodeError as exc:
+                    raise ValueError(
+                        f"cannot inspect comment ratchet base: {member.name}: {exc}"
+                    ) from exc
+                web_comments += sum(WEB_COMMENT.match(line) is not None for line in lines)
+    return python_comments, script_comments, docstrings, web_comments
+
+
+def _comment_ratchet_base(root: Path, errors: list[str]) -> str:
+    remote = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if remote.returncode:
+        return ""
+    requested = os.environ.get("NOVEL_FORGE_REALITY_BASE_REF", "").strip()
+    refs = tuple(dict.fromkeys(filter(None, (requested, "origin/main", "main"))))
+    for ref in refs:
+        result = subprocess.run(
+            ["git", "merge-base", "HEAD", ref],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        candidate = result.stdout.strip().lower()
+        if result.returncode == 0 and FULL_SHA.fullmatch(candidate):
+            return candidate
+    _error(errors, "comment ratchet base is unavailable for repository with origin")
+    return ""
+
+
+def _added_lines(root: Path, base_sha: str, errors: list[str]) -> dict[str, set[int]]:
+    diff = subprocess.run(
+        ["git", "diff", "--unified=0", "--no-ext-diff", base_sha, "--", "src", "web"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if diff.returncode:
+        _error(errors, "cannot derive added comment lines from comment ratchet base")
+        return {}
+    current_path = ""
+    current_line = 0
+    added: dict[str, set[int]] = {}
+    hunk = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+    for line in diff.stdout.splitlines():
+        if line.startswith("+++ b/"):
+            current_path = line.removeprefix("+++ b/")
+            continue
+        match = hunk.match(line)
+        if match:
+            current_line = int(match.group(1))
+            continue
+        if not current_path or not current_line:
+            continue
+        if line.startswith("+") and not line.startswith("+++"):
+            added.setdefault(current_path, set()).add(current_line)
+            current_line += 1
+        elif line.startswith("-") and not line.startswith("---"):
+            continue
+        elif not line.startswith("\\"):
+            current_line += 1
+    return added
+
+
+def _comment_is_policy_labeled(comment: str) -> bool:
+    stripped = comment.strip()
+    if TOOLING_COMMENT.match(stripped):
+        return True
+    text = stripped
+    for marker in ("#", "//", "/*", "*", "<!--"):
+        if text.startswith(marker):
+            text = text[len(marker) :].lstrip()
+            break
+    return text.startswith(COMMENT_PREFIXES)
+
+
+def _validate_added_comment_policy(
+    root: Path,
+    added: Mapping[str, set[int]],
+    errors: list[str],
+) -> None:
+    for relative, line_numbers in sorted(added.items()):
+        path = root / relative
+        if not path.is_file():
+            continue
+        if path.suffix == ".py":
+            try:
+                with path.open("rb") as handle:
+                    all_comments = [
+                        token
+                        for token in tokenize.tokenize(handle.readline)
+                        if token.type == tokenize.COMMENT
+                    ]
+            except (OSError, SyntaxError, tokenize.TokenError) as exc:
+                _error(errors, f"cannot inspect added comments: {relative}: {exc}")
+                continue
+            by_line = {token.start[0]: token for token in all_comments}
+            accepted: set[int] = set()
+            source_lines = path.read_text(encoding="utf-8").splitlines()
+            for token in all_comments:
+                if token.start[0] not in line_numbers:
+                    continue
+                line = source_lines[token.start[0] - 1]
+                full_line = not line[: token.start[1]].strip()
+                continuation = (
+                    full_line
+                    and token.start[0] - 1 in by_line
+                    and (
+                        token.start[0] - 1 in accepted
+                        or _comment_is_policy_labeled(
+                            by_line[token.start[0] - 1].string
+                        )
+                    )
+                )
+                if _comment_is_policy_labeled(token.string) or continuation:
+                    accepted.add(token.start[0])
+                else:
                     _error(
                         errors,
-                        f"historical or speculative comment: {relative}:{line_number}",
+                        f"new comment lacks policy label: {relative}:{token.start[0]}",
                     )
+        elif path.suffix in {".js", ".mjs", ".ts", ".tsx"}:
+            lines = path.read_text(encoding="utf-8").splitlines()
+            accepted: set[int] = set()
+            for line_number in sorted(line_numbers):
+                if line_number > len(lines):
+                    continue
+                match = WEB_COMMENT.match(lines[line_number - 1])
+                continuation = (
+                    line_number - 1 in accepted
+                    or (
+                        line_number > 1
+                        and WEB_COMMENT.match(lines[line_number - 2]) is not None
+                        and _comment_is_policy_labeled(lines[line_number - 2])
+                    )
+                )
+                if match and (
+                    _comment_is_policy_labeled(lines[line_number - 1])
+                    or continuation
+                ):
+                    accepted.add(line_number)
+                elif match:
+                    _error(
+                        errors,
+                        f"new comment lacks policy label: {relative}:{line_number}",
+                    )
+
+
+def _validate_comment_ratchet(
+    root: Path,
+    *,
+    python_comments: int,
+    script_comments: int,
+    docstrings: int,
+    web_comments: int,
+    errors: list[str],
+) -> dict[str, Any]:
+    initial_error_count = len(errors)
+    base_sha = _comment_ratchet_base(root, errors)
+    if not base_sha:
+        return {"status": "NOT_APPLICABLE_NO_ORIGIN", "base_sha": ""}
+    try:
+        base_python, base_scripts, base_docstrings, base_web = _archive_comment_counts(
+            root, base_sha
+        )
+    except ValueError as exc:
+        _error(errors, str(exc))
+        return {"status": "FAIL", "base_sha": base_sha}
+    for name, current, baseline in (
+        ("source comments", python_comments, base_python),
+        ("script comments", script_comments, base_scripts),
+        ("source docstrings", docstrings, base_docstrings),
+        ("web comments", web_comments, base_web),
+    ):
+        if current > baseline:
+            _error(errors, f"comment ratchet increased {name}: {current} > {baseline}")
+    _validate_added_comment_policy(root, _added_lines(root, base_sha, errors), errors)
+    return {
+        "status": "PASS" if len(errors) == initial_error_count else "FAIL",
+        "base_sha": base_sha,
+        "base_source_comment_count": base_python,
+        "base_script_comment_count": base_scripts,
+        "base_source_docstring_count": base_docstrings,
+        "base_web_comment_count": base_web,
+    }
 
 
 def _git_head(root: Path) -> str:
@@ -1176,22 +1550,20 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
     comment_count, module_docstrings, docstring_count = _validate_python_comments(
         repository, errors
     )
-    _validate_web_comments(repository, errors)
+    script_comment_count = _validate_script_comments(repository, errors)
+    web_comment_count = _validate_web_comments(repository, errors)
     comment_policy = (
         inventory.get("comment_policy") if isinstance(inventory, Mapping) else None
     )
     if not isinstance(comment_policy, Mapping):
         _error(errors, "reality inventory comment_policy must be an object")
     else:
-        for field, actual in (
-            ("max_source_comments", comment_count),
-            ("max_source_docstrings", docstring_count),
-        ):
-            limit = comment_policy.get(field)
-            if not isinstance(limit, int) or limit < 0:
-                _error(errors, f"comment_policy.{field} must be a non-negative integer")
-            elif actual > limit:
-                _error(errors, f"comment_policy.{field} exceeded: {actual} > {limit}")
+        if comment_policy.get("ratchet") != COMMENT_RATCHET:
+            _error(errors, "comment_policy.ratchet is not canonical")
+        if comment_policy.get("scope") != COMMENT_POLICY_SCOPE:
+            _error(errors, "comment_policy.scope is not canonical")
+        if comment_policy.get("new_comment_prefixes") != list(COMMENT_PREFIXES):
+            _error(errors, "comment_policy.new_comment_prefixes is not canonical")
         allowed_module_docstrings = comment_policy.get("allowed_module_docstrings")
         if not isinstance(allowed_module_docstrings, list) or any(
             not isinstance(path, str) or not path.strip()
@@ -1212,6 +1584,15 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
             for relative in sorted(allowed - module_docstrings):
                 _error(errors, f"allowlisted module docstring is missing: {relative}")
 
+    ratchet = _validate_comment_ratchet(
+        repository,
+        python_comments=comment_count,
+        script_comments=script_comment_count,
+        docstrings=docstring_count,
+        web_comments=web_comment_count,
+        errors=errors,
+    )
+
     tested_sha = _git_head(repository)
     normalized_expected_sha = expected_sha.strip().lower()
     if normalized_expected_sha and tested_sha != normalized_expected_sha:
@@ -1228,8 +1609,11 @@ def check_repository(root: str | Path, *, expected_sha: str = "") -> dict[str, A
         "canonical_document_count": len(CANONICAL_DOCUMENTS),
         "capability_count": capability_count,
         "source_comment_count": comment_count,
+        "script_comment_count": script_comment_count,
+        "web_comment_count": web_comment_count,
         "module_docstring_count": len(module_docstrings),
         "source_docstring_count": docstring_count,
+        "comment_ratchet": ratchet,
         "errors": errors,
     }
 

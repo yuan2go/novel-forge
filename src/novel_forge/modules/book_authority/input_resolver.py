@@ -1241,7 +1241,7 @@ class BookProductionInputResolver:
                 node_id = str(item.get("workflow_node_id") or "")
                 if node_id not in expected:
                     continue
-                # Planning generators are governed Typed Capabilities.  A
+                # WHY: Planning generators are governed Typed Capabilities.  A
                 # legacy Agent Definition reference is optional metadata and
                 # is not part of their production execution identity.
                 if (

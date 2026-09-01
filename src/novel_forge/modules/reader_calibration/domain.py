@@ -601,7 +601,7 @@ def evaluate_reader_outcome_consumption(
         "decision": decision,
         "advisory_recommendation_allowed": advisory_allowed,
         "activation_eligible": activation_eligible,
-        # Compatibility field: influence means eligibility to enter the
+        # COMPATIBILITY: influence means eligibility to enter the
         # governed future-plan change path, never direct mutation.
         "future_production_influence_allowed": activation_eligible,
         "direct_plan_activation_allowed": False,

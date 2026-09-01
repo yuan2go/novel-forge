@@ -359,7 +359,7 @@ class PostgresProductionAgentModelTurnPort:
     def _require_frozen_execution_contract(self, session: AgentHarnessSession) -> None:
         contract = dict(session.execution_contract)
         if not contract:
-            # Historical fixture sessions are intentionally not provider proof.
+            # INVARIANT: Historical fixture sessions are intentionally not provider proof.
             return
         if canonical_policy_hash(contract) != session.execution_contract_hash:
             raise KernelError(

@@ -345,7 +345,7 @@ def discover_accepted_retrieval_candidates(
         }
         for row in rows
     )
-    # One AssetVersion may have multiple memory-layer documents.  Operations
+    # INVARIANT: one AssetVersion may have multiple memory-layer documents. Operations
     # freeze the source once while the result retains every document identity.
     deduped_inputs = tuple(
         dict(item)

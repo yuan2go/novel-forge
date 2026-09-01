@@ -700,7 +700,7 @@ class ReaderJudgeAuthorityApplication:
                 "chapter_metric_ids": metric_ids,
                 "retention_metric_ids": retention_ids,
                 "observation_count": len(outcome_ids),
-                # Existing behavior records lack proof provenance; fail closed.
+                # INVARIANT: behavior records without proof provenance fail closed.
                 "evidence_level": "FIXTURE",
             }
             observation_hash = canonical_hash(value)

@@ -1087,7 +1087,7 @@ def build_chapter_authority_application(
         model_adapter=execution.gateway,
         object_store_adapter=execution.object_store,
         capability_binder=binder,
-        # Projection is not a Chapter Saga node. Its domain contract freezes
+        # INVARIANT: projection is not a Chapter Saga node. Its domain contract freezes
         # Provider materialization without borrowing Chapter Pack authority.
         embedding_capability_binder=(embedding_binder if controlled else None),
         worker_id=str(
@@ -1100,12 +1100,10 @@ def build_chapter_authority_application(
         in {"1", "true", "yes"},
         max_cost_per_model_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(include_chapter_total=True),
-        # Retrieval projection is project/operation/provider governed but is
+        # INVARIANT: retrieval projection is project/operation/provider governed but is
         # not a Chapter-stage model effect.  Applying the Chapter aggregate
         # cap here creates a cap with no Chapter budget lineage to charge.
         embedding_budget_caps=execution.budget_caps(),
-        # Migration-only per-stage Agent bindings are intentionally
-        # unreachable from production composition.
         agent_binding_recorder=None,
         agent_binding_required=False,
         runtime_fault_injector=runtime_fault_injector,

@@ -61,6 +61,8 @@ Comments and docstrings explain invariants, constraints, security, compatibility
 non-obvious algorithms or third-party limitations. They do not narrate architecture,
 record former versions or store future design. Production module docstrings require an
 `INVARIANT:`, `CONSTRAINT:`, `SECURITY:`, or `COMPATIBILITY:` prefix.
+Ordinary non-migration production comments require `WHY:`, `INVARIANT:`, `CONSTRAINT:`,
+`WORKAROUND:`, `SECURITY:`, or `COMPATIBILITY:`; published migration bodies are immutable.
 
 ## Skills
 

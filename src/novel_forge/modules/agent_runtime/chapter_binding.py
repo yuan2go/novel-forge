@@ -61,7 +61,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 AGENT_BOUND_CHAPTER_STAGES = LEGACY_AGENT_BOUND_MODEL_STAGES - {
-    # Semantic evaluation is a Story Design operation with its own Principal,
+    # WHY: Semantic evaluation is a Story Design operation with its own Principal,
     # binder, and Attempt; it is not a Chapter Agent node.
     "narrative_semantic_evaluation"
 }
@@ -133,7 +133,7 @@ class PostgresChapterAgentBindingRecorder:
                     [request.project_id],
                 )
                 if uow.cursor.fetchone() is None:
-                    # Legacy fixture Operations can predate Project Authority.
+                    # COMPATIBILITY: Legacy fixture Operations can predate Project Authority.
                     # They may emit explicit compatibility evidence, but must
                     # not borrow a global Agent binding and manufacture an
                     # invalid authoritative Runtime Binding.
@@ -287,7 +287,7 @@ class PostgresChapterAgentBindingRecorder:
                         ],
                     },
                 )
-            # A retry is a new Authority Attempt and must retain its own frozen
+            # INVARIANT: A retry is a new Authority Attempt and must retain its own frozen
             # collaboration evidence instead of mutating the prior attempt.
             session_id = _identity("chapter-agent-session", request.attempt_id)
             scope_snapshot_id = _identity("chapter-agent-scope", request.attempt_id)

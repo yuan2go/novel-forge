@@ -111,7 +111,7 @@ _PLANNING_STAGES = frozenset(
     }
 )
 
-# Planning has one retry owner: every Operation Attempt may advance the same
+# INVARIANT: Planning has one retry owner: every Operation Attempt may advance the same
 # ExternalEffect by at most one dispatch generation. Sharing the bound keeps
 # the Effect from terminalizing while the Operation still has retry budget and
 # prevents nested retry amplification.
@@ -1214,7 +1214,7 @@ def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
             "type": "array",
             "minItems": min(lengths),
             "maxItems": max(lengths),
-            # ``items`` remains mandatory in the Provider dialect even when
+            # COMPATIBILITY: ``items`` remains mandatory in the Provider dialect even when
             # every frozen array is empty and maxItems therefore forbids data.
             "items": (
                 _frozen_provider_value_schema(members)
@@ -2110,7 +2110,7 @@ def planning_provider_output_schema(
             if field == "chapter_range":
                 properties[field].update({"minItems": 2, "maxItems": 2})
                 if exact_group_range is not None:
-                    # OpenAI Structured Outputs rejects non-scalar ``const``
+                    # COMPATIBILITY: OpenAI Structured Outputs rejects non-scalar ``const``
                     # values. Bound each member to the frozen endpoints here;
                     # Planning Authority still validates the exact ordered pair
                     # before the candidate can be persisted or activated.
@@ -3545,7 +3545,7 @@ class PostgresPlanningExecutionPreparer:
             reservation_id = str(reservation["reservation_id"])
         else:
             reservation_id = str(recovered_completion["budget_reservation_id"])
-            # A durable Provider result must be settled against the original
+            # INVARIANT: A durable Provider result must be settled against the original
             # Budget Authority contract.  Runtime configuration may have
             # changed since the first send, but it cannot rewrite the frozen
             # reservation ceiling on replay.
@@ -3821,7 +3821,7 @@ class PostgresPlanningExecutionPreparer:
             correlation_id=command.correlation_id,
         )
         request = ExecutionRequest(
-            # The ExternalEffect owns the stable Provider idempotency identity;
+            # INVARIANT: The ExternalEffect owns the stable Provider idempotency identity;
             # each Operation Attempt owns one gateway execution record.  Reusing
             # the execution_id would conflict with the new Attempt fence and
             # budget reservation even though the Effect itself is unchanged.
@@ -3963,7 +3963,7 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
-        # A technical retry may create a new Operation Attempt, but it must not
+        # INVARIANT: A technical retry may create a new Operation Attempt, but it must not
         # become a semantic replanning event. Freeze selection at the Planning
         # Operation identity so every retry reuses the exact same Authority
         # inputs and Narrative Intelligence card versions.

@@ -129,7 +129,7 @@ def score_similarity(
         -1.0,
         min(1.0, _cosine_similarity(current_embedding, previous_embedding)),
     )
-    # Cosine can be negative for unrelated text; normalize to a risk score.
+    # WHY: Cosine can be negative for unrelated text; normalize to a risk score.
     normalized_embedding = (embedding + 1.0) / 2.0
     score = (normalized_embedding * 0.65) + (lexical * 0.35)
     configured = thresholds if isinstance(thresholds, Mapping) else {}

@@ -169,9 +169,8 @@ def execution_environment(value: str = "") -> RuntimeEnvironment:
     raw = str(
         value or os.environ.get("NOVEL_FORGE_ENVIRONMENT") or "development"
     ).strip().lower()
-    # Compatibility callers still emit the former local OS-envelope vocabulary.
-    # Normalize it once at the production-execution boundary; every downstream
-    # policy receives the canonical typed environment.
+    # COMPATIBILITY: normalize the accepted OS-envelope aliases once at the
+    # execution boundary so downstream policy receives one typed environment.
     normalized = {
         "dev": "development",
         "local": "development",

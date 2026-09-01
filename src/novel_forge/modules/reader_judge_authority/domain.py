@@ -62,7 +62,7 @@ class ReaderJudgeDefinition:
             and self.maximum_adjustment_chapters <= 0
         ):
             raise ValueError("Bounded Production requires a positive Chapter bound")
-        # ``mode`` is the requested deployment mode; qualification is a
+        # INVARIANT: ``mode`` is requested deployment; qualification is a
         # separate append-only decision stream.  A definition may therefore
         # be registered while UNQUALIFIED, but activation still calls
         # ``require_mode_status`` and fails closed until evidence permits it.

@@ -265,7 +265,7 @@ def scan_legacy_snapshot(
                 )
             )
             continue
-        # The scan only establishes that each business key exists in scope.
+        # WHY: The scan only establishes that each business key exists in scope.
         # Pass one materializes stable PostgreSQL identities; pass two resolves
         # the exact target AssetVersion and projection under a durable,
         # idempotent reference record.

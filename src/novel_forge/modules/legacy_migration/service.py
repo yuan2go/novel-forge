@@ -465,7 +465,7 @@ class LegacyMigrationService:
         *,
         expected_item_version: int,
     ) -> dict[str, Any]:
-        # Domain Authority applications open their own UnitOfWork boundaries.
+        # INVARIANT: Domain Authority applications open their own UnitOfWork boundaries.
         # This explicit coordinated scope makes those boundaries nested
         # savepoints on the same connection, retaining one atomic activation
         # transaction without requiring a second migration-pool connection.
@@ -534,7 +534,7 @@ class LegacyMigrationService:
                 commit_sha=self.commit_sha,
                 allow_fixture_activation=self.allow_fixture_domain_activation,
             ).resolve(adapter_name)
-            # The migration item, validation, decision, references, and
+            # WHY: The migration item, validation, decision, references, and
             # dependency projections remain locked while the domain Authority
             # commits. This closes the validation/activation TOCTOU window.
             result = adapter.activate(context)
@@ -1128,7 +1128,7 @@ class LegacyMigrationService:
             MigrationVerificationLevel.ARCHIVAL_NATIVE
         ),
     ) -> dict[str, Any]:
-        # Verification is a single run-consistent observation. Every mutable
+        # WHY: Verification is a single run-consistent observation. Every mutable
         # migration command (validation, decision, activation) takes the same
         # transaction-scoped advisory lock before touching Item/Validation
         # state, so none can commit between freshness checks and the persisted
@@ -1159,7 +1159,7 @@ class LegacyMigrationService:
         verification_level = MigrationVerificationLevel(required_level)
         self._refresh_current_activated_validations(migration_run_id)
         status = self.status(migration_run_id)
-        # Every verification level is a source-to-target proof.  Omitting the
+        # INVARIANT: Every verification level is a source-to-target proof.  Omitting the
         # source snapshot can report durable run status, but can never produce
         # a PASS by implicitly trusting the recorded hash.
         hash_matches = False
@@ -1535,7 +1535,7 @@ class LegacyMigrationService:
                     and snapshot["item"]["target_asset_version_id"]
                     == str(row[11])
                 )
-                # Only heal item-version drift caused by a completed migration
+                # WHY: Only heal item-version drift caused by a completed migration
                 # phase. Any content/reference/dependency/validator drift stays
                 # stale and must fail verification until an explicit Operation
                 # produces a new Validation record.

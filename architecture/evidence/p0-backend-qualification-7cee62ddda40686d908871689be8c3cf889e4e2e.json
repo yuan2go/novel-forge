@@ -2,21 +2,21 @@
   "cleanup": {
     "phases": [
       {
-        "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10",
+        "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022",
         "phase": "postgresql",
-        "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10.json",
+        "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022.json",
         "remaining_resource_count": 0,
         "resource_count": 2,
-        "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+        "run_id": "p0-905b66bd9cbd470894636125e739e022",
         "status": "PASS"
       },
       {
-        "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime",
+        "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022-runtime",
         "phase": "compose-runtime",
-        "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime.json",
+        "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022-runtime.json",
         "remaining_resource_count": 0,
         "resource_count": 18,
-        "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+        "run_id": "p0-905b66bd9cbd470894636125e739e022",
         "status": "PASS"
       }
     ],
@@ -25,7 +25,7 @@
   },
   "decision": "PASS",
   "dependency_snapshot": {
-    "digest": "sha256:fc74be1db650fe80910022209c941eda71d70d04b6e8f39030ba5d34d33291a2",
+    "digest": "sha256:7447d4dfaa36954826714985a09e63e663f3d39b7a5080e9b342ee0b54a9a9e7",
     "git_sha_alone_reproducible": false,
     "package_count": 40,
     "packages": [
@@ -33,16 +33,16 @@
       "annotated-types==0.8.0",
       "anyio==4.14.2",
       "argon2-cffi==25.1.0",
-      "argon2-cffi-bindings==26.1.0",
+      "argon2-cffi-bindings==25.1.0",
       "certifi==2026.7.22",
       "cffi==2.1.1",
-      "click==8.5.0",
+      "click==8.4.2",
       "fastapi==0.141.1",
       "h11==0.16.0",
-      "httpcore2==2.12.0",
+      "httpcore2==2.9.1",
       "httptools==0.8.0",
-      "httpx2==2.12.0",
-      "idna==3.19",
+      "httpx2==2.9.1",
+      "idna==3.18",
       "iniconfig==2.3.0",
       "minio==7.2.20",
       "novel-forge==6.0.0",
@@ -53,22 +53,22 @@
       "psycopg-pool==3.3.1",
       "pycparser==3.0",
       "pycryptodome==3.23.0",
-      "pydantic==2.13.5",
-      "pydantic-core==2.46.5",
-      "pygments==2.21.0",
+      "pydantic==2.13.4",
+      "pydantic-core==2.46.4",
+      "pygments==2.20.0",
       "pytest==9.1.1",
-      "python-dotenv==1.2.3",
+      "python-dotenv==1.2.2",
       "pyyaml==6.0.3",
       "ruff==0.15.20",
-      "starlette==1.6.0",
+      "starlette==1.4.1",
       "truststore==0.10.4",
       "typing-extensions==4.16.0",
-      "typing-inspection==0.4.4",
+      "typing-inspection==0.4.2",
       "urllib3==2.7.0",
-      "uvicorn==0.52.4",
+      "uvicorn==0.51.0",
       "uvloop==0.22.1",
       "watchfiles==1.2.0",
-      "websockets==17.1"
+      "websockets==16.1.1"
     ],
     "provenance_files": [],
     "python_implementation": "CPython",
@@ -89,40 +89,50 @@
   "evidence_class": "p0_backend_engineering_qualification",
   "gates": [
     {
-      "duration_seconds": 0.222415,
+      "duration_seconds": 0.364863,
       "evidence": {
-        "branch": "codex/wp-post-merge-reality-qualification-closure-01",
-        "commit_sha": "652e252987725ef5e39733d76d1798437e3be7ba",
+        "branch": "codex/wp-test-reality-reset-01",
+        "commit_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e",
         "dirty": false,
-        "implementation_tree_sha": "sha256:7716fb98349d6dbf74b642fd22488fa54d59ef04216541eb7b4bf8130c7ad722",
-        "source_tree": "20285e10d566e7ef8e76d43dd5b614be0dcbaa55",
+        "implementation_tree_sha": "sha256:ce8a2805f1cfbbccaef1ff8f7c06ce6bbec92f7a6ca0813a6195c406fcd95382",
+        "source_tree": "347a7a60992590bfb42c59b7b3bbd77a32c66734",
         "workflow_sha": ""
       },
       "gate_id": "source-preflight",
       "status": "PASS"
     },
     {
-      "duration_seconds": 2.587204,
+      "duration_seconds": 4.895303,
       "evidence": {
         "artifact": "documentation-reality.json",
         "canonical_document_count": 5,
         "capability_count": 13,
-        "digest": "sha256:52b8b6ee7b560ba354ec91fbf901a4680306bf4f25a6f7c3bce6f51f27cc2e15",
+        "comment_ratchet": {
+          "base_script_comment_count": 31,
+          "base_sha": "0b02a0bfc8e2d4f210e5c121e708853cda932740",
+          "base_source_comment_count": 557,
+          "base_source_docstring_count": 122,
+          "base_web_comment_count": 5,
+          "status": "PASS"
+        },
+        "digest": "sha256:e79d381966bc6f1a5bcc931c3f077a7a1636612eb26440805fefafb27145affb",
         "errors": [],
         "evidence_class": "reality_inventory",
-        "inventory_sha256": "sha256:be5d018b4d78b5055484efd3c72fc691c9d8ced06bf3c8aaf2fd1d556c77f8af",
+        "inventory_sha256": "sha256:be3309535a527374abc43e46c432dd1c1505ac6df3642154fe41a0f9ee012188",
         "module_docstring_count": 35,
         "schema_version": "novel-forge.documentation-reality-check.v1",
-        "source_comment_count": 557,
+        "script_comment_count": 31,
+        "source_comment_count": 514,
         "source_docstring_count": 122,
         "status": "PASS",
-        "tested_sha": "652e252987725ef5e39733d76d1798437e3be7ba"
+        "tested_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e",
+        "web_comment_count": 5
       },
       "gate_id": "documentation-reality",
       "status": "PASS"
     },
     {
-      "duration_seconds": 15.700515,
+      "duration_seconds": 19.667969,
       "evidence": {
         "returncode": 0
       },
@@ -130,23 +140,23 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 63.678919,
+      "duration_seconds": 73.257649,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 1432,
           "authority": "JUNIT_XML",
-          "collected_node_count": 1688,
-          "junit_case_count": 3120
+          "collected_node_count": 1597,
+          "junit_case_count": 3029
         },
         "collection": {
           "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_count": 1688,
+          "collected_count": 1597,
           "complete_collection": true,
           "name": "backend",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:bf33a375b8bf24f56a1401bb1c131c7ac01a78b591580a15900e96fed2e0dcc9",
+          "report_digest": "sha256:af957ee1524b34aeb489624fdbd21dc2d120de5a1bcf603f9f14d3c60fed0605",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
-          "source_file_count": 240,
+          "source_file_count": 211,
           "source_files": [
             "tests/acceptance/test_authority_runtime_contract.py",
             "tests/architecture/test_agent_collaboration_boundaries.py",
@@ -178,20 +188,16 @@
             "tests/unit/test_agent_collaboration_application.py",
             "tests/unit/test_agent_collaboration_candidate_graph.py",
             "tests/unit/test_agent_collaboration_domain.py",
-            "tests/unit/test_agent_collaboration_migration.py",
             "tests/unit/test_agent_collaboration_pep.py",
             "tests/unit/test_agent_collaboration_scope.py",
             "tests/unit/test_agent_harness_server_policy.py",
             "tests/unit/test_agent_runtime_api_contract.py",
             "tests/unit/test_agent_runtime_contracts.py",
             "tests/unit/test_agent_runtime_definitions.py",
-            "tests/unit/test_agent_runtime_domain_commit_migration.py",
-            "tests/unit/test_agent_runtime_recovery_migration.py",
             "tests/unit/test_agent_session_capability_pack.py",
             "tests/unit/test_agent_taxonomy_convergence.py",
             "tests/unit/test_architecture_manifest.py",
             "tests/unit/test_artifact_lineage_contract.py",
-            "tests/unit/test_asset_scope_migration.py",
             "tests/unit/test_authoring_projections.py",
             "tests/unit/test_authority_api_surface.py",
             "tests/unit/test_authority_asset_locator.py",
@@ -203,8 +209,6 @@
             "tests/unit/test_backend_qualification_resources.py",
             "tests/unit/test_best_candidate_selection.py",
             "tests/unit/test_book_design_authority_domain.py",
-            "tests/unit/test_book_initial_narrative_state_migration.py",
-            "tests/unit/test_book_liveness_critical_path_migration.py",
             "tests/unit/test_book_liveness_domain.py",
             "tests/unit/test_book_opening.py",
             "tests/unit/test_book_opening_future_branch_resume.py",
@@ -212,11 +216,8 @@
             "tests/unit/test_book_opening_progress.py",
             "tests/unit/test_book_opening_progress_api.py",
             "tests/unit/test_book_opening_progress_cli.py",
-            "tests/unit/test_book_opening_recovery_closure_migration.py",
             "tests/unit/test_book_opening_runtime_job_policy.py",
-            "tests/unit/test_book_opening_semantic_runtime_hardening_migration.py",
             "tests/unit/test_book_opening_workflow.py",
-            "tests/unit/test_book_opening_workflow_nodes_migration.py",
             "tests/unit/test_book_production_authority.py",
             "tests/unit/test_book_production_composition.py",
             "tests/unit/test_book_production_domain.py",
@@ -230,14 +231,11 @@
             "tests/unit/test_canon_reextraction_policy.py",
             "tests/unit/test_canon_semantic_quality_authority.py",
             "tests/unit/test_canonical_longform_projector.py",
-            "tests/unit/test_canonical_longform_runtime_completion_migration.py",
-            "tests/unit/test_canonical_narrative_architecture_migration.py",
             "tests/unit/test_capability_pack_artifact_materialization.py",
             "tests/unit/test_capability_pack_authority_api.py",
             "tests/unit/test_capability_pack_authority_application.py",
             "tests/unit/test_capability_pack_authority_definitions.py",
             "tests/unit/test_capability_pack_authority_domain.py",
-            "tests/unit/test_capability_pack_authority_migration.py",
             "tests/unit/test_capability_pack_authority_query.py",
             "tests/unit/test_capability_pack_resolution_compiler.py",
             "tests/unit/test_capability_pack_runtime_binding.py",
@@ -267,16 +265,13 @@
             "tests/unit/test_context_authority_domain.py",
             "tests/unit/test_context_retrieval_v2.py",
             "tests/unit/test_core_os_characterization.py",
-            "tests/unit/test_corrective_action_terminal_lineage_migration.py",
             "tests/unit/test_creative_domain.py",
-            "tests/unit/test_creative_engineering_convergence_migration.py",
             "tests/unit/test_creative_generator_boundary.py",
             "tests/unit/test_d0_authority_definition.py",
             "tests/unit/test_d0_object_store_evidence.py",
             "tests/unit/test_d0_provider_qualification.py",
             "tests/unit/test_database_runtime.py",
             "tests/unit/test_deterministic_continuity_validator.py",
-            "tests/unit/test_development_gap_final_convergence_migration.py",
             "tests/unit/test_documentation_reality.py",
             "tests/unit/test_domain_execution_port.py",
             "tests/unit/test_ending_domain.py",
@@ -287,10 +282,9 @@
             "tests/unit/test_gateway_effect_unknown_outcome.py",
             "tests/unit/test_hierarchical_planning.py",
             "tests/unit/test_hierarchical_planning_upgrade_replay.py",
-            "tests/unit/test_hierarchy_closure_migration.py",
             "tests/unit/test_human_blind_protocol.py",
             "tests/unit/test_implementation_tree_identity.py",
-            "tests/unit/test_industrial_autonomous_novel_os_migration.py",
+            "tests/unit/test_instruction_surface.py",
             "tests/unit/test_integration_database_safety.py",
             "tests/unit/test_legacy_migration_cli.py",
             "tests/unit/test_legacy_migration_codecs.py",
@@ -299,8 +293,7 @@
             "tests/unit/test_legacy_migration_state_machine.py",
             "tests/unit/test_legacy_migration_validation.py",
             "tests/unit/test_longform_capability_pack_profiles.py",
-            "tests/unit/test_longform_correctness_closure_migration.py",
-            "tests/unit/test_longform_execution_migration.py",
+            "tests/unit/test_longform_execution_contract.py",
             "tests/unit/test_longform_narrative_contracts.py",
             "tests/unit/test_longform_semantic_domain.py",
             "tests/unit/test_minio_external_effect_adapter.py",
@@ -309,22 +302,16 @@
             "tests/unit/test_narrative_evaluation_context.py",
             "tests/unit/test_narrative_evaluation_replacement.py",
             "tests/unit/test_narrative_evaluation_replacement_gate.py",
-            "tests/unit/test_narrative_evaluator_codex_lineage_migration.py",
             "tests/unit/test_narrative_evolution_book_design.py",
-            "tests/unit/test_narrative_evolution_migration.py",
             "tests/unit/test_narrative_memory_and_hybrid_retrieval.py",
             "tests/unit/test_narrative_obligation_contract_v2.py",
             "tests/unit/test_narrative_realization.py",
             "tests/unit/test_narrative_runtime_convergence.py",
-            "tests/unit/test_narrative_runtime_migration.py",
             "tests/unit/test_narrative_search.py",
             "tests/unit/test_narrative_search_branch_registration.py",
             "tests/unit/test_narrative_state_contract_v2.py",
-            "tests/unit/test_narrative_state_migration_v2.py",
             "tests/unit/test_narrative_state_semantics_v2.py",
-            "tests/unit/test_p0_backend_qualification_repairs_migration.py",
             "tests/unit/test_plan_change_authority.py",
-            "tests/unit/test_post_merge_correctness_repair_migration.py",
             "tests/unit/test_postgres_migrations.py",
             "tests/unit/test_postgresql_authority_api_boundary.py",
             "tests/unit/test_postgresql_authority_cli_boundary.py",
@@ -337,10 +324,8 @@
             "tests/unit/test_production_execution_inventory.py",
             "tests/unit/test_production_execution_routing.py",
             "tests/unit/test_production_reachability.py",
-            "tests/unit/test_progressive_narrative_design_migration.py",
             "tests/unit/test_progressive_narrative_qualification.py",
             "tests/unit/test_project_authority_domain.py",
-            "tests/unit/test_project_authority_migration.py",
             "tests/unit/test_provider_adapter_v2.py",
             "tests/unit/test_provider_budget_scope.py",
             "tests/unit/test_provider_task_views.py",
@@ -348,17 +333,15 @@
             "tests/unit/test_quality_book_contract.py",
             "tests/unit/test_quality_calibration_v2.py",
             "tests/unit/test_quality_context_authority.py",
-            "tests/unit/test_quality_execution_migration.py",
+            "tests/unit/test_quality_execution_contract.py",
             "tests/unit/test_quality_longitudinal_evidence.py",
             "tests/unit/test_quality_qualification_api.py",
             "tests/unit/test_quality_qualification_domain.py",
-            "tests/unit/test_quality_qualification_migration.py",
             "tests/unit/test_reader_calibration.py",
             "tests/unit/test_reader_judge_authority.py",
             "tests/unit/test_reader_outcome_and_recap_domain.py",
             "tests/unit/test_reader_outcome_decision_policy.py",
             "tests/unit/test_release_run_evidence.py",
-            "tests/unit/test_runtime_hardening_migration.py",
             "tests/unit/test_runtime_job.py",
             "tests/unit/test_schemas.py",
             "tests/unit/test_short_longform_proof_evaluator.py",
@@ -368,10 +351,8 @@
             "tests/unit/test_source_deconstruction_domain.py",
             "tests/unit/test_source_import_domain.py",
             "tests/unit/test_source_import_git_adapter.py",
-            "tests/unit/test_source_import_runtime_migration.py",
             "tests/unit/test_source_import_worker_permissions.py",
             "tests/unit/test_source_intelligence_execution_contracts.py",
-            "tests/unit/test_source_intelligence_router_migration.py",
             "tests/unit/test_source_intelligence_routing.py",
             "tests/unit/test_stateful_canon_domain.py",
             "tests/unit/test_story_design_authority.py",
@@ -380,10 +361,10 @@
             "tests/unit/test_story_planning_runtime.py",
             "tests/unit/test_temporal_query_api.py",
             "tests/unit/test_temporal_query_domain.py",
+            "tests/unit/test_test_reality.py",
             "tests/unit/test_theme_domain.py",
             "tests/unit/test_typed_empty_state_snapshots.py",
             "tests/unit/test_unified_agent_harness.py",
-            "tests/unit/test_unified_agent_runtime_migration.py",
             "tests/unit/test_worker_fleet_evidence.py",
             "tests/unit/test_worker_health.py",
             "tests/unit/test_worker_health_readiness.py",
@@ -415,13 +396,13 @@
         ],
         "junit": {
           "artifact": "backend-pytest.xml",
-          "digest": "sha256:1d080c26519cdd0985147e3ddf1af49473d141f1750c63d17143077ab711aab1",
-          "duration_seconds": 62.076,
+          "digest": "sha256:d95b9556fe33839bfd70703e2c8210bf567d71c48f48f9dd34956a07d68bed18",
+          "duration_seconds": 72.569,
           "errors": 0,
           "failures": 0,
-          "passed": 3120,
+          "passed": 3029,
           "skipped": 0,
-          "tests": 3120
+          "tests": 3029
         },
         "schema_version": "novel-forge.backend-pytest-evidence.v1",
         "status": "PASS"
@@ -430,13 +411,13 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 3.003245,
+      "duration_seconds": 3.169485,
       "evidence": {
         "database_identity": {
-          "database_name": "nf_p0_44c3b3ee96b1423095e89634d46dfa10_test",
+          "database_name": "nf_p0_905b66bd9cbd470894636125e739e022_test",
           "host_class": "LOOPBACK",
-          "port": 55038,
-          "server_identity_digest": "sha256:bcd5066574ae80774658ee765a2d059bfd0b3b8ae95d9ecec643d808731806f8"
+          "port": 55046,
+          "server_identity_digest": "sha256:db51044831bfb4959f6d2e0c22836afb3658c5ffebb373bf314dc162835c5e39"
         },
         "dynamic_port": true,
         "ownership_resource_count": 2
@@ -445,7 +426,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 1.41572,
+      "duration_seconds": 1.445641,
       "evidence": {
         "applied_count": 105,
         "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -457,7 +438,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 81.59688,
+      "duration_seconds": 80.855862,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 13,
@@ -472,7 +453,7 @@
           "complete_collection": true,
           "name": "migration-compatibility",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:3f6382ffbc2a3407c432d5c5e9e501b1b988de105e0cd96dba098d2812691952",
+          "report_digest": "sha256:6de929f86072b25c52873a76135bc3f3760c1654b44472245ebcc202d4afa2a4",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
           "source_file_count": 9,
           "source_files": [
@@ -490,8 +471,8 @@
         "complete_collection": true,
         "junit": {
           "artifact": "migration-compatibility-pytest.xml",
-          "digest": "sha256:a72d70b79333ee8172025332d100ee76c3749aa70ca689391677d2e8b234cb99",
-          "duration_seconds": 81.234,
+          "digest": "sha256:2b9cb730ce75a5e466d07e675a2760527633ab510288806e04145d694fd6b6be",
+          "duration_seconds": 80.523,
           "errors": 0,
           "failures": 0,
           "passed": 80,
@@ -518,7 +499,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 1507.934204,
+      "duration_seconds": 1392.313335,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 82,
@@ -533,7 +514,7 @@
           "complete_collection": true,
           "name": "integration",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:b6cf252a81a73381ce35c52a37e53564d493188a0afa3a84859e8d9c12bf72bd",
+          "report_digest": "sha256:b8ea8b47b38a932175b88505e0e352e0345a41ef7bad3354e86db5b3ac99ec83",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
           "source_file_count": 92,
           "source_files": [
@@ -634,8 +615,8 @@
         "complete_collection": true,
         "junit": {
           "artifact": "postgresql-pytest.xml",
-          "digest": "sha256:7b68dad509c6646b83ce3c636cdb655d5d013d26754edc2d254fb100657a6c11",
-          "duration_seconds": 1507.162,
+          "digest": "sha256:d1b6c3f1db739ff348012e5960e2e461655d0adfd03804c9166d18cdf917ea96",
+          "duration_seconds": 1391.553,
           "errors": 0,
           "failures": 0,
           "passed": 581,
@@ -691,7 +672,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 0.01401,
+      "duration_seconds": 0.020114,
       "evidence": {
         "applied_count": 105,
         "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -703,10 +684,10 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 15.721161,
+      "duration_seconds": 17.302445,
       "evidence": {
         "artifact": "query-plan.json",
-        "digest": "sha256:e42bb7fecd8c21e6112cae0c0afdd565b1b7ae408c3373ecc364da519014f031",
+        "digest": "sha256:f75ef6b69da18c011667389dcf15ecbbfcbabd16460435805e4fac48b2c0e753",
         "plan_count": 6,
         "row_counts": {
           "authority_asset_version": 100000,
@@ -721,14 +702,14 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 66.807915,
+      "duration_seconds": 79.744231,
       "evidence": {
         "artifact": "compose-runtime.json",
         "authoritative_side_effect": true,
-        "digest": "sha256:164f5a877b2d6714fb7540bfda4bae9d7fd16cd3f6bed0161dec4e335ad608f1",
-        "post_restart_operation_id": "217455b5-4687-43d1-b6cb-4d3736ac2134",
-        "pre_restart_operation_id": "38850b76-7124-4a45-bd25-b3bf0e8f8c13",
-        "recovered_operation_id": "80d8d83f-f936-46db-8600-270246367373"
+        "digest": "sha256:679a607f37b550efa410d918403b7833ddefbcdb4979ef7074f78f0793327248",
+        "post_restart_operation_id": "c7b35c0b-3bfa-4bcd-b139-43c98a20ba9f",
+        "pre_restart_operation_id": "d428c0b9-9ccf-43e1-a9d8-d4c8b4b62a85",
+        "recovered_operation_id": "aae11e9a-bbed-41e6-82be-bd3bf6e4be65"
       },
       "gate_id": "compose-runtime",
       "status": "PASS"
@@ -738,21 +719,21 @@
       "evidence": {
         "phases": [
           {
-            "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10",
+            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022",
             "phase": "postgresql",
-            "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10.json",
+            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022.json",
             "remaining_resource_count": 0,
             "resource_count": 2,
-            "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+            "run_id": "p0-905b66bd9cbd470894636125e739e022",
             "status": "PASS"
           },
           {
-            "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime",
+            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022-runtime",
             "phase": "compose-runtime",
-            "receipt": "compose-resource-ownership-nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime.json",
+            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022-runtime.json",
             "remaining_resource_count": 0,
             "resource_count": 18,
-            "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10",
+            "run_id": "p0-905b66bd9cbd470894636125e739e022",
             "status": "PASS"
           }
         ],
@@ -765,15 +746,15 @@
     {
       "duration_seconds": 0.0,
       "evidence": {
-        "artifact": "p0-backend-qualification-652e252987725ef5e39733d76d1798437e3be7ba.json",
+        "artifact": "p0-backend-qualification-7cee62ddda40686d908871689be8c3cf889e4e2e.json",
         "atomic_write": true
       },
       "gate_id": "evidence-finalization",
       "status": "PASS"
     }
   ],
-  "generated_at": "2026-08-31T02:43:11+00:00",
-  "implementation_tree_sha": "sha256:7716fb98349d6dbf74b642fd22488fa54d59ef04216541eb7b4bf8130c7ad722",
+  "generated_at": "2026-08-31T15:58:33+00:00",
+  "implementation_tree_sha": "sha256:ce8a2805f1cfbbccaef1ff8f7c06ce6bbec92f7a6ca0813a6195c406fcd95382",
   "migration": {
     "expectation_source": "architecture/manifests/migration-manifest.yaml",
     "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -781,6 +762,7 @@
   },
   "qualification_manifest": {
     "manifest_digests": {
+      "architecture/manifests/ai-instruction-manifest.yaml": "sha256:c09ce58c51f85e50d174195964dae9261d4f843f9f892e364c1fe02d3918e30f",
       "architecture/manifests/backend-qualification-manifest.yaml": "sha256:62e0b73c7dd47793efc979c7b503689e8081388db432accdf76f273825b89f99",
       "architecture/manifests/console-script-manifest.yaml": "sha256:578e44fbe914d3fa7eeb792bd05ef50092db855bef4beecf92027c852006a37e",
       "architecture/manifests/fitness-policy.yaml": "sha256:b805699cd94030cb443b94aa81e6f3a8067d5072dffa77b6a07f759744355fa6",
@@ -788,7 +770,7 @@
       "architecture/manifests/migration-surface-manifest.yaml": "sha256:10cb8d490500ff2d885240790423af249f42cd0a1b096f13013a7c38b2ae94fe",
       "architecture/manifests/module-manifest.yaml": "sha256:b5a0124678e45c79c8d4e2b6c25f96c52753dc850d9566378239598a8b4265b5",
       "architecture/manifests/production-entry-manifest.yaml": "sha256:383cd6f3029e4008468858859048384a6e3cbabb1c4a706ccf397f54acc84297",
-      "architecture/manifests/test-manifest.yaml": "sha256:16effb38903cf988460ccf463fd7b6fe51e0ad7903521214ce83ae1a57641058",
+      "architecture/manifests/test-manifest.yaml": "sha256:ed67aa1cc115725ea6c998eb7402d0cd41256e0527f88f46fb92ae067fcb3648",
       "architecture/manifests/worker-manifest.yaml": "sha256:29bcdd78b2db97ba0c1d66939d590ca8d7b9504675fa99cfc41627aadddd0e6b"
     },
     "required_gates": [
@@ -809,23 +791,23 @@
     "schema_version": "novel-forge.backend-qualification-manifest.v1"
   },
   "run_identity": {
-    "artifact_root": "novel-forge-p0-652e25298772-44c3b3ee96b1423095e89634d46dfa10",
-    "compose_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10",
-    "compose_runtime_project": "nf-p0-44c3b3ee96b1423095e89634d46dfa10-runtime",
-    "database_name": "nf_p0_44c3b3ee96b1423095e89634d46dfa10_test",
+    "artifact_root": "novel-forge-p0-7cee62ddda40-905b66bd9cbd470894636125e739e022",
+    "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022",
+    "compose_runtime_project": "nf-p0-905b66bd9cbd470894636125e739e022-runtime",
+    "database_name": "nf_p0_905b66bd9cbd470894636125e739e022_test",
     "profile": "local",
-    "run_id": "p0-44c3b3ee96b1423095e89634d46dfa10"
+    "run_id": "p0-905b66bd9cbd470894636125e739e022"
   },
   "schema_version": "novel-forge.p0-backend-qualification-report.v1",
   "source_identity": {
-    "branch": "codex/wp-post-merge-reality-qualification-closure-01",
-    "commit_sha": "652e252987725ef5e39733d76d1798437e3be7ba",
+    "branch": "codex/wp-test-reality-reset-01",
+    "commit_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e",
     "dirty": false,
-    "implementation_tree_sha": "sha256:7716fb98349d6dbf74b642fd22488fa54d59ef04216541eb7b4bf8130c7ad722",
-    "source_tree": "20285e10d566e7ef8e76d43dd5b614be0dcbaa55",
+    "implementation_tree_sha": "sha256:ce8a2805f1cfbbccaef1ff8f7c06ce6bbec92f7a6ca0813a6195c406fcd95382",
+    "source_tree": "347a7a60992590bfb42c59b7b3bbd77a32c66734",
     "workflow_sha": ""
   },
-  "source_tree": "20285e10d566e7ef8e76d43dd5b614be0dcbaa55",
+  "source_tree": "347a7a60992590bfb42c59b7b3bbd77a32c66734",
   "status": "PASS",
-  "tested_sha": "652e252987725ef5e39733d76d1798437e3be7ba"
+  "tested_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e"
 }

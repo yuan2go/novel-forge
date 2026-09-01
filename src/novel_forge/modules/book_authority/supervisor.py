@@ -538,7 +538,7 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_ARC_WORKING_SET_MISSING",
                 "Chapter preparation requires the selected ArcPlan versions",
             )
-        # The Working Set chooses a bounded subset, while Planning Authority
+        # INVARIANT: The Working Set chooses a bounded subset, while Planning Authority
         # remains the owner of the immutable ArcPlan contracts.  Freeze those
         # exact selected versions into the existing production manifest so
         # Mission/Context and accepted evidence share one completion identity.
@@ -999,7 +999,7 @@ class PostgresBookProductionSupervisor:
         )
         if group:
             fixed["chapter_group_plan"] = group["asset_version_id"]
-            # Planning Authority accepts the frozen ChapterGroupPlan itself as
+            # INVARIANT: Planning Authority accepts the frozen ChapterGroupPlan itself as
             # the source for this role and validates/extracts the unique row
             # for the requested Chapter.  Reuse that exact Active version so a
             # stale standalone matrix asset can never outrank the current plan.

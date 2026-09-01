@@ -754,7 +754,7 @@ def resolve_book_opening_budget_scope_in_uow(
             "BOOK_OPENING_EXACT_BUDGET_BINDING_REQUIRED",
             "Opening execution binding has no owner identity",
         )
-    # Match BookOpening recovery's canonical owner-first lock order.  Taking
+    # INVARIANT: Match BookOpening recovery's canonical owner-first lock order.  Taking
     # Budget locks before the referenced Opening/runtime rows would allow the
     # binding FK to deadlock with recovery (Budget -> Opening versus
     # Opening -> Budget).
@@ -1866,7 +1866,7 @@ def assess_budget_scope_in_uow(
         token_headroom: int | None = None
         cost_headroom: Decimal | None = None
     elif mode == "DURABLE_RESULT_REPLAY":
-        # Re-projecting an immutable, already-paid Provider result performs no
+        # INVARIANT: Re-projecting an immutable, already-paid Provider result performs no
         # external call.  It still validates reservation/cost evidence and
         # therefore cannot bypass ambiguous or drifted Budget Authority.
         outcome = (

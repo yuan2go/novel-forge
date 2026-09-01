@@ -717,7 +717,7 @@ class _ContextHandler:
             "quality_rubric",
             "platform_profile",
         }
-        # These inputs are not prose-generation context, but once Preparation
+        # WHY: These inputs are not prose-generation context, but once Preparation
         # freezes them the downstream Quality/Publish nodes must consume the
         # exact evidence.  Protect them from draft-oriented token eviction;
         # Context rendering still keeps every one evidence-only.
@@ -1375,7 +1375,7 @@ class _QualityGroupHandler:
                         "target_asset_version_id": revision.asset_version_id,
                         "calibration_status": "PROVIDER_UNCALIBRATED",
                         "provider_verified": True,
-                        # Scripted Provider output is useful only for exercising
+                        # WHY: Scripted Provider output is useful only for exercising
                         # the internal protocol.  Quality Authority will turn a
                         # passing result into an explicit fixture waiver only
                         # when a separately persisted scoped approval exists.

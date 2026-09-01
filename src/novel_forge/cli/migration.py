@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
                 migration_run_id=args.migration_run_id,
                 limit=args.limit,
             )
-        else:  # argparse owns the command set
+        else:  # INVARIANT: argparse owns the closed command set.
             raise RuntimeError(f"unsupported migration command: {args.command}")
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
         return 0

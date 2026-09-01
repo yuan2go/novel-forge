@@ -608,7 +608,7 @@ def build_provider_context_view(
             omitted_facts += len(raw.get("structured_facts") or ())
             continue
         if stage.startswith("quality_"):
-            # QualityContext is already a bounded, dimension-specific projection.
+            # WHY: QualityContext is already a bounded, dimension-specific projection.
             # Rendering Context segments again would duplicate the same semantics.
             omitted_segments += 1
             omitted_facts += len(raw.get("structured_facts") or ())

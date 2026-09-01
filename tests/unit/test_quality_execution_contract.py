@@ -11,7 +11,7 @@ from novel_forge.modules.production_execution import (
 )
 
 
-class QualityExecutionMigrationTests(unittest.TestCase):
+class QualityExecutionContractTests(unittest.TestCase):
     def test_all_judge_families_use_governed_capabilities(self) -> None:
         expected = {
             "intrinsic": "quality.intrinsic.judge",

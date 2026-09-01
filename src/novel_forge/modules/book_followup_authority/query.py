@@ -357,7 +357,7 @@ class BookFollowupProjectionQuery:
         project_id: str,
         operation_id: str,
     ) -> dict[str, Any]:
-        # View and column names are private constants, never request data.
+        # SECURITY: view and column identifiers are constants, never request data.
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 f"""

@@ -312,7 +312,7 @@ def _canon_schema() -> dict[str, Any]:
     properties = {
         field: {
             "type": "array",
-            # Each semantic array owns its schema.  Sharing ``change`` here
+            # WHY: Each semantic array owns its schema.  Sharing ``change`` here
             # lets a field-specific refinement silently mutate every other
             # Canon change contract.
             "items": (
@@ -783,7 +783,7 @@ def validate_chapter_provider_output_against_schema(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
             f"stage {stage}: {exc}",
         ) from exc
-    # JSON round-tripping freezes a JSON-compatible copy for downstream semantics.
+    # COMPATIBILITY: JSON round-tripping freezes a JSON-compatible copy for downstream semantics.
     return json.loads(json.dumps(value, ensure_ascii=False))
 
 

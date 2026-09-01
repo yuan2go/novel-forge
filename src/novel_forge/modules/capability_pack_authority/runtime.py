@@ -70,7 +70,7 @@ class CapabilityPackRuntimeResolver:
     ) -> CapabilityPackExecutionSnapshot:
         with AuthorityUnitOfWork(self.database_url) as uow:
             snapshot = self.resolve_in_uow(uow, request)
-            uow.commit()  # a first-time canary assignment is an immutable fact
+            uow.commit()  # INVARIANT: a first canary assignment is immutable.
             return snapshot
 
     def resolve_binding_set(
@@ -978,9 +978,6 @@ def _validate_active_agent(
     agent_ref = str(node.get("agent_definition_ref") or "")
     agent_hash = str(node.get("agent_definition_hash") or "")
     if not agent_ref and not agent_hash:
-        # Most creative workflow nodes are typed Capabilities, not autonomous
-        # Agents.  Their operation/capability/policy bindings are still frozen
-        # in the Pack snapshot and governed by the durable workflow.
         return
     if not agent_ref or not agent_hash:
         raise KernelError(

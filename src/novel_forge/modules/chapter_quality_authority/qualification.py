@@ -411,7 +411,7 @@ def decide_quality_qualification(
         status = QualificationStatus.FAIL
         lifecycle = CampaignLifecycle.FAILED
     elif not evaluators:
-        # Closing collection is meaningful only after at least one valid human
+        # WHY: Closing collection is meaningful only after at least one valid human
         # evaluation exists. Zero-human campaigns remain explicitly waiting;
         # an operator flag cannot manufacture subjective evidence.
         status = QualificationStatus.NOT_PROVEN

@@ -88,9 +88,8 @@ def validate_chapter_execution_intent(
             "CHAPTER_MISSION_REALIZATION_INVALID",
             "ExecutionIntent realization evidence must be an object",
         )
-    # Direct/manual Chapter operations remain replay compatible. Canonical
-    # resolved Book production admits only non-empty exact realization slices
-    # at its Planning and Book Authority boundaries.
+    # COMPATIBILITY: direct Chapter operations replay, while resolved Book
+    # production requires non-empty exact realization slices.
     if realization and (
         int(realization.get("chapter_number") or 0)
         != int(normalized.get("chapter") or 0)

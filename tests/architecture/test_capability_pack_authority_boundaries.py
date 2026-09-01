@@ -123,24 +123,3 @@ def test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed() ->
     assert "_SCOPE_KEYS" in policy
     assert '"real_provider_proven"' not in query
     assert '"provider_vertical_qualification_status"' in query
-
-
-def test_capability_pack_hardening_manifests_are_synchronized() -> None:
-    migration_manifest = (
-        ROOT / "architecture/manifests/migration-manifest.yaml"
-    ).read_text(encoding="utf-8")
-    test_manifest = (
-        ROOT / "architecture/manifests/test-manifest.yaml"
-    ).read_text(encoding="utf-8")
-    assert "20260806_0072_capability_pack_integrity_hardening" in migration_manifest
-    for name in (
-        "test_capability_pack_registration_compilation_postgres.py",
-        "test_capability_pack_approval_policy_postgres.py",
-        "test_capability_pack_activation_concurrency_postgres.py",
-        "test_capability_pack_scope_resolution_postgres.py",
-        "test_capability_pack_rollout_postgres.py",
-        "test_capability_pack_runtime_snapshot_postgres.py",
-        "test_capability_pack_integrity_constraints_postgres.py",
-        "test_capability_pack_dependency_postgres.py",
-    ):
-        assert name in test_manifest

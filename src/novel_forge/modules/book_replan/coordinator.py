@@ -1425,11 +1425,9 @@ class BookReplanCoordinator:
         elif approved_scope == "CHAPTER_GROUP":
             group_plan_id = replacement_id
 
-        # A Replan may replace only future Intent.  ChapterPlan is operational
-        # and cannot be regenerated until the replacement ChapterGroup has
-        # produced a newly qualified and frozen causal realization against the
-        # latest accepted boundary.  The Book Supervisor owns that existing
-        # just-in-time path after the replacement snapshot is bound.
+        # INVARIANT: replanning replaces future Intent only; a ChapterPlan cannot
+        # regenerate before the replacement group freezes a qualified realization
+        # against the latest accepted boundary.
         return group_plan_id
 
     def _transitive_arc_relation_dependents(

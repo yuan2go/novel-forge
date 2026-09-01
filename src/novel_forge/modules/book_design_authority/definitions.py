@@ -78,13 +78,13 @@ def book_design_definitions(
                 "handler_contract_version": "book-design-authority-handler-v1",
                 "application_build_id": application_build_id,
                 "commit_sha": commit_sha,
-                # Command Kernel persists this field as ``transactional``;
+                # WHY: Command Kernel persists this field as ``transactional``;
                 # policy retains the domain scheduling classification.
                 "execution_mode": "transactional",
                 "permissions": ["book_design.authority.execute"],
                 "approval_policy": {"required": False, "policy_key": "domain-decision-record"},
                 "idempotency_scope": "book:design",
-                # Admission exposes project/workspace at the envelope level;
+                # WHY: Admission exposes project/workspace at the envelope level;
                 # one workspace is authoritatively bound to one Book.
                 "concurrency_key_template": "book-workspace:{workspace_id}:design",
                 "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},

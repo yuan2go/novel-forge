@@ -590,7 +590,7 @@ def _evaluate(
                     f"{dimension} waiver lacks a current scoped approval",
                 )
         elif fixture and status == "PASSED_WITH_UNCALIBRATED":
-            # A fixture Provider result remains non-production evidence.  It
+            # WHY: A fixture Provider result remains non-production evidence.  It
             # may close an internal corrective loop only through the exact,
             # frozen operator waiver; a failed result is never converted.
             waiver = _approved_fixture_waiver(
@@ -726,7 +726,7 @@ def _evaluate(
             fixture=fixture,
             profile_ids=profile_ids,
         )
-    # Profile existence is deterministic; profile-specific compliance is not.
+    # WHY: Profile existence is deterministic; profile-specific compliance is not.
     if group == "platform" and not profile_ids["platform_profile_version_id"]:
         status = "INSUFFICIENT_EVIDENCE"
     elif group in {"commercial", "source_originality"}:

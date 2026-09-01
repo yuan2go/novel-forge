@@ -34,7 +34,7 @@ SEMANTIC_CHANGE_FIELDS = {
     "disclosure_events": "disclosure_event",
 }
 
-# Provider response keys are an extraction API, not Narrative State identity.
+# WHY: Provider response keys are an extraction API, not Narrative State identity.
 # Keep this translation explicit so the Canon proposal can use the shared v2
 # state-kind vocabulary without silently changing the provider boundary.
 PROVIDER_SEMANTIC_CHANGE_FIELDS = {
@@ -123,7 +123,7 @@ def extract_canon_candidates(
         if isinstance(item, dict)
     ]
     assertions = list(revision.get("canon_assertions", []))
-    # Every accepted chapter has a deterministic event assertion, so a real-provider
+    # WHY: Every accepted chapter has a deterministic event assertion, so a real-provider
     # path never silently produces an empty Canon update when optional structured
     # assertions are absent.
     assertions.append(
@@ -973,7 +973,7 @@ def _deterministic_identity_pronoun_conflicts(
         for alias in aliases:
             owner = alias_owners.get(alias)
             if owner is not None and owner != character_id:
-                # Ambiguous aliases are deliberately excluded instead of guessed.
+                # WHY: Ambiguous aliases are deliberately excluded instead of guessed.
                 alias_owners[alias] = ""
             else:
                 alias_owners[alias] = character_id
@@ -1236,7 +1236,7 @@ def _validate_planned_execution(
                 _current_state_value(accepted) == expected_from
                 for accepted in accepted_candidates
             )
-            # The frozen execution plan owns the compare-and-set precondition.
+            # INVARIANT: The frozen execution plan owns the compare-and-set precondition.
             # Provider extraction may repeat that precondition, but does not need
             # to duplicate it when the exact accepted baseline is already bound.
             # A repeated value must still agree, so extraction cannot override
@@ -1349,7 +1349,7 @@ _HISTORICAL_STATE_KIND = {
 
 
 def _candidate_entity_keys(state_kind: str, item: dict[str, Any]) -> set[str]:
-    # Provider extraction schemas expose ``entity_id`` as the stable generic
+    # WHY: Provider extraction schemas expose ``entity_id`` as the stable generic
     # identity for state kinds whose domain-specific aliases vary.  Treat it as
     # an exact Authority identity before constructing composite aliases; this
     # keeps Chapter execution reconciliation aligned with the planner's frozen

@@ -491,12 +491,12 @@ def main() -> int:
                             {"code": type(exc).__name__},
                         )
                     except Exception:
-                        # A concurrent higher fence owns recovery now.
+                        # INVARIANT: A concurrent higher fence owns recovery now.
                         pass
                     supervisor.operation_finished(claim.outbox_id, succeeded=False)
                 else:
                     supervisor.operation_finished(claim.outbox_id, succeeded=True)
-            supervisor.batch_completed(range(failures))  # only the count is observed
+            supervisor.batch_completed(range(failures))  # WHY: only the count is observed
         supervisor.draining()
         supervisor.stopped()
         return 0

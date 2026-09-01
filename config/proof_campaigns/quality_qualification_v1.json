@@ -115,10 +115,10 @@
     "skills/chapter-outline/SKILL.md": "sha256:fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
     "skills/reader-feedback/SKILL.md": "sha256:4e050589d442a819970144f6b699aaf65bb306022851b840e1ac07a4594530bc",
     "skills/context-builder-source-isolation/SKILL.md": "sha256:4dee8e12705105d94b23199a6816068a10fec22e27e5a698d201c691fce316aa",
-    "src/novel_forge/modules/chapter_authority/provider_output_contracts.py": "sha256:ae435760d6f253edf82a710f613307ca2400f7ab236e1a170c995bb7e5e30645",
-    "src/novel_forge/modules/story_planning_runtime/execution.py": "sha256:523b11c37ecd12859033408d1a8d347b0e1756b403f922e90be2779765de023e",
+    "src/novel_forge/modules/chapter_authority/provider_output_contracts.py": "sha256:9fd5e5e7673b0d9899cfe3e5a98b4ebea2a1782e469a2c025330af18aced4faa",
+    "src/novel_forge/modules/story_planning_runtime/execution.py": "sha256:c342e8ef23ee341a346398329539d3d06f3a13e6a7979461bc713de692e65340",
     "config/capability_packs/artifacts/story_planning_system_instruction.md": "sha256:67ed369708c4726ac0b8a25ba25c10a6b3a02c20ce8b8a1260cab48309c010dd",
-    "src/novel_forge/modules/chapter_authority/execution_gateway.py": "sha256:c0629bff520bbea44be82a1c3083d34f939974ecd50caaa72d2f7c3a577da05f",
+    "src/novel_forge/modules/chapter_authority/execution_gateway.py": "sha256:6b6081ef6b66ebac78e3fc15c3aea2517ad736f32d330fd5c0dc594f0f028eee",
     "src/novel_forge/modules/book_followup_authority/handlers.py": "sha256:7d1022133ac05902c38521266ef9df4becd3396766e0c32220680fcee3b507b9"
   },
   "profiles": {

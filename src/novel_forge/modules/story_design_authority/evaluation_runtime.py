@@ -100,7 +100,7 @@ def classify_narrative_evaluation_external_effects(
         if row.get("dispatch_id") is not None
     ]
     if "" in dispatch_ids or len(dispatch_ids) != len(set(dispatch_ids)):
-        # One classifier row per dispatch is the cardinality contract.  A
+        # INVARIANT: one classifier row per dispatch is the cardinality contract. A
         # repeated dispatch means multiple receipts (or otherwise duplicated
         # durable evidence) and must never be collapsed into apparent success.
         return NarrativeEvaluationExternalEffectDisposition.UNKNOWN_AMBIGUOUS
@@ -190,7 +190,7 @@ def _evaluation_command_payload_matches(
     def normalized(value: Mapping[str, Any]) -> dict[str, Any]:
         result = dict(value)
         payload = dict(result.get("payload") or {})
-        # Pre-fence commands represent only the unbound empty snapshot;
+        # INVARIANT: pre-fence commands represent only the unbound empty snapshot;
         # a non-empty server-derived Opening fence must still match exactly.
         payload.setdefault("opening_execution_binding", {})
         result["payload"] = payload
@@ -902,9 +902,8 @@ class NarrativeSemanticEvaluationApplication:
                 "Narrative Evaluation requires PostgreSQL and build identity"
             )
         self.database_url = database_url
-        # This is one shared production worker, even when Book Design and Story
-        # Planning call it through different application compositions. Its
-        # release identity must not depend on which caller registers first.
+        # INVARIANT: the shared worker release identity cannot depend on which
+        # application composition registers first.
         self.application_build_id = NARRATIVE_EVALUATION_APPLICATION_BUILD_ID
         self.commit_sha = commit_sha
         self.worker_id = worker_id
@@ -922,7 +921,7 @@ class NarrativeSemanticEvaluationApplication:
         principal: Principal,
         caller_permission: str,
     ) -> NarrativeSemanticEvaluationResult:
-        del caller_permission  # evaluator identity is governed by its own permission
+        del caller_permission
         principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError(
@@ -1190,7 +1189,7 @@ class NarrativeSemanticEvaluationApplication:
                     "replayed": True,
                 }
 
-            # Re-read candidate eligibility while holding the per-candidate
+            # INVARIANT: candidate eligibility is re-read under the per-candidate
             # transaction lock. Operation admission and the generation-1 head
             # are one commit boundary, so no operation-only orphan is created.
             self._require_candidate_in_uow(claim_uow, command)
@@ -1979,9 +1978,8 @@ class NarrativeSemanticEvaluationApplication:
             )
         project_id = str(execution["project_id"])
         candidate_id = str(execution["candidate_asset_version_id"])
-        # The BookOpening coordinator already holds the exact owner/runtime
-        # rows and its bound BudgetScope.  Semantic locks therefore remain
-        # strictly after the canonical Opening -> Runtime -> Budget prefix.
+        # INVARIANT: semantic locks follow the held Opening -> Runtime -> Budget
+        # lock prefix.
         self._lock_candidate(
             uow,
             project_id=project_id,

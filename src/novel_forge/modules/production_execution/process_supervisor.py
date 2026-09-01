@@ -15,7 +15,7 @@ from threading import Lock
 import time
 from typing import Any, Mapping, Protocol
 
-try:  # POSIX is the supported local CLI runtime; the fallback preserves importability.
+try:  # COMPATIBILITY: non-POSIX hosts must retain importability.
     import fcntl
 except ImportError:  # pragma: no cover - non-POSIX fallback
     fcntl = None  # type: ignore[assignment]
@@ -779,7 +779,7 @@ class CodexProcessSupervisor:
                             {"elapsed_ms": int(elapsed * 1000), "usage_source": "process_poll"},
                             elapsed_ms=int(elapsed * 1000),
                         )
-                    except Exception as exc:  # the provider controller owns the guard exception type
+                    except Exception as exc:  # INVARIANT: the provider controller owns guard exception typing.
                         control_failure = exc
                         cancelled = str(getattr(controller, "status", "")) == "cancelled"
                         termination_status = ProcessReceiptStatus.CANCELLED if cancelled else ProcessReceiptStatus.FAILED
@@ -1020,8 +1020,8 @@ class CodexProcessSupervisor:
         current_start = self.identity_probe.process_start_token(receipt.supervisor_pid)
         if current_start:
             return current_start == receipt.supervisor_process_start_token
-        # The PID is only used as a short-lived liveness hint here; it is never
-        # signaled without a verifiable child-process identity.
+        # SECURITY: a PID is only a liveness hint and never authorizes signaling
+        # without a verifiable child-process identity.
         return True
 
     def _await_existing(self, request: ProcessLaunchRequest) -> SupervisedProcessResult:
@@ -1068,7 +1068,7 @@ class CodexProcessSupervisor:
         termination_signal: str | None = None
         signal_allowed = False
         layout = self.execution_directory.prepare(execution_id)
-        # Signaling and its CANCELLED receipt form one serialized boundary.  A
+        # INVARIANT: signaling and its CANCELLED receipt are one serialized boundary. A
         # run thread that observes the signal-induced exit must not classify the
         # same process as FAILED before the cancellation fact is durable.
         with self.execution_directory.exclusive(layout):

@@ -1,0 +1,76 @@
+{
+  "schema_version": "novel-forge.ai-instruction-surface.v1",
+  "sources": [
+    {
+      "id": "coding-agent-policy",
+      "patterns": ["AGENTS.md", "CLAUDE.md"],
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "consumer": "coding-agent",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "runtime-skills",
+      "patterns": ["skills/*/SKILL.md"],
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "consumer": "coding-agent-and-agent-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "capability-pack-prompts",
+      "patterns": ["config/capability_packs/artifacts/*.md"],
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "capability-pack-instruction-bindings",
+      "patterns": ["config/capability_packs/*_pack.json"],
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "quality-proof-instruction-binding",
+      "patterns": ["config/proof_campaigns/quality_qualification_v1.json"],
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "quality-qualification",
+      "consumer": "bounded-quality-qualification",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "runtime-embedded-instructions",
+      "patterns": [
+        "src/novel_forge/modules/provider_qualification/runner.py",
+        "src/novel_forge/modules/source_authority/deconstruction.py",
+        "src/novel_forge/modules/source_import/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/execution.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "admin-embedded-instructions",
+      "patterns": [
+        "web/admin/app/features/editor/EditorPage.tsx",
+        "web/admin/app/features/evaluation/api.ts"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "admin-runtime",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    }
+  ],
+  "generated_copies": [
+    {
+      "source": "skills",
+      "target": ".claude/skills",
+      "generator": "scripts/sync_claude_skills.py"
+    }
+  ]
+}

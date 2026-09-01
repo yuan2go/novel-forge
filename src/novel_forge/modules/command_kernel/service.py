@@ -73,7 +73,7 @@ def execute_transaction_command(
             str(command["definition_name"]),
             str(command["definition_version"]),
         )
-        if definition is None:  # admission already proves this; fail closed on drift
+        if definition is None:  # INVARIANT: admission already proves this; fail closed on drift
             raise KernelError(
                 "OPERATION_DEFINITION_NOT_FOUND",
                 "transaction command definition disappeared during execution",

@@ -57,8 +57,6 @@ MODEL_CAPABILITY_STAGES = frozenset(
         "retrieval",
     }
 )
-# Migration-only adapter surface. Normal Chapter composition does not install
-# a Chapter Agent Binding Recorder; these are Typed Capabilities.
 LEGACY_AGENT_BOUND_MODEL_STAGES = MODEL_CAPABILITY_STAGES
 
 
@@ -769,7 +767,7 @@ class ExternalEffectChapterModelPort:
                     "external_effect_id": str(effect["external_effect_id"]),
                     "_production_execution": {
                         **effect_request_payload["_production_execution"],
-                        # ExternalEffect keeps its original execution identity.
+                        # WHY: ExternalEffect keeps its original execution identity.
                         # Snapshot admission instead uses the worker that holds
                         # the Attempt lease now, including after takeover.
                         "snapshot_fencing_token": request.fencing_token,
@@ -789,7 +787,7 @@ class ExternalEffectChapterModelPort:
                 "production Chapter model node has no Agent Binding recorder",
             )
         else:
-            # Explicit development compatibility path; never a silent fallback.
+            # COMPATIBILITY: the development path is explicit, never a fallback.
             recorder = self.agent_binding_recorder
             if recorder is not None:
                 recorder.record_compatibility_usage(request, stage=stage)
@@ -1111,8 +1109,7 @@ class ExternalEffectChapterModelPort:
                 "CHAPTER_PROVIDER_TIMEOUT_POLICY_INVALID",
                 "controlled Chapter execution requires a frozen Operation timeout",
             )
-        # Explicit compatibility path for development fixtures admitted before
-        # controlled Chapter definitions were required.
+        # COMPATIBILITY: explicitly admitted development fixtures retain this path.
         return self.lease_seconds * 5
 
     def _execution_identity(

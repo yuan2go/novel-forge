@@ -263,9 +263,8 @@ class ProductionPreparationService:
             )
             return ProductionPreparationResult(report=report, command=None)
 
-        # Governance and approval assets are frozen with the command as evidence-only
-        # Context segments.  This keeps Manifest == frozen inputs == Context lineage
-        # without exposing their content to the model-facing rendered view.
+        # INVARIANT: evidence-only governance assets remain in frozen Context lineage
+        # without exposing their content to the model-facing view.
         candidates = tuple(
             self._context_candidate(
                 item,
@@ -496,9 +495,8 @@ class ProductionPreparationService:
                 if evidence_only
                 else str(item.content.get("allowed_use") or "generation")
             ),
-            # Source governance use mode and model rendering use are separate.
-            # Evidence-only project assets are eligible to be frozen/segmented,
-            # while the Context View renderer still excludes their expression.
+            # INVARIANT: source governance and model rendering are separate;
+            # evidence-only assets freeze into lineage but not rendered expression.
             "source_use_mode": str(item.content.get("source_use_mode") or "generation"),
             "entity_id": str(item.content.get("entity_id") or ""),
             "scope": dict(item.content.get("scope") or {}),

@@ -12,9 +12,6 @@ concurrency:
 env:
   PYTHONPATH: src
 
-# This is the sole authoritative backend qualification check. The Admin UI is
-# intentionally outside this work package and remains DEFERRED / NOT_RUN_BY_SCOPE.
-# Every gate and artifact is recomputed from the exact checked-out revision.
 jobs:
   backend-qualification:
     name: P0 Backend Qualification
@@ -26,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -44,7 +41,3 @@ jobs:
           path: /tmp/novel-forge-p0/**
           if-no-files-found: error
           retention-days: 30
-
-# Real Provider, historical orphan mutation, 8-Chapter, human review,
-# long-form, multibook, production, and the current Admin UI are intentionally
-# absent. Their evidence ceilings are encoded in the qualification report.
