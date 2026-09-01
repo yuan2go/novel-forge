@@ -643,6 +643,11 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     execution_result = dict(production.get("execution_result") or {})
     route_snapshot = dict(production.get("route_snapshot") or {})
     capability_runtime = dict(provider_evidence.get("capability_runtime") or {})
+    system_instruction = dict(
+        capability_runtime.get("system_instruction") or {}
+    )
+    prompt_template = dict(capability_runtime.get("prompt_template") or {})
+    skill = dict(capability_runtime.get("skill") or {})
     provider_request_identity = str(
         execution_handle.get("provider_request_id")
         or execution_handle.get("external_request_id")
@@ -692,15 +697,13 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "route_snapshot_id": str(route_snapshot["route_snapshot_id"]),
             "route_snapshot_hash": request_hash(route_snapshot),
             "prompt_version": str(provider_evidence["prompt_version"]),
-            "prompt_hash": str(capability_runtime["prompt_template_hash"]),
+            "prompt_hash": str(prompt_template["content_hash"]),
             "instruction_version": (
                 str(provider_evidence["prompt_version"]) + ":system"
             ),
-            "instruction_hash": str(
-                capability_runtime["prompt_system_instruction_hash"]
-            ),
+            "instruction_hash": str(system_instruction["content_hash"]),
             "skill_version": str(provider_evidence["skill_version"]),
-            "skill_hash": str(capability_runtime["skill_content_hash"]),
+            "skill_hash": str(skill["content_hash"]),
             "request_hash": str(effect["request_hash"]),
             "response_hash": request_hash(provider_evidence),
             "provider_execution_id": str(execution_request["execution_id"]),

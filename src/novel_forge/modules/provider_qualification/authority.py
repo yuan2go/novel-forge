@@ -655,19 +655,27 @@ class D0QualificationAuthority:
         capability_runtime = provider_evidence.get("capability_runtime")
         if not isinstance(capability_runtime, Mapping):
             raise ValueError("live Provider prompt and Skill identity is missing")
+        system_instruction = capability_runtime.get("system_instruction")
+        prompt_template = capability_runtime.get("prompt_template")
+        skill = capability_runtime.get("skill")
+        if any(
+            not isinstance(value, Mapping)
+            for value in (system_instruction, prompt_template, skill)
+        ):
+            raise ValueError("live Provider prompt and Skill artifacts are missing")
+        assert isinstance(system_instruction, Mapping)
+        assert isinstance(prompt_template, Mapping)
+        assert isinstance(skill, Mapping)
         if (
             str(provider_evidence.get("prompt_version") or "")
             != evidence.prompt_version
             or str(provider_evidence.get("skill_version") or "")
             != evidence.skill_version
-            or str(capability_runtime.get("prompt_template_hash") or "")
+            or str(prompt_template.get("content_hash") or "")
             != evidence.prompt_hash
-            or str(
-                capability_runtime.get("prompt_system_instruction_hash") or ""
-            )
+            or str(system_instruction.get("content_hash") or "")
             != evidence.instruction_hash
-            or str(capability_runtime.get("skill_content_hash") or "")
-            != evidence.skill_hash
+            or str(skill.get("content_hash") or "") != evidence.skill_hash
         ):
             raise ValueError("live Provider prompt or Skill identity drifted")
         if (

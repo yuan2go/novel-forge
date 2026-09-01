@@ -293,9 +293,9 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             "cost": cost,
             "latency": {"duration_ms": 42},
             "capability_runtime": {
-                "prompt_system_instruction_hash": instruction_hash,
-                "prompt_template_hash": prompt_hash,
-                "skill_content_hash": skill_hash,
+                "system_instruction": {"content_hash": instruction_hash},
+                "prompt_template": {"content_hash": prompt_hash},
+                "skill": {"content_hash": skill_hash},
             },
             "production_execution": {
                 "execution_request": {
