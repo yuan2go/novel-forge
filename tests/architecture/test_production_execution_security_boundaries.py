@@ -22,6 +22,7 @@ from novel_forge.modules.production_execution.security import (
     LegacyUsageEvent,
     assert_legacy_execution_allowed,
     assert_no_inline_secrets,
+    redact_secret_text,
 )
 
 
@@ -44,11 +45,24 @@ class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
             {"header": "Bearer abcdefghijklmnop"},
             {"instruction": "api_key=abcdefghijklmnop"},
             {"private": "-----BEGIN PRIVATE KEY-----"},
+            {"database": "postgresql://operator:secret-value@db/runtime"},
         )
         for payload in unsafe_payloads:
             with self.subTest(payload=payload):
                 with self.assertRaisesRegex(ValueError, "inline secret material"):
                     assert_no_inline_secrets(payload)
+
+    def test_failure_text_redacts_connection_and_credential_material(self) -> None:
+        raw = (
+            "connection failed for postgresql://operator:database-secret@db/runtime "
+            "with api_key=provider-secret-value"
+        )
+
+        redacted = redact_secret_text(raw)
+
+        self.assertNotIn("database-secret", redacted)
+        self.assertNotIn("provider-secret-value", redacted)
+        self.assertIn("[REDACTED", redacted)
 
     def test_contract_hash_and_evidence_persistence_reject_secrets(self) -> None:
         route = RouteSnapshot(

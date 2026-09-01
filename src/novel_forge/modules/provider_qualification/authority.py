@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime
 import importlib.metadata
 from typing import Any, Mapping, Protocol
 from uuid import uuid4
@@ -56,6 +57,10 @@ class D0QualificationCommand:
     trace_id: str
     correlation_id: str
     config: D0ProbeConfig
+    resolved_model: str = ""
+    resolved_model_version: str = ""
+    resolved_auth_profile_ref: str = ""
+    implementation_identity: str = ""
 
 
 class D0QualificationAuthority:
@@ -66,12 +71,14 @@ class D0QualificationAuthority:
         evidence_store: D0EvidenceStore,
         application_build_id: str,
         commit_sha: str,
+        implementation_identity: str = "",
         worker_id: str = "integration-worker:d0",
     ) -> None:
         self.database_url = database_url
         self.evidence_store = evidence_store
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
+        self.implementation_identity = implementation_identity
         self.worker_id = worker_id
 
     def admit(self, command: D0QualificationCommand) -> dict[str, Any]:
@@ -107,6 +114,12 @@ class D0QualificationAuthority:
                     "project_id": command.project_id,
                     "workspace_id": command.workspace_id,
                     "config": asdict(command.config),
+                    "resolved_live_identity": {
+                        "model": command.resolved_model,
+                        "model_version": command.resolved_model_version,
+                        "auth_profile_ref": command.resolved_auth_profile_ref,
+                        "implementation_identity": command.implementation_identity,
+                    },
                 },
                 "input_assets": [],
             },
@@ -235,7 +248,10 @@ class D0QualificationAuthority:
             "fixture_protocol_only": False,
             "gates": {name: True for name in D0_GATE_NAMES},
             "scenarios": scenarios,
-            "duplicate_external_effect_count": 0,
+            "provider_execution_count": provider["provider_execution_count"],
+            "duplicate_external_effect_count": provider[
+                "duplicate_external_effect_count"
+            ],
             "non_claims": {
                 "provider_billed_cost": bool(
                     evidence.cost.get("provider_billed") is True
@@ -247,6 +263,7 @@ class D0QualificationAuthority:
                 "production": False,
             },
         }
+        assert_no_inline_secrets(report, label="D0 Provider qualification report")
         report_asset = self._materialize_report(
             operation_id,
             command,
@@ -276,6 +293,10 @@ class D0QualificationAuthority:
             "qualification_run_id": qualification_run_id,
             "report_asset_version_id": report_asset.asset_version_id,
             "status": "PASSED",
+            "provider_execution_count": provider["provider_execution_count"],
+            "duplicate_external_effect_count": provider[
+                "duplicate_external_effect_count"
+            ],
         }
         submit_attempt_result(
             self.database_url,
@@ -497,8 +518,39 @@ class D0QualificationAuthority:
     ) -> dict[str, Any]:
         if evidence.release_sha != self.commit_sha:
             raise ValueError("live Provider evidence belongs to another release SHA")
-        if evidence.provider != command.config.provider:
+        config = command.config
+        if (
+            not self.implementation_identity
+            or command.implementation_identity != self.implementation_identity
+            or evidence.implementation_identity != self.implementation_identity
+        ):
+            raise ValueError("live Provider implementation identity drifted")
+        if (
+            evidence.provider != config.provider
+            or evidence.backend_id != config.backend_id
+            or evidence.model != command.resolved_model
+            or evidence.model_version != command.resolved_model_version
+            or evidence.auth_profile_ref != command.resolved_auth_profile_ref
+        ):
             raise ValueError("live Provider evidence differs from the D0 route")
+        expected_instruction_version = config.instruction_version
+        if (
+            not all(
+                (
+                    config.prompt_hash,
+                    expected_instruction_version,
+                    config.instruction_hash,
+                    config.skill_hash,
+                )
+            )
+            or evidence.prompt_version != config.prompt_version
+            or evidence.prompt_hash != config.prompt_hash
+            or evidence.instruction_version != expected_instruction_version
+            or evidence.instruction_hash != config.instruction_hash
+            or evidence.skill_version != config.skill_version
+            or evidence.skill_hash != config.skill_hash
+        ):
+            raise ValueError("live Provider instruction identity differs from D0 config")
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -506,7 +558,8 @@ class D0QualificationAuthority:
                        effect.request_hash,effect.model_id,effect.capability,
                        effect.provider,effect.provider_control_level,
                        effect.provider_capability_profile,effect.request_payload,
-                       dispatch.status
+                       effect.request_timeout_seconds,dispatch.status,
+                       dispatch.evidence
                 FROM authority_external_effect AS effect
                 JOIN authority_external_effect_dispatch AS dispatch
                   ON dispatch.external_effect_id=effect.external_effect_id
@@ -527,6 +580,20 @@ class D0QualificationAuthority:
                 [evidence.external_effect_id],
             )
             receipt_count, receipt_payload = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT COUNT(DISTINCT NULLIF(
+                    receipt.payload#>>'{evidence,production_execution,execution_request,execution_id}',
+                    ''
+                ))::int
+                FROM authority_external_receipt AS receipt
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.dispatch_id=receipt.dispatch_id
+                WHERE dispatch.external_effect_id=%s
+                """,
+                [evidence.external_effect_id],
+            )
+            provider_execution_count = int(uow.cursor.fetchone()[0])
             uow.cursor.execute(
                 """
                 SELECT COUNT(*)::int
@@ -558,7 +625,9 @@ class D0QualificationAuthority:
             control_level,
             raw_profile,
             request_payload,
+            request_timeout_seconds,
             dispatch_status,
+            dispatch_evidence,
         ) = row
         if (
             str(source_operation_id) != evidence.source_operation_id
@@ -568,11 +637,24 @@ class D0QualificationAuthority:
         if (
             str(effect_status) != "SUCCEEDED"
             or str(dispatch_status) != "SUCCEEDED"
-            or dispatch_count != evidence.dispatch_count
-            or int(receipt_count) != evidence.receipt_count
+            or dispatch_count != 1
+            or int(receipt_count) != 1
+            or provider_execution_count != 1
             or reconciliation_count != 1
         ):
             raise ValueError("live Provider effect did not reconcile exactly once")
+        persisted_failure = dict(dispatch_evidence or {})
+        if (
+            persisted_failure.get("failure_kind") != "response_loss"
+            or persisted_failure.get("request_sent") is not True
+            or evidence.controlled_failure
+            != {
+                "checkpoint": "after_provider_response_before_effect_receipt",
+                "failure_kind": "response_loss",
+                "request_sent": True,
+            }
+        ):
+            raise ValueError("live Provider response-loss boundary is not durable")
         profile = dict(raw_profile or {})
         if (
             str(effect_provider) != "production_execution_gateway"
@@ -588,6 +670,7 @@ class D0QualificationAuthority:
             str(effect_request_hash) != evidence.request_hash
             or str(model_id) != evidence.model
             or str(capability) != command.config.capability
+            or int(request_timeout_seconds) != command.config.timeout_seconds
         ):
             raise ValueError("live Provider request identity drifted")
         assert_no_inline_secrets(
@@ -595,6 +678,9 @@ class D0QualificationAuthority:
         )
         provider_evidence = dict(
             dict(receipt_payload or {}).get("evidence") or {}
+        )
+        assert_no_inline_secrets(
+            provider_evidence, label="D0 persisted Provider response"
         )
         if request_hash(provider_evidence) != evidence.response_hash:
             raise ValueError("live Provider response identity drifted")
@@ -633,6 +719,12 @@ class D0QualificationAuthority:
             or str(provider_evidence.get("model_id") or "") != evidence.model
             or str(execution_request.get("execution_id") or "")
             != evidence.provider_execution_id
+            or str(execution_handle.get("execution_id") or "")
+            != evidence.provider_execution_id
+            or str(execution_result.get("execution_id") or "")
+            != evidence.provider_execution_id
+            or str(execution_handle.get("backend_id") or "")
+            != evidence.backend_id
             or request_identity != evidence.provider_request_identity
             or str(execution_handle.get("transport") or "")
             == "SCRIPTED_FIXTURE"
@@ -650,6 +742,13 @@ class D0QualificationAuthority:
             or str(route_snapshot.get("model_id") or "") != evidence.model
             or str(route_snapshot.get("auth_profile_ref") or "")
             != evidence.auth_profile_ref
+            or str(route_snapshot.get("backend_id") or "")
+            != evidence.backend_id
+            or (
+                f"{route_snapshot.get('policy_id')}@"
+                f"{route_snapshot.get('policy_version')}"
+            )
+            != config.route_policy_version
         ):
             raise ValueError("live Provider RouteSnapshot identity drifted")
         capability_runtime = provider_evidence.get("capability_runtime")
@@ -685,14 +784,37 @@ class D0QualificationAuthority:
             raise ValueError("live Provider usage or cost receipt drifted")
         started_at = str(execution_result.get("started_at") or "")
         completed_at = str(execution_result.get("completed_at") or "")
-        if not started_at or not completed_at:
-            if dict(provider_evidence.get("latency") or {}) != evidence.latency:
-                raise ValueError("live Provider latency evidence drifted")
+        try:
+            measured_duration_ms = max(
+                1,
+                int(
+                    (
+                        datetime.fromisoformat(completed_at)
+                        - datetime.fromisoformat(started_at)
+                    ).total_seconds()
+                    * 1000
+                ),
+            )
+        except (TypeError, ValueError):
+            measured_duration_ms = 0
+        if (
+            not started_at
+            or not completed_at
+            or dict(provider_evidence.get("latency") or {}) != evidence.latency
+            or measured_duration_ms != evidence.latency.get("duration_ms")
+        ):
+            raise ValueError("live Provider latency evidence drifted")
         return {
             "provider_evidence": provider_evidence,
             "route_snapshot": route_snapshot,
             "profile": profile,
             "reconciliation_count": reconciliation_count,
+            "dispatch_count": dispatch_count,
+            "receipt_count": int(receipt_count),
+            "provider_execution_count": provider_execution_count,
+            "duplicate_external_effect_count": max(
+                0, provider_execution_count - 1
+            ),
         }
 
     def _ensure_live_run(

@@ -21,9 +21,16 @@ class ProviderResult:
 
 class ExternalEffectAdapterError(RuntimeError):
 
-    def __init__(self, message: str, *, request_sent: bool) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        request_sent: bool,
+        failure_kind: str = "transport",
+    ) -> None:
         super().__init__(message)
         self.request_sent = request_sent
+        self.failure_kind = failure_kind
 
 
 class ExternalEffectAdapter(Protocol):

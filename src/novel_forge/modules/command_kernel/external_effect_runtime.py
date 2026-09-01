@@ -36,6 +36,7 @@ from novel_forge.modules.provider_control.contracts import (
 )
 from novel_forge.modules.production_execution.security import (
     assert_legacy_execution_allowed,
+    redact_secret_text,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -506,7 +507,7 @@ def dispatch_external_effect(
             outcome="retryable_failure",
             evidence={
                 "error_type": type(exc).__name__,
-                "message": str(exc),
+                "message": redact_secret_text(exc),
                 "request_sent": False,
                 "timeout_phase": "before_send",
             },
@@ -543,7 +544,7 @@ def dispatch_external_effect(
             evidence={
                 "error_type": type(exc).__name__,
                 "error_code": error_code,
-                "message": str(exc),
+                "message": redact_secret_text(exc),
                 "request_sent": False,
                 "failure_phase": "budget_execution_assertion",
                 "authorization_denial_permanent": permanent_denial,
@@ -606,8 +607,9 @@ def dispatch_external_effect(
             outcome=recorded,
             evidence={
                 "error_type": type(exc).__name__,
-                "message": str(exc),
+                "message": redact_secret_text(exc),
                 "request_sent": exc.request_sent,
+                "failure_kind": exc.failure_kind,
             },
         )
         raise KernelError(
@@ -635,7 +637,7 @@ def dispatch_external_effect(
                 evidence={
                     "error_type": type(exc).__name__,
                     "error_code": error_code,
-                    "message": str(exc),
+                    "message": redact_secret_text(exc),
                     "request_sent": False,
                     "failure_phase": (
                         "pre_send_assertion"
@@ -660,7 +662,7 @@ def dispatch_external_effect(
             outcome="unknown",
             evidence={
                 "error_type": type(exc).__name__,
-                "message": str(exc),
+                "message": redact_secret_text(exc),
                 "request_sent": "not_established",
             },
         )

@@ -35,6 +35,10 @@ class D0ProbeConfig:
     capability: str
     prompt_version: str
     skill_version: str
+    prompt_hash: str = ""
+    instruction_version: str = ""
+    instruction_hash: str = ""
+    skill_hash: str = ""
     schema_version: str = "d0-provider-probe-config.v1"
 
     @classmethod
@@ -43,6 +47,7 @@ class D0ProbeConfig:
             "schema_version", "provider", "backend_id", "model_env",
             "model_version_env", "route_policy_version", "timeout_seconds",
             "auth_secret_ref", "capability", "prompt_version", "skill_version",
+            "prompt_hash", "instruction_version", "instruction_hash", "skill_hash",
         }
         unexpected = sorted(set(payload) - allowed)
         if unexpected:
@@ -59,12 +64,24 @@ class D0ProbeConfig:
         }
         if not all(values.values()):
             raise ValueError("D0 config is incomplete")
+        optional_identity = {
+            key: str(payload.get(key) or "").strip()
+            for key in (
+                "prompt_hash",
+                "instruction_version",
+                "instruction_hash",
+                "skill_hash",
+            )
+        }
+        for key in ("prompt_hash", "instruction_hash", "skill_hash"):
+            if optional_identity[key] and not _SHA256.fullmatch(optional_identity[key]):
+                raise ValueError(f"D0 config {key} is invalid")
         if not values["auth_secret_ref"].startswith("env://"):
             raise ValueError("D0 auth must be a Secret Reference, never a secret value")
         timeout = payload.get("timeout_seconds")
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
             raise ValueError("D0 timeout_seconds must be positive")
-        return cls(**values, timeout_seconds=timeout)
+        return cls(**values, **optional_identity, timeout_seconds=timeout)
 
     @property
     def auth_environment_name(self) -> str:
@@ -141,10 +158,6 @@ class D0LiveQualificationEvidence:
     latency: dict[str, Any]
     controlled_failure: dict[str, Any]
     recovery: dict[str, Any]
-    dispatch_count: int
-    receipt_count: int
-    provider_execution_count: int
-    duplicate_external_effect_count: int
     fixture_protocol_only: bool
     real_model_call: bool
     schema_version: str = "d0-live-qualification-evidence.v1"
@@ -249,6 +262,7 @@ class D0LiveQualificationEvidence:
         if (
             failure.get("checkpoint")
             != "after_provider_response_before_effect_receipt"
+            or failure.get("failure_kind") != "response_loss"
             or failure.get("request_sent") is not True
         ):
             raise ValueError("controlled Provider failure evidence is incomplete")
@@ -262,31 +276,9 @@ class D0LiveQualificationEvidence:
             )
         ):
             raise ValueError("ambiguous Provider recovery evidence is incomplete")
-        counts = {
-            name: payload.get(name)
-            for name in (
-                "dispatch_count",
-                "receipt_count",
-                "provider_execution_count",
-                "duplicate_external_effect_count",
-            )
-        }
-        if any(
-            not isinstance(value, int) or isinstance(value, bool)
-            for value in counts.values()
-        ):
-            raise ValueError("live qualification execution counts are invalid")
-        if (
-            counts["dispatch_count"] != 1
-            or counts["receipt_count"] != 1
-            or counts["provider_execution_count"] != 1
-            or counts["duplicate_external_effect_count"] != 0
-        ):
-            raise ValueError("duplicate Provider execution is not qualifiable")
         normalized = {
             **text_values,
             **mappings,
-            **counts,
             "fixture_protocol_only": False,
             "real_model_call": True,
             "schema_version": "d0-live-qualification-evidence.v1",

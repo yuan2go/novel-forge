@@ -38,6 +38,23 @@ class D0ProviderQualificationTests(unittest.TestCase):
                 }
             )
 
+    def test_live_config_freezes_current_route_prompt_and_skill_identity(self) -> None:
+        config = D0ProbeConfig.from_mapping(
+            json.loads(
+                (ROOT / "config/provider/d0-codex-cli-probe.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        )
+
+        self.assertEqual(config.route_policy_version, "chapter.retrieval.route@1")
+        self.assertEqual(
+            config.prompt_version, "prompt-system:chapter-generation-pack@v1"
+        )
+        self.assertRegex(config.prompt_hash, r"^sha256:[0-9a-f]{64}$")
+        self.assertRegex(config.instruction_hash, r"^sha256:[0-9a-f]{64}$")
+        self.assertRegex(config.skill_hash, r"^sha256:[0-9a-f]{64}$")
+
     def test_fixture_probe_covers_protocol_but_cannot_pass_real_gates(self) -> None:
         report = run_fixture_protocol_probe(self.config)
 
@@ -119,6 +136,7 @@ class D0ProviderQualificationTests(unittest.TestCase):
                 "latency": {"duration_ms": 42},
                 "controlled_failure": {
                     "checkpoint": "after_provider_response_before_effect_receipt",
+                    "failure_kind": "response_loss",
                     "request_sent": True,
                 },
                 "recovery": {
@@ -126,10 +144,6 @@ class D0ProviderQualificationTests(unittest.TestCase):
                     "recovered_without_resend": True,
                     "replayed": True,
                 },
-                "dispatch_count": 1,
-                "receipt_count": 1,
-                "provider_execution_count": 1,
-                "duplicate_external_effect_count": 0,
                 "fixture_protocol_only": False,
                 "real_model_call": True,
             }
@@ -139,9 +153,9 @@ class D0ProviderQualificationTests(unittest.TestCase):
         self.assertEqual(evidence.usage["total_tokens"], 14)
         self.assertTrue(evidence.recovery["recovered_without_resend"])
 
-        with self.assertRaisesRegex(ValueError, "duplicate Provider execution"):
+        with self.assertRaisesRegex(ValueError, "unsupported fields"):
             D0LiveQualificationEvidence.from_mapping(
-                {**evidence.to_dict(), "dispatch_count": 2}
+                {**evidence.to_dict(), "provider_execution_count": 1}
             )
 
     def test_fixture_cannot_be_parsed_as_live_qualification_evidence(self) -> None:

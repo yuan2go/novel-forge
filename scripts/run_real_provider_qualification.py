@@ -45,6 +45,10 @@ from novel_forge.modules.provider_qualification import (
     D0QualificationCommand,
 )
 from novel_forge.modules.provider_qualification.domain import request_hash
+from novel_forge.modules.production_execution.security import (
+    assert_no_inline_secrets,
+    redact_secret_text,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import run_migrations
 from novel_forge.storage.object_store import MinioObjectStore
@@ -97,6 +101,7 @@ class OneShotAmbiguousResponseGateway:
             raise SimulatedProviderResponseLoss(
                 "qualification injected response loss after Provider completion",
                 request_sent=True,
+                failure_kind="response_loss",
             )
         return result
 
@@ -438,6 +443,49 @@ def _duration_ms(execution_result: Mapping[str, Any]) -> int:
     return max(1, int((completed - started).total_seconds() * 1000))
 
 
+def _provider_process_evidence(
+    runtime_root: Path, *, execution_id: str
+) -> dict[str, Any]:
+    receipts: list[dict[str, Any]] = []
+    for path in sorted(
+        runtime_root.glob("codex-executions/*/process-receipt.json")
+    ):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if str(payload.get("execution_id") or "") == execution_id:
+            assert_no_inline_secrets(
+                payload, label="real Provider process receipt"
+            )
+            receipts.append(dict(payload))
+    if len(receipts) != 1:
+        raise RuntimeError(
+            "real Provider execution must have exactly one process receipt; "
+            f"observed {len(receipts)}"
+        )
+    receipt = receipts[0]
+    identity = {
+        key: receipt.get(key)
+        for key in (
+            "receipt_id",
+            "execution_id",
+            "status",
+            "transport",
+            "provider_request_id",
+            "request_digest",
+            "command_sha256",
+            "input_sha256",
+            "result_integrity",
+            "process_started_at",
+            "completed_at",
+            "elapsed_ms",
+        )
+    }
+    return {
+        "process_receipt_count": len(receipts),
+        "duplicate_provider_process_count": max(0, len(receipts) - 1),
+        "process_receipt_identity_hash": request_hash(identity),
+    }
+
+
 def _run(args: argparse.Namespace) -> dict[str, Any]:
     commit_sha = _git("rev-parse", "HEAD")
     if commit_sha != args.expected_sha:
@@ -535,12 +583,17 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         trace_id=f"trace:{project_id}:provider-qualification",
         correlation_id=f"correlation:{project_id}",
         config=config,
+        resolved_model=env["NOVEL_FORGE_D0_MODEL"],
+        resolved_model_version=env["NOVEL_FORGE_D0_MODEL_VERSION"],
+        resolved_auth_profile_ref=env["NOVEL_FORGE_PROVIDER_AUTH_PROFILE"],
+        implementation_identity=identity["implementation_tree_sha"],
     )
     qualification_authority = D0QualificationAuthority(
         args.database_url,
         evidence_store=object_store,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        implementation_identity=identity["implementation_tree_sha"],
         worker_id="provider-qualification-authority-worker",
     )
     qualification_operation_id = str(
@@ -637,6 +690,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if dispatch_count != 1 or receipt_count != 1 or recon_count != 1:
         raise RuntimeError("Provider recovery created duplicate execution evidence")
+    assert_no_inline_secrets(
+        provider_evidence, label="real Provider response evidence"
+    )
     production = dict(provider_evidence.get("production_execution") or {})
     execution_request = dict(production.get("execution_request") or {})
     execution_handle = dict(production.get("execution_handle") or {})
@@ -656,6 +712,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if not provider_request_identity:
         raise RuntimeError("Provider execution has no durable request identity")
+    process_evidence = _provider_process_evidence(
+        runtime_root,
+        execution_id=str(execution_request.get("execution_id") or ""),
+    )
     latency = {"duration_ms": _duration_ms(execution_result)}
     request_ref = object_store.put_json(
         object_key=f"d0/{qualification_operation_id}/request.json",
@@ -713,6 +773,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "latency": latency,
             "controlled_failure": {
                 "checkpoint": "after_provider_response_before_effect_receipt",
+                "failure_kind": "response_loss",
                 "request_sent": True,
             },
             "recovery": {
@@ -720,16 +781,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "recovered_without_resend": True,
                 "replayed": bool(replay_tick.replayed),
             },
-            "dispatch_count": dispatch_count,
-            "receipt_count": receipt_count,
-            "provider_execution_count": 1,
-            "duplicate_external_effect_count": 0,
             "fixture_protocol_only": False,
             "real_model_call": bool(provider_evidence["real_model_call"]),
         }
     )
     decision = qualification_authority.execute_live(command, live_evidence)
-    return _jsonable(
+    result = _jsonable(
         {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
@@ -760,7 +817,13 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "dispatch_count": dispatch_count,
                 "receipt_count": receipt_count,
                 "reconciliation_count": recon_count,
-                "duplicate_external_effect_count": 0,
+                "provider_execution_count": decision[
+                    "provider_execution_count"
+                ],
+                "duplicate_external_effect_count": decision[
+                    "duplicate_external_effect_count"
+                ],
+                **process_evidence,
                 "ambiguous_response_injected": fault_gateway.triggered,
                 "initial_outcome": "EFFECT_EXTERNAL_STATE_UNKNOWN",
                 "recovery_runtime_restarted": True,
@@ -784,6 +847,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             },
         }
     )
+    assert_no_inline_secrets(result, label="real Provider qualification output")
+    return result
 
 
 def main() -> int:
@@ -824,6 +889,7 @@ def main() -> int:
     try:
         result = _run(args)
     except BaseException as exc:
+        safe_message = redact_secret_text(exc)
         failure = {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
@@ -832,7 +898,7 @@ def main() -> int:
                 "REAL_PROVIDER_RUNTIME": "FAIL",
                 "REAL_PROVIDER_QUALIFIED": False,
             },
-            "failure": {"type": type(exc).__name__, "message": str(exc)},
+            "failure": {"type": type(exc).__name__, "message": safe_message},
         }
         output.write_text(
             json.dumps(failure, ensure_ascii=False, indent=2) + "\n",

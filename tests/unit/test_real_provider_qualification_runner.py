@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
+from contextlib import redirect_stdout
 
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
@@ -67,6 +71,88 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             env["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"],
             "high",
         )
+
+    def test_process_receipt_count_is_measured_from_runtime_state(self) -> None:
+        with TemporaryDirectory() as directory:
+            runtime_root = Path(directory)
+            receipt_dir = runtime_root / "codex-executions" / "execution-a"
+            receipt_dir.mkdir(parents=True)
+            (receipt_dir / "process-receipt.json").write_text(
+                json.dumps(
+                    {
+                        "receipt_id": "receipt:a",
+                        "execution_id": "execution:a",
+                        "status": "SUCCEEDED",
+                        "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            evidence = RUNNER._provider_process_evidence(
+                runtime_root, execution_id="execution:a"
+            )
+
+        self.assertEqual(evidence["process_receipt_count"], 1)
+        self.assertEqual(evidence["duplicate_provider_process_count"], 0)
+        self.assertRegex(
+            evidence["process_receipt_identity_hash"], r"^sha256:[0-9a-f]{64}$"
+        )
+
+    def test_duplicate_process_receipts_fail_closed(self) -> None:
+        with TemporaryDirectory() as directory:
+            runtime_root = Path(directory)
+            for name in ("execution-a", "execution-b"):
+                receipt_dir = runtime_root / "codex-executions" / name
+                receipt_dir.mkdir(parents=True)
+                (receipt_dir / "process-receipt.json").write_text(
+                    json.dumps({"execution_id": "execution:a"}),
+                    encoding="utf-8",
+                )
+
+            with self.assertRaisesRegex(RuntimeError, "exactly one"):
+                RUNNER._provider_process_evidence(
+                    runtime_root, execution_id="execution:a"
+                )
+
+    def test_failure_evidence_and_stdout_redact_secret_material(self) -> None:
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "failure.json"
+            argv = [
+                "run_real_provider_qualification.py",
+                "--database-url",
+                "postgresql://operator:database-secret@localhost/runtime",
+                "--runtime-root",
+                str(Path(directory) / "runtime"),
+                "--output",
+                str(output),
+                "--expected-sha",
+                "a" * 40,
+                "--minio-endpoint",
+                "localhost:9000",
+            ]
+            stdout = io.StringIO()
+            with (
+                patch.object(sys, "argv", argv),
+                patch.object(
+                    RUNNER,
+                    "_run",
+                    side_effect=RuntimeError(
+                        "postgresql://operator:database-secret@localhost/runtime "
+                        "api_key=provider-secret-value"
+                    ),
+                ),
+                redirect_stdout(stdout),
+            ):
+                status = RUNNER.main()
+
+            retained = output.read_text(encoding="utf-8")
+            self.assertEqual(status, 1)
+            self.assertNotIn("database-secret", retained)
+            self.assertNotIn("provider-secret-value", retained)
+            self.assertNotIn("database-secret", stdout.getvalue())
+            self.assertNotIn("provider-secret-value", stdout.getvalue())
+            self.assertFalse(json.loads(retained)["proof_flags"]["REAL_PROVIDER_QUALIFIED"])
 
 
 if __name__ == "__main__":
