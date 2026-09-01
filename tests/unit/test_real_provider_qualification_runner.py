@@ -6,6 +6,10 @@ import sys
 from tempfile import TemporaryDirectory
 import unittest
 
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
@@ -21,6 +25,28 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class RealProviderQualificationRunnerTests(unittest.TestCase):
+    def test_ambiguous_response_fault_is_typed_as_request_sent(self) -> None:
+        class Delegate:
+            calls = 0
+
+            def execute(self, **_values: object) -> object:
+                self.calls += 1
+                return object()
+
+        delegate = Delegate()
+        gateway = RUNNER.OneShotAmbiguousResponseGateway(delegate)
+
+        with self.assertRaises(ExternalEffectAdapterError) as failure:
+            gateway.execute(
+                stable_idempotency_key="effect:stable",
+                capability="model.retrieval",
+                request_payload={},
+            )
+
+        self.assertTrue(failure.exception.request_sent)
+        self.assertTrue(gateway.triggered)
+        self.assertEqual(delegate.calls, 1)
+
     def test_runtime_environment_freezes_controlled_composition_routes(self) -> None:
         with TemporaryDirectory() as directory:
             env = RUNNER._runtime_environment(

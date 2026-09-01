@@ -22,6 +22,10 @@ from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+)
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority import (
     PostgresBookAuthority,
@@ -60,7 +64,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config/provider/d0-codex-cli-probe.json"
 
 
-class SimulatedProviderResponseLoss(BaseException):
+class SimulatedProviderResponseLoss(ExternalEffectAdapterError):
     pass
 
 
@@ -91,7 +95,8 @@ class OneShotAmbiguousResponseGateway:
         if not self.triggered:
             self.triggered = True
             raise SimulatedProviderResponseLoss(
-                "qualification injected response loss after Provider completion"
+                "qualification injected response loss after Provider completion",
+                request_sent=True,
             )
         return result
 
@@ -301,67 +306,6 @@ def _seed_accepted_retrieval_document(
         )
         uow.commit()
     return document_id, asset_version_id
-
-
-def _expire_active_attempt_lease(
-    database_url: str, operation_id: str
-) -> dict[str, Any]:
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute(
-            """
-            UPDATE authority_lease_acquisition
-            SET acquired_at=NOW()-INTERVAL '2 seconds',
-                heartbeat_at=NOW()-INTERVAL '2 seconds',
-                expires_at=NOW()-INTERVAL '1 second'
-            WHERE attempt_id=(
-                SELECT attempt_id FROM authority_attempt
-                WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1
-            ) AND status='HELD'
-            RETURNING attempt_id,fencing_token,owner,expires_at
-            """,
-            [operation_id],
-        )
-        row = uow.cursor.fetchone()
-        if row is None:
-            raise RuntimeError("response loss left no held Attempt lease")
-        uow.commit()
-    return {
-        "attempt_id": str(row[0]),
-        "fencing_token": int(row[1]),
-        "owner": str(row[2]),
-        "expires_at": row[3].isoformat(),
-    }
-
-
-def _expire_active_effect_dispatch_lease(
-    database_url: str, external_effect_id: str
-) -> dict[str, Any]:
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute(
-            """
-            UPDATE authority_effect_dispatch_lease
-            SET acquired_at=NOW()-INTERVAL '2 seconds',
-                heartbeat_at=NOW()-INTERVAL '2 seconds',
-                expires_at=NOW()-INTERVAL '1 second'
-            WHERE dispatch_id=(
-                SELECT dispatch_id FROM authority_external_effect_dispatch
-                WHERE external_effect_id=%s
-                ORDER BY generation DESC LIMIT 1
-            ) AND status='HELD'
-            RETURNING dispatch_id,fencing_token,owner,expires_at
-            """,
-            [external_effect_id],
-        )
-        row = uow.cursor.fetchone()
-        if row is None:
-            raise RuntimeError("response loss left no held Effect dispatch lease")
-        uow.commit()
-    return {
-        "dispatch_id": str(row[0]),
-        "fencing_token": int(row[1]),
-        "owner": str(row[2]),
-        "expires_at": row[3].isoformat(),
-    }
 
 
 def _outside_repository(path: Path) -> bool:
@@ -636,8 +580,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             project_id=project_id,
             operation_id=provider_operation_id,
         )
-    except SimulatedProviderResponseLoss:
-        pass
+    except KernelError as exc:
+        if exc.code != "EFFECT_EXTERNAL_STATE_UNKNOWN":
+            raise
     else:
         raise RuntimeError("ambiguous Provider response fault did not trigger")
     initial_execution.close()
@@ -657,12 +602,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         **env,
         "NOVEL_FORGE_AUTHORITY_WORKER_ID": "provider-qualification-worker:recovered",
     }
-    expired_lease = _expire_active_attempt_lease(
-        args.database_url, provider_operation_id
-    )
-    expired_dispatch_lease = _expire_active_effect_dispatch_lease(
-        args.database_url, external_effect_id
-    )
     recovered_execution = build_production_execution_composition(
         settings, env=recovered_env
     )
@@ -820,8 +759,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "reconciliation_count": recon_count,
                 "duplicate_external_effect_count": 0,
                 "ambiguous_response_injected": fault_gateway.triggered,
-                "expired_attempt_lease": expired_lease,
-                "expired_effect_dispatch_lease": expired_dispatch_lease,
+                "initial_outcome": "EFFECT_EXTERNAL_STATE_UNKNOWN",
+                "recovery_runtime_restarted": True,
                 "recovered_without_resend": True,
                 "replayed": replay_tick.replayed,
             },
