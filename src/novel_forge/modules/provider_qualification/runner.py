@@ -223,11 +223,11 @@ def run_d0_probe(
     }
     gates = {
         "real_provider_auth_proven": True,
+        "durable_intent_before_send_proven": False,
         "provider_request_receipt_proven": True,
-        "provider_usage_proven": bool(raw_usage),
-        "provider_cost_proven": False,
-        "provider_timeout_query_cancel_behavior_recorded": False,
-        "unknown_reconciliation_proven": False,
+        "provider_usage_cost_latency_proven": False,
+        "ambiguous_outcome_fail_closed": False,
+        "recovery_without_duplicate_send": False,
     }
     return D0ProbeReport(
         status="FAILED",

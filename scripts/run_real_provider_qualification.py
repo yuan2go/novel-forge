@@ -11,6 +11,8 @@ import subprocess
 from typing import Any, Mapping
 from uuid import uuid4
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
     build_production_execution_composition,
@@ -22,6 +24,18 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     reconcile_external_effect,
+)
+from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.book_authority import (
+    PostgresBookAuthority,
+    StartBookProductionCommand,
+)
+from novel_forge.modules.chapter_authority.definitions import (
+    chapter_operation_definitions,
+    chapter_root_operation_definition,
+)
+from novel_forge.modules.agent_runtime.definitions import (
+    agent_runtime_operation_definitions,
 )
 from novel_forge.modules.provider_qualification import (
     D0LiveQualificationEvidence,
@@ -42,12 +56,6 @@ from run_real_capability_codex_proof import (
     _principal,
     _runtime_env,
     _seed_authorities,
-)
-from run_small_real_provider_qualification import (
-    _expire_active_lease,
-    _register_pack_operation_definitions,
-    _seed_accepted_retrieval_document,
-    _seed_book_run,
 )
 
 
@@ -91,6 +99,11 @@ class OneShotAmbiguousResponseGateway:
         return result
 
 
+class _UnusedPort:
+    def __getattr__(self, name: str) -> Any:
+        raise AssertionError(f"qualification unexpectedly used port method {name}")
+
+
 def _git(*args: str) -> str:
     return subprocess.run(
         ("git", *args),
@@ -99,6 +112,228 @@ def _git(*args: str) -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+
+def _hash(value: Mapping[str, Any]) -> str:
+    return request_hash(value)
+
+
+def _seed_book_run(
+    database_url: str,
+    *,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    actor: Principal,
+    build_id: str,
+    commit_sha: str,
+) -> Any:
+    types = {
+        "book_design_version": "book_design",
+        "book_plan_version": "book_plan",
+        "volume_plan_version": "volume_plan",
+        "arc_plan_versions": "arc_plan",
+        "character_state_version": "character_state",
+        "foreshadowing_state_version": "foreshadowing_state",
+        "quality_trend_version": "quality_trend",
+        "reward_ledger_version": "reward_ledger",
+        "promise_ledger_version": "reader_promise_ledger",
+        "reader_segment_version": "reader_segment_profile",
+        "reader_contract_version": "reader_contract",
+        "platform_profile_version": "platform_profile",
+    }
+    versions: dict[str, Any] = {}
+    with AuthorityUnitOfWork(database_url) as uow:
+        for key, asset_type in types.items():
+            version_id = f"{project_id}:{asset_type}:qualification-v1"
+            asset_id = f"asset:{version_id}"
+            content = {
+                "contract_version": f"{asset_type}-qualification-fixture-v1",
+                "safe_summary": f"Frozen {asset_type} qualification fixture.",
+                "evidence_class": "FIXTURE_ONLY_NOT_PROVIDER_OR_CHAPTER_PROOF",
+            }
+            content_hash = _hash(content)
+            uow.cursor.execute(
+                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
+                [asset_id, project_id, asset_type],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id,asset_id,version_number,lifecycle,
+                    eligibility,governance,content,content_hash,schema_version
+                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,
+                          'qualification-fixture.v1')
+                """,
+                [version_id, asset_id, Jsonb(content), content_hash],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_qualification(
+                    qualification_id,asset_version_id,policy_version,
+                    decision,evidence
+                ) VALUES (%s,%s,'real-provider-input-fixture-v1','ELIGIBLE',%s)
+                """,
+                [
+                    f"qualification:{version_id}",
+                    version_id,
+                    Jsonb({"fixture_only": True, "provider_evidence": False}),
+                ],
+            )
+            versions[key] = [version_id] if key == "arc_plan_versions" else version_id
+        uow.commit()
+    return PostgresBookAuthority(
+        database_url,
+        chapter_port=_UnusedPort(),  # type: ignore[arg-type]
+        followup_application=_UnusedPort(),  # type: ignore[arg-type]
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        legacy_fixture_input_allowed=True,
+    ).start(
+        StartBookProductionCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=actor.principal_id,
+            trace_id=f"trace:{project_id}:book",
+            correlation_id=f"correlation:{project_id}",
+            stable_idempotency_key=f"{project_id}:provider-qualification-book",
+            book_design_version=str(versions.pop("book_design_version")),
+            book_plan_version=str(versions.pop("book_plan_version")),
+            production_profile_version=str(versions["platform_profile_version"]),
+            longform_context_versions=versions,
+            target_chapter_count=1,
+            input_mode="LEGACY_FIXTURE_INPUT_MODE",
+        ),
+        principal=actor,
+    )
+
+
+def _register_operation_definitions(
+    database_url: str, *, build_id: str, commit_sha: str
+) -> None:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.repositories.definitions.register(
+            chapter_root_operation_definition(
+                application_build_id=build_id,
+                commit_sha=commit_sha,
+                model_effects_required=True,
+            )
+        )
+        for definition in chapter_operation_definitions(
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+            model_effects_required=True,
+            semantic_retrieval_available=True,
+        ):
+            uow.repositories.definitions.register(definition)
+        for definition in agent_runtime_operation_definitions(
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+        ):
+            uow.repositories.definitions.register(definition)
+        uow.commit()
+
+
+def _seed_accepted_retrieval_document(
+    database_url: str,
+    *,
+    project_id: str,
+    book_id: str,
+    source_operation_id: str,
+) -> tuple[str, str]:
+    document_id = f"retrieval-document:{project_id}:accepted-input"
+    asset_version_id = f"asset-version:{project_id}:accepted-input"
+    content = {
+        "type": "accepted_passage",
+        "chapter": 0,
+        "text": "A sealed municipal ledger records one witness under two incompatible statuses.",
+        "accepted_boundary": 0,
+        "evidence_class": "QUALIFICATION_FIXTURE_ACCEPTED_INPUT",
+    }
+    content_hash = _hash(content)
+    projection_payload = {
+        "retrieval_document_id": document_id,
+        "source_asset_version_id": asset_version_id,
+        "source_content_hash": content_hash,
+        "accepted_from_chapter": 0,
+        "content_text": content["text"],
+        "memory_layer": "L0",
+    }
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
+            [f"asset:{asset_version_id}", project_id, "best_draft_candidate"],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_asset_version(
+                asset_version_id,asset_id,version_number,lifecycle,eligibility,
+                governance,content,content_hash,schema_version
+            ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,
+                      'accepted-passage-qualification.v1')
+            """,
+            [
+                asset_version_id,
+                f"asset:{asset_version_id}",
+                Jsonb(content),
+                content_hash,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_narrative_retrieval_document(
+                retrieval_document_id,project_id,book_id,
+                source_asset_version_id,source_artifact_type,
+                accepted_from_chapter,memory_layer,content_text,
+                temporal_coordinate,metadata,projection_hash,
+                created_by_operation_id
+            ) VALUES (%s,%s,%s,%s,'best_draft_candidate',0,'L0',%s,%s,%s,%s,%s)
+            """,
+            [
+                document_id,
+                project_id,
+                book_id,
+                asset_version_id,
+                content["text"],
+                Jsonb({"accepted_chapter": 0}),
+                Jsonb({"fixture_only": True, "provider_evidence": False}),
+                _hash(projection_payload),
+                source_operation_id,
+            ],
+        )
+        uow.commit()
+    return document_id, asset_version_id
+
+
+def _expire_active_attempt_lease(
+    database_url: str, operation_id: str
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            UPDATE authority_lease_acquisition
+            SET acquired_at=NOW()-INTERVAL '2 seconds',
+                heartbeat_at=NOW()-INTERVAL '2 seconds',
+                expires_at=NOW()-INTERVAL '1 second'
+            WHERE attempt_id=(
+                SELECT attempt_id FROM authority_attempt
+                WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1
+            ) AND status='HELD'
+            RETURNING attempt_id,fencing_token,owner,expires_at
+            """,
+            [operation_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise RuntimeError("response loss left no held Attempt lease")
+        uow.commit()
+    return {
+        "attempt_id": str(row[0]),
+        "fencing_token": int(row[1]),
+        "owner": str(row[2]),
+        "expires_at": row[3].isoformat(),
+    }
 
 
 def _outside_repository(path: Path) -> bool:
