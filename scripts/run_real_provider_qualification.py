@@ -22,10 +22,6 @@ from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.command_kernel.external_effect_runtime import (
-    EffectCommandContext,
-    reconcile_external_effect,
-)
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority import (
     PostgresBookAuthority,
@@ -382,7 +378,7 @@ def _runtime_environment(
 
 def _effect_evidence(
     database_url: str, *, operation_id: str
-) -> tuple[dict[str, Any], dict[str, Any], int, int, int]:
+) -> tuple[dict[str, Any], dict[str, Any], int, int, int, dict[str, Any]]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -425,8 +421,20 @@ def _effect_evidence(
             [row[0]],
         )
         reconciliation_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT outcome,evidence,trace_id,correlation_id,reconciled_at
+            FROM authority_effect_reconciliation_evidence
+            WHERE external_effect_id=%s AND outcome='success'
+            ORDER BY reconciled_at DESC LIMIT 1
+            """,
+            [row[0]],
+        )
+        reconciliation_row = uow.cursor.fetchone()
     if str(row[3]) != "SUCCEEDED" or receipt_row is None:
         raise RuntimeError("qualification Provider effect did not converge")
+    if reconciliation_row is None:
+        raise RuntimeError("qualification Provider effect has no recovery evidence")
     receipt_payload = dict(receipt_row[0] or {})
     provider_evidence = dict(receipt_payload.get("evidence") or {})
     return (
@@ -439,6 +447,13 @@ def _effect_evidence(
         int(row[4]),
         int(row[5]),
         reconciliation_count,
+        {
+            "outcome": str(reconciliation_row[0]),
+            "evidence": dict(reconciliation_row[1] or {}),
+            "trace_id": str(reconciliation_row[2]),
+            "correlation_id": str(reconciliation_row[3]),
+            "reconciled_at": reconciliation_row[4].isoformat(),
+        },
     )
 
 
@@ -611,6 +626,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         **env,
         "NOVEL_FORGE_AUTHORITY_WORKER_ID": "provider-qualification-worker:recovered",
     }
+    expired_lease = _expire_active_attempt_lease(
+        args.database_url, provider_operation_id
+    )
     recovered_execution = build_production_execution_composition(
         settings, env=recovered_env
     )
@@ -618,23 +636,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         settings,
         execution=recovered_execution,
         env=recovered_env,
-    )
-    reconciled = reconcile_external_effect(
-        args.database_url,
-        EffectCommandContext(
-            operation_id=provider_operation_id,
-            project_id=project_id,
-            actor_id="provider-qualification-worker:recovered",
-            trace_id=f"trace:{project_id}:embedding",
-            correlation_id=f"correlation:{project_id}",
-        ),
-        effect_id=external_effect_id,
-        adapter=recovered_execution.gateway,
-    )
-    if reconciled["outcome"] != "success":
-        raise RuntimeError("ambiguous Provider effect did not reconcile")
-    expired_lease = _expire_active_attempt_lease(
-        args.database_url, provider_operation_id
     )
     recovered_runtime = recovered_application.embedding_projection_runtime
     if recovered_runtime is None:
@@ -650,11 +651,16 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     recovered_execution.close()
     if recovered_tick.status != "SUCCEEDED" or not replay_tick.replayed:
         raise RuntimeError("Provider recovery/replay did not converge")
-    effect, provider_evidence, dispatch_count, receipt_count, recon_count = (
-        _effect_evidence(
-            args.database_url,
-            operation_id=provider_operation_id,
-        )
+    (
+        effect,
+        provider_evidence,
+        dispatch_count,
+        receipt_count,
+        recon_count,
+        reconciliation,
+    ) = _effect_evidence(
+        args.database_url,
+        operation_id=provider_operation_id,
     )
     if dispatch_count != 1 or receipt_count != 1 or recon_count != 1:
         raise RuntimeError("Provider recovery created duplicate execution evidence")
@@ -692,7 +698,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "external_effect_id": external_effect_id,
             "provider_request_identity": provider_request_identity,
             "provider_evidence": provider_evidence,
-            "reconciliation": reconciled,
+            "reconciliation": reconciliation,
             "latency": latency,
         },
     )
