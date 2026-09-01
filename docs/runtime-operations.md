@@ -127,6 +127,33 @@ P0 evidence ceilings are explicit: `CURRENT_UI` is
 `EIGHT_CHAPTER`, and `HUMAN_REVIEW` are `NOT_RUN_BY_SCOPE`; `LONGFORM`, `MULTIBOOK`, and
 `PRODUCTION` are `NOT_PROVEN`.
 
+## Credentialed Provider qualification
+
+Credentialed Provider qualification is intentionally separate from P0. The only live
+runner is `make real-provider-qualification`; the D0 contract probe and worker remain
+fixture-only and cannot send with a credential. The live runner requires a clean worktree,
+an explicit expected SHA, caller-owned PostgreSQL and object storage, and evidence/runtime
+paths outside the repository:
+
+```bash
+NOVEL_FORGE_DATABASE_URL='postgresql://...' \
+NOVEL_FORGE_MINIO_ENDPOINT='127.0.0.1:9000' \
+NOVEL_FORGE_REAL_PROVIDER_EXPECTED_SHA="$(git rev-parse HEAD)" \
+NOVEL_FORGE_REAL_PROVIDER_RUNTIME_ROOT='/tmp/novel-forge-provider-runtime' \
+NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH='/tmp/novel-forge-provider-evidence.json' \
+make real-provider-qualification
+```
+
+The runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
+executes one frozen Production Execution route, injects response loss after Provider
+completion, reconciles from the persistent execution receipt, and requires one dispatch,
+one receipt and one execution identity. Only `D0QualificationAuthority.execute_live` may
+write `decision=QUALIFIED`. Usage, estimated cost with immutable pricing identity, latency,
+route/model, prompt/instruction/Skill hashes and object-store evidence references are
+retained. The result establishes Provider runtime qualification only; it does not establish
+chapter acceptance, literary quality, human evidence, long-form stability or production
+operation.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
