@@ -29,11 +29,17 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
+from novel_forge.modules.production_execution.security import assert_no_inline_secrets
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .definitions import D0_DEFINITION_VERSION, D0_HANDLER_KEY, D0_OPERATION, d0_operation_definition
-from .domain import D0_GATE_NAMES, D0ProbeConfig, request_hash
+from .domain import (
+    D0_GATE_NAMES,
+    D0LiveQualificationEvidence,
+    D0ProbeConfig,
+    request_hash,
+)
 from .runner import run_fixture_protocol_probe
 
 
@@ -187,6 +193,141 @@ class D0QualificationAuthority:
             result=result,
         )
         return {**result, "attempt_id": attempt_id, "replayed": False}
+
+    def execute_live(
+        self,
+        command: D0QualificationCommand,
+        evidence: D0LiveQualificationEvidence,
+    ) -> dict[str, Any]:
+        admitted = self.admit(command)
+        operation_id = str(admitted["operation_id"])
+        existing = self._existing_result(operation_id, command.project_id)
+        if existing is not None:
+            return {**existing, "replayed": True}
+        provider = self._validated_live_effect(command, evidence)
+        attempt_id, worker = self._begin_attempt(command, operation_id)
+        qualification_run_id = f"d0:{operation_id}"
+        self._ensure_live_run(
+            qualification_run_id,
+            operation_id,
+            command,
+            evidence,
+            provider,
+        )
+        scenarios = self._persist_live_scenarios(
+            qualification_run_id=qualification_run_id,
+            evidence=evidence,
+            provider=provider,
+        )
+        report = {
+            "schema_version": "d0-provider-probe-report.v3",
+            "qualification_run_id": qualification_run_id,
+            "status": "PASSED",
+            "blocker": "",
+            "provider": evidence.provider,
+            "backend_id": evidence.backend_id,
+            "model": evidence.model,
+            "model_version": evidence.model_version,
+            "release_sha": evidence.release_sha,
+            "implementation_identity": evidence.implementation_identity,
+            "auth_profile_ref": evidence.auth_profile_ref,
+            "route_snapshot": provider["route_snapshot"],
+            "fixture_protocol_only": False,
+            "gates": {name: True for name in D0_GATE_NAMES},
+            "scenarios": scenarios,
+            "duplicate_external_effect_count": 0,
+            "non_claims": {
+                "provider_billed_cost": bool(
+                    evidence.cost.get("provider_billed") is True
+                ),
+                "literary_quality": False,
+                "human_editorial": False,
+                "chapter_vertical": False,
+                "longform": False,
+                "production": False,
+            },
+        }
+        report_asset = self._materialize_report(
+            operation_id,
+            command,
+            qualification_run_id,
+            report,
+            schema_version="d0-provider-probe-report.v3",
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_d0_qualification_run
+                SET status='COMPLETED', decision='QUALIFIED', blocker='',
+                    report_asset_version_id=%s, updated_at=NOW()
+                WHERE qualification_run_id=%s AND fixture_protocol_only=FALSE
+                  AND status='RUNNING' AND decision='PENDING'
+                """,
+                [report_asset.asset_version_id, qualification_run_id],
+            )
+            if uow.cursor.rowcount != 1:
+                raise RuntimeError(
+                    "Provider Qualification Authority decision did not advance"
+                )
+            uow.commit()
+        current = self._operation(operation_id, command.project_id)
+        result = {
+            "operation_id": operation_id,
+            "qualification_run_id": qualification_run_id,
+            "report_asset_version_id": report_asset.asset_version_id,
+            "status": "PASSED",
+        }
+        submit_attempt_result(
+            self.database_url,
+            WorkerResultCommand(
+                **worker.__dict__,
+                expected_operation_version=int(current["version"]),
+                expected_operation_status=str(current["status"]),
+            ),
+            outcome="success",
+            result=result,
+        )
+        return {**result, "attempt_id": attempt_id, "replayed": False}
+
+    def _begin_attempt(
+        self, command: D0QualificationCommand, operation_id: str
+    ) -> tuple[str, WorkerLeaseCommand]:
+        attempt = create_attempt(
+            self.database_url,
+            operation_id=operation_id,
+            project_id=command.project_id,
+            max_attempts=2,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        attempt_id = str(attempt["attempt_id"])
+        queue_attempt(
+            self.database_url,
+            attempt_id=attempt_id,
+            project_id=command.project_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        lease = acquire_attempt_lease(
+            self.database_url,
+            attempt_id=attempt_id,
+            project_id=command.project_id,
+            worker_id=self.worker_id,
+            lease_seconds=60,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        worker = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=command.project_id,
+            worker_id=self.worker_id,
+            fencing_token=int(lease["fencing_token"]),
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            causation_id=operation_id,
+        )
+        start_attempt(self.database_url, worker)
+        return attempt_id, worker
 
     def _execute_fixture(
         self, worker: WorkerLeaseCommand, command: D0QualificationCommand
@@ -349,6 +490,340 @@ class D0QualificationAuthority:
             "status": "BLOCKED_MISSING_CREDENTIALS",
         }
 
+    def _validated_live_effect(
+        self,
+        command: D0QualificationCommand,
+        evidence: D0LiveQualificationEvidence,
+    ) -> dict[str, Any]:
+        if evidence.release_sha != self.commit_sha:
+            raise ValueError("live Provider evidence belongs to another release SHA")
+        if evidence.provider != command.config.provider:
+            raise ValueError("live Provider evidence differs from the D0 route")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT effect.operation_id,effect.project_id,effect.status,
+                       effect.request_hash,effect.model_id,effect.capability,
+                       effect.provider,effect.provider_control_level,
+                       effect.provider_capability_profile,effect.request_payload,
+                       dispatch.status
+                FROM authority_external_effect AS effect
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
+                WHERE effect.external_effect_id=%s
+                """,
+                [evidence.external_effect_id],
+            )
+            row = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*)::int,
+                       (ARRAY_AGG(payload ORDER BY received_at DESC))[1]
+                FROM authority_external_receipt AS receipt
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.dispatch_id=receipt.dispatch_id
+                WHERE dispatch.external_effect_id=%s
+                """,
+                [evidence.external_effect_id],
+            )
+            receipt_count, receipt_payload = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*)::int
+                FROM authority_external_effect_dispatch
+                WHERE external_effect_id=%s
+                """,
+                [evidence.external_effect_id],
+            )
+            dispatch_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*)::int
+                FROM authority_effect_reconciliation_evidence
+                WHERE external_effect_id=%s AND outcome='success'
+                """,
+                [evidence.external_effect_id],
+            )
+            reconciliation_count = int(uow.cursor.fetchone()[0])
+        if row is None:
+            raise ValueError("live Provider ExternalEffect evidence does not exist")
+        (
+            source_operation_id,
+            project_id,
+            effect_status,
+            effect_request_hash,
+            model_id,
+            capability,
+            effect_provider,
+            control_level,
+            raw_profile,
+            request_payload,
+            dispatch_status,
+        ) = row
+        if (
+            str(source_operation_id) != evidence.source_operation_id
+            or str(project_id) != command.project_id
+        ):
+            raise ValueError("live Provider effect belongs to another Authority scope")
+        if (
+            str(effect_status) != "SUCCEEDED"
+            or str(dispatch_status) != "SUCCEEDED"
+            or dispatch_count != evidence.dispatch_count
+            or int(receipt_count) != evidence.receipt_count
+            or reconciliation_count != 1
+        ):
+            raise ValueError("live Provider effect did not reconcile exactly once")
+        profile = dict(raw_profile or {})
+        if (
+            str(effect_provider) != "production_execution_gateway"
+            or str(control_level) != "V2_CONTROLLED"
+            or profile.get("real_provider_validation_eligible") is not True
+            or profile.get("supports_provider_idempotency") is not True
+            or profile.get("supports_query") is not True
+            or profile.get("supports_usage_receipt") is not True
+            or profile.get("supports_cost_receipt") is not True
+        ):
+            raise ValueError("live Provider effect did not use the controlled gateway")
+        if (
+            str(effect_request_hash) != evidence.request_hash
+            or str(model_id) != evidence.model
+            or str(capability) != command.config.capability
+        ):
+            raise ValueError("live Provider request identity drifted")
+        assert_no_inline_secrets(
+            dict(request_payload or {}), label="D0 persisted Provider request"
+        )
+        provider_evidence = dict(
+            dict(receipt_payload or {}).get("evidence") or {}
+        )
+        if request_hash(provider_evidence) != evidence.response_hash:
+            raise ValueError("live Provider response identity drifted")
+        production = provider_evidence.get("production_execution")
+        if not isinstance(production, Mapping):
+            raise ValueError("live Provider response lacks Production Execution")
+        execution_request = production.get("execution_request")
+        execution_handle = production.get("execution_handle")
+        execution_result = production.get("execution_result")
+        route_snapshot = production.get("route_snapshot")
+        if any(
+            not isinstance(value, Mapping)
+            for value in (
+                execution_request,
+                execution_handle,
+                execution_result,
+                route_snapshot,
+            )
+        ):
+            raise ValueError("live Provider execution identity is incomplete")
+        execution_request = dict(execution_request)
+        execution_handle = dict(execution_handle)
+        execution_result = dict(execution_result)
+        route_snapshot = dict(route_snapshot)
+        request_identity = str(
+            execution_handle.get("provider_request_id")
+            or execution_handle.get("external_request_id")
+            or execution_handle.get("local_execution_receipt_id")
+            or ""
+        )
+        if (
+            provider_evidence.get("real_model_call") is not True
+            or provider_evidence.get("fixture_protocol_only") is True
+            or str(provider_evidence.get("provider_id") or "")
+            != evidence.provider
+            or str(provider_evidence.get("model_id") or "") != evidence.model
+            or str(execution_request.get("execution_id") or "")
+            != evidence.provider_execution_id
+            or request_identity != evidence.provider_request_identity
+            or str(execution_handle.get("transport") or "")
+            == "SCRIPTED_FIXTURE"
+            or str(execution_result.get("outcome") or "") != "SUCCEEDED"
+        ):
+            raise ValueError("live Provider execution is not real-runtime evidence")
+        if (
+            str(route_snapshot.get("route_snapshot_id") or "")
+            != evidence.route_snapshot_id
+            or str(route_snapshot.get("contract_hash") or "")
+            != evidence.route_snapshot_hash
+            or str(route_snapshot.get("release_sha") or "")
+            != evidence.release_sha
+            or str(route_snapshot.get("model_provider") or "")
+            != evidence.provider
+            or str(route_snapshot.get("model_id") or "") != evidence.model
+            or str(route_snapshot.get("auth_profile_ref") or "")
+            != evidence.auth_profile_ref
+        ):
+            raise ValueError("live Provider RouteSnapshot identity drifted")
+        capability_runtime = provider_evidence.get("capability_runtime")
+        if not isinstance(capability_runtime, Mapping):
+            raise ValueError("live Provider prompt and Skill identity is missing")
+        if (
+            str(provider_evidence.get("prompt_version") or "")
+            != evidence.prompt_version
+            or str(provider_evidence.get("skill_version") or "")
+            != evidence.skill_version
+            or str(capability_runtime.get("prompt_template_hash") or "")
+            != evidence.prompt_hash
+            or str(
+                capability_runtime.get("prompt_system_instruction_hash") or ""
+            )
+            != evidence.instruction_hash
+            or str(capability_runtime.get("skill_content_hash") or "")
+            != evidence.skill_hash
+        ):
+            raise ValueError("live Provider prompt or Skill identity drifted")
+        if (
+            dict(provider_evidence.get("usage") or {}) != evidence.usage
+            or dict(provider_evidence.get("cost") or {}) != evidence.cost
+        ):
+            raise ValueError("live Provider usage or cost receipt drifted")
+        started_at = str(execution_result.get("started_at") or "")
+        completed_at = str(execution_result.get("completed_at") or "")
+        if not started_at or not completed_at:
+            if dict(provider_evidence.get("latency") or {}) != evidence.latency:
+                raise ValueError("live Provider latency evidence drifted")
+        return {
+            "provider_evidence": provider_evidence,
+            "route_snapshot": route_snapshot,
+            "profile": profile,
+            "reconciliation_count": reconciliation_count,
+        }
+
+    def _ensure_live_run(
+        self,
+        run_id: str,
+        operation_id: str,
+        command: D0QualificationCommand,
+        evidence: D0LiveQualificationEvidence,
+        provider: Mapping[str, Any],
+    ) -> None:
+        try:
+            sdk_version = importlib.metadata.version("openai")
+        except importlib.metadata.PackageNotFoundError:
+            sdk_version = "not-applicable"
+        route_snapshot = dict(provider["route_snapshot"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_d0_qualification_run(
+                    qualification_run_id,operation_id,project_id,workspace_id,
+                    provider,backend_id,model,model_version,sdk_version,
+                    api_mode,sdk_max_retries,timeout_seconds,auth_secret_ref,
+                    route_snapshot,fixture_protocol_only,status,decision,blocker
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'production_execution',
+                          0,%s,%s,%s,FALSE,'RUNNING','PENDING','')
+                ON CONFLICT (qualification_run_id) DO NOTHING
+                """,
+                [
+                    run_id,
+                    operation_id,
+                    command.project_id,
+                    command.workspace_id,
+                    evidence.provider,
+                    evidence.backend_id,
+                    evidence.model,
+                    evidence.model_version,
+                    sdk_version,
+                    command.config.timeout_seconds,
+                    command.config.auth_secret_ref,
+                    Jsonb(
+                        {
+                            **route_snapshot,
+                            "implementation_identity": (
+                                evidence.implementation_identity
+                            ),
+                            "prompt_version": evidence.prompt_version,
+                            "prompt_hash": evidence.prompt_hash,
+                            "instruction_version": evidence.instruction_version,
+                            "instruction_hash": evidence.instruction_hash,
+                            "skill_version": evidence.skill_version,
+                            "skill_hash": evidence.skill_hash,
+                        }
+                    ),
+                ],
+            )
+            uow.commit()
+
+    def _persist_live_scenarios(
+        self,
+        *,
+        qualification_run_id: str,
+        evidence: D0LiveQualificationEvidence,
+        provider: Mapping[str, Any],
+    ) -> list[dict[str, Any]]:
+        receipt = {
+            "provider_request_identity": evidence.provider_request_identity,
+            "provider_execution_id": evidence.provider_execution_id,
+            "route_snapshot_id": evidence.route_snapshot_id,
+        }
+        scenario_values = (
+            ("D0-A", "PASSED", {"authentication": "governed_profile"}, False),
+            ("D0-B", "PASSED", {"durable_intent": True}, False),
+            ("D0-C", "PASSED", dict(evidence.controlled_failure), False),
+            ("D0-D", "PASSED", {"ambiguous_fail_closed": True}, False),
+            ("D0-E", "LATE_RESULT", {"receipt_reconciled": True}, True),
+            ("D0-F", "PASSED", dict(evidence.recovery), False),
+        )
+        rows: list[dict[str, Any]] = []
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            for scenario, status, scenario_evidence, late_result in scenario_values:
+                row = {
+                    "scenario": scenario,
+                    "status": status,
+                    "external_effect_id": evidence.external_effect_id,
+                    "provider_request_id": evidence.provider_request_identity,
+                    "request_object_ref": evidence.request_object_ref,
+                    "response_object_ref": evidence.response_object_ref,
+                    "request_hash": evidence.request_hash,
+                    "response_hash": evidence.response_hash,
+                    "receipt": receipt,
+                    "raw_usage": evidence.usage,
+                    "normalized_usage": evidence.usage,
+                    "provider_cost": evidence.cost,
+                    "calculated_cost": evidence.cost,
+                    "evidence": {
+                        **scenario_evidence,
+                        "fixture_protocol_only": False,
+                        "real_model_call": True,
+                        "reconciliation_count": provider[
+                            "reconciliation_count"
+                        ],
+                    },
+                    "late_result": late_result,
+                }
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_d0_scenario_evidence(
+                        qualification_run_id,scenario,external_effect_id,
+                        provider_request_id,status,request_object_ref,
+                        response_object_ref,request_hash,response_hash,receipt,
+                        raw_usage,normalized_usage,provider_cost,calculated_cost,
+                        evidence,late_result
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (qualification_run_id,scenario) DO NOTHING
+                    """,
+                    [
+                        qualification_run_id,
+                        scenario,
+                        evidence.external_effect_id,
+                        evidence.provider_request_identity,
+                        status,
+                        evidence.request_object_ref,
+                        evidence.response_object_ref,
+                        evidence.request_hash,
+                        evidence.response_hash,
+                        Jsonb(receipt),
+                        Jsonb(evidence.usage),
+                        Jsonb(evidence.usage),
+                        Jsonb(evidence.cost),
+                        Jsonb(evidence.cost),
+                        Jsonb(row["evidence"]),
+                        late_result,
+                    ],
+                )
+                rows.append(row)
+            uow.commit()
+        return rows
+
     def _ensure_run(self, run_id: str, operation_id: str, command: D0QualificationCommand, fixture: Any) -> None:
         try:
             sdk_version = importlib.metadata.version("openai")
@@ -468,7 +943,15 @@ class D0QualificationAuthority:
             ],
         }
 
-    def _materialize_report(self, operation_id: str, command: D0QualificationCommand, run_id: str, report: dict[str, Any]):
+    def _materialize_report(
+        self,
+        operation_id: str,
+        command: D0QualificationCommand,
+        run_id: str,
+        report: dict[str, Any],
+        *,
+        schema_version: str = "d0-provider-probe-report.v2",
+    ):
         logical_ref = f"provider_qualification/{run_id}.json"
         try:
             return AuthorityAssetQuery(self.database_url).require(
@@ -479,7 +962,7 @@ class D0QualificationAuthority:
                 AuthorityAssetWriteCommand(
                     operation_id=operation_id, project_id=command.project_id,
                     asset_id=f"d0-report:{run_id}", asset_type="d0_provider_qualification_report",
-                    schema_version="d0-provider-probe-report.v2", logical_ref=logical_ref,
+                    schema_version=schema_version, logical_ref=logical_ref,
                     category="provider_qualification", output_key="provider.qualification.d0.report",
                     role="primary", content=report, expected_current_asset_version_id=None,
                     reference_asset_ids=(), qualification_policy="d0-authority-evidence.v1",
@@ -496,20 +979,25 @@ class D0QualificationAuthority:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT qualification_run_id, report_asset_version_id
+                SELECT qualification_run_id, report_asset_version_id,decision
                 FROM authority_d0_qualification_run
                 WHERE operation_id=%s AND project_id=%s
-                  AND status='BLOCKED' AND report_asset_version_id IS NOT NULL
+                  AND status IN ('BLOCKED','COMPLETED')
+                  AND report_asset_version_id IS NOT NULL
                 """,
                 [operation_id, project_id],
             )
-            blocked = uow.cursor.fetchone()
-        if blocked is not None:
+            decided = uow.cursor.fetchone()
+        if decided is not None:
             return {
                 "operation_id": operation_id,
-                "qualification_run_id": str(blocked[0]),
-                "report_asset_version_id": str(blocked[1]),
-                "status": "BLOCKED_MISSING_CREDENTIALS",
+                "qualification_run_id": str(decided[0]),
+                "report_asset_version_id": str(decided[1]),
+                "status": (
+                    "PASSED"
+                    if str(decided[2]) == "QUALIFIED"
+                    else "BLOCKED_MISSING_CREDENTIALS"
+                ),
             }
         if state["status"] != "SUCCEEDED":
             return None

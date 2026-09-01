@@ -5,15 +5,34 @@ from pathlib import Path
 import unittest
 
 from novel_forge.modules.provider_qualification import (
+    D0LiveQualificationEvidence,
     D0ProbeConfig,
     D0QualificationAuthority,
     D0QualificationCommand,
     D0QualificationScheduler,
 )
+from novel_forge.modules.provider_qualification.domain import request_hash
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+    ProviderResult,
+)
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    dispatch_external_effect,
+    plan_external_effect,
+    reconcile_external_effect,
+)
+from novel_forge.modules.provider_control import (
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
+    insert_definition,
+    insert_operation,
     seed_authority_project_book,
     transaction,
 )
@@ -29,6 +48,50 @@ class _RecordingObjectStore:
     def put_json(self, *, object_key: str, payload: dict) -> str:
         self.objects[object_key] = json.loads(json.dumps(payload))
         return f"fixture-object://authority-evidence/{object_key}"
+
+
+class _ContractOnlyLiveGateway:
+    provider = "production_execution_gateway"
+    reconciliation_mode = "query"
+    production_execution_gateway_backed = True
+    capability_profile = ProviderCapabilityProfile(
+        provider=provider,
+        control_level=ProviderControlLevel.V2_CONTROLLED,
+        supports_request_timeout=True,
+        supports_provider_idempotency=True,
+        supports_query=True,
+        supports_cancel=True,
+        supports_callback=False,
+        supports_usage_receipt=True,
+        supports_cost_receipt=True,
+        reconciliation_mode="query",
+        real_provider_validation_eligible=True,
+    )
+
+    def __init__(self, evidence: dict) -> None:
+        self.evidence = evidence
+        self.response_lost = False
+
+    def execute(self, **_kwargs: object) -> ProviderResult:
+        self.response_lost = True
+        raise ExternalEffectAdapterError(
+            "contract test lost the response after Provider completion",
+            request_sent=True,
+        )
+
+    def query(self, **_kwargs: object) -> ProviderResult:
+        return ProviderResult(
+            "success",
+            "process-receipt:contract-only",
+            self.evidence,
+        )
+
+    def cancel(self, **_kwargs: object) -> ProviderResult:
+        return ProviderResult(
+            "already_completed",
+            "process-receipt:contract-only",
+            self.evidence,
+        )
 
 
 class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
@@ -150,6 +213,214 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 [result["qualification_run_id"]],
             )
             self.assertEqual(cursor.fetchone()[0], 1)
+
+    def test_only_authority_can_promote_correlated_live_execution_evidence(self) -> None:
+        project_id = identifier("d0-live-project")
+        book_id = identifier("d0-live-book")
+        workspace_id = f"workspace:{project_id}"
+        seed_authority_project_book(project_id=project_id, book_id=book_id)
+        authority = D0QualificationAuthority(
+            DATABASE_URL,
+            evidence_store=_RecordingObjectStore(),
+            application_build_id="d0-live-authority-integration",
+            commit_sha="a" * 40,
+        )
+        config = D0ProbeConfig.from_mapping(
+            {
+                **json.loads(
+                    (ROOT / "config/provider/d0-openai-probe.json").read_text(
+                        encoding="utf-8"
+                    )
+                ),
+                "provider": "codex-cli",
+                "backend_id": "codex-cli",
+            }
+        )
+        command = D0QualificationCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            actor_id="d0-live-integration-operator",
+            idempotency_key=f"{project_id}:codex:d0:v1",
+            trace_id=identifier("d0-live-trace"),
+            correlation_id=identifier("d0-live-correlation"),
+            config=config,
+        )
+        operation_id = str(authority.admit(command)["operation_id"])
+        source_operation_id = identifier("d0-live-source-operation")
+        source_definition = identifier("d0-live-source-definition")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_definition(cursor, source_definition)
+            insert_operation(
+                cursor,
+                operation_id=source_operation_id,
+                definition_name=source_definition,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                status="EXECUTING",
+            )
+        route_hash = "sha256:" + "c" * 64
+        prompt_hash = "sha256:" + "d" * 64
+        instruction_hash = "sha256:" + "e" * 64
+        skill_hash = "sha256:" + "f" * 64
+        usage = {
+            "measurement": "MEASURED",
+            "input_tokens": 11,
+            "output_tokens": 3,
+            "total_tokens": 14,
+        }
+        cost = {
+            "amount": "0.0001",
+            "currency": "USD",
+            "estimated": True,
+            "provider_billed": False,
+            "pricing_snapshot_hash": "sha256:" + "3" * 64,
+        }
+        provider_evidence = {
+            "provider_id": "codex-cli",
+            "model_id": "gpt-5.6-sol",
+            "prompt_version": "prompt:retrieval@1",
+            "skill_version": "skill:retrieval@1",
+            "real_model_call": True,
+            "fixture_protocol_only": False,
+            "usage": usage,
+            "cost": cost,
+            "latency": {"duration_ms": 42},
+            "capability_runtime": {
+                "prompt_system_instruction_hash": instruction_hash,
+                "prompt_template_hash": prompt_hash,
+                "skill_content_hash": skill_hash,
+            },
+            "production_execution": {
+                "execution_request": {
+                    "execution_id": f"chapter-execution:{source_operation_id}",
+                },
+                "execution_handle": {
+                    "local_execution_receipt_id": "process-receipt:contract-only",
+                    "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                },
+                "execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {
+                    "route_snapshot_id": "route:retrieval@1",
+                    "contract_hash": route_hash,
+                    "release_sha": "a" * 40,
+                    "model_provider": "codex-cli",
+                    "model_id": "gpt-5.6-sol",
+                    "auth_profile_ref": "auth:chatgpt-codex-cli",
+                },
+            },
+        }
+        context = EffectCommandContext(
+            operation_id=source_operation_id,
+            project_id=project_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        payload = {
+            "stage": "d0_qualification",
+            "input": {"probe": "d0"},
+            "trace_id": command.trace_id,
+            "correlation_id": command.correlation_id,
+        }
+        adapter = _ContractOnlyLiveGateway(provider_evidence)
+        effect = plan_external_effect(
+            DATABASE_URL,
+            context,
+            effect_type="provider.qualification.live",
+            provider=adapter.provider,
+            capability=config.capability,
+            stable_idempotency_key=f"{project_id}:live-effect",
+            request_payload=payload,
+            max_attempts=1,
+            reversible=False,
+            completion_policy="synchronous_final",
+            model_id="gpt-5.6-sol",
+            request_timeout_seconds=config.timeout_seconds,
+            reconciliation_mode="query",
+            provider_capability_profile=adapter.capability_profile.to_dict(),
+        )
+        with self.assertRaisesRegex(KernelError, "recorded as unknown"):
+            dispatch_external_effect(
+                DATABASE_URL,
+                context,
+                effect_id=str(effect["external_effect_id"]),
+                worker_id="d0-live-effect-worker",
+                lease_seconds=30,
+                adapter=adapter,
+            )
+        reconciled = reconcile_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=str(effect["external_effect_id"]),
+            adapter=adapter,
+        )
+        evidence = D0LiveQualificationEvidence.from_mapping(
+            {
+                "schema_version": "d0-live-qualification-evidence.v1",
+                "release_sha": "a" * 40,
+                "implementation_identity": "sha256:" + "b" * 64,
+                "source_operation_id": source_operation_id,
+                "external_effect_id": str(effect["external_effect_id"]),
+                "request_object_ref": "s3://evidence/d0/request.json",
+                "response_object_ref": "s3://evidence/d0/response.json",
+                "auth_profile_ref": "auth:chatgpt-codex-cli",
+                "provider": "codex-cli",
+                "backend_id": "codex-cli",
+                "model": "gpt-5.6-sol",
+                "model_version": "gpt-5.6-sol",
+                "route_snapshot_id": "route:retrieval@1",
+                "route_snapshot_hash": route_hash,
+                "prompt_version": "prompt:retrieval@1",
+                "prompt_hash": prompt_hash,
+                "instruction_version": "instruction:retrieval@1",
+                "instruction_hash": instruction_hash,
+                "skill_version": "skill:retrieval@1",
+                "skill_hash": skill_hash,
+                "request_hash": request_hash(payload),
+                "response_hash": request_hash(provider_evidence),
+                "provider_execution_id": f"chapter-execution:{source_operation_id}",
+                "provider_request_identity": "process-receipt:contract-only",
+                "usage": usage,
+                "cost": cost,
+                "latency": {"duration_ms": 42},
+                "controlled_failure": {
+                    "checkpoint": "after_provider_response_before_effect_receipt",
+                    "request_sent": True,
+                },
+                "recovery": {
+                    "external_state_was_ambiguous": True,
+                    "recovered_without_resend": True,
+                    "replayed": True,
+                },
+                "dispatch_count": 1,
+                "receipt_count": 1,
+                "provider_execution_count": 1,
+                "duplicate_external_effect_count": 0,
+                "fixture_protocol_only": False,
+                "real_model_call": True,
+            }
+        )
+
+        result = authority.execute_live(command, evidence)
+        replay = authority.execute_live(command, evidence)
+
+        self.assertTrue(adapter.response_lost)
+        self.assertEqual(reconciled["outcome"], "success")
+        self.assertEqual(result["status"], "PASSED")
+        self.assertTrue(replay["replayed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT fixture_protocol_only,status,decision,report_asset_version_id
+                FROM authority_d0_qualification_run
+                WHERE qualification_run_id=%s
+                """,
+                [result["qualification_run_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (False, "COMPLETED", "QUALIFIED", result["report_asset_version_id"]),
+            )
 
 
 if __name__ == "__main__":
