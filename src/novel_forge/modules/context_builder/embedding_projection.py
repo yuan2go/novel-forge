@@ -821,7 +821,7 @@ class RetrievalEmbeddingProjectionRuntime:
                     "embedding ExternalEffect has no frozen execution fence",
                 )
             recovery_adapter = authorize(
-                execution_id=f"embedding-execution:{effect_id}",
+                execution_id=f"chapter-execution:{effect_id}",
                 external_effect_id=effect_id,
                 operation_id=operation_id,
                 attempt_id=worker.attempt_id,

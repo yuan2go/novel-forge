@@ -73,7 +73,11 @@ class _RecoverableEmbeddingAdapter:
     def model_id_for_stage(self, _stage: str) -> str:
         return "fixture-embedding-recovery-v1"
 
-    def for_recovery(self, **_kwargs: object) -> "_RecoverableEmbeddingAdapter":
+    def for_recovery(self, **kwargs: object) -> "_RecoverableEmbeddingAdapter":
+        if str(kwargs.get("execution_id") or "") != (
+            "chapter-execution:" + str(kwargs.get("external_effect_id") or "")
+        ):
+            raise AssertionError("embedding recovery used a non-canonical execution ID")
         self.recovery_authorizations += 1
         return self
 
