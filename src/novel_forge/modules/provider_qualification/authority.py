@@ -797,11 +797,18 @@ class D0QualificationAuthority:
             )
         except (TypeError, ValueError):
             measured_duration_ms = 0
+        reported_latency = provider_evidence.get("latency")
         if (
             not started_at
             or not completed_at
-            or dict(provider_evidence.get("latency") or {}) != evidence.latency
             or measured_duration_ms != evidence.latency.get("duration_ms")
+            or (
+                reported_latency is not None
+                and (
+                    not isinstance(reported_latency, Mapping)
+                    or dict(reported_latency) != evidence.latency
+                )
+            )
         ):
             raise ValueError("live Provider latency evidence drifted")
         return {

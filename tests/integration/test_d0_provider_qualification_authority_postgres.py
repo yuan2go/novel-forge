@@ -308,7 +308,6 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             "fixture_protocol_only": False,
             "usage": usage,
             "cost": cost,
-            "latency": {"duration_ms": 42},
             "capability_runtime": {
                 "system_instruction": {"content_hash": instruction_hash},
                 "prompt_template": {"content_hash": prompt_hash},
