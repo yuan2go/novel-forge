@@ -2,21 +2,21 @@
   "cleanup": {
     "phases": [
       {
-        "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+        "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d",
         "phase": "postgresql",
-        "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1.json",
+        "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d.json",
         "remaining_resource_count": 0,
         "resource_count": 2,
-        "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+        "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
         "status": "PASS"
       },
       {
-        "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime",
+        "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime",
         "phase": "compose-runtime",
-        "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime.json",
+        "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime.json",
         "remaining_resource_count": 0,
         "resource_count": 18,
-        "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+        "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
         "status": "PASS"
       }
     ],
@@ -104,20 +104,20 @@
   "evidence_class": "p0_backend_engineering_qualification",
   "gates": [
     {
-      "duration_seconds": 0.405009,
+      "duration_seconds": 0.456408,
       "evidence": {
         "branch": "codex/wp-real-provider-qualification-01",
-        "commit_sha": "6bab0a5997755295cdc93654a0e6533c0ac53758",
+        "commit_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9",
         "dirty": false,
-        "implementation_tree_sha": "sha256:ed8bb7629a3d82a708be94e93f3bc669e5be5c09d37d8061525975305c792398",
-        "source_tree": "ccef1bf78783114d1498a246f7776312dee3989e",
+        "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
+        "source_tree": "d665d158f0d6f67b942ec59b0aaa7067eb4d226b",
         "workflow_sha": ""
       },
       "gate_id": "source-preflight",
       "status": "PASS"
     },
     {
-      "duration_seconds": 4.98764,
+      "duration_seconds": 5.090505,
       "evidence": {
         "artifact": "documentation-reality.json",
         "canonical_document_count": 5,
@@ -130,24 +130,24 @@
           "base_web_comment_count": 5,
           "status": "PASS"
         },
-        "digest": "sha256:377c6b16346ed209f1fceca6771aaaaa533b14e31c9ed0ac1b15993cae81f07b",
+        "digest": "sha256:63bae899b1d0209fba9669b3ded5c6075427e03c0e6bf819c0e5f60dd517f936",
         "errors": [],
         "evidence_class": "reality_inventory",
-        "inventory_sha256": "sha256:8dd06f54ae189096995436773fb07f1793fda46d5f41088ab2f37dabb4fd61e7",
+        "inventory_sha256": "sha256:98692ab39e81c006eed486f8ad02644f5e0d330a2e69f37a270346e5f7b945b8",
         "module_docstring_count": 35,
         "schema_version": "novel-forge.documentation-reality-check.v1",
         "script_comment_count": 25,
         "source_comment_count": 514,
         "source_docstring_count": 122,
         "status": "PASS",
-        "tested_sha": "6bab0a5997755295cdc93654a0e6533c0ac53758",
+        "tested_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9",
         "web_comment_count": 5
       },
       "gate_id": "documentation-reality",
       "status": "PASS"
     },
     {
-      "duration_seconds": 21.996975,
+      "duration_seconds": 21.796339,
       "evidence": {
         "returncode": 0
       },
@@ -155,21 +155,21 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 81.258618,
+      "duration_seconds": 79.914587,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 1433,
           "authority": "JUNIT_XML",
-          "collected_node_count": 1607,
-          "junit_case_count": 3040
+          "collected_node_count": 1608,
+          "junit_case_count": 3041
         },
         "collection": {
           "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_count": 1607,
+          "collected_count": 1608,
           "complete_collection": true,
           "name": "backend",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:afda15cb937ce3c599bd5025aeae322d988d8af19db5562a9918cd66317c8f54",
+          "report_digest": "sha256:3fd522de57643a8ea48b54a56c8f4771d63a52c4077255cf4efe3111708b4eac",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
           "source_file_count": 212,
           "source_files": [
@@ -412,13 +412,13 @@
         ],
         "junit": {
           "artifact": "backend-pytest.xml",
-          "digest": "sha256:4eed1320bed4a1bb0057a60409080467c418e5736bbb82e0cff5af08188dde79",
-          "duration_seconds": 80.613,
+          "digest": "sha256:ac6b85ba7c06bfdbb758ff77878a60519007243693c380cb73bed0dc1d2533cd",
+          "duration_seconds": 78.626,
           "errors": 0,
           "failures": 0,
-          "passed": 3040,
+          "passed": 3041,
           "skipped": 0,
-          "tests": 3040
+          "tests": 3041
         },
         "schema_version": "novel-forge.backend-pytest-evidence.v1",
         "status": "PASS"
@@ -427,13 +427,13 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 3.077207,
+      "duration_seconds": 3.086498,
       "evidence": {
         "database_identity": {
-          "database_name": "nf_p0_80eb99c8e34b4ff79dbdcb1f802b02b1_test",
+          "database_name": "nf_p0_24f5de4815ed4d8786bb542627e3ad2d_test",
           "host_class": "LOOPBACK",
-          "port": 55091,
-          "server_identity_digest": "sha256:ec512386861d3488774595373b68b1fd3e37bcec100d6d3fa3f8ffd9ddd61139"
+          "port": 55097,
+          "server_identity_digest": "sha256:bb9667502324c9ab08b499acec5800a3c0c09d3c49e4a61f6eb40170ccb6551b"
         },
         "dynamic_port": true,
         "ownership_resource_count": 2
@@ -442,7 +442,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 1.485812,
+      "duration_seconds": 1.510306,
       "evidence": {
         "applied_count": 105,
         "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -454,7 +454,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 80.899458,
+      "duration_seconds": 82.505139,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 13,
@@ -469,7 +469,7 @@
           "complete_collection": true,
           "name": "migration-compatibility",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:549de5b9d21ca4b3ec97fe0da390c2cb8561205f0973a4c5bbe8106e84af9ff1",
+          "report_digest": "sha256:fb4dbb5f476c573f685caadab463290bae4415cfabafb14a2bd6f9dcb30de0ba",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
           "source_file_count": 9,
           "source_files": [
@@ -487,8 +487,8 @@
         "complete_collection": true,
         "junit": {
           "artifact": "migration-compatibility-pytest.xml",
-          "digest": "sha256:5a41467f4f9fa5d4adf3a662b7edb5fcf1b32859276a5c6b1643397ca7c80ccd",
-          "duration_seconds": 80.529,
+          "digest": "sha256:63bbeea247ade30f1e854bab8c374310081834e04112de1a5aad08cfd7b03971",
+          "duration_seconds": 82.087,
           "errors": 0,
           "failures": 0,
           "passed": 80,
@@ -515,7 +515,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 1387.456526,
+      "duration_seconds": 1459.724919,
       "evidence": {
         "case_accounting": {
           "additional_junit_case_count": 85,
@@ -530,7 +530,7 @@
           "complete_collection": true,
           "name": "integration",
           "pytest_exit_status": 0,
-          "report_digest": "sha256:28029f47286e66a237828280aebd3f6fecad40fc87ededac885734b7aafbc50b",
+          "report_digest": "sha256:23653ebb4c80b3ba66805d830c3c048b59d4e76d5a0e4d9e8dad502f017c2cbe",
           "schema_version": "novel-forge.validated-pytest-collection.v1",
           "source_file_count": 92,
           "source_files": [
@@ -631,8 +631,8 @@
         "complete_collection": true,
         "junit": {
           "artifact": "postgresql-pytest.xml",
-          "digest": "sha256:2ff15ba0d6feb561d11bbc62def7318b6c537902f9f1d6f00ee46db5bb485a48",
-          "duration_seconds": 1386.528,
+          "digest": "sha256:778c7087d55d924d3961542ce0a1d312e4c41f3850f680a93bfda4161b8c731a",
+          "duration_seconds": 1458.906,
           "errors": 0,
           "failures": 0,
           "passed": 586,
@@ -688,7 +688,7 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 0.014962,
+      "duration_seconds": 0.019727,
       "evidence": {
         "applied_count": 105,
         "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -700,10 +700,10 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 16.944179,
+      "duration_seconds": 15.788259,
       "evidence": {
         "artifact": "query-plan.json",
-        "digest": "sha256:5705f3d15b5be15e369e2bd0811e9ccfe3a11b1a5804dcf11fe67c7013a92f82",
+        "digest": "sha256:f02716a4402089ef39ca5edcf6d12ccab981227baee48b6cef59109b9d61094d",
         "plan_count": 6,
         "row_counts": {
           "authority_asset_version": 100000,
@@ -718,14 +718,14 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 77.188389,
+      "duration_seconds": 55.266209,
       "evidence": {
         "artifact": "compose-runtime.json",
         "authoritative_side_effect": true,
-        "digest": "sha256:e2de7a5d7776e61d7f748e13dae3d61887e653fe6375cbfb857e560efa9d30d9",
-        "post_restart_operation_id": "e113521a-64c0-4c35-b83f-177ddcffa75a",
-        "pre_restart_operation_id": "910f321b-2ddd-45cc-973d-2d29896a33aa",
-        "recovered_operation_id": "f44ed169-f27b-4bb5-860b-27233d5b91d3"
+        "digest": "sha256:68eb5a5718b781b429905aa28192fc1b93b09e30f0c9ee3f730c809c2145b6b8",
+        "post_restart_operation_id": "cd750e01-3834-44a3-9d05-fc0554d76e93",
+        "pre_restart_operation_id": "f35eaa1b-e26e-49f4-a9c5-84d02ae6646f",
+        "recovered_operation_id": "3d5d17e8-969f-4bb8-83c7-cf811e936bbf"
       },
       "gate_id": "compose-runtime",
       "status": "PASS"
@@ -735,21 +735,21 @@
       "evidence": {
         "phases": [
           {
-            "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+            "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d",
             "phase": "postgresql",
-            "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1.json",
+            "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d.json",
             "remaining_resource_count": 0,
             "resource_count": 2,
-            "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+            "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
             "status": "PASS"
           },
           {
-            "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime",
+            "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime",
             "phase": "compose-runtime",
-            "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime.json",
+            "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime.json",
             "remaining_resource_count": 0,
             "resource_count": 18,
-            "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+            "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
             "status": "PASS"
           }
         ],
@@ -760,17 +760,17 @@
       "status": "PASS"
     },
     {
-      "duration_seconds": 0.0,
+      "duration_seconds": 1e-06,
       "evidence": {
-        "artifact": "p0-backend-qualification-6bab0a5997755295cdc93654a0e6533c0ac53758.json",
+        "artifact": "p0-backend-qualification-cac10f3be701e8608f4bf01b4ce7ec6174d9faa9.json",
         "atomic_write": true
       },
       "gate_id": "evidence-finalization",
       "status": "PASS"
     }
   ],
-  "generated_at": "2026-09-01T17:04:48+00:00",
-  "implementation_tree_sha": "sha256:ed8bb7629a3d82a708be94e93f3bc669e5be5c09d37d8061525975305c792398",
+  "generated_at": "2026-09-01T17:46:22+00:00",
+  "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
   "migration": {
     "expectation_source": "architecture/manifests/migration-manifest.yaml",
     "expected_head": "20260830_0105_p0_backend_qualification_repairs",
@@ -807,23 +807,23 @@
     "schema_version": "novel-forge.backend-qualification-manifest.v1"
   },
   "run_identity": {
-    "artifact_root": "novel-forge-p0-6bab0a599775-80eb99c8e34b4ff79dbdcb1f802b02b1",
-    "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
-    "compose_runtime_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime",
-    "database_name": "nf_p0_80eb99c8e34b4ff79dbdcb1f802b02b1_test",
+    "artifact_root": "novel-forge-p0-cac10f3be701-24f5de4815ed4d8786bb542627e3ad2d",
+    "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d",
+    "compose_runtime_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime",
+    "database_name": "nf_p0_24f5de4815ed4d8786bb542627e3ad2d_test",
     "profile": "local",
-    "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1"
+    "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d"
   },
   "schema_version": "novel-forge.p0-backend-qualification-report.v1",
   "source_identity": {
     "branch": "codex/wp-real-provider-qualification-01",
-    "commit_sha": "6bab0a5997755295cdc93654a0e6533c0ac53758",
+    "commit_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9",
     "dirty": false,
-    "implementation_tree_sha": "sha256:ed8bb7629a3d82a708be94e93f3bc669e5be5c09d37d8061525975305c792398",
-    "source_tree": "ccef1bf78783114d1498a246f7776312dee3989e",
+    "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
+    "source_tree": "d665d158f0d6f67b942ec59b0aaa7067eb4d226b",
     "workflow_sha": ""
   },
-  "source_tree": "ccef1bf78783114d1498a246f7776312dee3989e",
+  "source_tree": "d665d158f0d6f67b942ec59b0aaa7067eb4d226b",
   "status": "PASS",
-  "tested_sha": "6bab0a5997755295cdc93654a0e6533c0ac53758"
+  "tested_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9"
 }
