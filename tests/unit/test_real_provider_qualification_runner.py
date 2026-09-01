@@ -77,6 +77,10 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             runtime_root = Path(directory)
             receipt_dir = runtime_root / "codex-executions" / "execution-a"
             receipt_dir.mkdir(parents=True)
+            stdout_path = receipt_dir / "stdout.log"
+            stderr_path = receipt_dir / "stderr.log"
+            stdout_path.write_text('{"result":"ok"}\n', encoding="utf-8")
+            stderr_path.write_text("", encoding="utf-8")
             (receipt_dir / "process-receipt.json").write_text(
                 json.dumps(
                     {
@@ -84,6 +88,9 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
                         "execution_id": "execution:a",
                         "status": "SUCCEEDED",
                         "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                        "stdout_path": str(stdout_path),
+                        "stderr_path": str(stderr_path),
+                        "environment_keys": ["PATH", "CODEX_HOME"],
                     }
                 ),
                 encoding="utf-8",
@@ -98,6 +105,37 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
         self.assertRegex(
             evidence["process_receipt_identity_hash"], r"^sha256:[0-9a-f]{64}$"
         )
+        self.assertEqual(
+            evidence["process_log_evidence"]["stdout"]["secret_scan"], "PASS"
+        )
+        self.assertEqual(evidence["credential_environment_keys_present"], [])
+
+    def test_process_log_secret_material_fails_closed(self) -> None:
+        with TemporaryDirectory() as directory:
+            runtime_root = Path(directory)
+            receipt_dir = runtime_root / "codex-executions" / "execution-a"
+            receipt_dir.mkdir(parents=True)
+            stdout_path = receipt_dir / "stdout.log"
+            stderr_path = receipt_dir / "stderr.log"
+            stdout_path.write_text(
+                "api_key=provider-secret-value\n", encoding="utf-8"
+            )
+            stderr_path.write_text("", encoding="utf-8")
+            (receipt_dir / "process-receipt.json").write_text(
+                json.dumps(
+                    {
+                        "execution_id": "execution:a",
+                        "stdout_path": str(stdout_path),
+                        "stderr_path": str(stderr_path),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "inline secret material"):
+                RUNNER._provider_process_evidence(
+                    runtime_root, execution_id="execution:a"
+                )
 
     def test_duplicate_process_receipts_fail_closed(self) -> None:
         with TemporaryDirectory() as directory:

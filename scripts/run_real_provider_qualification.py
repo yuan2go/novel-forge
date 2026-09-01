@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -462,6 +463,46 @@ def _provider_process_evidence(
             f"observed {len(receipts)}"
         )
     receipt = receipts[0]
+    forbidden_environment_keys = {
+        "OPENAI_API_KEY",
+        "NOVEL_FORGE_DATABASE_URL",
+        "NOVEL_FORGE_MINIO_ACCESS_KEY",
+        "NOVEL_FORGE_MINIO_SECRET_KEY",
+    }
+    environment_keys = {
+        str(value) for value in receipt.get("environment_keys") or ()
+    }
+    leaked_environment_keys = sorted(
+        environment_keys & forbidden_environment_keys
+    )
+    if leaked_environment_keys:
+        raise RuntimeError(
+            "real Provider process received credential environment keys: "
+            + ", ".join(leaked_environment_keys)
+        )
+    log_evidence: dict[str, Any] = {}
+    resolved_runtime_root = runtime_root.resolve()
+    for label, key in (("stdout", "stdout_path"), ("stderr", "stderr_path")):
+        log_path = Path(str(receipt.get(key) or "")).resolve()
+        try:
+            relative_path = log_path.relative_to(resolved_runtime_root)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"real Provider {label} log escaped the runtime root"
+            ) from exc
+        if not log_path.is_file():
+            raise RuntimeError(f"real Provider {label} log is missing")
+        raw_log = log_path.read_bytes()
+        assert_no_inline_secrets(
+            raw_log.decode("utf-8", errors="replace"),
+            label=f"real Provider {label} log",
+        )
+        log_evidence[label] = {
+            "relative_path": relative_path.as_posix(),
+            "byte_count": len(raw_log),
+            "sha256": "sha256:" + hashlib.sha256(raw_log).hexdigest(),
+            "secret_scan": "PASS",
+        }
     identity = {
         key: receipt.get(key)
         for key in (
@@ -479,10 +520,13 @@ def _provider_process_evidence(
             "elapsed_ms",
         )
     }
+    identity["logs"] = log_evidence
     return {
         "process_receipt_count": len(receipts),
         "duplicate_provider_process_count": max(0, len(receipts) - 1),
         "process_receipt_identity_hash": request_hash(identity),
+        "process_log_evidence": log_evidence,
+        "credential_environment_keys_present": [],
     }
 
 
@@ -814,6 +858,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "external_effect": {
                 "operation_id": provider_operation_id,
                 "external_effect_id": external_effect_id,
+                "request_hash": live_evidence.request_hash,
+                "response_hash": live_evidence.response_hash,
+                "provider_execution_id": live_evidence.provider_execution_id,
+                "provider_request_identity": (
+                    live_evidence.provider_request_identity
+                ),
                 "dispatch_count": dispatch_count,
                 "receipt_count": receipt_count,
                 "reconciliation_count": recon_count,
