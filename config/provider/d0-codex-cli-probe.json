@@ -5,7 +5,7 @@
   "model_env": "NOVEL_FORGE_D0_MODEL",
   "model_version_env": "NOVEL_FORGE_D0_MODEL_VERSION",
   "route_policy_version": "chapter.retrieval.route@1",
-  "timeout_seconds": 300,
+  "timeout_seconds": 600,
   "auth_secret_ref": "env://NOVEL_FORGE_PROVIDER_AUTH_PROFILE",
   "capability": "model.retrieval",
   "prompt_version": "prompt-system:chapter-generation-pack@v1",

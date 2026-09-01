@@ -48,6 +48,7 @@ class D0ProviderQualificationTests(unittest.TestCase):
         )
 
         self.assertEqual(config.route_policy_version, "chapter.retrieval.route@1")
+        self.assertEqual(config.timeout_seconds, 600)
         self.assertEqual(
             config.prompt_version, "prompt-system:chapter-generation-pack@v1"
         )
