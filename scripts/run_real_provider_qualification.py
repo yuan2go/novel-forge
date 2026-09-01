@@ -368,6 +368,11 @@ def _runtime_environment(
             "NOVEL_FORGE_EMBEDDING_PROVIDER": "codex-cli",
             "NOVEL_FORGE_EMBEDDING_MODEL": model,
             "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "8",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                reasoning_effort
+            ),
             "NOVEL_FORGE_D0_MODEL": model,
             "NOVEL_FORGE_D0_MODEL_VERSION": "provider-not-reported",
         }
