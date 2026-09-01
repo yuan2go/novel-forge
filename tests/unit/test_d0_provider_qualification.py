@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 
 from novel_forge.modules.provider_qualification import (
+    D0LiveQualificationEvidence,
     D0ProbeConfig,
     run_d0_probe,
     run_fixture_protocol_probe,
@@ -59,6 +60,84 @@ class D0ProviderQualificationTests(unittest.TestCase):
         self.assertEqual(report.status, "BLOCKED_MISSING_CREDENTIALS")
         self.assertFalse(any(report.gates.values()))
         self.assertTrue(report.provider_request_id.startswith("scripted-request:"))
+
+    def test_live_evidence_requires_exact_identity_and_zero_duplicate_send(self) -> None:
+        evidence = D0LiveQualificationEvidence.from_mapping(
+            {
+                "schema_version": "d0-live-qualification-evidence.v1",
+                "release_sha": "a" * 40,
+                "implementation_identity": "sha256:" + "b" * 64,
+                "source_operation_id": "operation:provider-runtime",
+                "external_effect_id": "effect:provider-runtime",
+                "request_object_ref": "s3://evidence/d0/request.json",
+                "response_object_ref": "s3://evidence/d0/response.json",
+                "auth_profile_ref": "auth:chatgpt-codex-cli",
+                "provider": "codex-cli",
+                "backend_id": "codex-cli",
+                "model": "gpt-5.6-sol",
+                "model_version": "gpt-5.6-sol",
+                "route_snapshot_id": "route:retrieval@1",
+                "route_snapshot_hash": "sha256:" + "c" * 64,
+                "prompt_version": "prompt:retrieval@1",
+                "prompt_hash": "sha256:" + "d" * 64,
+                "instruction_version": "instruction:retrieval@1",
+                "instruction_hash": "sha256:" + "e" * 64,
+                "skill_version": "skill:retrieval@1",
+                "skill_hash": "sha256:" + "f" * 64,
+                "request_hash": "sha256:" + "1" * 64,
+                "response_hash": "sha256:" + "2" * 64,
+                "provider_execution_id": "chapter-execution:effect:provider-runtime",
+                "provider_request_identity": "process-receipt:provider-runtime",
+                "usage": {
+                    "measurement": "MEASURED",
+                    "input_tokens": 11,
+                    "output_tokens": 3,
+                    "total_tokens": 14,
+                },
+                "cost": {
+                    "amount": "0.0001",
+                    "currency": "USD",
+                    "estimated": True,
+                    "provider_billed": False,
+                    "pricing_snapshot_hash": "sha256:" + "3" * 64,
+                },
+                "latency": {"duration_ms": 42},
+                "controlled_failure": {
+                    "checkpoint": "after_provider_response_before_effect_receipt",
+                    "request_sent": True,
+                },
+                "recovery": {
+                    "external_state_was_ambiguous": True,
+                    "recovered_without_resend": True,
+                    "replayed": True,
+                },
+                "dispatch_count": 1,
+                "receipt_count": 1,
+                "provider_execution_count": 1,
+                "duplicate_external_effect_count": 0,
+                "fixture_protocol_only": False,
+                "real_model_call": True,
+            }
+        )
+
+        self.assertEqual(evidence.provider, "codex-cli")
+        self.assertEqual(evidence.usage["total_tokens"], 14)
+        self.assertTrue(evidence.recovery["recovered_without_resend"])
+
+        with self.assertRaisesRegex(ValueError, "duplicate Provider execution"):
+            D0LiveQualificationEvidence.from_mapping(
+                {**evidence.to_dict(), "dispatch_count": 2}
+            )
+
+    def test_fixture_cannot_be_parsed_as_live_qualification_evidence(self) -> None:
+        with self.assertRaisesRegex(ValueError, "fixture"):
+            D0LiveQualificationEvidence.from_mapping(
+                {
+                    "schema_version": "d0-live-qualification-evidence.v1",
+                    "fixture_protocol_only": True,
+                    "real_model_call": False,
+                }
+            )
 
 
 if __name__ == "__main__":

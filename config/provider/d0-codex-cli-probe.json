@@ -1,0 +1,13 @@
+{
+  "schema_version": "d0-provider-probe-config.v1",
+  "provider": "codex-cli",
+  "backend_id": "codex-cli",
+  "model_env": "NOVEL_FORGE_D0_MODEL",
+  "model_version_env": "NOVEL_FORGE_D0_MODEL_VERSION",
+  "route_policy_version": "d0-codex-cli-route-policy.v1",
+  "timeout_seconds": 300,
+  "auth_secret_ref": "env://NOVEL_FORGE_PROVIDER_AUTH_PROFILE",
+  "capability": "model.retrieval",
+  "prompt_version": "retrieval-embedding-prompt.v1",
+  "skill_version": "context-builder-source-isolation@current"
+}
