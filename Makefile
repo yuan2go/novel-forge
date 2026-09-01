@@ -11,7 +11,7 @@ QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -56,6 +56,7 @@ help:
 	@echo "make authority-only-config-check - validate the Track B production composition"
 	@echo "make documentation-reality-check - verify canonical docs, evidence references, and comments"
 	@echo "make d0-provider-probe - run the fail-closed D0 Provider qualification probe"
+	@echo "make real-provider-qualification - run exact-SHA credentialed Provider qualification"
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests
@@ -191,3 +192,16 @@ documentation-reality-check:
 
 d0-provider-probe:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_d0_provider_probe.py
+
+real-provider-qualification:
+	@test -n "$${NOVEL_FORGE_DATABASE_URL:-}" || { echo "NOVEL_FORGE_DATABASE_URL is required" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_MINIO_ENDPOINT:-}" || { echo "NOVEL_FORGE_MINIO_ENDPOINT is required" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_REAL_PROVIDER_RUNTIME_ROOT:-}" || { echo "NOVEL_FORGE_REAL_PROVIDER_RUNTIME_ROOT is required" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH:-}" || { echo "NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH is required" >&2; exit 2; }
+	@test -n "$${NOVEL_FORGE_REAL_PROVIDER_EXPECTED_SHA:-}" || { echo "NOVEL_FORGE_REAL_PROVIDER_EXPECTED_SHA is required" >&2; exit 2; }
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_real_provider_qualification.py \
+		--database-url "$${NOVEL_FORGE_DATABASE_URL}" \
+		--minio-endpoint "$${NOVEL_FORGE_MINIO_ENDPOINT}" \
+		--runtime-root "$${NOVEL_FORGE_REAL_PROVIDER_RUNTIME_ROOT}" \
+		--output "$${NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH}" \
+		--expected-sha "$${NOVEL_FORGE_REAL_PROVIDER_EXPECTED_SHA}"

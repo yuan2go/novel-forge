@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import json
+import os
 from pathlib import Path
 import subprocess
 from typing import Any, Mapping
@@ -525,7 +526,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         build_id=build_id,
         commit_sha=commit_sha,
     )
-    _register_pack_operation_definitions(
+    _register_operation_definitions(
         args.database_url, build_id=build_id, commit_sha=commit_sha
     )
     config = D0ProbeConfig.from_mapping(
@@ -627,7 +628,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if reconciled["outcome"] != "success":
         raise RuntimeError("ambiguous Provider effect did not reconcile")
-    expired_lease = _expire_active_lease(
+    expired_lease = _expire_active_attempt_lease(
         args.database_url, provider_operation_id
     )
     recovered_runtime = recovered_application.embedding_projection_runtime
@@ -807,11 +808,27 @@ def main() -> int:
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
     )
-    parser.add_argument("--model", default="gpt-5.6-sol")
-    parser.add_argument("--reasoning-effort", default="medium")
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("NOVEL_FORGE_REAL_PROVIDER_MODEL", "gpt-5.6-sol"),
+    )
+    parser.add_argument(
+        "--reasoning-effort",
+        default=os.environ.get(
+            "NOVEL_FORGE_REAL_PROVIDER_REASONING_EFFORT", "medium"
+        ),
+    )
     parser.add_argument("--minio-endpoint", required=True)
-    parser.add_argument("--minio-access-key", default="novel_forge")
-    parser.add_argument("--minio-secret-key", default="novel_forge_secret")
+    parser.add_argument(
+        "--minio-access-key",
+        default=os.environ.get("NOVEL_FORGE_MINIO_ACCESS_KEY", "novel_forge"),
+    )
+    parser.add_argument(
+        "--minio-secret-key",
+        default=os.environ.get(
+            "NOVEL_FORGE_MINIO_SECRET_KEY", "novel_forge_secret"
+        ),
+    )
     parser.add_argument("--minio-secure", action="store_true")
     args = parser.parse_args()
     output = Path(args.output).expanduser().resolve()

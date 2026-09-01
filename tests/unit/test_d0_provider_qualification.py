@@ -61,6 +61,21 @@ class D0ProviderQualificationTests(unittest.TestCase):
         self.assertFalse(any(report.gates.values()))
         self.assertTrue(report.provider_request_id.startswith("scripted-request:"))
 
+    def test_credentials_cannot_enable_the_non_authority_contract_probe(self) -> None:
+        report = run_d0_probe(
+            self.config,
+            env={
+                "OPENAI_API_KEY": "credential-presence-only",
+                "NOVEL_FORGE_D0_MODEL": "must-not-be-called",
+                "NOVEL_FORGE_D0_MODEL_VERSION": "test",
+            },
+        )
+
+        self.assertEqual(report.status, "BLOCKED_CONFIGURATION")
+        self.assertIn("Authority", report.blocker)
+        self.assertTrue(report.fixture_protocol_only)
+        self.assertFalse(any(report.gates.values()))
+
     def test_live_evidence_requires_exact_identity_and_zero_duplicate_send(self) -> None:
         evidence = D0LiveQualificationEvidence.from_mapping(
             {
