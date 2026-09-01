@@ -335,15 +335,15 @@
       "id": "real-provider-runtime-qualification",
       "evidence_class": "focused_qualification_contracts",
       "gate": "make real-provider-qualification",
-      "observed_at_sha": "91590ebb643f6d47539ca518d17d1573eaa42df5",
-      "source_tree": "b2130f7403b97d624f1c764bb6f21e13cd487f6a",
-      "implementation_tree_sha": "sha256:ed8bb7629a3d82a708be94e93f3bc669e5be5c09d37d8061525975305c792398",
+      "observed_at_sha": "d978a35584e8c6784ac141f6ff69495fb123ea07",
+      "source_tree": "27349f0d3162338d5e6035c3e2f620fe6304e87a",
+      "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
       "collected": 1,
       "passed": 1,
       "failed": 0,
       "qualification_evidence": [
         {
-          "path": "architecture/live-evidence/real-provider-qualification-91590ebb643f6d47539ca518d17d1573eaa42df5.json",
+          "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
           "locator": "\"REAL_PROVIDER_QUALIFIED\": true"
         },
         {
@@ -361,6 +361,10 @@
         {
           "path": "tests/unit/test_real_provider_qualification_runner.py",
           "symbol": "RealProviderQualificationRunnerTests.test_process_receipt_count_is_measured_from_runtime_state"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_process_log_secret_material_fails_closed"
         }
       ]
     }
@@ -1142,7 +1146,7 @@
       "value": false,
       "evidence": [
         {
-          "path": "architecture/live-evidence/real-provider-qualification-91590ebb643f6d47539ca518d17d1573eaa42df5.json",
+          "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
           "locator": "\"CHAPTER_VERTICAL_PROVEN\": false"
         }
       ]
