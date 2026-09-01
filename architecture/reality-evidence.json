@@ -75,28 +75,28 @@
       "id": "p0-backend-engineering-qualification",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
-      "observed_at_sha": "f76d02496bd4757a4cf853625357e2dc8841ebb9",
-      "source_tree": "c7bba80d94de885b2d02a516a488db457efc111c",
-      "implementation_tree_sha": "sha256:047a5e204dadccd2983f352862b319b6f162e7bce6164ce80399b0d88ffac15f",
+      "observed_at_sha": "6bab0a5997755295cdc93654a0e6533c0ac53758",
+      "source_tree": "ccef1bf78783114d1498a246f7776312dee3989e",
+      "implementation_tree_sha": "sha256:ed8bb7629a3d82a708be94e93f3bc669e5be5c09d37d8061525975305c792398",
       "dependency_snapshot_digest": "sha256:b3a7de0ed42c6ae6d4b29034abfef3b87d9c48cce4d7cd26679bf5c45f0c6046",
       "qualification_report": {
-        "run_id": "p0-5ee8946fc6f0488c98ab33a4a518e8cb",
-        "artifact_root": "novel-forge-p0-f76d02496bd4-5ee8946fc6f0488c98ab33a4a518e8cb",
-        "artifact": "p0-backend-qualification-f76d02496bd4757a4cf853625357e2dc8841ebb9.json",
-        "repository_path": "architecture/evidence/p0-backend-qualification-f76d02496bd4757a4cf853625357e2dc8841ebb9.json",
-        "sha256": "sha256:fcbdb17087a8b5e81bda418f481d7214dd7aba969a4ba222eacc0dd8a81731a8",
+        "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
+        "artifact_root": "novel-forge-p0-6bab0a599775-80eb99c8e34b4ff79dbdcb1f802b02b1",
+        "artifact": "p0-backend-qualification-6bab0a5997755295cdc93654a0e6533c0ac53758.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-6bab0a5997755295cdc93654a0e6533c0ac53758.json",
+        "sha256": "sha256:1b8c07d312d6910077694cdc7e444a046033531d8a6661f15e4d6413cc8f5625",
         "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
       },
       "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
-      "collected": 3616,
-      "passed": 3616,
+      "collected": 3626,
+      "passed": 3626,
       "failed": 0,
       "collections": [
         {
           "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_nodes": 1602,
-          "junit_cases": 3034,
-          "passed": 3034,
+          "collected_nodes": 1607,
+          "junit_cases": 3040,
+          "passed": 3040,
           "skipped": 0,
           "complete": true
         },
@@ -111,9 +111,9 @@
         },
         {
           "classification": "POSTGRESQL_REQUIRED",
-          "collected_nodes": 500,
-          "junit_cases": 582,
-          "passed": 582,
+          "collected_nodes": 501,
+          "junit_cases": 586,
+          "passed": 586,
           "skipped": 0,
           "complete": true
         }
@@ -183,21 +183,21 @@
         "remaining_resource_count": 0,
         "phases": [
           {
-            "compose_project": "nf-p0-5ee8946fc6f0488c98ab33a4a518e8cb",
+          "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
             "phase": "postgresql",
-            "receipt": "compose-resource-ownership-nf-p0-5ee8946fc6f0488c98ab33a4a518e8cb.json",
+          "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1.json",
             "remaining_resource_count": 0,
             "resource_count": 2,
-            "run_id": "p0-5ee8946fc6f0488c98ab33a4a518e8cb",
+          "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
             "status": "PASS"
           },
           {
-            "compose_project": "nf-p0-5ee8946fc6f0488c98ab33a4a518e8cb-runtime",
+          "compose_project": "nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime",
             "phase": "compose-runtime",
-            "receipt": "compose-resource-ownership-nf-p0-5ee8946fc6f0488c98ab33a4a518e8cb-runtime.json",
+          "receipt": "compose-resource-ownership-nf-p0-80eb99c8e34b4ff79dbdcb1f802b02b1-runtime.json",
             "remaining_resource_count": 0,
             "resource_count": 18,
-            "run_id": "p0-5ee8946fc6f0488c98ab33a4a518e8cb",
+          "run_id": "p0-80eb99c8e34b4ff79dbdcb1f802b02b1",
             "status": "PASS"
           }
         ]
@@ -353,6 +353,14 @@
         {
           "path": "src/novel_forge/modules/provider_qualification/authority.py",
           "symbol": "D0QualificationAuthority.execute_live"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_process_receipt_count_is_measured_from_runtime_state"
         }
       ]
     }
@@ -521,6 +529,10 @@
         {
           "path": "tests/integration/test_external_effect_runtime_postgres.py",
           "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
         },
         {
           "path": "tests/unit/test_provider_adapter_v2.py",
