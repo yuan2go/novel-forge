@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-import importlib.util
 import json
 import os
 from typing import Mapping
@@ -12,7 +11,6 @@ from novel_forge.modules.provider_control import (
     ProviderQueryRequest,
     ProviderReceipt,
     ScriptedProviderAdapterV2,
-    build_openai_provider_adapter,
 )
 
 from .domain import D0_GATE_NAMES, D0ProbeConfig, D0ProbeReport, request_hash
@@ -160,98 +158,18 @@ def run_d0_probe(
     model_version = str(values.get(config.model_version_env) or "").strip()
     if not api_key:
         return run_fixture_protocol_probe(config)
-    if not model or importlib.util.find_spec("openai") is None:
-        fixture = run_fixture_protocol_probe(config)
-        return D0ProbeReport(
-            **{
-                **fixture.to_dict(),
-                "status": "BLOCKED_CONFIGURATION",
-                "blocker": "Credential exists, but model configuration or the OpenAI SDK is missing.",
-            }
-        )
-
-    adapter = build_openai_provider_adapter(api_key)
-    request = _request(
-        provider=config.provider,
-        model=model,
-        timeout_seconds=config.timeout_seconds,
-        stable_key="d0-real-stable-key",
-    )
-    initial = adapter.invoke(request)
-    if initial.handle is None:
-        raise RuntimeError("real D0 request did not return a provider request ID")
-    query = adapter.query_v2(
-        ProviderQueryRequest(
-            provider_request_id=initial.handle.provider_request_id,
-            stable_idempotency_key=request.stable_idempotency_key,
-            trace_id=request.trace_id,
-            correlation_id=request.correlation_id,
-        )
-    )
-    cancel = adapter.cancel_v2(
-        ProviderCancellationRequest(
-            provider_request_id=initial.handle.provider_request_id,
-            stable_idempotency_key=request.stable_idempotency_key,
-            reason="D0 post-completion cancel behavior",
-            trace_id=request.trace_id,
-            correlation_id=request.correlation_id,
-        )
-    )
-    raw_usage = dict(initial.evidence.get("usage") or {})
-    normalized_usage = {
-        **raw_usage,
-        "total_tokens": int(raw_usage.get("input_tokens") or 0)
-        + int(raw_usage.get("output_tokens") or 0),
-    }
-    receipt = {
-        "schema_version": "provider-sdk-receipt.v1",
-        "provider_request_id": initial.handle.provider_request_id,
-        "outcome": initial.outcome,
-        "request_hash": request.request_hash,
-    }
-    checks = {
-        "authentication": True,
-        "request_id": bool(initial.handle.provider_request_id),
-        "query_behavior_recorded": query.outcome in {"success", "final_failure", "cancelled", "ambiguous"},
-        "cancel_behavior_recorded": cancel.outcome in {"cancelled", "already_completed", "ambiguous"},
-        "usage_receipt": bool(raw_usage),
-        "provider_cost_receipt": False,
-        "unknown_reconciliation": False,
-        "late_result": False,
-        "restart_recovery": False,
-        "timeout_behavior": False,
-    }
-    gates = {
-        "real_provider_auth_proven": True,
-        "durable_intent_before_send_proven": False,
-        "provider_request_receipt_proven": True,
-        "provider_usage_cost_latency_proven": False,
-        "ambiguous_outcome_fail_closed": False,
-        "recovery_without_duplicate_send": False,
-    }
+    fixture = run_fixture_protocol_probe(config)
     return D0ProbeReport(
-        status="FAILED",
-        blocker="One live request completed, but cost, timeout, UNKNOWN/late-result and restart evidence remain incomplete.",
-        provider=config.provider,
-        backend_id=config.backend_id,
-        model=model,
-        model_version=model_version or "provider-not-reported",
-        route_policy_version=config.route_policy_version,
-        timeout_seconds=config.timeout_seconds,
-        cancel_capability=cancel.outcome,
-        query_capability=query.outcome,
-        provider_request_id=initial.handle.provider_request_id,
-        raw_usage=raw_usage,
-        normalized_usage=normalized_usage,
-        provider_cost=dict(initial.evidence.get("cost") or {}),
-        calculated_cost={},
-        receipt=receipt,
-        request_object_ref="",
-        response_object_ref="",
-        contract_checks=checks,
-        gates=gates,
-        fixture_protocol_only=False,
-        external_execution_proven=True,
+        **{
+            **fixture.to_dict(),
+            "status": "BLOCKED_CONFIGURATION",
+            "blocker": (
+                "Credentialed execution is forbidden in the contract probe; use "
+                "the PostgreSQL Provider Qualification Authority runner."
+            ),
+            "model": model or "configured-model-not-called",
+            "model_version": model_version or "provider-not-called",
+        }
     )
 
 
