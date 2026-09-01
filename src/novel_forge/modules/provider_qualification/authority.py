@@ -642,8 +642,7 @@ class D0QualificationAuthority:
         if (
             str(route_snapshot.get("route_snapshot_id") or "")
             != evidence.route_snapshot_id
-            or str(route_snapshot.get("contract_hash") or "")
-            != evidence.route_snapshot_hash
+            or request_hash(route_snapshot) != evidence.route_snapshot_hash
             or str(route_snapshot.get("release_sha") or "")
             != evidence.release_sha
             or str(route_snapshot.get("model_provider") or "")

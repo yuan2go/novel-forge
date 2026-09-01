@@ -690,7 +690,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "model": str(provider_evidence["model_id"]),
             "model_version": env["NOVEL_FORGE_D0_MODEL_VERSION"],
             "route_snapshot_id": str(route_snapshot["route_snapshot_id"]),
-            "route_snapshot_hash": str(route_snapshot["contract_hash"]),
+            "route_snapshot_hash": request_hash(route_snapshot),
             "prompt_version": str(provider_evidence["prompt_version"]),
             "prompt_hash": str(capability_runtime["prompt_template_hash"]),
             "instruction_version": (

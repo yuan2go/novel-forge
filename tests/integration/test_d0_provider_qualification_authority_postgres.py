@@ -258,7 +258,6 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 workspace_id=workspace_id,
                 status="EXECUTING",
             )
-        route_hash = "sha256:" + "c" * 64
         prompt_hash = "sha256:" + "d" * 64
         instruction_hash = "sha256:" + "e" * 64
         skill_hash = "sha256:" + "f" * 64
@@ -275,6 +274,14 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             "provider_billed": False,
             "pricing_snapshot_hash": "sha256:" + "3" * 64,
         }
+        route_snapshot = {
+            "route_snapshot_id": "route:retrieval@1",
+            "release_sha": "a" * 40,
+            "model_provider": "codex-cli",
+            "model_id": "gpt-5.6-sol",
+            "auth_profile_ref": "auth:chatgpt-codex-cli",
+        }
+        route_hash = request_hash(route_snapshot)
         provider_evidence = {
             "provider_id": "codex-cli",
             "model_id": "gpt-5.6-sol",
@@ -299,14 +306,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                     "transport": "LOCAL_CLI_REMOTE_INFERENCE",
                 },
                 "execution_result": {"outcome": "SUCCEEDED"},
-                "route_snapshot": {
-                    "route_snapshot_id": "route:retrieval@1",
-                    "contract_hash": route_hash,
-                    "release_sha": "a" * 40,
-                    "model_provider": "codex-cli",
-                    "model_id": "gpt-5.6-sol",
-                    "auth_profile_ref": "auth:chatgpt-codex-cli",
-                },
+                "route_snapshot": route_snapshot,
             },
         }
         context = EffectCommandContext(
