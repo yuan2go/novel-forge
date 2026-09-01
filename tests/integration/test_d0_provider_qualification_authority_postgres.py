@@ -245,7 +245,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             correlation_id=identifier("d0-live-correlation"),
             config=config,
         )
-        operation_id = str(authority.admit(command)["operation_id"])
+        authority.admit(command)
         source_operation_id = identifier("d0-live-source-operation")
         source_definition = identifier("d0-live-source-definition")
         with transaction() as connection, connection.cursor() as cursor:
