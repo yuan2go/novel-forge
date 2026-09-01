@@ -333,6 +333,37 @@ def _expire_active_attempt_lease(
     }
 
 
+def _expire_active_effect_dispatch_lease(
+    database_url: str, external_effect_id: str
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            UPDATE authority_effect_dispatch_lease
+            SET acquired_at=NOW()-INTERVAL '2 seconds',
+                heartbeat_at=NOW()-INTERVAL '2 seconds',
+                expires_at=NOW()-INTERVAL '1 second'
+            WHERE dispatch_id=(
+                SELECT dispatch_id FROM authority_external_effect_dispatch
+                WHERE external_effect_id=%s
+                ORDER BY generation DESC LIMIT 1
+            ) AND status='HELD'
+            RETURNING dispatch_id,fencing_token,owner,expires_at
+            """,
+            [external_effect_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise RuntimeError("response loss left no held Effect dispatch lease")
+        uow.commit()
+    return {
+        "dispatch_id": str(row[0]),
+        "fencing_token": int(row[1]),
+        "owner": str(row[2]),
+        "expires_at": row[3].isoformat(),
+    }
+
+
 def _outside_repository(path: Path) -> bool:
     try:
         path.relative_to(ROOT)
@@ -629,6 +660,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     expired_lease = _expire_active_attempt_lease(
         args.database_url, provider_operation_id
     )
+    expired_dispatch_lease = _expire_active_effect_dispatch_lease(
+        args.database_url, external_effect_id
+    )
     recovered_execution = build_production_execution_composition(
         settings, env=recovered_env
     )
@@ -787,6 +821,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "duplicate_external_effect_count": 0,
                 "ambiguous_response_injected": fault_gateway.triggered,
                 "expired_attempt_lease": expired_lease,
+                "expired_effect_dispatch_lease": expired_dispatch_lease,
                 "recovered_without_resend": True,
                 "replayed": replay_tick.replayed,
             },
