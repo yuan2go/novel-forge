@@ -31,7 +31,7 @@ description: Use when adapting topic, outline, chapter plan, draft, review, publ
 3. 对 topic、outline、chapter plan、draft 或 release package 运行 platform fit 检查。
 4. 将平台风险转为 ReviewIssue、RevisionTask 或 PublishGate blocking/warning。
 5. 读取反馈回流，生成 platform-specific knowledge/template/rule weight 建议。
-6. 输出 next-10-chapter strategy 或 release recommendation。
+6. 输出 near-term chapter strategy 或 release recommendation。
 
 ## 输出格式
 

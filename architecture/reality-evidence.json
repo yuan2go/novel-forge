@@ -1,11 +1,17 @@
 {
-  "schema_version": "novel-forge.reality-evidence.v2",
+  "schema_version": "novel-forge.reality-evidence.v3",
   "authority_order": [
     "executable_code",
     "schema_and_migrations",
     "runtime_wiring",
     "tests"
   ],
+  "fact_type_policy": {
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
   "status_vocabulary": [
     "CODE_EXISTS",
     "WIRED",
@@ -20,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260830_0105_p0_backend_qualification_repairs",
+  "migration_head": "20260902_0106_quality_qualification_scope_generalization",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -73,6 +79,7 @@
   "qualification_runs": [
     {
       "id": "p0-backend-engineering-qualification",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
       "observed_at_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9",
@@ -202,16 +209,7 @@
           }
         ]
       },
-      "evidence_ceilings": {
-        "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-        "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-        "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-        "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-        "LONGFORM": "NOT_PROVEN",
-        "MULTIBOOK": "NOT_PROVEN",
-        "PRODUCTION": "NOT_PROVEN",
-        "REAL_PROVIDER": "NOT_RUN_BY_SCOPE"
-      },
+      "historical_evidence_scope": "IMMUTABLE_AUDIT_ONLY",
       "qualification_evidence": [
         {
           "path": "tests/architecture/test_narrative_state_boundaries.py",
@@ -337,6 +335,7 @@
     },
     {
       "id": "real-provider-runtime-qualification",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "focused_qualification_contracts",
       "gate": "make real-provider-qualification",
       "observed_at_sha": "d978a35584e8c6784ac141f6ff69495fb123ea07",
@@ -378,7 +377,8 @@
     {
       "concept": "runtime-composition",
       "owner": "Authority API and process composition",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/api/authority_app.py",
@@ -422,7 +422,7 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "proof_ceiling": "LOCAL_FIXTURE_BACKEND_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -430,7 +430,8 @@
     {
       "concept": "command-attempt-lease-fence",
       "owner": "Command Kernel",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/service.py",
@@ -478,7 +479,7 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -486,7 +487,8 @@
     {
       "concept": "external-effect-provider-control",
       "owner": "Command Kernel ExternalEffect and Production Execution",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
@@ -563,7 +565,7 @@
           "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
         }
       ],
-      "proof_ceiling": "REAL_PROVIDER_RUNTIME_QUALIFIED_NOT_CHAPTER_OR_PRODUCTION_PROVEN",
+      "proof_ceiling": "REAL_PROVIDER_RUNTIME",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ],
@@ -574,7 +576,8 @@
     {
       "concept": "story-design-plan-activation",
       "owner": "Story Design and Plan Change Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
@@ -627,7 +630,7 @@
           "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -635,7 +638,8 @@
     {
       "concept": "chapter-production-saga",
       "owner": "Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_authority/application.py",
@@ -683,7 +687,7 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -691,7 +695,8 @@
     {
       "concept": "quality-and-release-gates",
       "owner": "Quality Qualification and Chapter Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
@@ -723,6 +728,11 @@
           "id": "20260826_0101_quality_qualification",
           "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
           "locator": "MIGRATION_ID = \"20260826_0101_quality_qualification\""
+        },
+        {
+          "id": "20260902_0106_quality_qualification_scope_generalization",
+          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\""
         }
       ],
       "qualification": [
@@ -735,7 +745,7 @@
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "proof_ceiling": "FIXTURE_ENGINEERING_QUALIFIED_HUMAN_REVIEW_NOT_RUN",
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -743,7 +753,8 @@
     {
       "concept": "book-opening-workflow",
       "owner": "Book Opening Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
@@ -784,6 +795,11 @@
           "id": "20260830_0105_p0_backend_qualification_repairs",
           "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
           "locator": "MIGRATION_ID = \"20260830_0105_p0_backend_qualification_repairs\""
+        },
+        {
+          "id": "20260902_0106_quality_qualification_scope_generalization",
+          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\""
         }
       ],
       "qualification": [
@@ -796,7 +812,7 @@
           "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
         }
       ],
-      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
+      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -804,7 +820,8 @@
     {
       "concept": "book-chapter-acceptance",
       "owner": "Book Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
@@ -849,7 +866,7 @@
           "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
         }
       ],
-      "proof_ceiling": "LOCAL_VERTICAL_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -857,7 +874,8 @@
     {
       "concept": "canon-and-narrative-state",
       "owner": "Canon approval and Book-accepted Narrative State projection",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/canon_graph/domain.py",
@@ -901,7 +919,7 @@
           "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING_QUALIFIED_LONGFORM_NOT_PROVEN",
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -909,7 +927,8 @@
     {
       "concept": "source-import-and-knowledge",
       "owner": "Source Import and MKAOS Authorities",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/source_import/application.py",
@@ -962,7 +981,7 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "proof_ceiling": "LOCAL_OBJECT_AND_POSTGRESQL_ENGINEERING_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -970,7 +989,8 @@
     {
       "concept": "agent-runtime",
       "owner": "Agent Runtime Authority",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/agent_runtime/application.py",
@@ -1019,7 +1039,7 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "proof_ceiling": "LOCAL_FIXTURE_BACKEND_ENGINEERING_QUALIFIED_AUTONOMOUS_BOOK_NOT_PROVEN",
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -1027,7 +1047,8 @@
     {
       "concept": "postgresql-persistence-and-migrations",
       "owner": "Authority Unit of Work and migration runner",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/storage/authority_uow.py",
@@ -1076,7 +1097,7 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "proof_ceiling": "LOCAL_FRESH_AND_UPGRADE_MATRIX_QUALIFIED_BACKUP_PITR_NOT_PROVEN",
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]
@@ -1084,7 +1105,8 @@
     {
       "concept": "retry-recovery-and-replay",
       "owner": "Owning Authority recovery applications with Command Kernel fencing",
-      "status": "QUALIFIED",
+      "status": "EXECUTABLE",
+      "fact_type": "CURRENT_RUNTIME_FACT",
       "implementation": [
         {
           "path": "src/novel_forge/modules/book_authority/recovery.py",
@@ -1128,7 +1150,7 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_AND_COMPOSE_RECOVERY_QUALIFIED_NOT_PRODUCTION_PROVEN",
+      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
       ]

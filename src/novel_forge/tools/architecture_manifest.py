@@ -133,7 +133,7 @@ def check_tests(root: Path) -> dict[str, Any]:
     qualification = _load(
         root,
         "backend-qualification-manifest.yaml",
-        schema_version="novel-forge.backend-qualification-manifest.v1",
+        schema_version="novel-forge.backend-qualification-manifest.v2",
     )
     qualification_collections = {
         str(path): item

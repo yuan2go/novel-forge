@@ -1,5 +1,5 @@
 {
-  "schema_version": "novel-forge.backend-qualification-manifest.v1",
+  "schema_version": "novel-forge.backend-qualification-manifest.v2",
   "migration_manifest": "architecture/manifests/migration-manifest.yaml",
   "pytest_collections": [
     {"name": "architecture", "paths": ["tests/architecture"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
@@ -66,14 +66,31 @@
       "tests/integration/test_book_opening_workflow_failures_postgres.py"
     ]
   },
-  "evidence_ceilings": {
-    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-    "LONGFORM": "NOT_PROVEN",
-    "MULTIBOOK": "NOT_PROVEN",
-    "PRODUCTION": "NOT_PROVEN"
+  "proof_scope": {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+      "runtime-composition",
+      "command-attempt-lease-fence",
+      "external-effect-provider-control",
+      "story-design-plan-activation",
+      "chapter-production-saga",
+      "quality-and-release-gates",
+      "book-opening-workflow",
+      "book-chapter-acceptance",
+      "canon-and-narrative-state",
+      "source-import-and-knowledge",
+      "agent-runtime",
+      "postgresql-persistence-and-migrations",
+      "retry-recovery-and-replay"
+    ],
+    "ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "does_not_establish": [
+      "ADMIN_UI_EXECUTION",
+      "CREDENTIALED_PROVIDER_EXECUTION",
+      "HUMAN_EDITORIAL_EVIDENCE",
+      "LONGITUDINAL_NARRATIVE_STABILITY",
+      "PRODUCTION_OPERATION"
+    ]
   }
 }

@@ -281,6 +281,8 @@ class PostgresQualityQualificationAuthority:
             )
         self._inject("after_campaign_asset")
         raw = manifest.to_dict()
+        chapter_start = manifest.chapter_group_ranges[0][0]
+        chapter_end = manifest.chapter_group_ranges[-1][1]
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -299,7 +301,7 @@ class PostgresQualityQualificationAuthority:
                     created_by_operation_id
                 ) VALUES (
                     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                    'DRAFT',NULL,'NOT_STARTED',%s,1,8,%s,%s,%s,%s,%s,%s,%s,
+                    'DRAFT',NULL,'NOT_STARTED',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s
                 )
                 ON CONFLICT(project_id, stable_idempotency_key) DO NOTHING
@@ -318,6 +320,8 @@ class PostgresQualityQualificationAuthority:
                     manifest.quality_profile_version,
                     manifest.reader_outcome_profile_version,
                     manifest.required_evaluator_count,
+                    chapter_start,
+                    chapter_end,
                     Jsonb(raw["chapter_group_ranges"]),
                     Jsonb(raw["provider_route_manifest"]),
                     Jsonb(raw["capability_pack_manifest"]),
@@ -452,7 +456,8 @@ class PostgresQualityQualificationAuthority:
         if (
             command.chapter_start <= 0
             or command.chapter_end < command.chapter_start
-            or command.chapter_end > 8
+            or command.chapter_start < campaign["chapter_start"]
+            or command.chapter_end > campaign["chapter_end"]
             or (
                 scope_type == "CHAPTER" and command.chapter_start != command.chapter_end
             )
@@ -563,7 +568,8 @@ class PostgresQualityQualificationAuthority:
             scope_type not in {"CHAPTER", "ARC", "VOLUME_SLICE", "CAMPAIGN"}
             or command.chapter_start <= 0
             or command.chapter_end < command.chapter_start
-            or command.chapter_end > 8
+            or command.chapter_start < campaign["chapter_start"]
+            or command.chapter_end > campaign["chapter_end"]
             or not command.artifact_id
             or not isinstance(command.content, dict)
             or not command.content

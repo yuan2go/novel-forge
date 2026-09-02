@@ -8,11 +8,12 @@ import tempfile
 import unittest
 
 from novel_forge.tools.backend_qualification_contract import (
-    P0_EVIDENCE_CEILINGS,
+    P0_PROOF_SCOPE,
     REQUIRED_GATE_ORDER,
 )
 from novel_forge.tools.documentation_reality import (
     CANONICAL_DOCUMENTS,
+    FACT_TYPE_POLICY,
     SCHEMA_VERSION,
     STATUS_VOCABULARY,
     _validate_comment_ratchet,
@@ -43,13 +44,13 @@ def _build_valid_p0_report(
     runtime_project = compose_project + "-runtime"
     database_name = "nf_p0_" + "2" * 32 + "_test"
     manifest = {
-        "schema_version": "novel-forge.backend-qualification-manifest.v1",
+        "schema_version": "novel-forge.backend-qualification-manifest.v2",
         "required_gates": list(REQUIRED_GATE_ORDER),
         "expected_migration_head": migration_head,
         "manifest_digests": {
             "architecture/manifests/migration-manifest.yaml": _DIGEST
         },
-        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "proof_scope": dict(P0_PROOF_SCOPE),
     }
     pytest_evidence = {
         "schema_version": "novel-forge.backend-pytest-evidence.v1",
@@ -349,7 +350,7 @@ class DocumentationRealityTests(unittest.TestCase):
                 '"""Example architecture."""\n\n'
                 "def run() -> str:\n"
                 '    """Describe the operation."""\n'
-                "    # WP-OLD explains the former flow.\n"
+                "    # " + "WP-" + "OLD explains the former flow.\n"
                 "    return 'ok'\n",
                 encoding="utf-8",
             )
@@ -797,6 +798,7 @@ class DocumentationRealityTests(unittest.TestCase):
             ],
             "status_vocabulary": STATUS_VOCABULARY,
             "canonical_documents": CANONICAL_DOCUMENTS,
+            "fact_type_policy": FACT_TYPE_POLICY,
             "migration_head": "0001",
             "comment_policy": {
                 "ratchet": "GIT_MERGE_BASE_NONINCREASING",
@@ -814,6 +816,7 @@ class DocumentationRealityTests(unittest.TestCase):
             "qualification_runs": [
                 {
                     "id": "example-qualification",
+                    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
                     "gate": "pytest",
                     "evidence_class": "p0_backend_engineering_qualification",
                     "observed_at_sha": "0" * 40,
@@ -903,7 +906,7 @@ class DocumentationRealityTests(unittest.TestCase):
                             },
                         ],
                     },
-                    "evidence_ceilings": P0_EVIDENCE_CEILINGS,
+                    "proof_scope": P0_PROOF_SCOPE,
                     "implementation_tree_sha": build_implementation_tree_identity(root)[
                         "implementation_tree_sha"
                     ],
@@ -916,6 +919,7 @@ class DocumentationRealityTests(unittest.TestCase):
             "capabilities": [
                 {
                     "concept": "example",
+                    "fact_type": "CURRENT_RUNTIME_FACT",
                     "owner": "example owner",
                     "status": "QUALIFIED",
                     "implementation": [{"path": "src/example.py", "symbol": "run"}],

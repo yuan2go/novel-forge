@@ -11,7 +11,7 @@ QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check historical-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -50,6 +50,7 @@ help:
 	@echo "make check-skills - fail if .claude/skills drifts from repository skills"
 	@echo "make instruction-reality-check - verify every repository AI instruction source and copy"
 	@echo "make test-reality-check - classify every retained test and enforce proof ceilings"
+	@echo "make historical-reality-check - reject historical roadmap authority"
 	@echo "make head-integrity-check - fail on untracked or dangling runtime wiring"
 	@echo "make architecture-manifests-check - verify module/migration/worker/test/console manifests"
 	@echo "make architecture-fitness-check - enforce import, Legacy, Schema and entry classifications"
@@ -71,7 +72,7 @@ lint-authority:
 lint-ratchet:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_ruff_ratchet.py --ruff $(RUFF)
 
-validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check instruction-reality-check test-reality-check
+validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check instruction-reality-check test-reality-check historical-reality-check
 
 demo: authority-demo
 
@@ -107,7 +108,7 @@ authority-smoke: p0-backend-qualification
 authority-logs:
 	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker book-followup-authority-worker outbox-worker maintenance-worker
 
-authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check documentation-reality-check
+authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check documentation-reality-check historical-reality-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests/unit tests/architecture tests/acceptance
 
 authority-postgres-test: postgres-authority-test
@@ -142,7 +143,7 @@ authority-query-plan-release:
 p0-backend-list-gates:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_p0_backend_qualification.py --list-gates
 
-p0-backend-static: lint lint-authority lint-ratchet head-integrity-check architecture-manifests-check architecture-fitness-check sync-skills check-skills instruction-reality-check test-reality-check authority-compose-config-check
+p0-backend-static: lint lint-authority lint-ratchet head-integrity-check architecture-manifests-check architecture-fitness-check sync-skills check-skills instruction-reality-check test-reality-check historical-reality-check authority-compose-config-check
 
 p0-backend-qualification:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_p0_backend_qualification.py --profile $(P0_PROFILE) --output "$(P0_EVIDENCE_DIR)/p0-backend-qualification-$$(git rev-parse HEAD).json"
@@ -170,6 +171,9 @@ instruction-reality-check:
 
 test-reality-check:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.test_reality --repo-root .
+
+historical-reality-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.historical_reality --repo-root .
 
 head-integrity-check:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.head_integrity --repo-root .

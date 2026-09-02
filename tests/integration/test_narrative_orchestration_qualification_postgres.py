@@ -390,7 +390,7 @@ def _seed_initial_narrative_pair(
         }
     ]
     campaign_identity = canonical_hash(
-        {"work_package": "WP-NARRATIVE-ORCHESTRATION-QUALIFICATION-01"}
+        {"qualification_contract": "narrative-orchestration-current"}
     )
     story: dict[str, Any] = {
         "type": "StoryStateSnapshot",

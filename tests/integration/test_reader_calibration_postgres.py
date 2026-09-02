@@ -81,7 +81,7 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
                 "PROFESSIONAL_EDITOR",
                 "EXPERIENCED_READER",
             ),
-            scope_manifest={"chapter_range": [1, 8], "arc_count": 1},
+            scope_manifest={"chapter_range": [1, 6], "arc_count": 1},
             principal=self.principal,
         )
         evaluators = (
@@ -122,7 +122,7 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
         self.assertNotIn("asset_version", rendered)
         self.assertNotIn("database-only-campaign-secret", rendered)
         self.assertNotIn("private_mapping", rendered)
-        self.assertEqual(len(public["pairs"]), 9)
+        self.assertEqual(len(public["pairs"]), 7)
         with self.assertRaisesRegex(
             KernelError, "BLIND_PACK_REVIEWER_SCOPE_MISMATCH"
         ):
@@ -257,7 +257,7 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
                 ],
             )
             counts = tuple(int(value) for value in uow.cursor.fetchone())
-        self.assertEqual(counts, (2, 18, 2, 1))
+        self.assertEqual(counts, (2, 14, 2, 1))
         self.assertNotEqual(first_pack_id, second_pack_id)
 
     def test_human_preference_vertical_is_blind_and_fixture_not_anchored(
@@ -431,7 +431,7 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
             "quality-campaign-manifest", "quality_qualification_manifest"
         )
         candidate_rows: list[tuple[str, BlindScope, int, int, str, str]] = []
-        for chapter_number in range(1, 9):
+        for chapter_number in range(1, 7):
             candidate_rows.append(
                 (
                     f"{self.project_id}:subject:chapter:{chapter_number}",
@@ -450,15 +450,15 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
             )
         candidate_rows.append(
             (
-                f"{self.project_id}:subject:arc:1-8",
+                f"{self.project_id}:subject:arc:1-6",
                 BlindScope.ARC,
                 1,
-                8,
+                6,
                 self._seed_asset(
-                    "quality-canonical-arc-1-8", "arc_evaluation_text"
+                    "quality-canonical-arc-1-6", "arc_evaluation_text"
                 ),
                 self._seed_asset(
-                    "quality-baseline-arc-1-8", "arc_evaluation_text"
+                    "quality-baseline-arc-1-6", "arc_evaluation_text"
                 ),
             )
         )
@@ -504,7 +504,7 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
                     created_by_operation_id, frozen_at
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, 'FROZEN', NULL, 'NOT_STARTED', 2, 1, 8,
+                    %s, %s, 'FROZEN', NULL, 'NOT_STARTED', 2, 1, 6,
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
                 )
                 """,
@@ -521,14 +521,14 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
                     "editorial-pairwise-v1",
                     "quality-evidence-v1",
                     "reader-outcome-v3",
-                    Jsonb([[1, 4], [5, 8]]),
+                    Jsonb([[1, 3], [4, 6]]),
                     Jsonb({"provider": "scripted-fixture"}),
                     Jsonb({"pack": "fixture-pack", "hash": "sha256:fixture"}),
                     Jsonb({"foundation_set_version_id": "foundation:fixture:v1"}),
                     Jsonb({"book_plan_version_id": "book-plan:fixture:v1"}),
                     Jsonb({"realization_version": "narrative-realization-v1"}),
                     Jsonb({"policy_version": "context-manifest-v3"}),
-                    Jsonb({"chapter_budget": 8, "provider_calls": 0}),
+                    Jsonb({"chapter_budget": 6, "provider_calls": 0}),
                     f"{self.project_id}:quality-campaign:v1",
                     operation_id,
                 ],

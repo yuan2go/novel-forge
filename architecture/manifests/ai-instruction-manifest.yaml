@@ -34,14 +34,6 @@
       "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
     },
     {
-      "id": "quality-proof-instruction-binding",
-      "patterns": ["config/proof_campaigns/quality_qualification_v1.json"],
-      "kind": "INSTRUCTION_BINDING",
-      "owner": "quality-qualification",
-      "consumer": "bounded-quality-qualification",
-      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
-    },
-    {
       "id": "runtime-embedded-instructions",
       "patterns": [
         "src/novel_forge/modules/provider_qualification/runner.py",

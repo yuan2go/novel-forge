@@ -1,0 +1,127 @@
+{
+  "schema_version": "novel-forge.historical-reality-policy.v1",
+  "fact_types": {
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
+  "current_capabilities": [
+    "runtime-composition",
+    "command-attempt-lease-fence",
+    "external-effect-provider-control",
+    "story-design-plan-activation",
+    "chapter-production-saga",
+    "quality-and-release-gates",
+    "book-opening-workflow",
+    "book-chapter-acceptance",
+    "canon-and-narrative-state",
+    "source-import-and-knowledge",
+    "agent-runtime",
+    "postgresql-persistence-and-migrations",
+    "retry-recovery-and-replay"
+  ],
+  "allowed_proof_ceilings": [
+    "LOCAL_BACKEND_ENGINEERING",
+    "LOCAL_POSTGRESQL_ENGINEERING",
+    "LOCAL_RECOVERY_ENGINEERING",
+    "SCRIPTED_PROVIDER_BACKEND_ENGINEERING",
+    "REAL_PROVIDER_RUNTIME"
+  ],
+  "allowed_unestablished_evidence_classes": [
+    "ADMIN_UI_EXECUTION",
+    "CREDENTIALED_PROVIDER_EXECUTION",
+    "CHAPTER_ACCEPTED_ACTUAL",
+    "HUMAN_EDITORIAL_EVIDENCE",
+    "LONGITUDINAL_NARRATIVE_STABILITY",
+    "PRODUCTION_OPERATION"
+  ],
+  "backend_proof_scope": {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+      "runtime-composition",
+      "command-attempt-lease-fence",
+      "external-effect-provider-control",
+      "story-design-plan-activation",
+      "chapter-production-saga",
+      "quality-and-release-gates",
+      "book-opening-workflow",
+      "book-chapter-acceptance",
+      "canon-and-narrative-state",
+      "source-import-and-knowledge",
+      "agent-runtime",
+      "postgresql-persistence-and-migrations",
+      "retry-recovery-and-replay"
+    ],
+    "ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "does_not_establish": [
+      "ADMIN_UI_EXECUTION",
+      "CREDENTIALED_PROVIDER_EXECUTION",
+      "HUMAN_EDITORIAL_EVIDENCE",
+      "LONGITUDINAL_NARRATIVE_STABILITY",
+      "PRODUCTION_OPERATION"
+    ]
+  },
+  "forbidden_machine_fields": [
+    "evidence_ceilings",
+    "next_wp",
+    "pending_work_packages",
+    "qualification_stage",
+    "roadmap_stage",
+    "work_package"
+  ],
+  "retired_current_ontology": [
+    "EIGHT_CHAPTER",
+    "novel-forge.bounded-quality-campaign-profile.v1",
+    "novel-forge.bounded-quality-book-contract.v1",
+    "novel-forge.bounded-quality-runtime-state.v1",
+    "novel-forge.bounded-quality-campaign-result.v1",
+    "short_longform_runtime_proof"
+  ],
+  "retired_paths": [
+    "config/proof_campaigns/quality_qualification_book_v1.json",
+    "config/proof_campaigns/quality_qualification_v1.json",
+    "scripts/run_bounded_quality_qualification.py",
+    "scripts/run_longform_12ch_pressure.py",
+    "scripts/run_short_longform_runtime_proof.py",
+    "scripts/run_short_longform_runtime_proof_orchestrator.py",
+    "src/novel_forge/modules/runtime_proof/__init__.py",
+    "src/novel_forge/modules/runtime_proof/quality_campaign.py",
+    "src/novel_forge/modules/runtime_proof/quality_campaign_postgres.py",
+    "src/novel_forge/modules/runtime_proof/quality_preparation.py",
+    "src/novel_forge/modules/runtime_proof/short_longform.py",
+    "tests/integration/test_bounded_quality_campaign_postgres.py",
+    "tests/integration/test_quality_campaign_preparation_postgres.py",
+    "tests/unit/test_bounded_quality_campaign.py",
+    "tests/unit/test_bounded_quality_campaign_cli.py",
+    "tests/unit/test_quality_book_contract.py",
+    "tests/unit/test_short_longform_proof_evaluator.py",
+    "tests/unit/test_short_longform_runtime_proof.py"
+  ],
+  "authority_surface_roots": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".github",
+    ".claude",
+    "Makefile",
+    "architecture/manifests",
+    "architecture/reality-evidence.json",
+    "config",
+    "docs",
+    "scripts",
+    "skills",
+    "src",
+    "tests",
+    "web"
+  ],
+  "authority_surface_exclusions": [
+    "architecture/evidence/**",
+    "architecture/live-evidence/**",
+    "architecture/manifests/historical-reality-policy.yaml",
+    "src/novel_forge/tools/historical_reality.py",
+    "src/novel_forge/storage/migrations/versions/**",
+    "tests/architecture/test_retired_compatibility_runtime.py",
+    "tests/unit/test_historical_reality.py"
+  ]
+}

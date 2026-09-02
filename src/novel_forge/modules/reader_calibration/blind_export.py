@@ -157,8 +157,10 @@ def _ordering(
         ).hexdigest(),
     )
     offset = (campaign_version - 1) % len(ranked)
+    canonical_a_count = (len(ranked) + 1) // 2
     canonical_a = {
-        ranked[(offset + index) % len(ranked)].subject_id for index in range(4)
+        ranked[(offset + index) % len(ranked)].subject_id
+        for index in range(canonical_a_count)
     }
     result = {
         item.subject_id: "A" if item.subject_id in canonical_a else "B"
@@ -210,14 +212,19 @@ def export_blind_evaluation_packs(
             key=lambda item: (item.chapter_start, item.chapter_end, item.subject_id),
         )
     )
-    if (
-        len(chapters) != 8
-        or tuple(item.chapter_start for item in chapters) != tuple(range(1, 9))
-        or not arcs
+    if not chapters or not arcs:
+        raise ValueError("blind campaign requires Chapter and Arc subjects")
+    first_chapter = chapters[0].chapter_start
+    last_chapter = chapters[-1].chapter_end
+    if tuple(item.chapter_start for item in chapters) != tuple(
+        range(first_chapter, last_chapter + 1)
     ):
-        raise ValueError(
-            "blind campaign requires Chapters 1-8 and at least one Arc subject"
-        )
+        raise ValueError("blind campaign Chapter subjects must be contiguous")
+    if not any(
+        item.chapter_start <= first_chapter and item.chapter_end >= last_chapter
+        for item in arcs
+    ):
+        raise ValueError("blind campaign requires an Arc subject covering its Chapters")
     first_order = _ordering(
         chapters,
         arcs,
@@ -308,7 +315,10 @@ def export_blind_evaluation_packs(
             "protocol_version": protocol_version,
             "evaluation_version": evaluation_version,
             "instructions": {
-                "sequence": "Read Chapter pairs 1 through 8 in order, then complete the Arc pair.",
+                "sequence": (
+                    f"Read Chapter pairs {first_chapter} through {last_chapter} "
+                    "in order, then complete the Arc pair."
+                ),
                 "independence": "Complete this pack independently and do not inspect another evaluator's responses.",
                 "allowed_choices": ["A", "B", "TIE", "CANNOT_JUDGE"],
                 "ordinal_scale": {"minimum": 1, "maximum": 5},

@@ -14,7 +14,7 @@ description: Use when analyzing or reviewing pacing across scene, chapter, rolli
 
 ## 适用场景
 
-- 分析 Scene、Chapter、3 Chapter、10 Chapter、Chapter Group、Arc、Volume、Book 尺度的节奏。
+- 分析 Scene、Chapter、短窗、长窗、Chapter Group、Arc、Volume、Book 尺度的节奏。
 - 检查局部高潮与长线推进是否错位、promise / foreshadow debt 是否积累、状态变化是否过弱或过密。
 - 在 Review、Revision、Re-review、Longform Recap 或 Replan 中形成可追溯节奏诊断。
 
@@ -30,7 +30,7 @@ description: Use when analyzing or reviewing pacing across scene, chapter, rolli
 2. 从结构化变化计算可重放指标：open promises、promise debt、foreshadow debt、state-change magnitude 和显式 arc progress。
 3. 将 event/conflict/information/setup/payoff/reward density、emotional intensity/variance、dialogue/action/reflection/exposition ratio、hook/cliffhanger strength 路由到 semantic observation，除非上游已有正式结构化测量。
 4. 为每项 semantic observation 保留 evidence span、confidence、provider qualification；无证据不填猜测值。
-5. 聚合 Chapter、3/10 Chapter、Chapter Group、Arc、Volume、Book 窗口，并检查未来泄漏与跨项目污染。
+5. 聚合 Chapter、短/长滚动 Chapter、Chapter Group、Arc、Volume、Book 窗口，并检查未来泄漏与跨项目污染。
 6. 生成 diagnosis、ReviewIssue 和 revision actions，不直接修改生产资产。
 
 ## 输出格式

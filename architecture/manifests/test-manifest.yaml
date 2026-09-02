@@ -14,6 +14,7 @@
         "tests/unit/test_backend_qualification*.py",
         "tests/unit/test_core_os_characterization.py",
         "tests/unit/test_documentation_reality.py",
+        "tests/unit/test_historical_reality.py",
         "tests/unit/test_implementation_tree_identity.py",
         "tests/unit/test_integration_database_safety.py",
         "tests/unit/test_instruction_surface.py",
@@ -21,7 +22,6 @@
         "tests/unit/test_production_reachability.py",
         "tests/unit/test_pytest_collection_evidence.py",
         "tests/unit/test_release_run_evidence.py",
-        "tests/unit/test_short_longform_runtime_proof.py",
         "tests/unit/test_skill_sync.py",
         "tests/unit/test_test_reality.py",
         "tests/unit/test_worker_fleet_evidence.py",
@@ -56,16 +56,6 @@
       "capability": "agent-harness-protocol",
       "production_target": "src/novel_forge/modules/agent_runtime/harness.py",
       "qualification_role": "FIXTURE_CONTRACT_ONLY",
-      "proof_ceiling": "FIXTURE_ONLY"
-    },
-    {
-      "id": "longform-proof-fixture-protocol",
-      "patterns": ["tests/unit/test_short_longform_proof_evaluator.py"],
-      "classification": "FIXTURE_PROTOCOL",
-      "owner": "quality-qualification",
-      "capability": "short-longform-evidence-evaluator",
-      "production_target": "src/novel_forge/modules/runtime_proof/short_longform.py",
-      "qualification_role": "FIXTURE_EVIDENCE_VALIDATION_ONLY",
       "proof_ceiling": "FIXTURE_ONLY"
     },
     {
