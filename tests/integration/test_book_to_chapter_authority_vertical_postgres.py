@@ -833,6 +833,22 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 )
                 uow.cursor.execute(
                     """
+                    SELECT COUNT(*) FILTER (
+                               WHERE accepted_from_chapter=1
+                                 AND memory_layer IN ('L1','L2','L4','L5')
+                                 AND accepted_to_chapter=1
+                           ),
+                           BOOL_AND(metadata ? 'structured_facts')
+                    FROM authority_narrative_retrieval_document
+                    WHERE project_id=%s AND book_id=%s
+                    """,
+                    [project_id, f"book:{project_id}"],
+                )
+                closed_current_documents, retrieval_fact_metadata_complete = (
+                    uow.cursor.fetchone()
+                )
+                uow.cursor.execute(
+                    """
                     SELECT COUNT(*), BOOL_AND(version.content->>'gate'='PASSED')
                     FROM authority_operation_output_asset AS output
                     JOIN authority_operation AS operation
@@ -911,6 +927,13 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertTrue(chapter_two_retrieval["selected_documents"])
             self.assertEqual(
+                chapter_two_retrieval["retrieval_campaign"]["round_count"], 1
+            )
+            self.assertEqual(
+                chapter_two_retrieval["retrieval_campaign"]["authority"],
+                "DETERMINISTIC_CONTEXT_POLICY",
+            )
+            self.assertEqual(
                 chapter_two_retrieval["semantic_status"]["query_embedding_status"],
                 "READY",
             )
@@ -925,6 +948,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             # authoring projections plus its accepted prose archive entry.
             self.assertEqual(retrieval_document_count, 14)
             self.assertGreaterEqual(retrieval_layer_count, 5)
+            self.assertEqual(int(closed_current_documents), 4)
+            self.assertTrue(retrieval_fact_metadata_complete)
             self.assertTrue(context_bundles[1]["context_manifest"]["retrieval_trace"])
             accepted_retrieval_trace = [
                 item
@@ -979,9 +1004,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 quality_observations[0]["projection_contract_version"],
                 "accepted-quality-observation-v2",
             )
-            self.assertTrue(
-                quality_observations[0]["canon_snapshot_asset_version_id"]
-            )
+            self.assertTrue(quality_observations[0]["canon_snapshot_asset_version_id"])
             self.assertNotIn("text", quality_observations[0])
             self.assertEqual(
                 multiscale_quality["source_acceptance_ids"],

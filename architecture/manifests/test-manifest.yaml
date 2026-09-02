@@ -59,6 +59,26 @@
       "proof_ceiling": "FIXTURE_ONLY"
     },
     {
+      "id": "synthetic-retrieval-benchmark-protocol",
+      "patterns": ["tests/unit/test_longform_retrieval_benchmark.py"],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "context-builder-authority",
+      "capability": "synthetic-longform-retrieval-benchmark",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_benchmark.py",
+      "qualification_role": "SYNTHETIC_ENGINEERING_BENCHMARK_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "retrieval-campaign-domain-invariants",
+      "patterns": ["tests/unit/test_retrieval_campaign.py"],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "context-builder-authority",
+      "capability": "bounded-retrieval-campaign",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_campaign.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "migration-compatibility",
       "patterns": [
         "tests/unit/test_*migration*.py",
@@ -141,6 +161,10 @@
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     },
     "book_opening_recovery": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "bounded_retrieval_context": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     }

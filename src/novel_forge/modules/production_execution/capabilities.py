@@ -53,6 +53,7 @@ class CapabilityId(StrEnum):
     MKAOS_TEMPLATE_EXTRACT = "mkaos.template.extract"
     RETRIEVAL_EMBED = "retrieval.embed"
     RETRIEVAL_RERANK = "retrieval.rerank"
+    RETRIEVAL_QUERY_EXPAND = "retrieval.query.expand"
     RETRIEVAL_INDEX_UPSERT = "retrieval.index.upsert"
     RETRIEVAL_INDEX_QUERY = "retrieval.index.query"
     LONGFORM_RECAP_ANALYZE = "longform.recap.analyze"

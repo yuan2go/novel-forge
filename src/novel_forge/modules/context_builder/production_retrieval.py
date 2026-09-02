@@ -14,11 +14,15 @@ from novel_forge.modules.context_builder.retrieval import (
     RANKING_WEIGHTS,
     hybrid_retrieve,
 )
+from novel_forge.modules.context_builder.retrieval_campaign import (
+    RetrievalCampaignPolicy,
+    build_retrieval_coverage_contract,
+)
 from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-RETRIEVAL_POLICY_VERSION = "accepted-lexical-first-retrieval-v4"
+RETRIEVAL_POLICY_VERSION = "minimum-sufficient-retrieval-v5"
 SEMANTIC_PROJECTION_VERSION = "accepted-retrieval-embedding-v1"
 _SEMANTIC_POLICIES = frozenset({"REQUIRED", "FALLBACK_ALLOWED", "DISABLED"})
 
@@ -48,6 +52,7 @@ def build_retrieval_query_plan(
     intent: Mapping[str, Any],
     memo: Mapping[str, Any],
     semantic_policy: str = "FALLBACK_ALLOWED",
+    campaign_policy: RetrievalCampaignPolicy | None = None,
 ) -> dict[str, Any]:
 
     policy = semantic_policy.strip().upper()
@@ -116,8 +121,11 @@ def build_retrieval_query_plan(
         }
     )
     graph = dict(intent.get("retrieval_graph") or {})
+    policy_contract = campaign_policy or RetrievalCampaignPolicy()
+    coverage_contract = build_retrieval_coverage_contract(intent=intent, memo=memo)
+    boundary = int(intent_boundary.get("accepted_through_chapter") or 0)
     plan = {
-        "contract_version": "retrieval-query-plan-v4",
+        "contract_version": "retrieval-query-plan-v5",
         "queries": list(queries),
         "postgresql_fts_query": " ".join(queries),
         "entity_ids": _ids(graph.get("entity_ids")),
@@ -135,7 +143,132 @@ def build_retrieval_query_plan(
         "candidate_limit": 256,
         "semantic_rerank_limit": 64,
         "result_limit": 24,
+        "temporal_range": {"from_chapter": 0, "to_chapter": boundary},
+        "coverage_contract": coverage_contract,
+        "campaign_policy": policy_contract.to_dict(),
     }
+    plan["query_plan_fingerprint"] = _hash(plan)
+    return plan
+
+
+def build_expanded_retrieval_query_plan(
+    *,
+    base_query_plan: Mapping[str, Any],
+    expansion_plan: Mapping[str, Any],
+) -> dict[str, Any]:
+    queries = expansion_plan.get("queries")
+    if not isinstance(queries, list) or not queries:
+        raise KernelError(
+            "RETRIEVAL_EXPANSION_PLAN_INVALID",
+            "expanded retrieval requires a validated non-empty query plan",
+        )
+    base_boundary = dict(base_query_plan.get("accepted_boundary") or {})
+    if base_boundary != dict(expansion_plan.get("accepted_boundary") or {}):
+        raise KernelError(
+            "RETRIEVAL_EXPANSION_BOUNDARY_MISMATCH",
+            "expanded retrieval changed the frozen accepted boundary",
+        )
+    if str(base_query_plan.get("candidate_projection_cutoff") or "") == "":
+        raise KernelError(
+            "RETRIEVAL_EXPANSION_CUTOFF_MISSING",
+            "expanded retrieval requires the round-zero projection cutoff",
+        )
+    texts = [str(item.get("text") or "") for item in queries]
+    starts = [
+        int(dict(item.get("temporal_range") or {}).get("from_chapter") or 0)
+        for item in queries
+    ]
+    ends = [
+        int(dict(item.get("temporal_range") or {}).get("to_chapter") or 0)
+        for item in queries
+    ]
+    plan = {
+        key: value
+        for key, value in dict(base_query_plan).items()
+        if key != "query_plan_fingerprint"
+    }
+    plan.update(
+        {
+            "contract_version": "retrieval-query-plan-v5",
+            "queries": texts,
+            "postgresql_fts_query": " ".join(texts),
+            "entity_ids": _expanded_ids(plan, queries, "entity_ids"),
+            "character_ids": _expanded_ids(plan, queries, "character_ids"),
+            "relationship_ids": _expanded_ids(plan, queries, "relationship_ids"),
+            "arc_plan_version_ids": _expanded_ids(
+                plan, queries, "arc_plan_version_ids"
+            ),
+            "obligation_ids": _expanded_ids(plan, queries, "obligation_ids"),
+            "temporal_range": {
+                "from_chapter": min(starts),
+                "to_chapter": max(ends),
+            },
+            "expansion_plan_fingerprint": str(
+                expansion_plan.get("expansion_plan_fingerprint") or ""
+            ),
+            "retrieval_round": int(expansion_plan.get("round_number") or 0),
+        }
+    )
+    plan["query_plan_fingerprint"] = _hash(plan)
+    return plan
+
+
+def build_campaign_final_query_plan(
+    *,
+    base_query_plan: Mapping[str, Any],
+    round_query_plans: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    plans = tuple(dict(item) for item in round_query_plans)
+    if not plans:
+        raise KernelError(
+            "RETRIEVAL_CAMPAIGN_EMPTY",
+            "final retrieval ranking requires at least the frozen round-zero plan",
+        )
+    boundary = dict(base_query_plan.get("accepted_boundary") or {})
+    cutoff = str(base_query_plan.get("candidate_projection_cutoff") or "")
+    if not cutoff or any(
+        dict(item.get("accepted_boundary") or {}) != boundary
+        or str(item.get("candidate_projection_cutoff") or "") != cutoff
+        for item in plans
+    ):
+        raise KernelError(
+            "RETRIEVAL_CAMPAIGN_IDENTITY_DRIFT",
+            "retrieval rounds changed the frozen accepted boundary or projection cutoff",
+        )
+    plan = {
+        key: value
+        for key, value in dict(base_query_plan).items()
+        if key != "query_plan_fingerprint"
+    }
+    plan.update(
+        {
+            "queries": _ordered_unique(
+                str(query)
+                for item in plans
+                for query in item.get("queries") or ()
+                if str(query)
+            ),
+            "entity_ids": _union_plan_ids(plans, "entity_ids"),
+            "character_ids": _union_plan_ids(plans, "character_ids"),
+            "relationship_ids": _union_plan_ids(plans, "relationship_ids"),
+            "arc_plan_version_ids": _union_plan_ids(plans, "arc_plan_version_ids"),
+            "obligation_ids": _union_plan_ids(plans, "obligation_ids"),
+            "temporal_range": {
+                "from_chapter": min(
+                    int(dict(item.get("temporal_range") or {}).get("from_chapter") or 0)
+                    for item in plans
+                ),
+                "to_chapter": max(
+                    int(dict(item.get("temporal_range") or {}).get("to_chapter") or 0)
+                    for item in plans
+                ),
+            },
+            "retrieval_round_query_fingerprints": [
+                str(item.get("query_plan_fingerprint") or "") for item in plans
+            ],
+        }
+    )
+    plan["postgresql_fts_query"] = " ".join(plan["queries"])
     plan["query_plan_fingerprint"] = _hash(plan)
     return plan
 
@@ -169,14 +302,30 @@ def discover_accepted_retrieval_candidates(
     character_ids = _ids(query_plan.get("character_ids"))
     arc_ids = _ids(query_plan.get("arc_plan_version_ids"))
     obligation_ids = _ids(query_plan.get("obligation_ids"))
+    temporal_range = dict(query_plan.get("temporal_range") or {})
+    temporal_from = int(temporal_range.get("from_chapter") or 0)
+    temporal_to = int(
+        temporal_range.get("to_chapter")
+        if temporal_range.get("to_chapter") is not None
+        else boundary
+    )
+    if temporal_from < 0 or temporal_to < temporal_from or temporal_to > boundary:
+        raise KernelError(
+            "RETRIEVAL_DISCOVERY_TEMPORAL_SCOPE_INVALID",
+            "retrieval discovery temporal scope must stay within the accepted boundary",
+        )
     limit = min(256, max(1, int(query_plan.get("candidate_limit") or 256)))
     policy = str(query_plan.get("semantic_policy") or "FALLBACK_ALLOWED")
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("SELECT clock_timestamp()")
+        frozen_cutoff = str(query_plan.get("candidate_projection_cutoff") or "")
+        uow.cursor.execute(
+            "SELECT COALESCE(NULLIF(%s, '')::timestamptz, clock_timestamp())",
+            [frozen_cutoff],
+        )
         cutoff = uow.cursor.fetchone()[0]
         uow.cursor.execute(
             """
-            WITH eligible AS MATERIALIZED (
+            WITH eligible AS NOT MATERIALIZED (
                 SELECT document.*,
                        version.content_hash AS source_content_hash,
                        ts_rank(document.search_vector,
@@ -189,6 +338,7 @@ def discover_accepted_retrieval_candidates(
                   AND document.accepted_from_chapter<=%s
                   AND (document.accepted_to_chapter IS NULL
                        OR document.accepted_to_chapter>=%s)
+                  AND document.accepted_from_chapter BETWEEN %s AND %s
                   AND version.lifecycle IN ('ACTIVE','SUPERSEDED')
                   AND version.eligibility='ELIGIBLE'
                   AND version.governance='CLEAR'
@@ -287,6 +437,8 @@ def discover_accepted_retrieval_candidates(
                 cutoff,
                 boundary,
                 boundary,
+                temporal_from,
+                temporal_to,
                 text,
                 text,
                 limit,
@@ -929,7 +1081,7 @@ def build_retrieval_result(
     selected = [_selected_document(item) for item in ranked]
     result = {
         "type": "RetrievalResult",
-        "contract_version": "chapter-retrieval-result-v4",
+        "contract_version": "chapter-retrieval-result-v5",
         "project_id": project_id,
         "book_id": book_id,
         "accepted_boundary": dict(query_plan.get("accepted_boundary") or {}),
@@ -1095,6 +1247,29 @@ def _ids(values: Any) -> list[str]:
     return sorted({str(item) for item in values or () if str(item)})
 
 
+def _expanded_ids(
+    base: Mapping[str, Any], queries: Iterable[Mapping[str, Any]], field: str
+) -> list[str]:
+    return sorted(
+        {
+            *_ids(base.get(field)),
+            *(
+                identity
+                for query in queries
+                for identity in _ids(dict(query.get("selectors") or {}).get(field))
+            ),
+        }
+    )
+
+
+def _union_plan_ids(plans: Iterable[Mapping[str, Any]], field: str) -> list[str]:
+    return sorted({identity for plan in plans for identity in _ids(plan.get(field))})
+
+
+def _ordered_unique(values: Iterable[str]) -> list[str]:
+    return list(dict.fromkeys(values))
+
+
 def _hash(value: Mapping[str, Any]) -> str:
     return (
         "sha256:"
@@ -1112,6 +1287,8 @@ __all__ = [
     "FrozenRetrievalCandidateUnion",
     "RetrievalDiscovery",
     "build_retrieval_query_plan",
+    "build_expanded_retrieval_query_plan",
+    "build_campaign_final_query_plan",
     "build_retrieval_result",
     "discover_accepted_retrieval_candidates",
     "freeze_retrieval_candidate_union",

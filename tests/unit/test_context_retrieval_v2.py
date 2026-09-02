@@ -4,6 +4,7 @@ import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.production_retrieval import (
+    build_expanded_retrieval_query_plan,
     build_retrieval_query_plan,
     build_retrieval_result,
 )
@@ -74,11 +75,44 @@ def test_memo_is_the_authoritative_retrieval_query_input() -> None:
     assert plan["arc_plan_version_ids"] == ["arc:trust:v3"]
     assert plan["obligation_ids"] == ["promise:return-key"]
     assert plan["semantic_policy"] == "FALLBACK_ALLOWED"
-    assert plan["contract_version"] == "retrieval-query-plan-v4"
+    assert plan["contract_version"] == "retrieval-query-plan-v5"
     assert plan["ranking_policy_version"] == "accepted-lexical-first-ranking-v4"
     assert "semantic_rerank_limit" in plan
     assert "semantic_candidate_limit" not in plan
     assert sum(plan["ranking_weights"].values()) == 1.0
+    assert plan["result_limit"] == 24
+    assert plan["campaign_policy"]["total_round_limit"] == 3
+    assert plan["coverage_contract"]["accepted_boundary"] == {
+        "accepted_through_chapter": 8
+    }
+
+
+def test_expanded_query_plan_preserves_boundary_cutoff_and_result_limit() -> None:
+    base = build_retrieval_query_plan(intent=_intent(), memo=_memo())
+    base["candidate_projection_cutoff"] = "2026-09-03T00:00:00+00:00"
+    base.pop("query_plan_fingerprint")
+    base["query_plan_fingerprint"] = "sha256:" + "a" * 64
+    expanded = build_expanded_retrieval_query_plan(
+        base_query_plan=base,
+        expansion_plan={
+            "accepted_boundary": {"accepted_through_chapter": 8},
+            "round_number": 1,
+            "expansion_plan_fingerprint": "sha256:" + "b" * 64,
+            "queries": [
+                {
+                    "text": "oath under old bridge",
+                    "selectors": {"character_ids": ["character:mei"]},
+                    "temporal_range": {"from_chapter": 1, "to_chapter": 4},
+                }
+            ],
+        },
+    )
+
+    assert expanded["accepted_boundary"] == base["accepted_boundary"]
+    assert expanded["candidate_projection_cutoff"] == ("2026-09-03T00:00:00+00:00")
+    assert expanded["result_limit"] == 24
+    assert expanded["temporal_range"] == {"from_chapter": 1, "to_chapter": 4}
+    assert expanded["query_plan_fingerprint"].startswith("sha256:")
 
 
 def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -> None:

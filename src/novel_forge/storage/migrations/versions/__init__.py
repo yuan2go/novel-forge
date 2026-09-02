@@ -107,6 +107,7 @@ from . import (
     v20260829_0104_book_opening_workflow_nodes,
     v20260830_0105_p0_backend_qualification_repairs,
     v20260902_0106_quality_qualification_scope_generalization,
+    v20260903_0107_retrieval_campaign_runtime,
 )
 
 VERSION_MODULES = [
@@ -216,6 +217,7 @@ VERSION_MODULES = [
     v20260829_0104_book_opening_workflow_nodes,
     v20260830_0105_p0_backend_qualification_repairs,
     v20260902_0106_quality_qualification_scope_generalization,
+    v20260903_0107_retrieval_campaign_runtime,
 ]
 
 __all__ = ["VERSION_MODULES"]

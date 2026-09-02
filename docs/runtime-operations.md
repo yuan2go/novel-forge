@@ -115,6 +115,21 @@ make authority-compose-config-check
 make authority-query-plan-release
 ```
 
+The deterministic scale benchmark writes JSON only to an explicit path outside the
+repository:
+
+```bash
+LONGFORM_RETRIEVAL_EVIDENCE_PATH=/tmp/longform-retrieval.json \
+  make longform-retrieval-benchmark
+```
+
+It generates 50, 100, 300, 500 and 1,000-chapter profiles, with the largest corpus at
+three million characters, and compares current round-zero retrieval with bounded query
+expansion. Its report includes recall, leakage, candidate growth, Context tokens, round
+and call bounds, latency observations and replay identity. This is synthetic retrieval
+engineering evidence only; it does not establish real-Provider execution, narrative
+quality, human evaluation, longitudinal production stability or production operation.
+
 The complete PostgreSQL collection can be run only as a caller-owned diagnostic by
 providing `NOVEL_FORGE_DATABASE_URL`, `NOVEL_FORGE_QUALIFICATION_DATABASE_NAME`, and an
 absolute `NOVEL_FORGE_POSTGRES_EVIDENCE_DIR` to `make postgres-authority-test`. The

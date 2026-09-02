@@ -88,6 +88,16 @@ review/revision, Canon, quality, publish, export and final-release stages. Model
 object-store I/O is represented as ExternalEffect work. Quality correction is bounded;
 release gates do not accept a missing or failed prerequisite.
 
+Retrieval binds one campaign to the exact project, book, accepted-through chapter,
+ExecutionIntent, Memo and policy identity. Round zero uses the accepted selective
+retrieval projection. If deterministic coverage still identifies required evidence,
+Production Execution may return a typed query-expansion proposal through the existing
+ExternalEffect path. Deterministic policy validates every query and selector, freezes at
+most three append-only rounds, and alone decides sufficiency and termination. The model
+cannot name admissible AssetVersions or expand the accepted boundary. Context Authority
+admits only the frozen union after coverage is sufficient and continues to enforce the
+configured token budget; the default final retrieval limit remains 24.
+
 ## Book opening and book production
 
 `build_book_opening_workflow` creates five durable layers: `BOOK_PLAN`,
@@ -113,7 +123,7 @@ network I/O is kept outside business transactions.
 
 `src/novel_forge/storage/migrations/runner.py` owns the linear migration registry and
 the `nf_schema_migrations` table. The current registered head is
-`20260830_0105_p0_backend_qualification_repairs`, matching
+`20260903_0107_retrieval_campaign_runtime`, matching
 `architecture/manifests/migration-manifest.yaml`. Migration preflight rows fail closed
 when a non-zero blocker count is returned.
 

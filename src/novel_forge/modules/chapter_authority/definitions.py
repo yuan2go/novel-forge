@@ -5,15 +5,15 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.1.0"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.2.1"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.1.1"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.2.2"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
     f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@"
     f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION}"
 )
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.11"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.12"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS = 600
@@ -186,6 +186,8 @@ def _definition(
     }.get(node)
     if model_effects_required and model_capability:
         external_capabilities = [model_capability]
+        if node is ChapterNode.RETRIEVAL:
+            external_capabilities.append("model.retrieval_query_expansion")
         if node is not ChapterNode.RETRIEVAL:
             completion["required_external_effects"] = [
                 {"capability": model_capability, "allowed_states": ["SUCCEEDED"]}

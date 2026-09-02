@@ -55,6 +55,7 @@ MODEL_CAPABILITY_STAGES = frozenset(
         "narrative_semantic_evaluation",
         "agent_session",
         "retrieval",
+        "retrieval_query_expansion",
     }
 )
 LEGACY_AGENT_BOUND_MODEL_STAGES = MODEL_CAPABILITY_STAGES
@@ -193,16 +194,16 @@ def _model_budget_settlement(
     stop fail open.  Fixtures retain their explicit zero-cost semantics.
     """
     if not result.real_model_call:
-        return result.cost_amount, result.total_tokens, {
-            "token_settlement_basis": "FIXTURE_RECEIPT",
-            "cost_settlement_basis": "FIXTURE_RECEIPT",
-        }
-    supports_usage = bool(
-        frozen_capability_profile.get("supports_usage_receipt")
-    )
-    supports_cost = bool(
-        frozen_capability_profile.get("supports_cost_receipt")
-    )
+        return (
+            result.cost_amount,
+            result.total_tokens,
+            {
+                "token_settlement_basis": "FIXTURE_RECEIPT",
+                "cost_settlement_basis": "FIXTURE_RECEIPT",
+            },
+        )
+    supports_usage = bool(frozen_capability_profile.get("supports_usage_receipt"))
+    supports_cost = bool(frozen_capability_profile.get("supports_cost_receipt"))
     usage_tokens = result.total_tokens
     actual_tokens = (
         usage_tokens if supports_usage and usage_tokens > 0 else reserved_tokens
@@ -214,16 +215,20 @@ def _model_budget_settlement(
         and str(cost.get("source") or "").lower() != "not_provided"
     )
     actual_amount = result.cost_amount if cost_available else reserved_amount
-    return actual_amount, actual_tokens, {
-        "token_settlement_basis": (
-            "PROVIDER_USAGE_RECEIPT"
-            if actual_tokens == usage_tokens and supports_usage
-            else "RESERVATION_CEILING"
-        ),
-        "cost_settlement_basis": (
-            "PROVIDER_COST_RECEIPT" if cost_available else "RESERVATION_CEILING"
-        ),
-    }
+    return (
+        actual_amount,
+        actual_tokens,
+        {
+            "token_settlement_basis": (
+                "PROVIDER_USAGE_RECEIPT"
+                if actual_tokens == usage_tokens and supports_usage
+                else "RESERVATION_CEILING"
+            ),
+            "cost_settlement_basis": (
+                "PROVIDER_COST_RECEIPT" if cost_available else "RESERVATION_CEILING"
+            ),
+        },
+    )
 
 
 _MODEL_PROVIDER_RESULT_RECORDED_PHASES = frozenset(
@@ -250,9 +255,7 @@ def _model_failed_provider_submission_state(
     provider = provider if isinstance(provider, Mapping) else {}
     production = provider.get("production_execution")
     process = (
-        production.get("process_evidence")
-        if isinstance(production, Mapping)
-        else None
+        production.get("process_evidence") if isinstance(production, Mapping) else None
     )
     process = process if isinstance(process, Mapping) else {}
     declared = [
@@ -272,8 +275,7 @@ def _model_failed_provider_submission_state(
         if declared[0]:
             return "AMBIGUOUS" if phase in _MODEL_PROVIDER_AMBIGUOUS_PHASES else "SENT"
         if measured or phase in (
-            _MODEL_PROVIDER_RESULT_RECORDED_PHASES
-            | _MODEL_PROVIDER_AMBIGUOUS_PHASES
+            _MODEL_PROVIDER_RESULT_RECORDED_PHASES | _MODEL_PROVIDER_AMBIGUOUS_PHASES
         ):
             return "AMBIGUOUS"
         return "NOT_SENT"
@@ -351,6 +353,8 @@ class ChapterModelPort(Protocol):
         *,
         stage: str,
         payload: dict[str, Any],
+        reservation_amount: str | None = None,
+        reservation_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult: ...
 
@@ -518,9 +522,7 @@ class ExternalEffectChapterModelPort:
         provider_output_token_ceiling = bounded_reservation_tokens
         budget_scope_id = ""
         budget_scope_revision = None
-        if reservation_contract["source"] == (
-            "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
-        ):
+        if reservation_contract["source"] == ("BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"):
             bounded_reservation_tokens = int(
                 reservation_contract["estimated_total_tokens"]
             )
@@ -531,9 +533,7 @@ class ExternalEffectChapterModelPort:
                 reservation_contract["estimated_cost_amount"]
             )
             budget_scope_id = str(reservation_contract["budget_scope_id"])
-            budget_scope_revision = int(
-                reservation_contract["budget_scope_revision"]
-            )
+            budget_scope_revision = int(reservation_contract["budget_scope_revision"])
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -934,13 +934,14 @@ class ExternalEffectChapterModelPort:
                         "token_settlement_basis": str(
                             decision["token_settlement_basis"]
                         ),
-                        "cost_settlement_basis": str(
-                            decision["cost_settlement_basis"]
-                        ),
+                        "cost_settlement_basis": str(decision["cost_settlement_basis"]),
                     },
                 )
             measurement = _failed_provider_measurement(dispatched)
-            if decision.get("measurement_available") is True and measurement is not None:
+            if (
+                decision.get("measurement_available") is True
+                and measurement is not None
+            ):
                 usage, cost = measurement
                 self._record_failed_model_call(
                     request,
@@ -1823,6 +1824,8 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "embedding_model": str(raw.get("embedding_model") or ""),
             "embedding_dimensions": dimensions,
         }
+    if stage == "retrieval_query_expansion":
+        return dict(raw)
     if stage in {"review", "rereview"}:
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):

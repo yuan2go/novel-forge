@@ -27,7 +27,11 @@ _PLANNING_CAPABILITIES = frozenset(
     }
 )
 _PROVIDER_RUNTIME_V2_CAPABILITIES = frozenset(
-    {CapabilityId.AGENT_WORKSPACE_EXECUTE, CapabilityId.RETRIEVAL_EMBED}
+    {
+        CapabilityId.AGENT_WORKSPACE_EXECUTE,
+        CapabilityId.RETRIEVAL_EMBED,
+        CapabilityId.RETRIEVAL_QUERY_EXPAND,
+    }
 )
 
 _MODEL_RUNTIMES = (
@@ -364,6 +368,16 @@ def default_capability_registry() -> CapabilityRegistry:
                 prompt_bundle_type="RETRIEVAL_INPUT_BUNDLE",
                 skill_bundle_type="NO_SKILL_BUNDLE",
                 risk=RiskClass.MEDIUM,
+            ),
+            _definition(
+                CapabilityId.RETRIEVAL_QUERY_EXPAND,
+                ExecutionDomain.RETRIEVAL,
+                runtimes=_AGENT_RUNTIMES,
+                backends=_AGENT_BACKENDS,
+                prompt_bundle_type="RETRIEVAL_INPUT_BUNDLE",
+                skill_bundle_type="DOMAIN_SKILL_BUNDLE",
+                provider_idempotency=False,
+                risk=RiskClass.HIGH,
             ),
             _definition(
                 CapabilityId.AGENT_WORKSPACE_EXECUTE,

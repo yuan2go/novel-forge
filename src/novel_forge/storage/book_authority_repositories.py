@@ -10,6 +10,10 @@ from novel_forge.modules.authoring.projections import (
     build_hook_debt_projection,
     build_recent_trail_entry,
 )
+from novel_forge.modules.narrative_state.reducers import (
+    compact_canon_facts,
+    compact_current_state_facts,
+)
 
 
 class BookAuthorityRepository:
@@ -818,6 +822,23 @@ class BookAuthorityRepository:
                 },
             )
         )
+        self.cursor.execute(
+            """
+            UPDATE authority_narrative_retrieval_document
+            SET accepted_to_chapter=%s
+            WHERE project_id=%s AND book_id=%s
+              AND memory_layer=ANY(%s::TEXT[])
+              AND accepted_to_chapter IS NULL
+              AND accepted_from_chapter<%s
+            """,
+            [
+                chapter - 1,
+                projection["project_id"],
+                projection["book_id"],
+                ["L1", "L2", "L4", "L5"],
+                chapter,
+            ],
+        )
         if accepted_draft_version_id:
             specifications.append(
                 (
@@ -857,6 +878,9 @@ class BookAuthorityRepository:
                 else dict(source[1] or {})
             )
             graph = _retrieval_graph_metadata(content)
+            structured_facts = _retrieval_structured_facts(
+                source_artifact_type=str(source[0]), content=content
+            )
             content_text = json.dumps(
                 content,
                 ensure_ascii=False,
@@ -888,6 +912,9 @@ class BookAuthorityRepository:
                     **metadata,
                     "projection_set_id": projection["projection_set_id"],
                     "accepted_boundary": dict(projection["accepted_boundary"]),
+                    "fact_ids": _structured_fact_ids(structured_facts),
+                    "historical_reference_ids": _historical_reference_ids(content),
+                    "structured_facts": structured_facts,
                 },
             }
             projection_hash = (
@@ -1143,6 +1170,64 @@ def _retrieval_graph_metadata(content: Any) -> dict[str, list[str]]:
 
     visit(content)
     return {key: sorted(values) for key, values in found.items()}
+
+
+def _retrieval_structured_facts(
+    *, source_artifact_type: str, content: dict[str, Any]
+) -> list[dict[str, Any]]:
+    if (
+        source_artifact_type == "story_state_snapshot"
+        and content.get("contract_version") == "story-state-snapshot-v2"
+    ):
+        return compact_current_state_facts(content)
+    if (
+        source_artifact_type == "canon_snapshot"
+        and content.get("contract_version") == "canon-snapshot-v2"
+    ):
+        return compact_canon_facts(content)
+    return [
+        dict(item)
+        for item in content.get("structured_facts") or ()
+        if isinstance(item, dict)
+    ][:256]
+
+
+def _structured_fact_ids(facts: list[dict[str, Any]]) -> list[str]:
+    identities: set[str] = set()
+    for fact in facts:
+        state = dict(fact.get("state") or {})
+        direct = str(
+            fact.get("fact_id")
+            or fact.get("proposition_id")
+            or state.get("fact_id")
+            or state.get("proposition_id")
+            or ""
+        )
+        if direct:
+            identities.add(direct)
+        for component in str(fact.get("entity_key") or "").split("|"):
+            key, separator, value = component.partition("=")
+            if separator and key in {"fact_id", "proposition_id"} and value:
+                identities.add(value)
+    return sorted(identities)
+
+
+def _historical_reference_ids(content: Any) -> list[str]:
+    identities: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            identity = str(value.get("reference_id") or "")
+            if identity:
+                identities.add(identity)
+            for item in value.values():
+                visit(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item)
+
+    visit(content)
+    return sorted(identities)
 
 
 __all__ = ["BookAuthorityRepository", "_arc_checkpoint_followup"]

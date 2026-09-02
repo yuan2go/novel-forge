@@ -64,6 +64,13 @@
       "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",
       "tests/integration/test_book_opening_workflow_concurrency_postgres.py",
       "tests/integration/test_book_opening_workflow_failures_postgres.py"
+    ],
+    "bounded_retrieval_context": [
+      "tests/unit/test_retrieval_campaign.py",
+      "tests/unit/test_context_retrieval_v2.py",
+      "tests/integration/test_retrieval_campaign_postgres.py",
+      "tests/integration/test_authority_query_plans_postgres.py",
+      "tests/integration/test_book_to_chapter_authority_vertical_postgres.py"
     ]
   },
   "proof_scope": {
@@ -82,7 +89,8 @@
       "source-import-and-knowledge",
       "agent-runtime",
       "postgresql-persistence-and-migrations",
-      "retry-recovery-and-replay"
+      "retry-recovery-and-replay",
+      "bounded-retrieval-context"
     ],
     "ceiling": "LOCAL_BACKEND_ENGINEERING",
     "does_not_establish": [

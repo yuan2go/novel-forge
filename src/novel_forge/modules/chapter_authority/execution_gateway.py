@@ -95,7 +95,9 @@ _STAGES = frozenset(
         "narrative_semantic_evaluation",
     }
 )
-_OPTIONAL_DOMAIN_STAGES = frozenset({"agent_session", "retrieval"})
+_OPTIONAL_DOMAIN_STAGES = frozenset(
+    {"agent_session", "retrieval", "retrieval_query_expansion"}
+)
 
 _PLANNING_STAGES = frozenset(
     {
@@ -122,6 +124,7 @@ _STAGE_CAPABILITIES = {
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
     "retrieval": CapabilityId.RETRIEVAL_EMBED,
+    "retrieval_query_expansion": CapabilityId.RETRIEVAL_QUERY_EXPAND,
 }
 
 
@@ -167,7 +170,7 @@ def _provider_context_selection(
 ) -> list[dict[str, Any]]:
     if retrieval_projection:
         context = selected_inputs
-    elif stage == "retrieval":
+    elif stage in {"retrieval", "retrieval_query_expansion"}:
         context = [
             item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
         ]
@@ -1775,6 +1778,62 @@ def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
 
+    if stage == "retrieval_query_expansion":
+        coverage = dict(inputs.get("coverage") or {})
+        contract = dict(inputs.get("coverage_contract") or {})
+        selectors = dict(contract.get("selectors") or {})
+        boundary = int(
+            dict(inputs.get("accepted_boundary") or {}).get("accepted_through_chapter")
+            or 0
+        )
+        prefixes = {
+            "fact_ids": "fact",
+            "historical_reference_ids": "history",
+            "relationship_ids": "relationship",
+            "arc_plan_version_ids": "arc",
+            "obligation_ids": "obligation",
+        }
+        selector_for = {
+            "fact_ids": "entity_ids",
+            "historical_reference_ids": "entity_ids",
+            "relationship_ids": "relationship_ids",
+            "arc_plan_version_ids": "arc_plan_version_ids",
+            "obligation_ids": "obligation_ids",
+        }
+        queries = []
+        for dimension, identities in dict(coverage.get("missing") or {}).items():
+            for identity in identities or ():
+                selector_dimension = selector_for.get(str(dimension), "entity_ids")
+                allowed = [
+                    str(item)
+                    for item in selectors.get(selector_dimension) or ()
+                    if str(item)
+                ]
+                queries.append(
+                    {
+                        "query_id": f"fixture-query:{len(queries) + 1}",
+                        "text": str(identity),
+                        "reason": "fixture exercises the governed missing-evidence protocol",
+                        "targets": [f"{prefixes[str(dimension)]}:{identity}"],
+                        "selectors": (
+                            {selector_dimension: allowed[:1]} if allowed else {}
+                        ),
+                        "temporal_range": {
+                            "from_chapter": 0,
+                            "to_chapter": boundary,
+                        },
+                    }
+                )
+                if len(queries) == 4:
+                    break
+            if len(queries) == 4:
+                break
+        if not queries:
+            raise ValueError("fixture query expansion requires a deterministic gap")
+        return {
+            "contract_version": "retrieval-expansion-plan-v1",
+            "queries": queries,
+        }
     if stage == "retrieval":
         texts = inputs.get("texts")
         if not isinstance(texts, list) or not texts:
@@ -2526,6 +2585,16 @@ def _stage_semantic_contract(
             "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
             "mutate Authority state."
         )
+    if stage == "retrieval_query_expansion":
+        return (
+            "Return only a bounded retrieval query proposal matching the strict schema. "
+            "Every query must target one supplied deterministic evidence gap and stay "
+            "within the frozen accepted chapter boundary and allowed selector dimensions. "
+            "Never emit SQL, database identifiers, arbitrary AssetVersion identifiers, "
+            "future-state selectors, retrieved records, sufficiency decisions, or Authority "
+            "mutations. Deterministic policy validates the proposal and alone decides whether "
+            "another governed retrieval round executes."
+        )
     if stage == "agent_session":
         return (
             "Reason only over the frozen accepted boundary, committed transcript, "
@@ -2870,7 +2939,10 @@ def _materialize_production_codex_prompt(
         or len(context) != 1
         or not isinstance(context[0], Mapping)
         or not isinstance(knowledge, list)
-        or (not knowledge and stage not in {"agent_session", "retrieval"})
+        or (
+            not knowledge
+            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion"}
+        )
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
         or not isinstance(schema.get("content"), Mapping)
@@ -2890,7 +2962,11 @@ def _materialize_production_codex_prompt(
     knowledge_view = build_provider_knowledge_view(
         item for item in knowledge if isinstance(item, Mapping)
     )
-    if not knowledge_view and stage not in {"agent_session", "retrieval"}:
+    if not knowledge_view and stage not in {
+        "agent_session",
+        "retrieval",
+        "retrieval_query_expansion",
+    }:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Provider Knowledge projection is empty",

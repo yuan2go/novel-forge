@@ -196,6 +196,7 @@ _PACK_SKILL_FOR_STAGE = {
     "narrative_semantic_evaluation": "quality-review",
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
+    "retrieval_query_expansion": "context-builder-source-isolation",
 }
 
 
@@ -416,11 +417,18 @@ def build_production_execution_composition(
             "and NOVEL_FORGE_AGENT_MODEL"
         )
     if agent_binding_enabled:
-        stage_routes.append(
+        stage_routes.extend(
             (
-                "agent_session",
-                "NOVEL_FORGE_AGENT_PROVIDER",
-                "NOVEL_FORGE_AGENT_MODEL",
+                (
+                    "agent_session",
+                    "NOVEL_FORGE_AGENT_PROVIDER",
+                    "NOVEL_FORGE_AGENT_MODEL",
+                ),
+                (
+                    "retrieval_query_expansion",
+                    "NOVEL_FORGE_AGENT_PROVIDER",
+                    "NOVEL_FORGE_AGENT_MODEL",
+                ),
             )
         )
     embedding_provider = str(values.get("NOVEL_FORGE_EMBEDDING_PROVIDER") or "").strip()
@@ -460,7 +468,15 @@ def build_production_execution_composition(
         capability_definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
-        if stage in {"narrative_semantic_evaluation", "agent_session"} and controlled:
+        if (
+            stage
+            in {
+                "narrative_semantic_evaluation",
+                "agent_session",
+                "retrieval_query_expansion",
+            }
+            and controlled
+        ):
             if not all(
                 str(values.get(key) or "").strip()
                 for key in (
@@ -468,7 +484,7 @@ def build_production_execution_composition(
                     model_key,
                     (
                         "NOVEL_FORGE_AGENT_REASONING_EFFORT"
-                        if stage == "agent_session"
+                        if stage in {"agent_session", "retrieval_query_expansion"}
                         else "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"
                     ),
                 )

@@ -7,6 +7,7 @@ import pytest
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _required_language_from_context,
     _stage_semantic_contract,
+    default_chapter_fixture_response,
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
@@ -132,6 +133,60 @@ def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() ->
     assert "exactly 8 finite numeric entries" in contract
     assert "L2 norm" in contract
     assert "provider-unavailable" in contract
+
+
+def test_retrieval_query_expansion_is_a_strict_proposal_only_contract() -> None:
+    value = validate_chapter_provider_output_schema(
+        "retrieval_query_expansion",
+        {
+            "contract_version": "retrieval-expansion-plan-v1",
+            "queries": [
+                {
+                    "query_id": "query:oath",
+                    "text": "bridge oath witness",
+                    "reason": "missing causal antecedent",
+                    "targets": ["fact:fact:oath-origin"],
+                    "selectors": {"character_ids": ["character:mei"]},
+                    "temporal_range": {"from_chapter": 1, "to_chapter": 100},
+                }
+            ],
+        },
+    )
+    assert normalize_model_output("retrieval_query_expansion", value) == value
+    contract = _stage_semantic_contract("retrieval_query_expansion")
+    assert "proposal" in contract
+    assert "never" in contract.lower()
+    assert "SQL" in contract
+
+    invalid = deepcopy(value)
+    invalid["queries"][0]["selectors"] = {
+        "asset_version_ids": ["asset-version:arbitrary"]
+    }
+    with pytest.raises(KernelError, match="is not allowed"):
+        validate_chapter_provider_output_schema("retrieval_query_expansion", invalid)
+
+
+def test_scripted_expansion_exercises_only_the_typed_missing_evidence_contract() -> (
+    None
+):
+    output = default_chapter_fixture_response(
+        "retrieval_query_expansion",
+        {
+            "accepted_boundary": {"accepted_through_chapter": 40},
+            "coverage": {
+                "sufficient": False,
+                "missing": {"fact_ids": ["fact:oath-origin"]},
+            },
+            "coverage_contract": {"selectors": {"entity_ids": ["entity:bridge"]}},
+        },
+    )
+
+    assert (
+        validate_chapter_provider_output_schema("retrieval_query_expansion", output)
+        == output
+    )
+    assert output["queries"][0]["targets"] == ["fact:fact:oath-origin"]
+    assert output["queries"][0]["selectors"] == {"entity_ids": ["entity:bridge"]}
 
 
 def test_zh_cn_language_contract_overrides_legacy_revision_language() -> None:

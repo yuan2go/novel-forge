@@ -12,7 +12,9 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_indexes_are_valid_and_available_when_sequential_scan_is_disabled(self) -> None:
+    def test_indexes_are_valid_and_available_when_sequential_scan_is_disabled(
+        self,
+    ) -> None:
         """Index-availability proof only; release qualification proves planner choice."""
         probes = {
             "operation": (
@@ -89,6 +91,23 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
                 LIMIT 10
                 """,
             ),
+            "accepted_retrieval": (
+                "authority_narrative_retrieval_scope_boundary_idx",
+                """
+                SELECT retrieval_document_id
+                FROM authority_narrative_retrieval_document
+                WHERE project_id='query-plan-project'
+                  AND book_id='query-plan-book'
+                  AND accepted_from_chapter BETWEEN 0 AND 1000
+                  AND (accepted_to_chapter IS NULL OR accepted_to_chapter>=1000)
+                  AND (
+                    search_vector @@ plainto_tsquery('simple','rare oath')
+                    OR entity_ids ? 'entity:rare'
+                  )
+                ORDER BY accepted_from_chapter DESC,retrieval_document_id
+                LIMIT 24
+                """,
+            ),
         }
         with connect() as connection:
             connection.execute("SET enable_seqscan=off")
@@ -118,11 +137,7 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
 
 def _index_names(value: Any) -> set[str]:
     if isinstance(value, dict):
-        names = {
-            str(value["Index Name"])
-            for key in ("Index Name",)
-            if key in value
-        }
+        names = {str(value["Index Name"]) for key in ("Index Name",) if key in value}
         for nested in value.values():
             names.update(_index_names(nested))
         return names

@@ -19,7 +19,6 @@ from .contracts import (
 
 
 class ScriptedProviderAdapterV2:
-
     provider = "scripted_provider_v2"
     reconciliation_mode = "query"
     capability_profile = ProviderCapabilityProfile(
@@ -104,6 +103,50 @@ class ScriptedProviderAdapterV2:
 
     @staticmethod
     def _result_for(request: ProviderInvocationRequest) -> dict[str, Any]:
+        if request.stage == "retrieval_query_expansion":
+            inputs = request.request_payload.get("input")
+            inputs = inputs if isinstance(inputs, dict) else {}
+            coverage = dict(inputs.get("coverage") or {})
+            boundary = int(
+                dict(inputs.get("accepted_boundary") or {}).get(
+                    "accepted_through_chapter"
+                )
+                or 0
+            )
+            prefixes = {
+                "fact_ids": "fact",
+                "historical_reference_ids": "history",
+                "relationship_ids": "relationship",
+                "arc_plan_version_ids": "arc",
+                "obligation_ids": "obligation",
+            }
+            queries = [
+                {
+                    "query_id": f"scripted-query:{index}",
+                    "text": str(identity),
+                    "reason": "scripted Provider protocol exercises one governed gap",
+                    "targets": [f"{prefixes[str(dimension)]}:{identity}"],
+                    "selectors": {},
+                    "temporal_range": {
+                        "from_chapter": 0,
+                        "to_chapter": boundary,
+                    },
+                }
+                for index, (dimension, identity) in enumerate(
+                    (
+                        (dimension, identity)
+                        for dimension, identities in dict(
+                            coverage.get("missing") or {}
+                        ).items()
+                        for identity in identities or ()
+                    ),
+                    start=1,
+                )
+            ][:4]
+            return {
+                "contract_version": "retrieval-expansion-plan-v1",
+                "queries": queries,
+            }
         if request.stage == "draft":
             marker = str(
                 request.request_payload.get("capability_pack_fixture_marker") or ""
@@ -169,17 +212,14 @@ class ScriptedProviderAdapterV2:
                             }
                         ],
                         "observed_consequence": str(
-                            event.get("consequence")
-                            or "the planned consequence occurs"
+                            event.get("consequence") or "the planned consequence occurs"
                         ),
                         "observed_action": str(event.get("action") or "planned action"),
                         "observed_decision": str(
                             event.get("decision") or "planned decision"
                         ),
                         "observed_cause_event_ids": list(event.get("causes") or ()),
-                        "observed_disclosures": list(
-                            event.get("disclosures") or ()
-                        ),
+                        "observed_disclosures": list(event.get("disclosures") or ()),
                         "observed_state_deltas": [
                             dict(delta)
                             for delta in event.get("state_deltas") or ()

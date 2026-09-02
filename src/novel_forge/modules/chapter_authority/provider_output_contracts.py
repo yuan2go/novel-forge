@@ -387,13 +387,9 @@ def _canon_schema() -> dict[str, Any]:
                         required=("start", "end", "summary"),
                     ),
                 },
-                "observed_consequence": _nullable(
-                    {"type": "string", "minLength": 1}
-                ),
+                "observed_consequence": _nullable({"type": "string", "minLength": 1}),
                 "observed_action": _nullable({"type": "string", "minLength": 1}),
-                "observed_decision": _nullable(
-                    {"type": "string", "minLength": 1}
-                ),
+                "observed_decision": _nullable({"type": "string", "minLength": 1}),
                 "observed_cause_event_ids": {
                     "type": "array",
                     "items": {"type": "string", "minLength": 1},
@@ -720,6 +716,68 @@ def _retrieval_embedding_schema() -> dict[str, Any]:
     )
 
 
+def _retrieval_query_expansion_schema() -> dict[str, Any]:
+    string_ids = {
+        "type": "array",
+        "maxItems": 32,
+        "uniqueItems": True,
+        "items": {"type": "string", "minLength": 1, "maxLength": 200},
+    }
+    selectors = _object_schema(
+        {
+            key: dict(string_ids)
+            for key in (
+                "entity_ids",
+                "character_ids",
+                "relationship_ids",
+                "arc_plan_version_ids",
+                "obligation_ids",
+            )
+        },
+        required=(),
+    )
+    temporal_range = _object_schema(
+        {
+            "from_chapter": {"type": "integer", "minimum": 0},
+            "to_chapter": {"type": "integer", "minimum": 0},
+        },
+        required=("from_chapter", "to_chapter"),
+    )
+    query = _object_schema(
+        {
+            "query_id": {"type": "string", "minLength": 1, "maxLength": 160},
+            "text": {"type": "string", "minLength": 1, "maxLength": 512},
+            "reason": {"type": "string", "minLength": 1, "maxLength": 512},
+            "targets": {**string_ids, "minItems": 1},
+            "selectors": selectors,
+            "temporal_range": temporal_range,
+        },
+        required=(
+            "query_id",
+            "text",
+            "reason",
+            "targets",
+            "selectors",
+            "temporal_range",
+        ),
+    )
+    return _object_schema(
+        {
+            "contract_version": {
+                "type": "string",
+                "const": "retrieval-expansion-plan-v1",
+            },
+            "queries": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": query,
+            },
+        },
+        required=("contract_version", "queries"),
+    )
+
+
 def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 
     if stage == "draft":
@@ -738,6 +796,8 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
         schema = _reader_outcome_schema()
     elif stage == "retrieval":
         schema = _retrieval_embedding_schema()
+    elif stage == "retrieval_query_expansion":
+        schema = _retrieval_query_expansion_schema()
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_UNSUPPORTED",
