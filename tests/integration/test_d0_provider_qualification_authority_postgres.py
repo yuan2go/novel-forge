@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import unittest
+from dataclasses import replace
 
 from novel_forge.modules.provider_qualification import (
     D0LiveQualificationEvidence,
@@ -77,6 +78,7 @@ class _ContractOnlyLiveGateway:
         raise ExternalEffectAdapterError(
             "contract test lost the response after Provider completion",
             request_sent=True,
+            failure_kind="response_loss",
         )
 
     def query(self, **_kwargs: object) -> ProviderResult:
@@ -224,6 +226,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             evidence_store=_RecordingObjectStore(),
             application_build_id="d0-live-authority-integration",
             commit_sha="a" * 40,
+            implementation_identity="sha256:" + "b" * 64,
         )
         config = D0ProbeConfig.from_mapping(
             {
@@ -234,6 +237,13 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 ),
                 "provider": "codex-cli",
                 "backend_id": "codex-cli",
+                "route_policy_version": "chapter.retrieval.route@1",
+                "prompt_version": "prompt:retrieval@1",
+                "prompt_hash": "sha256:" + "d" * 64,
+                "instruction_version": "instruction:retrieval@1",
+                "instruction_hash": "sha256:" + "e" * 64,
+                "skill_version": "skill:retrieval@1",
+                "skill_hash": "sha256:" + "f" * 64,
             }
         )
         command = D0QualificationCommand(
@@ -244,6 +254,10 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             trace_id=identifier("d0-live-trace"),
             correlation_id=identifier("d0-live-correlation"),
             config=config,
+            resolved_model="gpt-5.6-sol",
+            resolved_model_version="gpt-5.6-sol",
+            resolved_auth_profile_ref="auth:chatgpt-codex-cli",
+            implementation_identity="sha256:" + "b" * 64,
         )
         authority.admit(command)
         source_operation_id = identifier("d0-live-source-operation")
@@ -258,7 +272,6 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 workspace_id=workspace_id,
                 status="EXECUTING",
             )
-        route_hash = "sha256:" + "c" * 64
         prompt_hash = "sha256:" + "d" * 64
         instruction_hash = "sha256:" + "e" * 64
         skill_hash = "sha256:" + "f" * 64
@@ -275,6 +288,17 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             "provider_billed": False,
             "pricing_snapshot_hash": "sha256:" + "3" * 64,
         }
+        route_snapshot = {
+            "route_snapshot_id": "route:retrieval@1",
+            "release_sha": "a" * 40,
+            "model_provider": "codex-cli",
+            "model_id": "gpt-5.6-sol",
+            "auth_profile_ref": "auth:chatgpt-codex-cli",
+            "backend_id": "codex-cli",
+            "policy_id": "chapter.retrieval.route",
+            "policy_version": 1,
+        }
+        route_hash = request_hash(route_snapshot)
         provider_evidence = {
             "provider_id": "codex-cli",
             "model_id": "gpt-5.6-sol",
@@ -284,29 +308,28 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             "fixture_protocol_only": False,
             "usage": usage,
             "cost": cost,
-            "latency": {"duration_ms": 42},
             "capability_runtime": {
-                "prompt_system_instruction_hash": instruction_hash,
-                "prompt_template_hash": prompt_hash,
-                "skill_content_hash": skill_hash,
+                "system_instruction": {"content_hash": instruction_hash},
+                "prompt_template": {"content_hash": prompt_hash},
+                "skill": {"content_hash": skill_hash},
             },
             "production_execution": {
                 "execution_request": {
                     "execution_id": f"chapter-execution:{source_operation_id}",
                 },
                 "execution_handle": {
+                    "execution_id": f"chapter-execution:{source_operation_id}",
+                    "backend_id": "codex-cli",
                     "local_execution_receipt_id": "process-receipt:contract-only",
                     "transport": "LOCAL_CLI_REMOTE_INFERENCE",
                 },
-                "execution_result": {"outcome": "SUCCEEDED"},
-                "route_snapshot": {
-                    "route_snapshot_id": "route:retrieval@1",
-                    "contract_hash": route_hash,
-                    "release_sha": "a" * 40,
-                    "model_provider": "codex-cli",
-                    "model_id": "gpt-5.6-sol",
-                    "auth_profile_ref": "auth:chatgpt-codex-cli",
+                "execution_result": {
+                    "execution_id": f"chapter-execution:{source_operation_id}",
+                    "outcome": "SUCCEEDED",
+                    "started_at": "2026-09-02T00:00:00+00:00",
+                    "completed_at": "2026-09-02T00:00:00.042000+00:00",
                 },
+                "route_snapshot": route_snapshot,
             },
         }
         context = EffectCommandContext(
@@ -385,6 +408,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 "latency": {"duration_ms": 42},
                 "controlled_failure": {
                     "checkpoint": "after_provider_response_before_effect_receipt",
+                    "failure_kind": "response_loss",
                     "request_sent": True,
                 },
                 "recovery": {
@@ -392,21 +416,21 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                     "recovered_without_resend": True,
                     "replayed": True,
                 },
-                "dispatch_count": 1,
-                "receipt_count": 1,
-                "provider_execution_count": 1,
-                "duplicate_external_effect_count": 0,
                 "fixture_protocol_only": False,
                 "real_model_call": True,
             }
         )
 
+        with self.assertRaisesRegex(ValueError, "D0 route"):
+            authority.execute_live(command, replace(evidence, backend_id="other"))
         result = authority.execute_live(command, evidence)
         replay = authority.execute_live(command, evidence)
 
         self.assertTrue(adapter.response_lost)
         self.assertEqual(reconciled["outcome"], "success")
         self.assertEqual(result["status"], "PASSED")
+        self.assertEqual(result["provider_execution_count"], 1)
+        self.assertEqual(result["duplicate_external_effect_count"], 0)
         self.assertTrue(replay["replayed"])
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(

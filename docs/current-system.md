@@ -152,13 +152,17 @@ revision and binds each passing run to the current implementation-tree identity.
 file, fixture or historical result cannot establish `QUALIFIED` by itself. The P0
 Provider route is scripted and its evidence remains fixture engineering proof. The
 current inventory retains one validated exact-revision P0 report and projects each
-listed capability as `QUALIFIED` only to the local or scripted engineering ceiling
-recorded beside it. Exact SHA, implementation identity, collection, migration and
-cleanup facts remain in machine evidence rather than duplicated as prose.
+listed capability as `QUALIFIED` only to its recorded engineering ceiling. A separate
+credentialed qualification proves the real Provider runtime for one frozen route,
+including durable intent, usage, estimated cost, response-loss reconciliation and zero
+duplicate sends. It does not promote chapter, human, long-form or production proof.
+Exact SHA, implementation identity, collection, migration and cleanup facts remain in
+machine evidence rather than duplicated as prose.
 
 Current boundaries, encoded in executable readiness and release-evidence code, are:
 
-- credentialed real-Provider proof: not established;
+- credentialed real-Provider runtime: qualified for the retained exact-revision route;
+- credentialed chapter and production proof: not established;
 - human editorial or reader proof: not established for the current revision;
 - stable long-form and multi-book production: not established;
 - autonomous end-to-end book operation: not established;

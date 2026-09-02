@@ -1,0 +1,118 @@
+{
+  "schema_version": "novel-forge.retained-real-provider-qualification.v1",
+  "evidence_class": "real_provider_runtime_qualification",
+  "observed_at_sha": "d978a35584e8c6784ac141f6ff69495fb123ea07",
+  "source_tree": "27349f0d3162338d5e6035c3e2f620fe6304e87a",
+  "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
+  "created_at": "2026-09-02T01:13:18.982275+08:00",
+  "raw_evidence_sha256": "sha256:2ba478a222854c5c1942a75e4920eb29947175922a92bf0ec940ffc16a966214",
+  "provider": {
+    "provider_id": "codex-cli",
+    "backend_id": "codex-cli",
+    "model": "gpt-5.6-sol",
+    "model_version": "provider-not-reported",
+    "route_snapshot_id": "production_execution/routes/988a45c3e446474cbaaa",
+    "prompt_version": "prompt-system:chapter-generation-pack@v1",
+    "prompt_hash": "sha256:5a8ccec99d1c1bf0a28870f1cb608169974f78529b0552119dbfbe5c790b22c0",
+    "instruction_version": "prompt-system:chapter-generation-pack@v1:system",
+    "instruction_hash": "sha256:56ca60948dbfee8de94e233307604f3a178e0b61c3f3082803a38cce0830ba20",
+    "skill_version": "context-builder-source-isolation@context-builder-source-isolation-v1",
+    "skill_hash": "sha256:953c21770114b27df36e21273b93106f1d236e968a55cb865b0a26d17df3f341"
+  },
+  "qualification": {
+    "authority": "D0QualificationAuthority.execute_live",
+    "qualification_operation_id": "ed6a5c33-8336-48e0-967a-b6fdbe87bf1d",
+    "qualification_run_id": "d0:ed6a5c33-8336-48e0-967a-b6fdbe87bf1d",
+    "report_asset_version_id": "21c054d3-6907-46d0-92ad-09ba7653592b",
+    "authority_status": "COMPLETED",
+    "authority_decision": "QUALIFIED",
+    "scenario_count": 6,
+    "decision": "PASSED",
+    "provider_execution_count": 1,
+    "real_model_call": true,
+    "fixture_protocol_only": false
+  },
+  "request_response_traceability": {
+    "external_effect_operation_id": "e688e567-1e21-4471-a15e-7a8c96ec5599",
+    "external_effect_id": "50253e76-b928-4713-a7ce-2b7c2410c832",
+    "provider_execution_id": "chapter-execution:50253e76-b928-4713-a7ce-2b7c2410c832",
+    "provider_request_identity": "process-receipt:6f69518daa7421126484f030",
+    "request_hash": "sha256:39cda7e58d0163f28d2c1e6a8d2f56aad8fd65d4135a469cc33bfd0a28bdab01",
+    "response_hash": "sha256:b984b8fec98c1e293fcac29b9c087b12036c1bed8653e13e5bc7efe7d930e081",
+    "request_content_hash": "sha256:922db2fffe86dc8c0115a09ad35bcddf4154ad5c774c053c052e7a36628a8c06",
+    "response_content_hash": "sha256:c0ee10e5f299f88ac44c0947a18a690a2c41875b4aaddbee9d2028f4b5634f9c"
+  },
+  "external_effect": {
+    "dispatch_count": 1,
+    "receipt_count": 1,
+    "reconciliation_count": 1,
+    "provider_execution_count": 1,
+    "process_receipt_count": 1,
+    "duplicate_external_effect_count": 0,
+    "duplicate_provider_process_count": 0,
+    "process_receipt_identity_hash": "sha256:462f32be607228184315d145b0fba0a800db8e90ebca0750d2ba0983946a637b",
+    "fault": "RESPONSE_LOSS_AFTER_PROVIDER_COMPLETION",
+    "initial_outcome": "EFFECT_EXTERNAL_STATE_UNKNOWN",
+    "recovery_runtime_restarted": true,
+    "recovered_without_resend": true,
+    "replay_verified": true
+  },
+  "process_log_evidence": {
+    "stdout": {
+      "relative_path": "codex-executions/chapter-execution-50253e76-b928-4713-a7ce-2b7c24-7745080a3073b734/stdout.log",
+      "byte_count": 578,
+      "sha256": "sha256:737e897d208eb997e565921278036bb1c13869bc54a3e33f8f50ad842ce179dc",
+      "secret_scan": "PASS"
+    },
+    "stderr": {
+      "relative_path": "codex-executions/chapter-execution-50253e76-b928-4713-a7ce-2b7c24-7745080a3073b734/stderr.log",
+      "byte_count": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "secret_scan": "PASS"
+    },
+    "credential_environment_keys_present": []
+  },
+  "controlled_failure_contracts": {
+    "evidence_class": "CURRENT_RUNTIME_CONTRACT",
+    "proof_ceiling": "DETERMINISTIC_FAULT_CONTRACT_NOT_PROVIDER_BILLED_RESPONSE",
+    "test": "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_typed_provider_failures_preserve_send_boundary_and_fail_closed",
+    "cases": [
+      "timeout_before_send",
+      "rate_limit_before_send",
+      "connection_loss_after_send"
+    ]
+  },
+  "usage": {
+    "measurement": "MEASURED",
+    "input_tokens": 19380,
+    "output_tokens": 259,
+    "reasoning_output_tokens": 154,
+    "cached_input_tokens": 0,
+    "total_tokens": 19639
+  },
+  "cost": {
+    "amount": "0.052335",
+    "currency": "USD",
+    "measurement": "ESTIMATED",
+    "provider_billed": false,
+    "pricing_ref": "proof-estimate:gpt-5.6-sol:2026-08-09:not-provider-billing",
+    "pricing_snapshot_hash": "sha256:874d14d08987f1bf0cb2b38e1efbb23fe0f4bcfd86eda47541db0b18a9a81c82"
+  },
+  "latency": {
+    "duration_ms": 16506,
+    "source": "durable_execution_result_timestamps"
+  },
+  "migration_head": "20260830_0105_p0_backend_qualification_repairs",
+  "secret_material_retained": false,
+  "proof_flags": {
+    "REAL_PROVIDER_READY_FOR_LIVE_RUN": true,
+    "REAL_PROVIDER_RUNTIME": "PASS",
+    "REAL_PROVIDER_QUALIFIED": true,
+    "DUPLICATE_EXTERNAL_EFFECT": 0,
+    "CHAPTER_VERTICAL_PROVEN": false,
+    "HUMAN_EDITORIAL_PROVEN": false,
+    "LONGFORM_PROVEN": false,
+    "PRODUCTION_PROVEN": false
+  },
+  "proof_ceiling": "REAL_PROVIDER_RUNTIME_ONLY_NOT_CHAPTER_HUMAN_LONGFORM_OR_PRODUCTION"
+}

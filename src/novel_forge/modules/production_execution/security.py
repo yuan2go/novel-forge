@@ -81,6 +81,14 @@ _SECRET_VALUE_PATTERNS = (
         re.IGNORECASE,
     ),
 )
+_CONNECTION_URL_PATTERN = re.compile(
+    r"\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis)://[^\s\"'<>]+",
+    re.IGNORECASE,
+)
+_CREDENTIAL_URL_PATTERN = re.compile(
+    r"\b[a-z][a-z0-9+.-]*://[^\s/:@]+:[^\s/@]+@[^\s\"'<>]+",
+    re.IGNORECASE,
+)
 _LEGACY_USAGE_LOGGER = logging.getLogger(
     "novel_forge.production_execution.legacy_usage"
 )
@@ -124,7 +132,9 @@ def _is_prohibited_key(key: str) -> bool:
 
 
 def _contains_secret_value(value: str) -> bool:
-    return any(pattern.search(value) for pattern in _SECRET_VALUE_PATTERNS)
+    return bool(_CREDENTIAL_URL_PATTERN.search(value)) or any(
+        pattern.search(value) for pattern in _SECRET_VALUE_PATTERNS
+    )
 
 
 def assert_no_inline_secrets(
@@ -163,6 +173,14 @@ def assert_no_inline_secrets(
                 visit(item, f"{path}[{index}]")
 
     visit(payload, "$")
+
+
+def redact_secret_text(value: object) -> str:
+    redacted = _CONNECTION_URL_PATTERN.sub("[REDACTED_CONNECTION_URL]", str(value))
+    redacted = _CREDENTIAL_URL_PATTERN.sub("[REDACTED_CREDENTIAL_URL]", redacted)
+    for pattern in _SECRET_VALUE_PATTERNS:
+        redacted = pattern.sub("[REDACTED_SECRET]", redacted)
+    return redacted
 
 
 def execution_environment(value: str = "") -> RuntimeEnvironment:
@@ -231,4 +249,5 @@ __all__ = [
     "assert_legacy_execution_allowed",
     "assert_no_inline_secrets",
     "execution_environment",
+    "redact_secret_text",
 ]

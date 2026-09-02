@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,9 +23,9 @@ from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.command_kernel.external_effect_runtime import (
-    EffectCommandContext,
-    reconcile_external_effect,
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
 )
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority import (
@@ -45,6 +46,10 @@ from novel_forge.modules.provider_qualification import (
     D0QualificationCommand,
 )
 from novel_forge.modules.provider_qualification.domain import request_hash
+from novel_forge.modules.production_execution.security import (
+    assert_no_inline_secrets,
+    redact_secret_text,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import run_migrations
 from novel_forge.storage.object_store import MinioObjectStore
@@ -64,7 +69,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config/provider/d0-codex-cli-probe.json"
 
 
-class SimulatedProviderResponseLoss(BaseException):
+class SimulatedProviderResponseLoss(ExternalEffectAdapterError):
     pass
 
 
@@ -95,7 +100,9 @@ class OneShotAmbiguousResponseGateway:
         if not self.triggered:
             self.triggered = True
             raise SimulatedProviderResponseLoss(
-                "qualification injected response loss after Provider completion"
+                "qualification injected response loss after Provider completion",
+                request_sent=True,
+                failure_kind="response_loss",
             )
         return result
 
@@ -307,36 +314,6 @@ def _seed_accepted_retrieval_document(
     return document_id, asset_version_id
 
 
-def _expire_active_attempt_lease(
-    database_url: str, operation_id: str
-) -> dict[str, Any]:
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute(
-            """
-            UPDATE authority_lease_acquisition
-            SET acquired_at=NOW()-INTERVAL '2 seconds',
-                heartbeat_at=NOW()-INTERVAL '2 seconds',
-                expires_at=NOW()-INTERVAL '1 second'
-            WHERE attempt_id=(
-                SELECT attempt_id FROM authority_attempt
-                WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1
-            ) AND status='HELD'
-            RETURNING attempt_id,fencing_token,owner,expires_at
-            """,
-            [operation_id],
-        )
-        row = uow.cursor.fetchone()
-        if row is None:
-            raise RuntimeError("response loss left no held Attempt lease")
-        uow.commit()
-    return {
-        "attempt_id": str(row[0]),
-        "fencing_token": int(row[1]),
-        "owner": str(row[2]),
-        "expires_at": row[3].isoformat(),
-    }
-
-
 def _outside_repository(path: Path) -> bool:
     try:
         path.relative_to(ROOT)
@@ -368,6 +345,11 @@ def _runtime_environment(
             "NOVEL_FORGE_EMBEDDING_PROVIDER": "codex-cli",
             "NOVEL_FORGE_EMBEDDING_MODEL": model,
             "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "8",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                reasoning_effort
+            ),
             "NOVEL_FORGE_D0_MODEL": model,
             "NOVEL_FORGE_D0_MODEL_VERSION": "provider-not-reported",
         }
@@ -377,7 +359,7 @@ def _runtime_environment(
 
 def _effect_evidence(
     database_url: str, *, operation_id: str
-) -> tuple[dict[str, Any], dict[str, Any], int, int, int]:
+) -> tuple[dict[str, Any], dict[str, Any], int, int, int, dict[str, Any]]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -420,8 +402,20 @@ def _effect_evidence(
             [row[0]],
         )
         reconciliation_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT outcome,evidence,trace_id,correlation_id,reconciled_at
+            FROM authority_effect_reconciliation_evidence
+            WHERE external_effect_id=%s AND outcome='success'
+            ORDER BY reconciled_at DESC LIMIT 1
+            """,
+            [row[0]],
+        )
+        reconciliation_row = uow.cursor.fetchone()
     if str(row[3]) != "SUCCEEDED" or receipt_row is None:
         raise RuntimeError("qualification Provider effect did not converge")
+    if reconciliation_row is None:
+        raise RuntimeError("qualification Provider effect has no recovery evidence")
     receipt_payload = dict(receipt_row[0] or {})
     provider_evidence = dict(receipt_payload.get("evidence") or {})
     return (
@@ -434,6 +428,13 @@ def _effect_evidence(
         int(row[4]),
         int(row[5]),
         reconciliation_count,
+        {
+            "outcome": str(reconciliation_row[0]),
+            "evidence": dict(reconciliation_row[1] or {}),
+            "trace_id": str(reconciliation_row[2]),
+            "correlation_id": str(reconciliation_row[3]),
+            "reconciled_at": reconciliation_row[4].isoformat(),
+        },
     )
 
 
@@ -441,6 +442,92 @@ def _duration_ms(execution_result: Mapping[str, Any]) -> int:
     started = datetime.fromisoformat(str(execution_result["started_at"]))
     completed = datetime.fromisoformat(str(execution_result["completed_at"]))
     return max(1, int((completed - started).total_seconds() * 1000))
+
+
+def _provider_process_evidence(
+    runtime_root: Path, *, execution_id: str
+) -> dict[str, Any]:
+    receipts: list[dict[str, Any]] = []
+    for path in sorted(
+        runtime_root.glob("codex-executions/*/process-receipt.json")
+    ):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if str(payload.get("execution_id") or "") == execution_id:
+            assert_no_inline_secrets(
+                payload, label="real Provider process receipt"
+            )
+            receipts.append(dict(payload))
+    if len(receipts) != 1:
+        raise RuntimeError(
+            "real Provider execution must have exactly one process receipt; "
+            f"observed {len(receipts)}"
+        )
+    receipt = receipts[0]
+    forbidden_environment_keys = {
+        "OPENAI_API_KEY",
+        "NOVEL_FORGE_DATABASE_URL",
+        "NOVEL_FORGE_MINIO_ACCESS_KEY",
+        "NOVEL_FORGE_MINIO_SECRET_KEY",
+    }
+    environment_keys = {
+        str(value) for value in receipt.get("environment_keys") or ()
+    }
+    leaked_environment_keys = sorted(
+        environment_keys & forbidden_environment_keys
+    )
+    if leaked_environment_keys:
+        raise RuntimeError(
+            "real Provider process received credential environment keys: "
+            + ", ".join(leaked_environment_keys)
+        )
+    log_evidence: dict[str, Any] = {}
+    resolved_runtime_root = runtime_root.resolve()
+    for label, key in (("stdout", "stdout_path"), ("stderr", "stderr_path")):
+        log_path = Path(str(receipt.get(key) or "")).resolve()
+        try:
+            relative_path = log_path.relative_to(resolved_runtime_root)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"real Provider {label} log escaped the runtime root"
+            ) from exc
+        if not log_path.is_file():
+            raise RuntimeError(f"real Provider {label} log is missing")
+        raw_log = log_path.read_bytes()
+        assert_no_inline_secrets(
+            raw_log.decode("utf-8", errors="replace"),
+            label=f"real Provider {label} log",
+        )
+        log_evidence[label] = {
+            "relative_path": relative_path.as_posix(),
+            "byte_count": len(raw_log),
+            "sha256": "sha256:" + hashlib.sha256(raw_log).hexdigest(),
+            "secret_scan": "PASS",
+        }
+    identity = {
+        key: receipt.get(key)
+        for key in (
+            "receipt_id",
+            "execution_id",
+            "status",
+            "transport",
+            "provider_request_id",
+            "request_digest",
+            "command_sha256",
+            "input_sha256",
+            "result_integrity",
+            "process_started_at",
+            "completed_at",
+            "elapsed_ms",
+        )
+    }
+    identity["logs"] = log_evidence
+    return {
+        "process_receipt_count": len(receipts),
+        "duplicate_provider_process_count": max(0, len(receipts) - 1),
+        "process_receipt_identity_hash": request_hash(identity),
+        "process_log_evidence": log_evidence,
+        "credential_environment_keys_present": [],
+    }
 
 
 def _run(args: argparse.Namespace) -> dict[str, Any]:
@@ -540,12 +627,17 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         trace_id=f"trace:{project_id}:provider-qualification",
         correlation_id=f"correlation:{project_id}",
         config=config,
+        resolved_model=env["NOVEL_FORGE_D0_MODEL"],
+        resolved_model_version=env["NOVEL_FORGE_D0_MODEL_VERSION"],
+        resolved_auth_profile_ref=env["NOVEL_FORGE_PROVIDER_AUTH_PROFILE"],
+        implementation_identity=identity["implementation_tree_sha"],
     )
     qualification_authority = D0QualificationAuthority(
         args.database_url,
         evidence_store=object_store,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        implementation_identity=identity["implementation_tree_sha"],
         worker_id="provider-qualification-authority-worker",
     )
     qualification_operation_id = str(
@@ -585,8 +677,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             project_id=project_id,
             operation_id=provider_operation_id,
         )
-    except SimulatedProviderResponseLoss:
-        pass
+    except KernelError as exc:
+        if exc.code != "EFFECT_EXTERNAL_STATE_UNKNOWN":
+            raise
     else:
         raise RuntimeError("ambiguous Provider response fault did not trigger")
     initial_execution.close()
@@ -614,23 +707,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         execution=recovered_execution,
         env=recovered_env,
     )
-    reconciled = reconcile_external_effect(
-        args.database_url,
-        EffectCommandContext(
-            operation_id=provider_operation_id,
-            project_id=project_id,
-            actor_id="provider-qualification-worker:recovered",
-            trace_id=f"trace:{project_id}:embedding",
-            correlation_id=f"correlation:{project_id}",
-        ),
-        effect_id=external_effect_id,
-        adapter=recovered_execution.gateway,
-    )
-    if reconciled["outcome"] != "success":
-        raise RuntimeError("ambiguous Provider effect did not reconcile")
-    expired_lease = _expire_active_attempt_lease(
-        args.database_url, provider_operation_id
-    )
     recovered_runtime = recovered_application.embedding_projection_runtime
     if recovered_runtime is None:
         raise RuntimeError("recovered embedding projection runtime is not wired")
@@ -645,20 +721,33 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     recovered_execution.close()
     if recovered_tick.status != "SUCCEEDED" or not replay_tick.replayed:
         raise RuntimeError("Provider recovery/replay did not converge")
-    effect, provider_evidence, dispatch_count, receipt_count, recon_count = (
-        _effect_evidence(
-            args.database_url,
-            operation_id=provider_operation_id,
-        )
+    (
+        effect,
+        provider_evidence,
+        dispatch_count,
+        receipt_count,
+        recon_count,
+        reconciliation,
+    ) = _effect_evidence(
+        args.database_url,
+        operation_id=provider_operation_id,
     )
     if dispatch_count != 1 or receipt_count != 1 or recon_count != 1:
         raise RuntimeError("Provider recovery created duplicate execution evidence")
+    assert_no_inline_secrets(
+        provider_evidence, label="real Provider response evidence"
+    )
     production = dict(provider_evidence.get("production_execution") or {})
     execution_request = dict(production.get("execution_request") or {})
     execution_handle = dict(production.get("execution_handle") or {})
     execution_result = dict(production.get("execution_result") or {})
     route_snapshot = dict(production.get("route_snapshot") or {})
     capability_runtime = dict(provider_evidence.get("capability_runtime") or {})
+    system_instruction = dict(
+        capability_runtime.get("system_instruction") or {}
+    )
+    prompt_template = dict(capability_runtime.get("prompt_template") or {})
+    skill = dict(capability_runtime.get("skill") or {})
     provider_request_identity = str(
         execution_handle.get("provider_request_id")
         or execution_handle.get("external_request_id")
@@ -667,6 +756,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if not provider_request_identity:
         raise RuntimeError("Provider execution has no durable request identity")
+    process_evidence = _provider_process_evidence(
+        runtime_root,
+        execution_id=str(execution_request.get("execution_id") or ""),
+    )
     latency = {"duration_ms": _duration_ms(execution_result)}
     request_ref = object_store.put_json(
         object_key=f"d0/{qualification_operation_id}/request.json",
@@ -687,7 +780,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "external_effect_id": external_effect_id,
             "provider_request_identity": provider_request_identity,
             "provider_evidence": provider_evidence,
-            "reconciliation": reconciled,
+            "reconciliation": reconciliation,
             "latency": latency,
         },
     )
@@ -706,17 +799,15 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "model": str(provider_evidence["model_id"]),
             "model_version": env["NOVEL_FORGE_D0_MODEL_VERSION"],
             "route_snapshot_id": str(route_snapshot["route_snapshot_id"]),
-            "route_snapshot_hash": str(route_snapshot["contract_hash"]),
+            "route_snapshot_hash": request_hash(route_snapshot),
             "prompt_version": str(provider_evidence["prompt_version"]),
-            "prompt_hash": str(capability_runtime["prompt_template_hash"]),
+            "prompt_hash": str(prompt_template["content_hash"]),
             "instruction_version": (
                 str(provider_evidence["prompt_version"]) + ":system"
             ),
-            "instruction_hash": str(
-                capability_runtime["prompt_system_instruction_hash"]
-            ),
+            "instruction_hash": str(system_instruction["content_hash"]),
             "skill_version": str(provider_evidence["skill_version"]),
-            "skill_hash": str(capability_runtime["skill_content_hash"]),
+            "skill_hash": str(skill["content_hash"]),
             "request_hash": str(effect["request_hash"]),
             "response_hash": request_hash(provider_evidence),
             "provider_execution_id": str(execution_request["execution_id"]),
@@ -726,6 +817,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "latency": latency,
             "controlled_failure": {
                 "checkpoint": "after_provider_response_before_effect_receipt",
+                "failure_kind": "response_loss",
                 "request_sent": True,
             },
             "recovery": {
@@ -733,16 +825,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "recovered_without_resend": True,
                 "replayed": bool(replay_tick.replayed),
             },
-            "dispatch_count": dispatch_count,
-            "receipt_count": receipt_count,
-            "provider_execution_count": 1,
-            "duplicate_external_effect_count": 0,
             "fixture_protocol_only": False,
             "real_model_call": bool(provider_evidence["real_model_call"]),
         }
     )
     decision = qualification_authority.execute_live(command, live_evidence)
-    return _jsonable(
+    result = _jsonable(
         {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
@@ -770,12 +858,25 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "external_effect": {
                 "operation_id": provider_operation_id,
                 "external_effect_id": external_effect_id,
+                "request_hash": live_evidence.request_hash,
+                "response_hash": live_evidence.response_hash,
+                "provider_execution_id": live_evidence.provider_execution_id,
+                "provider_request_identity": (
+                    live_evidence.provider_request_identity
+                ),
                 "dispatch_count": dispatch_count,
                 "receipt_count": receipt_count,
                 "reconciliation_count": recon_count,
-                "duplicate_external_effect_count": 0,
+                "provider_execution_count": decision[
+                    "provider_execution_count"
+                ],
+                "duplicate_external_effect_count": decision[
+                    "duplicate_external_effect_count"
+                ],
+                **process_evidence,
                 "ambiguous_response_injected": fault_gateway.triggered,
-                "expired_attempt_lease": expired_lease,
+                "initial_outcome": "EFFECT_EXTERNAL_STATE_UNKNOWN",
+                "recovery_runtime_restarted": True,
                 "recovered_without_resend": True,
                 "replayed": replay_tick.replayed,
             },
@@ -796,6 +897,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             },
         }
     )
+    assert_no_inline_secrets(result, label="real Provider qualification output")
+    return result
 
 
 def main() -> int:
@@ -836,6 +939,7 @@ def main() -> int:
     try:
         result = _run(args)
     except BaseException as exc:
+        safe_message = redact_secret_text(exc)
         failure = {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
@@ -844,7 +948,7 @@ def main() -> int:
                 "REAL_PROVIDER_RUNTIME": "FAIL",
                 "REAL_PROVIDER_QUALIFIED": False,
             },
-            "failure": {"type": type(exc).__name__, "message": str(exc)},
+            "failure": {"type": type(exc).__name__, "message": safe_message},
         }
         output.write_text(
             json.dumps(failure, ensure_ascii=False, indent=2) + "\n",

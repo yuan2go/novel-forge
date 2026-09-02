@@ -75,28 +75,28 @@
       "id": "p0-backend-engineering-qualification",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
-      "observed_at_sha": "7cee62ddda40686d908871689be8c3cf889e4e2e",
-      "source_tree": "347a7a60992590bfb42c59b7b3bbd77a32c66734",
-      "implementation_tree_sha": "sha256:ce8a2805f1cfbbccaef1ff8f7c06ce6bbec92f7a6ca0813a6195c406fcd95382",
-      "dependency_snapshot_digest": "sha256:7447d4dfaa36954826714985a09e63e663f3d39b7a5080e9b342ee0b54a9a9e7",
+      "observed_at_sha": "cac10f3be701e8608f4bf01b4ce7ec6174d9faa9",
+      "source_tree": "d665d158f0d6f67b942ec59b0aaa7067eb4d226b",
+      "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
+      "dependency_snapshot_digest": "sha256:b3a7de0ed42c6ae6d4b29034abfef3b87d9c48cce4d7cd26679bf5c45f0c6046",
       "qualification_report": {
-        "run_id": "p0-905b66bd9cbd470894636125e739e022",
-        "artifact_root": "novel-forge-p0-7cee62ddda40-905b66bd9cbd470894636125e739e022",
-        "artifact": "p0-backend-qualification-7cee62ddda40686d908871689be8c3cf889e4e2e.json",
-        "repository_path": "architecture/evidence/p0-backend-qualification-7cee62ddda40686d908871689be8c3cf889e4e2e.json",
-        "sha256": "sha256:435af99df2cf481d770dbc37b4a7d4ada25367fe4ba6494539334c9556a12d4c",
+        "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
+        "artifact_root": "novel-forge-p0-cac10f3be701-24f5de4815ed4d8786bb542627e3ad2d",
+        "artifact": "p0-backend-qualification-cac10f3be701e8608f4bf01b4ce7ec6174d9faa9.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-cac10f3be701e8608f4bf01b4ce7ec6174d9faa9.json",
+        "sha256": "sha256:6daa17cbe7851f8ff195d01ad51568f4fef9fa67bd6732f00de294bfef957797",
         "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
       },
       "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
-      "collected": 3610,
-      "passed": 3610,
+      "collected": 3627,
+      "passed": 3627,
       "failed": 0,
       "collections": [
         {
           "classification": "BACKEND_NON_POSTGRESQL",
-          "collected_nodes": 1597,
-          "junit_cases": 3029,
-          "passed": 3029,
+          "collected_nodes": 1608,
+          "junit_cases": 3041,
+          "passed": 3041,
           "skipped": 0,
           "complete": true
         },
@@ -111,9 +111,9 @@
         },
         {
           "classification": "POSTGRESQL_REQUIRED",
-          "collected_nodes": 499,
-          "junit_cases": 581,
-          "passed": 581,
+          "collected_nodes": 501,
+          "junit_cases": 586,
+          "passed": 586,
           "skipped": 0,
           "complete": true
         }
@@ -183,21 +183,21 @@
         "remaining_resource_count": 0,
         "phases": [
           {
-            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022",
+            "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d",
             "phase": "postgresql",
-            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022.json",
+            "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d.json",
             "remaining_resource_count": 0,
             "resource_count": 2,
-            "run_id": "p0-905b66bd9cbd470894636125e739e022",
+            "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
             "status": "PASS"
           },
           {
-            "compose_project": "nf-p0-905b66bd9cbd470894636125e739e022-runtime",
+            "compose_project": "nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime",
             "phase": "compose-runtime",
-            "receipt": "compose-resource-ownership-nf-p0-905b66bd9cbd470894636125e739e022-runtime.json",
+            "receipt": "compose-resource-ownership-nf-p0-24f5de4815ed4d8786bb542627e3ad2d-runtime.json",
             "remaining_resource_count": 0,
             "resource_count": 18,
-            "run_id": "p0-905b66bd9cbd470894636125e739e022",
+            "run_id": "p0-24f5de4815ed4d8786bb542627e3ad2d",
             "status": "PASS"
           }
         ]
@@ -252,6 +252,10 @@
         {
           "path": "tests/integration/test_external_effect_runtime_postgres.py",
           "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
         },
         {
           "path": "tests/integration/test_mkaos_authority_postgres.py",
@@ -312,6 +316,59 @@
         {
           "path": "tests/unit/test_provider_adapter_v2.py",
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
+        },
+        {
+          "path": "tests/unit/test_d0_provider_qualification.py",
+          "symbol": "D0ProviderQualificationTests.test_live_evidence_requires_exact_identity_and_zero_duplicate_send"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_ambiguous_response_fault_is_typed_as_request_sent"
+        },
+        {
+          "path": "tests/integration/test_d0_provider_qualification_authority_postgres.py",
+          "symbol": "D0ProviderQualificationAuthorityPostgresTests.test_only_authority_can_promote_correlated_live_execution_evidence"
+        },
+        {
+          "path": "tests/integration/test_retrieval_embedding_projection_postgres.py",
+          "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
+        }
+      ]
+    },
+    {
+      "id": "real-provider-runtime-qualification",
+      "evidence_class": "focused_qualification_contracts",
+      "gate": "make real-provider-qualification",
+      "observed_at_sha": "d978a35584e8c6784ac141f6ff69495fb123ea07",
+      "source_tree": "27349f0d3162338d5e6035c3e2f620fe6304e87a",
+      "implementation_tree_sha": "sha256:28a7fddd32b540c9a9ec63fc1021ab02129644e8d6681e0a98614b43963fad59",
+      "collected": 1,
+      "passed": 1,
+      "failed": 0,
+      "qualification_evidence": [
+        {
+          "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+          "locator": "\"REAL_PROVIDER_QUALIFIED\": true"
+        },
+        {
+          "path": "scripts/run_real_provider_qualification.py",
+          "symbol": "main"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_qualification/authority.py",
+          "symbol": "D0QualificationAuthority.execute_live"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_process_receipt_count_is_measured_from_runtime_state"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_process_log_secret_material_fails_closed"
         }
       ]
     }
@@ -482,13 +539,36 @@
           "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
         },
         {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
+        },
+        {
           "path": "tests/unit/test_provider_adapter_v2.py",
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
+        },
+        {
+          "path": "tests/unit/test_d0_provider_qualification.py",
+          "symbol": "D0ProviderQualificationTests.test_live_evidence_requires_exact_identity_and_zero_duplicate_send"
+        },
+        {
+          "path": "tests/unit/test_real_provider_qualification_runner.py",
+          "symbol": "RealProviderQualificationRunnerTests.test_ambiguous_response_fault_is_typed_as_request_sent"
+        },
+        {
+          "path": "tests/integration/test_d0_provider_qualification_authority_postgres.py",
+          "symbol": "D0ProviderQualificationAuthorityPostgresTests.test_only_authority_can_promote_correlated_live_execution_evidence"
+        },
+        {
+          "path": "tests/integration/test_retrieval_embedding_projection_postgres.py",
+          "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
         }
       ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_EFFECT_ENGINEERING_QUALIFIED_REAL_PROVIDER_NOT_RUN",
+      "proof_ceiling": "REAL_PROVIDER_RUNTIME_QUALIFIED_NOT_CHAPTER_OR_PRODUCTION_PROVEN",
       "qualification_run_ids": [
         "p0-backend-engineering-qualification"
+      ],
+      "focused_qualification_run_ids": [
+        "real-provider-runtime-qualification"
       ]
     },
     {
@@ -1066,12 +1146,12 @@
       ]
     },
     {
-      "claim": "credentialed real Provider is qualified or proven",
+      "claim": "credentialed real Provider chapter or production is proven",
       "value": false,
       "evidence": [
         {
-          "path": "src/novel_forge/api/authority_app.py",
-          "locator": "\"real_provider_proven\": False"
+          "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+          "locator": "\"CHAPTER_VERTICAL_PROVEN\": false"
         }
       ]
     },

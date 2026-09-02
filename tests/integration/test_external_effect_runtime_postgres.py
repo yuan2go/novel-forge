@@ -20,6 +20,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
     FakeDeterministicProvider,
     LocalFileObjectStoreAdapter,
 )
@@ -79,6 +80,20 @@ class _CountingProvider(FakeDeterministicProvider):
 class _NeverSentProvider(FakeDeterministicProvider):
     def execute(self, **_kwargs):
         raise AssertionError("Provider must not run after a failed pre-send assertion")
+
+
+class _TypedFailureProvider(FakeDeterministicProvider):
+    def __init__(self, *, failure_kind: str, request_sent: bool) -> None:
+        super().__init__("success")
+        self.failure_kind = failure_kind
+        self.request_sent = request_sent
+
+    def execute(self, **_kwargs):
+        raise ExternalEffectAdapterError(
+            f"controlled {self.failure_kind}",
+            request_sent=self.request_sent,
+            failure_kind=self.failure_kind,
+        )
 
 
 class ExternalEffectRuntimePostgresTests(unittest.TestCase):
@@ -769,6 +784,47 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
                         [effect],
                     )
                     self.assertEqual(cursor.fetchone(), (effect_status, 0))
+
+    def test_typed_provider_failures_preserve_send_boundary_and_fail_closed(
+        self,
+    ) -> None:
+        cases = (
+            ("timeout", False, "FAILED_RETRYABLE"),
+            ("rate_limit", False, "FAILED_RETRYABLE"),
+            ("connection_loss", True, "UNKNOWN"),
+        )
+        for failure_kind, request_sent, effect_status in cases:
+            with self.subTest(failure_kind=failure_kind):
+                context = self._context()
+                effect = self._plan(context, scenario=failure_kind)
+                adapter = _TypedFailureProvider(
+                    failure_kind=failure_kind,
+                    request_sent=request_sent,
+                )
+                with self.assertRaises(KernelError):
+                    dispatch_external_effect(
+                        DATABASE_URL,
+                        context,
+                        effect_id=effect,
+                        worker_id=identifier("typed-failure-worker"),
+                        lease_seconds=30,
+                        adapter=adapter,
+                    )
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT effect.status,dispatch.evidence
+                        FROM authority_external_effect AS effect
+                        JOIN authority_external_effect_dispatch AS dispatch
+                          ON dispatch.external_effect_id=effect.external_effect_id
+                        WHERE effect.external_effect_id=%s
+                        """,
+                        [effect],
+                    )
+                    status, evidence = cursor.fetchone()
+                self.assertEqual(status, effect_status)
+                self.assertEqual(evidence["failure_kind"], failure_kind)
+                self.assertIs(evidence["request_sent"], request_sent)
 
     def test_stable_effect_key_is_scoped_by_project(self) -> None:
         first_context = self._context()

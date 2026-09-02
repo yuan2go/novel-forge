@@ -4,7 +4,7 @@ from typing import Any
 
 
 D0_OPERATION = "provider.qualification.d0"
-D0_DEFINITION_VERSION = "1.0.1"
+D0_DEFINITION_VERSION = "1.0.2"
 D0_HANDLER_KEY = "novel_forge.provider_qualification.d0"
 
 
@@ -21,6 +21,22 @@ def d0_operation_definition(*, application_build_id: str, commit_sha: str) -> di
                 "project_id": {"type": "string"},
                 "workspace_id": {"type": "string"},
                 "config": {"type": "object"},
+                "resolved_live_identity": {
+                    "type": "object",
+                    "required": [
+                        "model",
+                        "model_version",
+                        "auth_profile_ref",
+                        "implementation_identity",
+                    ],
+                    "properties": {
+                        "model": {"type": "string"},
+                        "model_version": {"type": "string"},
+                        "auth_profile_ref": {"type": "string"},
+                        "implementation_identity": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
             },
             "additionalProperties": False,
         },

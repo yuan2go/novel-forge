@@ -68,6 +68,9 @@ from novel_forge.modules.context_builder.embedding_contracts import (
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
+EMBEDDING_PROVIDER_TOKEN_BUDGET = 32_768
+
+
 @dataclass(frozen=True, slots=True)
 class EmbeddingProjectionTick:
     operation_id: str
@@ -107,7 +110,7 @@ class _EmbeddingHandler:
                 "payload": {
                     **payload,
                     "chapter_number": int(payload.get("accepted_from_chapter") or 0),
-                    "context_token_budget": int(payload.get("token_budget") or 8_192),
+                    "context_token_budget": EMBEDDING_PROVIDER_TOKEN_BUDGET,
                 },
             },
             inputs=(
@@ -821,7 +824,7 @@ class RetrievalEmbeddingProjectionRuntime:
                     "embedding ExternalEffect has no frozen execution fence",
                 )
             recovery_adapter = authorize(
-                execution_id=f"embedding-execution:{effect_id}",
+                execution_id=f"chapter-execution:{effect_id}",
                 external_effect_id=effect_id,
                 operation_id=operation_id,
                 attempt_id=worker.attempt_id,
