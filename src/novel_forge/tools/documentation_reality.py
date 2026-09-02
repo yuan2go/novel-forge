@@ -1280,6 +1280,20 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                         f"{context} references a run that does not qualify the current implementation tree",
                     )
                     continue
+                proof_scope = run.get("proof_scope")
+                proven_capabilities = (
+                    proof_scope.get("proves")
+                    if isinstance(proof_scope, Mapping)
+                    else None
+                )
+                if not isinstance(proven_capabilities, list) or concept not in {
+                    str(value) for value in proven_capabilities
+                }:
+                    _error(
+                        errors,
+                        f"{context} is outside the referenced run proof scope: {run_id}",
+                    )
+                    continue
                 _, passed, failed = result_counts
                 if failed != 0 or passed < 1:
                     _error(errors, f"{context} references a non-passing run: {run_id}")

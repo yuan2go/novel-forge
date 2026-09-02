@@ -374,6 +374,25 @@ class DocumentationRealityTests(unittest.TestCase):
                 "\n".join(report["errors"]),
             )
 
+    def test_capability_must_be_inside_qualification_run_proof_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            inventory["capabilities"][0]["concept"] = "outside-proof-scope"
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "is outside the referenced run proof scope",
+                "\n".join(report["errors"]),
+            )
+
     def test_canonical_document_cannot_duplicate_migration_identity(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1020,7 +1039,7 @@ class DocumentationRealityTests(unittest.TestCase):
             "qualification_failures": [],
             "capabilities": [
                 {
-                    "concept": "example",
+                    "concept": "runtime-composition",
                     "fact_type": "CURRENT_RUNTIME_FACT",
                     "owner": "example owner",
                     "qualification_state": "QUALIFIED",
