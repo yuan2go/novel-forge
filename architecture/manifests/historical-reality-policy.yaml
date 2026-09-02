@@ -67,6 +67,7 @@
     "evidence_ceilings",
     "next_wp",
     "pending_work_packages",
+    "proof_flags",
     "qualification_stage",
     "roadmap_stage",
     "work_package"
@@ -83,6 +84,7 @@
     "config/proof_campaigns/quality_qualification_book_v1.json",
     "config/proof_campaigns/quality_qualification_v1.json",
     "scripts/run_bounded_quality_qualification.py",
+    "scripts/run_real_capability_codex_proof.py",
     "scripts/run_longform_12ch_pressure.py",
     "scripts/run_short_longform_runtime_proof.py",
     "scripts/run_short_longform_runtime_proof_orchestrator.py",

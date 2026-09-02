@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
+from datetime import date, datetime
 import hashlib
 import json
 import os
@@ -27,7 +27,11 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
 )
-from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.book_design_authority import (
+    BookDesignAuthorityApplication,
+    BookDesignAuthorityCommand,
+)
 from novel_forge.modules.book_authority import (
     PostgresBookAuthority,
     StartBookProductionCommand,
@@ -46,6 +50,10 @@ from novel_forge.modules.provider_qualification import (
     D0QualificationCommand,
 )
 from novel_forge.modules.provider_qualification.domain import request_hash
+from novel_forge.modules.project_authority import (
+    ProjectAuthorityApplication,
+    ProjectAuthorityCommand,
+)
 from novel_forge.modules.production_execution.security import (
     assert_no_inline_secrets,
     redact_secret_text,
@@ -57,16 +65,20 @@ from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
 )
 
-from run_real_capability_codex_proof import (
-    _jsonable,
-    _principal,
-    _runtime_env,
-    _seed_authorities,
-)
-
-
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config/provider/d0-codex-cli-probe.json"
+PROOF_SCOPE = {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": ["external-effect-provider-control"],
+    "ceiling": "REAL_PROVIDER_RUNTIME",
+    "does_not_establish": [
+        "CHAPTER_ACCEPTED_ACTUAL",
+        "HUMAN_EDITORIAL_EVIDENCE",
+        "LONGITUDINAL_NARRATIVE_STABILITY",
+        "PRODUCTION_OPERATION",
+    ],
+}
 
 
 class SimulatedProviderResponseLoss(ExternalEffectAdapterError):
@@ -124,6 +136,88 @@ def _git(*args: str) -> str:
 
 def _hash(value: Mapping[str, Any]) -> str:
     return request_hash(value)
+
+
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Mapping):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, set):
+        return sorted(_jsonable(item) for item in value)
+    return value
+
+
+def _principal(identity: str, project_id: str, *permissions: str) -> Principal:
+    return Principal(
+        principal_id=identity,
+        principal_type=PrincipalType.LOCAL_OPERATOR,
+        permissions=frozenset(permissions),
+        project_scope=frozenset({project_id}),
+        authentication_source="real-provider-qualification",
+    )
+
+
+def _seed_project_and_book(
+    database_url: str,
+    *,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    build_id: str,
+    commit_sha: str,
+    principal: Principal,
+) -> None:
+    ProjectAuthorityApplication(
+        database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    ).execute(
+        ProjectAuthorityCommand(
+            definition_name="project_lifecycle.create",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            idempotency_key=f"project:create:{project_id}",
+            trace_id=f"trace:{project_id}",
+            correlation_id=f"correlation:{project_id}",
+            payload={"title": "Provider qualification", "stage": "PRODUCTION"},
+        ),
+        principal=principal,
+    )
+    BookDesignAuthorityApplication(
+        database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    ).execute(
+        BookDesignAuthorityCommand(
+            definition_name="book.create",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            service_identity="real-provider-qualification",
+            idempotency_key=f"book:create:{book_id}",
+            trace_id=f"trace:{project_id}",
+            correlation_id=f"correlation:{project_id}",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Provider qualification",
+                "production_profile": {
+                    "environment": "validation",
+                    "provider": "codex-cli",
+                },
+                "runtime_policy": {
+                    "legacy_write": False,
+                    "silent_fallback": False,
+                },
+                "release_identity": f"{build_id}@{commit_sha}",
+            },
+        ),
+        principal=principal,
+    )
 
 
 def _seed_book_run(
@@ -330,31 +424,49 @@ def _runtime_environment(
     model: str,
     reasoning_effort: str,
 ) -> dict[str, str]:
-    env = _runtime_env(
-        commit_sha=commit_sha,
-        codex_executable=codex_executable,
-        runtime_root=runtime_root,
-        worker_id="provider-qualification-worker:initial",
-        model=model,
-        reasoning_effort=reasoning_effort,
-    )
-    env.update(
-        {
-            "NOVEL_FORGE_APPLICATION_BUILD_ID": "real-provider-qualification",
-            "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:chatgpt-codex-cli",
-            "NOVEL_FORGE_EMBEDDING_PROVIDER": "codex-cli",
-            "NOVEL_FORGE_EMBEDDING_MODEL": model,
-            "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "8",
-            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
-            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": model,
-            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
-                reasoning_effort
-            ),
-            "NOVEL_FORGE_D0_MODEL": model,
-            "NOVEL_FORGE_D0_MODEL_VERSION": "provider-not-reported",
-        }
-    )
-    return env
+    workspace = runtime_root / "isolated-codex-workspace"
+    executions = runtime_root / "codex-executions"
+    objects = runtime_root / "object-store-locators"
+    workspace.mkdir(parents=True, exist_ok=False)
+    executions.mkdir(parents=True, exist_ok=True)
+    objects.mkdir(parents=True, exist_ok=True)
+    return {
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": "real-provider-qualification",
+        "NOVEL_FORGE_COMMIT_SHA": commit_sha,
+        "NOVEL_FORGE_RELEASE_CHANNEL": "VALIDATION",
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:chatgpt-codex-cli",
+        "NOVEL_FORGE_AUTHORITY_WORKER_ID": "provider-qualification-worker:initial",
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(objects),
+        "NOVEL_FORGE_CODEX_EXECUTABLE": codex_executable,
+        "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
+        "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(executions),
+        "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "2.00",
+        "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "30.00",
+        "NOVEL_FORGE_OPERATION_PROVIDER_CAP": "5.00",
+        "NOVEL_FORGE_PROVIDER_DAILY_CAP": "30.00",
+        "NOVEL_FORGE_DAILY_PROVIDER_CAP": "30.00",
+        "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": "20.00",
+        "NOVEL_FORGE_CODEX_PRICING_REF": (
+            "proof-estimate:gpt-5.6-sol:2026-08-09:not-provider-billing"
+        ),
+        "NOVEL_FORGE_CODEX_PRICING_CURRENCY": "USD",
+        "NOVEL_FORGE_CODEX_INPUT_PER_MILLION": "2.50",
+        "NOVEL_FORGE_CODEX_CACHED_INPUT_PER_MILLION": "0.25",
+        "NOVEL_FORGE_CODEX_OUTPUT_PER_MILLION": "15.00",
+        "NOVEL_FORGE_EMBEDDING_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_EMBEDDING_MODEL": model,
+        "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "8",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": model,
+        "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+            reasoning_effort
+        ),
+        "NOVEL_FORGE_D0_MODEL": model,
+        "NOVEL_FORGE_D0_MODEL_VERSION": "provider-not-reported",
+    }
 
 
 def _effect_evidence(
@@ -593,10 +705,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         "chapter.authority.execute",
         "provider.qualification.execute",
     )
-    _inputs, _chapter_command = _seed_authorities(
+    _seed_project_and_book(
         args.database_url,
-        settings,
-        env=env,
         project_id=project_id,
         workspace_id=workspace_id,
         book_id=book_id,
@@ -885,16 +995,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "latency": live_evidence.latency,
             "request_object_ref": request_ref,
             "response_object_ref": response_ref,
-            "proof_flags": {
-                "REAL_PROVIDER_READY_FOR_LIVE_RUN": True,
-                "REAL_PROVIDER_RUNTIME": "PASS",
-                "REAL_PROVIDER_QUALIFIED": True,
-                "DUPLICATE_EXTERNAL_EFFECT": 0,
-                "CHAPTER_VERTICAL_PROVEN": False,
-                "HUMAN_EDITORIAL_PROVEN": False,
-                "LONGFORM_PROVEN": False,
-                "PRODUCTION_PROVEN": False,
-            },
+            "proof_scope": PROOF_SCOPE,
+            "result": "PASS",
         }
     )
     assert_no_inline_secrets(result, label="real Provider qualification output")
@@ -943,11 +1045,8 @@ def main() -> int:
         failure = {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
-            "proof_flags": {
-                "REAL_PROVIDER_READY_FOR_LIVE_RUN": True,
-                "REAL_PROVIDER_RUNTIME": "FAIL",
-                "REAL_PROVIDER_QUALIFIED": False,
-            },
+            "proof_scope": PROOF_SCOPE,
+            "result": "FAIL",
             "failure": {"type": type(exc).__name__, "message": safe_message},
         }
         output.write_text(
@@ -962,7 +1061,7 @@ def main() -> int:
     )
     print(
         json.dumps(
-            {"proof_output": str(output), "proof_flags": result["proof_flags"]},
+            {"proof_output": str(output), "proof_scope": result["proof_scope"]},
             ensure_ascii=False,
         ),
         flush=True,
