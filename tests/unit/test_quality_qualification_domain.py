@@ -21,18 +21,18 @@ from novel_forge.modules.chapter_quality_authority.qualification import (
 def _manifest() -> dict[str, object]:
     return {
         "schema_version": "novel-forge.quality-qualification.v1",
-        "campaign_id": "quality-proof-01-v1",
+        "campaign_id": "quality-qualification:v1",
         "campaign_version": 1,
         "exact_release_sha": "a" * 40,
-        "migration_head": "20260826_0101_quality_qualification",
+        "migration_head": "20260902_0106_quality_qualification_scope_generalization",
         "protocol_version": "human-blind-comparison-v1",
         "evaluation_profile_version": "editorial-pairwise-v1",
         "quality_profile_version": "canonical-quality-v3",
         "reader_outcome_profile_version": "reader-outcome-v3",
-        "project_id": "project:quality-proof",
-        "workspace_id": "workspace:quality-proof",
-        "book_id": "book:quality-proof",
-        "chapter_group_ranges": [[1, 4], [5, 8]],
+        "project_id": "project:quality-qualification",
+        "workspace_id": "workspace:quality-qualification",
+        "book_id": "book:quality-qualification",
+        "chapter_group_ranges": [[1, 3], [4, 6]],
         "provider_route_manifest": {
             "generator": {"provider": "codex", "model": "frozen-generator"},
             "reviewer": {"provider": "codex", "model": "frozen-reviewer"},
@@ -46,7 +46,7 @@ def _manifest() -> dict[str, object]:
         "context_policy": {"contract": "context-manifest-v3"},
         "baseline_protocol": {"kind": "FIRST_DRAFT_VS_ACCEPTED_REVISION"},
         "budget_policy": {
-            "chapter_limit": 8,
+            "chapter_limit": 6,
             "token_limit": 200_000,
             "cost_limit_usd": "100.00",
         },
@@ -82,9 +82,9 @@ def test_manifest_freezes_exact_lineage_and_has_canonical_digest() -> None:
 
     assert manifest.digest == reordered.digest
     assert manifest.digest.startswith("sha256:")
-    assert manifest.chapter_group_ranges == ((1, 4), (5, 8))
-    assert manifest.allows_chapter(8) is True
-    assert manifest.allows_chapter(9) is False
+    assert manifest.chapter_group_ranges == ((1, 3), (4, 6))
+    assert manifest.allows_chapter(6) is True
+    assert manifest.allows_chapter(7) is False
     assert (
         manifest.to_dict()["provider_route_manifest"] == raw["provider_route_manifest"]
     )
@@ -102,8 +102,12 @@ def test_manifest_freezes_exact_lineage_and_has_canonical_digest() -> None:
     ("mutation", "message"),
     [
         (
-            {"chapter_group_ranges": [[1, 4], [5, 9]]},
-            r"exactly \[1,4\] and \[5,8\]",
+            {"chapter_group_ranges": [[1, 3], [5, 7]]},
+            "ordered and contiguous",
+        ),
+        (
+            {"chapter_group_ranges": [[1, 3], [4, 3]]},
+            "positive ranges",
         ),
         ({"required_evaluator_count": 1}, "at least two"),
         ({"foundation_lineage": {}}, "foundation_lineage"),
@@ -255,4 +259,4 @@ def test_two_humans_are_bounded_evidence_not_statistical_calibration() -> None:
     assert decision.lifecycle is CampaignLifecycle.COMPLETE
     assert decision.human_evidence_status is HumanEvidenceStatus.BOUNDED_HUMAN_EVIDENCE
     assert "STATISTICAL_JUDGE_CALIBRATION" in decision.unproven_claims
-    assert "COMMERCIAL_SUCCESS" in decision.unproven_claims
+    assert "COMMERCIAL_OUTCOME" in decision.unproven_claims

@@ -59,14 +59,31 @@ def test_authority_api_has_one_production_composition_profile() -> None:
 
 def test_obsolete_quality_and_unbounded_campaign_surfaces_are_absent() -> None:
     retired_paths = (
+        "src/novel_forge/modules/runtime_proof/__init__.py",
+        "src/novel_forge/modules/runtime_proof/quality_campaign.py",
+        "src/novel_forge/modules/runtime_proof/quality_campaign_postgres.py",
+        "src/novel_forge/modules/runtime_proof/quality_preparation.py",
+        "src/novel_forge/modules/runtime_proof/short_longform.py",
         "src/novel_forge/evaluation/quality.py",
         "src/novel_forge/modules/runtime_proof/longform_campaign.py",
         "scripts/run_longform_narrative_campaign.py",
         "scripts/run_long_chain_to_completion.py",
+        "scripts/run_bounded_quality_qualification.py",
+        "scripts/run_short_longform_runtime_proof.py",
+        "scripts/run_short_longform_runtime_proof_orchestrator.py",
+        "config/proof_campaigns/quality_qualification_book_v1.json",
+        "config/proof_campaigns/quality_qualification_v1.json",
         "config/proof_campaigns/longform_narrative_v1.json",
         "config/proof_campaigns/longform_narrative_v2.json",
         "tests/unit/test_longform_narrative_campaign.py",
         "tests/unit/test_longform_narrative_campaign_runner.py",
+        "tests/integration/test_bounded_quality_campaign_postgres.py",
+        "tests/integration/test_quality_campaign_preparation_postgres.py",
+        "tests/unit/test_bounded_quality_campaign.py",
+        "tests/unit/test_bounded_quality_campaign_cli.py",
+        "tests/unit/test_quality_book_contract.py",
+        "tests/unit/test_short_longform_proof_evaluator.py",
+        "tests/unit/test_short_longform_runtime_proof.py",
         "web/admin/app/quality-eval-v2/page.tsx",
         "web/admin/app/long-chain-proof/page.tsx",
     )
@@ -79,7 +96,6 @@ def test_obsolete_quality_and_unbounded_campaign_surfaces_are_absent() -> None:
 
     current_surfaces = "\n".join(
         (
-            _read("src/novel_forge/modules/runtime_proof/__init__.py"),
             _read("src/novel_forge/api/models.py"),
             _read("web/admin/app/shared/navigation.tsx"),
             _read(

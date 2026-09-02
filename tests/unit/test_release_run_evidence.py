@@ -17,7 +17,7 @@ from novel_forge.tools.release_run_evidence import (
     main as release_evidence_main,
 )
 from novel_forge.tools.backend_qualification_contract import (
-    P0_EVIDENCE_CEILINGS,
+    P0_PROOF_SCOPE,
     REQUIRED_GATE_ORDER,
 )
 
@@ -88,13 +88,13 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
     ) -> None:
         required_gates = REQUIRED_GATE_ORDER
         manifest = {
-            "schema_version": "novel-forge.backend-qualification-manifest.v1",
+            "schema_version": "novel-forge.backend-qualification-manifest.v2",
             "required_gates": list(required_gates),
             "expected_migration_head": "manifest-head",
             "manifest_digests": {
                 "architecture/manifests/migration-manifest.yaml": DIGEST
             },
-            "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+            "proof_scope": dict(P0_PROOF_SCOPE),
         }
         pytest_evidence = {
             "schema_version": "novel-forge.backend-pytest-evidence.v1",

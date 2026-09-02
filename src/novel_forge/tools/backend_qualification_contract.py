@@ -16,7 +16,7 @@ QUALIFICATION_MANIFEST = Path(
     "architecture/manifests/backend-qualification-manifest.yaml"
 )
 MIGRATION_MANIFEST = Path("architecture/manifests/migration-manifest.yaml")
-QUALIFICATION_SCHEMA_VERSION = "novel-forge.backend-qualification-manifest.v1"
+QUALIFICATION_SCHEMA_VERSION = "novel-forge.backend-qualification-manifest.v2"
 COLLECTION_CLASSIFICATIONS = frozenset(
     {"BACKEND_NON_POSTGRESQL", "POSTGRESQL_REQUIRED"}
 )
@@ -35,15 +35,32 @@ REQUIRED_GATE_ORDER = (
     "resource-cleanup",
     "evidence-finalization",
 )
-P0_EVIDENCE_CEILINGS = {
-    "CURRENT_UI": "DEFERRED / NOT_RUN_BY_SCOPE",
-    "REAL_PROVIDER": "NOT_RUN_BY_SCOPE",
-    "HISTORICAL_ORPHAN_MUTATION": "NOT_RUN_BY_SCOPE",
-    "EIGHT_CHAPTER": "NOT_RUN_BY_SCOPE",
-    "HUMAN_REVIEW": "NOT_RUN_BY_SCOPE",
-    "LONGFORM": "NOT_PROVEN",
-    "MULTIBOOK": "NOT_PROVEN",
-    "PRODUCTION": "NOT_PROVEN",
+P0_PROOF_SCOPE = {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+        "runtime-composition",
+        "command-attempt-lease-fence",
+        "external-effect-provider-control",
+        "story-design-plan-activation",
+        "chapter-production-saga",
+        "quality-and-release-gates",
+        "book-opening-workflow",
+        "book-chapter-acceptance",
+        "canon-and-narrative-state",
+        "source-import-and-knowledge",
+        "agent-runtime",
+        "postgresql-persistence-and-migrations",
+        "retry-recovery-and-replay",
+    ],
+    "ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "does_not_establish": [
+        "ADMIN_UI_EXECUTION",
+        "CREDENTIALED_PROVIDER_EXECUTION",
+        "HUMAN_EDITORIAL_EVIDENCE",
+        "LONGITUDINAL_NARRATIVE_STABILITY",
+        "PRODUCTION_OPERATION",
+    ],
 }
 REQUIRED_SEMANTIC_SLICES = frozenset(
     {
@@ -122,7 +139,7 @@ class QualificationManifest:
     pytest_collections: tuple[PytestCollectionContract, ...]
     required_gates: tuple[str, ...]
     semantic_slices: Mapping[str, tuple[str, ...]]
-    evidence_ceilings: Mapping[str, str]
+    proof_scope: Mapping[str, object]
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -283,18 +300,12 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
             + ", ".join(undeclared_migration_compatibility)
         )
 
-    raw_ceilings = payload.get("evidence_ceilings")
-    if not isinstance(raw_ceilings, dict) or not raw_ceilings:
-        raise QualificationContractError("evidence_ceilings must be a non-empty object")
-    evidence_ceilings = {
-        _required_text(key, field="evidence_ceilings key"): _required_text(
-            value, field=f"evidence_ceilings.{key}"
-        )
-        for key, value in raw_ceilings.items()
-    }
-    if evidence_ceilings != P0_EVIDENCE_CEILINGS:
+    proof_scope = payload.get("proof_scope")
+    if not isinstance(proof_scope, dict) or not proof_scope:
+        raise QualificationContractError("proof_scope must be a non-empty object")
+    if proof_scope != P0_PROOF_SCOPE:
         raise QualificationContractError(
-            "evidence_ceilings differ from the canonical P0 proof ceiling"
+            "proof_scope differs from the canonical P0 proof contract"
         )
     return QualificationManifest(
         schema_version=schema_version,
@@ -302,7 +313,7 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
         pytest_collections=tuple(collections),
         required_gates=required_gates,
         semantic_slices=MappingProxyType(semantic_slices),
-        evidence_ceilings=MappingProxyType(evidence_ceilings),
+        proof_scope=MappingProxyType(proof_scope),
     )
 
 
@@ -1231,7 +1242,7 @@ __all__ = [
     "QUALIFICATION_MANIFEST",
     "QUALIFICATION_SCHEMA_VERSION",
     "PytestCollectionContract",
-    "P0_EVIDENCE_CEILINGS",
+    "P0_PROOF_SCOPE",
     "QualificationContractError",
     "QualificationManifest",
     "REQUIRED_GATE_ORDER",

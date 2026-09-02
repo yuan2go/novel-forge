@@ -13,6 +13,10 @@ from contextlib import redirect_stdout
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
 )
+from novel_forge.tools.historical_reality import (
+    load_historical_reality_policy,
+    validate_proof_scope,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +33,14 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class RealProviderQualificationRunnerTests(unittest.TestCase):
+    def test_live_evidence_uses_the_typed_current_proof_scope(self) -> None:
+        policy = load_historical_reality_policy(ROOT)
+
+        self.assertEqual(
+            validate_proof_scope(RUNNER.PROOF_SCOPE, policy=policy),
+            [],
+        )
+
     def test_ambiguous_response_fault_is_typed_as_request_sent(self) -> None:
         class Delegate:
             calls = 0
@@ -63,6 +75,13 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
 
         self.assertEqual(env["NOVEL_FORGE_EMBEDDING_PROVIDER"], "codex-cli")
         self.assertEqual(env["NOVEL_FORGE_EMBEDDING_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_DRAFT_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_REVIEW_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_QUALITY_MODEL"], "gpt-test")
+        self.assertEqual(
+            env["NOVEL_FORGE_RUNTIME_HOST_ID"],
+            "host:provider-qualification:" + "a" * 12,
+        )
         self.assertEqual(
             env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER"], "codex-cli"
         )
@@ -190,7 +209,13 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             self.assertNotIn("provider-secret-value", retained)
             self.assertNotIn("database-secret", stdout.getvalue())
             self.assertNotIn("provider-secret-value", stdout.getvalue())
-            self.assertFalse(json.loads(retained)["proof_flags"]["REAL_PROVIDER_QUALIFIED"])
+            evidence = json.loads(retained)
+            self.assertEqual(evidence["result"], "FAIL")
+            self.assertEqual(
+                evidence["proof_scope"]["proves"],
+                ["external-effect-provider-control"],
+            )
+            self.assertNotIn("proof_flags", evidence)
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ class ArchitectureManifestTestCollectionTests(unittest.TestCase):
             (manifest_dir / "backend-qualification-manifest.yaml").write_text(
                 json.dumps(
                     {
-                        "schema_version": "novel-forge.backend-qualification-manifest.v1",
+                        "schema_version": "novel-forge.backend-qualification-manifest.v2",
                         "pytest_collections": [
                             {
                                 "name": "architecture",

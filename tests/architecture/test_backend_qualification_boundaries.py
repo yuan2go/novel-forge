@@ -26,23 +26,21 @@ class BackendQualificationBoundaryTests(unittest.TestCase):
         self.assertIn(".[test,industrial]", docs)
         self.assertIn("make p0-backend-qualification", docs)
         self.assertIn("Docker-assigned", docs)
-        self.assertIn("DEFERRED / NOT_RUN_BY_SCOPE", docs)
+        self.assertIn("typed `proof_scope`", docs)
         self.assertIn("Git SHA alone", docs)
         self.assertIn("resolved dependency digest", docs)
         self.assertIn("branch governance", docs)
         self.assertIn("OPEN / NOT_CLOSED", docs)
         self.assertIn("documentation-reality", docs)
         self.assertIn("migration-compatibility", docs)
-        for ceiling in (
-            "REAL_PROVIDER",
-            "HISTORICAL_ORPHAN_MUTATION",
-            "EIGHT_CHAPTER",
-            "HUMAN_REVIEW",
-            "LONGFORM",
-            "MULTIBOOK",
-            "PRODUCTION",
+        for evidence_class in (
+            "ADMIN_UI_EXECUTION",
+            "CREDENTIALED_PROVIDER_EXECUTION",
+            "HUMAN_EDITORIAL_EVIDENCE",
+            "LONGITUDINAL_NARRATIVE_STABILITY",
+            "PRODUCTION_OPERATION",
         ):
-            self.assertIn(ceiling, docs)
+            self.assertIn(evidence_class, docs)
 
     def test_backend_make_entry_is_python_only_and_has_no_fixed_port(self) -> None:
         source = (ROOT / "Makefile").read_text(encoding="utf-8")

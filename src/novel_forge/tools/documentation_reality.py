@@ -16,7 +16,7 @@ import tokenize
 from typing import Any, Iterable, Mapping
 
 from novel_forge.tools.backend_qualification_contract import (
-    P0_EVIDENCE_CEILINGS,
+    P0_PROOF_SCOPE,
     REQUIRED_GATE_ORDER,
 )
 from novel_forge.tools.implementation_tree_identity import (
@@ -24,7 +24,7 @@ from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
 )
 
-SCHEMA_VERSION = "novel-forge.reality-evidence.v2"
+SCHEMA_VERSION = "novel-forge.reality-evidence.v3"
 REPORT_SCHEMA_VERSION = "novel-forge.documentation-reality-check.v1"
 AUTHORITY_ORDER = [
     "executable_code",
@@ -86,6 +86,12 @@ P0_COLLECTIONS = (
     "MIGRATION_COMPATIBILITY",
     "POSTGRESQL_REQUIRED",
 )
+FACT_TYPE_POLICY = {
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY",
+}
 
 
 def _error(errors: list[str], message: str) -> None:
@@ -380,7 +386,7 @@ def _p0_report_projection(report: Mapping[str, Any]) -> dict[str, Any]:
             "remaining_resource_count": cleanup.get("remaining_resource_count"),
             "phases": phases,
         },
-        "evidence_ceilings": report.get("evidence_ceilings"),
+        "proof_scope": report.get("proof_scope"),
     }
 
 
@@ -618,8 +624,8 @@ def _validate_p0_run_projection(
             or not valid_phases
         ):
             _error(errors, f"{context}.cleanup is not zero-residue receipt-bound PASS")
-    if run.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
-        _error(errors, f"{context}.evidence_ceilings differ from P0 policy")
+    if run.get("proof_scope") != P0_PROOF_SCOPE:
+        _error(errors, f"{context}.proof_scope differs from P0 policy")
     if retained_report is not None:
         try:
             report_projection = _p0_report_projection(retained_report)
@@ -647,6 +653,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
         _error(errors, "reality inventory status_vocabulary is not canonical")
     if inventory.get("canonical_documents") != CANONICAL_DOCUMENTS:
         _error(errors, "reality inventory canonical_documents is not canonical")
+    if inventory.get("fact_type_policy") != FACT_TYPE_POLICY:
+        _error(errors, "reality inventory fact_type_policy is not canonical")
 
     migration_head = str(inventory.get("migration_head") or "").strip()
     if not migration_head:
@@ -663,8 +671,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     run_is_current: dict[str, bool] = {}
     runs_with_invalid_results: set[str] = set()
     historical_implementation_identities: dict[str, str] = {}
-    if not isinstance(qualification_runs, list) or not qualification_runs:
-        _error(errors, "reality inventory qualification_runs must be a non-empty list")
+    if not isinstance(qualification_runs, list):
+        _error(errors, "reality inventory qualification_runs must be a list")
     else:
         for index, run in enumerate(qualification_runs):
             context = f"qualification_runs[{index}]"
@@ -672,6 +680,12 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 _error(errors, f"{context} must be an object")
                 continue
             run_error_count = len(errors)
+            fact_type = str(run.get("fact_type") or "")
+            if fact_type not in {
+                FACT_TYPE_POLICY["current_qualification"],
+                FACT_TYPE_POLICY["historical_compatibility"],
+            }:
+                _error(errors, f"{context}.fact_type is invalid")
             run_id = str(run.get("id") or "").strip()
             if not CONCEPT_NAME.fullmatch(run_id):
                 _error(errors, f"{context}.id must be lowercase kebab-case")
@@ -763,7 +777,10 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     context=context,
                     required=True,
                 )
-                if evidence_class == P0_EVIDENCE_CLASS:
+                if (
+                    evidence_class == P0_EVIDENCE_CLASS
+                    and fact_type == FACT_TYPE_POLICY["current_qualification"]
+                ):
                     _validate_p0_run_projection(
                         root,
                         run,
@@ -828,6 +845,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
         concepts.add(concept)
         if not str(capability.get("owner") or "").strip():
             _error(errors, f"{context}.owner is missing")
+        if capability.get("fact_type") != FACT_TYPE_POLICY["current_runtime"]:
+            _error(errors, f"{context}.fact_type is not a current runtime fact")
         status = str(capability.get("status") or "").strip()
         if status not in STATUS_VOCABULARY:
             _error(errors, f"{context}.status is not recognized: {status}")

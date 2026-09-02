@@ -12,8 +12,7 @@ from typing import Any, Iterable, Mapping
 
 
 QUALITY_QUALIFICATION_SCHEMA = "novel-forge.quality-qualification.v1"
-QUALITY_QUALIFICATION_MIGRATION_HEAD = "20260826_0101_quality_qualification"
-QUALITY_QUALIFICATION_CHAPTER_GROUPS = ((1, 4), (5, 8))
+_MIGRATION_ID = re.compile(r"^[0-9]{8}_[0-9]{4}_[a-z0-9_]+$")
 
 
 class CampaignLifecycle(StrEnum):
@@ -166,10 +165,8 @@ class QualityCampaignManifest:
         if not _FULL_GIT_SHA.fullmatch(release_sha):
             raise ValueError("exact_release_sha must be a full Git SHA")
         migration_head = _required_text(payload, "migration_head")
-        if migration_head != QUALITY_QUALIFICATION_MIGRATION_HEAD:
-            raise ValueError(
-                "migration_head must equal the Quality Qualification schema head"
-            )
+        if not _MIGRATION_ID.fullmatch(migration_head):
+            raise ValueError("migration_head must identify an applied migration")
 
         campaign_version = int(payload.get("campaign_version") or 0)
         if campaign_version <= 0:
@@ -184,16 +181,26 @@ class QualityCampaignManifest:
         ):
             raise ValueError("chapter_group_ranges must be a list of pairs")
         ranges = tuple((int(item[0]), int(item[1])) for item in raw_ranges)
-        if ranges != QUALITY_QUALIFICATION_CHAPTER_GROUPS:
-            raise ValueError("chapter_group_ranges must be exactly [1,4] and [5,8]")
+        if not ranges:
+            raise ValueError("chapter_group_ranges must not be empty")
+        expected_start = ranges[0][0]
+        for start, end in ranges:
+            if start <= 0 or end < start:
+                raise ValueError("chapter_group_ranges must contain positive ranges")
+            if start != expected_start:
+                raise ValueError("chapter_group_ranges must be ordered and contiguous")
+            expected_start = end + 1
 
         for name in _MAPPING_FIELDS:
             value = payload.get(name)
             if not isinstance(value, dict) or not value:
                 raise ValueError(f"{name} must be a non-empty object")
         budget = payload["budget_policy"]
-        if int(budget.get("chapter_limit") or 0) != 8:
-            raise ValueError("budget_policy.chapter_limit must equal 8")
+        chapter_count = sum(end - start + 1 for start, end in ranges)
+        if int(budget.get("chapter_limit") or 0) != chapter_count:
+            raise ValueError(
+                "budget_policy.chapter_limit must equal the frozen chapter coverage"
+            )
         if int(budget.get("token_limit") or 0) <= 0:
             raise ValueError("budget_policy.token_limit must be positive")
         try:
@@ -327,12 +334,12 @@ class QualityQualificationDecision:
     unproven_claims: tuple[str, ...]
 
 
-_UNPROVEN_OUTSIDE_BOUNDED_SCOPE = (
+_UNESTABLISHED_EVIDENCE_CLASSES = (
     "STATISTICAL_JUDGE_CALIBRATION",
     "REAL_READER_OUTCOME",
-    "SUSTAINED_LONGFORM_QUALITY",
-    "PRODUCTION_READINESS",
-    "COMMERCIAL_SUCCESS",
+    "LONGITUDINAL_NARRATIVE_STABILITY",
+    "PRODUCTION_OPERATION",
+    "COMMERCIAL_OUTCOME",
 )
 
 
@@ -444,7 +451,7 @@ def decide_quality_qualification(
         layer_statuses=MappingProxyType(dict(layer_statuses)),
         limitations=tuple(limitations),
         diagnostics=tuple(diagnostics),
-        unproven_claims=_UNPROVEN_OUTSIDE_BOUNDED_SCOPE,
+        unproven_claims=_UNESTABLISHED_EVIDENCE_CLASSES,
     )
 
 
@@ -454,8 +461,6 @@ __all__ = [
     "EvidenceSeverity",
     "EvidenceStatus",
     "HumanEvidenceStatus",
-    "QUALITY_QUALIFICATION_CHAPTER_GROUPS",
-    "QUALITY_QUALIFICATION_MIGRATION_HEAD",
     "QUALITY_QUALIFICATION_SCHEMA",
     "QualityCampaignManifest",
     "QualityEvidence",

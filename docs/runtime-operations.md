@@ -122,10 +122,12 @@ runner rejects fixed/shared database identity and repository-local evidence path
 diagnostic is not an alternate qualification authority; the P0 gate already executes
 the complete architecture, unit, acceptance and PostgreSQL collections.
 
-P0 evidence ceilings are explicit: `CURRENT_UI` is
-`DEFERRED / NOT_RUN_BY_SCOPE`; `REAL_PROVIDER`, `HISTORICAL_ORPHAN_MUTATION`,
-`EIGHT_CHAPTER`, and `HUMAN_REVIEW` are `NOT_RUN_BY_SCOPE`; `LONGFORM`, `MULTIBOOK`, and
-`PRODUCTION` are `NOT_PROVEN`.
+P0 evidence uses the typed `proof_scope` in the backend qualification manifest. A
+passing exact-revision run proves the listed current backend capabilities at
+`LOCAL_BACKEND_ENGINEERING`. It does not establish `ADMIN_UI_EXECUTION`,
+`CREDENTIALED_PROVIDER_EXECUTION`, `HUMAN_EDITORIAL_EVIDENCE`,
+`LONGITUDINAL_NARRATIVE_STABILITY`, or `PRODUCTION_OPERATION`. These are evidence
+boundaries, not a product or narrative development sequence.
 
 ## Credentialed Provider qualification
 

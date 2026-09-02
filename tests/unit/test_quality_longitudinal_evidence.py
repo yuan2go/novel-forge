@@ -83,7 +83,7 @@ def test_momentum_retains_causal_change_decision_and_antagonist_evidence() -> No
             protagonist_decision_ids=[f"decision:{chapter}:1", f"decision:{chapter}:2"],
             antagonist_response_ids=([f"response:{chapter}"] if chapter >= 3 else []),
         )
-        for chapter in range(1, 9)
+        for chapter in range(1, 7)
     ]
 
     momentum = build_longitudinal_quality_evidence(rows).momentum
@@ -91,14 +91,14 @@ def test_momentum_retains_causal_change_decision_and_antagonist_evidence() -> No
     assert momentum.status == "SUSTAINED"
     assert momentum.causal_event_coverage == 1.0
     assert momentum.irreversible_change_chapters == (2, 6)
-    assert momentum.protagonist_decision_count == 16
-    assert momentum.antagonist_response_count == 6
-    assert momentum.ending_propulsion_chapters == tuple(range(1, 9))
+    assert momentum.protagonist_decision_count == 12
+    assert momentum.antagonist_response_count == 4
+    assert momentum.ending_propulsion_chapters == tuple(range(1, 7))
 
 
 def test_promise_ledger_tracks_full_lifecycle_without_inventing_memory() -> None:
     rows = []
-    for chapter in range(1, 9):
+    for chapter in range(1, 7):
         promises: list[dict[str, object]] = []
         if chapter <= 4:
             promises.append(
@@ -196,7 +196,7 @@ def test_carried_terminal_promise_keeps_first_payoff_boundary() -> None:
                 }
             ],
         )
-        for chapter in range(1, 9)
+        for chapter in range(1, 7)
     ]
 
     evidence = build_longitudinal_quality_evidence(rows).promise_payoff
@@ -240,13 +240,13 @@ def test_reader_proxy_trends_keep_all_dimensions_and_source_lineage() -> None:
                 dimension: (
                     chapter / 10
                     if dimension not in {"confusion", "drop_risk", "repetition_fatigue"}
-                    else (9 - chapter) / 10
+                    else (7 - chapter) / 10
                 )
                 for dimension in READER_OUTCOME_DIMENSIONS
             },
             reader_outcome_asset_version_ids=[f"reader-outcome:{chapter}:v3"],
         )
-        for chapter in range(1, 9)
+        for chapter in range(1, 7)
     ]
 
     report = build_longitudinal_quality_evidence(rows)
@@ -258,9 +258,9 @@ def test_reader_proxy_trends_keep_all_dimensions_and_source_lineage() -> None:
         report.reader_trends["continue_intent"].evidence_class
         == "READER_PROXY_ADVISORY"
     )
-    assert report.source_acceptance_ids == tuple(f"acceptance:{i}" for i in range(1, 9))
+    assert report.source_acceptance_ids == tuple(f"acceptance:{i}" for i in range(1, 7))
     assert report.reader_source_asset_version_ids == tuple(
-        f"reader-outcome:{i}:v3" for i in range(1, 9)
+        f"reader-outcome:{i}:v3" for i in range(1, 7)
     )
 
 
@@ -318,18 +318,18 @@ def test_arc_evaluation_uses_causal_progress_not_chapter_score_average() -> None
 
 def test_volume_slice_evaluation_does_not_average_arc_or_chapter_scores() -> None:
     rows = [
-        _observation(chapter, automated_editorial_score=100) for chapter in range(1, 9)
+        _observation(chapter, automated_editorial_score=100) for chapter in range(1, 7)
     ]
     primary = build_arc_quality_evaluation(rows, arc_plan_version_id="arc:primary:v1")
     volume = build_volume_slice_quality_evaluation(
         rows,
         arc_evaluations=(primary,),
-        volume_scope_id="volume:slice:1-8",
+        volume_scope_id="volume:slice:1-6",
     )
 
     assert volume.status == "PROGRESSING"
     payload = asdict(volume)
     assert "average_chapter_score" not in payload
     assert "average_arc_score" not in payload
-    assert volume.chapter_range == (1, 8)
+    assert volume.chapter_range == (1, 6)
     assert volume.ending_reachability == "IMPROVING"

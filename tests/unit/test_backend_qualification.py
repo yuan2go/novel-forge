@@ -513,10 +513,8 @@ class BackendQualificationCliTests(unittest.TestCase):
         self.assertEqual(statuses["static-and-manifests"], "FAIL")
         self.assertEqual(statuses["pytest-backend"], "NOT_RUN")
         self.assertEqual(report["cleanup"]["status"], "PASS")
-        self.assertEqual(
-            report["evidence_ceilings"]["CURRENT_UI"],
-            "DEFERRED / NOT_RUN_BY_SCOPE",
-        )
+        self.assertEqual(report["proof_scope"]["ceiling"], "LOCAL_BACKEND_ENGINEERING")
+        self.assertIn("ADMIN_UI_EXECUTION", report["proof_scope"]["does_not_establish"])
         self.assertTrue(any("p0-backend-static" in command for command in commands))
 
     def test_migration_compatibility_passes_before_complete_postgresql_failure(

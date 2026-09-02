@@ -275,7 +275,7 @@ def _manifest_evidence(root: Path, manifest: object) -> dict[str, object]:
         "manifest_digests": {
             path.relative_to(root).as_posix(): _digest(path) for path in paths
         },
-        "evidence_ceilings": dict(getattr(manifest, "evidence_ceilings")),
+        "proof_scope": dict(getattr(manifest, "proof_scope")),
     }
 
 

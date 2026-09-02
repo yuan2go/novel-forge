@@ -65,13 +65,13 @@ def _subjects() -> tuple[BlindComparisonSubject, ...]:
             baseline_text=f"The alternate rendered story sequence reaches chapter {chapter}.",
             arc_plan_version_ids=("arc:primary:v1",),
         )
-        for chapter in range(1, 9)
+        for chapter in range(1, 7)
     )
     arc = BlindComparisonSubject(
         subject_id="subject:arc:primary",
         scope_type=BlindScope.ARC,
         chapter_start=1,
-        chapter_end=8,
+        chapter_end=6,
         canonical_asset_version_id="canonical:arc:primary:v1",
         baseline_asset_version_id="baseline:arc:primary:v1",
         canonical_text="The first complete story sequence closes its primary turn.",
@@ -155,7 +155,7 @@ def test_decision_validates_version_identity_scope_and_confidence(
         "evaluation_version": "editorial-pairwise-v1",
         "scope_type": BlindScope.ARC,
         "chapter_start": 1,
-        "chapter_end": 8,
+        "chapter_end": 6,
         "choice": PreferenceChoice.A,
         "dimension_scores": _scores(),
         "confidence": 0.8,
@@ -164,7 +164,7 @@ def test_decision_validates_version_identity_scope_and_confidence(
     }
     values[field] = value
     if field == "scope_type":
-        values["chapter_end"] = 8
+        values["chapter_end"] = 6
     with pytest.raises((ValueError, TypeError), match=message):
         HumanBlindDecision(**values)  # type: ignore[arg-type]
 
@@ -184,9 +184,9 @@ def test_two_reviewer_packs_are_balanced_complementary_and_story_ordered() -> No
     first_chapters = [item for item in first.private_mapping if item.scope_type is BlindScope.CHAPTER]
     second_by_subject = {item.subject_id: item for item in second.private_mapping}
 
-    assert len(first_chapters) == 8
-    assert sum(item.canonical_position == "A" for item in first_chapters) == 4
-    assert [item.chapter_start for item in first_chapters] == list(range(1, 9))
+    assert len(first_chapters) == 6
+    assert sum(item.canonical_position == "A" for item in first_chapters) == 3
+    assert [item.chapter_start for item in first_chapters] == list(range(1, 7))
     assert all(
         second_by_subject[item.subject_id].canonical_position
         != item.canonical_position

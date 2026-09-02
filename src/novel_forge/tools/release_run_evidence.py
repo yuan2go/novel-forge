@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from novel_forge.tools.backend_qualification_contract import (
-    P0_EVIDENCE_CEILINGS,
+    P0_PROOF_SCOPE,
     REQUIRED_GATE_ORDER,
     validate_resolved_dependency_snapshot,
 )
@@ -520,7 +520,7 @@ def build_p0_backend_qualification_report(
         raise ValueError("P0 qualification source identity must be exact and clean")
     if (
         manifest.get("schema_version")
-        != "novel-forge.backend-qualification-manifest.v1"
+        != "novel-forge.backend-qualification-manifest.v2"
     ):
         raise ValueError("P0 qualification manifest schema is invalid")
     required_gates = manifest.get("required_gates")
@@ -585,8 +585,8 @@ def build_p0_backend_qualification_report(
         for path, digest in manifest_digests.items()
     ):
         raise ValueError("P0 qualification manifest digest entry is invalid")
-    if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
-        raise ValueError("P0 qualification evidence ceilings differ from policy")
+    if dict(manifest.get("proof_scope") or {}) != P0_PROOF_SCOPE:
+        raise ValueError("P0 qualification proof scope differs from policy")
     _validate_cleanup_evidence(cleanup, run_identity=run_identity)
     if dict(cleanup) != dict(
         _required_gate_evidence(gates, "resource-cleanup")
@@ -596,7 +596,7 @@ def build_p0_backend_qualification_report(
     from novel_forge.tools.backend_qualification_contract import sanitize_evidence
 
     report = {
-        "schema_version": "novel-forge.p0-backend-qualification-report.v1",
+        "schema_version": "novel-forge.p0-backend-qualification-report.v2",
         "evidence_class": "p0_backend_engineering_qualification",
         "status": "PASS",
         "decision": "PASS",
@@ -618,7 +618,7 @@ def build_p0_backend_qualification_report(
         },
         "gates": [dict(item) for item in gates],
         "cleanup": dict(cleanup),
-        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "proof_scope": dict(P0_PROOF_SCOPE),
         "generated_at": _now(),
     }
     sanitized = sanitize_evidence(report)
@@ -653,8 +653,8 @@ def build_p0_backend_qualification_failure_report(
         raise ValueError("failed P0 report has no failed or blocked gate")
     if any(gate.get("status") not in allowed_statuses for gate in gates):
         raise ValueError("failed P0 report contains an invalid gate status")
-    if dict(manifest.get("evidence_ceilings") or {}) != P0_EVIDENCE_CEILINGS:
-        raise ValueError("failed P0 report evidence ceilings differ from policy")
+    if dict(manifest.get("proof_scope") or {}) != P0_PROOF_SCOPE:
+        raise ValueError("failed P0 report proof scope differs from policy")
     validated_dependency = validate_resolved_dependency_snapshot(
         dependency_snapshot
     )
@@ -664,7 +664,7 @@ def build_p0_backend_qualification_failure_report(
     from novel_forge.tools.backend_qualification_contract import sanitize_evidence
 
     report = {
-        "schema_version": "novel-forge.p0-backend-qualification-report.v1",
+        "schema_version": "novel-forge.p0-backend-qualification-report.v2",
         "evidence_class": "p0_backend_engineering_qualification",
         "status": "FAIL",
         "decision": "FAIL",
@@ -689,7 +689,7 @@ def build_p0_backend_qualification_failure_report(
         },
         "gates": [dict(item) for item in gates],
         "cleanup": dict(cleanup),
-        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "proof_scope": dict(P0_PROOF_SCOPE),
         "generated_at": _now(),
     }
     sanitized = sanitize_evidence(report)
@@ -705,7 +705,7 @@ def validate_p0_backend_qualification_report(
 ) -> dict[str, Any]:
     tested_sha = _validated_sha(expected_sha)
     if report.get("schema_version") != (
-        "novel-forge.p0-backend-qualification-report.v1"
+        "novel-forge.p0-backend-qualification-report.v2"
     ):
         raise ValueError("P0 backend qualification report schema is invalid")
     if report.get("status") != "PASS" or report.get("decision") != "PASS":
@@ -778,8 +778,8 @@ def validate_p0_backend_qualification_report(
         _required_gate_evidence(gates, "resource-cleanup")
     ):
         raise ValueError("P0 backend qualification cleanup differs from its gate")
-    if report.get("evidence_ceilings") != P0_EVIDENCE_CEILINGS:
-        raise ValueError("P0 backend qualification evidence ceilings differ")
+    if report.get("proof_scope") != P0_PROOF_SCOPE:
+        raise ValueError("P0 backend qualification proof scope differs")
     return {
         "schema_version": "novel-forge.p0-backend-qualification-validation.v1",
         "status": "PASS",
@@ -789,7 +789,7 @@ def validate_p0_backend_qualification_report(
         "dependency_digest": validated_dependency["digest"],
         "migration_head": migration["observed_head"],
         "gate_count": len(gates),
-        "evidence_ceilings": dict(P0_EVIDENCE_CEILINGS),
+        "proof_scope": dict(P0_PROOF_SCOPE),
     }
 
 
@@ -909,7 +909,7 @@ if __name__ == "__main__":
 
 __all__ = [
     "REQUIRED_ARTIFACT_FILES",
-    "P0_EVIDENCE_CEILINGS",
+    "P0_PROOF_SCOPE",
     "build_p0_backend_qualification_report",
     "build_p0_backend_qualification_failure_report",
     "build_ci_test_result",

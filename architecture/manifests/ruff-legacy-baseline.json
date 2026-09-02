@@ -6,7 +6,7 @@
     "tests",
     "scripts"
   ],
-  "diagnostic_count": 519,
+  "diagnostic_count": 515,
   "policy": {
     "new_file_diagnostics": "FORBIDDEN",
     "new_rule_for_existing_file": "FORBIDDEN",
@@ -70,17 +70,6 @@
       "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
       "violations": {
         "F841": 1
-      }
-    },
-    {
-      "path": "scripts/run_longform_12ch_pressure.py",
-      "content_sha256": "647e4828c8b13599fa05473d9b1d251d42673c138a6a6b75b349cc2fb998666c",
-      "owner": "Runtime Operations",
-      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
-      "replacement": "Replace bootstrap import patterns with packaged entry points",
-      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
-      "violations": {
-        "E402": 4
       }
     },
     {

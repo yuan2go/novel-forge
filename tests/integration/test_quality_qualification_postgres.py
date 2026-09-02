@@ -36,7 +36,7 @@ def _manifest(project_id: str, workspace_id: str, book_id: str) -> dict[str, obj
         "campaign_id": f"quality-campaign:{project_id}",
         "campaign_version": 1,
         "exact_release_sha": RELEASE_SHA,
-        "migration_head": "20260826_0101_quality_qualification",
+        "migration_head": "20260902_0106_quality_qualification_scope_generalization",
         "protocol_version": "human-blind-comparison-v1",
         "evaluation_profile_version": "editorial-pairwise-v1",
         "quality_profile_version": "canonical-quality-v3",
@@ -44,7 +44,7 @@ def _manifest(project_id: str, workspace_id: str, book_id: str) -> dict[str, obj
         "project_id": project_id,
         "workspace_id": workspace_id,
         "book_id": book_id,
-        "chapter_group_ranges": [[1, 4], [5, 8]],
+        "chapter_group_ranges": [[1, 3], [4, 6]],
         "provider_route_manifest": {
             "generator": {"provider": "scripted", "model": "fixture-generator"},
             "reviewer": {"provider": "scripted", "model": "fixture-reviewer"},
@@ -64,7 +64,7 @@ def _manifest(project_id: str, workspace_id: str, book_id: str) -> dict[str, obj
             "controlled_difference": "REVIEW_REVISION_REREVIEW",
         },
         "budget_policy": {
-            "chapter_limit": 8,
+            "chapter_limit": 6,
             "token_limit": 200_000,
             "cost_limit_usd": "100.00",
         },
