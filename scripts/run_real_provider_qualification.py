@@ -435,6 +435,7 @@ def _runtime_environment(
         "NOVEL_FORGE_APPLICATION_BUILD_ID": "real-provider-qualification",
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
         "NOVEL_FORGE_RELEASE_CHANNEL": "VALIDATION",
+        "NOVEL_FORGE_RUNTIME_HOST_ID": f"host:provider-qualification:{commit_sha[:12]}",
         "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
         "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli",
         "NOVEL_FORGE_PLANNING_MODEL": model,
