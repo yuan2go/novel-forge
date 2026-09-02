@@ -75,6 +75,9 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
 
         self.assertEqual(env["NOVEL_FORGE_EMBEDDING_PROVIDER"], "codex-cli")
         self.assertEqual(env["NOVEL_FORGE_EMBEDDING_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_DRAFT_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_REVIEW_MODEL"], "gpt-test")
+        self.assertEqual(env["NOVEL_FORGE_QUALITY_MODEL"], "gpt-test")
         self.assertEqual(
             env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER"], "codex-cli"
         )
