@@ -8,7 +8,7 @@ description: Use when auditing Novel Forge or Novel Operating System implementat
 ## 适用场景
 
 - 对比设计文档、审计报告、代码、API、UI、测试和运行资产，判断 Novel OS 能力是否真实完成。
-- 审核 MKAOS、Context Builder、ReviewIssue、Loop Kernel、Agent Center、Publish/Feedback、Platform Strategy、Evaluation Center。
+- 审核 MKAOS、Context Builder、ReviewIssue、Command Kernel、Agent Runtime、Publish/Feedback、Platform Strategy、Quality Qualification。
 - 生成逐项矩阵、风险台账、修复计划和测试缺口报告。
 
 ## 输入要求

@@ -24,8 +24,9 @@ from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
 )
 
-SCHEMA_VERSION = "novel-forge.reality-evidence.v3"
+SCHEMA_VERSION = "novel-forge.reality-evidence.v4"
 REPORT_SCHEMA_VERSION = "novel-forge.documentation-reality-check.v1"
+PROJECTION_KIND = "CURRENT_CODE_REALITY_PROJECTION"
 AUTHORITY_ORDER = [
     "executable_code",
     "schema_and_migrations",
@@ -80,6 +81,7 @@ WEB_COMMENT = re.compile(r"^\s*(?://|/\*|\*|<!--)\s?(.*)$")
 WEB_TOOLING_COMMENT = re.compile(r"^\s*(?:/\*\*\s*@type|///\s*<reference)")
 FULL_SHA = re.compile(r"[0-9a-f]{40}")
 CONTENT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+MIGRATION_ID_IN_PROSE = re.compile(r"\b20[0-9]{6}_[0-9]{4}_[a-z0-9_]+\b")
 P0_EVIDENCE_CLASS = "p0_backend_engineering_qualification"
 P0_COLLECTIONS = (
     "BACKEND_NON_POSTGRESQL",
@@ -92,6 +94,76 @@ FACT_TYPE_POLICY = {
     "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
     "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY",
 }
+CAPABILITY_REFERENCE_FIELDS = (
+    "production_entries",
+    "application",
+    "domain_symbols",
+    "commands_operations",
+    "mutation_boundary",
+    "persistence",
+    "tests",
+)
+EXTERNAL_EFFECT_MODES = frozenset({"NONE", "INDIRECT", "DIRECT"})
+SEMANTIC_CONSTRAINT_CLASSES = frozenset(
+    {
+        "CURRENT_PROVEN_INVARIANT",
+        "CURRENT_RUNTIME_FACT",
+        "CONFIGURABLE_POLICY",
+        "HISTORICAL_COMPATIBILITY",
+        "UNRESOLVED_DESIGN_CONSTRAINT",
+    }
+)
+SYSTEM_ROLES = frozenset(
+    {
+        "AUTHORITY",
+        "PROJECTION",
+        "COORDINATOR",
+        "REPOSITORY",
+        "EVIDENCE",
+        "CANDIDATE",
+        "ACCEPTED_FACT",
+    }
+)
+NARRATIVE_NATURES = frozenset(
+    {
+        "CONTAINER",
+        "TRAJECTORY",
+        "PLAN",
+        "PROPOSAL",
+        "CANDIDATE",
+        "ACCEPTED_ACTUAL",
+        "PROJECTION",
+        "EVIDENCE",
+    }
+)
+NARRATIVE_RELATION_TYPES = frozenset(
+    {
+        "STRUCTURAL_CONTAINMENT",
+        "CAUSAL_DEPENDENCY",
+        "TEMPORAL_TRAJECTORY",
+        "PLANNING_DEPENDENCY",
+        "ACCEPTED_FACT_PROJECTION",
+    }
+)
+RUNTIME_CHAIN_ROLES = frozenset(
+    {
+        "REQUIRED",
+        "OPTIONAL_INPUT",
+        "CONDITIONAL",
+        "ASYNCHRONOUS_FOLLOWUP",
+        "FUTURE_ONLY_CHANGE",
+    }
+)
+BOUNDARY_CLASSES = frozenset(
+    {
+        "MISSING_CAPABILITY",
+        "FIXTURE_ONLY_SEAM",
+        "PARALLEL_TRUTH_RISK",
+        "MISSING_AUTHORITY_TRANSITION",
+        "UNSUPPORTED_CAPABILITY_CLAIM",
+        "PROOF_BOUNDARY",
+    }
+)
 
 
 def _error(errors: list[str], message: str) -> None:
@@ -253,6 +325,234 @@ def _is_nonnegative_integer(value: object) -> bool:
     return type(value) is int and value >= 0
 
 
+def _validate_text_list(
+    payload: Mapping[str, Any],
+    field: str,
+    errors: list[str],
+    *,
+    context: str,
+    required: bool,
+    allowed: frozenset[str] | None = None,
+) -> list[str]:
+    value = payload.get(field)
+    if not isinstance(value, list):
+        _error(errors, f"{context}.{field} must be a list")
+        return []
+    normalized = [str(item).strip() for item in value]
+    if required and not normalized:
+        _error(errors, f"{context}.{field} must not be empty")
+    if any(not item for item in normalized):
+        _error(errors, f"{context}.{field} contains an empty value")
+    if len(set(normalized)) != len(normalized):
+        _error(errors, f"{context}.{field} contains duplicates")
+    if allowed is not None:
+        for item in normalized:
+            if item not in allowed:
+                _error(errors, f"{context}.{field} contains an unknown value: {item}")
+    return normalized
+
+
+def _validate_projection_identity(
+    inventory: Mapping[str, Any], current_tree_sha: str, errors: list[str]
+) -> None:
+    if inventory.get("projection_kind") != PROJECTION_KIND:
+        _error(errors, f"reality inventory projection_kind must be {PROJECTION_KIND}")
+    projection_source = inventory.get("projection_source")
+    if not isinstance(projection_source, Mapping):
+        _error(errors, "reality inventory projection_source must be an object")
+        return
+    if projection_source.get("authority") != "EXECUTABLE_CODE":
+        _error(errors, "projection_source.authority must be EXECUTABLE_CODE")
+    if projection_source.get("identity_scope") != "IMPLEMENTATION_TREE_IDENTITY_V3":
+        _error(
+            errors,
+            "projection_source.identity_scope must be IMPLEMENTATION_TREE_IDENTITY_V3",
+        )
+    if projection_source.get("implementation_tree_sha") != current_tree_sha:
+        _error(errors, "current-system projection is stale for the implementation tree")
+
+
+def _validate_role_definitions(inventory: Mapping[str, Any], errors: list[str]) -> None:
+    definitions = inventory.get("role_definitions")
+    if not isinstance(definitions, Mapping):
+        _error(errors, "reality inventory role_definitions must be an object")
+        return
+    if set(definitions) != SYSTEM_ROLES:
+        _error(errors, "reality inventory role_definitions are not canonical")
+    for role, definition in definitions.items():
+        if not str(definition or "").strip():
+            _error(errors, f"role_definitions.{role} is empty")
+
+
+def _validate_semantic_constraints(
+    root: Path, inventory: Mapping[str, Any], errors: list[str]
+) -> None:
+    constraints = inventory.get("semantic_constraints")
+    if not isinstance(constraints, list) or not constraints:
+        _error(
+            errors, "reality inventory semantic_constraints must be a non-empty list"
+        )
+        return
+    seen: set[str] = set()
+    for index, constraint in enumerate(constraints):
+        context = f"semantic_constraints[{index}]"
+        if not isinstance(constraint, Mapping):
+            _error(errors, f"{context} must be an object")
+            continue
+        constraint_id = str(constraint.get("id") or "").strip()
+        if not CONCEPT_NAME.fullmatch(constraint_id):
+            _error(errors, f"{context}.id must be lowercase kebab-case")
+        elif constraint_id in seen:
+            _error(errors, f"duplicate semantic constraint id: {constraint_id}")
+        seen.add(constraint_id)
+        classification = str(constraint.get("classification") or "")
+        if classification not in SEMANTIC_CONSTRAINT_CLASSES:
+            _error(errors, f"{context}.classification is not recognized")
+        if not str(constraint.get("statement") or "").strip():
+            _error(errors, f"{context}.statement is missing")
+        design_review_required = constraint.get("design_review_required")
+        if type(design_review_required) is not bool:
+            _error(errors, f"{context}.design_review_required must be boolean")
+        elif design_review_required != (
+            classification == "UNRESOLVED_DESIGN_CONSTRAINT"
+        ):
+            _error(
+                errors, f"{context}.design_review_required contradicts classification"
+            )
+        _validate_reference_list(
+            root, constraint, "evidence", errors, context=context, required=True
+        )
+
+
+def _validate_authority_model(
+    root: Path, inventory: Mapping[str, Any], errors: list[str]
+) -> None:
+    model = inventory.get("authority_model")
+    if not isinstance(model, list) or not model:
+        _error(errors, "reality inventory authority_model must be a non-empty list")
+        return
+    seen: set[str] = set()
+    for index, item in enumerate(model):
+        context = f"authority_model[{index}]"
+        if not isinstance(item, Mapping):
+            _error(errors, f"{context} must be an object")
+            continue
+        identity = str(item.get("id") or "").strip()
+        if not CONCEPT_NAME.fullmatch(identity):
+            _error(errors, f"{context}.id must be lowercase kebab-case")
+        elif identity in seen:
+            _error(errors, f"duplicate authority model id: {identity}")
+        seen.add(identity)
+        if item.get("role") not in SYSTEM_ROLES:
+            _error(errors, f"{context}.role is not recognized")
+        _validate_text_list(item, "owns", errors, context=context, required=True)
+        _validate_text_list(
+            item, "does_not_own", errors, context=context, required=True
+        )
+        if not str(item.get("mutation_rule") or "").strip():
+            _error(errors, f"{context}.mutation_rule is missing")
+        _validate_reference_list(
+            root, item, "evidence", errors, context=context, required=True
+        )
+
+
+def _validate_narrative_model(
+    root: Path, inventory: Mapping[str, Any], errors: list[str]
+) -> None:
+    model = inventory.get("narrative_model")
+    if not isinstance(model, list) or not model:
+        _error(errors, "reality inventory narrative_model must be a non-empty list")
+        return
+    by_id: dict[str, Mapping[str, Any]] = {}
+    for index, item in enumerate(model):
+        context = f"narrative_model[{index}]"
+        if not isinstance(item, Mapping):
+            _error(errors, f"{context} must be an object")
+            continue
+        identity = str(item.get("id") or "").strip()
+        if not CONCEPT_NAME.fullmatch(identity):
+            _error(errors, f"{context}.id must be lowercase kebab-case")
+        elif identity in by_id:
+            _error(errors, f"duplicate narrative object id: {identity}")
+        else:
+            by_id[identity] = item
+        if item.get("nature") not in NARRATIVE_NATURES:
+            _error(errors, f"{context}.nature is not recognized")
+        if not str(item.get("owner") or "").strip():
+            _error(errors, f"{context}.owner is missing")
+        if not str(item.get("lifecycle_rule") or "").strip():
+            _error(errors, f"{context}.lifecycle_rule is missing")
+        _validate_reference_list(
+            root, item, "evidence", errors, context=context, required=True
+        )
+    for index, item in enumerate(model):
+        if not isinstance(item, Mapping):
+            continue
+        context = f"narrative_model[{index}]"
+        relationships = item.get("relationships")
+        if not isinstance(relationships, list):
+            _error(errors, f"{context}.relationships must be a list")
+            continue
+        for relation_index, relation in enumerate(relationships):
+            relation_context = f"{context}.relationships[{relation_index}]"
+            if not isinstance(relation, Mapping):
+                _error(errors, f"{relation_context} must be an object")
+                continue
+            if relation.get("type") not in NARRATIVE_RELATION_TYPES:
+                _error(errors, f"{relation_context}.type is not recognized")
+            target = str(relation.get("target") or "")
+            if target not in by_id:
+                _error(errors, f"{relation_context}.target is unknown: {target}")
+
+
+def _validate_runtime_chain(
+    root: Path, inventory: Mapping[str, Any], errors: list[str]
+) -> None:
+    chain = inventory.get("runtime_chain")
+    if not isinstance(chain, list) or not chain:
+        _error(errors, "reality inventory runtime_chain must be a non-empty list")
+        return
+    by_id: dict[str, Mapping[str, Any]] = {}
+    orders: set[int] = set()
+    for index, step in enumerate(chain):
+        context = f"runtime_chain[{index}]"
+        if not isinstance(step, Mapping):
+            _error(errors, f"{context} must be an object")
+            continue
+        identity = str(step.get("id") or "").strip()
+        if not CONCEPT_NAME.fullmatch(identity):
+            _error(errors, f"{context}.id must be lowercase kebab-case")
+        elif identity in by_id:
+            _error(errors, f"duplicate runtime chain id: {identity}")
+        else:
+            by_id[identity] = step
+        order = step.get("order")
+        if type(order) is not int or order < 1:
+            _error(errors, f"{context}.order must be a positive integer")
+        elif order in orders:
+            _error(errors, f"duplicate runtime chain order: {order}")
+        else:
+            orders.add(order)
+        if step.get("path_role") not in RUNTIME_CHAIN_ROLES:
+            _error(errors, f"{context}.path_role is not recognized")
+        if not str(step.get("owner") or "").strip():
+            _error(errors, f"{context}.owner is missing")
+        _validate_reference_list(
+            root, step, "evidence", errors, context=context, required=True
+        )
+    for index, step in enumerate(chain):
+        if not isinstance(step, Mapping):
+            continue
+        context = f"runtime_chain[{index}]"
+        for target in _validate_text_list(
+            step, "downstream", errors, context=context, required=False
+        ):
+            if target not in by_id:
+                _error(
+                    errors, f"{context}.downstream references unknown step: {target}"
+                )
+
+
 def _git_tree_for_ancestor_commit(
     root: Path,
     commit_sha: str,
@@ -283,8 +583,10 @@ def _git_tree_for_ancestor_commit(
         _error(errors, f"{context}.observed_at_sha cannot be verified by Git: {exc}")
         return ""
     resolved_tree = tree.stdout.strip().lower()
-    if ancestor.returncode != 0 or tree.returncode != 0 or not FULL_SHA.fullmatch(
-        resolved_tree
+    if (
+        ancestor.returncode != 0
+        or tree.returncode != 0
+        or not FULL_SHA.fullmatch(resolved_tree)
     ):
         _error(
             errors,
@@ -363,9 +665,9 @@ def _p0_report_projection(report: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "source_tree": report.get("source_tree"),
         "implementation_tree_sha": report.get("implementation_tree_sha"),
-        "dependency_snapshot_digest": (
-            report.get("dependency_snapshot") or {}
-        ).get("digest"),
+        "dependency_snapshot_digest": (report.get("dependency_snapshot") or {}).get(
+            "digest"
+        ),
         "collected": sum(int(item["junit_cases"]) for item in unique_collections),
         "passed": sum(int(item["passed"]) for item in unique_collections),
         "failed": 0,
@@ -528,11 +830,14 @@ def _validate_p0_run_projection(
             ):
                 _error(errors, f"{collection_context} has fewer JUnit cases than nodes")
         if tuple(collections_by_class) != P0_COLLECTIONS:
-            _error(errors, f"{context}.collections differ from the canonical P0 classes")
+            _error(
+                errors, f"{context}.collections differ from the canonical P0 classes"
+            )
         migration_collection = collections_by_class.get("MIGRATION_COMPATIBILITY")
         if (
             migration_collection is not None
-            and migration_collection.get("repeated_in_postgresql_collection") is not True
+            and migration_collection.get("repeated_in_postgresql_collection")
+            is not True
         ):
             _error(errors, f"{context} does not mark the repeated migration matrix")
         unique_classes = ("BACKEND_NON_POSTGRESQL", "POSTGRESQL_REQUIRED")
@@ -547,7 +852,10 @@ def _validate_p0_run_projection(
                 int(collections_by_class[classification]["junit_cases"])
                 for classification in unique_classes
             )
-            if run.get("collected") != unique_total or run.get("passed") != unique_total:
+            if (
+                run.get("collected") != unique_total
+                or run.get("passed") != unique_total
+            ):
                 _error(errors, f"{context} aggregate counts duplicate or omit cases")
     if run.get("result_count_scope") != "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES":
         _error(errors, f"{context}.result_count_scope is not canonical")
@@ -590,9 +898,7 @@ def _validate_p0_run_projection(
         )
         phases = cleanup.get("phases")
         phase_resource_count = 0
-        valid_phases = isinstance(phases, list) and len(phases) == len(
-            expected_phases
-        )
+        valid_phases = isinstance(phases, list) and len(phases) == len(expected_phases)
         if valid_phases:
             for phase, (expected_phase, expected_project) in zip(
                 phases, expected_phases, strict=True
@@ -663,6 +969,12 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
     current_tree_sha = str(
         build_implementation_tree_identity(root).get("implementation_tree_sha") or ""
     )
+    _validate_projection_identity(inventory, current_tree_sha, errors)
+    _validate_role_definitions(inventory, errors)
+    _validate_semantic_constraints(root, inventory, errors)
+    _validate_authority_model(root, inventory, errors)
+    _validate_narrative_model(root, inventory, errors)
+    _validate_runtime_chain(root, inventory, errors)
     qualification_runs = inventory.get("qualification_runs")
     runs_by_id: dict[str, Mapping[str, Any]] = {}
     run_results: dict[str, tuple[int, int, int]] = {}
@@ -803,7 +1115,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                 counts_match
                 and run_id in runs_by_id
                 and runs_by_id[run_id] is run
-                and evidence_class in {
+                and evidence_class
+                in {
                     P0_EVIDENCE_CLASS,
                     "focused_qualification_contracts",
                 }
@@ -821,7 +1134,9 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
         for path in sorted(item for item in retained_root.rglob("*") if item.is_file()):
             relative = _relative(root, path)
             if relative not in retained_artifacts:
-                _error(errors, f"unreferenced retained qualification artifact: {relative}")
+                _error(
+                    errors, f"unreferenced retained qualification artifact: {relative}"
+                )
 
     capabilities = inventory.get("capabilities")
     if not isinstance(capabilities, list):
@@ -847,37 +1162,70 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             _error(errors, f"{context}.owner is missing")
         if capability.get("fact_type") != FACT_TYPE_POLICY["current_runtime"]:
             _error(errors, f"{context}.fact_type is not a current runtime fact")
-        status = str(capability.get("status") or "").strip()
+        status = str(capability.get("qualification_state") or "").strip()
         if status not in STATUS_VOCABULARY:
-            _error(errors, f"{context}.status is not recognized: {status}")
+            _error(
+                errors,
+                f"{context}.qualification_state is not recognized: {status}",
+            )
         if not str(capability.get("proof_ceiling") or "").strip():
             _error(errors, f"{context}.proof_ceiling is missing")
 
-        _validate_reference_list(
-            root, capability, "implementation", errors, context=context, required=True
-        )
-        _validate_reference_list(
-            root,
-            capability,
-            "runtime_entries",
-            errors,
-            context=context,
-            required=status in STATUS_VOCABULARY[1:],
-        )
-        _validate_reference_list(
-            root, capability, "persistence", errors, context=context, required=True
-        )
+        for field in CAPABILITY_REFERENCE_FIELDS:
+            _validate_reference_list(
+                root,
+                capability,
+                field,
+                errors,
+                context=context,
+                required=(
+                    field != "production_entries" or status in STATUS_VOCABULARY[1:]
+                ),
+            )
+        state_ownership = capability.get("state_ownership")
+        if not isinstance(state_ownership, Mapping):
+            _error(errors, f"{context}.state_ownership must be an object")
+        else:
+            _validate_text_list(
+                state_ownership,
+                "owned_state",
+                errors,
+                context=f"{context}.state_ownership",
+                required=True,
+            )
+            if not str(state_ownership.get("write_rule") or "").strip():
+                _error(errors, f"{context}.state_ownership.write_rule is missing")
+            _validate_reference_list(
+                root,
+                state_ownership,
+                "evidence",
+                errors,
+                context=f"{context}.state_ownership",
+                required=True,
+            )
+        external_effects = capability.get("external_effects")
+        if not isinstance(external_effects, Mapping):
+            _error(errors, f"{context}.external_effects must be an object")
+        else:
+            effect_mode = str(external_effects.get("mode") or "")
+            if effect_mode not in EXTERNAL_EFFECT_MODES:
+                _error(errors, f"{context}.external_effects.mode is not recognized")
+            if not str(external_effects.get("rule") or "").strip():
+                _error(errors, f"{context}.external_effects.rule is missing")
+            _validate_reference_list(
+                root,
+                external_effects,
+                "evidence",
+                errors,
+                context=f"{context}.external_effects",
+                required=effect_mode != "NONE",
+            )
         cited_migrations.update(
             _validate_migrations(root, capability, errors, context=context)
         )
-        qualification = _validate_reference_list(
-            root,
-            capability,
-            "qualification",
-            errors,
-            context=context,
-            required=status in ("QUALIFIED", "PRODUCTION_PROVEN"),
-        )
+        qualification = capability.get("tests")
+        if not isinstance(qualification, list):
+            qualification = []
         if status in ("QUALIFIED", "PRODUCTION_PROVEN") and not qualification:
             _error(
                 errors, f"{context} cannot be {status} without qualification evidence"
@@ -959,6 +1307,23 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
                     f"{context} cannot be PRODUCTION_PROVEN without live evidence",
                 )
 
+    for index, capability in enumerate(capabilities):
+        if not isinstance(capability, Mapping):
+            continue
+        context = f"capabilities[{index}]"
+        for field in ("upstream_dependencies", "downstream_consumers"):
+            dependencies = _validate_text_list(
+                capability, field, errors, context=context, required=False
+            )
+            for dependency in dependencies:
+                if dependency not in concepts:
+                    _error(
+                        errors,
+                        f"{context}.{field} references unknown capability: {dependency}",
+                    )
+                if dependency == capability.get("concept"):
+                    _error(errors, f"{context}.{field} cannot reference itself")
+
     qualification_failures = inventory.get("qualification_failures")
     if not isinstance(qualification_failures, list):
         _error(errors, "reality inventory qualification_failures must be a list")
@@ -1029,6 +1394,8 @@ def _validate_inventory(root: Path, inventory: object, errors: list[str]) -> int
             if not isinstance(boundary, Mapping):
                 _error(errors, f"{context} must be an object")
                 continue
+            if boundary.get("classification") not in BOUNDARY_CLASSES:
+                _error(errors, f"{context}.classification is not recognized")
             if not str(boundary.get("claim") or "").strip():
                 _error(errors, f"{context}.claim is missing")
             if "value" not in boundary:
@@ -1059,6 +1426,19 @@ def _validate_canonical_documents(root: Path, errors: list[str]) -> None:
         else:
             if line_count > 80:
                 _error(errors, f"README.md must remain thin; found {line_count} lines")
+    for relative in CANONICAL_DOCUMENTS:
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if MIGRATION_ID_IN_PROSE.search(content):
+            _error(
+                errors,
+                f"canonical document duplicates a migration identity: {relative}",
+            )
 
 
 def _path_from_inline_code(value: str) -> str | None:
@@ -1144,9 +1524,7 @@ def _validate_python_comments(
             continue
         accepted_comment_lines: set[int] = set()
         comments_by_line = {
-            token.start[0]: token
-            for token in tokens
-            if token.type == tokenize.COMMENT
+            token.start[0]: token for token in tokens if token.type == tokenize.COMMENT
         }
         source_lines = path.read_text(encoding="utf-8").splitlines()
         immutable_migration = relative.startswith(
@@ -1216,9 +1594,7 @@ def _validate_script_comments(root: Path, errors: list[str]) -> int:
             _error(errors, f"cannot tokenize {relative}: {exc}")
             continue
         comments_by_line = {
-            token.start[0]: token
-            for token in tokens
-            if token.type == tokenize.COMMENT
+            token.start[0]: token for token in tokens if token.type == tokenize.COMMENT
         }
         accepted_comment_lines: set[int] = set()
         for token in comments_by_line.values():
@@ -1335,7 +1711,10 @@ def _archive_comment_counts(root: Path, commit_sha: str) -> tuple[int, int, int,
             elif member.name.startswith("web/") and member.name.endswith(
                 (".js", ".mjs", ".ts", ".tsx")
             ):
-                if any(part in {"node_modules", ".next"} for part in Path(member.name).parts):
+                if any(
+                    part in {"node_modules", ".next"}
+                    for part in Path(member.name).parts
+                ):
                     continue
                 try:
                     lines = content.decode("utf-8").splitlines()
@@ -1343,7 +1722,9 @@ def _archive_comment_counts(root: Path, commit_sha: str) -> tuple[int, int, int,
                     raise ValueError(
                         f"cannot inspect comment ratchet base: {member.name}: {exc}"
                     ) from exc
-                web_comments += sum(WEB_COMMENT.match(line) is not None for line in lines)
+                web_comments += sum(
+                    WEB_COMMENT.match(line) is not None for line in lines
+                )
     return python_comments, script_comments, docstrings, web_comments
 
 
@@ -1474,17 +1855,13 @@ def _validate_added_comment_policy(
                 if line_number > len(lines):
                     continue
                 match = WEB_COMMENT.match(lines[line_number - 1])
-                continuation = (
-                    line_number - 1 in accepted
-                    or (
-                        line_number > 1
-                        and WEB_COMMENT.match(lines[line_number - 2]) is not None
-                        and _comment_is_policy_labeled(lines[line_number - 2])
-                    )
+                continuation = line_number - 1 in accepted or (
+                    line_number > 1
+                    and WEB_COMMENT.match(lines[line_number - 2]) is not None
+                    and _comment_is_policy_labeled(lines[line_number - 2])
                 )
                 if match and (
-                    _comment_is_policy_labeled(lines[line_number - 1])
-                    or continuation
+                    _comment_is_policy_labeled(lines[line_number - 1]) or continuation
                 ):
                     accepted.add(line_number)
                 elif match:

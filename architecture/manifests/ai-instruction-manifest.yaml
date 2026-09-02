@@ -1,5 +1,11 @@
 {
-  "schema_version": "novel-forge.ai-instruction-surface.v1",
+  "schema_version": "novel-forge.ai-instruction-surface.v2",
+  "forbidden_terms": [
+    "Agent Center",
+    "Editor-in-Chief Console",
+    "Evaluation Center",
+    "Loop Kernel"
+  ],
   "sources": [
     {
       "id": "coding-agent-policy",

@@ -80,5 +80,5 @@ description: Use when preparing, reviewing, or blocking a Novel Forge release pa
 ## 与其他模块的关系
 
 - 上游：Draft/Revision、ReviewIssue Gate、Canon Graph、Context Builder、Platform Strategy、Provider Runtime Policy。
-- 下游：Publishing log、Feedback Backflow、Editor-in-Chief Console、MKAOS learning、Resume/Invalidation。
+- 下游：Publishing log、Feedback Backflow、Authority API/admin projection、MKAOS learning、Resume/Invalidation。
 - 关联 Skill：`platform-strategy-os`、`review-issue-gate`、`canon-continuity-graph`、`provider-runtime-policy`。

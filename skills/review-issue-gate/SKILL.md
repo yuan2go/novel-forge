@@ -31,7 +31,7 @@ description: Use when validation, canon conflict, source leakage, MKAOS risk, ev
 3. 创建或更新 ReviewIssue，避免重复但保留历史。
 4. 计算 GateResult：continue、revise、block 或 human_review。
 5. 为可修复 issue 生成 RevisionTask candidate 和 re-review criteria。
-6. 将 blocking 状态暴露给 Loop Kernel、Publish Gate、Editor-in-Chief Console。
+6. 将 blocking 状态暴露给 Command Kernel、Publish Gate、Authority API/admin projection。
 
 ## 输出格式
 
@@ -67,6 +67,6 @@ description: Use when validation, canon conflict, source leakage, MKAOS risk, ev
 
 ## 与其他模块的关系
 
-- 上游：Quality Review、MKAOS Gate、Canon Graph、Evaluation Center、Platform Strategy。
-- 下游：Loop Kernel、RevisionTask、Publish Gate、Release Package、Editor-in-Chief Console。
+- 上游：Quality Review、MKAOS Gate、Canon Graph、Quality Qualification、Platform Strategy。
+- 下游：Command Kernel、RevisionTask、Publish Gate、Release Package、Authority API/admin projection。
 - 关联 Skill：`quality-review`、`agent-loop-governance`、`platform-strategy-os`。

@@ -20,7 +20,7 @@ description: Use when adapting topic, outline, chapter plan, draft, review, publ
 ## Novel OS Runtime Contract
 
 - 平台策略必须是结构化资产或 gate policy，不能只作为提示词语气要求。
-- 平台 gate 输出必须能进入 ReviewIssue、Publish Gate、Evaluation Center 和 Editor-in-Chief Console。
+- 平台 gate 输出必须能进入 ReviewIssue、Publish Gate、Quality Qualification 和 Authority API/admin projection。
 - 平台适配不得覆盖 canon facts、人物状态、source isolation 或 originality boundary。
 - 真实平台 API 和外部数据导入必须 opt-in；默认使用本地 fixture 或 deterministic metrics。
 
@@ -69,6 +69,6 @@ description: Use when adapting topic, outline, chapter plan, draft, review, publ
 
 ## 与其他模块的关系
 
-- 上游：Topic、Outline、ChapterPlan、Feedback、Evaluation Center、MKAOS。
-- 下游：ReviewIssue、Publish Gate、Editor-in-Chief Console、Platform Feedback Backflow。
+- 上游：Topic、Outline、ChapterPlan、Feedback、Quality Qualification、MKAOS。
+- 下游：ReviewIssue、Publish Gate、Authority API/admin projection、Platform Feedback Backflow。
 - 关联 Skill：`mkaos-knowledge-asset-os`、`review-issue-gate`、`quality-review`。

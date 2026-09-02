@@ -31,9 +31,17 @@ Only the files listed in `docs/README.md` are canonical. They contain current be
 and executable procedures, not delivery history, session logs, completion narratives or
 future architecture.
 
-Update `architecture/reality-evidence.json` when a capability owner, symbol, runtime
-entry, persistence boundary, migration, qualification test or status changes. The
-inventory points to evidence; it does not duplicate implementation prose.
+Update `architecture/reality-evidence.json` when a capability owner, entry, application,
+domain symbol, operation, state owner, mutation boundary, persistence/effect boundary,
+dependency, qualification test or status changes. Its projection source is bound to the
+implementation-tree identity, so any covered code, test, manifest or instruction change
+must make an unrefreshed projection fail. The inventory points to evidence; it does not
+duplicate generated implementation detail or become a design Authority.
+
+Semantic constraints use only `CURRENT_PROVEN_INVARIANT`, `CURRENT_RUNTIME_FACT`,
+`CONFIGURABLE_POLICY`, `HISTORICAL_COMPATIBILITY`, or
+`UNRESOLVED_DESIGN_CONSTRAINT`. Only the first may be documented as an architecture
+invariant; the last always requires an explicit design review marker.
 
 Repository-local design candidates are exceptional. When explicitly authorized, all of
 `PROPOSAL`, `NOT_IMPLEMENTED`, and `NOT_RUNTIME_AUTHORITY` must be visible, and the file

@@ -47,9 +47,7 @@ def _build_valid_p0_report(
         "schema_version": "novel-forge.backend-qualification-manifest.v2",
         "required_gates": list(REQUIRED_GATE_ORDER),
         "expected_migration_head": migration_head,
-        "manifest_digests": {
-            "architecture/manifests/migration-manifest.yaml": _DIGEST
-        },
+        "manifest_digests": {"architecture/manifests/migration-manifest.yaml": _DIGEST},
         "proof_scope": dict(P0_PROOF_SCOPE),
     }
     pytest_evidence = {
@@ -330,7 +328,7 @@ class DocumentationRealityTests(unittest.TestCase):
             self._write_valid_repository(root)
             inventory_path = root / "architecture" / "reality-evidence.json"
             inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-            inventory["capabilities"][0]["implementation"][0]["symbol"] = "missing"
+            inventory["capabilities"][0]["domain_symbols"][0]["symbol"] = "missing"
             inventory_path.write_text(
                 json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
             )
@@ -339,6 +337,58 @@ class DocumentationRealityTests(unittest.TestCase):
 
             self.assertEqual(report["status"], "FAIL")
             self.assertIn("symbol does not exist", "\n".join(report["errors"]))
+
+    def test_changed_implementation_invalidates_the_current_projection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            (root / "src/example.py").write_text(
+                "def run() -> str:\n    return 'changed'\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "current-system projection is stale", "\n".join(report["errors"])
+            )
+
+    def test_unresolved_constraint_requires_design_review(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            constraint = inventory["semantic_constraints"][0]
+            constraint["classification"] = "UNRESOLVED_DESIGN_CONSTRAINT"
+            constraint["design_review_required"] = False
+            inventory_path.write_text(
+                json.dumps(inventory, indent=2) + "\n", encoding="utf-8"
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "design_review_required contradicts classification",
+                "\n".join(report["errors"]),
+            )
+
+    def test_canonical_document_cannot_duplicate_migration_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            (root / "docs/current-system.md").write_text(
+                "# Current\n\nMigration 20260902_0106_example is current.\n",
+                encoding="utf-8",
+            )
+
+            report = check_repository(root)
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn(
+                "duplicates a migration identity", "\n".join(report["errors"])
+            )
 
     def test_narrative_module_docstring_and_work_package_comment_are_rejected(
         self,
@@ -685,17 +735,17 @@ class DocumentationRealityTests(unittest.TestCase):
             report_path = root / artifact["repository_path"]
             retained = json.loads(report_path.read_text(encoding="utf-8"))
             retained["implementation_tree_sha"] = implementation_tree_sha
-            retained["source_identity"][
-                "implementation_tree_sha"
-            ] = implementation_tree_sha
+            retained["source_identity"]["implementation_tree_sha"] = (
+                implementation_tree_sha
+            )
             source_preflight = next(
                 gate
                 for gate in retained["gates"]
                 if gate["gate_id"] == "source-preflight"
             )
-            source_preflight["evidence"][
-                "implementation_tree_sha"
-            ] = implementation_tree_sha
+            source_preflight["evidence"]["implementation_tree_sha"] = (
+                implementation_tree_sha
+            )
             report_bytes = (
                 json.dumps(retained, indent=2, sort_keys=True) + "\n"
             ).encode()
@@ -790,6 +840,14 @@ class DocumentationRealityTests(unittest.TestCase):
         )
         inventory = {
             "schema_version": SCHEMA_VERSION,
+            "projection_kind": "CURRENT_CODE_REALITY_PROJECTION",
+            "projection_source": {
+                "authority": "EXECUTABLE_CODE",
+                "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
+                "implementation_tree_sha": build_implementation_tree_identity(root)[
+                    "implementation_tree_sha"
+                ],
+            },
             "authority_order": [
                 "executable_code",
                 "schema_and_migrations",
@@ -799,6 +857,54 @@ class DocumentationRealityTests(unittest.TestCase):
             "status_vocabulary": STATUS_VOCABULARY,
             "canonical_documents": CANONICAL_DOCUMENTS,
             "fact_type_policy": FACT_TYPE_POLICY,
+            "role_definitions": {
+                "AUTHORITY": "Owns decisions and accepted state.",
+                "PROJECTION": "Read model derived from owned state.",
+                "COORDINATOR": "Orders work without taking ownership.",
+                "REPOSITORY": "Persists state for an owner.",
+                "EVIDENCE": "Observed input to a decision.",
+                "CANDIDATE": "Unaccepted generated result.",
+                "ACCEPTED_FACT": "Authority-accepted actual.",
+            },
+            "semantic_constraints": [
+                {
+                    "id": "example-invariant",
+                    "classification": "CURRENT_PROVEN_INVARIANT",
+                    "statement": "The example returns through its executable function.",
+                    "design_review_required": False,
+                    "evidence": [{"path": "src/example.py", "symbol": "run"}],
+                }
+            ],
+            "authority_model": [
+                {
+                    "id": "example-authority",
+                    "role": "AUTHORITY",
+                    "owns": ["example result"],
+                    "does_not_own": ["external effects"],
+                    "mutation_rule": "Only run produces the example result.",
+                    "evidence": [{"path": "src/example.py", "symbol": "run"}],
+                }
+            ],
+            "narrative_model": [
+                {
+                    "id": "example-object",
+                    "nature": "EVIDENCE",
+                    "owner": "example-authority",
+                    "lifecycle_rule": "Created by the example function.",
+                    "relationships": [],
+                    "evidence": [{"path": "src/example.py", "symbol": "run"}],
+                }
+            ],
+            "runtime_chain": [
+                {
+                    "id": "example-step",
+                    "order": 1,
+                    "path_role": "REQUIRED",
+                    "owner": "example-authority",
+                    "downstream": [],
+                    "evidence": [{"path": "src/example.py", "symbol": "run"}],
+                }
+            ],
             "migration_head": "0001",
             "comment_policy": {
                 "ratchet": "GIT_MERGE_BASE_NONINCREASING",
@@ -824,9 +930,7 @@ class DocumentationRealityTests(unittest.TestCase):
                     "dependency_snapshot_digest": "sha256:" + "d" * 64,
                     "qualification_report": {
                         "run_id": "p0-" + "2" * 32,
-                        "artifact_root": (
-                            "novel-forge-p0-000000000000-" + "2" * 32
-                        ),
+                        "artifact_root": ("novel-forge-p0-000000000000-" + "2" * 32),
                         "artifact": "p0-backend-qualification-" + "0" * 40 + ".json",
                         "sha256": "sha256:" + "e" * 64,
                         "retention": "EXTERNAL_QUALIFICATION_ARTIFACT",
@@ -895,9 +999,7 @@ class DocumentationRealityTests(unittest.TestCase):
                                 "resource_count": 1,
                                 "remaining_resource_count": 0,
                                 "run_id": "p0-" + "2" * 32,
-                                "compose_project": (
-                                    "nf-p0-" + "2" * 32 + "-runtime"
-                                ),
+                                "compose_project": ("nf-p0-" + "2" * 32 + "-runtime"),
                                 "receipt": (
                                     "compose-resource-ownership-nf-p0-"
                                     + "2" * 32
@@ -921,9 +1023,19 @@ class DocumentationRealityTests(unittest.TestCase):
                     "concept": "example",
                     "fact_type": "CURRENT_RUNTIME_FACT",
                     "owner": "example owner",
-                    "status": "QUALIFIED",
-                    "implementation": [{"path": "src/example.py", "symbol": "run"}],
-                    "runtime_entries": [{"path": "src/example.py", "symbol": "run"}],
+                    "qualification_state": "QUALIFIED",
+                    "production_entries": [{"path": "src/example.py", "symbol": "run"}],
+                    "application": [{"path": "src/example.py", "symbol": "run"}],
+                    "domain_symbols": [{"path": "src/example.py", "symbol": "run"}],
+                    "commands_operations": [
+                        {"path": "src/example.py", "symbol": "run"}
+                    ],
+                    "state_ownership": {
+                        "owned_state": ["example result"],
+                        "write_rule": "run is the only writer.",
+                        "evidence": [{"path": "src/example.py", "symbol": "run"}],
+                    },
+                    "mutation_boundary": [{"path": "src/example.py", "symbol": "run"}],
                     "persistence": [
                         {"path": "migrations/v0001.py", "locator": "MIGRATION_ID"}
                     ],
@@ -934,14 +1046,28 @@ class DocumentationRealityTests(unittest.TestCase):
                             "locator": 'MIGRATION_ID = "0001"',
                         }
                     ],
-                    "qualification": [
-                        {"path": "tests/test_example.py", "symbol": "test_run"}
-                    ],
+                    "external_effects": {
+                        "mode": "NONE",
+                        "rule": "The example performs no external I/O.",
+                        "evidence": [],
+                    },
+                    "upstream_dependencies": [],
+                    "downstream_consumers": [],
+                    "tests": [{"path": "tests/test_example.py", "symbol": "test_run"}],
                     "qualification_run_ids": ["example-qualification"],
                     "proof_ceiling": "ENGINEERING_QUALIFIED",
                 }
             ],
-            "negative_boundaries": [],
+            "negative_boundaries": [
+                {
+                    "classification": "PROOF_BOUNDARY",
+                    "claim": "The fixture does not prove production behavior.",
+                    "value": False,
+                    "evidence": [
+                        {"path": "tests/test_example.py", "symbol": "test_run"}
+                    ],
+                }
+            ],
         }
         inventory_path = root / "architecture" / "reality-evidence.json"
         inventory_path.parent.mkdir(parents=True)

@@ -60,7 +60,7 @@
       {
         "skill_ref": "agent-loop-governance",
         "version": "agent-loop-governance-v1",
-        "content_hash": "sha256:23499c4d3a9bf77f0db65f120622e94c7f992dcdfa07fc5ff0f8abf06497a4ee",
+        "content_hash": "sha256:caf8f32bda87c6e48b3c4514133646de94c714a3222e0c86193ba7517b564fcc",
         "required": true,
         "input_contract_ref": "schema:execution-input:agent-workspace-execute:v1",
         "output_contract_ref": "schema:execution-output:agent-workspace-execute:v1",

@@ -28,7 +28,8 @@ def _fixture_repository(root: Path) -> None:
     )
     _write(root / "scripts/sync_claude_skills.py", "pass\n")
     manifest = {
-        "schema_version": "novel-forge.ai-instruction-surface.v1",
+        "schema_version": "novel-forge.ai-instruction-surface.v2",
+        "forbidden_terms": ["Retired Runtime"],
         "sources": [
             {
                 "id": "coding-agent-policy",
@@ -128,6 +129,16 @@ def test_instruction_identity_changes_with_policy_content(tmp_path: Path) -> Non
     assert before["instruction_identity_sha256"] != after["instruction_identity_sha256"]
 
 
+def test_retired_instruction_term_is_rejected(tmp_path: Path) -> None:
+    _fixture_repository(tmp_path)
+    _write(tmp_path / "AGENTS.md", "# Policy\n\nUse Retired Runtime.\n")
+
+    report = check_instruction_surface(tmp_path)
+
+    assert report["status"] == "FAIL"
+    assert report["errors"] == ["retired instruction term: AGENTS.md:Retired Runtime"]
+
+
 def test_generated_instruction_copy_must_match_its_source(tmp_path: Path) -> None:
     _fixture_repository(tmp_path)
     _write(tmp_path / ".claude/skills/example/SKILL.md", "drift\n")
@@ -135,6 +146,4 @@ def test_generated_instruction_copy_must_match_its_source(tmp_path: Path) -> Non
     report = check_instruction_surface(tmp_path)
 
     assert report["status"] == "FAIL"
-    assert report["errors"] == [
-        "generated instruction copy drifts: .claude/skills"
-    ]
+    assert report["errors"] == ["generated instruction copy drifts: .claude/skills"]
