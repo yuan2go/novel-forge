@@ -852,9 +852,17 @@ def _dedupe_identities(candidate: ContextCandidate) -> tuple[tuple[str, str], ..
     physical_identity = candidate.asset_version_id
     source_identity = candidate.source_identity
     if representation_scope:
-        physical_identity = f"{physical_identity}\u0000{representation_scope}"
+        physical_identity = json.dumps(
+            [physical_identity, representation_scope],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
         if source_identity:
-            source_identity = f"{source_identity}\u0000{representation_scope}"
+            source_identity = json.dumps(
+                [source_identity, representation_scope],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
     values = (
         ("PHYSICAL_IDENTITY", physical_identity),
         ("SOURCE_IDENTITY", source_identity),

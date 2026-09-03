@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from novel_forge.modules.context_builder.domain import (
@@ -414,6 +416,40 @@ def test_dedup_preserves_distinct_logical_projections_from_one_source() -> None:
         "chapter_schedule_row",
     ]
     assert selection.deduplications == ()
+
+
+def test_dedup_composite_identity_is_jsonb_safe_and_replayable() -> None:
+    policy = compile_effective_context_policy(
+        (_policy("a", allowed=("knowledge_pack",)),)
+    ).effective_policy
+    selection = select_context_candidates(
+        project_id="project-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate(
+                "knowledge-v1",
+                "knowledge_pack",
+                relevance_score=0.5,
+                semantic_representation_identity="representation:shared",
+            ),
+            _candidate(
+                "knowledge-v1",
+                "knowledge_pack",
+                relevance_score=0.9,
+                semantic_representation_identity="representation:shared",
+            ),
+        ),
+        token_budget=100,
+        effective_policy=policy,
+    )
+
+    receipt = selection.deduplications[0]
+    assert receipt["equivalence_basis"] == "PHYSICAL_IDENTITY"
+    assert json.loads(receipt["equivalence_identity"]) == [
+        "knowledge-v1",
+        "representation:shared",
+    ]
+    assert "\u0000" not in receipt["equivalence_identity"]
 
 
 @pytest.mark.parametrize(
