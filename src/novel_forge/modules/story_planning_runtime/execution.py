@@ -4323,6 +4323,12 @@ class PostgresPlanningExecutionPreparer:
                 separators=(",", ":"),
             )
             projection_hash = canonical_hash(value)
+            semantic_value = (
+                value.get("content")
+                if isinstance(value, Mapping) and "content" in value
+                else value
+            )
+            semantic_hash = canonical_hash(semantic_value)
             candidates.append(
                 ContextCandidate(
                     asset_version_id=asset_version_id,
@@ -4339,7 +4345,7 @@ class PostgresPlanningExecutionPreparer:
                         f"{logical_kind}:{source_identity}"
                     ),
                     semantic_representation_identity=(
-                        f"provider-context-view-v2:{logical_kind}:{projection_hash}"
+                        f"provider-context-view-v2:{semantic_hash}"
                     ),
                     safe_summary=rendered,
                     compression_method="authority_projection",

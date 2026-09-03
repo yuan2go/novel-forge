@@ -382,6 +382,40 @@ def test_dedup_uses_all_identities_and_transitive_components() -> None:
     }
 
 
+def test_dedup_preserves_distinct_logical_projections_from_one_source() -> None:
+    policy = compile_effective_context_policy(
+        (_policy("a", allowed=("chapter_group_plan", "chapter_schedule_row")),)
+    ).effective_policy
+    selection = select_context_candidates(
+        project_id="project-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate(
+                "chapter-group-v1",
+                "chapter_group_plan",
+                source_identity="chapter-group-v1",
+                logical_narrative_identity="logical:chapter-group-plan",
+                semantic_representation_identity="representation:chapter-group-plan",
+            ),
+            _candidate(
+                "chapter-group-v1",
+                "chapter_schedule_row",
+                source_identity="chapter-group-v1",
+                logical_narrative_identity="logical:chapter-schedule-row:1",
+                semantic_representation_identity="representation:chapter-schedule-row:1",
+            ),
+        ),
+        token_budget=100,
+        effective_policy=policy,
+    )
+
+    assert [item.logical_context_kind for item in selection.selected] == [
+        "chapter_group_plan",
+        "chapter_schedule_row",
+    ]
+    assert selection.deduplications == ()
+
+
 @pytest.mark.parametrize(
     ("changes", "reason"),
     (

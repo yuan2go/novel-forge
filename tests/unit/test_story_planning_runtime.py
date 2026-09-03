@@ -2159,13 +2159,13 @@ def test_planning_context_rejects_duplicate_authority_representation() -> None:
     command = _command("book_plan.generate")
     selected_inputs = [
         {
-            "role": role,
-            "asset_version_id": "shared-v1",
+            "role": "story_foundation",
+            "asset_version_id": asset_version_id,
             "asset_type": "story_foundation",
             "content_hash": HASH,
             "content": {"premise": "same Authority source"},
         }
-        for role in ("story_foundation", "book_design")
+        for asset_version_id in ("shared-v1", "shared-v2")
     ]
     content = {
         "schema_version": "novelos.planning_context_bundle.v1",
@@ -2180,7 +2180,7 @@ def test_planning_context_rejects_duplicate_authority_representation() -> None:
         "token_budget": 16_000,
     }
 
-    with pytest.raises(ValueError, match="required context asset types missing"):
+    with pytest.raises(KernelError, match="dropped or deduplicated input"):
         PostgresPlanningExecutionPreparer._planning_context_manifest(
             command=command,
             selected_inputs=selected_inputs,

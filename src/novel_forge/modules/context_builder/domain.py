@@ -848,9 +848,16 @@ def select_context_candidates(
 
 
 def _dedupe_identities(candidate: ContextCandidate) -> tuple[tuple[str, str], ...]:
+    representation_scope = candidate.semantic_representation_identity
+    physical_identity = candidate.asset_version_id
+    source_identity = candidate.source_identity
+    if representation_scope:
+        physical_identity = f"{physical_identity}\u0000{representation_scope}"
+        if source_identity:
+            source_identity = f"{source_identity}\u0000{representation_scope}"
     values = (
-        ("PHYSICAL_IDENTITY", candidate.asset_version_id),
-        ("SOURCE_IDENTITY", candidate.source_identity),
+        ("PHYSICAL_IDENTITY", physical_identity),
+        ("SOURCE_IDENTITY", source_identity),
         ("LOGICAL_NARRATIVE", candidate.logical_narrative_identity),
         ("SEMANTIC_REPRESENTATION", candidate.semantic_representation_identity),
     )
