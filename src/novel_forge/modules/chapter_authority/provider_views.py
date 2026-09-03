@@ -1235,8 +1235,6 @@ def _build_planning_context_view(
 def _planning_accepted_through_chapter(
     context_bundle: Mapping[str, Any], raw_inputs: Iterable[Mapping[str, Any]]
 ) -> int:
-    # INVARIANT: project only frozen accepted-boundary evidence; mutable current
-    # state must never change a persisted Planning provider view.
     observed: list[tuple[str, int]] = []
 
     def observe(source: str, value: Any) -> None:

@@ -106,24 +106,40 @@ configured token budget; the default final retrieval limit remains 24.
 
 ## Context governance and Provider admission
 
-Context assembly has one governed seam. It compiles the applicable ContextProfile,
-ProductionStageProfile, caller limits and frozen Capability Pack policy with allowlist
-intersection, deny-wins, required-source union and strictest-limit semantics. Eligibility
-and deterministic representation deduplication precede ranking and consumption of total,
-section, bucket and Context-class budgets. Optional projections may use an explicitly
-allowed structured-element truncation; required or protected material fails closed when
-it cannot fit. ContextBundle v8 and NarrativeContextManifest v4 retain every policy
-identity, selection, rejection, deduplication, truncation, provenance and estimate.
-Historical v7 manifests replay with their frozen v7 algorithm and are not recompiled.
+Context assembly has one governed seam. A ContextBundle compiles ContextProfile,
+ProductionStageProfile and caller limits; Provider preflight then intersects that frozen
+receipt with the Capability Pack and route policy. The resulting five inputs use logical
+kind allowlist intersection, physical-type admission, deny-wins, required-source union
+and strictest-limit semantics. Planning applies the same compiler to the bounded
+`provider-context-view-v2` projection rather than treating the larger stored input as
+prompt material. Eligibility and deterministic four-identity representation deduplication
+precede ranking and consumption of total, section, bucket and Context-class budgets.
+The Chapter request admission boundary freezes one Book identity and one accepted-state
+boundary onto every candidate; Context assembly validates those identities but does not
+invent Authority scope.
+Optional projections may use an explicitly allowed structured-element truncation;
+required or protected material fails closed when it cannot fit. ContextBundle v8 and
+NarrativeContextManifest v4 retain every policy identity, selection, rejection,
+deduplication, truncation, provenance and estimate. Historical v7 and typed legacy
+manifests use their frozen validators and are not recompiled.
 
 Context token estimates are selection evidence, not a Provider hard bound. Before a real
 Provider ExternalEffect exists, Production Execution renders the exact request, binds its
 hash to the route/provider/model and applies a versioned accounting contract covering the
-complete input, framing, output reserve and safety margin. The remote adapter sends that
-same admitted envelope. An unknown meter, route mismatch, changed serialization or limit
-overflow creates no Provider ExternalEffect. Admission manifests retain hashes and
-component identities rather than duplicating prompt or raw Source bodies; Source
-Intelligence reconstructs transient Source bytes and must reproduce the admitted hash.
+complete input, framing, output reserve and safety margin. Context selection limits and
+complete-request admission limits are distinct: normal execution admits against the
+route/model window, while Book Opening also applies its immutable per-call token ceiling.
+The admitted exact or conservative total becomes the Provider budget reservation. The
+remote adapter sends that same admitted envelope. Agent, Planning and Chapter paths all
+perform this preflight before effect creation. An unknown meter, route mismatch, changed
+serialization or limit overflow creates no Provider ExternalEffect. Admission manifests
+retain hashes and component identities rather than duplicating prompt or raw Source
+bodies; Source Intelligence reconstructs transient Source bytes and must reproduce the
+admitted hash.
+
+The current migration head advances only the two read-only Context/MKAOS usage views to
+recognize bundle v7/v8 and manifest v3/v4. It adds no writable Context state or alternate
+Narrative Authority; the machine projection owns the exact migration identity.
 
 ## Executable novel-production chain
 

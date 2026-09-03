@@ -914,8 +914,6 @@ def _validate_request(request: SingleChapterRequest) -> None:
 
 
 def _bind_context_candidate_scope(request: SingleChapterRequest) -> SingleChapterRequest:
-    # INVARIANT: legacy/direct candidates gain scope only at the request-producing
-    # admission boundary; the Context assembler never invents Authority scope.
     declared_books = {
         str(item.get("book_id") or "").strip()
         for item in request.context_candidates

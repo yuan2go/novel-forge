@@ -279,8 +279,6 @@ class ProductionPreparationService:
             ),
             "canon_snapshot_version": version_refs.get("canon_snapshot_version", ""),
         }
-        # INVARIANT: evidence-only assets remain frozen without model exposure;
-        # producers, not the assembler, bind every candidate to execution scope.
         candidates = tuple(
             self._context_candidate(
                 item,
