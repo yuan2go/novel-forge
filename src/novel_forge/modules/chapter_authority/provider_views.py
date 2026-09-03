@@ -48,6 +48,15 @@ _NARRATIVE_FOUNDATION_GENERATORS = {
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
 _MAX_PLANNING_STRING_CHARACTERS = 2_000
 _MAX_PLANNING_LIST_ITEMS = 12
+_RETRIEVAL_SELECTOR_KEYS = frozenset(
+    {
+        "entity_ids",
+        "character_ids",
+        "relationship_ids",
+        "arc_plan_version_ids",
+        "obligation_ids",
+    }
+)
 _PLANNING_ROLE_FIELDS: dict[str, tuple[str, ...]] = {
     "book_plan": (
         "objective",
@@ -156,6 +165,45 @@ _OPERATIONAL_KEYS = {
 
 def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
 
+    if stage == "retrieval_query_expansion":
+        boundary = inputs.get("accepted_boundary")
+        coverage = inputs.get("coverage")
+        policy = inputs.get("policy")
+        prior_rounds = inputs.get("prior_rounds")
+        allowed_selectors = inputs.get("allowed_retrieval_selectors")
+        if (
+            not isinstance(boundary, Mapping)
+            or not isinstance(coverage, Mapping)
+            or coverage.get("sufficient") is not False
+            or not isinstance(policy, Mapping)
+            or not isinstance(prior_rounds, list)
+            or len(prior_rounds) > 3
+            or not isinstance(allowed_selectors, Mapping)
+            or any(key not in _RETRIEVAL_SELECTOR_KEYS for key in allowed_selectors)
+            or any(
+                not isinstance(values, list) or len(values) > 256
+                for values in allowed_selectors.values()
+            )
+        ):
+            raise KernelError(
+                "RETRIEVAL_EXPANSION_PROVIDER_TASK_INVALID",
+                "query expansion requires bounded frozen coverage and campaign policy",
+            )
+        return _task(
+            stage,
+            accepted_boundary=_compact(boundary),
+            intent_fingerprint=str(inputs.get("intent_fingerprint") or ""),
+            memo_fingerprint=str(inputs.get("memo_fingerprint") or ""),
+            mission=_compact(inputs.get("mission") or {}),
+            memo=_compact(inputs.get("memo") or {}),
+            coverage=_compact(coverage),
+            policy=_compact(policy),
+            prior_rounds=_compact(prior_rounds),
+            allowed_retrieval_dimensions=_compact(
+                inputs.get("allowed_retrieval_dimensions") or []
+            ),
+            allowed_retrieval_selectors=_compact(allowed_selectors),
+        )
     if stage == "retrieval":
         texts = inputs.get("texts")
         if (
@@ -474,6 +522,27 @@ def build_provider_context_view(
     task_view: Mapping[str, Any],
 ) -> dict[str, Any]:
 
+    if stage == "retrieval_query_expansion":
+        boundary = context_bundle.get("accepted_boundary")
+        if (
+            not isinstance(boundary, Mapping)
+            or dict(boundary) != dict(task_view.get("accepted_boundary") or {})
+            or str(context_bundle.get("memo_fingerprint") or "")
+            != str(task_view.get("memo_fingerprint") or "")
+        ):
+            raise KernelError(
+                "RETRIEVAL_EXPANSION_PROVIDER_CONTEXT_INVALID",
+                "query expansion context must be the exact frozen ChapterMemo boundary",
+            )
+        return {
+            "contract_version": "provider-context-view-v2",
+            "schema_version": "novelos.retrieval_expansion_context.v1",
+            "stage": stage,
+            "source_isolation": "FROZEN_MISSION_MEMO_COVERAGE_ONLY",
+            "accepted_boundary": _compact(boundary),
+            "memo_fingerprint": str(context_bundle.get("memo_fingerprint") or ""),
+            "protected": True,
+        }
     if stage == "retrieval":
         return {
             "contract_version": "provider-context-view-v2",

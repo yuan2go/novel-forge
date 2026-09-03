@@ -333,10 +333,12 @@ class ChapterHandlerRegistry:
         *,
         model_effects_required: bool = False,
         semantic_retrieval_available: bool = False,
+        agentic_retrieval_available: bool = False,
     ) -> None:
         self._handlers: dict[ChapterNode, ChapterNodeHandler] = {}
         self.model_effects_required = model_effects_required
         self.semantic_retrieval_available = semantic_retrieval_available
+        self.agentic_retrieval_available = agentic_retrieval_available
 
     def register(self, node: ChapterNode, handler: ChapterNodeHandler) -> None:
         if node in self._handlers:

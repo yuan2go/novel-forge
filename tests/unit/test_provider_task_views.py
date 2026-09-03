@@ -58,6 +58,37 @@ def _narrative_intelligence() -> dict[str, object]:
     }
 
 
+def test_retrieval_expansion_view_exposes_only_frozen_query_scope() -> None:
+    view = build_provider_task_view(
+        "retrieval_query_expansion",
+        {
+            "accepted_boundary": {"accepted_through_chapter": 40},
+            "intent_fingerprint": "sha256:" + "1" * 64,
+            "memo_fingerprint": "sha256:" + "2" * 64,
+            "mission": {"objective": "pay the accepted oath"},
+            "memo": {"retrieval_queries": ["accepted oath"]},
+            "coverage": {
+                "sufficient": False,
+                "missing": {"fact_ids": ["fact:oath"]},
+            },
+            "policy": {"total_round_limit": 3},
+            "prior_rounds": [{"round_number": 0}],
+            "allowed_retrieval_dimensions": ["entity_ids"],
+            "allowed_retrieval_selectors": {
+                "entity_ids": ["entity:oath"],
+            },
+            "coverage_contract": {"database_url": "must-not-cross-view"},
+            "candidate_asset_versions": ["asset-version:must-not-cross-view"],
+        },
+    )
+
+    assert view["accepted_boundary"] == {"accepted_through_chapter": 40}
+    assert view["allowed_retrieval_selectors"] == {"entity_ids": ["entity:oath"]}
+    assert "coverage_contract" not in view
+    assert "candidate_asset_versions" not in view
+    assert "database_url" not in json.dumps(view, sort_keys=True)
+
+
 def _plan() -> dict:
     return {
         "chapter": 31,

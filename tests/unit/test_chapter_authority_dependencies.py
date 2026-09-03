@@ -237,6 +237,12 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "gpt-test",
         )
         self.assertEqual(
+            execution.gateway.routes[
+                "retrieval_query_expansion"
+            ].model_profile.model_id,
+            "gpt-test",
+        )
+        self.assertEqual(
             execution.gateway.routes["retrieval"].model_profile.model_id,
             "text-embedding-test",
         )

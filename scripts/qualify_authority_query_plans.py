@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Representative-scale PostgreSQL planner qualification for a disposable DB."""
+
 from __future__ import annotations
 
 import argparse
@@ -23,6 +24,7 @@ ROW_COUNTS = {
     "authority_book_production": 10_000,
     "authority_legacy_migration_item": 100_000,
     "authority_runtime_job": 100_000,
+    "authority_narrative_retrieval_document": 100_000,
 }
 
 
@@ -51,10 +53,13 @@ def _qualify_plan(
     index_nodes = [
         node
         for node in relation_nodes
-        if node.get("Node Type") in {"Index Scan", "Index Only Scan", "Bitmap Index Scan"}
+        if node.get("Node Type")
+        in {"Index Scan", "Index Only Scan", "Bitmap Index Scan"}
         or node.get("Index Name")
     ]
-    sequential = [node for node in relation_nodes if node.get("Node Type") == "Seq Scan"]
+    sequential = [
+        node for node in relation_nodes if node.get("Node Type") == "Seq Scan"
+    ]
     if not index_nodes or sequential:
         raise RuntimeError(
             f"planner qualification failed for {name}: "
@@ -68,15 +73,21 @@ def _qualify_plan(
             {str(node["Index Name"]) for node in index_nodes if node.get("Index Name")}
         ),
         "node_types": sorted({str(node["Node Type"]) for node in nodes}),
-        "actual_rows": sum(int(node.get("Actual Rows") or 0) for node in relation_nodes),
+        "actual_rows": sum(
+            int(node.get("Actual Rows") or 0) for node in relation_nodes
+        ),
         "rows_removed_by_filter": sum(
             int(node.get("Rows Removed by Filter") or 0) for node in relation_nodes
         ),
         "sort_present": any(node.get("Node Type") == "Sort" for node in nodes),
         "planning_time_ms": float(plan.get("Planning Time") or 0),
         "execution_time_ms": float(plan.get("Execution Time") or 0),
-        "shared_hit_blocks": sum(int(node.get("Shared Hit Blocks") or 0) for node in nodes),
-        "shared_read_blocks": sum(int(node.get("Shared Read Blocks") or 0) for node in nodes),
+        "shared_hit_blocks": sum(
+            int(node.get("Shared Hit Blocks") or 0) for node in nodes
+        ),
+        "shared_read_blocks": sum(
+            int(node.get("Shared Read Blocks") or 0) for node in nodes
+        ),
         "plan": plan,
     }
 
@@ -84,7 +95,9 @@ def _qualify_plan(
 def qualify(database_url: str) -> dict[str, Any]:
     migration = get_migration_status(database_url)
     if not migration["ok"]:
-        raise RuntimeError("release query qualification requires the current migration head")
+        raise RuntimeError(
+            "release query qualification requires the current migration head"
+        )
     token = f"rq-{uuid4().hex[:12]}"
     started = time.monotonic()
     with psycopg.connect(database_url) as connection:
@@ -228,8 +241,38 @@ def qualify(database_url: str) -> dict[str, Any]:
                 governance,content,content_hash,schema_version
             )
             SELECT %(token)s || ':version:' || value,%(token)s || ':asset:' || value,
-                   1,'IMPORTED','PENDING_EVALUATION','CLEAR','{}'::jsonb,
+                   1,'ACTIVE','ELIGIBLE','CLEAR','{}'::jsonb,
                    'sha256:' || repeat('b',64),'rq_asset.schema.v1'
+            FROM generate_series(1,100000) AS value
+            """,
+            {"token": token},
+        )
+        connection.execute(
+            """
+            INSERT INTO authority_narrative_retrieval_document(
+                retrieval_document_id,project_id,book_id,
+                source_asset_version_id,source_artifact_type,
+                accepted_from_chapter,accepted_to_chapter,memory_layer,
+                content_text,entity_ids,relationship_ids,character_ids,
+                arc_plan_version_ids,obligation_ids,temporal_coordinate,
+                metadata,projection_hash,created_by_operation_id
+            )
+            SELECT %(token)s || ':retrieval:' || value,
+                   %(token)s || ':project:' || (value %% 1000),
+                   %(token)s || ':retrieval-book:' || (value %% 1000),
+                   %(token)s || ':version:' || value,'rq_asset',
+                   (value %% 1000)+1,NULL,'L' || (value %% 10),
+                   CASE WHEN value %% 101=0 THEN 'rare oath bridge evidence '
+                        ELSE 'bounded accepted narrative evidence ' END || value,
+                   jsonb_build_array('entity:' || (value %% 97)),
+                   jsonb_build_array('relationship:' || (value %% 53)),
+                   jsonb_build_array('character:' || (value %% 89)),
+                   jsonb_build_array('arc:' || (value %% 20)),
+                   jsonb_build_array('obligation:' || (value %% 41)),
+                   jsonb_build_object('accepted_chapter',(value %% 1000)+1),
+                   jsonb_build_object('projection_kind','query_plan_fixture'),
+                   'sha256:' || md5(value::text) || md5((value+1)::text),
+                   %(token)s || ':op:' || value
             FROM generate_series(1,100000) AS value
             """,
             {"token": token},
@@ -317,6 +360,22 @@ def qualify(database_url: str) -> dict[str, Any]:
                       AND status='NEEDS_REVIEW'
                     ORDER BY updated_at,migration_item_id LIMIT 10""",
             ),
+            (
+                "accepted_retrieval_discovery",
+                "authority_narrative_retrieval_document",
+                f"""SELECT retrieval_document_id
+                    FROM authority_narrative_retrieval_document
+                    WHERE project_id='{token}:project:1'
+                      AND book_id='{token}:retrieval-book:1'
+                      AND accepted_from_chapter BETWEEN 0 AND 1000
+                      AND (accepted_to_chapter IS NULL OR accepted_to_chapter>=1000)
+                      AND (
+                        search_vector @@ plainto_tsquery('simple','rare oath')
+                        OR entity_ids ? 'entity:1'
+                      )
+                    ORDER BY accepted_from_chapter DESC,retrieval_document_id
+                    LIMIT 24""",
+            ),
         )
         plans = [
             _qualify_plan(connection, name=name, relation=relation, query=query)
@@ -349,10 +408,13 @@ def main() -> int:
     if not args.database_url:
         raise SystemExit("NOVEL_FORGE_DATABASE_URL or --database-url is required")
     result = qualify(args.database_url)
-    commit_sha = args.commit_sha or subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], text=True
-    ).strip()
-    if len(commit_sha) != 40 or any(character not in "0123456789abcdef" for character in commit_sha):
+    commit_sha = (
+        args.commit_sha
+        or subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    )
+    if len(commit_sha) != 40 or any(
+        character not in "0123456789abcdef" for character in commit_sha
+    ):
         raise SystemExit("--commit-sha must be a full lowercase Git SHA")
     result["tested_sha"] = commit_sha
     encoded = json.dumps(result, indent=2, sort_keys=True)

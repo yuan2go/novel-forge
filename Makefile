@@ -11,7 +11,7 @@ QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check historical-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release longform-retrieval-benchmark p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check historical-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -37,6 +37,7 @@ help:
 	@echo "make authority-postgres-test - run non-skippable Authority PostgreSQL tests"
 	@echo "make authority-compose-config-check - validate Authority Compose"
 	@echo "make authority-query-plan-release - run representative-scale real Planner proof"
+	@echo "make longform-retrieval-benchmark - write synthetic retrieval engineering evidence to LONGFORM_RETRIEVAL_EVIDENCE_PATH"
 	@echo "make p0-backend-list-gates - print the canonical backend gate list as JSON"
 	@echo "make p0-backend-static - run backend-only static and manifest checks"
 	@echo "make p0-backend-qualification - run exact-SHA backend qualification without Admin UI"
@@ -139,6 +140,10 @@ authority-query-plan-release:
 	@test -n "$${NOVEL_FORGE_DATABASE_URL:-}" || { echo "NOVEL_FORGE_DATABASE_URL is required; fixed qualification ports are forbidden" >&2; exit 2; }
 	NOVEL_FORGE_DATABASE_URL="$${NOVEL_FORGE_DATABASE_URL}" \
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/qualify_authority_query_plans.py
+
+longform-retrieval-benchmark:
+	@test -n "$${LONGFORM_RETRIEVAL_EVIDENCE_PATH:-}" || { echo "LONGFORM_RETRIEVAL_EVIDENCE_PATH is required" >&2; exit 2; }
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_longform_retrieval_benchmark.py --output "$${LONGFORM_RETRIEVAL_EVIDENCE_PATH}"
 
 p0-backend-list-gates:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_p0_backend_qualification.py --list-gates

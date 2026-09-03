@@ -54,6 +54,7 @@ REQUIRED_CAPABILITIES = {
     "mkaos.template.extract",
     "retrieval.embed",
     "retrieval.rerank",
+    "retrieval.query.expand",
     "longform.recap.analyze",
     "longform.plan_vs_actual.judge",
     "longform.arc_closure.judge",
@@ -308,6 +309,7 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
         for capability_id in (
             CapabilityId.AGENT_WORKSPACE_EXECUTE,
             CapabilityId.RETRIEVAL_EMBED,
+            CapabilityId.RETRIEVAL_QUERY_EXPAND,
         ):
             with self.subTest(capability_id=capability_id.value):
                 definition = registry.require_backend(

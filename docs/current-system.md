@@ -92,6 +92,18 @@ accepted-fact projection.
 | Obligation | trajectory | setup, due-window and payoff state across accepted chapters |
 | Reader State | evidence | may motivate a proposal but cannot directly rewrite truth or plans |
 
+## Bounded long-form retrieval
+
+Retrieval binds one campaign to the exact project, book, accepted-through chapter,
+ExecutionIntent, Memo and policy identity. Round zero uses the accepted selective
+retrieval projection. If deterministic coverage still identifies required evidence,
+Production Execution may return a typed query-expansion proposal through the existing
+ExternalEffect path. Deterministic policy validates every query and selector, freezes at
+most three append-only rounds, and alone decides sufficiency and termination. The model
+cannot name admissible AssetVersions or expand the accepted boundary. Context Authority
+admits only the frozen union after coverage is sufficient and continues to enforce the
+configured token budget; the default final retrieval limit remains 24.
+
 ## Executable novel-production chain
 
 The current production-reachable chain is a set of Authority transitions, not one

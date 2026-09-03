@@ -1,15 +1,32 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
+from decimal import Decimal
 import hashlib
 import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.production_retrieval import (
+    build_campaign_final_query_plan,
+    build_expanded_retrieval_query_plan,
     build_retrieval_result,
+    discover_accepted_retrieval_candidates,
     freeze_retrieval_candidate_union,
     load_frozen_retrieval_candidate_union,
+)
+from novel_forge.modules.context_builder.retrieval_campaign import (
+    RetrievalCampaignPolicy,
+    decide_retrieval_campaign_transition,
+    evaluate_retrieval_coverage,
+    merge_retrieval_round_documents,
+    validate_retrieval_expansion_plan,
+)
+from novel_forge.modules.context_builder.retrieval_campaign_store import (
+    complete_retrieval_campaign,
+    freeze_retrieval_round,
+    load_retrieval_rounds,
+    start_retrieval_campaign,
 )
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -76,7 +93,6 @@ from novel_forge.modules.production_preparation.policies import (
 
 
 class DeterministicFixtureChapterProvider:
-
     provider_id = "deterministic_chapter_fixture_v1"
     external_effect_backed = False
 
@@ -86,6 +102,9 @@ class DeterministicFixtureChapterProvider:
         *,
         stage: str,
         payload: dict[str, Any],
+        reservation_amount: str | None = None,
+        reservation_tokens: int | None = None,
+        pre_send_assertion: Any | None = None,
     ) -> ModelProviderResult:
         if stage == "draft":
             plan = payload["plan"]
@@ -140,8 +159,6 @@ class DeterministicFixtureChapterProvider:
                 "target_content_hash": str(revision.get("content_hash", "")),
             }
         else:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}"
             )
@@ -398,6 +415,7 @@ class _MemoHandler:
 class _RetrievalHandler:
     provider: ChapterModelPort
     semantic_provider_bound: bool = False
+    expansion_provider_bound: bool = False
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
@@ -518,25 +536,370 @@ class _RetrievalHandler:
             )
         return _output(
             ChapterNode.RETRIEVAL,
-            build_retrieval_result(
-                project_id=request.project_id,
-                book_id=str(
-                    plan.content.get("book_id") or f"book:{request.project_id}"
+            self._run_campaign(
+                request=request,
+                plan=plan,
+                intent=intent,
+                memo=memo,
+                query_plan=query_plan,
+                frozen_union=frozen_union,
+                discovery_rejections=tuple(
+                    dict(item) for item in snapshot.get("rejected_documents") or ()
                 ),
+            ),
+        )
+
+    def _run_campaign(
+        self,
+        *,
+        request: ChapterHandlerRequest,
+        plan: ChapterInputAsset,
+        intent: ChapterInputAsset,
+        memo: ChapterInputAsset,
+        query_plan: dict[str, Any],
+        frozen_union: Any,
+        discovery_rejections: tuple[dict[str, Any], ...],
+    ) -> dict[str, Any]:
+        book_id = str(plan.content.get("book_id") or f"book:{request.project_id}")
+        policy = RetrievalCampaignPolicy(
+            **dict(query_plan.get("campaign_policy") or {})
+        )
+        coverage_contract = dict(query_plan.get("coverage_contract") or {})
+        campaign = start_retrieval_campaign(
+            request.database_url,
+            project_id=request.project_id,
+            book_id=book_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            worker_id=request.worker_id,
+            chapter=int(plan.content.get("chapter") or 0),
+            intent_asset_version_id=intent.asset_version_id,
+            memo_asset_version_id=memo.asset_version_id,
+            intent_fingerprint=str(intent.content.get("intent_fingerprint") or ""),
+            memo_fingerprint=str(memo.content.get("memo_fingerprint") or ""),
+            accepted_boundary=dict(intent.content.get("accepted_boundary") or {}),
+            policy=policy,
+            coverage_contract=coverage_contract,
+        )
+        rounds = load_retrieval_rounds(
+            request.database_url, campaign_id=str(campaign["campaign_id"])
+        )
+        if not rounds:
+            round_zero_result = build_retrieval_result(
+                project_id=request.project_id,
+                book_id=book_id,
                 intent_asset_version_id=intent.asset_version_id,
                 memo_asset_version_id=memo.asset_version_id,
                 query_plan=query_plan,
                 documents=frozen_union.documents,
-                discovery_rejections=tuple(
-                    dict(item) for item in snapshot.get("rejected_documents") or ()
-                ),
+                discovery_rejections=discovery_rejections,
                 semantic_status=frozen_union.semantic_status,
                 query_embedding=frozen_union.query_embedding,
                 query_embedding_evidence=frozen_union.query_embedding_evidence,
                 candidate_snapshot_id=frozen_union.candidate_snapshot_id,
                 candidate_snapshot_hash=frozen_union.snapshot_hash,
-            ),
+            )
+            coverage_before = evaluate_retrieval_coverage(
+                contract=coverage_contract, documents=()
+            )
+            coverage_after = evaluate_retrieval_coverage(
+                contract=coverage_contract,
+                documents=round_zero_result["selected_documents"],
+            )
+            freeze_retrieval_round(
+                request.database_url,
+                campaign_id=str(campaign["campaign_id"]),
+                project_id=request.project_id,
+                book_id=book_id,
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                round_number=0,
+                query_plan=query_plan,
+                documents=frozen_union.documents,
+                rejected_documents=discovery_rejections,
+                semantic_status=frozen_union.semantic_status,
+                coverage_before=coverage_before,
+                coverage_after=coverage_after,
+                new_evidence_count=len(frozen_union.documents),
+                provider_evidence=frozen_union.query_embedding_evidence,
+                external_effect_id=_external_effect_id(
+                    frozen_union.query_embedding_evidence
+                ),
+                **_provider_usage(frozen_union.query_embedding_evidence),
+            )
+            rounds = load_retrieval_rounds(
+                request.database_url, campaign_id=str(campaign["campaign_id"])
+            )
+
+        termination_reason = str(campaign.get("termination_reason") or "")
+        while not termination_reason:
+            coverage = dict(rounds[-1]["coverage_after"])
+            usage = _campaign_usage(rounds)
+            decision = decide_retrieval_campaign_transition(
+                coverage=coverage,
+                policy=policy,
+                completed_rounds=len(rounds),
+                total_queries=sum(
+                    len(item["query_plan"].get("queries") or ()) for item in rounds
+                ),
+                provider_calls=usage["provider_calls"],
+                model_tokens=usage["model_tokens"],
+                cost_amount=usage["cost_amount"],
+                last_round_new_evidence=int(rounds[-1]["new_evidence_count"]),
+                expansion_available=self.expansion_provider_bound,
+            )
+            if not bool(decision["continue"]):
+                termination_reason = str(decision["termination_reason"])
+                break
+
+            round_number = len(rounds)
+            existing_query_count = sum(
+                len(item["query_plan"].get("queries") or ()) for item in rounds
+            )
+            prior_fingerprints = [
+                str(query.get("query_fingerprint") or "")
+                for item in rounds
+                for query in item["expansion_plan"].get("queries") or ()
+            ]
+            expansion_request = replace(
+                request,
+                command={
+                    **request.command,
+                    "_effect_instance": f"retrieval-expansion-round-{round_number}",
+                    "context_token_budget": min(
+                        resolve_stage_context_token_budget(
+                            request.command,
+                            "retrieval_query_expansion",
+                        ),
+                        policy.model_token_limit - usage["model_tokens"],
+                    ),
+                },
+            )
+            remaining_cost = max(
+                Decimal("0"),
+                Decimal(policy.cost_limit) - Decimal(usage["cost_amount"]),
+            )
+            provider_cost_ceiling = Decimal(
+                str(getattr(self.provider, "max_cost_per_call", "0") or "0")
+            )
+            provider_result = self.provider.invoke(
+                expansion_request,
+                stage="retrieval_query_expansion",
+                payload={
+                    "campaign_id": str(campaign["campaign_id"]),
+                    "round_number": round_number,
+                    "accepted_boundary": dict(
+                        coverage_contract.get("accepted_boundary") or {}
+                    ),
+                    "intent_fingerprint": str(
+                        coverage_contract.get("intent_fingerprint") or ""
+                    ),
+                    "memo_fingerprint": str(
+                        coverage_contract.get("memo_fingerprint") or ""
+                    ),
+                    "mission": dict(intent.content.get("chapter_mission") or {}),
+                    "memo": dict(memo.content),
+                    "coverage": coverage,
+                    "coverage_contract": coverage_contract,
+                    "allowed_retrieval_dimensions": sorted(
+                        dict(coverage_contract.get("selectors") or {})
+                    ),
+                    "allowed_retrieval_selectors": dict(
+                        coverage_contract.get("selectors") or {}
+                    ),
+                    "prior_rounds": [
+                        {
+                            "round_number": int(item["round_number"]),
+                            "query_plan_fingerprint": str(
+                                item["query_plan_fingerprint"]
+                            ),
+                            "coverage_after": dict(item["coverage_after"]),
+                            "new_evidence_count": int(item["new_evidence_count"]),
+                        }
+                        for item in rounds
+                    ],
+                    "policy": policy.to_dict(),
+                },
+                reservation_amount=format(
+                    min(remaining_cost, provider_cost_ceiling), "f"
+                ),
+                reservation_tokens=(policy.model_token_limit - usage["model_tokens"]),
+            )
+            expansion_plan = validate_retrieval_expansion_plan(
+                raw=provider_result.output,
+                contract=coverage_contract,
+                coverage=coverage,
+                policy=policy,
+                round_number=round_number,
+                prior_query_fingerprints=prior_fingerprints,
+                existing_query_count=existing_query_count,
+            )
+            expanded_query_plan = build_expanded_retrieval_query_plan(
+                base_query_plan=query_plan,
+                expansion_plan=expansion_plan,
+            )
+            discovery = discover_accepted_retrieval_candidates(
+                request.database_url,
+                project_id=request.project_id,
+                book_id=book_id,
+                query_plan=expanded_query_plan,
+            )
+            existing_ids = {
+                str(document.get("retrieval_document_id") or "")
+                for item in rounds
+                for document in item["documents"]
+            }
+            merged_documents = merge_retrieval_round_documents(
+                [
+                    *(item["documents"] for item in rounds),
+                    discovery.documents,
+                ]
+            )
+            round_plans = [
+                *(item["query_plan"] for item in rounds),
+                discovery.query_plan,
+            ]
+            final_plan = build_campaign_final_query_plan(
+                base_query_plan=query_plan, round_query_plans=round_plans
+            )
+            intermediate = build_retrieval_result(
+                project_id=request.project_id,
+                book_id=book_id,
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=final_plan,
+                documents=merged_documents,
+                discovery_rejections=(
+                    *discovery_rejections,
+                    *(
+                        rejection
+                        for item in rounds[1:]
+                        for rejection in item["rejected_documents"]
+                    ),
+                    *discovery.rejected_documents,
+                ),
+                semantic_status=_campaign_semantic_status(
+                    rounds, discovery.semantic_status
+                ),
+                candidate_snapshot_id=str(campaign["campaign_id"]),
+            )
+            coverage_after = evaluate_retrieval_coverage(
+                contract=coverage_contract,
+                documents=intermediate["selected_documents"],
+            )
+            evidence = provider_result.to_evidence()
+            freeze_retrieval_round(
+                request.database_url,
+                campaign_id=str(campaign["campaign_id"]),
+                project_id=request.project_id,
+                book_id=book_id,
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                round_number=round_number,
+                query_plan=discovery.query_plan,
+                documents=discovery.documents,
+                rejected_documents=discovery.rejected_documents,
+                semantic_status=discovery.semantic_status,
+                coverage_before=coverage,
+                coverage_after=coverage_after,
+                new_evidence_count=sum(
+                    str(item.get("retrieval_document_id") or "") not in existing_ids
+                    for item in discovery.documents
+                ),
+                expansion_plan=expansion_plan,
+                expansion_reason="DETERMINISTIC_COVERAGE_GAP",
+                provider_evidence=evidence,
+                external_effect_id=_external_effect_id(evidence),
+                input_tokens=provider_result.input_tokens,
+                output_tokens=provider_result.output_tokens,
+                cost_amount=provider_result.cost_amount,
+                currency=provider_result.currency,
+                latency_ms=_provider_latency_ms(evidence),
+            )
+            rounds = load_retrieval_rounds(
+                request.database_url, campaign_id=str(campaign["campaign_id"])
+            )
+
+        merged_documents = merge_retrieval_round_documents(
+            item["documents"] for item in rounds
         )
+        final_plan = build_campaign_final_query_plan(
+            base_query_plan=query_plan,
+            round_query_plans=(item["query_plan"] for item in rounds),
+        )
+        final_semantic_status = _campaign_semantic_status(rounds)
+        final_evidence_identity = _content_hash(
+            {
+                "campaign_id": str(campaign["campaign_id"]),
+                "round_snapshot_hashes": [item["snapshot_hash"] for item in rounds],
+                "coverage": dict(rounds[-1]["coverage_after"]),
+                "termination_reason": termination_reason,
+            }
+        )
+        result = build_retrieval_result(
+            project_id=request.project_id,
+            book_id=book_id,
+            intent_asset_version_id=intent.asset_version_id,
+            memo_asset_version_id=memo.asset_version_id,
+            query_plan=final_plan,
+            documents=merged_documents,
+            discovery_rejections=tuple(
+                rejection for item in rounds for rejection in item["rejected_documents"]
+            ),
+            semantic_status=final_semantic_status,
+            query_embedding=(frozen_union.query_embedding if len(rounds) == 1 else ()),
+            query_embedding_evidence=(
+                frozen_union.query_embedding_evidence if len(rounds) == 1 else {}
+            ),
+            candidate_snapshot_id=str(campaign["campaign_id"]),
+            candidate_snapshot_hash=final_evidence_identity,
+        )
+        result.pop("result_fingerprint", None)
+        result["retrieval_campaign"] = {
+            "contract_version": "retrieval-campaign-result-v1",
+            "campaign_id": str(campaign["campaign_id"]),
+            "policy_version": policy.policy_version,
+            "accepted_boundary": dict(coverage_contract.get("accepted_boundary") or {}),
+            "round_count": len(rounds),
+            "round_snapshot_hashes": [item["snapshot_hash"] for item in rounds],
+            "coverage": dict(rounds[-1]["coverage_after"]),
+            "termination_reason": termination_reason,
+            "final_evidence_identity": final_evidence_identity,
+            "usage": _campaign_usage(rounds),
+            "authority": "DETERMINISTIC_CONTEXT_POLICY",
+        }
+        result["result_fingerprint"] = _content_hash(result)
+        terminal_status = (
+            "FALLBACK"
+            if termination_reason == "DETERMINISTIC_FALLBACK"
+            else "COMPLETED"
+        )
+        completed = complete_retrieval_campaign(
+            request.database_url,
+            campaign_id=str(campaign["campaign_id"]),
+            project_id=request.project_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            worker_id=request.worker_id,
+            status=terminal_status,
+            termination_reason=termination_reason,
+            final_result_fingerprint=str(result["result_fingerprint"]),
+            final_evidence_identity=final_evidence_identity,
+        )
+        if str(completed["final_result_fingerprint"]) != str(
+            result["result_fingerprint"]
+        ):
+            raise KernelError(
+                "RETRIEVAL_CAMPAIGN_REPLAY_DRIFT",
+                "replayed retrieval campaign produced a different result identity",
+            )
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -546,8 +909,6 @@ class _ContextHandler:
             (item for item in request.inputs if item.asset_type == "chapter_plan"), None
         )
         if plan is None:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
             raise KernelError(
                 "CHAPTER_HANDLER_INPUT_INVALID", "generated chapter plan is missing"
             )
@@ -588,6 +949,24 @@ class _ContextHandler:
                 "CONTEXT_RETRIEVAL_IDENTITY_MISMATCH",
                 "Context requires RetrievalResult for its exact Intent, Memo, and boundary",
             )
+        campaign_result = retrieval.content.get("retrieval_campaign")
+        if not isinstance(campaign_result, dict):
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_CAMPAIGN_MISSING",
+                "Context requires deterministic Retrieval Campaign evidence",
+            )
+        coverage = campaign_result.get("coverage")
+        if not isinstance(coverage, dict) or coverage.get("sufficient") is not True:
+            missing = (
+                dict(coverage.get("missing") or {})
+                if isinstance(coverage, dict)
+                else {"campaign_evidence": ["coverage"]}
+            )
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_INSUFFICIENT",
+                "Context cannot admit evidence until deterministic coverage is "
+                f"sufficient; missing={json.dumps(missing, sort_keys=True)}",
+            )
         selected_documents: dict[str, list[dict[str, Any]]] = {}
         for document in retrieval.content.get("selected_documents") or ():
             if isinstance(document, dict):
@@ -613,7 +992,13 @@ class _ContextHandler:
                     1, int(best.get("output_characters") or 0) // 4
                 ),
                 "safe_summary": str(best.get("safe_summary") or ""),
-                "structured_facts": [],
+                "structured_facts": [
+                    dict(item)
+                    for item in dict(best.get("metadata") or {}).get(
+                        "structured_facts", ()
+                    )
+                    if isinstance(item, dict)
+                ],
                 "narrative_function": str(
                     dict(best.get("metadata") or {}).get("projection_kind")
                     or "accepted_historical_evidence"
@@ -672,8 +1057,6 @@ class _ContextHandler:
         if set(candidate_metadata) != {
             item.asset_version_id for item in frozen_candidates
         }:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
             raise KernelError(
                 "CONTEXT_FROZEN_INPUT_MISMATCH",
                 "governed context candidates must equal frozen AssetVersion inputs",
@@ -832,8 +1215,6 @@ class _ContextHandler:
             and context_external_selected_ids.union(context_rejected_ids) == frozen_ids
         )
         if not consistent:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
             raise KernelError(
                 "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
                 "Manifest, frozen inputs, and Context selection partition differ: "
@@ -1543,8 +1924,6 @@ class _QualityHandler:
             "longform",
             "platform",
         }:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
             raise KernelError(
                 "QUALITY_FANIN_INCOMPLETE", "all five quality groups are required"
             )
@@ -1950,21 +2329,131 @@ class _FinalReleaseGateHandler:
         )
 
 
+def _content_hash(value: dict[str, Any]) -> str:
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+    )
+
+
+def _external_effect_id(evidence: dict[str, Any]) -> str:
+    pending: list[Any] = [evidence]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            identity = str(current.get("external_effect_id") or "")
+            if identity:
+                return identity
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return ""
+
+
+def _provider_latency_ms(evidence: dict[str, Any]) -> int:
+    pending: list[Any] = [evidence]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key in ("latency_ms", "duration_ms", "elapsed_ms"):
+                if current.get(key) is not None:
+                    return max(0, int(current[key]))
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return 0
+
+
+def _provider_usage(evidence: dict[str, Any]) -> dict[str, Any]:
+    usage = dict(evidence.get("usage") or {})
+    cost = dict(evidence.get("cost") or {})
+    return {
+        "input_tokens": int(usage.get("input_tokens") or 0),
+        "output_tokens": int(usage.get("output_tokens") or 0),
+        "cost_amount": str(cost.get("amount") or "0"),
+        "currency": str(cost.get("currency") or "USD"),
+        "latency_ms": _provider_latency_ms(evidence),
+    }
+
+
+def _campaign_usage(rounds: tuple[dict[str, Any], ...]) -> dict[str, Any]:
+    currencies = {str(item["usage"].get("currency") or "USD") for item in rounds}
+    if len(currencies) > 1:
+        raise KernelError(
+            "RETRIEVAL_CAMPAIGN_CURRENCY_MISMATCH",
+            "retrieval campaign usage cannot combine different currencies",
+        )
+    input_tokens = sum(int(item["usage"].get("input_tokens") or 0) for item in rounds)
+    output_tokens = sum(int(item["usage"].get("output_tokens") or 0) for item in rounds)
+    amount = sum(
+        (Decimal(str(item["usage"].get("cost_amount") or "0")) for item in rounds),
+        Decimal("0"),
+    )
+    return {
+        "provider_calls": sum(
+            bool(item.get("external_effect_id") or item.get("provider_evidence"))
+            for item in rounds
+        ),
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "model_tokens": input_tokens + output_tokens,
+        "cost_amount": format(amount, "f"),
+        "currency": next(iter(currencies), "USD"),
+        "latency_ms": sum(int(item["usage"].get("latency_ms") or 0) for item in rounds),
+        "candidate_count": sum(len(item["documents"]) for item in rounds),
+    }
+
+
+def _campaign_semantic_status(
+    rounds: tuple[dict[str, Any], ...],
+    additional: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    statuses = [dict(item["semantic_status"]) for item in rounds]
+    if additional is not None:
+        statuses.append(dict(additional))
+    base = dict(statuses[0]) if statuses else {}
+    base.update(
+        {
+            "campaign_round_count": len(statuses),
+            "agentic_expansion_used": len(statuses) > 1,
+            "candidate_document_count": sum(
+                int(item.get("candidate_document_count") or 0) for item in statuses
+            ),
+            "semantic_candidate_expansion": False,
+        }
+    )
+    return base
+
+
 def build_chapter_handler_registry(
     provider: ChapterModelPort,
 ) -> ChapterHandlerRegistry:
     routes = getattr(getattr(provider, "adapter", None), "routes", {})
     semantic_provider_bound = isinstance(routes, dict) and "retrieval" in routes
+    expansion_provider_bound = (
+        bool(getattr(provider, "external_effect_backed", False))
+        and isinstance(routes, dict)
+        and "retrieval_query_expansion" in routes
+    )
     registry = ChapterHandlerRegistry(
         model_effects_required=bool(getattr(provider, "external_effect_backed", False)),
         semantic_retrieval_available=semantic_provider_bound,
+        agentic_retrieval_available=expansion_provider_bound,
     )
     registry.register(ChapterNode.PLAN, _PlanHandler())
     registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
     registry.register(ChapterNode.MEMO, _MemoHandler())
     registry.register(
         ChapterNode.RETRIEVAL,
-        _RetrievalHandler(provider, semantic_provider_bound),
+        _RetrievalHandler(
+            provider,
+            semantic_provider_bound,
+            expansion_provider_bound,
+        ),
     )
     registry.register(ChapterNode.CONTEXT, _ContextHandler())
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))

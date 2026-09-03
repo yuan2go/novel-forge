@@ -1583,7 +1583,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 context["chapter_execution"]["memo_fingerprint"]
                 == memo["memo_fingerprint"]
             )
-            assert retrieval["contract_version"] == "chapter-retrieval-result-v4"
+            assert retrieval["contract_version"] == "chapter-retrieval-result-v5"
             assert retrieval["ranking"]["lexical_signal"] == (
                 "PostgreSQL Full-Text Search / ts_rank"
             )

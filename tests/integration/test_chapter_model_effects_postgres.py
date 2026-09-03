@@ -74,6 +74,23 @@ class _ModelAdapter:
             raise ExternalEffectAdapterError("connection lost", request_sent=True)
         if capability == "model.draft":
             output = {"text": "The promise is public, but its cost remains abstract."}
+        elif capability == "model.retrieval_query_expansion":
+            output = {
+                "contract_version": "retrieval-expansion-plan-v1",
+                "queries": [
+                    {
+                        "query_id": "query:origin",
+                        "text": "bridge oath origin",
+                        "reason": "recover required causal provenance",
+                        "targets": ["fact:fact:origin"],
+                        "selectors": {"entity_ids": ["entity:key"]},
+                        "temporal_range": {
+                            "from_chapter": 1,
+                            "to_chapter": 40,
+                        },
+                    }
+                ],
+            }
         elif capability == "model.review":
             output = {
                 "decision": "NEEDS_REVISION",
@@ -553,9 +570,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             "activation_mode": "DOMAIN_AUTHORITY_ONLY",
         }
         content = {"contract": contract}
-        content_hash = "sha256:" + hashlib.sha256(
-            json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         asset_id = f"{project_id}:intrinsic-semantic-commit-policy"
         asset_version_id = f"{asset_id}:v1"
         with transaction() as connection, connection.cursor() as cursor:
@@ -619,6 +639,107 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(
                 dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1}
             )
+
+    def test_query_expansion_effect_is_typed_durable_and_replayed_once(self) -> None:
+        request = replace(
+            self._request(),
+            command={
+                "chapter": 41,
+                "context_token_budget": 200,
+                "_effect_instance": "retrieval-expansion-round-1",
+            },
+        )
+        adapter = _ModelAdapter()
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=adapter,
+            worker_id="retrieval-expansion-worker",
+            max_cost_per_call="0.01",
+        )
+        payload = {
+            "round_number": 1,
+            "accepted_boundary": {"accepted_through_chapter": 40},
+            "coverage": {"missing": {"fact_ids": ["fact:origin"]}},
+            "allowed_retrieval_dimensions": ["entity_ids"],
+        }
+
+        first = port.invoke(
+            request,
+            stage="retrieval_query_expansion",
+            payload=payload,
+        )
+        replay = port.invoke(
+            request,
+            stage="retrieval_query_expansion",
+            payload=payload,
+        )
+
+        self.assertEqual(first.output, replay.output)
+        self.assertEqual(adapter.calls, 1)
+        self.assertEqual(first.output["queries"][0]["targets"], ["fact:fact:origin"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT capability, status, COUNT(*) OVER ()
+                FROM authority_external_effect
+                WHERE operation_id=%s
+                """,
+                [request.operation_id],
+            )
+            capability, status, effect_count = cursor.fetchone()
+        self.assertEqual(capability, "model.retrieval_query_expansion")
+        self.assertEqual(status, "SUCCEEDED")
+        self.assertEqual(effect_count, 1)
+
+    def test_query_expansion_response_loss_is_not_blindly_resent(self) -> None:
+        request = replace(
+            self._request(),
+            command={
+                "chapter": 41,
+                "context_token_budget": 200,
+                "_effect_instance": "retrieval-expansion-round-1",
+            },
+        )
+        adapter = _ModelAdapter(fail_after_send=True)
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=adapter,
+            worker_id="retrieval-expansion-loss-worker",
+        )
+        payload = {
+            "round_number": 1,
+            "accepted_boundary": {"accepted_through_chapter": 40},
+            "coverage": {"missing": {"fact_ids": ["fact:origin"]}},
+            "allowed_retrieval_dimensions": ["entity_ids"],
+        }
+
+        with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+            port.invoke(
+                request,
+                stage="retrieval_query_expansion",
+                payload=payload,
+            )
+        with self.assertRaises(KernelError):
+            port.invoke(
+                request,
+                stage="retrieval_query_expansion",
+                payload=payload,
+            )
+
+        self.assertEqual(adapter.calls, 1)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT capability, status, COUNT(*) OVER ()
+                FROM authority_external_effect
+                WHERE operation_id=%s
+                """,
+                [request.operation_id],
+            )
+            capability, status, effect_count = cursor.fetchone()
+        self.assertEqual(capability, "model.retrieval_query_expansion")
+        self.assertEqual(status, "UNKNOWN")
+        self.assertEqual(effect_count, 1)
 
     def test_model_effect_accepts_only_lower_internal_reservation_limits(self) -> None:
         request = replace(
@@ -914,9 +1035,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             application = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
-            context_candidates = self._release_evidence(
-                project_id, with_mkaos=True
-            )
+            context_candidates = self._release_evidence(project_id, with_mkaos=True)
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,

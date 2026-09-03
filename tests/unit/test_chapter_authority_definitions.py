@@ -212,7 +212,10 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 definition["completion_contract"]["required_external_effects"],
             )
         retrieval = definitions[list(ChapterNode).index(ChapterNode.RETRIEVAL)]
-        self.assertEqual(retrieval["external_capabilities"], ["model.retrieval"])
+        self.assertEqual(
+            retrieval["external_capabilities"],
+            ["model.retrieval", "model.retrieval_query_expansion"],
+        )
         self.assertNotIn("required_external_effects", retrieval["completion_contract"])
         self.assertEqual(
             retrieval,
