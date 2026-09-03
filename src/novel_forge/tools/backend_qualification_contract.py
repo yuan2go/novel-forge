@@ -62,7 +62,6 @@ P0_PROOF_SCOPE = {
         "agent-runtime",
         "postgresql-persistence-and-migrations",
         "retry-recovery-and-replay",
-        "bounded-retrieval-context",
     ],
     "ceiling": "LOCAL_BACKEND_ENGINEERING",
     "does_not_establish": [
