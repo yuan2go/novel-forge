@@ -6,6 +6,14 @@ import json
 from typing import Any, Iterable
 
 from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
+from novel_forge.modules.context_builder.governance import (
+    ContextBudgetLimits,
+    ContextPolicyCompilation,
+    ContextPolicySnapshot,
+    EffectiveContextPolicy,
+    PolicyIdentity,
+    compile_effective_context_policy,
+)
 
 
 ELIGIBLE_QUALIFICATIONS = {"ELIGIBLE"}
@@ -59,6 +67,11 @@ class ContextSelection:
     rejected: tuple[dict[str, str], ...]
     estimated_tokens: int
     token_budget: int
+    decisions: tuple[dict[str, Any], ...] = ()
+    deduplications: tuple[dict[str, Any], ...] = ()
+    truncations: tuple[dict[str, Any], ...] = ()
+    token_accounting: dict[str, Any] = field(default_factory=dict)
+    policy_compilation: dict[str, Any] = field(default_factory=dict)
 
 
 _RAW_TYPES = frozenset(
@@ -188,6 +201,8 @@ def _validate_context_class_invariants(candidate: ContextCandidate) -> None:
         context_class is ContextClass.COMPRESSIBLE
         and method not in _NON_LOSSY_COMPRESSION_METHODS
     ):
+        if candidate.truncation_strategy == "structured_elements-v1":
+            return
         if not candidate.compression_trace or not candidate.provenance:
             raise ValueError(
                 "COMPRESSIBLE_CONTEXT_PROVENANCE_REQUIRED: compressed context "
@@ -329,22 +344,221 @@ def resolve_context_profile(name: str) -> ContextProfile:
         raise ValueError(f"unknown context profile: {name}") from exc
 
 
+def _policy_hash(payload: dict[str, Any]) -> str:
+    return "sha256:" + hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _compile_profile_policy(
+    profile: ContextProfile,
+    *,
+    token_budget: int,
+    required_asset_types: Iterable[str] = (),
+    stage: str = "",
+) -> ContextPolicyCompilation:
+    profile_payload = {
+        "name": profile.name,
+        "allowed_asset_types": sorted(profile.allowed_asset_types),
+        "forbidden_asset_types": sorted(profile.forbidden_asset_types),
+        "required_asset_types": sorted(profile.required_asset_types),
+        "maximum_token_budget": profile.maximum_token_budget,
+        "maximum_raw_source_ratio": profile.maximum_raw_source_ratio,
+        "source_risk_threshold": profile.source_risk_threshold,
+        "compression_policy": profile.compression_policy,
+    }
+    caller_required = frozenset(
+        str(value).strip() for value in required_asset_types if str(value).strip()
+    )
+    snapshots: list[ContextPolicySnapshot] = [
+        ContextPolicySnapshot(
+            identity=PolicyIdentity(
+                policy_id=f"context-profile:{profile.name}",
+                version="context-profile-v1",
+                content_hash=_policy_hash(profile_payload),
+                snapshot_ref=f"context-profile:{profile.name}",
+            ),
+            allowed_logical_kinds=tuple(profile.allowed_asset_types),
+            denied_logical_kinds=tuple(profile.forbidden_asset_types),
+            required_logical_kinds=tuple(profile.required_asset_types),
+            limits=ContextBudgetLimits(total=profile.maximum_token_budget),
+            permitted_source_modes=(
+                ("generation", "structure_only")
+                if profile.generation_allowed_requirement
+                else tuple(SOURCE_MODES)
+            ),
+            source_risk_threshold=profile.source_risk_threshold,
+            maximum_raw_source_ratio=profile.maximum_raw_source_ratio,
+        ),
+        ContextPolicySnapshot(
+            identity=PolicyIdentity(
+                policy_id=f"caller-context-limit:{profile.name}",
+                version="caller-context-limit-v1",
+                content_hash=_policy_hash(
+                    {
+                        "token_budget": token_budget,
+                        "required_asset_types": sorted(caller_required),
+                    }
+                ),
+                snapshot_ref="command:context_token_budget",
+            ),
+            allowed_logical_kinds=tuple(profile.allowed_asset_types),
+            required_logical_kinds=tuple(caller_required),
+            limits=ContextBudgetLimits(total=token_budget),
+            permitted_source_modes=(
+                ("generation", "structure_only")
+                if profile.generation_allowed_requirement
+                else tuple(SOURCE_MODES)
+            ),
+            source_risk_threshold=profile.source_risk_threshold,
+            maximum_raw_source_ratio=profile.maximum_raw_source_ratio,
+        ),
+    ]
+    if stage:
+        from novel_forge.modules.production_preparation.policies import STAGE_PROFILES
+
+        normalized_stage = "recap" if stage == "longform_recap" else stage
+        try:
+            stage_profile = STAGE_PROFILES[normalized_stage]
+        except KeyError as exc:
+            raise ValueError(
+                "CONTEXT_POLICY_UNRESOLVED: unknown ProductionStageProfile " + stage
+            ) from exc
+        stage_payload = {
+            "stage": stage_profile.stage,
+            "allowed_asset_types": list(stage_profile.allowed_asset_types),
+            "forbidden_asset_types": list(stage_profile.forbidden_asset_types),
+            "declared_required_asset_types": list(stage_profile.required_asset_types),
+            "maximum_raw_source_ratio": stage_profile.maximum_raw_source_ratio,
+            "compression_policy": stage_profile.compression_policy,
+            "source_expression_policy": stage_profile.source_expression_policy,
+        }
+        snapshots.append(
+            ContextPolicySnapshot(
+                identity=PolicyIdentity(
+                    policy_id=f"production-stage-profile:{stage_profile.stage}",
+                    version="production-stage-profile-v1",
+                    content_hash=_policy_hash(stage_payload),
+                    snapshot_ref=f"production-stage-profile:{stage_profile.stage}",
+                ),
+                allowed_logical_kinds=stage_profile.allowed_asset_types,
+                denied_logical_kinds=stage_profile.forbidden_asset_types,
+                required_logical_kinds=tuple(caller_required),
+                limits=ContextBudgetLimits(total=profile.maximum_token_budget),
+                permitted_source_modes=("generation", "structure_only"),
+                source_risk_threshold=profile.source_risk_threshold,
+                maximum_raw_source_ratio=stage_profile.maximum_raw_source_ratio,
+            )
+        )
+    return compile_effective_context_policy(snapshots)
+
+
+_DIAGNOSTIC_CONTEXT_TYPES = frozenset(
+    {
+        "build_log",
+        "ci_output",
+        "stack_trace",
+        "raw_exception",
+        "provider_debug_payload",
+        "provider_diagnostic",
+        "retry_chatter",
+        "tool_debug_output",
+        "sql_debug_log",
+        "runtime_debug",
+        "rejected_generation",
+    }
+)
+
+
+def _eligibility_reason(
+    project_id: str,
+    profile: ContextProfile,
+    policy: EffectiveContextPolicy,
+    candidate: ContextCandidate,
+    *,
+    authority_state_boundary: dict[str, Any],
+) -> str:
+    logical_kind = candidate.logical_context_kind
+    physical_type = candidate.physical_asset_type or candidate.asset_type
+    if candidate.project_id != project_id:
+        return "WRONG_PROJECT"
+    if logical_kind in _DIAGNOSTIC_CONTEXT_TYPES or physical_type in _DIAGNOSTIC_CONTEXT_TYPES:
+        return "DIAGNOSTIC_CONTEXT_FORBIDDEN"
+    if (
+        candidate.qualification in BLOCKED_QUALIFICATIONS
+        or candidate.qualification not in ELIGIBLE_QUALIFICATIONS
+    ):
+        return f"QUALIFICATION_{candidate.qualification}"
+    if candidate.governance_status != "CLEAR":
+        return f"GOVERNANCE_{candidate.governance_status}"
+    if candidate.authority_freshness not in {"CURRENT", "VALID_AS_OF"}:
+        return "STALE_REPRESENTATION"
+    if candidate.representation_status not in {"ACTIVE", "CURRENT", "VALID_AS_OF"}:
+        return "SUPERSEDED_REPRESENTATION"
+    if (
+        candidate.active_read_generation_id
+        and candidate.read_generation_id != candidate.active_read_generation_id
+    ):
+        return "WRONG_READ_GENERATION"
+    if candidate.raw_source or logical_kind in profile.forbidden_asset_types:
+        return "RAW_SOURCE_FORBIDDEN"
+    if logical_kind in policy.denied_logical_kinds:
+        return "LOGICAL_CONTEXT_KIND_DENIED"
+    if physical_type in policy.denied_physical_types:
+        return "PHYSICAL_ASSET_TYPE_DENIED"
+    if logical_kind not in policy.allowed_logical_kinds:
+        return "LOGICAL_CONTEXT_KIND_NOT_ALLOWED"
+    if policy.allowed_physical_types and physical_type not in policy.allowed_physical_types:
+        return "PHYSICAL_ASSET_TYPE_NOT_ALLOWED"
+    if candidate.asset_type in profile.review_only_types and profile.name == "draft":
+        return "REVIEW_ONLY_TYPE"
+    if candidate.source_use_mode not in SOURCE_MODES:
+        return "UNKNOWN_SOURCE_USE_MODE"
+    if candidate.source_use_mode not in policy.permitted_source_modes:
+        return f"SOURCE_MODE_{candidate.source_use_mode}"
+    if candidate.source_risk > policy.source_risk_threshold:
+        return "SOURCE_RISK"
+    if not candidate.provenance:
+        return "MISSING_PROVENANCE"
+    if candidate.accepted_boundary and authority_state_boundary:
+        if dict(candidate.accepted_boundary) != authority_state_boundary:
+            return "WRONG_ACCEPTED_BOUNDARY"
+    return ""
+
+
 def select_context_candidates(
     *,
     project_id: str,
     profile: ContextProfile,
     candidates: Iterable[ContextCandidate],
     token_budget: int,
+    effective_policy: EffectiveContextPolicy | None = None,
+    authority_state_boundary: dict[str, Any] | None = None,
 ) -> ContextSelection:
     if not project_id.strip():
         raise ValueError("project_id is required")
     if token_budget <= 0 or token_budget > profile.maximum_token_budget:
         raise ValueError("token_budget exceeds context profile maximum")
+    compilation = (
+        None
+        if effective_policy is not None
+        else _compile_profile_policy(profile, token_budget=token_budget)
+    )
+    policy = effective_policy or compilation.effective_policy
+    if token_budget > policy.limits.total:
+        raise ValueError("token_budget exceeds effective Context policy")
     accepted: list[ContextCandidate] = []
     rejected: list[dict[str, str]] = []
+    decisions: list[dict[str, Any]] = []
     for candidate in candidates:
         _validate_context_class_invariants(candidate)
-        reason = _rejection_reason(project_id, profile, candidate)
+        reason = _eligibility_reason(
+            project_id,
+            profile,
+            policy,
+            candidate,
+            authority_state_boundary=authority_state_boundary or {},
+        )
         if reason:
             if context_candidate_class(candidate) is ContextClass.PROTECTED:
                 raise ValueError(
@@ -353,38 +567,82 @@ def select_context_candidates(
             rejected.append(
                 {"asset_version_id": candidate.asset_version_id, "reason": reason}
             )
+            decisions.append(
+                {
+                    "asset_version_id": candidate.asset_version_id,
+                    "decision": "DROPPED",
+                    "reason": reason,
+                }
+            )
         else:
             accepted.append(candidate)
-    protected_tokens = sum(
-        candidate.estimated_tokens
-        for candidate in accepted
-        if context_candidate_class(candidate) is ContextClass.PROTECTED
-    )
-    if protected_tokens > token_budget:
-        raise ValueError(
-            "PROTECTED_CONTEXT_BUDGET_EXCEEDED: protected context alone exceeds "
-            "the safe Context token budget; Provider admission is forbidden"
-        )
     class_priority = {
         ContextClass.PROTECTED: 0,
         ContextClass.COMPRESSIBLE: 1,
         ContextClass.RETRIEVABLE: 2,
         ContextClass.EPHEMERAL: 3,
     }
-    accepted.sort(
-        key=lambda item: (
+    required_kinds = set(policy.required_logical_kinds)
+
+    def ordering(item: ContextCandidate) -> tuple[Any, ...]:
+        required = item.required or item.logical_context_kind in required_kinds
+        return (
+            not required,
             context_candidate_class(item) is not ContextClass.PROTECTED,
-            item.asset_type not in profile.required_asset_types,
             class_priority[context_candidate_class(item)],
             -item.relevance_score,
             item.source_risk,
+            item.source_revision,
             item.asset_version_id,
         )
-    )
-    selected: list[ContextCandidate] = []
-    used = 0
+
+    accepted.sort(key=ordering)
+    deduplicated: list[ContextCandidate] = []
+    dedupe_winners: dict[tuple[str, str], ContextCandidate] = {}
+    deduplications: list[dict[str, Any]] = []
     for candidate in accepted:
-        if candidate.estimated_tokens < 0:
+        basis = _dedupe_basis(candidate)
+        if basis is None:
+            deduplicated.append(candidate)
+            continue
+        previous = dedupe_winners.get(basis)
+        if previous is None:
+            dedupe_winners[basis] = candidate
+            deduplicated.append(candidate)
+            continue
+        winner = min((previous, candidate), key=ordering)
+        loser = candidate if winner is previous else previous
+        if winner is candidate:
+            deduplicated.remove(previous)
+            deduplicated.append(candidate)
+            dedupe_winners[basis] = candidate
+        receipt = {
+            "asset_version_id": loser.asset_version_id,
+            "decision": "DROPPED",
+            "reason": "DUPLICATE_REPRESENTATION",
+            "winner_asset_version_id": winner.asset_version_id,
+            "equivalence_basis": basis[0],
+            "equivalence_identity": basis[1],
+        }
+        decisions.append(receipt)
+        deduplications.append(receipt)
+        rejected.append(
+            {
+                "asset_version_id": loser.asset_version_id,
+                "reason": "DUPLICATE_REPRESENTATION",
+            }
+        )
+    accepted = sorted(deduplicated, key=ordering)
+    selected: list[ContextCandidate] = []
+    usage: dict[str, dict[str, int]] = {
+        "sections": {},
+        "buckets": {},
+        "classes": {},
+    }
+    used = 0
+    truncations: list[dict[str, Any]] = []
+    for candidate in accepted:
+        if candidate.estimated_tokens <= 0:
             if context_candidate_class(candidate) is ContextClass.PROTECTED:
                 raise ValueError(
                     "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID: protected context "
@@ -397,28 +655,229 @@ def select_context_candidates(
                 }
             )
             continue
-        if used + candidate.estimated_tokens > token_budget:
-            if context_candidate_class(candidate) is ContextClass.PROTECTED:
-                raise ValueError(
-                    "protected context exceeds token budget; explicit replanning is required"
+        required = candidate.required or candidate.logical_context_kind in required_kinds
+        available, budget_reason = _available_budget(
+            candidate,
+            policy=policy,
+            total_limit=token_budget,
+            used=used,
+            usage=usage,
+        )
+        selected_candidate = candidate
+        decision = "SELECTED"
+        if candidate.estimated_tokens > available:
+            if required or context_candidate_class(candidate) is ContextClass.PROTECTED:
+                code = (
+                    "PROTECTED_CONTEXT_BUDGET_EXCEEDED"
+                    if context_candidate_class(candidate) is ContextClass.PROTECTED
+                    else "CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"
                 )
-            rejected.append(
-                {
-                    "asset_version_id": candidate.asset_version_id,
-                    "reason": "token_budget",
-                }
+                raise ValueError(
+                    f"{code}: {candidate.asset_version_id} exceeds {budget_reason}"
+                )
+            selected_candidate, receipt = _truncate_candidate(
+                candidate,
+                maximum_tokens=available,
+                policy=policy,
             )
-            continue
-        selected.append(candidate)
-        used += candidate.estimated_tokens
-    present = {item.asset_type for item in selected}
-    missing = sorted(profile.required_asset_types - present)
+            if selected_candidate is not None and receipt is not None:
+                truncations.append(receipt)
+                decision = "TRUNCATED_THEN_SELECTED"
+            else:
+                rejected.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "reason": budget_reason,
+                    }
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": budget_reason,
+                    }
+                )
+                continue
+        if selected_candidate is None:
+            raise AssertionError("selected Context candidate is unexpectedly absent")
+        selected.append(selected_candidate)
+        _consume_budget(selected_candidate, usage)
+        used += selected_candidate.estimated_tokens
+        decisions.append(
+            {
+                "asset_version_id": selected_candidate.asset_version_id,
+                "decision": decision,
+                "reason": (
+                    "STRUCTURED_TRUNCATION"
+                    if decision == "TRUNCATED_THEN_SELECTED"
+                    else "ELIGIBLE_AND_BUDGETED"
+                ),
+            }
+        )
+    present = {item.logical_context_kind for item in selected}
+    missing = sorted(required_kinds - present)
     if missing:
         raise ValueError("required context asset types missing: " + ", ".join(missing))
     raw_tokens = sum(item.estimated_tokens for item in selected if item.raw_source)
-    if used and raw_tokens / used > profile.maximum_raw_source_ratio:
+    if used and raw_tokens / used > policy.maximum_raw_source_ratio:
         raise ValueError("maximum_raw_source_ratio exceeded")
-    return ContextSelection(tuple(selected), tuple(rejected), used, token_budget)
+    required_tokens = sum(
+        item.estimated_tokens
+        for item in selected
+        if item.required or item.logical_context_kind in required_kinds
+    )
+    accounting = {
+        "accounting_method": "declared-candidate-estimate-v1",
+        "precision": "ESTIMATE_ONLY",
+        "total_candidate_tokens": sum(
+            max(0, item.estimated_tokens) for item in accepted
+        ),
+        "accepted_tokens": used,
+        "tokens_by_section": dict(sorted(usage["sections"].items())),
+        "tokens_by_bucket": dict(sorted(usage["buckets"].items())),
+        "tokens_by_class": dict(sorted(usage["classes"].items())),
+        "required_tokens": required_tokens,
+        "required_reservation": max(
+            required_tokens, policy.limits.required_reservation
+        ),
+        "total_limit": token_budget,
+    }
+    return ContextSelection(
+        tuple(selected),
+        tuple(rejected),
+        used,
+        token_budget,
+        tuple(sorted(decisions, key=lambda item: str(item["asset_version_id"]))),
+        tuple(deduplications),
+        tuple(truncations),
+        accounting,
+        dict(compilation.receipt) if compilation is not None else {},
+    )
+
+
+def _dedupe_basis(candidate: ContextCandidate) -> tuple[str, str] | None:
+    if candidate.semantic_representation_identity:
+        return ("SEMANTIC_REPRESENTATION", candidate.semantic_representation_identity)
+    if candidate.logical_narrative_identity:
+        return ("LOGICAL_NARRATIVE", candidate.logical_narrative_identity)
+    if candidate.source_identity != candidate.asset_version_id:
+        return ("SOURCE_IDENTITY", candidate.source_identity)
+    return ("PHYSICAL_IDENTITY", candidate.asset_version_id)
+
+
+def _dimension_limit(
+    limits: dict[str, int] | Any, key: str, total_limit: int
+) -> int:
+    return int(limits.get(key, total_limit))
+
+
+def _available_budget(
+    candidate: ContextCandidate,
+    *,
+    policy: EffectiveContextPolicy,
+    total_limit: int,
+    used: int,
+    usage: dict[str, dict[str, int]],
+) -> tuple[int, str]:
+    context_class = context_candidate_class(candidate).value
+    remaining = {
+        "TOTAL_CONTEXT_LIMIT": total_limit - used,
+        "SECTION_LIMIT": _dimension_limit(
+            dict(policy.limits.sections), candidate.section, total_limit
+        )
+        - usage["sections"].get(candidate.section, 0),
+        "BUCKET_LIMIT": _dimension_limit(
+            dict(policy.limits.buckets), candidate.bucket, total_limit
+        )
+        - usage["buckets"].get(candidate.bucket, 0),
+        "CLASS_LIMIT": _dimension_limit(
+            dict(policy.limits.classes), context_class, total_limit
+        )
+        - usage["classes"].get(context_class, 0),
+    }
+    reason, amount = min(remaining.items(), key=lambda item: item[1])
+    return max(0, amount), reason
+
+
+def _consume_budget(
+    candidate: ContextCandidate, usage: dict[str, dict[str, int]]
+) -> None:
+    dimensions = {
+        "sections": candidate.section,
+        "buckets": candidate.bucket,
+        "classes": context_candidate_class(candidate).value,
+    }
+    for dimension, key in dimensions.items():
+        usage[dimension][key] = usage[dimension].get(key, 0) + candidate.estimated_tokens
+
+
+def _truncate_candidate(
+    candidate: ContextCandidate,
+    *,
+    maximum_tokens: int,
+    policy: EffectiveContextPolicy,
+) -> tuple[ContextCandidate | None, dict[str, Any] | None]:
+    strategy = candidate.truncation_strategy
+    if (
+        maximum_tokens <= 0
+        or strategy != "structured_elements-v1"
+        or strategy not in policy.permitted_truncation_strategies
+        or context_candidate_class(candidate) is ContextClass.PROTECTED
+        or candidate.required
+        or not candidate.structured_facts
+    ):
+        return None, None
+    facts = tuple(dict(item) for item in candidate.structured_facts)
+    keep = min(
+        len(facts),
+        max(1, (len(facts) * maximum_tokens) // candidate.estimated_tokens),
+    )
+    if keep >= len(facts):
+        return None, None
+    kept = facts[:keep]
+    after_tokens = max(1, min(maximum_tokens, (candidate.estimated_tokens * keep) // len(facts)))
+    before_payload = {
+        "safe_summary": candidate.safe_summary,
+        "structured_facts": list(facts),
+    }
+    after_payload = {"safe_summary": "", "structured_facts": list(kept)}
+    before_hash = "sha256:" + hashlib.sha256(
+        json.dumps(before_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    after_hash = "sha256:" + hashlib.sha256(
+        json.dumps(after_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    updated = replace(
+        candidate,
+        estimated_tokens=after_tokens,
+        safe_summary="",
+        structured_facts=kept,
+        content_digest=after_hash,
+        compression_method=strategy,
+        compression_trace=(
+            *candidate.compression_trace,
+            {
+                "source_asset_version_id": candidate.asset_version_id,
+                "source_content_hash": candidate.content_digest,
+                "method": strategy,
+                "result_content_hash": after_hash,
+            },
+        ),
+    )
+    return updated, {
+        "asset_version_id": candidate.asset_version_id,
+        "source_identity": candidate.source_identity,
+        "source_revision": candidate.source_revision,
+        "before_hash": before_hash,
+        "after_hash": after_hash,
+        "strategy": strategy,
+        "strategy_version": candidate.truncation_version or "v1",
+        "before_token_count": candidate.estimated_tokens,
+        "after_token_count": after_tokens,
+        "removed_element_count": len(facts) - keep,
+        "decision_reason": "HIERARCHICAL_BUDGET",
+        "provenance": dict(candidate.provenance or {}),
+    }
 
 
 def build_authority_context_bundle(
@@ -452,12 +911,21 @@ def build_authority_context_bundle(
             profile,
             required_asset_types=profile.required_asset_types | required,
         )
+    compilation = _compile_profile_policy(
+        profile,
+        token_budget=token_budget,
+        required_asset_types=required,
+        stage=profile.name,
+    )
     selection = select_context_candidates(
         project_id=project_id,
         profile=profile,
         candidates=candidates,
         token_budget=token_budget,
+        effective_policy=compilation.effective_policy,
+        authority_state_boundary=dict(authority_state_boundary or {}),
     )
+    selection = replace(selection, policy_compilation=dict(compilation.receipt))
     refs = dict(version_refs or {})
     selected = [item.asset_version_id for item in selection.selected]
     segments = [_context_segment(item, profile) for item in selection.selected]
@@ -540,6 +1008,23 @@ def build_authority_context_bundle(
             "retrieval_scores": dict(item.retrieval_scores or {}),
             "provenance": dict(item.provenance or {}),
             "compression_trace": [dict(entry) for entry in item.compression_trace],
+            "logical_context_kind": item.logical_context_kind,
+            "source_identity": item.source_identity,
+            "source_revision": item.source_revision,
+            "logical_narrative_identity": item.logical_narrative_identity,
+            "semantic_representation_identity": (
+                item.semantic_representation_identity
+            ),
+            "accepted_boundary": dict(item.accepted_boundary or {}),
+            "section": item.section,
+            "bucket": item.bucket,
+            "required": (
+                item.required
+                or item.logical_context_kind
+                in compilation.effective_policy.required_logical_kinds
+            ),
+            "representation_status": item.representation_status,
+            "read_generation_id": item.read_generation_id,
         }
         for item in selection.selected
     ]
@@ -574,7 +1059,7 @@ def build_authority_context_bundle(
     )
     context_manifest = {
         "type": "NarrativeContextManifest",
-        "contract_version": "narrative-context-manifest-v3",
+        "contract_version": "narrative-context-manifest-v4",
         "task": {
             "stage": profile.name,
             "target_capability_id": target_capability_id,
@@ -588,6 +1073,11 @@ def build_authority_context_bundle(
         "selected_asset_version_ids": selected,
         "rejected_inputs": list(selection.rejected),
         "rejected_asset_versions": list(selection.rejected),
+        "candidate_decisions": [dict(item) for item in selection.decisions],
+        "deduplication_decisions": [
+            dict(item) for item in selection.deduplications
+        ],
+        "truncation_decisions": [dict(item) for item in selection.truncations],
         "knowledge_usage": [
             {
                 "asset_version_id": item.asset_version_id,
@@ -660,9 +1150,52 @@ def build_authority_context_bundle(
                 for candidate in selection.selected
                 if context_candidate_class(candidate) is ContextClass.EPHEMERAL
             ),
+            "sections": dict(
+                selection.token_accounting.get("tokens_by_section") or {}
+            ),
+            "buckets": dict(
+                selection.token_accounting.get("tokens_by_bucket") or {}
+            ),
+            "classes": dict(
+                selection.token_accounting.get("tokens_by_class") or {}
+            ),
+            "required_reservation": int(
+                selection.token_accounting.get("required_reservation") or 0
+            ),
+        },
+        "effective_policy": {
+            **compilation.effective_policy.to_dict(),
+            "input_policy_identities": [
+                dict(item["identity"])
+                for item in compilation.receipt["input_policies"]
+            ],
+            "compiler_receipt_hash": compilation.receipt["receipt_hash"],
+        },
+        "token_accounting_contract": {
+            "method": "declared-candidate-estimate-v1",
+            "version": "v1",
+            "precision": "ESTIMATE_ONLY",
+            "provider_admission_eligible": False,
+        },
+        "metrics": {
+            **selection.token_accounting,
+            "candidate_count": len(selection.decisions),
+            "accepted_count": len(selection.selected),
+            "dropped_count": sum(
+                item["decision"] == "DROPPED" for item in selection.decisions
+            ),
+            "truncated_count": len(selection.truncations),
+            "decision_count_by_reason": {
+                reason: sum(
+                    item["reason"] == reason for item in selection.decisions
+                )
+                for reason in sorted(
+                    {str(item["reason"]) for item in selection.decisions}
+                )
+            },
         },
         "replay": {
-            "algorithm": "authority-context-selection-v2-four-class",
+            "algorithm": "authority-context-selection-v3-governed",
             "input_digest": replay_input_digest,
             "output_context_digest": actual_context_digest,
         },
@@ -731,7 +1264,7 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v7",
+        "context_contract_version": "authority-context-bundle-v8",
     }
 
 
@@ -1073,6 +1606,58 @@ def _rejection_reason(
     return ""
 
 
+def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
+    contract_version = str(bundle.get("context_contract_version") or "")
+    manifest = bundle.get("context_manifest")
+    if not isinstance(manifest, dict):
+        raise ValueError("CONTEXT_REPLAY_INVALID: Context Manifest is absent")
+    expected = str(manifest.get("context_fingerprint") or "")
+    body = dict(manifest)
+    body.pop("context_fingerprint", None)
+    actual = "sha256:" + hashlib.sha256(
+        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    output_digest = str(
+        dict(manifest.get("replay") or {}).get("output_context_digest") or ""
+    )
+    bundle_digest = str(bundle.get("actual_context_digest") or "")
+    if expected != actual or output_digest != bundle_digest:
+        raise ValueError("CONTEXT_REPLAY_MISMATCH: frozen Context evidence changed")
+    versions = {
+        "authority-context-bundle-v7": (
+            "narrative-context-manifest-v3",
+            "authority-context-selection-v2-four-class",
+            "FROZEN_V7",
+        ),
+        "authority-context-bundle-v8": (
+            "narrative-context-manifest-v4",
+            "authority-context-selection-v3-governed",
+            "FROZEN_V8",
+        ),
+    }
+    try:
+        manifest_version, algorithm, semantics = versions[contract_version]
+    except KeyError as exc:
+        raise ValueError(
+            "CONTEXT_REPLAY_VERSION_UNSUPPORTED: " + contract_version
+        ) from exc
+    if (
+        manifest.get("contract_version") != manifest_version
+        or dict(manifest.get("replay") or {}).get("algorithm") != algorithm
+    ):
+        raise ValueError("CONTEXT_REPLAY_VERSION_MISMATCH: frozen semantics changed")
+    return {
+        "status": "MATCH",
+        "context_contract_version": contract_version,
+        "manifest_contract_version": manifest_version,
+        "algorithm": algorithm,
+        "semantics": semantics,
+        "current_policy_compiler_invoked": False,
+        "context_fingerprint": expected,
+        "output_context_digest": output_digest,
+    }
+
+
 __all__ = [
     "CONTEXT_PROFILES",
     "ContextCandidate",
@@ -1081,5 +1666,6 @@ __all__ = [
     "ContextSelection",
     "build_authority_context_bundle",
     "resolve_context_profile",
+    "replay_context_bundle",
     "select_context_candidates",
 ]

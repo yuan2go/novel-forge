@@ -60,6 +60,22 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
 )
+from novel_forge.modules.production_execution.provider_admission import (
+    ProviderAdmissionReceipt,
+    ProviderRequestEnvelope,
+    TokenAccountingContract,
+    build_route_token_accounting_contract,
+    prepare_provider_admission,
+    provider_request_protocol,
+    verify_provider_admission,
+)
+from novel_forge.modules.context_builder.domain import replay_context_bundle
+from novel_forge.modules.context_builder.governance import (
+    ContextBudgetLimits,
+    ContextPolicySnapshot,
+    PolicyIdentity,
+    compile_effective_context_policy,
+)
 from novel_forge.storage.authority_asset_store import (
     AuthorityAssetDocument,
     AuthorityAssetQuery,
@@ -188,6 +204,137 @@ def _provider_context_selection(
     return context
 
 
+def _provider_token_contract(
+    route: "ChapterExecutionRoute",
+    *,
+    route_identity: str,
+    output_reserve: int,
+) -> TokenAccountingContract:
+    return build_route_token_accounting_contract(
+        provider=route.model_profile.model_provider,
+        model=route.model_profile.model_id,
+        route_identity=route_identity,
+        accounting_method=route.token_accounting_method,
+        accounting_evidence_ref=route.token_accounting_evidence_ref,
+        model_context_limit=route.model_context_limit,
+        output_reserve=output_reserve,
+        safety_margin=route.token_safety_margin,
+        framing_overhead=route.token_framing_overhead,
+    )
+
+
+def _provider_effective_context_policy(
+    *,
+    context_selection: list[dict[str, Any]],
+    context_policy_payload: Mapping[str, Any],
+    context_policy_hash: str,
+    context_policy_ref: str,
+) -> dict[str, Any]:
+    physical_allowed = tuple(
+        str(value) for value in context_policy_payload.get("allowed_asset_types") or ()
+    )
+    physical_denied = tuple(
+        str(value)
+        for value in context_policy_payload.get("forbidden_asset_types") or ()
+    )
+    selected_physical = tuple(
+        str(item.get("artifact_type") or "") for item in context_selection
+    )
+    if (
+        not physical_allowed
+        or any(not value for value in selected_physical)
+        or set(selected_physical) - set(physical_allowed)
+        or set(selected_physical) & set(physical_denied)
+    ):
+        raise KernelError(
+            "CONTEXT_POLICY_CONFLICT",
+            "Capability Pack does not admit the frozen physical Context selection",
+        )
+    content = context_selection[0].get("content")
+    if not isinstance(content, Mapping):
+        raise KernelError(
+            "CONTEXT_POLICY_UNRESOLVED",
+            "frozen Context selection has no contract content",
+        )
+    bundle_version = str(content.get("context_contract_version") or "")
+    if bundle_version == "authority-context-bundle-v7":
+        replay = replay_context_bundle(dict(content))
+        return {
+            "compiler_version": "frozen-context-v7-physical-admission-v1",
+            "historical_replay": replay,
+            "physical_allowed_types": sorted(physical_allowed),
+            "physical_denied_types": sorted(physical_denied),
+            "selected_physical_types": list(selected_physical),
+            "current_policy_compiler_invoked": False,
+        }
+    if bundle_version != "authority-context-bundle-v8":
+        return {
+            "compiler_version": "typed-narrative-context-outer-admission-v1",
+            "context_contract_version": str(
+                content.get("schema_version") or bundle_version or "UNKNOWN"
+            ),
+            "physical_allowed_types": sorted(physical_allowed),
+            "physical_denied_types": sorted(physical_denied),
+            "selected_physical_types": list(selected_physical),
+            "internal_context_policy": "OWNED_BY_TYPED_CONTEXT_CONTRACT",
+        }
+    manifest = content.get("context_manifest")
+    effective = manifest.get("effective_policy") if isinstance(manifest, Mapping) else None
+    if not isinstance(manifest, Mapping) or not isinstance(effective, Mapping):
+        raise KernelError(
+            "CONTEXT_POLICY_UNRESOLVED",
+            "v8 Context does not carry its effective policy",
+        )
+    limits = effective.get("limits")
+    if not isinstance(limits, Mapping):
+        raise KernelError("CONTEXT_POLICY_UNRESOLVED", "Context limits are absent")
+    context_snapshot = ContextPolicySnapshot(
+        identity=PolicyIdentity(
+            policy_id="context-manifest:" + str(manifest.get("context_fingerprint") or ""),
+            version="context-policy-v1",
+            content_hash=str(manifest.get("context_fingerprint") or ""),
+            snapshot_ref="context-bundle:" + str(content.get("actual_context_digest") or ""),
+        ),
+        allowed_logical_kinds=tuple(effective.get("allowed_logical_kinds") or ()),
+        denied_logical_kinds=tuple(effective.get("denied_logical_kinds") or ()),
+        required_logical_kinds=tuple(effective.get("required_logical_kinds") or ()),
+        limits=ContextBudgetLimits(
+            total=int(limits.get("total") or 0),
+            sections=dict(limits.get("sections") or {}),
+            buckets=dict(limits.get("buckets") or {}),
+            classes=dict(limits.get("classes") or {}),
+            required_reservation=int(limits.get("required_reservation") or 0),
+        ),
+        permitted_truncation_strategies=tuple(
+            effective.get("permitted_truncation_strategies") or ()
+        ),
+        permitted_source_modes=tuple(effective.get("permitted_source_modes") or ()),
+        source_risk_threshold=int(effective.get("source_risk_threshold") or 0),
+        maximum_raw_source_ratio=float(
+            effective.get("maximum_raw_source_ratio") or 0
+        ),
+    )
+    pack_snapshot = ContextPolicySnapshot(
+        identity=PolicyIdentity(
+            policy_id=str(context_policy_payload.get("policy_id") or context_policy_ref),
+            version="provider-context-route-v1",
+            content_hash=context_policy_hash,
+            snapshot_ref=context_policy_ref,
+        ),
+        allowed_physical_types=physical_allowed,
+        denied_physical_types=physical_denied,
+        limits=ContextBudgetLimits(
+            total=int(context_policy_payload.get("max_tokens") or 0)
+        ),
+        permitted_truncation_strategies=context_snapshot.permitted_truncation_strategies,
+        permitted_source_modes=context_snapshot.permitted_source_modes,
+        source_risk_threshold=context_snapshot.source_risk_threshold,
+        maximum_raw_source_ratio=context_snapshot.maximum_raw_source_ratio,
+    )
+    compilation = compile_effective_context_policy((context_snapshot, pack_snapshot))
+    return dict(compilation.receipt)
+
+
 def _stage_tool_permissions(
     policy: Mapping[str, Any], stage: str
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -242,6 +389,11 @@ class ChapterExecutionRoute:
     release_sha: str
     real_provider_validation_eligible: bool
     embedding_dimensions: int = 0
+    model_context_limit: int = 0
+    token_accounting_method: str = ""
+    token_accounting_evidence_ref: str = ""
+    token_safety_margin: int = 256
+    token_framing_overhead: int = 16
 
     def __post_init__(self) -> None:
         if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
@@ -283,6 +435,12 @@ class ChapterExecutionRoute:
             raise ValueError(
                 "embedding dimensions may only be bound to the retrieval route"
             )
+        if min(
+            self.model_context_limit,
+            self.token_safety_margin,
+            self.token_framing_overhead,
+        ) < 0:
+            raise ValueError("Chapter route Token Accounting limits are invalid")
         definition = default_capability_registry().resolve(
             chapter_stage_capability(self.stage)
         )
@@ -316,6 +474,7 @@ class ChapterCapabilityPreflight:
     materialization: CapabilityPackArtifactMaterialization | None
     materialization_artifact: ArtifactPointer
     effect_binding: Mapping[str, Any]
+    provider_admission_artifact: ArtifactPointer | None = None
 
 
 class PostgresChapterExecutionContractBinder:
@@ -449,6 +608,17 @@ class PostgresChapterExecutionContractBinder:
             selected_inputs,
             retrieval_projection=retrieval_projection,
         )
+        frozen_context_policy_payload = json.loads(
+            attempt_snapshot.execution_snapshot.context_policy_payload_json
+        )
+        effective_context_policy = _provider_effective_context_policy(
+            context_selection=context_selection,
+            context_policy_payload=frozen_context_policy_payload,
+            context_policy_hash=(
+                attempt_snapshot.execution_snapshot.context_policy_hash
+            ),
+            context_policy_ref=attempt_snapshot.execution_snapshot.context_policy_ref,
+        )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
         )
@@ -502,6 +672,7 @@ class PostgresChapterExecutionContractBinder:
                 materialization.materialization_hash
             ),
             "context_selection": context_selection,
+            "effective_context_policy": effective_context_policy,
             "knowledge_selection": [
                 item.to_dict(include_content=True)
                 for item in materialization.required_knowledge
@@ -559,6 +730,122 @@ class PostgresChapterExecutionContractBinder:
             schema_version="novelos.chapter_capability_materialization.v1",
             source_eligibility="NOT_SOURCE_DERIVED",
         )
+        provider_inputs = request_payload.get("input")
+        if not isinstance(provider_inputs, Mapping):
+            raise KernelError(
+                "CHAPTER_PROVIDER_INPUT_INVALID",
+                "Provider admission requires frozen stage inputs",
+            )
+        target_scope = self._target_scope(
+            metadata=metadata,
+            project_id=project_id,
+            book_id=book_id,
+            chapter=int(metadata.get("chapter") or 0),
+        )
+        prompt, prompt_evidence = _materialize_production_codex_prompt(
+            target_scope=target_scope.to_dict(),
+            stage=stage,
+            inputs=provider_inputs,
+            materialization=contract,
+        )
+        stable_idempotency_key = str(
+            request_payload.get("stable_idempotency_key") or ""
+        )
+        timeout_seconds = int(
+            metadata.get("provider_request_timeout_seconds") or 0
+        )
+        output_reserve = int(request_payload.get("max_output_tokens") or 0)
+        if not stable_idempotency_key or timeout_seconds <= 0 or output_reserve <= 0:
+            raise KernelError(
+                "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
+                "Provider admission requires stable identity, timeout, and output reserve",
+            )
+        route_identity = ":".join(
+            (
+                route.stage,
+                route.model_profile.model_provider,
+                route.model_profile.model_id,
+                route.release_sha,
+                attempt_snapshot.snapshot_hash,
+            )
+        )
+        envelope = ProviderRequestEnvelope(
+            provider=route.model_profile.model_provider,
+            model=route.model_profile.model_id,
+            protocol=provider_request_protocol(route.model_profile.model_provider),
+            input_text=prompt,
+            max_output_tokens=output_reserve,
+            timeout_seconds=_provider_process_timeout_seconds(
+                timeout_seconds, max_attempts=2
+            ),
+            stable_idempotency_key=stable_idempotency_key,
+        )
+        token_contract = _provider_token_contract(
+            route,
+            route_identity=route_identity,
+            output_reserve=output_reserve,
+        )
+        context_content = context_selection[0].get("content")
+        context_bundle_tokens = (
+            int(context_content.get("estimated_tokens") or 0)
+            if isinstance(context_content, Mapping)
+            else 0
+        )
+        admission = prepare_provider_admission(
+            envelope,
+            token_contract,
+            context_bundle_tokens=context_bundle_tokens,
+            input_component_hashes=dict(
+                dict(prompt_evidence.get("provider_view") or {}).get(
+                    "component_hashes"
+                )
+                or {}
+            ),
+            complete_request_coverage=(
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin",
+            ),
+        )
+        if admission.status != "ADMITTED":
+            raise KernelError(
+                "PROVIDER_TOKEN_ADMISSION_REJECTED",
+                admission.reason,
+            )
+        admission_contract = {
+            "schema_version": "novelos.provider_request_admission.v1",
+            "provider_request_identity": envelope.to_identity_dict(),
+            "provider_admission": admission.to_dict(),
+            "effective_context_policy": effective_context_policy,
+            "prompt_materialization": prompt_evidence,
+            "capability_materialization_asset_version_id": document.asset_version_id,
+            "capability_materialization_content_hash": document.content_hash,
+        }
+        admission_ref = f"production_execution/provider_admissions/{token}"
+        admission_document = self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=admission_ref,
+            asset_type="provider_request_admission_manifest",
+            contract=admission_contract,
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        admission_pointer = ArtifactPointer(
+            artifact_ref=f"asset-version:{admission_document.asset_version_id}",
+            asset_version_id=admission_document.asset_version_id,
+            artifact_type=admission_document.asset_type,
+            content_hash=admission_document.content_hash,
+            schema_version="novelos.provider_request_admission.v1",
+            source_eligibility="NOT_SOURCE_DERIVED",
+        )
         effect_binding = {
             "snapshot_id": attempt_snapshot.snapshot_id,
             "snapshot_hash": attempt_snapshot.snapshot_hash,
@@ -586,6 +873,11 @@ class PostgresChapterExecutionContractBinder:
             "allowed_tools": list(allowed_tools),
             "output_schema_ref": provider_schema_ref,
             "output_schema_hash": schema_hash,
+            "provider_admission_asset_version_id": admission_document.asset_version_id,
+            "provider_admission_content_hash": admission_document.content_hash,
+            "provider_request_envelope_hash": envelope.envelope_hash,
+            "token_accounting_contract": token_contract.to_dict(),
+            "provider_admission": admission.to_dict(),
         }
         if embedding_output_contract is not None:
             effect_binding["embedding_output_contract"] = embedding_output_contract
@@ -593,6 +885,7 @@ class PostgresChapterExecutionContractBinder:
             attempt_snapshot=attempt_snapshot,
             materialization=materialization,
             materialization_artifact=pointer,
+            provider_admission_artifact=admission_pointer,
             effect_binding=effect_binding,
         )
 
@@ -1682,10 +1975,113 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             schema_version="novelos.provider_capability_materialization.v1",
             source_eligibility="NOT_SOURCE_DERIVED",
         )
+        provider_inputs = request_payload.get("input")
+        if not isinstance(provider_inputs, Mapping):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_INPUT_INVALID",
+                "projection Provider admission requires frozen inputs",
+            )
+        prompt, prompt_evidence = _materialize_production_codex_prompt(
+            target_scope={
+                "scope_kind": "asset_version",
+                "scope_id": source_asset_version_id,
+                "project_id": project_id,
+                "asset_version_id": source_asset_version_id,
+            },
+            stage=stage,
+            inputs=provider_inputs,
+            materialization=contract,
+        )
+        stable_idempotency_key = str(
+            request_payload.get("stable_idempotency_key") or ""
+        )
+        timeout_seconds = int(
+            metadata.get("provider_request_timeout_seconds") or 0
+        )
+        output_reserve = int(request_payload.get("max_output_tokens") or 0)
+        if not stable_idempotency_key or timeout_seconds <= 0 or output_reserve <= 0:
+            raise KernelError(
+                "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
+                "projection admission identity or limits are incomplete",
+            )
+        route_identity = ":".join(
+            (
+                stage,
+                route.model_profile.model_provider,
+                route.model_profile.model_id,
+                route.release_sha,
+                source_content_hash,
+            )
+        )
+        envelope = ProviderRequestEnvelope(
+            provider=route.model_profile.model_provider,
+            model=route.model_profile.model_id,
+            protocol=provider_request_protocol(route.model_profile.model_provider),
+            input_text=prompt,
+            max_output_tokens=output_reserve,
+            timeout_seconds=_provider_process_timeout_seconds(
+                timeout_seconds, max_attempts=2
+            ),
+            stable_idempotency_key=stable_idempotency_key,
+        )
+        token_contract = _provider_token_contract(
+            route,
+            route_identity=route_identity,
+            output_reserve=output_reserve,
+        )
+        admission = prepare_provider_admission(
+            envelope,
+            token_contract,
+            input_component_hashes=dict(
+                dict(prompt_evidence.get("provider_view") or {}).get(
+                    "component_hashes"
+                )
+                or {}
+            ),
+            complete_request_coverage=(
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin",
+            ),
+        )
+        if admission.status != "ADMITTED":
+            raise KernelError("PROVIDER_TOKEN_ADMISSION_REJECTED", admission.reason)
+        admission_contract = {
+            "schema_version": "novelos.provider_request_admission.v1",
+            "provider_request_identity": envelope.to_identity_dict(),
+            "provider_admission": admission.to_dict(),
+            "prompt_materialization": prompt_evidence,
+            "capability_materialization_asset_version_id": document.asset_version_id,
+            "capability_materialization_content_hash": document.content_hash,
+        }
+        admission_document = self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=f"production_execution/provider_admissions/{token}",
+            asset_type="provider_request_admission_manifest",
+            contract=admission_contract,
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        admission_pointer = ArtifactPointer(
+            artifact_ref=f"asset-version:{admission_document.asset_version_id}",
+            asset_version_id=admission_document.asset_version_id,
+            artifact_type=admission_document.asset_type,
+            content_hash=admission_document.content_hash,
+            schema_version="novelos.provider_request_admission.v1",
+            source_eligibility="NOT_SOURCE_DERIVED",
+        )
         return ChapterCapabilityPreflight(
             attempt_snapshot=None,
             materialization=None,
             materialization_artifact=pointer,
+            provider_admission_artifact=admission_pointer,
             effect_binding={
                 "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
                 "materialization_asset_version_id": document.asset_version_id,
@@ -1700,6 +2096,13 @@ class PostgresRetrievalProjectionExecutionContractBinder(
                 "output_schema_ref": output_schema_ref,
                 "output_schema_hash": canonical_hash(output_schema),
                 "embedding_output_contract": embedding_output_contract,
+                "provider_admission_asset_version_id": (
+                    admission_document.asset_version_id
+                ),
+                "provider_admission_content_hash": admission_document.content_hash,
+                "provider_request_envelope_hash": envelope.envelope_hash,
+                "token_accounting_contract": token_contract.to_dict(),
+                "provider_admission": admission.to_dict(),
             },
         )
 
@@ -2151,8 +2554,8 @@ class PostgresProductionExecutionPayloadResolver:
         source_metadata = payload.get("_source_intelligence")
         source_execution = isinstance(source_metadata, Mapping)
         inputs = (
-            self._source_intelligence_inputs(
-                request=request,
+            self.resolve_source_intelligence_inputs(
+                project_id=request.project_id,
                 stored_inputs=stored_inputs,
                 metadata=source_metadata,
             )
@@ -2226,14 +2629,66 @@ class PostgresProductionExecutionPayloadResolver:
                     "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
                     "frozen Capability materialization has no Tool policy",
                 )
-            resolved_payload: dict[str, Any] = {
-                "stage": stage,
-                "input": dict(inputs),
-                "prompt_bundle_ref": admission.route_snapshot.prompt_bundle_ref,
-                "skill_bundle_ref": admission.route_snapshot.skill_bundle_ref,
-                "output_schema_ref": str(output_schema.get("ref") or ""),
-                "capability_runtime": dict(capability_runtime),
-                "prompt_materialization": prompt_evidence,
+            admission_version_id = str(
+                capability_runtime.get("provider_admission_asset_version_id") or ""
+            )
+            admission_document = AuthorityAssetQuery(self.database_url).require(
+                project_id=request.project_id,
+                asset_version_id=admission_version_id,
+            )
+            if (
+                admission_document.asset_type
+                != "provider_request_admission_manifest"
+                or admission_document.content_hash
+                != str(capability_runtime.get("provider_admission_content_hash") or "")
+            ):
+                raise KernelError(
+                    "PROVIDER_ADMISSION_IDENTITY_DRIFT",
+                    "Provider admission differs from frozen ExternalEffect",
+                )
+            frozen_admission = admission_document.content.get(
+                "contract", admission_document.content
+            )
+            if not isinstance(frozen_admission, Mapping):
+                raise KernelError(
+                    "PROVIDER_ADMISSION_IDENTITY_DRIFT",
+                    "Provider admission contract is malformed",
+                )
+            try:
+                envelope = ProviderRequestEnvelope.from_identity_dict(
+                    dict(frozen_admission.get("provider_request_identity") or {}),
+                    input_text=input_text,
+                )
+            except ValueError as exc:
+                raise KernelError(
+                    "PROVIDER_REQUEST_IDENTITY_DRIFT", str(exc)
+                ) from exc
+            admission_receipt = ProviderAdmissionReceipt.from_dict(
+                dict(frozen_admission.get("provider_admission") or {})
+            )
+            try:
+                verify_provider_admission(envelope, admission_receipt)
+            except ValueError as exc:
+                raise KernelError(
+                    "PROVIDER_ADMISSION_IDENTITY_DRIFT", str(exc)
+                ) from exc
+            if (
+                envelope.input_text != input_text
+                or envelope.envelope_hash
+                != str(capability_runtime.get("provider_request_envelope_hash") or "")
+                or envelope.provider != admission.route_snapshot.model_provider
+                or envelope.model != admission.route_snapshot.model_id
+            ):
+                raise KernelError(
+                    "PROVIDER_REQUEST_IDENTITY_DRIFT",
+                    "materialized Provider request differs from admitted envelope",
+                )
+            resolved_payload = envelope.to_dict()
+            prompt_evidence = {
+                **dict(prompt_evidence),
+                "provider_admission_asset_version_id": admission_version_id,
+                "provider_admission": admission_receipt.to_dict(),
+                "provider_request_envelope_hash": envelope.envelope_hash,
             }
         else:
             input_text = _canonical({"stage": stage, "input": inputs})
@@ -2281,10 +2736,10 @@ class PostgresProductionExecutionPayloadResolver:
             ),
         )
 
-    def _source_intelligence_inputs(
+    def resolve_source_intelligence_inputs(
         self,
         *,
-        request: ExecutionRequest,
+        project_id: str,
         stored_inputs: Mapping[str, Any],
         metadata: Mapping[str, Any],
     ) -> dict[str, Any]:
@@ -2319,7 +2774,7 @@ class PostgresProductionExecutionPayloadResolver:
                         WHERE chunk.project_id=%s
                           AND chunk.asset_version_id=ANY(%s)
                         """,
-                        [request.project_id, identities],
+                        [project_id, identities],
                     )
                     rows = cursor.fetchall()
             by_id = {str(row[0]): row for row in rows}
@@ -2391,7 +2846,7 @@ class PostgresProductionExecutionPayloadResolver:
                         WHERE chunk.project_id=%s
                           AND chunk.asset_version_id=ANY(%s)
                         """,
-                        [request.project_id, identities],
+                        [project_id, identities],
                     )
                     rows = cursor.fetchall()
             by_id = {str(row[0]): row for row in rows}
@@ -2434,7 +2889,7 @@ class PostgresProductionExecutionPayloadResolver:
             ]
             documents = {
                 identity: AuthorityAssetQuery(self.database_url).require(
-                    project_id=request.project_id,
+                    project_id=project_id,
                     asset_version_id=identity,
                 )
                 for identity in identities
@@ -2478,7 +2933,7 @@ class PostgresProductionExecutionPayloadResolver:
                 stored_inputs.get("observation_asset_version_id") or ""
             )
             document = AuthorityAssetQuery(self.database_url).require(
-                project_id=request.project_id,
+                project_id=project_id,
                 asset_version_id=observation_id,
             )
             if document.asset_type != "source_deconstruction_observation":
@@ -2904,11 +3359,21 @@ def _bind_language_contract(contract: str, required_language: str | None) -> str
 
 def _materialize_production_codex_prompt(
     *,
-    request: ExecutionRequest,
+    request: ExecutionRequest | None = None,
+    target_scope: Mapping[str, Any] | None = None,
     stage: str,
     inputs: Mapping[str, Any],
     materialization: Mapping[str, Any],
 ) -> tuple[str, dict[str, Any]]:
+    if request is not None:
+        resolved_target_scope = request.target_scope.to_dict()
+    elif target_scope is not None:
+        resolved_target_scope = dict(target_scope)
+    else:
+        raise KernelError(
+            "CHAPTER_PROVIDER_TARGET_SCOPE_MISSING",
+            "Provider prompt requires a frozen target scope",
+        )
     pack_artifacts = materialization.get("pack_artifacts")
     if not isinstance(pack_artifacts, Mapping):
         raise KernelError(
@@ -2973,7 +3438,7 @@ def _materialize_production_codex_prompt(
         )
     replacements = {
         "{{stage}}": stage,
-        "{{target_scope}}": _canonical(request.target_scope.to_dict()),
+        "{{target_scope}}": _canonical(resolved_target_scope),
         "{{input_manifest}}": _canonical(task_view),
         "{{context_bundle}}": _canonical(context_view),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
@@ -3057,16 +3522,24 @@ def _materialize_production_codex_prompt(
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     prompt_bytes = len(prompt.encode("utf-8"))
     prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)
-    component_characters = {
-        "system_instruction": len(system_text),
-        "governed_skill": len(skill_text),
-        "provider_knowledge": len(_canonical(knowledge_view)),
-        "provider_task_view": len(_canonical(task_view)),
-        "provider_context_view": len(_canonical(context_view)),
-        "tool_policy": len(_canonical(tools)),
-        "stage_semantic_contract": len(stage_semantic_contract),
-        "output_schema": len(_canonical(schema["content"])),
-        "fully_rendered_prompt": len(prompt),
+    component_text = {
+        "system_instruction": system_text,
+        "governed_skill": skill_text,
+        "provider_knowledge": _canonical(knowledge_view),
+        "provider_task_view": _canonical(task_view),
+        "provider_context_view": _canonical(context_view),
+        "tool_policy": _canonical(tools),
+        "stage_semantic_contract": stage_semantic_contract,
+        "output_schema": _canonical(schema["content"]),
+        "fully_rendered_prompt": prompt,
+    }
+    component_characters = {key: len(value) for key, value in component_text.items()}
+    component_bytes = {
+        key: len(value.encode("utf-8")) for key, value in component_text.items()
+    }
+    component_hashes = {
+        key: "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+        for key, value in component_text.items()
     }
     component_tokens = {
         key: max(1, count // 4) for key, count in component_characters.items()
@@ -3122,6 +3595,10 @@ def _materialize_production_codex_prompt(
             ),
             "component_characters": component_characters,
             "component_estimated_tokens": component_tokens,
+            "component_utf8_byte_upper_bounds": component_bytes,
+            "component_hashes": component_hashes,
+            "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+            "provider_admission_uses_component_estimates": False,
             "authority_context_estimated_tokens": authority_context_tokens,
             "provider_context_estimated_tokens": provider_context_tokens,
             "context_projection_ratio": round(
@@ -3139,12 +3616,22 @@ def _materialize_production_codex_prompt(
 
 def _materialize_source_intelligence_prompt(
     *,
-    request: ExecutionRequest,
+    request: ExecutionRequest | None = None,
+    target_scope: Mapping[str, Any] | None = None,
     stage: str,
     inputs: Mapping[str, Any],
     materialization: Mapping[str, Any],
 ) -> tuple[str, dict[str, Any]]:
     """SECURITY: Render Source analysis bytes only in Provider memory, never in PostgreSQL."""
+    if request is not None:
+        resolved_target_scope = request.target_scope.to_dict()
+    elif target_scope is not None:
+        resolved_target_scope = dict(target_scope)
+    else:
+        raise KernelError(
+            "SOURCE_PROVIDER_TARGET_SCOPE_MISSING",
+            "Source Provider prompt requires a frozen target scope",
+        )
     system = materialization.get("system_instruction")
     skill = materialization.get("skill")
     template = materialization.get("prompt_template")
@@ -3182,7 +3669,7 @@ def _materialize_source_intelligence_prompt(
             "<governed_skill>\n" + texts[1] + "\n</governed_skill>",
             "<prompt_template>\n" + texts[2] + "\n</prompt_template>",
             "<target_scope>\n"
-            + _canonical(request.target_scope.to_dict())
+            + _canonical(resolved_target_scope)
             + "\n</target_scope>",
             "<source_analysis_input>\n"
             + _canonical(inputs)
@@ -3193,12 +3680,32 @@ def _materialize_source_intelligence_prompt(
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    source_components = {
+        "system_instruction": texts[0],
+        "governed_skill": texts[1],
+        "prompt_template": texts[2],
+        "target_scope": _canonical(resolved_target_scope),
+        "source_analysis_input": _canonical(inputs),
+        "tool_policy": _canonical(tool_permissions),
+        "output_schema": _canonical(schema_content),
+        "fully_rendered_prompt": prompt,
+    }
     return prompt, {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
         "stage": stage,
         "source_bytes_transient_only": True,
         "source_bytes_persisted_in_external_effect": False,
+        "component_hashes": {
+            key: "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+            for key, value in source_components.items()
+        },
+        "component_utf8_byte_upper_bounds": {
+            key: len(value.encode("utf-8"))
+            for key, value in source_components.items()
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_UPPER_BOUND",
+        "provider_admission_uses_component_estimates": False,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")
         },

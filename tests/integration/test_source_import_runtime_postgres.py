@@ -163,6 +163,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             transport=self.production_execution.gateway,
             worker_id="source-import-integration-worker",
             lease_seconds=30,
+            source_object_reader=LocalObjectStoreReader(self.object_root),
         )
         self.execution_port = execution_port
         self.application = SourceImportApplication(

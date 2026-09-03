@@ -63,6 +63,7 @@ class ProviderInvocationRequest:
     operation_id: str
     external_effect_id: str
     budget_reservation_id: str = ""
+    provider_admission: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -73,6 +74,10 @@ class ProviderInvocationRequest:
         )
         if not all(required) or self.timeout_seconds <= 0:
             raise ValueError("provider invocation request is incomplete")
+        if self.provider_admission is not None and not isinstance(
+            self.provider_admission, dict
+        ):
+            raise ValueError("provider admission receipt must be an object")
 
 
 @dataclass(frozen=True, slots=True)

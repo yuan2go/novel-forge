@@ -53,7 +53,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             {"plan-v1", "style-v1"},
         )
         self.assertIn(
-            {"asset_version_id": "world-v1", "reason": "token_budget"},
+            {"asset_version_id": "world-v1", "reason": "TOTAL_CONTEXT_LIMIT"},
             bundle["rejected_asset_versions"],
         )
 
@@ -106,6 +106,10 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             "content_digest": f"sha256:{asset_version_id}",
             "policy_version": "source-policy-v1",
             "safe_summary": f"Safe facts for {asset_version_id}",
+            "provenance": {
+                "authority_asset_version_id": asset_version_id,
+                "source_content_hash": f"sha256:{asset_version_id}",
+            },
         }
         values.update(changes)
         return ContextCandidate(**values)
@@ -164,13 +168,13 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         reasons = {
             item["asset_version_id"]: item["reason"] for item in selection.rejected
         }
-        self.assertEqual(reasons["other-project"], "cross_project")
-        self.assertEqual(reasons["revoked"], "qualification:REVOKED")
-        self.assertEqual(reasons["stale"], "qualification:STALE")
-        self.assertEqual(reasons["quarantine"], "qualification:QUARANTINED")
-        self.assertEqual(reasons["review-only"], "source_mode:review_only")
-        self.assertEqual(reasons["raw"], "raw_source_forbidden")
-        self.assertEqual(reasons["observation"], "raw_source_forbidden")
+        self.assertEqual(reasons["other-project"], "WRONG_PROJECT")
+        self.assertEqual(reasons["revoked"], "QUALIFICATION_REVOKED")
+        self.assertEqual(reasons["stale"], "QUALIFICATION_STALE")
+        self.assertEqual(reasons["quarantine"], "QUALIFICATION_QUARANTINED")
+        self.assertEqual(reasons["review-only"], "SOURCE_MODE_review_only")
+        self.assertEqual(reasons["raw"], "RAW_SOURCE_FORBIDDEN")
+        self.assertEqual(reasons["observation"], "RAW_SOURCE_FORBIDDEN")
 
     def test_budget_is_deterministic_and_never_exceeded(self) -> None:
         selection = select_context_candidates(
@@ -197,7 +201,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             [item.asset_version_id for item in selection.selected], ["plan-v1", "best"]
         )
         self.assertIn(
-            {"asset_version_id": "overflow", "reason": "token_budget"},
+            {"asset_version_id": "overflow", "reason": "TOTAL_CONTEXT_LIMIT"},
             selection.rejected,
         )
 
@@ -380,14 +384,14 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            first["context_contract_version"], "authority-context-bundle-v7"
+            first["context_contract_version"], "authority-context-bundle-v8"
         )
         self.assertEqual(
             first["actual_context_digest"], replayed["actual_context_digest"]
         )
         self.assertEqual(first["context_manifest"], replayed["context_manifest"])
         manifest = first["context_manifest"]
-        self.assertEqual(manifest["contract_version"], "narrative-context-manifest-v3")
+        self.assertEqual(manifest["contract_version"], "narrative-context-manifest-v4")
         self.assertEqual(manifest["accepted_boundary"]["accepted_through_chapter"], 11)
         self.assertIn("protected_context", manifest)
         self.assertIn("compressible_context", manifest)
@@ -484,7 +488,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 ),
             ),
             "NO_HIDDEN_KNOWLEDGE_LEAK": (plan, state),
-            "NO_STALE_VERSION": (
+            "STALE_REPRESENTATION": (
                 plan,
                 self.candidate(
                     "stale-v1",

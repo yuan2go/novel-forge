@@ -151,23 +151,32 @@ class OpenAISdkTransport:
         self.client = client
 
     def execute(self, request: ProviderInvocationRequest) -> Mapping[str, Any]:
+        from novel_forge.modules.production_execution.provider_admission import (
+            ProviderAdmissionReceipt,
+            ProviderRequestEnvelope,
+            verify_provider_admission,
+        )
+
+        envelope = ProviderRequestEnvelope.from_dict(request.request_payload)
+        if not isinstance(request.provider_admission, Mapping):
+            raise ValueError("PROVIDER_ADMISSION_REQUIRED")
+        admission = ProviderAdmissionReceipt.from_dict(request.provider_admission)
+        verify_provider_admission(envelope, admission)
+        if (
+            envelope.envelope_hash != request.request_hash
+            or envelope.provider != request.provider
+            or envelope.model != request.model
+            or envelope.timeout_seconds != request.timeout_seconds
+            or envelope.stable_idempotency_key != request.stable_idempotency_key
+        ):
+            raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT")
         request_options: dict[str, Any] = {
-            "model": request.model,
-            "input": json.dumps(
-                request.request_payload, ensure_ascii=False, sort_keys=True
-            ),
-            "timeout": request.timeout_seconds,
-            "extra_headers": {"Idempotency-Key": request.stable_idempotency_key},
+            "model": envelope.model,
+            "input": envelope.input_text,
+            "timeout": envelope.timeout_seconds,
+            "extra_headers": {"Idempotency-Key": envelope.stable_idempotency_key},
         }
-        raw_max_output_tokens = request.request_payload.get("max_output_tokens")
-        if raw_max_output_tokens is not None:
-            try:
-                max_output_tokens = int(raw_max_output_tokens)
-            except (TypeError, ValueError) as exc:
-                raise ValueError("Provider request token ceiling is invalid") from exc
-            if max_output_tokens <= 0:
-                raise ValueError("Provider request token ceiling must be positive")
-            request_options["max_output_tokens"] = max_output_tokens
+        request_options["max_output_tokens"] = envelope.max_output_tokens
         response = self.client.responses.create(
             **request_options,
         )

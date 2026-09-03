@@ -1278,8 +1278,14 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
             model_profile=SimpleNamespace(
                 contract_hash="model-profile-hash",
                 model_id="gpt-semantic-test",
+                model_provider="scripted_provider_v2",
             ),
             route_policy=SimpleNamespace(contract_hash="route-policy-hash"),
+            token_accounting_method="",
+            token_accounting_evidence_ref="",
+            model_context_limit=65_536,
+            token_safety_margin=256,
+            token_framing_overhead=16,
         )
     }
     binder.frozen_artifacts = {
@@ -1301,10 +1307,15 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
     captured: dict[str, object] = {}
 
     def persist(**values: object) -> SimpleNamespace:
-        captured.update(values)
+        asset_type = str(values["asset_type"])
+        captured[
+            "materialization"
+            if asset_type == "capability_materialization_manifest"
+            else "admission"
+        ] = values["contract"]
         return SimpleNamespace(
-            asset_version_id="asset-version:materialization",
-            asset_type="capability_materialization_manifest",
+            asset_version_id=f"asset-version:{asset_type}",
+            asset_type=asset_type,
             content_hash="sha256:" + "c" * 64,
         )
 
@@ -1314,6 +1325,9 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         capability="model.retrieval",
         request_payload={
             "stage": "retrieval",
+            "max_output_tokens": 512,
+            "stable_idempotency_key": "retrieval:stable:1",
+            "input": {"texts": ["accepted-only text"], "purpose": "INDEX"},
             "trace_id": "trace:1",
             "correlation_id": "correlation:1",
             "_production_execution": {
@@ -1321,6 +1335,7 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
                 "attempt_id": "attempt:1",
                 "project_id": "project:1",
                 "fencing_token": 3,
+                "provider_request_timeout_seconds": 30,
                 "source_asset_version_id": "asset-version:accepted",
                 "source_content_hash": "sha256:" + "b" * 64,
             },
@@ -1329,7 +1344,7 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         snapshot_worker_id="worker:1",
     )
 
-    contract = captured["contract"]
+    contract = captured["materialization"]
     assert isinstance(contract, dict)
     assert contract["runtime_kind"] == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
     assert contract["source_asset_version_id"] == "asset-version:accepted"
@@ -1354,6 +1369,9 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         capability="model.retrieval",
         request_payload={
             "stage": "retrieval",
+            "max_output_tokens": 512,
+            "stable_idempotency_key": "retrieval:stable:1",
+            "input": {"texts": ["accepted-only text"], "purpose": "INDEX"},
             "trace_id": "trace:1",
             "correlation_id": "correlation:1",
             "_production_execution": {
@@ -1361,6 +1379,7 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
                 "attempt_id": "attempt:1",
                 "project_id": "project:1",
                 "fencing_token": 3,
+                "provider_request_timeout_seconds": 30,
                 "source_asset_version_id": "asset-version:accepted",
                 "source_content_hash": "sha256:" + "b" * 64,
             },
@@ -1368,4 +1387,4 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         snapshot_fencing_token=4,
         snapshot_worker_id="worker:recovery",
     )
-    assert captured["contract"] == first_contract
+    assert captured["materialization"] == first_contract

@@ -562,9 +562,11 @@ class ExternalEffectChapterModelPort:
             request,
             stable_key=stable_key,
         )
+        provider_request_timeout_seconds = self._request_timeout_seconds(request)
         effect_request_payload = {
             "stage": stage,
             "max_output_tokens": provider_output_token_ceiling,
+            "stable_idempotency_key": stable_key,
             "input": payload,
             "trace_id": request.trace_id,
             "correlation_id": request.correlation_id,
@@ -617,6 +619,7 @@ class ExternalEffectChapterModelPort:
                     )(stage)
                 ),
                 "execution_binding_domain": self.execution_binding_domain,
+                "provider_request_timeout_seconds": provider_request_timeout_seconds,
                 "input_artifacts": [
                     {
                         "artifact_ref": f"asset-version:{item.asset_version_id}",
@@ -657,6 +660,10 @@ class ExternalEffectChapterModelPort:
                 metadata = dict(effect_request_payload["_production_execution"])
                 frozen_artifacts = list(metadata["input_artifacts"])
                 frozen_artifacts.append(preflight.materialization_artifact.to_dict())
+                if preflight.provider_admission_artifact is not None:
+                    frozen_artifacts.append(
+                        preflight.provider_admission_artifact.to_dict()
+                    )
                 metadata.update(
                     {
                         "input_artifacts": frozen_artifacts,
@@ -682,7 +689,7 @@ class ExternalEffectChapterModelPort:
             model_id=str(
                 getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
             ),
-            request_timeout_seconds=self._request_timeout_seconds(request),
+            request_timeout_seconds=provider_request_timeout_seconds,
             reconciliation_mode=str(self.adapter.reconciliation_mode),
             provider_capability_profile=(
                 self.adapter.capability_profile.to_dict()

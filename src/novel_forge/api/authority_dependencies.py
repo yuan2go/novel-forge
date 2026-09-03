@@ -740,6 +740,33 @@ def build_production_execution_composition(
             release_sha=release_sha,
             real_provider_validation_eligible=real_provider_eligible,
             embedding_dimensions=(embedding_dimensions if stage == "retrieval" else 0),
+            model_context_limit=int(
+                values.get(
+                    f"NOVEL_FORGE_{stage.upper()}_MODEL_CONTEXT_LIMIT"
+                )
+                or values.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT")
+                or 0
+            ),
+            token_accounting_method=str(
+                values.get(
+                    f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_METHOD"
+                )
+                or values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD")
+                or ""
+            ).strip(),
+            token_accounting_evidence_ref=str(
+                values.get(
+                    f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_EVIDENCE_REF"
+                )
+                or values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF")
+                or ""
+            ).strip(),
+            token_safety_margin=int(
+                values.get("NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN") or 256
+            ),
+            token_framing_overhead=int(
+                values.get("NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD") or 16
+            ),
         )
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)
@@ -1401,6 +1428,10 @@ def build_source_import_application(
         lease_seconds=int(values.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30"),
         max_cost_per_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(),
+        source_object_reader=execution.source_object_reader,
+        provider_output_token_reserve=int(
+            values.get("NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE") or 4_096
+        ),
     )
     return SourceImportApplication(
         settings.database_url,
