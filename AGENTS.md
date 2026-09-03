@@ -14,6 +14,11 @@ Use these evidence states exactly: `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIF
 `PRODUCTION_PROVEN`. A lower state never implies a higher one. Scripted, fixture, test,
 human, real-Provider, long-form and production evidence remain separate.
 
+Classify hard constraints as `CURRENT_PROVEN_INVARIANT`, `CURRENT_RUNTIME_FACT`,
+`CONFIGURABLE_POLICY`, `HISTORICAL_COMPATIBILITY`, or
+`UNRESOLVED_DESIGN_CONSTRAINT`. Only a proven invariant may be treated as final
+architecture. Never rationalize an unresolved constant from its mere presence in code.
+
 ## Runtime boundaries
 
 - PostgreSQL owns production business and execution facts.
@@ -56,6 +61,10 @@ inputs unless a governed context contract explicitly permits the material.
 
 The only canonical docs are listed in `docs/README.md`. Do not add delivery histories,
 session reports, completed plans or parallel architecture sources.
+
+Navigate current knowledge through `docs/current-system.md` for meaning,
+`architecture/reality-evidence.json` for checked ownership/topology facts, the production
+and worker manifests for reachability, and the migration manifest for schema identity.
 
 Comments and docstrings explain invariants, constraints, security, compatibility,
 non-obvious algorithms or third-party limitations. They do not narrate architecture,

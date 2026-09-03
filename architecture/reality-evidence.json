@@ -1,5 +1,5 @@
 {
-  "schema_version": "novel-forge.reality-evidence.v3",
+  "schema_version": "novel-forge.reality-evidence.v4",
   "authority_order": [
     "executable_code",
     "schema_and_migrations",
@@ -78,8 +78,332 @@
   },
   "qualification_runs": [
     {
-      "id": "p0-backend-engineering-qualification-45e901b2",
+      "id": "p0-backend-engineering-qualification-adc0a2df",
       "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "evidence_class": "p0_backend_engineering_qualification",
+      "gate": "P0_PROFILE=local make p0-backend-qualification",
+      "observed_at_sha": "adc0a2df02ee6d9cb8cecaeec2fef2dfcf25a612",
+      "source_tree": "fb752a4f694e11e70ae69e4522f589a91d52811b",
+      "implementation_tree_sha": "sha256:4d4e5852e4e29b69169152c53791a1698d481386c25b8caa960987b2421523f8",
+      "dependency_snapshot_digest": "sha256:7447d4dfaa36954826714985a09e63e663f3d39b7a5080e9b342ee0b54a9a9e7",
+      "qualification_report": {
+        "run_id": "p0-2a3e7fbe2add4857ba3a35d66299936d",
+        "artifact_root": "novel-forge-p0-adc0a2df02ee-2a3e7fbe2add4857ba3a35d66299936d",
+        "artifact": "p0-backend-qualification-adc0a2df02ee6d9cb8cecaeec2fef2dfcf25a612.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-adc0a2df02ee6d9cb8cecaeec2fef2dfcf25a612.json",
+        "sha256": "sha256:0f7814e50295eeecf587bc43ed4a0d259e6b122e783d0d1e35984b65e697b815",
+        "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
+      },
+      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+      "collected": 3578,
+      "passed": 3578,
+      "failed": 0,
+      "collections": [
+        {
+          "classification": "BACKEND_NON_POSTGRESQL",
+          "collected_nodes": 1561,
+          "junit_cases": 2994,
+          "passed": 2994,
+          "skipped": 0,
+          "complete": true
+        },
+        {
+          "classification": "MIGRATION_COMPATIBILITY",
+          "collected_nodes": 67,
+          "junit_cases": 80,
+          "passed": 80,
+          "skipped": 0,
+          "complete": true,
+          "repeated_in_postgresql_collection": true
+        },
+        {
+          "classification": "POSTGRESQL_REQUIRED",
+          "collected_nodes": 499,
+          "junit_cases": 584,
+          "passed": 584,
+          "skipped": 0,
+          "complete": true
+        }
+      ],
+      "gates": [
+        {
+          "id": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "id": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "id": "static-and-manifests",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-backend",
+          "status": "PASS"
+        },
+        {
+          "id": "postgresql-start",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-fresh",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-compatibility",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-postgresql-integration",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-head",
+          "status": "PASS"
+        },
+        {
+          "id": "query-plan-release",
+          "status": "PASS"
+        },
+        {
+          "id": "compose-runtime",
+          "status": "PASS"
+        },
+        {
+          "id": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "id": "evidence-finalization",
+          "status": "PASS"
+        }
+      ],
+      "migration": {
+        "applied_count": 106,
+        "expected_head": "20260902_0106_quality_qualification_scope_generalization",
+        "observed_head": "20260902_0106_quality_qualification_scope_generalization"
+      },
+      "cleanup": {
+        "status": "PASS",
+        "owned_resource_count": 20,
+        "remaining_resource_count": 0,
+        "phases": [
+          {
+            "compose_project": "nf-p0-2a3e7fbe2add4857ba3a35d66299936d",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-2a3e7fbe2add4857ba3a35d66299936d.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-2a3e7fbe2add4857ba3a35d66299936d",
+            "status": "PASS"
+          },
+          {
+            "compose_project": "nf-p0-2a3e7fbe2add4857ba3a35d66299936d-runtime",
+            "phase": "compose-runtime",
+            "receipt": "compose-resource-ownership-nf-p0-2a3e7fbe2add4857ba3a35d66299936d-runtime.json",
+            "remaining_resource_count": 0,
+            "resource_count": 18,
+            "run_id": "p0-2a3e7fbe2add4857ba3a35d66299936d",
+            "status": "PASS"
+          }
+        ]
+      },
+      "proof_scope": {
+        "ceiling": "LOCAL_BACKEND_ENGINEERING",
+        "does_not_establish": [
+          "ADMIN_UI_EXECUTION",
+          "CREDENTIALED_PROVIDER_EXECUTION",
+          "HUMAN_EDITORIAL_EVIDENCE",
+          "LONGITUDINAL_NARRATIVE_STABILITY",
+          "PRODUCTION_OPERATION"
+        ],
+        "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+        "proves": [
+          "runtime-composition",
+          "project-workspace-authority",
+          "command-attempt-lease-fence",
+          "capability-pack-instruction-runtime",
+          "external-effect-provider-control",
+          "source-import-and-knowledge",
+          "book-design-and-story-formation",
+          "story-design-authority",
+          "hierarchical-planning",
+          "narrative-realization",
+          "plan-change-authority",
+          "book-opening-workflow",
+          "book-production-coordination",
+          "chapter-group-coordination",
+          "context-and-retrieval",
+          "chapter-production-saga",
+          "review-revision-quality",
+          "book-chapter-acceptance",
+          "canon-and-narrative-state",
+          "reader-and-followup-evidence",
+          "agent-runtime",
+          "postgresql-persistence-and-migrations",
+          "retry-recovery-and-replay"
+        ],
+        "schema_version": "novel-forge.qualification-proof-scope.v1"
+      },
+      "qualification_evidence": [
+        {
+          "path": "tests/unit/test_authority_api_surface.py",
+          "symbol": "AuthorityApiSurfaceTests.test_required_product_reads_are_exposed_by_postgresql_app"
+        },
+        {
+          "path": "tests/unit/test_postgresql_authority_cli_boundary.py",
+          "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
+        },
+        {
+          "path": "tests/integration/test_authority_project_workspace_postgres.py",
+          "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
+        },
+        {
+          "path": "tests/unit/test_command_kernel_admission.py",
+          "symbol": "CommandKernelAdmissionTests.test_missing_command_identity_is_rejected_before_uow"
+        },
+        {
+          "path": "tests/integration/test_authority_attempt_lease_schema_postgres.py",
+          "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
+        },
+        {
+          "path": "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
+          "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
+        },
+        {
+          "path": "tests/unit/test_provider_adapter_v2.py",
+          "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
+        },
+        {
+          "path": "tests/integration/test_source_import_runtime_postgres.py",
+          "symbol": "SourceImportRuntimePostgresTests.test_production_composition_runs_automatic_document_routing"
+        },
+        {
+          "path": "tests/integration/test_mkaos_authority_postgres.py",
+          "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
+        },
+        {
+          "path": "tests/integration/test_authority_book_design_postgres.py",
+          "symbol": "BookDesignAuthorityPostgresTests.test_full_chain_replay_projection_and_supersession"
+        },
+        {
+          "path": "tests/integration/test_hierarchy_closure_postgres.py",
+          "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
+        },
+        {
+          "path": "tests/integration/test_story_design_authority_postgres.py",
+          "symbol": "StoryDesignAuthorityPostgresTests.test_activation_supersedes_old_version"
+        },
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_book_volume_group_hierarchy_and_parent_versions"
+        },
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_arc_crosses_volumes_and_relations_form_closure"
+        },
+        {
+          "path": "tests/unit/test_narrative_realization.py",
+          "symbol": "test_realization_is_not_a_plan_scale_or_accepted_actual"
+        },
+        {
+          "path": "tests/integration/test_plan_change_authority_postgres.py",
+          "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
+        },
+        {
+          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
+          "symbol": "test_opening_advances_five_durable_layers_before_book_run_admission"
+        },
+        {
+          "path": "tests/integration/test_book_opening_workflow_failures_postgres.py",
+          "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
+        },
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_acceptance_freezes_typed_execution_plan_for_chapter_outcome"
+        },
+        {
+          "path": "tests/integration/test_chapter_group_authority_postgres.py",
+          "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
+        },
+        {
+          "path": "tests/integration/test_retrieval_candidate_v3_postgres.py",
+          "symbol": "test_semantic_rerank_cannot_expand_frozen_lexical_structured_union"
+        },
+        {
+          "path": "tests/integration/test_retrieval_embedding_projection_postgres.py",
+          "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
+        },
+        {
+          "path": "tests/integration/test_chapter_authority_scheduler_postgres.py",
+          "symbol": "ChapterAuthoritySchedulerPostgresTests.test_admission_does_not_execute_and_ticks_rebuild_full_saga"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_dependencies.py",
+          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_domain_handlers.py",
+          "symbol": "ChapterAuthorityDomainHandlerTests.test_post_blob_final_release_fails_closed_and_binds_receipt"
+        },
+        {
+          "path": "tests/integration/test_quality_qualification_postgres.py",
+          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
+        },
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
+        },
+        {
+          "path": "tests/integration/test_narrative_state_v2_postgres.py",
+          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
+        },
+        {
+          "path": "tests/architecture/test_narrative_state_boundaries.py",
+          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
+        },
+        {
+          "path": "tests/integration/test_book_followup_authority_postgres.py",
+          "symbol": "BookFollowupAuthorityPostgresTests.test_reader_outcome_uses_pep_external_effect_and_replays_once"
+        },
+        {
+          "path": "tests/integration/test_reader_calibration_postgres.py",
+          "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
+        },
+        {
+          "path": "tests/integration/test_unified_agent_runtime_postgres.py",
+          "symbol": "UnifiedAgentRuntimePostgresTests.test_runtime_projection_reuses_kernel_attempt_and_lease_tables"
+        },
+        {
+          "path": "tests/unit/test_agent_authority_scheduler.py",
+          "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
+        },
+        {
+          "path": "tests/unit/test_postgres_migrations.py",
+          "symbol": "PostgresMigrationTests.test_migration_chain_is_ordered_and_pending_is_deterministic"
+        },
+        {
+          "path": "tests/integration/test_authority_migrations_postgres.py",
+          "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
+        },
+        {
+          "path": "tests/integration/test_book_opening_recovery_regression_postgres.py",
+          "symbol": "test_book_opening_process_loss_converges_and_admits_one_replacement"
+        },
+        {
+          "path": "tests/integration/test_book_opening_recovery_protocol_postgres.py",
+          "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
+        }
+      ]
+    },
+    {
+      "id": "p0-backend-engineering-qualification-45e901b2",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
       "observed_at_sha": "45e901b2422b5f17dd70004cb186ff1e19155743",
@@ -361,7 +685,7 @@
     },
     {
       "id": "real-provider-runtime-qualification-45e901b2",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "focused_qualification_contracts",
       "gate": "make real-provider-qualification",
       "observed_at_sha": "45e901b2422b5f17dd70004cb186ff1e19155743",
@@ -711,27 +1035,58 @@
   "capabilities": [
     {
       "concept": "runtime-composition",
-      "owner": "Authority API and process composition",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/api/authority_app.py",
-          "symbol": "create_authority_app"
-        },
-        {
-          "path": "src/novel_forge/infrastructure/production_execution_composition.py",
-          "symbol": "ProductionExecutionComposition"
-        }
-      ],
-      "runtime_entries": [
+      "owner": "Authority API and process composition",
+      "production_entries": [
         {
           "path": "src/novel_forge/cli/authority.py",
           "symbol": "main"
         },
         {
+          "path": "src/novel_forge/api/authority_app.py",
+          "symbol": "create_authority_app"
+        },
+        {
           "path": "compose.yml",
           "locator": "authority-api:"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/api/authority_app.py",
+          "symbol": "create_authority_app"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/infrastructure/production_execution_composition.py",
+          "symbol": "ProductionExecutionComposition"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/cli/authority.py",
+          "symbol": "main"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "process composition",
+          "dependency graph",
+          "readiness surface"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/infrastructure/production_execution_composition.py",
+            "symbol": "ProductionExecutionComposition"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/infrastructure/production_execution_composition.py",
+          "symbol": "ProductionExecutionComposition"
         }
       ],
       "persistence": [
@@ -742,12 +1097,29 @@
       ],
       "migrations": [
         {
-          "id": "20260712_0007_postgres_command_kernel_authority",
           "path": "src/novel_forge/storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py",
-          "locator": "MIGRATION_ID = \"20260712_0007_postgres_command_kernel_authority\""
+          "locator": "MIGRATION_ID = \"20260712_0007_postgres_command_kernel_authority\"",
+          "id": "20260712_0007_postgres_command_kernel_authority"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Composition provides governed effect adapters but does not itself decide domain state.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/infrastructure/production_execution_composition.py",
+            "symbol": "ProductionExecutionComposition"
+          }
+        ]
+      },
+      "upstream_dependencies": [],
+      "downstream_consumers": [
+        "project-workspace-authority",
+        "capability-pack-instruction-runtime",
+        "book-opening-workflow",
+        "agent-runtime"
+      ],
+      "tests": [
         {
           "path": "tests/unit/test_authority_api_surface.py",
           "symbol": "AuthorityApiSurfaceTests.test_required_product_reads_are_exposed_by_postgresql_app"
@@ -757,31 +1129,107 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
+    },
+    {
+      "concept": "project-workspace-authority",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Project Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/authority_projects.py",
+          "locator": "@router.post(\"/product/projects\")"
+        },
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"project_lifecycle.create\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/project_authority/application.py",
+          "symbol": "ProjectAuthorityApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/project_authority/domain.py",
+          "symbol": "build_project_snapshot"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/project_authority/application.py",
+          "symbol": "ProjectAuthorityCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "project snapshot",
+          "workspace snapshot",
+          "project binding decisions"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/project_authority/application.py",
+            "symbol": "ProjectAuthorityApplication.execute"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/project_authority/application.py",
+          "symbol": "ProjectAuthorityApplication.execute"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/project_authority_repositories.py",
+          "symbol": "ProjectAuthorityRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260801_0043_project_workspace_and_legacy_migration_authority.py",
+          "locator": "MIGRATION_ID = \"20260801_0043_project_workspace_and_legacy_migration_authority\"",
+          "id": "20260801_0043_project_workspace_and_legacy_migration_authority"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Project mutations are PostgreSQL transactions without external I/O.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "runtime-composition"
+      ],
+      "downstream_consumers": [
+        "source-import-and-knowledge",
+        "book-design-and-story-formation",
+        "agent-runtime"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_authority_project_workspace_postgres.py",
+          "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
     },
     {
       "concept": "command-attempt-lease-fence",
-      "owner": "Command Kernel",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/command_kernel/service.py",
-          "symbol": "admit_command"
-        },
-        {
-          "path": "src/novel_forge/modules/command_kernel/service.py",
-          "symbol": "execute_transaction_command"
-        },
-        {
-          "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
-          "symbol": "acquire_attempt_lease"
-        }
-      ],
-      "runtime_entries": [
+      "owner": "Command Kernel",
+      "production_entries": [
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"classification\": \"transaction_command\""
@@ -791,6 +1239,46 @@
           "locator": "\"recovery_protocol\": \"dual-fence-v1\""
         }
       ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/service.py",
+          "symbol": "admit_command"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+          "symbol": "acquire_attempt_lease"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/service.py",
+          "symbol": "execute_transaction_command"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "operation",
+          "attempt",
+          "lease",
+          "fencing token",
+          "idempotency evidence"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+            "symbol": "acquire_attempt_lease"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+          "symbol": "acquire_attempt_lease"
+        }
+      ],
       "persistence": [
         {
           "path": "src/novel_forge/storage/authority_repositories.py",
@@ -799,12 +1287,26 @@
       ],
       "migrations": [
         {
-          "id": "20260713_0009_attempt_lease_invariants",
           "path": "src/novel_forge/storage/migrations/versions/v20260713_0009_attempt_lease_invariants.py",
-          "locator": "MIGRATION_ID = \"20260713_0009_attempt_lease_invariants\""
+          "locator": "MIGRATION_ID = \"20260713_0009_attempt_lease_invariants\"",
+          "id": "20260713_0009_attempt_lease_invariants"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Command admission and transaction attempts do not perform external I/O.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "runtime-composition"
+      ],
+      "downstream_consumers": [
+        "external-effect-provider-control",
+        "chapter-production-saga",
+        "agent-runtime",
+        "retry-recovery-and-replay"
+      ],
+      "tests": [
         {
           "path": "tests/unit/test_command_kernel_admission.py",
           "symbol": "CommandKernelAdmissionTests.test_missing_command_identity_is_rejected_before_uow"
@@ -814,35 +1316,116 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "capability-pack-instruction-runtime",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Capability Pack Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/capability_pack_authority.py",
+          "locator": "@router.post(\"/register\")"
+        },
+        {
+          "path": "config/capability_packs/chapter_generation_pack.json",
+          "locator": "\"pack_id\": \"chapter_generation_pack\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/capability_pack_authority/application.py",
+          "symbol": "CapabilityPackAuthorityApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/capability_pack_authority/runtime.py",
+          "symbol": "CapabilityPackRuntimeResolver"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/capability_pack_authority/application.py",
+          "symbol": "CapabilityPackAuthorityCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "pack versions",
+          "validation",
+          "compilation",
+          "deployment",
+          "activation",
+          "attempt snapshot"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/capability_pack_authority/application.py",
+            "symbol": "CapabilityPackAuthorityApplication.execute"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/capability_pack_authority/application.py",
+          "symbol": "CapabilityPackAuthorityApplication.execute"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/capability_pack_authority_repositories.py",
+          "symbol": "CapabilityPackAuthorityRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260805_0071_capability_pack_authority.py",
+          "locator": "MIGRATION_ID = \"20260805_0071_capability_pack_authority\"",
+          "id": "20260805_0071_capability_pack_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260806_0072_capability_pack_integrity_hardening.py",
+          "locator": "MIGRATION_ID = \"20260806_0072_capability_pack_integrity_hardening\"",
+          "id": "20260806_0072_capability_pack_integrity_hardening"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Pack governance freezes instructions and routes; provider I/O occurs only when a consuming operation executes.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "runtime-composition",
+        "project-workspace-authority"
+      ],
+      "downstream_consumers": [
+        "chapter-production-saga",
+        "hierarchical-planning",
+        "agent-runtime"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
+          "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
     },
     {
       "concept": "external-effect-provider-control",
-      "owner": "Command Kernel ExternalEffect and Production Execution",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
-          "symbol": "dispatch_external_effect"
-        },
-        {
-          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
-          "symbol": "reconcile_external_effect"
-        },
-        {
-          "path": "src/novel_forge/modules/production_execution/gateway.py",
-          "symbol": "ProductionExecutionGateway"
-        },
-        {
-          "path": "src/novel_forge/modules/provider_control/composition.py",
-          "symbol": "build_provider_adapter_registry"
-        }
-      ],
-      "runtime_entries": [
+      "owner": "Command Kernel ExternalEffect and Production Execution",
+      "production_entries": [
         {
           "path": "architecture/manifests/worker-manifest.yaml",
           "locator": "\"execution_class\": \"external_effect\""
@@ -852,429 +1435,116 @@
           "symbol": "ProductionExecutionComposition"
         }
       ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "dispatch_external_effect"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/production_execution/gateway.py",
+          "symbol": "ProductionExecutionGateway"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_control/composition.py",
+          "symbol": "build_provider_adapter_registry"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "reconcile_external_effect"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "external effect intent",
+          "dispatch",
+          "receipt",
+          "provider usage and cost evidence"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+            "symbol": "dispatch_external_effect"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "dispatch_external_effect"
+        }
+      ],
       "persistence": [
         {
-          "path": "src/novel_forge/storage/authority_repositories.py",
-          "symbol": "AuthorityRepositories"
+          "path": "src/novel_forge/storage/external_effect_repositories.py",
+          "symbol": "ExternalEffectRepository"
         }
       ],
       "migrations": [
         {
-          "id": "20260716_0019_external_effect_protocol",
           "path": "src/novel_forge/storage/migrations/versions/v20260716_0019_external_effect_protocol.py",
-          "locator": "MIGRATION_ID = \"20260716_0019_external_effect_protocol\""
+          "locator": "MIGRATION_ID = \"20260716_0019_external_effect_protocol\"",
+          "id": "20260716_0019_external_effect_protocol"
         },
         {
-          "id": "20260718_0028_provider_adapter_v2",
           "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
-          "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\""
+          "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\"",
+          "id": "20260718_0028_provider_adapter_v2"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "All Provider and object-store I/O crosses durable ExternalEffect intent and receipt control.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/production_execution/gateway.py",
+            "symbol": "ProductionExecutionGateway.submit"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "command-attempt-lease-fence",
+        "capability-pack-instruction-runtime"
+      ],
+      "downstream_consumers": [
+        "source-import-and-knowledge",
+        "book-design-and-story-formation",
+        "story-design-authority",
+        "book-opening-workflow",
+        "context-and-retrieval",
+        "chapter-production-saga",
+        "reader-and-followup-evidence",
+        "agent-runtime"
+      ],
+      "tests": [
         {
           "path": "tests/integration/test_external_effect_runtime_postgres.py",
           "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
         },
         {
-          "path": "tests/integration/test_external_effect_runtime_postgres.py",
-          "symbol": "ExternalEffectRuntimePostgresTests.test_typed_provider_failures_preserve_send_boundary_and_fail_closed"
-        },
-        {
           "path": "tests/unit/test_provider_adapter_v2.py",
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
-        },
-        {
-          "path": "tests/unit/test_d0_provider_qualification.py",
-          "symbol": "D0ProviderQualificationTests.test_live_evidence_requires_exact_identity_and_zero_duplicate_send"
-        },
-        {
-          "path": "tests/unit/test_real_provider_qualification_runner.py",
-          "symbol": "RealProviderQualificationRunnerTests.test_ambiguous_response_fault_is_typed_as_request_sent"
-        },
-        {
-          "path": "tests/integration/test_d0_provider_qualification_authority_postgres.py",
-          "symbol": "D0ProviderQualificationAuthorityPostgresTests.test_only_authority_can_promote_correlated_live_execution_evidence"
-        },
-        {
-          "path": "tests/integration/test_retrieval_embedding_projection_postgres.py",
-          "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
         }
       ],
-      "proof_ceiling": "REAL_PROVIDER_RUNTIME",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
+        "p0-backend-engineering-qualification-adc0a2df"
       ],
-      "focused_qualification_run_ids": [
-        "real-provider-runtime-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "story-design-plan-activation",
-      "owner": "Story Design and Plan Change Authorities",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/story_design_authority/application.py",
-          "symbol": "PostgresStoryDesignAssetAuthority"
-        },
-        {
-          "path": "src/novel_forge/modules/plan_change_authority/application.py",
-          "symbol": "PostgresPlanChangeAuthority"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
-          "symbol": "StoryPlanningGenerationApplication"
-        },
-        {
-          "path": "architecture/manifests/production-entry-manifest.yaml",
-          "locator": "\"name\": \"planning.binding.activate\""
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/story_design_repositories.py",
-          "symbol": "StoryDesignRepository"
-        },
-        {
-          "path": "src/novel_forge/storage/plan_change_repositories.py",
-          "symbol": "PlanChangeRepository"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260730_0038_story_design_authority",
-          "path": "src/novel_forge/storage/migrations/versions/v20260730_0038_story_design_authority.py",
-          "locator": "MIGRATION_ID = \"20260730_0038_story_design_authority\""
-        },
-        {
-          "id": "20260730_0041_plan_change_authority",
-          "path": "src/novel_forge/storage/migrations/versions/v20260730_0041_plan_change_authority.py",
-          "locator": "MIGRATION_ID = \"20260730_0041_plan_change_authority\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/integration/test_story_design_authority_postgres.py",
-          "symbol": "StoryDesignAuthorityPostgresTests.test_activation_supersedes_old_version"
-        },
-        {
-          "path": "tests/integration/test_plan_change_authority_postgres.py",
-          "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
-        }
-      ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "chapter-production-saga",
-      "owner": "Chapter Authority",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/chapter_authority/application.py",
-          "symbol": "ChapterAuthorityApplication.admit"
-        },
-        {
-          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
-          "symbol": "admit_single_chapter_saga"
-        },
-        {
-          "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
-          "symbol": "ChapterAuthorityScheduler"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "architecture/manifests/production-entry-manifest.yaml",
-          "locator": "\"name\": \"chapter.slice.run\""
-        },
-        {
-          "path": "architecture/manifests/worker-manifest.yaml",
-          "locator": "\"name\": \"chapter-authority\""
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/chapter_authority_repositories.py",
-          "symbol": "AuthorityHandlerRepository"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260716_0021_saga_coordination",
-          "path": "src/novel_forge/storage/migrations/versions/v20260716_0021_saga_coordination.py",
-          "locator": "MIGRATION_ID = \"20260716_0021_saga_coordination\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/integration/test_chapter_authority_scheduler_postgres.py",
-          "symbol": "ChapterAuthoritySchedulerPostgresTests.test_admission_does_not_execute_and_ticks_rebuild_full_saga"
-        },
-        {
-          "path": "tests/unit/test_chapter_authority_dependencies.py",
-          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
-        }
-      ],
-      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "quality-and-release-gates",
-      "owner": "Quality Qualification and Chapter Authority",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
-          "symbol": "PostgresQualityQualificationAuthority"
-        },
-        {
-          "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
-          "symbol": "build_final_release_gate"
-        },
-        {
-          "path": "src/novel_forge/modules/publishing/release_gate.py",
-          "symbol": "release_package_gate_evidence"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
-          "locator": "\"final_release_gate\""
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
-          "locator": "CREATE TABLE authority_quality_qualification_campaign"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260826_0101_quality_qualification",
-          "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
-          "locator": "MIGRATION_ID = \"20260826_0101_quality_qualification\""
-        },
-        {
-          "id": "20260902_0106_quality_qualification_scope_generalization",
-          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
-          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/unit/test_chapter_authority_domain_handlers.py",
-          "symbol": "ChapterAuthorityDomainHandlerTests.test_post_blob_final_release_fails_closed_and_binds_receipt"
-        },
-        {
-          "path": "tests/integration/test_quality_qualification_postgres.py",
-          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
-        }
-      ],
-      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "book-opening-workflow",
-      "owner": "Book Opening Authority",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/book_authority/opening.py",
-          "symbol": "PostgresBookOpeningApplication"
-        },
-        {
-          "path": "src/novel_forge/modules/book_authority/opening_workflow.py",
-          "symbol": "build_book_opening_workflow"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "src/novel_forge/api/routers/book_authority.py",
-          "locator": "opening"
-        },
-        {
-          "path": "architecture/manifests/worker-manifest.yaml",
-          "locator": "\"name\": \"book-authority\""
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/migrations/versions/v20260829_0104_book_opening_workflow_nodes.py",
-          "locator": "book_opening_workflow_node"
-        },
-        {
-          "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
-          "locator": "authority_bo_node_receipt_checkpoint_fk_idx"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260829_0104_book_opening_workflow_nodes",
-          "path": "src/novel_forge/storage/migrations/versions/v20260829_0104_book_opening_workflow_nodes.py",
-          "locator": "MIGRATION_ID = \"20260829_0104_book_opening_workflow_nodes\""
-        },
-        {
-          "id": "20260830_0105_p0_backend_qualification_repairs",
-          "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
-          "locator": "MIGRATION_ID = \"20260830_0105_p0_backend_qualification_repairs\""
-        },
-        {
-          "id": "20260902_0106_quality_qualification_scope_generalization",
-          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
-          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
-          "symbol": "test_opening_advances_five_durable_layers_before_book_run_admission"
-        },
-        {
-          "path": "tests/integration/test_book_opening_workflow_failures_postgres.py",
-          "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
-        }
-      ],
-      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "book-chapter-acceptance",
-      "owner": "Book Authority",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/book_authority/production.py",
-          "symbol": "PostgresBookAuthority.accept_chapter"
-        },
-        {
-          "path": "src/novel_forge/storage/book_authority_repositories.py",
-          "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "architecture/manifests/production-entry-manifest.yaml",
-          "locator": "\"name\": \"book.production.coordinate\""
-        },
-        {
-          "path": "architecture/manifests/worker-manifest.yaml",
-          "locator": "\"name\": \"book-authority\""
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/book_authority_repositories.py",
-          "symbol": "BookAuthorityRepository"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260730_0035_book_child_delegation",
-          "path": "src/novel_forge/storage/migrations/versions/v20260730_0035_book_child_delegation.py",
-          "locator": "MIGRATION_ID = \"20260730_0035_book_child_delegation\""
-        },
-        {
-          "id": "20260730_0036_book_canon_checkpoint",
-          "path": "src/novel_forge/storage/migrations/versions/v20260730_0036_book_canon_checkpoint.py",
-          "locator": "MIGRATION_ID = \"20260730_0036_book_canon_checkpoint\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
-          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
-        }
-      ],
-      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
-    },
-    {
-      "concept": "canon-and-narrative-state",
-      "owner": "Canon approval and Book-accepted Narrative State projection",
-      "status": "QUALIFIED",
-      "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/modules/canon_graph/domain.py",
-          "symbol": "build_canon_update"
-        },
-        {
-          "path": "src/novel_forge/modules/narrative_state/rebuild.py",
-          "symbol": "NarrativeStateRebuildService"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "src/novel_forge/modules/book_authority/production.py",
-          "locator": "narrative_state"
-        },
-        {
-          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
-          "locator": "canon"
-        }
-      ],
-      "persistence": [
-        {
-          "path": "src/novel_forge/storage/narrative_realization_repositories.py",
-          "locator": "class NarrativeRealizationRepository"
-        }
-      ],
-      "migrations": [
-        {
-          "id": "20260812_0082_narrative_state_contract_v2",
-          "path": "src/novel_forge/storage/migrations/versions/v20260812_0082_narrative_state_contract_v2.py",
-          "locator": "MIGRATION_ID = \"20260812_0082_narrative_state_contract_v2\""
-        }
-      ],
-      "qualification": [
-        {
-          "path": "tests/integration/test_narrative_state_v2_postgres.py",
-          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
-        },
-        {
-          "path": "tests/architecture/test_narrative_state_boundaries.py",
-          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
-        }
-      ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
       "concept": "source-import-and-knowledge",
-      "owner": "Source Import and MKAOS Authorities",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
+      "owner": "Source Import, Source, and MKAOS Authorities",
+      "production_entries": [
         {
-          "path": "src/novel_forge/modules/source_import/application.py",
-          "symbol": "SourceImportApplication"
+          "path": "src/novel_forge/api/routers/source_import.py",
+          "symbol": "create_router"
         },
-        {
-          "path": "src/novel_forge/modules/mkaos_authority/application.py",
-          "symbol": "MkaosAuthorityApplication"
-        }
-      ],
-      "runtime_entries": [
         {
           "path": "architecture/manifests/worker-manifest.yaml",
           "locator": "\"name\": \"source-import\""
@@ -1282,6 +1552,69 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"mkaos.knowledge_candidate.commit\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/source_import/application.py",
+          "symbol": "SourceImportApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/application.py",
+          "symbol": "SourceAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/source_import/domain.py",
+          "symbol": "RepositoryFile"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/domain.py",
+          "symbol": "NarrativeIntelligenceNeed"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "CommitKnowledgeCandidateCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/application.py",
+          "symbol": "RegisterSourceDocumentCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "source import runs",
+          "source documents and transforms",
+          "deconstruction observations",
+          "knowledge decisions and packs"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/source_import/application.py",
+            "symbol": "SourceImportApplication.create_import"
+          },
+          {
+            "path": "src/novel_forge/modules/mkaos_authority/application.py",
+            "symbol": "MkaosAuthorityApplication.execute_candidate"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/source_import/application.py",
+          "symbol": "SourceImportApplication.create_import"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication.execute_candidate"
         }
       ],
       "persistence": [
@@ -1296,17 +1629,35 @@
       ],
       "migrations": [
         {
-          "id": "20260801_0050_mkaos_authority",
           "path": "src/novel_forge/storage/migrations/versions/v20260801_0050_mkaos_authority.py",
-          "locator": "MIGRATION_ID = \"20260801_0050_mkaos_authority\""
+          "locator": "MIGRATION_ID = \"20260801_0050_mkaos_authority\"",
+          "id": "20260801_0050_mkaos_authority"
         },
         {
-          "id": "20260811_0076_source_import_runtime",
           "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
-          "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\""
+          "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\"",
+          "id": "20260811_0076_source_import_runtime"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Git, object-store, and analysis model work use controlled adapters and keep raw evidence out of draft context.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/source_import/execution.py",
+            "symbol": "PostgresContentIntelligenceExecutionPort"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "project-workspace-authority",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "book-design-and-story-formation",
+        "context-and-retrieval"
+      ],
+      "tests": [
         {
           "path": "tests/integration/test_source_import_runtime_postgres.py",
           "symbol": "SourceImportRuntimePostgresTests.test_production_composition_runs_automatic_document_routing"
@@ -1316,27 +1667,1618 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "book-design-and-story-formation",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Book Design Authority and Story Formation coordinator",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_design_authority.py",
+          "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/books/{book_id}/formation-runs\""
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_story_formation_claim"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/application.py",
+          "symbol": "BookDesignAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StoryFormationApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/domain.py",
+          "symbol": "BookDesignPayload"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/foundation.py",
+          "symbol": "QualifiedFoundationSet"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/application.py",
+          "symbol": "BookDesignAuthorityCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StartStoryFormationCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "book design candidates and activation",
+          "qualified foundation set",
+          "story formation run and stages"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_design_authority/application.py",
+            "symbol": "BookDesignAuthorityApplication.execute"
+          },
+          {
+            "path": "src/novel_forge/modules/book_design_authority/formation.py",
+            "symbol": "StoryFormationApplication.approve_book_design"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/application.py",
+          "symbol": "BookDesignAuthorityApplication.execute"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StoryFormationApplication.approve_book_design"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/book_design_authority_repositories.py",
+          "symbol": "BookDesignAuthorityRepository"
+        },
+        {
+          "path": "src/novel_forge/storage/story_formation_repositories.py",
+          "symbol": "StoryFormationRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260803_0051_book_design_authority_slice.py",
+          "locator": "MIGRATION_ID = \"20260803_0051_book_design_authority_slice\"",
+          "id": "20260803_0051_book_design_authority_slice"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
+          "locator": "MIGRATION_ID = \"20260825_0100_hierarchy_closure\"",
+          "id": "20260825_0100_hierarchy_closure"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Formation may generate semantic candidates through governed provider effects; Book Design Authority alone activates a design.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_design_authority/formation.py",
+            "symbol": "StoryFormationApplication"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "project-workspace-authority",
+        "source-import-and-knowledge",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "story-design-authority",
+        "book-opening-workflow"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_authority_book_design_postgres.py",
+          "symbol": "BookDesignAuthorityPostgresTests.test_full_chain_replay_projection_and_supersession"
+        },
+        {
+          "path": "tests/integration/test_hierarchy_closure_postgres.py",
+          "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
+    },
+    {
+      "concept": "story-design-authority",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Story Design Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication"
+        },
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"planning.binding.activate\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "PostgresStoryDesignAssetAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/domain.py",
+          "symbol": "DesignLifecycle"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "StoryDesignTransitionCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "story design version lifecycle",
+          "qualification",
+          "approval",
+          "active semantic version"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/story_design_authority/application.py",
+            "symbol": "PostgresStoryDesignAssetAuthority.transition"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "PostgresStoryDesignAssetAuthority.transition"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/story_design_repositories.py",
+          "symbol": "StoryDesignRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0038_story_design_authority.py",
+          "locator": "MIGRATION_ID = \"20260730_0038_story_design_authority\"",
+          "id": "20260730_0038_story_design_authority"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Semantic evaluation may use Provider effects, but activation is a separate Authority transition.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+            "symbol": "NarrativeSemanticEvaluationApplication"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "book-design-and-story-formation",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "hierarchical-planning",
+        "book-opening-workflow"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_story_design_authority_postgres.py",
+          "symbol": "StoryDesignAuthorityPostgresTests.test_activation_supersedes_old_version"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "hierarchical-planning",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Hierarchical Planning Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication"
+        },
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"planning.binding.activate\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+          "symbol": "PostgresHierarchicalPlanningAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanningContract"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+          "symbol": "PostgresHierarchicalPlanningAuthority.bind_active_contract"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "typed plan contracts",
+          "active plan bindings",
+          "plan parent and relation closures"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+            "symbol": "PostgresHierarchicalPlanningAuthority.bind_active_contract"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+          "symbol": "PostgresHierarchicalPlanningAuthority.bind_active_contract"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/authority_asset_store.py",
+          "symbol": "AuthorityAssetDocumentRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0039_hierarchical_planning.py",
+          "locator": "MIGRATION_ID = \"20260730_0039_hierarchical_planning\"",
+          "id": "20260730_0039_hierarchical_planning"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
+          "locator": "MIGRATION_ID = \"20260825_0100_hierarchy_closure\"",
+          "id": "20260825_0100_hierarchy_closure"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Planning generation may call a Provider; plan validation and activation remain PostgreSQL Authority mutations.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+            "symbol": "PostgresPlanningExecutionPreparer"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "story-design-authority",
+        "capability-pack-instruction-runtime"
+      ],
+      "downstream_consumers": [
+        "narrative-realization",
+        "book-opening-workflow",
+        "chapter-group-coordination",
+        "chapter-production-saga",
+        "plan-change-authority"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_book_volume_group_hierarchy_and_parent_versions"
+        },
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_arc_crosses_volumes_and_relations_form_closure"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "narrative-realization",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Narrative Realization Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "PostgresNarrativeRealizationApplication"
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/books/{book_id}/opening-runs\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "PostgresNarrativeRealizationApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+          "symbol": "NarrativeRealizationContract"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "NarrativeRealizationCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "realization lifecycle",
+          "event chain",
+          "accepted boundary binding",
+          "consumption and deviation evidence"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+            "symbol": "PostgresNarrativeRealizationApplication.execute"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "PostgresNarrativeRealizationApplication.execute"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/narrative_realization_repositories.py",
+          "symbol": "NarrativeRealizationRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
+          "locator": "MIGRATION_ID = \"20260825_0100_hierarchy_closure\"",
+          "id": "20260825_0100_hierarchy_closure"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Qualification may consume semantic evaluation evidence; lifecycle transitions are Authority-owned database mutations.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+            "symbol": "PostgresNarrativeRealizationApplication"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "hierarchical-planning",
+        "canon-and-narrative-state"
+      ],
+      "downstream_consumers": [
+        "chapter-group-coordination",
+        "chapter-production-saga",
+        "book-chapter-acceptance"
+      ],
+      "tests": [
+        {
+          "path": "tests/unit/test_narrative_realization.py",
+          "symbol": "test_realization_is_not_a_plan_scale_or_accepted_actual"
+        },
+        {
+          "path": "tests/integration/test_hierarchy_closure_postgres.py",
+          "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "plan-change-authority",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Plan Change Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/runs/{book_run_id}/replans/{replan_id}/approve\")"
+        },
+        {
+          "path": "src/novel_forge/modules/book_replan/coordinator.py",
+          "symbol": "BookReplanCoordinator"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/application.py",
+          "symbol": "PostgresPlanChangeAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/domain.py",
+          "symbol": "semantic_plan_diff"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/application.py",
+          "symbol": "PlanChangeProposalCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "future-only plan change proposals",
+          "impact reports",
+          "approval and activation lineage"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/plan_change_authority/application.py",
+            "symbol": "PostgresPlanChangeAuthority.propose"
+          },
+          {
+            "path": "src/novel_forge/modules/plan_change_authority/application.py",
+            "symbol": "PostgresPlanChangeAuthority.activate"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/application.py",
+          "symbol": "PostgresPlanChangeAuthority.propose"
+        },
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/application.py",
+          "symbol": "PostgresPlanChangeAuthority.activate"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/plan_change_repositories.py",
+          "symbol": "PlanChangeRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0041_plan_change_authority.py",
+          "locator": "MIGRATION_ID = \"20260730_0041_plan_change_authority\"",
+          "id": "20260730_0041_plan_change_authority"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Plan changes are database decisions and cannot invoke an external effect during activation.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "hierarchical-planning",
+        "canon-and-narrative-state",
+        "reader-and-followup-evidence"
+      ],
+      "downstream_consumers": [
+        "book-production-coordination",
+        "chapter-group-coordination"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_plan_change_authority_postgres.py",
+          "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "book-opening-workflow",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Book Opening Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/books/{book_id}/opening-runs\""
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_book_opening_node_claim"
+        },
+        {
+          "path": "architecture/manifests/worker-manifest.yaml",
+          "locator": "\"name\": \"book-authority\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "PostgresBookOpeningApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening_workflow.py",
+          "symbol": "BookOpeningWorkflow"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "OpenBookProductionRequest"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "opening run",
+          "five-node workflow",
+          "node execution",
+          "checkpoint and receipt lineage",
+          "input snapshot"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/opening.py",
+            "symbol": "PostgresBookOpeningApplication.execute_run"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "PostgresBookOpeningApplication.execute_run"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260829_0104_book_opening_workflow_nodes.py",
+          "locator": "MIGRATION_ID = \"20260829_0104_book_opening_workflow_nodes\"",
+          "id": "20260829_0104_book_opening_workflow_nodes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
+          "locator": "MIGRATION_ID = \"20260830_0105_p0_backend_qualification_repairs\"",
+          "id": "20260830_0105_p0_backend_qualification_repairs"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\"",
+          "id": "20260902_0106_quality_qualification_scope_generalization"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Semantic node work uses governed Provider effects outside the opening mutation transaction and commits verified receipts.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/opening.py",
+            "symbol": "PostgresBookOpeningApplication"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "book-design-and-story-formation",
+        "story-design-authority",
+        "hierarchical-planning",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "book-production-coordination"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
+          "symbol": "test_opening_advances_five_durable_layers_before_book_run_admission"
+        },
+        {
+          "path": "tests/integration/test_book_opening_workflow_failures_postgres.py",
+          "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
+    },
+    {
+      "concept": "book-production-coordination",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Book Authority and Book Production Supervisor",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/commands\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/runs/{book_run_id}/tick\")"
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_book_coordination_claim"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "PostgresBookProductionSupervisor"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "BookProductionState"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "StartBookProductionCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "BookProductionSupervisorTick"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "book production run",
+          "production cursor",
+          "delegation and reconciliation state",
+          "terminal completion state"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/production.py",
+            "symbol": "PostgresBookAuthority.start"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/supervisor.py",
+            "symbol": "PostgresBookProductionSupervisor.tick"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.start"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "PostgresBookProductionSupervisor.tick"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260729_0034_unified_business_authority.py",
+          "locator": "MIGRATION_ID = \"20260729_0034_unified_business_authority\"",
+          "id": "20260729_0034_unified_business_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260806_0073_core_functional_loops.py",
+          "locator": "MIGRATION_ID = \"20260806_0073_core_functional_loops\"",
+          "id": "20260806_0073_core_functional_loops"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Book coordination delegates Chapter and follow-up effects to their owning runtimes; it does not send Provider requests itself.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/production.py",
+            "symbol": "ChapterAuthorityCommandAdapter"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "book-opening-workflow",
+        "hierarchical-planning",
+        "command-attempt-lease-fence"
+      ],
+      "downstream_consumers": [
+        "chapter-group-coordination",
+        "book-chapter-acceptance",
+        "reader-and-followup-evidence"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_acceptance_freezes_typed_execution_plan_for_chapter_outcome"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "chapter-group-coordination",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "ChapterGroup Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "PostgresChapterGroupAuthority"
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_book_coordination_claim"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "PostgresChapterGroupAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
+          "symbol": "ChapterGroupState"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
+          "symbol": "ChapterGroupRange"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "StartChapterGroupCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "chapter group range",
+          "group lifecycle",
+          "active child reference",
+          "closure and recap references"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+            "symbol": "PostgresChapterGroupAuthority.start"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "PostgresChapterGroupAuthority.start"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/chapter_group_repositories.py",
+          "symbol": "ChapterGroupRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0040_chapter_group_authority.py",
+          "locator": "MIGRATION_ID = \"20260730_0040_chapter_group_authority\"",
+          "id": "20260730_0040_chapter_group_authority"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "ChapterGroup delegates Chapter and recap work and stores only their identities and outcomes.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+            "symbol": "PostgresChapterGroupAuthority"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "book-production-coordination",
+        "hierarchical-planning",
+        "narrative-realization"
+      ],
+      "downstream_consumers": [
+        "chapter-production-saga",
+        "reader-and-followup-evidence",
+        "plan-change-authority"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_chapter_group_authority_postgres.py",
+          "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "context-and-retrieval",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Context Builder inside owning production operations",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "symbol": "_ContextHandler"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "locator": "class _ContextHandler"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "build_authority_context_bundle"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "ContextSelection"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+          "symbol": "FrozenRetrievalCandidateUnion"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+          "symbol": "build_retrieval_query_plan"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+          "symbol": "EmbeddingProjectionTick"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "frozen retrieval candidate union",
+          "embedding projection",
+          "context selection and bundle"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+            "symbol": "freeze_retrieval_candidate_union"
+          },
+          {
+            "path": "src/novel_forge/modules/context_builder/domain.py",
+            "symbol": "build_authority_context_bundle"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+          "symbol": "freeze_retrieval_candidate_union"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "build_authority_context_bundle"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/authority_asset_store.py",
+          "symbol": "AuthorityAssetDocumentRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260820_0094_industrial_autonomous_novel_os.py",
+          "locator": "MIGRATION_ID = \"20260820_0094_industrial_autonomous_novel_os\"",
+          "id": "20260820_0094_industrial_autonomous_novel_os"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260821_0095_post_merge_correctness_repair.py",
+          "locator": "MIGRATION_ID = \"20260821_0095_post_merge_correctness_repair\"",
+          "id": "20260821_0095_post_merge_correctness_repair"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260821_0096_runtime_hardening.py",
+          "locator": "MIGRATION_ID = \"20260821_0096_runtime_hardening\"",
+          "id": "20260821_0096_runtime_hardening"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Embedding is an ExternalEffect; lexical and structured retrieval freeze the candidate union before semantic reranking.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+            "symbol": "RetrievalEmbeddingProjectionRuntime"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "source-import-and-knowledge",
+        "canon-and-narrative-state",
+        "capability-pack-instruction-runtime",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "hierarchical-planning",
+        "chapter-production-saga",
+        "agent-runtime"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_retrieval_candidate_v3_postgres.py",
+          "symbol": "test_semantic_rerank_cannot_expand_frozen_lexical_structured_union"
+        },
+        {
+          "path": "tests/integration/test_retrieval_embedding_projection_postgres.py",
+          "symbol": "RetrievalEmbeddingProjectionPostgresTests.test_unknown_effect_reconciles_without_blind_redispatch"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "chapter-production-saga",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Chapter Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/chapter_authority.py",
+          "symbol": "create_router"
+        },
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"chapter.slice.run\""
+        },
+        {
+          "path": "architecture/manifests/worker-manifest.yaml",
+          "locator": "\"name\": \"chapter-authority\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/application.py",
+          "symbol": "ChapterAuthorityApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "symbol": "ChapterNode"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+          "symbol": "SingleChapterRequest"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+          "symbol": "admit_single_chapter_saga"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "chapter saga",
+          "stage operations",
+          "draft and review candidates",
+          "release package candidate"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_authority/application.py",
+            "symbol": "ChapterAuthorityApplication.admit"
+          },
+          {
+            "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+            "symbol": "ChapterAuthorityScheduler.tick"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/application.py",
+          "symbol": "ChapterAuthorityApplication.admit"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+          "symbol": "ChapterAuthorityScheduler.tick"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/chapter_authority_repositories.py",
+          "symbol": "AuthorityHandlerRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260716_0021_saga_coordination.py",
+          "locator": "MIGRATION_ID = \"20260716_0021_saga_coordination\"",
+          "id": "20260716_0021_saga_coordination"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Provider and object-store stages are durable ExternalEffects; synchronous run is fixture-guarded.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+            "symbol": "ProductionExecutionGatewayExternalEffectAdapter"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "chapter-group-coordination",
+        "context-and-retrieval",
+        "narrative-realization",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "review-revision-quality",
+        "book-chapter-acceptance"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_chapter_authority_scheduler_postgres.py",
+          "symbol": "ChapterAuthoritySchedulerPostgresTests.test_admission_does_not_execute_and_ticks_rebuild_full_saga"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_dependencies.py",
+          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
+    },
+    {
+      "concept": "review-revision-quality",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Chapter Authority and Quality Qualification Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/quality_qualification.py",
+          "locator": "@router.post(\"/campaigns\")"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "locator": "\"final_release_gate\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
+          "symbol": "PostgresQualityQualificationAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/review/domain.py",
+          "symbol": "evaluate_review_result"
+        },
+        {
+          "path": "src/novel_forge/modules/revision/domain.py",
+          "symbol": "apply_revision_result"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
+          "symbol": "QualitySubjectBindingCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+          "symbol": "build_final_release_gate"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "review report",
+          "revision candidate",
+          "quality group reports",
+          "quality qualification evidence",
+          "publish and final release gates"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
+            "symbol": "PostgresQualityQualificationAuthority.admit_campaign"
+          },
+          {
+            "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+            "symbol": "build_final_release_gate"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
+          "symbol": "PostgresQualityQualificationAuthority.admit_campaign"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+          "symbol": "build_final_release_gate"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/authority_asset_store.py",
+          "symbol": "AuthorityAssetDocumentRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
+          "locator": "MIGRATION_ID = \"20260826_0101_quality_qualification\"",
+          "id": "20260826_0101_quality_qualification"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\"",
+          "id": "20260902_0106_quality_qualification_scope_generalization"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Semantic judges may call Providers, while deterministic and aggregate gate decisions remain schema-backed owner mutations.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/chapter_authority/model_effects.py",
+            "symbol": "ExternalEffectChapterModelPort"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "chapter-production-saga",
+        "capability-pack-instruction-runtime",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "book-chapter-acceptance"
+      ],
+      "tests": [
+        {
+          "path": "tests/unit/test_chapter_authority_domain_handlers.py",
+          "symbol": "ChapterAuthorityDomainHandlerTests.test_post_blob_final_release_fails_closed_and_binds_receipt"
+        },
+        {
+          "path": "tests/integration/test_quality_qualification_postgres.py",
+          "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
+    },
+    {
+      "concept": "book-chapter-acceptance",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Book Authority",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/chapter-requests/{chapter_request_id}/accept\")"
+        },
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"book.production.coordinate\""
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/chapter_outcome/domain.py",
+          "symbol": "build_chapter_outcome"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "SubmitBookChapterCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "accepted chapter cursor",
+          "chapter acceptance",
+          "accepted outcome bindings",
+          "projection set identity"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/production.py",
+            "symbol": "PostgresBookAuthority.accept_chapter"
+          },
+          {
+            "path": "src/novel_forge/storage/book_authority_repositories.py",
+            "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.accept_chapter"
+        },
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0035_book_child_delegation.py",
+          "locator": "MIGRATION_ID = \"20260730_0035_book_child_delegation\"",
+          "id": "20260730_0035_book_child_delegation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0036_book_canon_checkpoint.py",
+          "locator": "MIGRATION_ID = \"20260730_0036_book_canon_checkpoint\"",
+          "id": "20260730_0036_book_canon_checkpoint"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Acceptance is one PostgreSQL transaction after external chapter work has completed and been verified.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "book-production-coordination",
+        "chapter-production-saga",
+        "review-revision-quality",
+        "narrative-realization"
+      ],
+      "downstream_consumers": [
+        "canon-and-narrative-state",
+        "reader-and-followup-evidence",
+        "chapter-group-coordination"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "canon-and-narrative-state",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Canon approval and Book-accepted Narrative State projection",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/canon_authority.py",
+          "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "locator": "narrative_state"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/canon_graph/approval_authority.py",
+          "symbol": "decide_canon_approval"
+        },
+        {
+          "path": "src/novel_forge/modules/narrative_state/rebuild.py",
+          "symbol": "NarrativeStateRebuildService"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/narrative_state/contracts.py",
+          "symbol": "NarrativeStateEvent"
+        },
+        {
+          "path": "src/novel_forge/modules/canon_graph/domain.py",
+          "symbol": "build_canon_update"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/canon_graph/approval_domain.py",
+          "symbol": "build_canon_change_proposal"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "canon approval decision",
+          "accepted canon snapshot",
+          "narrative state",
+          "arc actual",
+          "obligation state"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/canon_graph/approval_authority.py",
+            "symbol": "decide_canon_approval"
+          },
+          {
+            "path": "src/novel_forge/storage/book_authority_repositories.py",
+            "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/canon_graph/approval_authority.py",
+          "symbol": "decide_canon_approval"
+        },
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/story_state_repositories.py",
+          "symbol": "StoryStateRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260718_0025_canon_approval_authority.py",
+          "locator": "MIGRATION_ID = \"20260718_0025_canon_approval_authority\"",
+          "id": "20260718_0025_canon_approval_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260812_0082_narrative_state_contract_v2.py",
+          "locator": "MIGRATION_ID = \"20260812_0082_narrative_state_contract_v2\"",
+          "id": "20260812_0082_narrative_state_contract_v2"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Canon decisions and Narrative State reduction consume already persisted evidence and do not perform network I/O.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "book-chapter-acceptance"
+      ],
+      "downstream_consumers": [
+        "context-and-retrieval",
+        "narrative-realization",
+        "plan-change-authority",
+        "reader-and-followup-evidence"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_narrative_state_v2_postgres.py",
+          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
+        },
+        {
+          "path": "tests/architecture/test_narrative_state_boundaries.py",
+          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
+    },
+    {
+      "concept": "reader-and-followup-evidence",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Book Follow-up and Reader Calibration Authorities",
+      "production_entries": [
+        {
+          "path": "architecture/manifests/worker-manifest.yaml",
+          "locator": "\"name\": \"book-followup-authority\""
+        },
+        {
+          "path": "src/novel_forge/workers/book_followup_authority.py",
+          "symbol": "execute_book_followup_admission_claim"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/application.py",
+          "symbol": "BookFollowupAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/domain.py",
+          "symbol": "evaluate_reader_outcome"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/domain.py",
+          "symbol": "ReaderOutcomeDecisionPolicy"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/application.py",
+          "symbol": "BookFollowupCommand"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "reader outcome evidence",
+          "long-form recap evidence",
+          "blind preference packs",
+          "calibration observations",
+          "plan adjustment proposals"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_followup_authority/application.py",
+            "symbol": "BookFollowupAuthorityApplication.admit"
+          },
+          {
+            "path": "src/novel_forge/modules/reader_calibration/application.py",
+            "symbol": "PostgresReaderCalibrationAuthority.create_preference_task"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/application.py",
+          "symbol": "BookFollowupAuthorityApplication.admit"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority.create_preference_task"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/authority_asset_store.py",
+          "symbol": "AuthorityAssetDocumentRepository"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260729_0034_unified_business_authority.py",
+          "locator": "MIGRATION_ID = \"20260729_0034_unified_business_authority\"",
+          "id": "20260729_0034_unified_business_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260730_0042_reader_calibration.py",
+          "locator": "MIGRATION_ID = \"20260730_0042_reader_calibration\"",
+          "id": "20260730_0042_reader_calibration"
+        }
+      ],
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Reader proxy evaluation may call a Provider in shadow mode; outputs remain advisory evidence and proposals.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_followup_authority/coordinator.py",
+            "symbol": "PostgresBookFollowupCoordinator"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "book-chapter-acceptance",
+        "canon-and-narrative-state",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "plan-change-authority",
+        "chapter-group-coordination"
+      ],
+      "tests": [
+        {
+          "path": "tests/integration/test_book_followup_authority_postgres.py",
+          "symbol": "BookFollowupAuthorityPostgresTests.test_reader_outcome_uses_pep_external_effect_and_replays_once"
+        },
+        {
+          "path": "tests/integration/test_reader_calibration_postgres.py",
+          "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
+        }
+      ],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
       "concept": "agent-runtime",
-      "owner": "Agent Runtime Authority",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
+      "owner": "Agent Runtime Authority",
+      "production_entries": [
         {
-          "path": "src/novel_forge/modules/agent_runtime/application.py",
-          "symbol": "AgentRuntimeAuthorityApplication"
+          "path": "src/novel_forge/api/routers/agent_runtime.py",
+          "symbol": "create_router"
         },
-        {
-          "path": "src/novel_forge/modules/agent_runtime/scheduler.py",
-          "symbol": "AgentAuthorityScheduler"
-        }
-      ],
-      "runtime_entries": [
         {
           "path": "architecture/manifests/worker-manifest.yaml",
           "locator": "\"name\": \"agent-authority\""
@@ -1346,25 +3288,94 @@
           "locator": "\"name\": \"agent.definition.register\""
         }
       ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/application.py",
+          "symbol": "AgentRuntimeAuthorityApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/contracts.py",
+          "symbol": "AgentSchedulingAuthority"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/application.py",
+          "symbol": "AgentRuntimeAdminCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/coordinator.py",
+          "symbol": "AgentTurnExecutionCoordinator"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "agent definitions and activation",
+          "runtime binding",
+          "dispatch queue",
+          "session and transcript",
+          "checkpoint and gate evidence"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/agent_runtime/application.py",
+            "symbol": "AgentRuntimeAuthorityApplication.execute_admin"
+          },
+          {
+            "path": "src/novel_forge/modules/agent_runtime/scheduler.py",
+            "symbol": "AgentAuthorityScheduler.tick"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/application.py",
+          "symbol": "AgentRuntimeAuthorityApplication.execute_admin"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/scheduler.py",
+          "symbol": "AgentAuthorityScheduler.tick"
+        }
+      ],
       "persistence": [
         {
           "path": "src/novel_forge/modules/agent_runtime/repository.py",
-          "locator": "class PostgresAgentRuntimeRepository"
+          "symbol": "PostgresAgentRuntimeRepository"
         }
       ],
       "migrations": [
         {
-          "id": "20260805_0068_unified_agent_runtime",
           "path": "src/novel_forge/storage/migrations/versions/v20260805_0068_unified_agent_runtime.py",
-          "locator": "MIGRATION_ID = \"20260805_0068_unified_agent_runtime\""
+          "locator": "MIGRATION_ID = \"20260805_0068_unified_agent_runtime\"",
+          "id": "20260805_0068_unified_agent_runtime"
         },
         {
-          "id": "20260805_0070_agent_runtime_recovery_protocol",
           "path": "src/novel_forge/storage/migrations/versions/v20260805_0070_agent_runtime_recovery_protocol.py",
-          "locator": "MIGRATION_ID = \"20260805_0070_agent_runtime_recovery_protocol\""
+          "locator": "MIGRATION_ID = \"20260805_0070_agent_runtime_recovery_protocol\"",
+          "id": "20260805_0070_agent_runtime_recovery_protocol"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "DIRECT",
+        "rule": "Agent sessions use governed tools and Production Execution; domain outputs are submitted to their owning Authorities.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/agent_runtime/coordinator.py",
+            "symbol": "AgentTurnExecutionCoordinator"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "project-workspace-authority",
+        "capability-pack-instruction-runtime",
+        "context-and-retrieval",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [],
+      "tests": [
         {
           "path": "tests/integration/test_unified_agent_runtime_postgres.py",
           "symbol": "UnifiedAgentRuntimePostgresTests.test_runtime_projection_reuses_kernel_attempt_and_lease_tables"
@@ -1374,27 +3385,17 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
       "concept": "postgresql-persistence-and-migrations",
-      "owner": "Authority Unit of Work and migration runner",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
-        {
-          "path": "src/novel_forge/storage/authority_uow.py",
-          "symbol": "AuthorityUnitOfWork"
-        },
-        {
-          "path": "src/novel_forge/storage/migrations/runner.py",
-          "symbol": "run_migrations"
-        }
-      ],
-      "runtime_entries": [
+      "owner": "Authority Unit of Work and migration runner",
+      "production_entries": [
         {
           "path": "src/novel_forge/cli/authority.py",
           "locator": "authority-migrate"
@@ -1402,6 +3403,44 @@
         {
           "path": "compose.yml",
           "locator": "authority-migration:"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/storage/migrations/runner.py",
+          "symbol": "run_migrations"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "symbol": "AuthorityUnitOfWork"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/storage/migrations/runner.py",
+          "symbol": "run_migrations"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "transaction boundaries",
+          "schema migration registry",
+          "migration receipts"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/storage/authority_uow.py",
+            "symbol": "AuthorityUnitOfWork.commit"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "symbol": "AuthorityUnitOfWork.commit"
         }
       ],
       "persistence": [
@@ -1412,17 +3451,43 @@
       ],
       "migrations": [
         {
-          "id": "20260829_0104_book_opening_workflow_nodes",
-          "path": "src/novel_forge/storage/migrations/versions/v20260829_0104_book_opening_workflow_nodes.py",
-          "locator": "MIGRATION_ID = \"20260829_0104_book_opening_workflow_nodes\""
-        },
-        {
-          "id": "20260830_0105_p0_backend_qualification_repairs",
-          "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
-          "locator": "MIGRATION_ID = \"20260830_0105_p0_backend_qualification_repairs\""
+          "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+          "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\"",
+          "id": "20260902_0106_quality_qualification_scope_generalization"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Migration and business UoW paths are database-local; external I/O is excluded from their transactions.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "runtime-composition"
+      ],
+      "downstream_consumers": [
+        "project-workspace-authority",
+        "command-attempt-lease-fence",
+        "capability-pack-instruction-runtime",
+        "external-effect-provider-control",
+        "source-import-and-knowledge",
+        "book-design-and-story-formation",
+        "story-design-authority",
+        "hierarchical-planning",
+        "narrative-realization",
+        "plan-change-authority",
+        "book-opening-workflow",
+        "book-production-coordination",
+        "chapter-group-coordination",
+        "context-and-retrieval",
+        "chapter-production-saga",
+        "review-revision-quality",
+        "book-chapter-acceptance",
+        "canon-and-narrative-state",
+        "reader-and-followup-evidence",
+        "agent-runtime",
+        "retry-recovery-and-replay"
+      ],
+      "tests": [
         {
           "path": "tests/unit/test_postgres_migrations.py",
           "symbol": "PostgresMigrationTests.test_migration_chain_is_ordered_and_pending_is_deterministic"
@@ -1432,50 +3497,108 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_POSTGRESQL_ENGINEERING"
     },
     {
       "concept": "retry-recovery-and-replay",
-      "owner": "Owning Authority recovery applications with Command Kernel fencing",
-      "status": "QUALIFIED",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "implementation": [
+      "owner": "Owning Authority recovery applications with Command Kernel fencing",
+      "production_entries": [
         {
-          "path": "src/novel_forge/modules/book_authority/recovery.py",
-          "symbol": "PostgresBookOpeningRecoveryApplication"
-        },
-        {
-          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
-          "symbol": "reconcile_external_effect"
-        }
-      ],
-      "runtime_entries": [
-        {
-          "path": "architecture/manifests/worker-manifest.yaml",
-          "locator": "\"recovery_protocol\": \"lease-fence-external-effect-v1\""
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/opening-runs/{opening_run_id}/recover\""
         },
         {
           "path": "src/novel_forge/workers/runtime_groups.py",
           "symbol": "maintenance_cli"
         }
       ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_authority/recovery.py",
+          "symbol": "PostgresBookOpeningRecoveryApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/recovery.py",
+          "symbol": "RecoverOperationCommand"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "reconcile_external_effect"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "recovery assessment",
+          "replacement lineage",
+          "replay receipt",
+          "dead-letter and manual intervention state"
+        ],
+        "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/recovery.py",
+            "symbol": "PostgresBookOpeningRecoveryApplication.recover"
+          },
+          {
+            "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+            "symbol": "reconcile_external_effect"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_authority/recovery.py",
+          "symbol": "PostgresBookOpeningRecoveryApplication.recover"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "reconcile_external_effect"
+        }
+      ],
       "persistence": [
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20260828_0102_book_opening_recovery_closure.py",
-          "locator": "book_opening_recovery_assessment"
+          "path": "src/novel_forge/storage/authority_repositories.py",
+          "symbol": "AuthorityRepositories"
         }
       ],
       "migrations": [
         {
-          "id": "20260828_0102_book_opening_recovery_closure",
           "path": "src/novel_forge/storage/migrations/versions/v20260828_0102_book_opening_recovery_closure.py",
-          "locator": "MIGRATION_ID = \"20260828_0102_book_opening_recovery_closure\""
+          "locator": "MIGRATION_ID = \"20260828_0102_book_opening_recovery_closure\"",
+          "id": "20260828_0102_book_opening_recovery_closure"
         }
       ],
-      "qualification": [
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Recovery queries or reconciles prior ExternalEffects and never blindly repeats an ambiguous send.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+            "symbol": "reconcile_external_effect"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "command-attempt-lease-fence",
+        "external-effect-provider-control",
+        "postgresql-persistence-and-migrations"
+      ],
+      "downstream_consumers": [
+        "book-opening-workflow",
+        "book-production-coordination",
+        "chapter-production-saga",
+        "agent-runtime"
+      ],
+      "tests": [
         {
           "path": "tests/integration/test_book_opening_recovery_regression_postgres.py",
           "symbol": "test_book_opening_process_loss_converges_and_admits_one_replacement"
@@ -1485,14 +3608,16 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING",
+      "qualification_state": "QUALIFIED",
       "qualification_run_ids": [
-        "p0-backend-engineering-qualification-45e901b2"
-      ]
+        "p0-backend-engineering-qualification-adc0a2df"
+      ],
+      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     }
   ],
   "negative_boundaries": [
     {
+      "classification": "PROOF_BOUNDARY",
       "claim": "default readiness establishes runtime readiness",
       "value": false,
       "evidence": [
@@ -1503,7 +3628,8 @@
       ]
     },
     {
-      "claim": "credentialed real Provider chapter or production is proven",
+      "classification": "PROOF_BOUNDARY",
+      "claim": "credentialed real Provider execution qualifies the current implementation tree",
       "value": false,
       "evidence": [
         {
@@ -1513,6 +3639,7 @@
       ]
     },
     {
+      "classification": "PROOF_BOUNDARY",
       "claim": "long-form production is proven",
       "value": false,
       "evidence": [
@@ -1523,6 +3650,7 @@
       ]
     },
     {
+      "classification": "PROOF_BOUNDARY",
       "claim": "production deployment is verified",
       "value": false,
       "evidence": [
@@ -1533,6 +3661,7 @@
       ]
     },
     {
+      "classification": "PROOF_BOUNDARY",
       "claim": "backup restore and point-in-time recovery are proven",
       "value": false,
       "evidence": [
@@ -1543,13 +3672,1276 @@
       ]
     },
     {
-      "claim": "the complete autonomous book loop is proven",
+      "classification": "UNSUPPORTED_CAPABILITY_CLAIM",
+      "claim": "a complete autonomous multi-Agent product exists",
       "value": false,
       "evidence": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/contracts.py",
+          "symbol": "AgentSchedulingAuthority"
+        },
         {
           "path": "src/novel_forge/tools/release_run_evidence.py",
           "locator": "\"autonomous_book_loop_proven\": False"
         }
+      ]
+    },
+    {
+      "classification": "FIXTURE_ONLY_SEAM",
+      "claim": "ChapterAuthorityApplication.run is a production execution entry",
+      "value": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/application.py",
+          "symbol": "ChapterAuthorityApplication.run"
+        },
+        {
+          "path": "tests/unit/test_chapter_authority_dependencies.py",
+          "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
+        }
+      ]
+    },
+    {
+      "classification": "MISSING_AUTHORITY_TRANSITION",
+      "claim": "one production command currently owns the full idea-to-finished-book transition",
+      "value": false,
+      "evidence": [
+        {
+          "path": "architecture/manifests/production-entry-manifest.yaml",
+          "locator": "\"name\": \"book.production.coordinate\""
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StoryFormationApplication"
+        }
+      ]
+    },
+    {
+      "classification": "MISSING_CAPABILITY",
+      "claim": "an independent whole-book acceptance decision exists beyond terminal cursor completion",
+      "value": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "BookProductionState"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "PostgresBookProductionSupervisor.tick"
+        }
+      ]
+    },
+    {
+      "classification": "PARALLEL_TRUTH_RISK",
+      "claim": "legacy compatibility paths may be treated as current architecture authority",
+      "value": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/legacy_migration/domain_adapters.py",
+          "locator": "allow_pre_hierarchy_compatibility=True"
+        },
+        {
+          "path": "architecture/manifests/historical-reality-policy.yaml",
+          "locator": "\"retired_current_ontology\""
+        }
+      ]
+    }
+  ],
+  "projection_kind": "CURRENT_CODE_REALITY_PROJECTION",
+  "projection_source": {
+    "authority": "EXECUTABLE_CODE",
+    "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
+    "implementation_tree_sha": "sha256:4d4e5852e4e29b69169152c53791a1698d481386c25b8caa960987b2421523f8"
+  },
+  "role_definitions": {
+    "AUTHORITY": "Owns a business decision and is the only writer of that state.",
+    "PROJECTION": "Deterministically derives a read model from authoritative accepted evidence.",
+    "COORDINATOR": "Orders work across owners without acquiring their mutation rights.",
+    "REPOSITORY": "Persists state inside an owning transaction and has no business decision right.",
+    "EVIDENCE": "Records an observation or proof input without making it accepted truth.",
+    "CANDIDATE": "May be reviewed or decided but is not active or accepted merely because it exists.",
+    "ACCEPTED_FACT": "Has crossed its owning acceptance boundary and may feed canonical projections."
+  },
+  "semantic_constraints": [
+    {
+      "id": "book-chapter-acceptance-atomicity",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "statement": "Book acceptance atomically advances the cursor and binds ChapterOutcome, Canon, Narrative State, long-form projections, audit, and outbox evidence.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.accept_chapter"
+        },
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+        },
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-external-effect-no-blind-resend",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "statement": "An external request that may have started must reconcile durable intent and receipt evidence before any retry.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "reconcile_external_effect"
+        },
+        {
+          "path": "tests/integration/test_external_effect_runtime_postgres.py",
+          "symbol": "ExternalEffectRuntimePostgresTests.test_expired_post_request_lease_requires_query_without_duplicate_execute"
+        }
+      ]
+    },
+    {
+      "id": "candidate-and-accepted-actual-separation",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "statement": "Draft, Canon extraction, and ChapterOutcome candidate evidence is not visible as accepted actual before Book acceptance.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_outcome/domain.py",
+          "symbol": "build_chapter_outcome"
+        },
+        {
+          "path": "tests/integration/test_narrative_state_v2_postgres.py",
+          "symbol": "NarrativeStateV2PostgresTests.test_successful_outcome_is_not_visible_before_book_acceptance"
+        }
+      ]
+    },
+    {
+      "id": "source-isolation-from-draft",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "statement": "Raw source material is excluded from production draft context; reusable source knowledge must cross Source and MKAOS governance.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "build_authority_context_bundle"
+        },
+        {
+          "path": "tests/architecture/test_narrative_state_boundaries.py",
+          "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
+        }
+      ]
+    },
+    {
+      "id": "arc-is-not-volume-containment",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "statement": "Arc identity is independent of the Volume containment parent chain and one Arc may cross Volumes.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        },
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_arc_crosses_volumes_and_relations_form_closure"
+        }
+      ]
+    },
+    {
+      "id": "chapter-group-three-to-eight",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "statement": "Current code rejects ChapterGroup ranges outside three to eight Chapters, but the repository does not prove this number as a final business invariant.",
+      "design_review_required": true,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
+          "symbol": "ChapterGroupRange"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "_bounded_chapter_group_range"
+        },
+        {
+          "path": "tests/integration/test_chapter_group_authority_postgres.py",
+          "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
+        }
+      ]
+    },
+    {
+      "id": "typed-plan-levels-and-horizons",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "The runtime currently uses BOOK, VOLUME, ARC, CHAPTER_GROUP, and CHAPTER contracts with strategic, tactical, and operational horizons.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "locator": "PLAN_HORIZON ="
+        }
+      ]
+    },
+    {
+      "id": "book-opening-five-layer-dag",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Book Opening currently materializes five durable workflow layers before Book production admission.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening_workflow.py",
+          "symbol": "BookOpeningWorkflowNodeKind"
+        },
+        {
+          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
+          "symbol": "test_opening_advances_five_durable_layers_before_book_run_admission"
+        }
+      ]
+    },
+    {
+      "id": "quality-thresholds",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Chapter quality thresholds are frozen Capability Pack and quality-profile policy values, not universal domain invariants.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "config/capability_packs/chapter_generation_pack.json",
+          "locator": "\"threshold\": 80"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/context_views.py",
+          "symbol": "compile_quality_policy"
+        }
+      ]
+    },
+    {
+      "id": "retry-attempt-limits",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Attempt limits differ by frozen operation definition and runtime policy; only positivity and fenced replay are domain constraints.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+          "symbol": "create_attempt"
+        },
+        {
+          "path": "config/capability_packs/chapter_generation_pack.json",
+          "locator": "\"max_attempts\": 2"
+        }
+      ]
+    },
+    {
+      "id": "context-token-boundary",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Context token ceilings and selection profiles are runtime policy selected per stage and capability.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "ContextProfile"
+        },
+        {
+          "path": "config/capability_packs/chapter_generation_pack.json",
+          "locator": "\"max_tokens\""
+        }
+      ]
+    },
+    {
+      "id": "quality-human-evaluator-minimum",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Quality qualification currently requires at least two evaluator identities; larger counts remain manifest policy.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification.py",
+          "symbol": "QualityCampaignManifest"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
+          "locator": "CHECK (required_evaluator_count >= 2)"
+        }
+      ]
+    },
+    {
+      "id": "pre-hierarchy-import-branch",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "statement": "Pre-hierarchy plan shapes are accepted only through the explicit legacy migration adapter compatibility flag.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/legacy_migration/domain_adapters.py",
+          "locator": "allow_pre_hierarchy_compatibility=True"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "validate_planning_contract"
+        }
+      ]
+    },
+    {
+      "id": "reader-proxy-thresholds",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "statement": "Reader Outcome advisory thresholds are hard-coded current behavior without a versioned policy owner.",
+      "design_review_required": true,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/domain.py",
+          "symbol": "evaluate_reader_outcome"
+        },
+        {
+          "path": "tests/integration/test_book_followup_authority_postgres.py",
+          "symbol": "BookFollowupAuthorityPostgresTests.test_reader_outcome_uses_pep_external_effect_and_replays_once"
+        }
+      ]
+    }
+  ],
+  "authority_model": [
+    {
+      "id": "project-workspace-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "project lifecycle",
+        "workspace lifecycle",
+        "project bindings"
+      ],
+      "does_not_own": [
+        "book content",
+        "provider effects"
+      ],
+      "mutation_rule": "Project Authority commands commit scoped snapshots and binding decisions.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/project_authority/application.py",
+          "symbol": "ProjectAuthorityApplication"
+        }
+      ]
+    },
+    {
+      "id": "book-design-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "book design candidate lifecycle",
+        "current book design pointer",
+        "foundation bindings"
+      ],
+      "does_not_own": [
+        "story design activation",
+        "accepted chapter actual"
+      ],
+      "mutation_rule": "Only Book Design Authority decides and activates BookDesign versions.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/application.py",
+          "symbol": "BookDesignAuthorityApplication"
+        }
+      ]
+    },
+    {
+      "id": "story-design-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "story design candidate decisions",
+        "active semantic design versions"
+      ],
+      "does_not_own": [
+        "typed plan activation",
+        "accepted actual"
+      ],
+      "mutation_rule": "Generation produces candidates; explicit Story Design transitions own semantic activation.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "PostgresStoryDesignAssetAuthority"
+        }
+      ]
+    },
+    {
+      "id": "planning-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "typed planning contracts",
+        "active plan bindings"
+      ],
+      "does_not_own": [
+        "semantic design",
+        "accepted actual"
+      ],
+      "mutation_rule": "Hierarchical Planning validates plan types and commits active bindings.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+          "symbol": "PostgresHierarchicalPlanningAuthority"
+        }
+      ]
+    },
+    {
+      "id": "narrative-realization-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "narrative realization lifecycle",
+        "realization event contracts",
+        "consumption evidence"
+      ],
+      "does_not_own": [
+        "plan scale",
+        "accepted chapter actual"
+      ],
+      "mutation_rule": "Realization proposals require qualification, approval, and freezing before execution evidence.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "PostgresNarrativeRealizationApplication"
+        }
+      ]
+    },
+    {
+      "id": "plan-change-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "future-only change proposals",
+        "impact decisions",
+        "typed reactivation"
+      ],
+      "does_not_own": [
+        "executed history",
+        "story design semantics"
+      ],
+      "mutation_rule": "Approved changes supersede future plan versions without rewriting executed plans.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/application.py",
+          "symbol": "PostgresPlanChangeAuthority"
+        }
+      ]
+    },
+    {
+      "id": "book-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "book production state",
+        "accepted chapter cursor",
+        "chapter acceptance transaction"
+      ],
+      "does_not_own": [
+        "chapter attempt state",
+        "provider receipts"
+      ],
+      "mutation_rule": "Book Authority delegates Chapter work and alone accepts its outcome into Book reality.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority"
+        }
+      ]
+    },
+    {
+      "id": "chapter-group-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "chapter group range",
+        "sequential child coordination",
+        "group closure state"
+      ],
+      "does_not_own": [
+        "chapter saga internals",
+        "accepted book cursor"
+      ],
+      "mutation_rule": "ChapterGroup records references to child commands and outcomes without copying their execution state.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "PostgresChapterGroupAuthority"
+        }
+      ]
+    },
+    {
+      "id": "chapter-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "chapter saga",
+        "draft candidates",
+        "review and release artifacts"
+      ],
+      "does_not_own": [
+        "book acceptance",
+        "accepted Canon"
+      ],
+      "mutation_rule": "Chapter Authority commits stage artifacts and terminal candidate evidence under its saga.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/application.py",
+          "symbol": "ChapterAuthorityApplication"
+        }
+      ]
+    },
+    {
+      "id": "quality-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "quality qualification campaign",
+        "quality evidence bindings",
+        "qualification decision"
+      ],
+      "does_not_own": [
+        "draft text",
+        "book acceptance"
+      ],
+      "mutation_rule": "Quality decisions require frozen subject, evidence, evaluator, and scope identities.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
+          "symbol": "PostgresQualityQualificationAuthority"
+        }
+      ]
+    },
+    {
+      "id": "canon-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "canon approval decisions",
+        "re-extraction decisions"
+      ],
+      "does_not_own": [
+        "raw extraction candidate",
+        "book cursor"
+      ],
+      "mutation_rule": "Extraction is a proposal; Canon approval decides canonical status.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/canon_graph/approval_authority.py",
+          "symbol": "decide_canon_approval"
+        }
+      ]
+    },
+    {
+      "id": "narrative-state-projection",
+      "role": "PROJECTION",
+      "owns": [
+        "deterministic current narrative state read model"
+      ],
+      "does_not_own": [
+        "source ChapterOutcome",
+        "Canon decisions"
+      ],
+      "mutation_rule": "Narrative State is rebuilt only from Book-accepted outcome evidence.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/narrative_state/rebuild.py",
+          "symbol": "NarrativeStateRebuildService"
+        }
+      ]
+    },
+    {
+      "id": "reader-evidence-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "reader proxy observations",
+        "blind preference evidence",
+        "calibration state"
+      ],
+      "does_not_own": [
+        "Canon",
+        "active plans",
+        "executed chapter"
+      ],
+      "mutation_rule": "Reader and calibration outputs remain evidence or proposals until another owner decides.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority"
+        }
+      ]
+    },
+    {
+      "id": "source-knowledge-authorities",
+      "role": "AUTHORITY",
+      "owns": [
+        "source lineage",
+        "deconstruction observations",
+        "knowledge candidate decisions",
+        "knowledge packs"
+      ],
+      "does_not_own": [
+        "draft prose",
+        "accepted story facts"
+      ],
+      "mutation_rule": "Source and MKAOS stages preserve evidence lineage and source isolation.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/source_authority/application.py",
+          "symbol": "SourceAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication"
+        }
+      ]
+    },
+    {
+      "id": "agent-runtime-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "agent definitions",
+        "runtime bindings",
+        "sessions",
+        "transcript provenance"
+      ],
+      "does_not_own": [
+        "domain assets",
+        "accepted narrative truth"
+      ],
+      "mutation_rule": "Agent Runtime executes bounded contracts and submits candidate or command evidence to domain owners.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/agent_runtime/application.py",
+          "symbol": "AgentRuntimeAuthorityApplication"
+        }
+      ]
+    },
+    {
+      "id": "provider-effect-authority",
+      "role": "AUTHORITY",
+      "owns": [
+        "external effect intent",
+        "dispatch generation",
+        "receipt",
+        "reconciliation disposition"
+      ],
+      "does_not_own": [
+        "domain activation",
+        "accepted story facts"
+      ],
+      "mutation_rule": "Command Kernel ExternalEffect state gates every Provider or object-store send.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "dispatch_external_effect"
+        }
+      ]
+    },
+    {
+      "id": "runtime-job-coordinator",
+      "role": "COORDINATOR",
+      "owns": [
+        "runtime job scheduling and claim state"
+      ],
+      "does_not_own": [
+        "business truth",
+        "external effect outcome"
+      ],
+      "mutation_rule": "RuntimeJob coordinates claims while the domain Authority owns completion.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/runtime_job/application.py",
+          "symbol": "RuntimeJobAuthority"
+        }
+      ]
+    },
+    {
+      "id": "authority-repositories",
+      "role": "REPOSITORY",
+      "owns": [
+        "persistence mechanics inside owner transactions"
+      ],
+      "does_not_own": [
+        "business decisions",
+        "cross-authority mutation"
+      ],
+      "mutation_rule": "Repository writes are valid only inside the owning application and unit of work.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "symbol": "AuthorityUnitOfWork"
+        }
+      ]
+    }
+  ],
+  "narrative_model": [
+    {
+      "id": "story-foundation",
+      "nature": "CONTAINER",
+      "owner": "book-design-authority",
+      "lifecycle_rule": "A qualified foundation set binds exact upstream semantic assets for Book Design; it is not chapter truth.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/foundation.py",
+          "symbol": "QualifiedFoundationSet"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "book-design"
+        }
+      ]
+    },
+    {
+      "id": "book-design",
+      "nature": "CANDIDATE",
+      "owner": "book-design-authority",
+      "lifecycle_rule": "BookDesign candidates may be decided and one version activated; activation establishes design input, not accepted story actual.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/domain.py",
+          "symbol": "BookDesignPayload"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "volume"
+        },
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "narrative-arc"
+        }
+      ]
+    },
+    {
+      "id": "volume",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "A Volume is a typed strategic plan structurally parented by the Book plan.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "STRUCTURAL_CONTAINMENT",
+          "target": "chapter-group"
+        },
+        {
+          "type": "STRUCTURAL_CONTAINMENT",
+          "target": "narrative-segment"
+        }
+      ]
+    },
+    {
+      "id": "narrative-segment",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "Segments encode ordered internal progression and state handoffs; they do not form a universal containment parent for Arcs.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "validate_planning_contract"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "TEMPORAL_TRAJECTORY",
+          "target": "narrative-arc"
+        }
+      ]
+    },
+    {
+      "id": "narrative-arc",
+      "nature": "TRAJECTORY",
+      "owner": "planning-authority",
+      "lifecycle_rule": "An Arc plan has independent identity and may span multiple Volumes.",
+      "evidence": [
+        {
+          "path": "tests/integration/test_hierarchical_planning_postgres.py",
+          "symbol": "HierarchicalPlanningPostgresTests.test_arc_crosses_volumes_and_relations_form_closure"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "TEMPORAL_TRAJECTORY",
+          "target": "arc-trajectory"
+        }
+      ]
+    },
+    {
+      "id": "arc-trajectory",
+      "nature": "PROJECTION",
+      "owner": "narrative-state-projection",
+      "lifecycle_rule": "Arc actual movement is derived from accepted chapter outcomes and cannot be advanced by plan text.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/longform_narrative/contracts.py",
+          "symbol": "ArcActualState"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "ACCEPTED_FACT_PROJECTION",
+          "target": "accepted-actual"
+        }
+      ]
+    },
+    {
+      "id": "chapter-group",
+      "nature": "CONTAINER",
+      "owner": "chapter-group-authority",
+      "lifecycle_rule": "A ChapterGroup is a bounded planning and coordination window, not an execution-state copy.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
+          "symbol": "ChapterGroupRange"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "STRUCTURAL_CONTAINMENT",
+          "target": "chapter-plan"
+        }
+      ]
+    },
+    {
+      "id": "chapter-plan",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "A Chapter plan is the operational typed plan for one Chapter and remains distinct from its realization and actual outcome.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanningContract"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "STRUCTURAL_CONTAINMENT",
+          "target": "scene-beat"
+        },
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "narrative-realization"
+        }
+      ]
+    },
+    {
+      "id": "scene-beat",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "Scenes and beats are chapter-plan components that schedule state transitions and information flow.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "locator": "\"scene_plan\""
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "draft"
+        }
+      ]
+    },
+    {
+      "id": "narrative-realization",
+      "nature": "PROPOSAL",
+      "owner": "narrative-realization-authority",
+      "lifecycle_rule": "Narrative Realization is a separately approved event-chain contract; it is neither a plan scale nor accepted actual.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+          "symbol": "NarrativeRealizationContract"
+        },
+        {
+          "path": "tests/unit/test_narrative_realization.py",
+          "symbol": "test_realization_is_not_a_plan_scale_or_accepted_actual"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "draft"
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "nature": "CANDIDATE",
+      "owner": "chapter-authority",
+      "lifecycle_rule": "A draft remains candidate content through review, revision, quality, and release gates.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "symbol": "ChapterNode"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "accepted-actual"
+        }
+      ]
+    },
+    {
+      "id": "accepted-actual",
+      "nature": "ACCEPTED_ACTUAL",
+      "owner": "book-authority",
+      "lifecycle_rule": "A ChapterOutcome becomes accepted actual only in the Book acceptance transaction.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_outcome/domain.py",
+          "symbol": "build_chapter_outcome"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "ACCEPTED_FACT_PROJECTION",
+          "target": "canon"
+        },
+        {
+          "type": "ACCEPTED_FACT_PROJECTION",
+          "target": "narrative-state"
+        }
+      ]
+    },
+    {
+      "id": "canon",
+      "nature": "PROJECTION",
+      "owner": "canon-authority",
+      "lifecycle_rule": "Canon exposes approved or Book-bound accepted facts; extraction alone is not Canon.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/canon_graph/domain.py",
+          "symbol": "build_canon_update"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "narrative-state"
+        }
+      ]
+    },
+    {
+      "id": "narrative-state",
+      "nature": "PROJECTION",
+      "owner": "narrative-state-projection",
+      "lifecycle_rule": "Narrative State is a deterministic as-of projection over accepted evidence.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/narrative_state/contracts.py",
+          "symbol": "NarrativeStateEvent"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "TEMPORAL_TRAJECTORY",
+          "target": "obligation"
+        }
+      ]
+    },
+    {
+      "id": "obligation",
+      "nature": "TRAJECTORY",
+      "owner": "narrative-state-projection",
+      "lifecycle_rule": "Obligations track setup, due windows, and payoff state across accepted Chapters.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/narrative_state/contracts.py",
+          "symbol": "NarrativeObligationStatus"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "chapter-plan"
+        }
+      ]
+    },
+    {
+      "id": "reader-state",
+      "nature": "EVIDENCE",
+      "owner": "reader-evidence-authority",
+      "lifecycle_rule": "Reader state is proxy, preference, or behavior evidence and cannot mutate accepted facts directly.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/domain.py",
+          "symbol": "evaluate_reader_outcome"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "CAUSAL_DEPENDENCY",
+          "target": "chapter-plan"
+        }
+      ]
+    }
+  ],
+  "runtime_chain": [
+    {
+      "id": "project-scope",
+      "order": 1,
+      "path_role": "REQUIRED",
+      "owner": "project-workspace-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/project_authority/application.py",
+          "symbol": "ProjectAuthorityApplication"
+        }
+      ],
+      "downstream": [
+        "source-knowledge",
+        "book-design"
+      ]
+    },
+    {
+      "id": "source-knowledge",
+      "order": 2,
+      "path_role": "OPTIONAL_INPUT",
+      "owner": "source-knowledge-authorities",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication"
+        }
+      ],
+      "downstream": [
+        "book-design",
+        "context-retrieval"
+      ]
+    },
+    {
+      "id": "book-design",
+      "order": 3,
+      "path_role": "REQUIRED",
+      "owner": "book-design-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StoryFormationApplication"
+        }
+      ],
+      "downstream": [
+        "story-design"
+      ]
+    },
+    {
+      "id": "story-design",
+      "order": 4,
+      "path_role": "REQUIRED",
+      "owner": "story-design-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "PostgresStoryDesignAssetAuthority"
+        }
+      ],
+      "downstream": [
+        "book-opening"
+      ]
+    },
+    {
+      "id": "book-opening",
+      "order": 5,
+      "path_role": "REQUIRED",
+      "owner": "book-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "PostgresBookOpeningApplication"
+        }
+      ],
+      "downstream": [
+        "active-planning"
+      ]
+    },
+    {
+      "id": "active-planning",
+      "order": 6,
+      "path_role": "REQUIRED",
+      "owner": "planning-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+          "symbol": "PostgresHierarchicalPlanningAuthority"
+        }
+      ],
+      "downstream": [
+        "narrative-realization",
+        "book-production"
+      ]
+    },
+    {
+      "id": "narrative-realization",
+      "order": 7,
+      "path_role": "REQUIRED",
+      "owner": "narrative-realization-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+          "symbol": "PostgresNarrativeRealizationApplication"
+        }
+      ],
+      "downstream": [
+        "chapter-group"
+      ]
+    },
+    {
+      "id": "book-production",
+      "order": 8,
+      "path_role": "REQUIRED",
+      "owner": "book-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.start"
+        }
+      ],
+      "downstream": [
+        "chapter-group"
+      ]
+    },
+    {
+      "id": "chapter-group",
+      "order": 9,
+      "path_role": "REQUIRED",
+      "owner": "chapter-group-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+          "symbol": "PostgresChapterGroupAuthority"
+        }
+      ],
+      "downstream": [
+        "chapter-plan"
+      ]
+    },
+    {
+      "id": "chapter-plan",
+      "order": 10,
+      "path_role": "REQUIRED",
+      "owner": "planning-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication"
+        }
+      ],
+      "downstream": [
+        "context-retrieval"
+      ]
+    },
+    {
+      "id": "context-retrieval",
+      "order": 11,
+      "path_role": "REQUIRED",
+      "owner": "chapter-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "symbol": "build_authority_context_bundle"
+        }
+      ],
+      "downstream": [
+        "chapter-saga"
+      ]
+    },
+    {
+      "id": "chapter-saga",
+      "order": 12,
+      "path_role": "REQUIRED",
+      "owner": "chapter-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+          "symbol": "admit_single_chapter_saga"
+        }
+      ],
+      "downstream": [
+        "provider-effects",
+        "review-quality"
+      ]
+    },
+    {
+      "id": "provider-effects",
+      "order": 13,
+      "path_role": "CONDITIONAL",
+      "owner": "provider-effect-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "dispatch_external_effect"
+        }
+      ],
+      "downstream": [
+        "review-quality"
+      ]
+    },
+    {
+      "id": "review-quality",
+      "order": 14,
+      "path_role": "REQUIRED",
+      "owner": "chapter-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "symbol": "ChapterNode"
+        }
+      ],
+      "downstream": [
+        "book-acceptance"
+      ]
+    },
+    {
+      "id": "book-acceptance",
+      "order": 15,
+      "path_role": "REQUIRED",
+      "owner": "book-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.accept_chapter"
+        }
+      ],
+      "downstream": [
+        "accepted-projections",
+        "reader-followup",
+        "future-plan-change"
+      ]
+    },
+    {
+      "id": "accepted-projections",
+      "order": 16,
+      "path_role": "REQUIRED",
+      "owner": "book-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py",
+          "symbol": "BookAuthorityRepository.commit_chapter_acceptance"
+        }
+      ],
+      "downstream": [
+        "chapter-group"
+      ]
+    },
+    {
+      "id": "reader-followup",
+      "order": 17,
+      "path_role": "ASYNCHRONOUS_FOLLOWUP",
+      "owner": "reader-evidence-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/coordinator.py",
+          "symbol": "PostgresBookFollowupCoordinator"
+        }
+      ],
+      "downstream": [
+        "future-plan-change"
+      ]
+    },
+    {
+      "id": "future-plan-change",
+      "order": 18,
+      "path_role": "FUTURE_ONLY_CHANGE",
+      "owner": "plan-change-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_replan/coordinator.py",
+          "symbol": "BookReplanCoordinator"
+        }
+      ],
+      "downstream": [
+        "active-planning"
       ]
     }
   ]

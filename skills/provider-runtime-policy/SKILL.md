@@ -77,5 +77,5 @@ description: Use when designing, reviewing, or debugging model provider routing,
 ## 与其他模块的关系
 
 - 上游：Runtime Profile、AgentRun、ContextBundle、provider adapter、model_call_log、cost_ledger。
-- 下游：Evaluation Center、ReviewIssue Gate、Agent Loop、Publish Gate、Editor-in-Chief Console。
+- 下游：Quality Qualification、ReviewIssue Gate、Agent Runtime、Publish Gate、Authority API/admin projection。
 - 关联 Skill：`agent-loop-governance`、`review-issue-gate`、`novel-os-engineering-audit`。

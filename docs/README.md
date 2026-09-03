@@ -14,8 +14,9 @@ The canonical prose set is intentionally limited to:
 - `docs/development.md` — repository, documentation, comment and validation rules.
 
 `architecture/reality-evidence.json` is the separately governed machine-readable
-capability-to-code inventory. It is evidence for the prose set, not another prose
-document.
+code-reality projection. It records capability topology, Authority ownership, narrative
+relationships, runtime-chain edges, semantic-constraint classes and evidence ceilings.
+It is checked evidence for the prose set, not an independent design Authority.
 
 `python -m novel_forge.tools.documentation_reality --repo-root .` validates this
 allowlist, referenced files and symbols, evidence status, and comment policy. Any other

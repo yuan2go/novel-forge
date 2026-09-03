@@ -11,7 +11,7 @@ from typing import Any, Mapping
 
 
 MANIFEST_PATH = Path("architecture/manifests/ai-instruction-manifest.yaml")
-SCHEMA_VERSION = "novel-forge.ai-instruction-surface.v1"
+SCHEMA_VERSION = "novel-forge.ai-instruction-surface.v2"
 REPORT_SCHEMA_VERSION = "novel-forge.ai-instruction-reality.v1"
 REQUIRED_SOURCE_FIELDS = (
     "id",
@@ -96,9 +96,7 @@ def _python_has_embedded_instruction(path: Path) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            names = {
-                target.id for target in targets if isinstance(target, ast.Name)
-            }
+            names = {target.id for target in targets if isinstance(target, ast.Name)}
             if names & EMBEDDED_ASSIGNMENT_NAMES and _literal_instruction(node.value):
                 return True
         if isinstance(node, ast.Dict):
@@ -138,7 +136,9 @@ def _discover_instruction_candidates(
         discovered.add(copilot)
     artifact_root = root / "config/capability_packs/artifacts"
     if artifact_root.is_dir():
-        discovered.update(path for path in artifact_root.rglob("*.md") if path.is_file())
+        discovered.update(
+            path for path in artifact_root.rglob("*.md") if path.is_file()
+        )
     for config_root in (
         root / "config/capability_packs",
         root / "config/proof_campaigns",
@@ -223,6 +223,16 @@ def check_instruction_surface(repo_root: str | Path) -> dict[str, Any]:
         }
     if manifest.get("schema_version") != SCHEMA_VERSION:
         _error(errors, f"instruction manifest schema must be {SCHEMA_VERSION}")
+    raw_forbidden_terms = manifest.get("forbidden_terms")
+    if not isinstance(raw_forbidden_terms, list) or not raw_forbidden_terms:
+        _error(errors, "forbidden_terms must be a non-empty list")
+        forbidden_terms: tuple[str, ...] = ()
+    else:
+        forbidden_terms = tuple(str(term or "").strip() for term in raw_forbidden_terms)
+        if any(not term for term in forbidden_terms):
+            _error(errors, "forbidden_terms contains an empty value")
+        if len(set(forbidden_terms)) != len(forbidden_terms):
+            _error(errors, "forbidden_terms contains duplicates")
     raw_generated = manifest.get("generated_copies")
     if not isinstance(raw_generated, list):
         _error(errors, "generated_copies must be a list")
@@ -268,7 +278,9 @@ def check_instruction_surface(repo_root: str | Path) -> dict[str, Any]:
         for path in sorted(matched):
             relative = path.relative_to(root).as_posix()
             if relative in records_by_path:
-                _error(errors, f"instruction source classified more than once: {relative}")
+                _error(
+                    errors, f"instruction source classified more than once: {relative}"
+                )
                 continue
             content = path.read_bytes()
             records_by_path[relative] = {
@@ -277,12 +289,18 @@ def check_instruction_surface(repo_root: str | Path) -> dict[str, Any]:
                 "kind": str(source["kind"]),
                 "owner": str(source["owner"]),
                 "consumer": str(source["consumer"]),
-                "qualification_invalidation": str(
-                    source["qualification_invalidation"]
-                ),
+                "qualification_invalidation": str(source["qualification_invalidation"]),
                 "size": len(content),
                 "sha256": "sha256:" + hashlib.sha256(content).hexdigest(),
             }
+            try:
+                instruction_text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                _error(errors, f"instruction source is not UTF-8: {relative}")
+                continue
+            for term in forbidden_terms:
+                if term in instruction_text:
+                    _error(errors, f"retired instruction term: {relative}:{term}")
 
     discovered = _discover_instruction_candidates(root, generated)
     discovered_paths = {path.relative_to(root).as_posix() for path in discovered}
@@ -296,15 +314,22 @@ def check_instruction_surface(repo_root: str | Path) -> dict[str, Any]:
         target_relative = str(item.get("target") or "").strip()
         generator_relative = str(item.get("generator") or "").strip()
         if not source_relative or not target_relative or not generator_relative:
-            _error(errors, "generated instruction copy requires source, target, and generator")
+            _error(
+                errors,
+                "generated instruction copy requires source, target, and generator",
+            )
             continue
         source_path = root / source_relative
         target_path = root / target_relative
         if not source_path.is_dir():
-            _error(errors, f"generated instruction source is missing: {source_relative}")
+            _error(
+                errors, f"generated instruction source is missing: {source_relative}"
+            )
         if not (root / generator_relative).is_file():
             _error(errors, f"instruction generator is missing: {generator_relative}")
-        if source_path.is_dir() and not _generated_copy_matches(source_path, target_path):
+        if source_path.is_dir() and not _generated_copy_matches(
+            source_path, target_path
+        ):
             _error(errors, f"generated instruction copy drifts: {target_relative}")
 
     records = [records_by_path[path] for path in sorted(records_by_path)]

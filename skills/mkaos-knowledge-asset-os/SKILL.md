@@ -89,6 +89,6 @@ description: Use when importing, extracting, selecting, gating, tracing, or lear
 
 ## 与其他模块的关系
 
-- 上游：Source Authority、Source Deconstruction Observation、Audit Log、Feedback Backflow、Evaluation Center；LocalStorage MKAOS Ingestion/Model Extraction 为 `LEGACY_ISOLATED`。
-- 下游：Context Builder、AgentRun、Loop Kernel、ReviewIssue、Publish Gate、Editor-in-Chief Console。
+- 上游：Source Authority、Source Deconstruction Observation、Audit Log、Feedback Backflow、Quality Qualification；LocalStorage MKAOS Ingestion/Model Extraction 为 `LEGACY_ISOLATED`。
+- 下游：Context Builder、AgentRun、Command Kernel、ReviewIssue、Publish Gate、Authority API/admin projection。
 - 关联 Skill：`context-builder-source-isolation`、`review-issue-gate`、`platform-strategy-os`、`quality-review`。
