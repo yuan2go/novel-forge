@@ -53,6 +53,7 @@ from novel_forge.modules.production_execution.gateway import (
     StaticExecutionContractSource,
 )
 from tests.unit.test_production_execution_gateway import (
+    _admitted_remote_payload,
     _remote_adapter,
     contracts as model_contracts,
 )
@@ -680,12 +681,8 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
             admission=remote_admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    remote_request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="",
-                        working_directory=".",
-                        timeout_seconds=5,
-                        output_schema_version="structured-output.v1",
+                    remote_request.execution_id: _admitted_remote_payload(
+                        remote_request, "chapter 1"
                     )
                 }
             ),

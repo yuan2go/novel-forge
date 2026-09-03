@@ -873,9 +873,34 @@ class RemoteProviderExecutionBackend:
                 raise ValueError("duplicate execution ID has a different request")
             return existing.handle
         payload = self.payload_resolver.resolve(request, admission)
+        from novel_forge.modules.production_execution.provider_admission import (
+            ProviderAdmissionReceipt,
+            ProviderRequestEnvelope,
+            verify_provider_admission,
+        )
         from novel_forge.modules.provider_control.contracts import (
             ProviderInvocationRequest,
         )
+
+        envelope = ProviderRequestEnvelope.from_dict(payload.request_payload)
+        admission_payload = (
+            payload.capability_evidence.get("provider_admission")
+            if isinstance(payload.capability_evidence, Mapping)
+            else None
+        )
+        if not isinstance(admission_payload, Mapping):
+            raise ValueError(
+                "PROVIDER_ADMISSION_REQUIRED: remote Provider request has no frozen receipt"
+            )
+        admission_receipt = ProviderAdmissionReceipt.from_dict(admission_payload)
+        verify_provider_admission(envelope, admission_receipt)
+        if (
+            envelope.provider != admission.route_snapshot.model_provider
+            or envelope.model != admission.route_snapshot.model_id
+            or envelope.timeout_seconds != payload.timeout_seconds
+            or envelope.stable_idempotency_key != request.stable_idempotency_key
+        ):
+            raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT: route envelope changed")
 
         provider_request = ProviderInvocationRequest(
             provider=admission.route_snapshot.model_provider,
@@ -883,14 +908,15 @@ class RemoteProviderExecutionBackend:
             capability=request.capability,
             stage=request.stage,
             stable_idempotency_key=request.stable_idempotency_key,
-            request_payload=dict(payload.request_payload),
-            request_hash=_sha256(dict(payload.request_payload)),
+            request_payload=envelope.to_dict(),
+            request_hash=envelope.envelope_hash,
             timeout_seconds=payload.timeout_seconds,
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
             operation_id=request.operation_id,
             external_effect_id=request.external_effect_id,
             budget_reservation_id=request.budget_reservation_id,
+            provider_admission=admission_receipt.to_dict(),
         )
         provisional_handle = ExecutionHandle(
             execution_id=request.execution_id,

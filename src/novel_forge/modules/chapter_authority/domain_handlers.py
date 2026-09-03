@@ -175,8 +175,41 @@ def build_context_bundle(
             memory_layer=str(item.get("memory_layer") or ""),
             retrieval_reasons=tuple(item.get("retrieval_reasons") or ()),
             retrieval_scores=dict(item.get("retrieval_scores") or {}),
-            provenance=dict(item.get("provenance") or {}),
+            provenance=dict(
+                item.get("provenance")
+                or {
+                    "authority_asset_version_id": str(item["asset_version_id"]),
+                    "source_content_hash": str(item.get("content_digest") or ""),
+                    "projection_source": "frozen_context_candidate",
+                }
+            ),
             compression_trace=tuple(item.get("compression_trace") or ()),
+            logical_context_kind=str(
+                item.get("logical_context_kind") or item.get("asset_type") or ""
+            ),
+            source_identity=str(
+                item.get("source_identity") or item.get("asset_version_id") or ""
+            ),
+            logical_narrative_identity=str(
+                item.get("logical_narrative_identity") or ""
+            ),
+            semantic_representation_identity=str(
+                item.get("semantic_representation_identity") or ""
+            ),
+            source_revision=str(
+                item.get("source_revision") or item.get("content_digest") or ""
+            ),
+            accepted_boundary=dict(item.get("accepted_boundary") or {}),
+            section=str(item.get("section") or "NARRATIVE"),
+            bucket=str(item.get("bucket") or item.get("asset_type") or "GENERAL"),
+            required=bool(item.get("required", False)),
+            representation_status=str(item.get("representation_status") or "ACTIVE"),
+            read_generation_id=str(item.get("read_generation_id") or ""),
+            active_read_generation_id=str(
+                item.get("active_read_generation_id") or ""
+            ),
+            truncation_strategy=str(item.get("truncation_strategy") or ""),
+            truncation_version=str(item.get("truncation_version") or ""),
         )
         for item in (governed_candidates or [])
     ]

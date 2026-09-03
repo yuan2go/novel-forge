@@ -629,8 +629,8 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             item["asset_version_id"]: item["reason"]
             for item in bundle["rejected_asset_versions"]
         }
-        self.assertEqual(reasons["review-only-v1"], "source_mode:review_only")
-        self.assertEqual(reasons["foreign-v1"], "cross_project")
+        self.assertEqual(reasons["review-only-v1"], "SOURCE_MODE_review_only")
+        self.assertEqual(reasons["foreign-v1"], "WRONG_PROJECT")
         with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_BLOCKED"):
             build_export_package(
                 revision={"chapter": 1, "title": "Blocked", "text": "text"},

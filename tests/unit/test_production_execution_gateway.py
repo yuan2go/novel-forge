@@ -59,6 +59,11 @@ from novel_forge.modules.production_execution.process_supervisor import (
 )
 from novel_forge.modules.provider_control.contracts import ProviderReceipt
 from novel_forge.modules.provider_control.openai_v2 import OpenAIProviderAdapterV2
+from novel_forge.modules.production_execution.provider_admission import (
+    ProviderRequestEnvelope,
+    TokenAccountingContract,
+    prepare_provider_admission,
+)
 
 
 SHA = "a" * 40
@@ -131,6 +136,42 @@ def _remote_adapter(scenario: str):
         real_provider_validation_eligible=False,
     )
     return adapter, transport
+
+
+def _admitted_remote_payload(request: ExecutionRequest, text: str) -> ResolvedExecutionPayload:
+    envelope = ProviderRequestEnvelope(
+        provider="openai",
+        model="gpt-test",
+        protocol="openai-responses-text-envelope-v1",
+        input_text=text,
+        max_output_tokens=64,
+        timeout_seconds=30,
+        stable_idempotency_key=request.stable_idempotency_key,
+    )
+    contract = TokenAccountingContract(
+        provider="openai",
+        model="gpt-test",
+        route_identity="route:unit-test",
+        meter_identity="openai-byte-token-upper-bound",
+        meter_version="v1",
+        accounting_method="OPENAI_UTF8_BYTES_UPPER_BOUND_V1",
+        precision="PROVEN_UPPER_BOUND",
+        evidence_ref="token-proof:openai-byte-fallback:v1",
+        serialization_contract=envelope.protocol,
+        model_context_limit=4096,
+        output_reserve=64,
+        safety_margin=32,
+        framing_overhead=16,
+    )
+    receipt = prepare_provider_admission(envelope, contract)
+    return ResolvedExecutionPayload(
+        request_payload=envelope.to_dict(),
+        input_text=text,
+        working_directory=".",
+        timeout_seconds=30,
+        output_schema_version="chapter-draft.v1",
+        capability_evidence={"provider_admission": receipt.to_dict()},
+    )
 
 
 def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
@@ -608,12 +649,8 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             admission=admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="provider payload",
-                        working_directory=".",
-                        timeout_seconds=30,
-                        output_schema_version="chapter-draft.v1",
+                    request.execution_id: _admitted_remote_payload(
+                        request, "provider payload"
                     )
                 }
             ),
@@ -670,12 +707,8 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             admission=admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="provider payload",
-                        working_directory=".",
-                        timeout_seconds=30,
-                        output_schema_version="chapter-draft.v1",
+                    request.execution_id: _admitted_remote_payload(
+                        request, "provider payload"
                     )
                 }
             ),
@@ -1005,13 +1038,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             admission=admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="provider",
-                        working_directory=".",
-                        timeout_seconds=30,
-                        output_schema_version="chapter-draft.v1",
-                    )
+                    request.execution_id: _admitted_remote_payload(request, "provider")
                 }
             ),
             record_store=InMemoryExecutionRecordStore(),
@@ -1052,13 +1079,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             admission=admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="provider",
-                        working_directory=".",
-                        timeout_seconds=30,
-                        output_schema_version="chapter-draft.v1",
-                    )
+                    request.execution_id: _admitted_remote_payload(request, "provider")
                 }
             ),
             record_store=InMemoryExecutionRecordStore(),
@@ -1121,13 +1142,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             admission=admission,
             payload_resolver=StaticExecutionPayloadResolver(
                 {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="provider",
-                        working_directory=".",
-                        timeout_seconds=30,
-                        output_schema_version="chapter-draft.v1",
-                    )
+                    request.execution_id: _admitted_remote_payload(request, "provider")
                 }
             ),
             record_store=InMemoryExecutionRecordStore(),

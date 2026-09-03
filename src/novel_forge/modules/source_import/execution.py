@@ -10,7 +10,10 @@ from typing import Any
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
+    PostgresProductionExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
+    _materialize_source_intelligence_prompt,
+    _provider_process_timeout_seconds,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.budget_runtime import (
@@ -46,6 +49,12 @@ from novel_forge.modules.production_execution import (
     RouteSnapshot,
     TargetScope,
     default_capability_registry,
+)
+from novel_forge.modules.production_execution.provider_admission import (
+    ProviderRequestEnvelope,
+    build_route_token_accounting_contract,
+    prepare_provider_admission,
+    provider_request_protocol,
 )
 from novel_forge.modules.source_authority.deconstruction import (
     AnalyzerContract,
@@ -266,8 +275,15 @@ class PostgresContentIntelligenceExecutionPort:
         max_cost_per_call: str = "0",
         budget_caps: Mapping[str, str] | None = None,
         methodology_registry: SourceMethodologyRegistry | None = None,
+        source_object_reader: Any | None = None,
+        provider_output_token_reserve: int = 4_096,
     ) -> None:
-        if not database_url or not worker_id or lease_seconds <= 0:
+        if (
+            not database_url
+            or not worker_id
+            or lease_seconds <= 0
+            or provider_output_token_reserve <= 0
+        ):
             raise ValueError("Source PEP port requires database, worker, and lease")
         if not getattr(transport, "production_execution_gateway_backed", False):
             raise ValueError("Source execution requires ProductionExecutionGateway")
@@ -282,6 +298,8 @@ class PostgresContentIntelligenceExecutionPort:
         self.methodology_registry = methodology_registry or SourceMethodologyRegistry(
             Path(__file__).resolve().parents[4] / "skills"
         )
+        self.source_object_reader = source_object_reader
+        self.provider_output_token_reserve = provider_output_token_reserve
 
     def execute_classification(
         self,
@@ -670,6 +688,101 @@ class PostgresContentIntelligenceExecutionPort:
         stable_key = (
             f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}:source-pep-v1"
         )
+        base_route = self.transport.routes["quality_source_originality"]
+        transient_inputs = PostgresProductionExecutionPayloadResolver(
+            self.database_url,
+            source_object_reader=self.source_object_reader,
+        ).resolve_source_intelligence_inputs(
+            project_id=worker.project_id,
+            stored_inputs=spec.input_payload,
+            metadata={"kind": spec.kind},
+        )
+        prompt, prompt_evidence = _materialize_source_intelligence_prompt(
+            target_scope=spec.target_scope.to_dict(),
+            stage=spec.stage,
+            inputs=transient_inputs,
+            materialization=materialization,
+        )
+        provider_timeout = self.lease_seconds * 5
+        envelope = ProviderRequestEnvelope(
+            provider=base_route.model_profile.model_provider,
+            model=base_route.model_profile.model_id,
+            protocol=provider_request_protocol(
+                base_route.model_profile.model_provider
+            ),
+            input_text=prompt,
+            max_output_tokens=self.provider_output_token_reserve,
+            timeout_seconds=_provider_process_timeout_seconds(
+                provider_timeout, max_attempts=2
+            ),
+            stable_idempotency_key=stable_key,
+        )
+        token_contract = build_route_token_accounting_contract(
+            provider=base_route.model_profile.model_provider,
+            model=base_route.model_profile.model_id,
+            route_identity=":".join(
+                (
+                    spec.stage,
+                    base_route.model_profile.model_provider,
+                    base_route.model_profile.model_id,
+                    base_route.release_sha,
+                    materialization["materialization_hash"],
+                )
+            ),
+            accounting_method=base_route.token_accounting_method,
+            accounting_evidence_ref=base_route.token_accounting_evidence_ref,
+            model_context_limit=base_route.model_context_limit,
+            output_reserve=self.provider_output_token_reserve,
+            safety_margin=base_route.token_safety_margin,
+            framing_overhead=base_route.token_framing_overhead,
+        )
+        provider_admission = prepare_provider_admission(
+            envelope,
+            token_contract,
+            input_component_hashes=dict(
+                prompt_evidence.get("component_hashes") or {}
+            ),
+            complete_request_coverage=(
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "source_analysis_input",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin",
+            ),
+        )
+        if provider_admission.status != "ADMITTED":
+            raise KernelError(
+                "PROVIDER_TOKEN_ADMISSION_REJECTED", provider_admission.reason
+            )
+        admission_contract = {
+            "schema_version": "novelos.provider_request_admission.v1",
+            "provider_request_identity": envelope.to_identity_dict(),
+            "provider_admission": provider_admission.to_dict(),
+            "prompt_materialization": prompt_evidence,
+            "source_bytes_transient_only": True,
+            "capability_materialization_asset_version_id": (
+                materialization_document.asset_version_id
+            ),
+            "capability_materialization_content_hash": (
+                materialization_document.content_hash
+            ),
+        }
+        admission_document = self._ensure_contract(
+            operation_id=worker.causation_id,
+            project_id=worker.project_id,
+            logical_ref=(
+                "source-intelligence/provider-admission/"
+                + _token(f"{worker.attempt_id}:{spec.capability}")
+            ),
+            asset_type="provider_request_admission_manifest",
+            contract=admission_contract,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+        )
         effect_context = EffectCommandContext(
             operation_id=worker.causation_id,
             project_id=worker.project_id,
@@ -703,10 +816,19 @@ class PostgresContentIntelligenceExecutionPort:
                         materialization_document.content_hash
                     ),
                     "materialization_hash": materialization["materialization_hash"],
+                    "provider_admission_asset_version_id": (
+                        admission_document.asset_version_id
+                    ),
+                    "provider_admission_content_hash": (
+                        admission_document.content_hash
+                    ),
+                    "provider_request_envelope_hash": envelope.envelope_hash,
+                    "token_accounting_contract": token_contract.to_dict(),
+                    "provider_admission": provider_admission.to_dict(),
                 },
             },
+            "max_output_tokens": self.provider_output_token_reserve,
         }
-        base_route = self.transport.routes["quality_source_originality"]
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -719,7 +841,7 @@ class PostgresContentIntelligenceExecutionPort:
             reversible=False,
             completion_policy="synchronous_final",
             model_id=base_route.model_profile.model_id,
-            request_timeout_seconds=self.lease_seconds * 5,
+            request_timeout_seconds=provider_timeout,
             reconciliation_mode=self.transport.reconciliation_mode,
             provider_capability_profile=self.transport.capability_profile.to_dict(),
         )
@@ -745,6 +867,7 @@ class PostgresContentIntelligenceExecutionPort:
             graph=graph,
             documents=documents,
             context=context,
+            provider_admission=admission_document,
             effect_id=effect_id,
             stable_key=stable_key,
             reservation_id=str(reservation["reservation_id"]),
@@ -897,6 +1020,7 @@ class PostgresContentIntelligenceExecutionPort:
         graph: dict[str, str],
         documents: tuple[AuthorityAssetDocument, ...],
         context: AuthorityAssetDocument,
+        provider_admission: AuthorityAssetDocument,
         effect_id: str,
         stable_key: str,
         reservation_id: str,
@@ -963,6 +1087,14 @@ class PostgresContentIntelligenceExecutionPort:
                     source_eligibility="SOURCE_ANALYSIS_ONLY",
                 )
                 for document in documents
+            ),
+            ArtifactPointer(
+                artifact_ref=f"asset-version:{provider_admission.asset_version_id}",
+                asset_version_id=provider_admission.asset_version_id,
+                artifact_type=provider_admission.asset_type,
+                content_hash=provider_admission.content_hash,
+                schema_version="novelos.provider_request_admission.v1",
+                source_eligibility="NOT_SOURCE_DERIVED",
             ),
         )
         manifest = InputManifest(

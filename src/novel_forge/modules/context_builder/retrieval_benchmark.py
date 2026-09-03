@@ -567,6 +567,10 @@ def _build_context(
             context_class="PROTECTED",
             compression_method="none",
             narrative_function="current_chapter_plan",
+            provenance={
+                "source_identity": "benchmark-chapter-plan",
+                "source_revision": "benchmark-v1",
+            },
         )
     ]
     for rank, item in enumerate(selected):
@@ -592,6 +596,11 @@ def _build_context(
                 retrieval_reasons=tuple(item.get("retrieval_reasons") or ()),
                 retrieval_scores=dict(item.get("retrieval_scores") or {}),
                 narrative_function="minimum_retrieved_historical_evidence",
+                source_identity=str(item["source_asset_version_id"]),
+                provenance={
+                    "source_identity": str(item["source_asset_version_id"]),
+                    "source_revision": str(item["source_content_hash"]),
+                },
             )
         )
     required_long_distance = (

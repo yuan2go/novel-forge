@@ -44,6 +44,20 @@ class ContextCandidate:
     retrieval_scores: dict[str, float] | None = None
     provenance: dict[str, Any] | None = None
     compression_trace: tuple[dict[str, Any], ...] = ()
+    logical_context_kind: str = ""
+    source_identity: str = ""
+    logical_narrative_identity: str = ""
+    semantic_representation_identity: str = ""
+    source_revision: str = ""
+    accepted_boundary: dict[str, Any] | None = None
+    section: str = "NARRATIVE"
+    bucket: str = "GENERAL"
+    required: bool = False
+    representation_status: str = "ACTIVE"
+    read_generation_id: str = ""
+    active_read_generation_id: str = ""
+    truncation_strategy: str = ""
+    truncation_version: str = ""
 
     def __post_init__(self) -> None:
         try:
@@ -54,6 +68,30 @@ class ContextCandidate:
                 "RETRIEVABLE, or EPHEMERAL"
             ) from exc
         object.__setattr__(self, "context_class", context_class)
+        object.__setattr__(
+            self,
+            "logical_context_kind",
+            self.logical_context_kind.strip() or self.asset_type,
+        )
+        object.__setattr__(
+            self,
+            "source_identity",
+            self.source_identity.strip() or self.asset_version_id,
+        )
+        object.__setattr__(
+            self,
+            "source_revision",
+            self.source_revision.strip() or self.content_digest,
+        )
+        object.__setattr__(self, "section", self.section.strip().upper())
+        object.__setattr__(self, "bucket", self.bucket.strip() or self.asset_type)
+        object.__setattr__(
+            self,
+            "accepted_boundary",
+            dict(self.accepted_boundary or {}),
+        )
+        if not self.section or not self.bucket:
+            raise ValueError("context candidate section and bucket are required")
         if context_class is ContextClass.EPHEMERAL and (
             self.memory_layer or self.retrieval_reasons or self.retrieval_scores
         ):

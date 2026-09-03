@@ -585,6 +585,7 @@ def build_provider_context_view(
         "authority-context-bundle-v5",
         "authority-context-bundle-v6",
         "authority-context-bundle-v7",
+        "authority-context-bundle-v8",
     }:
         if not isinstance(correctness, Mapping):
             raise KernelError(
