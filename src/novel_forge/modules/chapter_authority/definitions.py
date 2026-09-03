@@ -423,6 +423,7 @@ def _chapter_command_schema() -> dict[str, Any]:
         ],
         "properties": {
             "chapter": {"type": "integer"},
+            "book_id": {"type": "string"},
             "premise": {"type": "string"},
             "title": {"type": "string"},
             "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},

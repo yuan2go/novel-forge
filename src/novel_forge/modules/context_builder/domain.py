@@ -432,19 +432,12 @@ def _compile_profile_policy(
             "allowed_asset_types": list(stage_profile.allowed_asset_types),
             "forbidden_asset_types": list(stage_profile.forbidden_asset_types),
             "declared_required_asset_types": list(stage_profile.required_asset_types),
+            "required_context_types": list(stage_profile.required_context_types),
             "maximum_raw_source_ratio": stage_profile.maximum_raw_source_ratio,
             "compression_policy": stage_profile.compression_policy,
             "source_expression_policy": stage_profile.source_expression_policy,
+            "runtime_context_types": list(stage_profile.runtime_context_types),
         }
-        runtime_context_types = (
-            (
-                "chapter_execution_intent",
-                "chapter_memo",
-                "retrieval_result",
-            )
-            if normalized_stage == "draft"
-            else ()
-        )
         snapshots.append(
             ContextPolicySnapshot(
                 identity=PolicyIdentity(
@@ -455,10 +448,10 @@ def _compile_profile_policy(
                 ),
                 allowed_logical_kinds=(
                     *stage_profile.allowed_asset_types,
-                    *runtime_context_types,
+                    *stage_profile.runtime_context_types,
                 ),
                 denied_logical_kinds=stage_profile.forbidden_asset_types,
-                required_logical_kinds=tuple(caller_required),
+                required_logical_kinds=stage_profile.required_context_types,
                 limits=ContextBudgetLimits(total=profile.maximum_token_budget),
                 permitted_source_modes=("generation", "structure_only"),
                 source_risk_threshold=profile.source_risk_threshold,
@@ -487,6 +480,7 @@ _DIAGNOSTIC_CONTEXT_TYPES = frozenset(
 
 def _eligibility_reason(
     project_id: str,
+    book_id: str,
     profile: ContextProfile,
     policy: EffectiveContextPolicy,
     candidate: ContextCandidate,
@@ -497,6 +491,8 @@ def _eligibility_reason(
     physical_type = candidate.physical_asset_type or candidate.asset_type
     if candidate.project_id != project_id:
         return "WRONG_PROJECT"
+    if book_id and candidate.book_id != book_id:
+        return "WRONG_BOOK"
     if (
         logical_kind in _DIAGNOSTIC_CONTEXT_TYPES
         or physical_type in _DIAGNOSTIC_CONTEXT_TYPES
@@ -517,10 +513,9 @@ def _eligibility_reason(
         return "INVALIDATED_REPRESENTATION"
     if candidate.representation_status not in {"ACTIVE", "CURRENT", "VALID_AS_OF"}:
         return "SUPERSEDED_REPRESENTATION"
-    if (
-        candidate.active_read_generation_id
-        and candidate.read_generation_id != candidate.active_read_generation_id
-    ):
+    if bool(candidate.read_generation_id) != bool(candidate.active_read_generation_id):
+        return "READ_GENERATION_UNRESOLVED"
+    if candidate.read_generation_id != candidate.active_read_generation_id:
         return "WRONG_READ_GENERATION"
     if candidate.raw_source or logical_kind in profile.forbidden_asset_types:
         return "RAW_SOURCE_FORBIDDEN"
@@ -545,7 +540,9 @@ def _eligibility_reason(
         return "SOURCE_RISK"
     if not candidate.provenance:
         return "MISSING_PROVENANCE"
-    if candidate.accepted_boundary and authority_state_boundary:
+    if authority_state_boundary:
+        if not candidate.accepted_boundary:
+            return "ACCEPTED_BOUNDARY_MISSING"
         if dict(candidate.accepted_boundary) != authority_state_boundary:
             return "WRONG_ACCEPTED_BOUNDARY"
     return ""
@@ -554,6 +551,7 @@ def _eligibility_reason(
 def select_context_candidates(
     *,
     project_id: str,
+    book_id: str = "",
     profile: ContextProfile,
     candidates: Iterable[ContextCandidate],
     token_budget: int,
@@ -579,6 +577,7 @@ def select_context_candidates(
         _validate_context_class_invariants(candidate)
         reason = _eligibility_reason(
             project_id,
+            book_id,
             profile,
             policy,
             candidate,
@@ -623,40 +622,84 @@ def select_context_candidates(
 
     accepted.sort(key=ordering)
     deduplicated: list[ContextCandidate] = []
-    dedupe_winners: dict[tuple[str, str], ContextCandidate] = {}
     deduplications: list[dict[str, Any]] = []
-    for candidate in accepted:
-        basis = _dedupe_basis(candidate)
-        if basis is None:
-            deduplicated.append(candidate)
-            continue
-        previous = dedupe_winners.get(basis)
-        if previous is None:
-            dedupe_winners[basis] = candidate
-            deduplicated.append(candidate)
-            continue
-        winner = min((previous, candidate), key=ordering)
-        loser = candidate if winner is previous else previous
-        if winner is candidate:
-            deduplicated.remove(previous)
-            deduplicated.append(candidate)
-            dedupe_winners[basis] = candidate
-        receipt = {
-            "asset_version_id": loser.asset_version_id,
-            "decision": "DROPPED",
-            "reason": "DUPLICATE_REPRESENTATION",
-            "winner_asset_version_id": winner.asset_version_id,
-            "equivalence_basis": basis[0],
-            "equivalence_identity": basis[1],
-        }
-        decisions.append(receipt)
-        deduplications.append(receipt)
-        rejected.append(
-            {
+    parent = list(range(len(accepted)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left_root, right_root = find(left), find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    owners: dict[tuple[str, str], int] = {}
+    candidate_identities: list[tuple[tuple[str, str], ...]] = []
+    for index, candidate in enumerate(accepted):
+        identities = _dedupe_identities(candidate)
+        candidate_identities.append(identities)
+        for identity in identities:
+            previous = owners.setdefault(identity, index)
+            union(index, previous)
+    components: dict[int, list[int]] = {}
+    for index in range(len(accepted)):
+        components.setdefault(find(index), []).append(index)
+    for indexes in components.values():
+        members = [accepted[index] for index in indexes]
+        winner = min(members, key=ordering)
+        deduplicated.append(winner)
+        for index in indexes:
+            loser = accepted[index]
+            if loser is winner:
+                continue
+            matches = sorted(
+                set(candidate_identities[index])
+                & set(_dedupe_identities(winner))
+            )
+            if not matches:
+                component_identities = sorted(
+                    {
+                        identity
+                        for component_index in indexes
+                        for identity in candidate_identities[component_index]
+                    }
+                )
+                matches = (
+                    (
+                        "TRANSITIVE_EQUIVALENCE_COMPONENT",
+                        "sha256:"
+                        + hashlib.sha256(
+                            json.dumps(
+                                component_identities,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode()
+                        ).hexdigest(),
+                    ),
+                )
+            receipt = {
                 "asset_version_id": loser.asset_version_id,
+                "decision": "DROPPED",
                 "reason": "DUPLICATE_REPRESENTATION",
+                "winner_asset_version_id": winner.asset_version_id,
+                "equivalence_basis": matches[0][0],
+                "equivalence_identity": matches[0][1],
+                "matching_identities": [
+                    {"basis": basis, "identity": identity}
+                    for basis, identity in matches
+                ],
             }
-        )
+            decisions.append(receipt)
+            deduplications.append(receipt)
+            rejected.append(
+                {
+                    "asset_version_id": loser.asset_version_id,
+                    "reason": "DUPLICATE_REPRESENTATION",
+                }
+            )
     accepted = sorted(deduplicated, key=ordering)
     selected: list[ContextCandidate] = []
     usage: dict[str, dict[str, int]] = {
@@ -697,6 +740,21 @@ def select_context_candidates(
             used=used,
             usage=usage,
         )
+        if not required:
+            required_used = sum(
+                item.estimated_tokens
+                for item in selected
+                if item.required or item.logical_context_kind in required_kinds
+            )
+            reserved_remaining = max(
+                0, policy.limits.required_reservation - required_used
+            )
+            reservation_available = max(0, token_budget - used - reserved_remaining)
+            if reservation_available < available:
+                available, budget_reason = (
+                    reservation_available,
+                    "REQUIRED_RESERVATION",
+                )
         selected_candidate = candidate
         decision = "SELECTED"
         if candidate.estimated_tokens > available:
@@ -789,14 +847,14 @@ def select_context_candidates(
     )
 
 
-def _dedupe_basis(candidate: ContextCandidate) -> tuple[str, str] | None:
-    if candidate.semantic_representation_identity:
-        return ("SEMANTIC_REPRESENTATION", candidate.semantic_representation_identity)
-    if candidate.logical_narrative_identity:
-        return ("LOGICAL_NARRATIVE", candidate.logical_narrative_identity)
-    if candidate.source_identity != candidate.asset_version_id:
-        return ("SOURCE_IDENTITY", candidate.source_identity)
-    return ("PHYSICAL_IDENTITY", candidate.asset_version_id)
+def _dedupe_identities(candidate: ContextCandidate) -> tuple[tuple[str, str], ...]:
+    values = (
+        ("PHYSICAL_IDENTITY", candidate.asset_version_id),
+        ("SOURCE_IDENTITY", candidate.source_identity),
+        ("LOGICAL_NARRATIVE", candidate.logical_narrative_identity),
+        ("SEMANTIC_REPRESENTATION", candidate.semantic_representation_identity),
+    )
+    return tuple((basis, identity) for basis, identity in values if identity)
 
 
 def _dimension_limit(limits: dict[str, int] | Any, key: str, total_limit: int) -> int:
@@ -961,6 +1019,7 @@ def build_authority_context_bundle(
     )
     selection = select_context_candidates(
         project_id=project_id,
+        book_id=book_id,
         profile=profile,
         candidates=candidates,
         token_budget=token_budget,
@@ -1033,6 +1092,7 @@ def build_authority_context_bundle(
     selected_inputs = [
         {
             "asset_version_id": item.asset_version_id,
+            "book_id": item.book_id,
             "asset_type": item.asset_type,
             "physical_asset_type": item.physical_asset_type or item.asset_type,
             "content_digest": item.content_digest,
@@ -1065,6 +1125,7 @@ def build_authority_context_bundle(
             ),
             "representation_status": item.representation_status,
             "read_generation_id": item.read_generation_id,
+            "active_read_generation_id": item.active_read_generation_id,
         }
         for item in selection.selected
     ]
@@ -1109,6 +1170,7 @@ def build_authority_context_bundle(
         "narrative_position": normalized_position,
         "authority_state_boundary": normalized_boundary,
         "accepted_boundary": normalized_boundary,
+        "capability_pack_snapshot_ref": capability_pack_snapshot_ref,
         "selected_inputs": selected_inputs,
         "selected_asset_version_ids": selected,
         "rejected_inputs": list(selection.rejected),
@@ -1202,6 +1264,7 @@ def build_authority_context_bundle(
             ],
             "compiler_receipt_hash": compilation.receipt["receipt_hash"],
         },
+        "policy_compilation": dict(compilation.receipt),
         "token_accounting_contract": {
             "method": "declared-candidate-estimate-v1",
             "version": "v1",
@@ -1360,7 +1423,7 @@ def _context_correctness_receipt(
     stale = [
         item.asset_version_id
         for item in selection.selected
-        if item.authority_freshness != "CURRENT"
+        if item.authority_freshness not in {"CURRENT", "VALID_AS_OF"}
         or item.qualification != "ELIGIBLE"
         or item.governance_status != "CLEAR"
     ]
@@ -1678,6 +1741,102 @@ def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
         or dict(manifest.get("replay") or {}).get("algorithm") != algorithm
     ):
         raise ValueError("CONTEXT_REPLAY_VERSION_MISMATCH: frozen semantics changed")
+    if contract_version == "authority-context-bundle-v7":
+        return {
+            "status": "MATCH",
+            "context_contract_version": contract_version,
+            "manifest_contract_version": manifest_version,
+            "algorithm": algorithm,
+            "semantics": semantics,
+            "current_policy_compiler_invoked": False,
+            "context_fingerprint": expected,
+            "output_context_digest": output_digest,
+        }
+    selected_inputs = manifest.get("selected_inputs")
+    rejected_inputs = manifest.get("rejected_inputs")
+    task = manifest.get("task")
+    scope = manifest.get("scope")
+    profile_contract = bundle.get("profile_contract")
+    if not all(
+        isinstance(value, expected_type)
+        for value, expected_type in (
+            (selected_inputs, list),
+            (rejected_inputs, list),
+            (task, dict),
+            (scope, dict),
+            (profile_contract, dict),
+        )
+    ):
+        raise ValueError("CONTEXT_REPLAY_INVALID: frozen replay inputs are incomplete")
+    digest_payload = {
+        "manifest": [
+            {
+                "asset_version_id": str(item.get("asset_version_id") or ""),
+                "content_digest": str(item.get("content_digest") or ""),
+            }
+            for item in selected_inputs
+            if isinstance(item, dict)
+        ],
+        "stage_context_view": bundle.get("stage_context_view"),
+        "context_correctness": bundle.get("context_correctness"),
+    }
+    reconstructed_output = "sha256:" + hashlib.sha256(
+        json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    if reconstructed_output != output_digest:
+        raise ValueError("CONTEXT_REPLAY_OUTPUT_MISMATCH: selected Context changed")
+    knowledge_usage = manifest.get("knowledge_usage")
+    knowledge_usage = knowledge_usage if isinstance(knowledge_usage, list) else []
+    pack_refs = {
+        str(item.get("capability_pack_snapshot_ref") or "")
+        for item in knowledge_usage
+        if isinstance(item, dict)
+    }
+    if len(pack_refs) > 1:
+        raise ValueError("CONTEXT_REPLAY_INPUT_MISMATCH: Pack identity is ambiguous")
+    frozen_pack_ref = manifest.get("capability_pack_snapshot_ref")
+    if frozen_pack_ref is not None and not isinstance(frozen_pack_ref, str):
+        raise ValueError("CONTEXT_REPLAY_INVALID: Pack identity is invalid")
+    pack_ref = (
+        str(frozen_pack_ref)
+        if frozen_pack_ref is not None
+        else next(iter(pack_refs), "")
+    )
+    replay_inputs = {
+        "project_id": str(scope.get("project_id") or bundle.get("project_id") or ""),
+        "book_id": str(scope.get("book_id") or bundle.get("book_id") or ""),
+        "stage": str(task.get("stage") or bundle.get("stage") or ""),
+        "context_profile_version": str(bundle.get("context_profile_version") or ""),
+        "target_capability_id": str(task.get("target_capability_id") or ""),
+        "capability_pack_snapshot_ref": pack_ref,
+        "narrative_position": dict(manifest.get("narrative_position") or {}),
+        "authority_state_boundary": dict(
+            manifest.get("authority_state_boundary") or {}
+        ),
+        "selected_inputs": selected_inputs,
+        "rejected_inputs": rejected_inputs,
+        "token_budget": int(dict(manifest.get("token_budget") or {}).get("maximum") or 0),
+        "selection_policy": {
+            "priority_rules": list(profile_contract.get("priority_rules") or ()),
+            "compression_policy": str(profile_contract.get("compression_policy") or ""),
+            "copyright_mode": str(profile_contract.get("copyright_mode") or ""),
+        },
+    }
+    reconstructed_input = "sha256:" + hashlib.sha256(
+        json.dumps(replay_inputs, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    expected_input = str(dict(manifest.get("replay") or {}).get("input_digest") or "")
+    if reconstructed_input != expected_input:
+        raise ValueError("CONTEXT_REPLAY_INPUT_MISMATCH: frozen inputs changed")
+    if contract_version == "authority-context-bundle-v8":
+        compilation = manifest.get("policy_compilation")
+        if not isinstance(compilation, dict):
+            raise ValueError("CONTEXT_REPLAY_INVALID: v8 compiler receipt is absent")
+        receipt_hash = str(compilation.get("receipt_hash") or "")
+        receipt_body = dict(compilation)
+        receipt_body.pop("receipt_hash", None)
+        if _policy_hash(receipt_body) != receipt_hash:
+            raise ValueError("CONTEXT_REPLAY_POLICY_MISMATCH: compiler receipt changed")
     return {
         "status": "MATCH",
         "context_contract_version": contract_version,
@@ -1687,6 +1846,9 @@ def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
         "current_policy_compiler_invoked": False,
         "context_fingerprint": expected,
         "output_context_digest": output_digest,
+        "reconstructed_input_digest": reconstructed_input,
+        "input_digest_status": "MATCH",
+        "reconstructed_output_digest": reconstructed_output,
     }
 
 

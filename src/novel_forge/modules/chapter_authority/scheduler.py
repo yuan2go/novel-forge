@@ -1589,6 +1589,7 @@ class ChapterAuthorityScheduler:
         return SingleChapterRequest(
             project_id=str(root["project_id"]),
             workspace_id=str(root["workspace_id"]),
+            book_id=str(payload.get("book_id") or ""),
             actor_id=str(root["actor_id"]),
             chapter=int(payload["chapter"]),
             title=str(payload.get("title") or ""),

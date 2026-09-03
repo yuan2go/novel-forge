@@ -21,6 +21,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
     plan_external_effect,
+    read_external_effect_intent,
 )
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
@@ -534,6 +535,15 @@ class ExternalEffectChapterModelPort:
             )
             budget_scope_id = str(reservation_contract["budget_scope_id"])
             budget_scope_revision = int(reservation_contract["budget_scope_revision"])
+        route = getattr(self.adapter, "routes", {}).get(stage)
+        route_context_limit = int(getattr(route, "model_context_limit", 0) or 0)
+        provider_admission_token_limit = (
+            int(reservation_contract["estimated_total_tokens"])
+            if reservation_contract["source"]
+            == "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
+            else route_context_limit
+            or int(reservation_contract["estimated_total_tokens"])
+        )
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -620,6 +630,7 @@ class ExternalEffectChapterModelPort:
                 ),
                 "execution_binding_domain": self.execution_binding_domain,
                 "provider_request_timeout_seconds": provider_request_timeout_seconds,
+                "provider_token_limit": provider_admission_token_limit,
                 "input_artifacts": [
                     {
                         "artifact_ref": f"asset-version:{item.asset_version_id}",
@@ -649,12 +660,69 @@ class ExternalEffectChapterModelPort:
             getattr(self.adapter, "production_execution_gateway_backed", False)
             and route_provider != "scripted_provider_v2"
         )
-        if self.agent_binding_required and binder is None:
+        existing_intent = read_external_effect_intent(
+            self.database_url,
+            context,
+            effect_type="model.invoke",
+            stable_idempotency_key=stable_key,
+        )
+        if self.agent_binding_required and binder is None and existing_intent is None:
             raise KernelError(
                 "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
                 "controlled Chapter model node has no Capability contract binder",
             )
-        if binder is not None:
+        if existing_intent is not None:
+            frozen_payload = dict(existing_intent["request_payload"])
+            expected_outer = {
+                key: value
+                for key, value in effect_request_payload.items()
+                if key != "_production_execution"
+            }
+            frozen_outer = {
+                key: value
+                for key, value in frozen_payload.items()
+                if key != "_production_execution"
+            }
+            frozen_metadata = frozen_payload.get("_production_execution")
+            if (
+                json.dumps(
+                    frozen_outer,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                != json.dumps(
+                    expected_outer,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                or existing_intent["provider"] != self.adapter.provider
+                or existing_intent["capability"] != f"model.{stage}"
+                or int(existing_intent["max_attempts"]) != 2
+                or not isinstance(frozen_metadata, Mapping)
+                or str(frozen_metadata.get("operation_id") or "")
+                != request.operation_id
+                or str(frozen_metadata.get("attempt_id") or "") != request.attempt_id
+                or str(frozen_metadata.get("project_id") or "") != request.project_id
+                or str(frozen_metadata.get("book_id") or "")
+                != str(effect_request_payload["_production_execution"]["book_id"])
+            ):
+                raise KernelError(
+                    "MODEL_EFFECT_INTENT_DRIFT",
+                    "model retry differs from the first frozen Provider intent",
+                )
+            frozen_runtime = frozen_metadata.get("capability_runtime")
+            if isinstance(frozen_runtime, Mapping):
+                frozen_admission = frozen_runtime.get("provider_admission")
+                if isinstance(frozen_admission, Mapping):
+                    frozen_total = int(frozen_admission.get("total_reserved") or 0)
+                    if frozen_total <= 0:
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_INVALID",
+                            "frozen Provider admission has no positive bounded usage",
+                        )
+                    bounded_reservation_tokens = frozen_total
+            effect_request_payload = frozen_payload
+        elif binder is not None:
             freeze_capability = getattr(binder, "freeze_before_external_effect", None)
             if not callable(freeze_capability):
                 raise KernelError(
@@ -667,12 +735,8 @@ class ExternalEffectChapterModelPort:
                 snapshot_fencing_token=request.fencing_token,
                 snapshot_worker_id=request.worker_id or self.worker_id,
             )
-            if (
-                provider_admission_required
-                and (
-                    preflight is None
-                    or preflight.provider_admission_artifact is None
-                )
+            if provider_admission_required and (
+                preflight is None or preflight.provider_admission_artifact is None
             ):
                 raise KernelError(
                     "PROVIDER_ADMISSION_REQUIRED",
@@ -680,6 +744,19 @@ class ExternalEffectChapterModelPort:
                     "a frozen Provider admission receipt",
                 )
             if preflight is not None:
+                if provider_admission_required:
+                    receipt = preflight.effect_binding.get("provider_admission")
+                    if not isinstance(receipt, Mapping):
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_REQUIRED",
+                            "Provider admission receipt is absent from the frozen binding",
+                        )
+                    bounded_reservation_tokens = int(receipt.get("total_reserved") or 0)
+                    if bounded_reservation_tokens <= 0:
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_INVALID",
+                            "Provider admission has no positive bounded request usage",
+                        )
                 metadata = dict(effect_request_payload["_production_execution"])
                 frozen_artifacts = list(metadata["input_artifacts"])
                 frozen_artifacts.append(preflight.materialization_artifact.to_dict())

@@ -883,6 +883,7 @@ class PostgresBookAuthority:
                 correlation_id=book["root_operation_id"],
                 application_build_id=self.application_build_id,
                 commit_sha=self.commit_sha,
+                book_id=book["book_id"],
                 chapter_plan_asset_version_id=(
                     command.execution_chapter_plan_asset_version_id
                     or command.chapter_plan_asset_version_id
@@ -3095,6 +3096,7 @@ class PostgresBookAuthority:
                 "BOOK_PREVIOUS_CHAPTER_STATE_MISSING",
                 "next Chapter requires one accepted predecessor Story State and Canon snapshot",
             )
+        state_versions = {str(row[0]): str(row[1]) for row in rows}
         governed_items: list[dict[str, Any]] = []
         accepted_quality_observations = load_accepted_quality_observations(
             self.database_url,
@@ -3156,6 +3158,14 @@ class PostgresBookAuthority:
                     "asset_version_id": str(row[1]),
                     "content_hash": str(row[2]),
                     "project_id": project_id,
+                    "book_id": book_id,
+                    "accepted_boundary": {
+                        "accepted_through_chapter": chapter_number - 1,
+                        "story_state_snapshot_version": state_versions[
+                            "story_state_snapshot"
+                        ],
+                        "canon_snapshot_version": state_versions["canon_snapshot"],
+                    },
                     "scope": {
                         "project_id": project_id,
                         "book_id": str(content["book_id"]),

@@ -37,6 +37,8 @@ class ProductionStageProfile:
     copyright_mode: str
     compression_policy: str
     knowledge_pack_policy: str
+    runtime_context_types: tuple[str, ...] = ()
+    required_context_types: tuple[str, ...] = ()
 
 
 _BASE_ALLOWED = (
@@ -194,6 +196,21 @@ _STAGE_REQUIRED = {
     "ending": ("closure_plan", "theme_arc", "canon_snapshot"),
 }
 
+_STAGE_CONTEXT_REQUIRED = {
+    "creative": (),
+    "worldbuilding": ("creative_brief",),
+    "character": ("creative_brief", "world_bible"),
+    "outline": ("world_bible", "character_card"),
+    "chapter_plan": ("outline_version",),
+    "draft": ("chapter_plan",),
+    "review": ("draft_version",),
+    "revision": ("draft_version", "review_report"),
+    "canon_extraction": ("draft_version",),
+    "quality": ("draft_version",),
+    "recap": ("longform_recap_report",),
+    "ending": ("closure_plan", "theme_arc"),
+}
+
 STAGE_PROFILES = {
     stage: ProductionStageProfile(
         stage=stage,
@@ -226,6 +243,16 @@ STAGE_PROFILES = {
         copyright_mode="fail_closed",
         compression_policy="safe_summary_then_structured_facts",
         knowledge_pack_policy="CAPABILITY_OPTIONAL",
+        runtime_context_types=(
+            (
+                "chapter_execution_intent",
+                "chapter_memo",
+                "retrieval_result",
+            )
+            if stage == "draft"
+            else ()
+        ),
+        required_context_types=_STAGE_CONTEXT_REQUIRED[stage],
     )
     for stage in _STAGE_REQUIRED
 }

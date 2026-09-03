@@ -31,6 +31,7 @@ def _policy(
     sections: dict[str, int] | None = None,
     buckets: dict[str, int] | None = None,
     classes: dict[str, int] | None = None,
+    required_reservation: int = 0,
 ) -> ContextPolicySnapshot:
     return ContextPolicySnapshot(
         identity=PolicyIdentity(
@@ -47,7 +48,7 @@ def _policy(
             sections=sections or {},
             buckets=buckets or {},
             classes=classes or {},
-            required_reservation=0,
+            required_reservation=required_reservation,
         ),
     )
 
@@ -58,6 +59,8 @@ def _candidate(identity: str, kind: str, **changes: object) -> ContextCandidate:
         "asset_type": kind,
         "physical_asset_type": kind,
         "project_id": "project-a",
+        "book_id": "book-a",
+        "accepted_boundary": {"accepted_through_chapter": 1},
         "estimated_tokens": 40,
         "content_digest": "sha256:" + identity.replace("-", "")[:8].ljust(64, "0"),
         "safe_summary": f"Safe material for {identity}",
@@ -303,6 +306,124 @@ def test_required_and_protected_budget_overflow_fail_closed() -> None:
         )
 
 
+def test_required_reservation_cannot_be_consumed_by_optional_context() -> None:
+    policy = compile_effective_context_policy(
+        (
+            _policy(
+                "a",
+                allowed=("chapter_plan", "knowledge_pack"),
+                total=100,
+                required_reservation=40,
+            ),
+        )
+    ).effective_policy
+    selection = select_context_candidates(
+        project_id="project-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate("optional-v1", "knowledge_pack", estimated_tokens=30),
+            _candidate("optional-v2", "knowledge_pack", estimated_tokens=40),
+        ),
+        token_budget=100,
+        effective_policy=policy,
+    )
+
+    assert selection.estimated_tokens == 30
+    assert {item["reason"] for item in selection.rejected} == {
+        "REQUIRED_RESERVATION"
+    }
+
+
+def test_dedup_uses_all_identities_and_transitive_components() -> None:
+    policy = compile_effective_context_policy(
+        (_policy("a", allowed=("knowledge_pack",), total=100),)
+    ).effective_policy
+    selection = select_context_candidates(
+        project_id="project-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate(
+                "a-v1",
+                "knowledge_pack",
+                relevance_score=0.5,
+                source_identity="source:a",
+            ),
+            _candidate(
+                "b-v1",
+                "knowledge_pack",
+                relevance_score=0.6,
+                source_identity="source:a",
+                logical_narrative_identity="logical:shared",
+            ),
+            _candidate(
+                "c-v1",
+                "knowledge_pack",
+                relevance_score=0.9,
+                logical_narrative_identity="logical:shared",
+            ),
+            _candidate(
+                "independent-v1",
+                "knowledge_pack",
+                relevance_score=0.1,
+                logical_narrative_identity="logical:independent",
+            ),
+        ),
+        token_budget=100,
+        effective_policy=policy,
+    )
+
+    assert [item.asset_version_id for item in selection.selected] == [
+        "c-v1",
+        "independent-v1",
+    ]
+    assert {item["asset_version_id"] for item in selection.deduplications} == {
+        "a-v1",
+        "b-v1",
+    }
+
+
+@pytest.mark.parametrize(
+    ("changes", "reason"),
+    (
+        ({"book_id": "book-b"}, "WRONG_BOOK"),
+        (
+            {
+                "asset_type": "narrative_retrieval_document",
+                "logical_context_kind": "narrative_retrieval_document",
+                "accepted_boundary": {},
+            },
+            "ACCEPTED_BOUNDARY_MISSING",
+        ),
+        ({"read_generation_id": "read-1"}, "READ_GENERATION_UNRESOLVED"),
+        (
+            {
+                "read_generation_id": "read-1",
+                "active_read_generation_id": "read-2",
+            },
+            "WRONG_READ_GENERATION",
+        ),
+    ),
+)
+def test_scope_and_read_generation_eligibility_fail_closed(
+    changes: dict[str, object], reason: str
+) -> None:
+    candidate = _candidate("optional-v1", "knowledge_pack", **changes)
+    selection = select_context_candidates(
+        project_id="project-a",
+        book_id="book-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate("plan-v1", "chapter_plan", estimated_tokens=10),
+            candidate,
+        ),
+        token_budget=100,
+        authority_state_boundary={"accepted_through_chapter": 1},
+    )
+    assert selection.rejected == (
+        {"asset_version_id": "optional-v1", "reason": reason},
+    )
+
+
 def test_structured_truncation_preserves_elements_and_provenance() -> None:
     policy = compile_effective_context_policy(
         (
@@ -371,6 +492,7 @@ def test_new_manifest_freezes_compiler_and_complete_decisions() -> None:
                 "chapter_plan",
                 context_class="PROTECTED",
                 estimated_tokens=40,
+                accepted_boundary={"accepted_through_chapter": 0},
             ),
         ),
         token_budget=80,
@@ -384,6 +506,19 @@ def test_new_manifest_freezes_compiler_and_complete_decisions() -> None:
     assert manifest["effective_policy"]["compiler_version"] == (
         "effective-context-policy-compiler-v1"
     )
+    policy_inputs = manifest["policy_compilation"]["input_policies"]
+    assert len(policy_inputs) == 3
+    stage_policy = next(
+        item
+        for item in policy_inputs
+        if item["identity"]["version"] == "production-stage-profile-v1"
+    )
+    assert {
+        "chapter_execution_intent",
+        "chapter_memo",
+        "retrieval_result",
+    }.issubset(stage_policy["allowed_logical_kinds"])
+    assert stage_policy["required_logical_kinds"] == ["chapter_plan"]
     assert manifest["metrics"]["candidate_count"] == 1
     assert manifest["metrics"]["accepted_count"] == 1
     assert manifest["token_accounting_contract"]["precision"] == "ESTIMATE_ONLY"
@@ -403,6 +538,7 @@ def test_same_frozen_context_inputs_produce_same_manifest_identity() -> None:
                 "chapter_plan",
                 context_class="PROTECTED",
                 estimated_tokens=40,
+                accepted_boundary={"accepted_through_chapter": 0},
             ),
         ),
         "token_budget": 80,
@@ -418,6 +554,14 @@ def test_same_frozen_context_inputs_produce_same_manifest_identity() -> None:
 
 
 def test_historical_v7_replay_uses_frozen_semantics_without_current_compiler() -> None:
+    import hashlib
+    import json
+
+    def digest(value: object) -> str:
+        return "sha256:" + hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
     manifest = {
         "type": "NarrativeContextManifest",
         "contract_version": "narrative-context-manifest-v3",
@@ -428,12 +572,7 @@ def test_historical_v7_replay_uses_frozen_semantics_without_current_compiler() -
             "output_context_digest": "sha256:" + "2" * 64,
         },
     }
-    import hashlib
-    import json
-
-    manifest["context_fingerprint"] = "sha256:" + hashlib.sha256(
-        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    manifest["context_fingerprint"] = digest(manifest)
     frozen = {
         "context_contract_version": "authority-context-bundle-v7",
         "actual_context_digest": "sha256:" + "2" * 64,
@@ -445,3 +584,32 @@ def test_historical_v7_replay_uses_frozen_semantics_without_current_compiler() -
     assert replay["status"] == "MATCH"
     assert replay["semantics"] == "FROZEN_V7"
     assert replay["current_policy_compiler_invoked"] is False
+
+
+def test_v8_replay_freezes_pack_identity_without_selected_knowledge() -> None:
+    bundle = build_authority_context_bundle(
+        project_id="project-a",
+        book_id="book-a",
+        stage="draft",
+        created_by_operation_id="operation-pack-replay",
+        context_profile_version="draft-profile-v2",
+        target_capability_id="prose.chapter.draft",
+        capability_pack_snapshot_ref="pack-snapshot-1",
+        candidates=(
+            _candidate(
+                "plan-v1",
+                "chapter_plan",
+                context_class="PROTECTED",
+                estimated_tokens=40,
+                accepted_boundary={"accepted_through_chapter": 0},
+            ),
+        ),
+        token_budget=80,
+        required_asset_types=("chapter_plan",),
+        authority_state_boundary={"accepted_through_chapter": 0},
+    )
+
+    assert bundle["context_manifest"]["capability_pack_snapshot_ref"] == (
+        "pack-snapshot-1"
+    )
+    assert replay_context_bundle(bundle)["status"] == "MATCH"

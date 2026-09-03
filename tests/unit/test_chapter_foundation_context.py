@@ -84,6 +84,12 @@ def _governed_candidate(
         "asset_type": asset_type,
         "physical_asset_type": asset_type,
         "project_id": "project:quality",
+        "book_id": "book:quality",
+        "accepted_boundary": {
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "",
+            "canon_snapshot_version": "",
+        },
         "content_hash": content_hash,
         "content_digest": content_hash,
         "qualification": "ELIGIBLE",

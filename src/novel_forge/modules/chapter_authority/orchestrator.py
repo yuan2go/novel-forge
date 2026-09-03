@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import json
 from typing import Any
 from uuid import uuid4
 
@@ -73,6 +74,7 @@ class SingleChapterRequest:
     correlation_id: str
     application_build_id: str
     commit_sha: str
+    book_id: str = ""
     chapter_plan_asset_version_id: str = ""
     chapter_plan_content_hash: str = ""
     context_candidates: tuple[dict[str, Any], ...] = ()
@@ -110,6 +112,7 @@ def admit_single_chapter_saga(
     registry: ChapterHandlerRegistry,
     permissions: frozenset[str],
 ) -> ChapterSagaAdmission:
+    request = _bind_context_candidate_scope(request)
     _validate_request(request)
     plan_input = _chapter_plan_input(request)
     definition_version = chapter_definition_version(registry.model_effects_required)
@@ -206,6 +209,7 @@ def run_single_chapter_slice(
     retry_once_at: ChapterNode | None = None,
     exercise_unknown_export_reconciliation: bool = False,
 ) -> ChapterSliceResult:
+    request = _bind_context_candidate_scope(request)
     _validate_request(request)
     definition_version = chapter_definition_version(registry.model_effects_required)
     definitions = chapter_operation_definitions(
@@ -608,6 +612,7 @@ def _command(
         "causation_id": causation_operation_id or "",
         "input": {
             "chapter": request.chapter,
+            "book_id": request.book_id,
             "title": request.title,
             "premise": request.premise,
             "chapter_plan_asset_version_id": _chapter_plan_input(request)[
@@ -906,6 +911,83 @@ def _validate_request(request: SingleChapterRequest) -> None:
             "CHAPTER_SLICE_REQUEST_INVALID", "single-chapter request is incomplete"
         )
     _chapter_plan_input(request)
+
+
+def _bind_context_candidate_scope(request: SingleChapterRequest) -> SingleChapterRequest:
+    # INVARIANT: legacy/direct candidates gain scope only at the request-producing
+    # admission boundary; the Context assembler never invents Authority scope.
+    declared_books = {
+        str(item.get("book_id") or "").strip()
+        for item in request.context_candidates
+        if str(item.get("book_id") or "").strip()
+    }
+    if request.book_id.strip():
+        declared_books.add(request.book_id.strip())
+    if len(declared_books) > 1:
+        raise KernelError(
+            "CHAPTER_CONTEXT_BOOK_CONFLICT",
+            "Chapter Context candidates disagree on their Book scope",
+        )
+    book_id = next(iter(declared_books), f"book:{request.project_id}")
+    expected_chapter = max(0, request.chapter - 1)
+    declared_boundaries = {
+        json.dumps(
+            dict(item.get("accepted_boundary") or {}),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        for item in request.context_candidates
+        if dict(item.get("accepted_boundary") or {})
+    }
+    if len(declared_boundaries) > 1:
+        raise KernelError(
+            "CHAPTER_CONTEXT_BOUNDARY_CONFLICT",
+            "Chapter Context candidates disagree on their accepted boundary",
+        )
+    refs = dict(request.context_version_refs or {})
+    boundary = (
+        json.loads(next(iter(declared_boundaries)))
+        if declared_boundaries
+        else {
+            "accepted_through_chapter": expected_chapter,
+            "story_state_snapshot_version": refs.get(
+                "story_state_snapshot_version",
+                refs.get("story_state_snapshot_versions", ""),
+            ),
+            "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
+        }
+    )
+    accepted = boundary.get("accepted_through_chapter")
+    if (
+        not isinstance(accepted, int)
+        or isinstance(accepted, bool)
+        or accepted != expected_chapter
+    ):
+        raise KernelError(
+            "CHAPTER_CONTEXT_BOUNDARY_INVALID",
+            "Chapter Context accepted boundary differs from the requested chapter",
+        )
+    for key in ("story_state_snapshot_version", "canon_snapshot_version"):
+        expected = refs.get(
+            key,
+            refs.get("story_state_snapshot_versions", "")
+            if key == "story_state_snapshot_version"
+            else "",
+        )
+        if expected and boundary.get(key) != expected:
+            raise KernelError(
+                "CHAPTER_CONTEXT_BOUNDARY_INVALID",
+                "Chapter Context boundary differs from its frozen version refs",
+            )
+    candidates = tuple(
+        {
+            **dict(item),
+            "book_id": book_id,
+            "accepted_boundary": dict(boundary),
+        }
+        for item in request.context_candidates
+    )
+    return replace(request, book_id=book_id, context_candidates=candidates)
 
 
 def _chapter_plan_input(request: SingleChapterRequest) -> dict[str, str]:

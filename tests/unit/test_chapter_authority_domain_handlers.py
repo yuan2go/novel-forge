@@ -186,6 +186,12 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                         "asset_version_id": "state-v1",
                         "asset_type": "story_state_snapshot",
                         "project_id": "project-a",
+                        "book_id": "book-a",
+                        "accepted_boundary": {
+                            "accepted_through_chapter": 1,
+                            "story_state_snapshot_version": "",
+                            "canon_snapshot_version": "",
+                        },
                         "estimated_tokens": 20,
                         "structured_facts": [
                             {
@@ -475,6 +481,12 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 "asset_type": asset_type,
                 "physical_asset_type": asset_type,
                 "project_id": "project-a",
+                "book_id": "",
+                "accepted_boundary": {
+                    "accepted_through_chapter": 1,
+                    "story_state_snapshot_version": "",
+                    "canon_snapshot_version": "",
+                },
                 "estimated_tokens": estimated_tokens,
                 "safe_summary": f"Accepted {asset_type}.",
                 "structured_facts": [{"kind": asset_type, "value": "current"}],
@@ -603,6 +615,12 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                     "asset_version_id": "pack-v1",
                     "asset_type": "knowledge_pack",
                     "project_id": "project-a",
+                    "book_id": "",
+                    "accepted_boundary": {
+                        "accepted_through_chapter": 0,
+                        "story_state_snapshot_version": "",
+                        "canon_snapshot_version": "",
+                    },
                     "estimated_tokens": 100,
                     "score": 0.9,
                     "allowed_use": "generation",
@@ -612,6 +630,12 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                     "asset_version_id": "review-only-v1",
                     "asset_type": "knowledge_pack",
                     "project_id": "project-a",
+                    "book_id": "",
+                    "accepted_boundary": {
+                        "accepted_through_chapter": 0,
+                        "story_state_snapshot_version": "",
+                        "canon_snapshot_version": "",
+                    },
                     "estimated_tokens": 100,
                     "source_use_mode": "review_only",
                 },

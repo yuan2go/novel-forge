@@ -1144,6 +1144,9 @@ def _build_planning_context_view(
                 "content": content,
             }
         )
+    accepted_through_chapter = _planning_accepted_through_chapter(
+        context_bundle, raw_inputs
+    )
     view = {
         "contract_version": "provider-context-view-v2",
         "stage": stage,
@@ -1152,7 +1155,9 @@ def _build_planning_context_view(
             "logical_key": str(context_bundle.get("logical_key") or ""),
             "planning_scope": str(context_bundle.get("planning_scope") or ""),
         },
-        "accepted_state_boundary": {"accepted_through_chapter": 0},
+        "accepted_state_boundary": {
+            "accepted_through_chapter": accepted_through_chapter
+        },
         "segments": projected,
         "selection_explanation": {
             "policy": (
@@ -1225,6 +1230,58 @@ def _build_planning_context_view(
             "projected Planning Provider Context exceeds its deterministic size boundary",
         )
     return view
+
+
+def _planning_accepted_through_chapter(
+    context_bundle: Mapping[str, Any], raw_inputs: Iterable[Mapping[str, Any]]
+) -> int:
+    # INVARIANT: project only frozen accepted-boundary evidence; mutable current
+    # state must never change a persisted Planning provider view.
+    observed: list[tuple[str, int]] = []
+
+    def observe(source: str, value: Any) -> None:
+        if value is None:
+            return
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_BOUNDARY_INVALID",
+                "Planning accepted boundary must be a non-negative integer",
+            )
+        observed.append((source, value))
+
+    for raw in raw_inputs:
+        role = str(raw.get("role") or "")
+        if role not in {"story_state", "canon_snapshot"}:
+            continue
+        content = raw.get("content")
+        if not isinstance(content, Mapping):
+            continue
+        if "accepted_through_chapter" in content:
+            observe(role, content.get("accepted_through_chapter"))
+        authority_boundary = content.get("authority_state_boundary")
+        if isinstance(authority_boundary, Mapping) and (
+            "accepted_through_chapter" in authority_boundary
+        ):
+            observe(
+                role + ".authority_state_boundary",
+                authority_boundary.get("accepted_through_chapter"),
+            )
+    search = context_bundle.get("narrative_search")
+    if isinstance(search, Mapping) and search:
+        observe("narrative_search", search.get("accepted_through_chapter"))
+    realization = context_bundle.get("realization_reference_contract")
+    if isinstance(realization, Mapping) and "accepted_through_chapter" in realization:
+        observe(
+            "realization_reference_contract",
+            realization.get("accepted_through_chapter"),
+        )
+    boundaries = {boundary for _, boundary in observed}
+    if len(boundaries) > 1:
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_BOUNDARY_CONFLICT",
+            "Planning frozen Authority inputs disagree on the accepted boundary",
+        )
+    return next(iter(boundaries), 0)
 
 
 def _planning_chapter(context_bundle: Mapping[str, Any]) -> int:

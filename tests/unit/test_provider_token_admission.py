@@ -13,6 +13,19 @@ from novel_forge.modules.production_execution.provider_admission import (
 )
 
 
+COMPLETE_COVERAGE = (
+    "system_runtime_instructions",
+    "prompt_template",
+    "skill_instructions",
+    "tool_policy_and_schemas",
+    "structured_output_schema",
+    "context_bundle",
+    "request_envelope_and_framing",
+    "output_reserve",
+    "safety_margin",
+)
+
+
 def _contract(*, limit: int = 512) -> TokenAccountingContract:
     return TokenAccountingContract(
         provider="openai",
@@ -25,6 +38,7 @@ def _contract(*, limit: int = 512) -> TokenAccountingContract:
         evidence_ref="token-proof:openai-byte-fallback:v1",
         serialization_contract="openai-responses-text-envelope-v1",
         model_context_limit=limit,
+        execution_token_limit=limit,
         output_reserve=64,
         safety_margin=32,
         framing_overhead=16,
@@ -48,13 +62,7 @@ def test_complete_admission_counts_exact_envelope_and_reserves_output() -> None:
         _envelope("x" * 100),
         _contract(),
         input_component_hashes={"context_bundle": "sha256:" + "a" * 64},
-        complete_request_coverage=(
-            "system_runtime_instructions",
-            "context_bundle",
-            "request_envelope_and_framing",
-            "output_reserve",
-            "safety_margin",
-        ),
+        complete_request_coverage=COMPLETE_COVERAGE,
     )
 
     assert receipt.status == "ADMITTED"
@@ -68,12 +76,18 @@ def test_complete_admission_counts_exact_envelope_and_reserves_output() -> None:
 
 
 def test_exact_fit_and_output_reserve_can_cause_complete_request_overflow() -> None:
-    exact = prepare_provider_admission(_envelope("x" * 100), _contract(limit=212))
+    exact = prepare_provider_admission(
+        _envelope("x" * 100),
+        _contract(limit=212),
+        complete_request_coverage=COMPLETE_COVERAGE,
+    )
     assert exact.status == "ADMITTED"
 
     reserve_overflow = replace(_contract(limit=212), output_reserve=128)
     envelope = replace(_envelope("x" * 100), max_output_tokens=128)
-    receipt = prepare_provider_admission(envelope, reserve_overflow)
+    receipt = prepare_provider_admission(
+        envelope, reserve_overflow, complete_request_coverage=COMPLETE_COVERAGE
+    )
     assert receipt.status == "REJECTED"
     assert receipt.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
 
@@ -83,11 +97,35 @@ def test_context_can_fit_while_complete_provider_request_is_rejected() -> None:
         _envelope("x" * 100),
         _contract(limit=180),
         context_bundle_tokens=80,
+        complete_request_coverage=COMPLETE_COVERAGE,
     )
 
     assert receipt.context_bundle_status == "VALID"
     assert receipt.status == "REJECTED"
     assert receipt.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
+
+
+def test_execution_policy_limit_is_part_of_provider_admission() -> None:
+    receipt = prepare_provider_admission(
+        _envelope("x" * 100),
+        replace(_contract(limit=512), execution_token_limit=180),
+        complete_request_coverage=COMPLETE_COVERAGE,
+    )
+
+    assert receipt.status == "REJECTED"
+    assert receipt.reason == "EXECUTION_TOKEN_LIMIT_EXCEEDED"
+    assert receipt.applicable_limit == 180
+
+
+def test_v2_admission_rejects_incomplete_request_coverage() -> None:
+    receipt = prepare_provider_admission(
+        _envelope(),
+        _contract(),
+        complete_request_coverage=("context_bundle", "output_reserve"),
+    )
+
+    assert receipt.status == "REJECTED"
+    assert receipt.reason == "PROVIDER_REQUEST_COVERAGE_INCOMPLETE"
 
 
 def test_unknown_meter_and_route_mismatch_fail_closed() -> None:
@@ -97,12 +135,16 @@ def test_unknown_meter_and_route_mismatch_fail_closed() -> None:
         precision="UNPROVEN",
         evidence_ref="",
     )
-    receipt = prepare_provider_admission(_envelope(), unknown)
+    receipt = prepare_provider_admission(
+        _envelope(), unknown, complete_request_coverage=COMPLETE_COVERAGE
+    )
     assert receipt.status == "REJECTED"
     assert receipt.reason == "TOKEN_ACCOUNTING_UNPROVEN"
 
     mismatch = replace(_contract(), model="other-model")
-    receipt = prepare_provider_admission(_envelope(), mismatch)
+    receipt = prepare_provider_admission(
+        _envelope(), mismatch, complete_request_coverage=COMPLETE_COVERAGE
+    )
     assert receipt.status == "REJECTED"
     assert receipt.reason == "TOKEN_ACCOUNTING_ROUTE_MISMATCH"
 
@@ -126,7 +168,9 @@ def test_fallback_route_requires_its_own_provider_model_accounting_contract() ->
         protocol="unsupported-provider-envelope-v1",
     )
 
-    receipt = prepare_provider_admission(envelope, fallback)
+    receipt = prepare_provider_admission(
+        envelope, fallback, complete_request_coverage=COMPLETE_COVERAGE
+    )
 
     assert receipt.status == "REJECTED"
     assert receipt.reason == "TOKEN_ACCOUNTING_UNPROVEN"
@@ -134,7 +178,9 @@ def test_fallback_route_requires_its_own_provider_model_accounting_contract() ->
 
 def test_serialization_drift_is_rejected_before_dispatch() -> None:
     envelope = _envelope("frozen")
-    receipt = prepare_provider_admission(envelope, _contract())
+    receipt = prepare_provider_admission(
+        envelope, _contract(), complete_request_coverage=COMPLETE_COVERAGE
+    )
 
     verify_provider_admission(envelope, receipt)
     with pytest.raises(ValueError, match="PROVIDER_REQUEST_IDENTITY_DRIFT"):
