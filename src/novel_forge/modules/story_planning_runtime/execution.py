@@ -36,6 +36,11 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     read_external_effect_intent,
     read_succeeded_external_effect,
 )
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    _materialize_production_codex_prompt,
+    _provider_effective_context_policy,
+    _provider_process_timeout_seconds,
+)
 from novel_forge.modules.hierarchical_planning.domain import (
     CHAPTER_EXECUTION_STATE_KINDS,
     HORIZON_REALIZATION_LEVELS,
@@ -66,6 +71,12 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionCandidate,
     DomainExecutionCommand,
     DomainExecutionEvidence,
+)
+from novel_forge.modules.production_execution.provider_admission import (
+    ProviderRequestEnvelope,
+    build_route_token_accounting_contract,
+    prepare_provider_admission,
+    provider_request_protocol,
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
@@ -368,6 +379,11 @@ class PlanningExecutionRoute:
     runtime_host_id: str
     auth_profile_ref: str
     release_sha: str
+    model_context_limit: int = 0
+    token_accounting_method: str = ""
+    token_accounting_evidence_ref: str = ""
+    token_safety_margin: int = 256
+    token_framing_overhead: int = 16
 
     def __post_init__(self) -> None:
         if (
@@ -392,6 +408,12 @@ class PlanningExecutionRoute:
             raise ValueError("Planning execution route is incomplete")
         if len(self.release_sha) != 40:
             raise ValueError("Planning execution route requires a full release SHA")
+        if min(
+            self.model_context_limit,
+            self.token_safety_margin,
+            self.token_framing_overhead,
+        ) < 0:
+            raise ValueError("Planning route Token Accounting limits are invalid")
 
 
 def _canonical(value: Any) -> str:
@@ -3210,6 +3232,24 @@ class PostgresPlanningExecutionPreparer:
                 else ":v1"
             )
         )
+        context_selection = [
+            {
+                "artifact_ref": f"asset-version:{context_document.asset_version_id}",
+                "asset_version_id": context_document.asset_version_id,
+                "artifact_type": "context_bundle",
+                "content_hash": context_document.content_hash,
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE",
+                "content": context_document.content,
+            }
+        ]
+        frozen_context_policy = json.loads(frozen.context_policy_payload_json)
+        effective_context_policy = _provider_effective_context_policy(
+            context_selection=context_selection,
+            context_policy_payload=frozen_context_policy,
+            context_policy_hash=frozen.context_policy_hash,
+            context_policy_ref=frozen.context_policy_ref,
+        )
         materialization = {
             "schema_version": "novelos.planning_capability_materialization.v1",
             "stage": command.generator_operation_name,
@@ -3234,17 +3274,8 @@ class PostgresPlanningExecutionPreparer:
             "pack_artifact_materialization_hash": (
                 pack_materialization.materialization_hash
             ),
-            "context_selection": [
-                {
-                    "artifact_ref": f"asset-version:{context_document.asset_version_id}",
-                    "asset_version_id": context_document.asset_version_id,
-                    "artifact_type": "context_bundle",
-                    "content_hash": context_document.content_hash,
-                    "schema_version": "novelos.planning_context_bundle.v1",
-                    "source_eligibility": "PRODUCTION_ELIGIBLE",
-                    "content": context_document.content,
-                }
-            ],
+            "context_selection": context_selection,
+            "effective_context_policy": effective_context_policy,
             "knowledge_selection": [
                 item.to_dict(include_content=True)
                 for item in pack_materialization.required_knowledge
@@ -3417,6 +3448,113 @@ class PostgresPlanningExecutionPreparer:
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
             )
+            target_scope = TargetScope(
+                scope_kind=command.planning_scope.value.lower(),
+                scope_id=command.logical_key,
+                project_id=command.project_id,
+                book_id=command.book_id,
+            )
+            prompt, prompt_evidence = _materialize_production_codex_prompt(
+                target_scope=target_scope.to_dict(),
+                stage=command.generator_operation_name,
+                inputs=stable_request_payload["input"],
+                materialization=materialization,
+            )
+            output_reserve = int(stable_request_payload["max_output_tokens"])
+            route_identity = ":".join(
+                (
+                    command.generator_operation_name,
+                    planning_route.model_profile.model_provider,
+                    planning_route.model_profile.model_id,
+                    planning_route.release_sha,
+                    attempt_snapshot.snapshot_hash,
+                )
+            )
+            envelope = ProviderRequestEnvelope(
+                provider=planning_route.model_profile.model_provider,
+                model=planning_route.model_profile.model_id,
+                protocol=provider_request_protocol(
+                    planning_route.model_profile.model_provider
+                ),
+                input_text=prompt,
+                max_output_tokens=output_reserve,
+                timeout_seconds=_provider_process_timeout_seconds(
+                    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+                    max_attempts=PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+                ),
+                stable_idempotency_key=stable_key,
+            )
+            token_contract = build_route_token_accounting_contract(
+                provider=planning_route.model_profile.model_provider,
+                model=planning_route.model_profile.model_id,
+                route_identity=route_identity,
+                accounting_method=planning_route.token_accounting_method,
+                accounting_evidence_ref=(
+                    planning_route.token_accounting_evidence_ref
+                ),
+                model_context_limit=planning_route.model_context_limit,
+                output_reserve=output_reserve,
+                safety_margin=planning_route.token_safety_margin,
+                framing_overhead=planning_route.token_framing_overhead,
+            )
+            context_bundle_tokens = int(
+                context_document.content.get("estimated_tokens") or 0
+            )
+            admission = prepare_provider_admission(
+                envelope,
+                token_contract,
+                context_bundle_tokens=context_bundle_tokens,
+                input_component_hashes=dict(
+                    dict(prompt_evidence.get("provider_view") or {}).get(
+                        "component_hashes"
+                    )
+                    or {}
+                ),
+                complete_request_coverage=(
+                    "system_runtime_instructions",
+                    "prompt_template",
+                    "skill_instructions",
+                    "tool_policy_and_schemas",
+                    "structured_output_schema",
+                    "context_bundle",
+                    "knowledge_inputs",
+                    "request_envelope_and_framing",
+                    "output_reserve",
+                    "safety_margin",
+                ),
+            )
+            if admission.status != "ADMITTED":
+                raise KernelError(
+                    "PROVIDER_TOKEN_ADMISSION_REJECTED",
+                    admission.reason,
+                )
+            admission_contract = {
+                "schema_version": "novelos.provider_request_admission.v1",
+                "provider_request_identity": envelope.to_identity_dict(),
+                "provider_admission": admission.to_dict(),
+                "effective_context_policy": effective_context_policy,
+                "prompt_materialization": prompt_evidence,
+                "capability_materialization_asset_version_id": (
+                    materialization_document.asset_version_id
+                ),
+                "capability_materialization_content_hash": (
+                    materialization_document.content_hash
+                ),
+            }
+            admission_document = self._ensure_contract(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                logical_ref=(
+                    "production_execution/provider_admissions/"
+                    + _token(
+                        f"{command.project_id}:{operation_id}:{attempt_id}:planning"
+                    )
+                ),
+                asset_type="provider_request_admission_manifest",
+                contract=admission_contract,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
             request_payload = {
                 **stable_request_payload,
                 "_production_execution": {
@@ -3430,6 +3568,15 @@ class PostgresPlanningExecutionPreparer:
                             materialization_document.content_hash
                         ),
                         "materialization_hash": materialization["materialization_hash"],
+                        "provider_admission_asset_version_id": (
+                            admission_document.asset_version_id
+                        ),
+                        "provider_admission_content_hash": (
+                            admission_document.content_hash
+                        ),
+                        "provider_request_envelope_hash": envelope.envelope_hash,
+                        "provider_admission": admission.to_dict(),
+                        "token_accounting_contract": token_contract.to_dict(),
                     }
                 },
             }
@@ -3455,6 +3602,10 @@ class PostgresPlanningExecutionPreparer:
                 or not isinstance(capability_runtime, Mapping)
                 or str(capability_runtime.get("snapshot_hash") or "")
                 != attempt_snapshot.snapshot_hash
+                or not str(
+                    capability_runtime.get("provider_admission_asset_version_id")
+                    or ""
+                )
             ):
                 raise KernelError(
                     "PLANNING_EFFECT_INTENT_DRIFT",

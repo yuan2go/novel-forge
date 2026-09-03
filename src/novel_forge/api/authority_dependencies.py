@@ -1919,6 +1919,11 @@ def build_story_planning_generation_application(
         runtime_host_id=base_route.runtime_host_id,
         auth_profile_ref=base_route.auth_profile_ref,
         release_sha=base_route.release_sha,
+        model_context_limit=base_route.model_context_limit,
+        token_accounting_method=base_route.token_accounting_method,
+        token_accounting_evidence_ref=base_route.token_accounting_evidence_ref,
+        token_safety_margin=base_route.token_safety_margin,
+        token_framing_overhead=base_route.token_framing_overhead,
     )
     preparer = PostgresPlanningExecutionPreparer(
         settings.database_url,

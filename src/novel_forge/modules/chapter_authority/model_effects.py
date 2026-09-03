@@ -638,6 +638,17 @@ class ExternalEffectChapterModelPort:
             },
         }
         binder = self.capability_binder or getattr(self.adapter, "binder", None)
+        route_provider = str(
+            getattr(
+                self.adapter,
+                "provider_id_for_stage",
+                lambda _stage: self.adapter.provider,
+            )(stage)
+        )
+        provider_admission_required = bool(
+            getattr(self.adapter, "production_execution_gateway_backed", False)
+            and route_provider != "scripted_provider_v2"
+        )
         if self.agent_binding_required and binder is None:
             raise KernelError(
                 "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
@@ -656,6 +667,18 @@ class ExternalEffectChapterModelPort:
                 snapshot_fencing_token=request.fencing_token,
                 snapshot_worker_id=request.worker_id or self.worker_id,
             )
+            if (
+                provider_admission_required
+                and (
+                    preflight is None
+                    or preflight.provider_admission_artifact is None
+                )
+            ):
+                raise KernelError(
+                    "PROVIDER_ADMISSION_REQUIRED",
+                    "Production Execution cannot create an ExternalEffect without "
+                    "a frozen Provider admission receipt",
+                )
             if preflight is not None:
                 metadata = dict(effect_request_payload["_production_execution"])
                 frozen_artifacts = list(metadata["input_artifacts"])
@@ -675,6 +698,11 @@ class ExternalEffectChapterModelPort:
                     "_production_execution": metadata,
                 }
                 self.fault_injector("after_capability_preflight")
+        elif provider_admission_required:
+            raise KernelError(
+                "PROVIDER_ADMISSION_REQUIRED",
+                "Production Execution has no Provider admission binder",
+            )
         effect = plan_external_effect(
             self.database_url,
             context,

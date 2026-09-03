@@ -220,6 +220,89 @@ def test_eligibility_dedup_and_hierarchical_budget_are_pre_rank() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("changes", "reason"),
+    (
+        ({"qualification": "REVOKED"}, "QUALIFICATION_REVOKED"),
+        ({"authority_freshness": "STALE"}, "STALE_REPRESENTATION"),
+        ({"representation_status": "SUPERSEDED"}, "SUPERSEDED_REPRESENTATION"),
+        ({"representation_status": "INVALIDATED"}, "INVALIDATED_REPRESENTATION"),
+        ({"asset_type": "runtime_debug"}, "DIAGNOSTIC_CONTEXT_FORBIDDEN"),
+        ({"raw_source": True}, "RAW_SOURCE_FORBIDDEN"),
+        ({"provenance": {}}, "MISSING_PROVENANCE"),
+        (
+            {"accepted_boundary": {"accepted_through_chapter": 2}},
+            "WRONG_ACCEPTED_BOUNDARY",
+        ),
+    ),
+)
+def test_eligibility_rejections_are_stable(
+    changes: dict[str, object], reason: str
+) -> None:
+    candidate = _candidate("optional-v1", "knowledge_pack", **changes)
+    selection = select_context_candidates(
+        project_id="project-a",
+        profile=resolve_context_profile("draft"),
+        candidates=(
+            _candidate(
+                "plan-v1",
+                "chapter_plan",
+                context_class="PROTECTED",
+                estimated_tokens=40,
+            ),
+            candidate,
+        ),
+        token_budget=100,
+        authority_state_boundary={"accepted_through_chapter": 1},
+    )
+
+    assert selection.rejected == (
+        {"asset_version_id": "optional-v1", "reason": reason},
+    )
+
+
+def test_required_and_protected_budget_overflow_fail_closed() -> None:
+    policy = compile_effective_context_policy(
+        (
+            _policy(
+                "a",
+                allowed=("chapter_plan", "knowledge_pack"),
+                required=("knowledge_pack",),
+                total=70,
+                buckets={"chapter_plan": 30, "knowledge_pack": 30},
+                classes={"PROTECTED": 30, "RETRIEVABLE": 30},
+            ),
+        )
+    ).effective_policy
+    with pytest.raises(ValueError, match="PROTECTED_CONTEXT_BUDGET_EXCEEDED"):
+        select_context_candidates(
+            project_id="project-a",
+            profile=resolve_context_profile("draft"),
+            candidates=(
+                _candidate(
+                    "plan-v1",
+                    "chapter_plan",
+                    context_class="PROTECTED",
+                    estimated_tokens=40,
+                ),
+            ),
+            token_budget=70,
+            effective_policy=policy,
+        )
+    with pytest.raises(ValueError, match="CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"):
+        select_context_candidates(
+            project_id="project-a",
+            profile=resolve_context_profile("draft"),
+            candidates=(
+                _candidate(
+                    "knowledge-v1", "knowledge_pack", estimated_tokens=40
+                ),
+            ),
+            token_budget=70,
+            effective_policy=policy,
+        )
+
+
 def test_structured_truncation_preserves_elements_and_provenance() -> None:
     policy = compile_effective_context_policy(
         (
@@ -305,6 +388,33 @@ def test_new_manifest_freezes_compiler_and_complete_decisions() -> None:
     assert manifest["metrics"]["accepted_count"] == 1
     assert manifest["token_accounting_contract"]["precision"] == "ESTIMATE_ONLY"
     assert manifest["replay"]["algorithm"] == "authority-context-selection-v3-governed"
+
+
+def test_same_frozen_context_inputs_produce_same_manifest_identity() -> None:
+    arguments = {
+        "project_id": "project-a",
+        "book_id": "book-a",
+        "stage": "draft",
+        "created_by_operation_id": "operation-a",
+        "context_profile_version": "draft-profile-v2",
+        "candidates": (
+            _candidate(
+                "plan-v1",
+                "chapter_plan",
+                context_class="PROTECTED",
+                estimated_tokens=40,
+            ),
+        ),
+        "token_budget": 80,
+        "required_asset_types": ("chapter_plan",),
+        "authority_state_boundary": {"accepted_through_chapter": 0},
+    }
+
+    first = build_authority_context_bundle(**arguments)
+    second = build_authority_context_bundle(**arguments)
+
+    assert first == second
+    assert replay_context_bundle(first)["status"] == "MATCH"
 
 
 def test_historical_v7_replay_uses_frozen_semantics_without_current_compiler() -> None:

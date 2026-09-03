@@ -345,9 +345,12 @@ def resolve_context_profile(name: str) -> ContextProfile:
 
 
 def _policy_hash(payload: dict[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
 
 
 def _compile_profile_policy(
@@ -433,6 +436,15 @@ def _compile_profile_policy(
             "compression_policy": stage_profile.compression_policy,
             "source_expression_policy": stage_profile.source_expression_policy,
         }
+        runtime_context_types = (
+            (
+                "chapter_execution_intent",
+                "chapter_memo",
+                "retrieval_result",
+            )
+            if normalized_stage == "draft"
+            else ()
+        )
         snapshots.append(
             ContextPolicySnapshot(
                 identity=PolicyIdentity(
@@ -441,7 +453,10 @@ def _compile_profile_policy(
                     content_hash=_policy_hash(stage_payload),
                     snapshot_ref=f"production-stage-profile:{stage_profile.stage}",
                 ),
-                allowed_logical_kinds=stage_profile.allowed_asset_types,
+                allowed_logical_kinds=(
+                    *stage_profile.allowed_asset_types,
+                    *runtime_context_types,
+                ),
                 denied_logical_kinds=stage_profile.forbidden_asset_types,
                 required_logical_kinds=tuple(caller_required),
                 limits=ContextBudgetLimits(total=profile.maximum_token_budget),
@@ -482,7 +497,10 @@ def _eligibility_reason(
     physical_type = candidate.physical_asset_type or candidate.asset_type
     if candidate.project_id != project_id:
         return "WRONG_PROJECT"
-    if logical_kind in _DIAGNOSTIC_CONTEXT_TYPES or physical_type in _DIAGNOSTIC_CONTEXT_TYPES:
+    if (
+        logical_kind in _DIAGNOSTIC_CONTEXT_TYPES
+        or physical_type in _DIAGNOSTIC_CONTEXT_TYPES
+    ):
         return "DIAGNOSTIC_CONTEXT_FORBIDDEN"
     if (
         candidate.qualification in BLOCKED_QUALIFICATIONS
@@ -491,8 +509,12 @@ def _eligibility_reason(
         return f"QUALIFICATION_{candidate.qualification}"
     if candidate.governance_status != "CLEAR":
         return f"GOVERNANCE_{candidate.governance_status}"
+    if candidate.authority_freshness == "INVALIDATED":
+        return "INVALIDATED_REPRESENTATION"
     if candidate.authority_freshness not in {"CURRENT", "VALID_AS_OF"}:
         return "STALE_REPRESENTATION"
+    if candidate.representation_status == "INVALIDATED":
+        return "INVALIDATED_REPRESENTATION"
     if candidate.representation_status not in {"ACTIVE", "CURRENT", "VALID_AS_OF"}:
         return "SUPERSEDED_REPRESENTATION"
     if (
@@ -508,7 +530,10 @@ def _eligibility_reason(
         return "PHYSICAL_ASSET_TYPE_DENIED"
     if logical_kind not in policy.allowed_logical_kinds:
         return "LOGICAL_CONTEXT_KIND_NOT_ALLOWED"
-    if policy.allowed_physical_types and physical_type not in policy.allowed_physical_types:
+    if (
+        policy.allowed_physical_types
+        and physical_type not in policy.allowed_physical_types
+    ):
         return "PHYSICAL_ASSET_TYPE_NOT_ALLOWED"
     if candidate.asset_type in profile.review_only_types and profile.name == "draft":
         return "REVIEW_ONLY_TYPE"
@@ -651,11 +676,20 @@ def select_context_candidates(
             rejected.append(
                 {
                     "asset_version_id": candidate.asset_version_id,
-                    "reason": "invalid_token_estimate",
+                    "reason": "INVALID_TOKEN_ESTIMATE",
+                }
+            )
+            decisions.append(
+                {
+                    "asset_version_id": candidate.asset_version_id,
+                    "decision": "DROPPED",
+                    "reason": "INVALID_TOKEN_ESTIMATE",
                 }
             )
             continue
-        required = candidate.required or candidate.logical_context_kind in required_kinds
+        required = (
+            candidate.required or candidate.logical_context_kind in required_kinds
+        )
         available, budget_reason = _available_budget(
             candidate,
             policy=policy,
@@ -765,9 +799,7 @@ def _dedupe_basis(candidate: ContextCandidate) -> tuple[str, str] | None:
     return ("PHYSICAL_IDENTITY", candidate.asset_version_id)
 
 
-def _dimension_limit(
-    limits: dict[str, int] | Any, key: str, total_limit: int
-) -> int:
+def _dimension_limit(limits: dict[str, int] | Any, key: str, total_limit: int) -> int:
     return int(limits.get(key, total_limit))
 
 
@@ -808,7 +840,9 @@ def _consume_budget(
         "classes": context_candidate_class(candidate).value,
     }
     for dimension, key in dimensions.items():
-        usage[dimension][key] = usage[dimension].get(key, 0) + candidate.estimated_tokens
+        usage[dimension][key] = (
+            usage[dimension].get(key, 0) + candidate.estimated_tokens
+        )
 
 
 def _truncate_candidate(
@@ -835,18 +869,26 @@ def _truncate_candidate(
     if keep >= len(facts):
         return None, None
     kept = facts[:keep]
-    after_tokens = max(1, min(maximum_tokens, (candidate.estimated_tokens * keep) // len(facts)))
+    after_tokens = max(
+        1, min(maximum_tokens, (candidate.estimated_tokens * keep) // len(facts))
+    )
     before_payload = {
         "safe_summary": candidate.safe_summary,
         "structured_facts": list(facts),
     }
     after_payload = {"safe_summary": "", "structured_facts": list(kept)}
-    before_hash = "sha256:" + hashlib.sha256(
-        json.dumps(before_payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    after_hash = "sha256:" + hashlib.sha256(
-        json.dumps(after_payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    before_hash = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(before_payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    after_hash = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(after_payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     updated = replace(
         candidate,
         estimated_tokens=after_tokens,
@@ -1012,9 +1054,7 @@ def build_authority_context_bundle(
             "source_identity": item.source_identity,
             "source_revision": item.source_revision,
             "logical_narrative_identity": item.logical_narrative_identity,
-            "semantic_representation_identity": (
-                item.semantic_representation_identity
-            ),
+            "semantic_representation_identity": (item.semantic_representation_identity),
             "accepted_boundary": dict(item.accepted_boundary or {}),
             "section": item.section,
             "bucket": item.bucket,
@@ -1074,9 +1114,7 @@ def build_authority_context_bundle(
         "rejected_inputs": list(selection.rejected),
         "rejected_asset_versions": list(selection.rejected),
         "candidate_decisions": [dict(item) for item in selection.decisions],
-        "deduplication_decisions": [
-            dict(item) for item in selection.deduplications
-        ],
+        "deduplication_decisions": [dict(item) for item in selection.deduplications],
         "truncation_decisions": [dict(item) for item in selection.truncations],
         "knowledge_usage": [
             {
@@ -1150,15 +1188,9 @@ def build_authority_context_bundle(
                 for candidate in selection.selected
                 if context_candidate_class(candidate) is ContextClass.EPHEMERAL
             ),
-            "sections": dict(
-                selection.token_accounting.get("tokens_by_section") or {}
-            ),
-            "buckets": dict(
-                selection.token_accounting.get("tokens_by_bucket") or {}
-            ),
-            "classes": dict(
-                selection.token_accounting.get("tokens_by_class") or {}
-            ),
+            "sections": dict(selection.token_accounting.get("tokens_by_section") or {}),
+            "buckets": dict(selection.token_accounting.get("tokens_by_bucket") or {}),
+            "classes": dict(selection.token_accounting.get("tokens_by_class") or {}),
             "required_reservation": int(
                 selection.token_accounting.get("required_reservation") or 0
             ),
@@ -1166,8 +1198,7 @@ def build_authority_context_bundle(
         "effective_policy": {
             **compilation.effective_policy.to_dict(),
             "input_policy_identities": [
-                dict(item["identity"])
-                for item in compilation.receipt["input_policies"]
+                dict(item["identity"]) for item in compilation.receipt["input_policies"]
             ],
             "compiler_receipt_hash": compilation.receipt["receipt_hash"],
         },
@@ -1186,9 +1217,7 @@ def build_authority_context_bundle(
             ),
             "truncated_count": len(selection.truncations),
             "decision_count_by_reason": {
-                reason: sum(
-                    item["reason"] == reason for item in selection.decisions
-                )
+                reason: sum(item["reason"] == reason for item in selection.decisions)
                 for reason in sorted(
                     {str(item["reason"]) for item in selection.decisions}
                 )
@@ -1614,9 +1643,12 @@ def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
     expected = str(manifest.get("context_fingerprint") or "")
     body = dict(manifest)
     body.pop("context_fingerprint", None)
-    actual = "sha256:" + hashlib.sha256(
-        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    actual = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     output_digest = str(
         dict(manifest.get("replay") or {}).get("output_context_digest") or ""
     )

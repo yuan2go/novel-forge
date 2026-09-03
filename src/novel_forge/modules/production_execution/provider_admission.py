@@ -11,6 +11,7 @@ _SUPPORTED_METHODS = {
     "OPENAI_UTF8_BYTES_UPPER_BOUND_V1": ("openai", "PROVEN_UPPER_BOUND"),
     "SCRIPTED_UTF8_BYTES_EXACT_V1": ("scripted_provider_v2", "EXACT"),
 }
+_SCRIPTED_PROVIDER_CONTEXT_BYTES = 262_144
 
 
 def provider_request_protocol(provider: str) -> str:
@@ -264,7 +265,7 @@ def build_route_token_accounting_contract(
         method = "SCRIPTED_UTF8_BYTES_EXACT_V1"
         precision = "EXACT"
         evidence_ref = "fixture-protocol:scripted-byte-meter:v1"
-        context_limit = model_context_limit or 65_536
+        context_limit = model_context_limit or _SCRIPTED_PROVIDER_CONTEXT_BYTES
     elif (
         provider == "openai"
         and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"

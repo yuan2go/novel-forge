@@ -171,6 +171,18 @@ retained. The result establishes Provider runtime qualification only; it does no
 chapter acceptance, literary quality, human evidence, long-form stability or production
 operation.
 
+Every non-fixture Provider route also requires a route-bound admission contract before an
+ExternalEffect can be created. Configure the actual model context limit, accounting
+method, immutable evidence reference, framing allowance, safety margin and Source output
+reserve through the corresponding `NOVEL_FORGE_PROVIDER_*` and
+`NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE` settings in `.env.example`. The
+currently implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
+bytes are treated as a conservative provider/model-bound input-token upper bound, and the
+frozen evidence reference must justify the route's framing and limit assumptions. Generic
+character estimates are never used for admission. Missing or unproven accounting fails
+before Provider effect creation; Codex CLI remains fail-closed because its hidden request
+framing cannot currently satisfy the complete-request identity contract.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect

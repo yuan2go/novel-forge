@@ -45,6 +45,7 @@ from novel_forge.modules.production_execution import (
     RouteSnapshot,
     SkillBundle,
     SourcePolicy,
+    TargetScope,
     ValidationPolicy,
     default_capability_registry,
 )
@@ -743,7 +744,7 @@ class PostgresChapterExecutionContractBinder:
             chapter=int(metadata.get("chapter") or 0),
         )
         prompt, prompt_evidence = _materialize_production_codex_prompt(
-            target_scope=target_scope.to_dict(),
+            target_scope=target_scope,
             stage=stage,
             inputs=provider_inputs,
             materialization=contract,
@@ -3368,7 +3369,7 @@ def _materialize_production_codex_prompt(
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
-        resolved_target_scope = dict(target_scope)
+        resolved_target_scope = TargetScope.from_dict(target_scope).to_dict()
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_TARGET_SCOPE_MISSING",
@@ -3626,7 +3627,7 @@ def _materialize_source_intelligence_prompt(
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
-        resolved_target_scope = dict(target_scope)
+        resolved_target_scope = TargetScope.from_dict(target_scope).to_dict()
     else:
         raise KernelError(
             "SOURCE_PROVIDER_TARGET_SCOPE_MISSING",

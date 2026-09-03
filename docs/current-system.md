@@ -104,6 +104,27 @@ cannot name admissible AssetVersions or expand the accepted boundary. Context Au
 admits only the frozen union after coverage is sufficient and continues to enforce the
 configured token budget; the default final retrieval limit remains 24.
 
+## Context governance and Provider admission
+
+Context assembly has one governed seam. It compiles the applicable ContextProfile,
+ProductionStageProfile, caller limits and frozen Capability Pack policy with allowlist
+intersection, deny-wins, required-source union and strictest-limit semantics. Eligibility
+and deterministic representation deduplication precede ranking and consumption of total,
+section, bucket and Context-class budgets. Optional projections may use an explicitly
+allowed structured-element truncation; required or protected material fails closed when
+it cannot fit. ContextBundle v8 and NarrativeContextManifest v4 retain every policy
+identity, selection, rejection, deduplication, truncation, provenance and estimate.
+Historical v7 manifests replay with their frozen v7 algorithm and are not recompiled.
+
+Context token estimates are selection evidence, not a Provider hard bound. Before a real
+Provider ExternalEffect exists, Production Execution renders the exact request, binds its
+hash to the route/provider/model and applies a versioned accounting contract covering the
+complete input, framing, output reserve and safety margin. The remote adapter sends that
+same admitted envelope. An unknown meter, route mismatch, changed serialization or limit
+overflow creates no Provider ExternalEffect. Admission manifests retain hashes and
+component identities rather than duplicating prompt or raw Source bodies; Source
+Intelligence reconstructs transient Source bytes and must reproduce the admitted hash.
+
 ## Executable novel-production chain
 
 The current production-reachable chain is a set of Authority transitions, not one

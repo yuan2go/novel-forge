@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -179,11 +180,18 @@ class _MeasuredPlanningAndEvaluationTransport:
     def execute(self, request):  # type: ignore[no-untyped-def]
         self.stages.append(request.stage)
         self.idempotency_keys.add(request.stable_idempotency_key)
+        input_text = str(request.request_payload["input_text"])
+        contract_offset = input_text.find("provider-task-view-v1")
+        task_line_start = input_text.rfind("\n", 0, contract_offset) + 1
+        task_offset = input_text.find("{", task_line_start, contract_offset)
+        if request.stage != "narrative_semantic_evaluation":
+            assert contract_offset >= 0 and task_offset >= 0
         result = (
             scripted_qualification("book_plan.generate")
             if request.stage == "narrative_semantic_evaluation"
             else planning_fixture_response(
-                request.stage, request.request_payload["input"]
+                request.stage,
+                json.JSONDecoder().raw_decode(input_text[task_offset:])[0],
             )
         )
         return {
@@ -2326,6 +2334,13 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
                 "independent-planning-semantic-evaluator"
             ),
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+            "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "131072",
+            "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": (
+                "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
+            ),
+            "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": (
+                "test-proof:openai-byte-upper-bound:v1"
+            ),
         }
         execution = build_production_execution_composition(
             settings, env=env, provider_registry=registry

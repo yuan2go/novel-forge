@@ -108,6 +108,7 @@ from . import (
     v20260830_0105_p0_backend_qualification_repairs,
     v20260902_0106_quality_qualification_scope_generalization,
     v20260903_0107_retrieval_campaign_runtime,
+    v20260903_0108_context_governance_projection,
 )
 
 VERSION_MODULES = [
@@ -218,6 +219,7 @@ VERSION_MODULES = [
     v20260830_0105_p0_backend_qualification_repairs,
     v20260902_0106_quality_qualification_scope_generalization,
     v20260903_0107_retrieval_campaign_runtime,
+    v20260903_0108_context_governance_projection,
 ]
 
 __all__ = ["VERSION_MODULES"]
