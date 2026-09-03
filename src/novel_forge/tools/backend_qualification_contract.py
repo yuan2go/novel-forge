@@ -40,15 +40,25 @@ P0_PROOF_SCOPE = {
     "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
     "proves": [
         "runtime-composition",
+        "project-workspace-authority",
         "command-attempt-lease-fence",
+        "capability-pack-instruction-runtime",
         "external-effect-provider-control",
-        "story-design-plan-activation",
-        "chapter-production-saga",
-        "quality-and-release-gates",
+        "source-import-and-knowledge",
+        "book-design-and-story-formation",
+        "story-design-authority",
+        "hierarchical-planning",
+        "narrative-realization",
+        "plan-change-authority",
         "book-opening-workflow",
+        "book-production-coordination",
+        "chapter-group-coordination",
+        "context-and-retrieval",
+        "chapter-production-saga",
+        "review-revision-quality",
         "book-chapter-acceptance",
         "canon-and-narrative-state",
-        "source-import-and-knowledge",
+        "reader-and-followup-evidence",
         "agent-runtime",
         "postgresql-persistence-and-migrations",
         "retry-recovery-and-replay",
@@ -148,7 +158,9 @@ def _load_json_object(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
-        raise QualificationContractError(f"qualification manifest is missing: {path}") from exc
+        raise QualificationContractError(
+            f"qualification manifest is missing: {path}"
+        ) from exc
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise QualificationContractError(
             f"qualification manifest is not JSON-compatible YAML: {path}"
@@ -161,7 +173,9 @@ def _load_json_object(path: Path) -> dict[str, Any]:
 def _required_text(value: object, *, field: str) -> str:
     text = str(value or "").strip()
     if not text:
-        raise QualificationContractError(f"qualification manifest field is empty: {field}")
+        raise QualificationContractError(
+            f"qualification manifest field is empty: {field}"
+        )
     return text
 
 
@@ -205,9 +219,13 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
             raise QualificationContractError(
                 f"pytest_collections[{index}] must be an object"
             )
-        name = _required_text(item.get("name"), field=f"pytest_collections[{index}].name")
+        name = _required_text(
+            item.get("name"), field=f"pytest_collections[{index}].name"
+        )
         if name in names:
-            raise QualificationContractError(f"duplicate pytest collection name: {name}")
+            raise QualificationContractError(
+                f"duplicate pytest collection name: {name}"
+            )
         names.add(name)
         raw_paths = item.get("paths")
         if not isinstance(raw_paths, list) or not raw_paths:
@@ -236,7 +254,9 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
             )
         complete_collection = item.get("complete_collection")
         allow_skips = item.get("allow_skips")
-        if not isinstance(complete_collection, bool) or not isinstance(allow_skips, bool):
+        if not isinstance(complete_collection, bool) or not isinstance(
+            allow_skips, bool
+        ):
             raise QualificationContractError(
                 f"pytest collection {name} requires boolean collection and skip policy"
             )
@@ -271,7 +291,9 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
     semantic_slices: dict[str, tuple[str, ...]] = {}
     for name, values in raw_slices.items():
         if not isinstance(values, list) or not values:
-            raise QualificationContractError(f"semantic slice {name} has no test modules")
+            raise QualificationContractError(
+                f"semantic slice {name} has no test modules"
+            )
         paths = tuple(
             _relative_path(value, field=f"semantic_slices.{name}") for value in values
         )
@@ -293,8 +315,7 @@ def load_qualification_manifest(repo_root: Path) -> QualificationManifest:
         if path.is_file()
     }
     undeclared_migration_compatibility = sorted(
-        discovered_migration_compatibility
-        - set(semantic_slices["migration_matrix"])
+        discovered_migration_compatibility - set(semantic_slices["migration_matrix"])
     )
     if undeclared_migration_compatibility:
         raise QualificationContractError(
@@ -369,8 +390,7 @@ def parse_junit_xml(path: Path) -> dict[str, object]:
         for source in sources
     )
     errors = sum(
-        _junit_integer(source.get("errors", "0"), field="errors")
-        for source in sources
+        _junit_integer(source.get("errors", "0"), field="errors") for source in sources
     )
     skipped = sum(
         _junit_integer(source.get("skipped", "0"), field="skipped")
@@ -445,11 +465,15 @@ def resolved_dependency_snapshot(
     versions: dict[str, str] = {}
     for item in payload["packages"]:
         if not isinstance(item, dict):
-            raise QualificationContractError("dependency package entry is not an object")
+            raise QualificationContractError(
+                "dependency package entry is not an object"
+            )
         name = DEPENDENCY_NAME_SEPARATOR.sub(
             "-", _required_text(item.get("name"), field="dependency name").lower()
         )
-        version = _required_text(item.get("version"), field=f"dependency {name} version")
+        version = _required_text(
+            item.get("version"), field=f"dependency {name} version"
+        )
         existing = versions.get(name)
         if existing is not None and existing != version:
             raise QualificationContractError(
@@ -495,9 +519,7 @@ def resolved_dependency_snapshot(
         "package_count": len(packages),
         "digest": digest,
         "reproducibility_class": (
-            "CONSTRAINTS_BOUND_RESOLVED_SNAPSHOT"
-            if provenance
-            else "RESOLVED_SNAPSHOT"
+            "CONSTRAINTS_BOUND_RESOLVED_SNAPSHOT" if provenance else "RESOLVED_SNAPSHOT"
         ),
         "git_sha_alone_reproducible": False,
     }
@@ -507,10 +529,7 @@ def resolved_dependency_snapshot(
 def validate_resolved_dependency_snapshot(
     snapshot: Mapping[str, object],
 ) -> dict[str, object]:
-    if (
-        snapshot.get("schema_version")
-        != "novel-forge.resolved-dependency-snapshot.v1"
-    ):
+    if snapshot.get("schema_version") != "novel-forge.resolved-dependency-snapshot.v1":
         raise QualificationContractError(
             "resolved dependency snapshot schema is invalid"
         )
@@ -521,11 +540,15 @@ def validate_resolved_dependency_snapshot(
         snapshot.get("python_version"), field="python version"
     )
     packages = snapshot.get("packages")
-    if not isinstance(packages, list) or not packages or not all(
-        isinstance(item, str)
-        and item.count("==") == 1
-        and not any(character.isspace() for character in item)
-        for item in packages
+    if (
+        not isinstance(packages, list)
+        or not packages
+        or not all(
+            isinstance(item, str)
+            and item.count("==") == 1
+            and not any(character.isspace() for character in item)
+            for item in packages
+        )
     ):
         raise QualificationContractError(
             "resolved dependency package identities are invalid"
@@ -556,9 +579,7 @@ def validate_resolved_dependency_snapshot(
             raise QualificationContractError(
                 "resolved dependency provenance entry is invalid"
             )
-        relative = _relative_path(
-            item.get("path"), field="dependency provenance path"
-        )
+        relative = _relative_path(item.get("path"), field="dependency provenance path")
         digest = _required_text(
             item.get("digest"), field="dependency provenance digest"
         )
@@ -801,8 +822,7 @@ def build_backend_pytest_command(
     collection_report: Path,
 ) -> list[str]:
     if any(
-        contract.classification != "BACKEND_NON_POSTGRESQL"
-        for contract in contracts
+        contract.classification != "BACKEND_NON_POSTGRESQL" for contract in contracts
     ):
         raise QualificationContractError(
             "backend pytest command received a PostgreSQL collection"
@@ -986,14 +1006,8 @@ def validate_backend_test_evidence(
     }
 
 
-def _positive_compose_counter(
-    value: object, *, field: str, minimum: int = 1
-) -> int:
-    if (
-        not isinstance(value, int)
-        or isinstance(value, bool)
-        or value < minimum
-    ):
+def _positive_compose_counter(value: object, *, field: str, minimum: int = 1) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
         raise QualificationContractError(
             f"Compose runtime evidence field {field} must be at least {minimum}"
         )
@@ -1017,9 +1031,7 @@ def _validate_compose_operation(
     _positive_compose_counter(
         value.get("attempt_count"), field=f"{label}.attempt_count"
     )
-    _positive_compose_counter(
-        value.get("lease_count"), field=f"{label}.lease_count"
-    )
+    _positive_compose_counter(value.get("lease_count"), field=f"{label}.lease_count")
     _positive_compose_counter(
         value.get("max_fencing_token"),
         field=f"{label}.max_fencing_token",
@@ -1032,16 +1044,17 @@ def _validate_compose_operation(
     )
     try:
         for field in side_effect_fields:
-            _positive_compose_counter(
-                value.get(field), field=f"{label}.{field}"
-            )
+            _positive_compose_counter(value.get(field), field=f"{label}.{field}")
     except QualificationContractError as exc:
         if label == "post-restart":
             raise QualificationContractError(
                 "Compose post-restart authoritative side effect is incomplete"
             ) from exc
         raise
-    if value.get("fixture") is not True or value.get("real_provider_proven") is not False:
+    if (
+        value.get("fixture") is not True
+        or value.get("real_provider_proven") is not False
+    ):
         raise QualificationContractError(
             f"Compose runtime {label} operation evidence overclaims provider scope"
         )
@@ -1068,9 +1081,7 @@ def _validate_worker_projection_snapshot(
         raise QualificationContractError(
             f"Compose worker projection is not ready after {label}"
         )
-    _required_text(
-        value.get("updated_at"), field=f"worker restart {label}.updated_at"
-    )
+    _required_text(value.get("updated_at"), field=f"worker restart {label}.updated_at")
     _required_text(
         value.get("last_heartbeat_at"),
         field=f"worker restart {label}.last_heartbeat_at",
@@ -1171,8 +1182,7 @@ def validate_compose_runtime_evidence(
     }
     if (
         restart.get("projection_changed") is not True
-        or snapshots["before_stop"]["updated_at"]
-        == snapshots["stopped"]["updated_at"]
+        or snapshots["before_stop"]["updated_at"] == snapshots["stopped"]["updated_at"]
         or snapshots["stopped"]["updated_at"]
         == snapshots["after_recovery_start"]["updated_at"]
         or snapshots["before_forced_restart"]["updated_at"]

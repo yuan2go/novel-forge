@@ -85,7 +85,7 @@
       {
         "skill_ref": "context-builder-source-isolation",
         "version": "context-builder-source-isolation-v1",
-      "content_hash": "sha256:953c21770114b27df36e21273b93106f1d236e968a55cb865b0a26d17df3f341",
+      "content_hash": "sha256:beba0a22037fe37179f884bac2a1f37cb96ea226b5f8bcd92e07fae61b5841f6",
         "required": true,
         "input_contract_ref": "schema:chapter-context-input:v1",
         "output_contract_ref": "schema:context-bundle:v1",
@@ -124,7 +124,7 @@
       {
         "skill_ref": "canon-continuity-graph",
         "version": "canon-continuity-graph-v1",
-        "content_hash": "sha256:e43958a4619eb2788df3104c9f89b3655a5c6e415cd89233a59fbae7c696cf82",
+        "content_hash": "sha256:544403d3856c07938f96db9e90ef7333f975daa4c942214235f797b6720c4a38",
         "required": true,
         "input_contract_ref": "schema:canon-extraction-input:v1",
         "output_contract_ref": "schema:canon-patch:v1",

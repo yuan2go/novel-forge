@@ -1,76 +1,105 @@
 ---
 name: agent-loop-governance
-description: Use when converting production workflows into auditable AgentRun and LoopRun execution with context contracts, budget limits, checkpoints, stop conditions, review-revision loops, rollback rehearsal, and dead-letter recovery.
+description: Use when governing bounded Agent Runtime execution through AgentRun operations, sessions, budgets, checkpoints, gates, retries, dead letters, and owner-approved domain submission.
 ---
 
-# Agent Loop Governance
+# Agent Runtime Loop Governance
 
-## 适用场景
+## Purpose
 
-- 将 analysis、outline、chapter plan、draft、review、revision、recap、publish、feedback 等操作纳入 Agent Center 或 Loop Kernel。
-- 设计 review -> revision -> re-review -> publish gate 的标准 LoopRun。
-- 审计 Agent operation coverage、hard-stop、checkpoint、dead letter、rollback rehearsal。
+- Turn one bounded Agent task into an auditable AgentRun and, when a model/tool dialogue
+  is required, an Agent Session bound to a Command Kernel Operation.
+- Review scheduler, checkpoint, gate, budget, retry, dead-letter and recovery behavior.
+- Preserve the distinction between Agent execution evidence and domain Authority state.
 
-## 输入要求
+## Input contract
 
-- operation、Agent profile、ContextBundle contract、runtime policy、budget、stop conditions、gate policy。
-- 相关 ReviewIssue、RevisionTask、EvaluationResult、PublishGateReport、AuditLog 和 rollback evidence。
-- 本次运行的 `trace_id`、project/workspace id 和环境。
+- Project/workspace scope, Principal and requested Agent definition/version.
+- Frozen operation definition, runtime binding, Capability Pack, ContextBundle and Tool
+  policy identities.
+- Token/cost/time limits, checkpoint/gate policy, retry ceiling and stop conditions.
+- Current Operation, Attempt, Lease, Fence, ExternalEffect, session and transcript
+  evidence when resuming or diagnosing.
 
-## Novel OS Runtime Contract
+Reject cross-project inputs, floating versions, missing execution mappings and any task
+whose requested domain mutation has no owning Authority command.
 
-- 生产 AgentRun 必须记录 `context_bundle_id`、`knowledge_pack_id`、model/provider、cost/token budget、gate result 和 registry metadata。
-- LoopRun 必须有 max_steps、max_tokens、max_cost、max_duration 和明确 stop condition。
-- provider timeout、cancel、budget exceeded、blocking issue、human required 都必须 hard-stop 并记录。
-- compat operation 必须显式标记，不能伪装成 production coverage。
+## Allowed context
 
-## 操作流程
+- Current project-scoped ContextBundle and accepted Canon/Narrative State evidence.
+- Frozen Agent definition, Capability Pack, prompt/Skill hashes and runtime policy.
+- Relevant ReviewIssue, gate, budget, trace, audit and recovery evidence.
+- No raw source document or ungoverned chat memory as domain truth.
 
-1. 识别目标 workflow 的 Agent operation、输入资产、输出资产和关键 gates。
-2. 生成 LoopRun / AgentRun 计划，包括 budget、checkpoint、rollback 和 stop condition。
-3. 为每步绑定 ContextBundle、ReviewIssue、EvaluationGate、MKAOS Gate 和 AuditLog。
-4. 执行或设计状态迁移：planned、running、checkpointed、succeeded、failed、waiting_human、dead_letter。
-5. 处理阻断：创建 recovery instruction、dead letter repair 或 rollback rehearsal。
-6. 输出 coverage report，标记 production、compat、bypass forbidden 和 missing contract。
+## Authority boundary
 
-## 输出格式
+- Agent Runtime owns definitions, activations, runtime bindings, AgentRun projection,
+  sessions, transcripts and dispatch evidence.
+- Command Kernel owns Operation, Attempt, Lease, Fence and ExternalEffect lifecycle.
+- The Agent may submit a candidate or typed command only. Story Design, Planning, Plan
+  Change, Book, Chapter, Quality and Canon Authorities retain their decisions.
+- A repository or coordinator cannot convert Agent output into accepted narrative truth.
 
-```markdown
-# Agent Loop Governance Report
+## Procedure
 
-## Coverage
-- operation:
-- agent:
-- context contract:
-- gate:
-- status:
+1. Resolve the production entry, Agent definition, capability execution mapping and
+   frozen instruction/context identities.
+2. Admit one bounded AgentRun Operation and record its task, budgets, stop conditions and
+   expected output contract.
+3. Let the Agent scheduler claim the current Attempt under lease and fence; create or
+   resume the bound Agent Session when the operation uses the harness.
+4. Route model/tool I/O through Production Execution and durable ExternalEffect intent.
+5. Append transcript, cost/usage, checkpoint and gate evidence; never overwrite a
+   terminal Attempt or session event.
+6. Submit resulting candidates or commands to their owning domain Authority and retain
+   its acceptance/rejection evidence.
+7. On retry, create a new Attempt under the declared ceiling. On ambiguous effect or
+   commit outcome, stop and reconcile before dispatch. On exhaustion, dead-letter with a
+   recovery instruction.
 
-## Loop
-- steps:
-- budget:
-- stop condition:
-- checkpoints:
+## Output contract
 
-## Recovery
-- dead letters:
-- rollback rehearsal:
-- human approval:
-```
+Return a schema-backed governance record containing:
 
-## 质量标准
+- AgentRun/Operation and optional Agent Session identities;
+- Agent definition, runtime binding, Capability Pack, prompt/Skill and ContextBundle
+  identities;
+- task scope, budgets, stop condition and current status;
+- Attempt/Lease/Fence, ExternalEffect, checkpoint, transcript and gate references;
+- domain submission and owner decision references, if any;
+- retry, dead-letter or reconciliation instruction on failure;
+- `trace_id`, correlation/causation identity, validation status and evidence paths.
 
-- 每个主链 step 都能从 trace_id 查到 AgentRun、ContextBundle、GateResult 和 AuditLog。
-- blocking issue、budget exceeded、provider hard-stop 都有可测试证明。
-- Loop 不修改历史 run；rerun 必须创建新 run/version。
+## Quality criteria
 
-## 禁止事项
+- Every execution step is traceable to the same frozen project-scoped contract.
+- Budget, permission, Provider and Tool limits fail closed.
+- Agent completion is not reported as domain acceptance without owner evidence.
+- Retry/recovery appends new versioned facts and ambiguous effects are never blindly
+  resent.
+- Fixture, scripted Provider, credentialed Provider and production proof remain distinct.
 
-- 禁止 Agent 绕过 Context Builder 或 MKAOS contract。
-- 禁止 provider failure silent fallback。
-- 禁止通过 chat memory 代替 schema-backed checkpoint 或 handoff。
+## Failure semantics
 
-## 与其他模块的关系
+- Missing/stale binding, context, instruction identity, budget or permission: reject
+  admission or hard-stop the active Attempt.
+- Lost lease or stale fence: reject completion and let the scheduler reacquire according
+  to policy.
+- Ambiguous external outcome: enter reconciliation; do not redispatch.
+- Blocking owner gate or human decision: checkpoint as waiting evidence, not success.
+- Exhausted retry ceiling: dead-letter with a durable recovery instruction.
 
-- 上游：Agent Registry、Context Builder、Runtime Policy、ReviewIssue、Evaluation Center。
-- 下游：Agent Center UI、Loop Kernel、Publish Gate、Longform Recap、Audit Log。
-- 关联 Skill：`context-builder-source-isolation`、`review-issue-gate`、`novel-os-engineering-audit`。
+## Required evidence
+
+- `AgentRuntimeAuthorityApplication` and `AgentAuthorityScheduler` result.
+- Operation/Attempt/Lease/Fence and ExternalEffect/receipt records.
+- Agent runtime binding, session/transcript and Capability Pack materialization records.
+- ContextBundle, prompt/Skill identity, model usage/cost and Tool-call evidence.
+- Owning domain Authority result and gate decision for every submitted mutation.
+
+## Related Skills
+
+- `context-builder-source-isolation`
+- `provider-runtime-policy`
+- `review-issue-gate`
+- `novel-os-engineering-audit`

@@ -108,5 +108,5 @@ description: Use when designing, reviewing, or debugging Canon Graph, as-of cont
 ## 与其他模块的关系
 
 - 上游：WorldBible、CharacterCard、Outline、ChapterPlan、DraftChapter、Recap、FeedbackInsight、`temporal.query`。
-- 下游：Context Builder、ReviewIssue Gate、RevisionTask、Publish Gate、Loop Kernel。
+- 下游：Context Builder、ReviewIssue Gate、RevisionTask、Publish Gate、Command Kernel。
 - 关联 Skill：`longform-temporal-query`、`context-builder-source-isolation`、`review-issue-gate`、`agent-loop-governance`。

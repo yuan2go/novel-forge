@@ -59,7 +59,7 @@ description: Use when building, reviewing, or debugging ContextBundle and Knowle
 
 ## 质量标准
 
-- ContextBundle 可从 AgentRun、LoopRun、PublishGate、FeedbackBackflow 反查。
+- ContextBundle 可从 AgentRun、Chapter Saga、PublishGate、FeedbackBackflow 反查。
 - 所有上下文片段都有来源类型、允许用途和裁剪理由。
 - 必须记录 `knowledge_requirement`；REQUIRED 不允许空 pack，OPTIONAL 未选择时记录 `NOT_REQUESTED`，不得伪造空 pack。
 
@@ -72,5 +72,5 @@ description: Use when building, reviewing, or debugging ContextBundle and Knowle
 ## 与其他模块的关系
 
 - 上游：MKAOS、Canon Graph、RAG、ReviewIssue、Runtime Policy。
-- 下游：Agent Center、Loop Kernel、Draft/Review/Revision/Recap/Publish/Feedback flows。
+- 下游：Agent Runtime、Command Kernel、Draft/Review/Revision/Recap/Publish/Feedback flows。
 - 关联 Skill：`mkaos-knowledge-asset-os`、`review-issue-gate`、`agent-loop-governance`。
