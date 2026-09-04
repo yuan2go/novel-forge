@@ -21,6 +21,7 @@ class ContextCandidate:
     asset_type: str
     project_id: str
     estimated_tokens: int
+    book_id: str = ""
     relevance_score: float = 0.0
     qualification: str = "ELIGIBLE"
     governance_status: str = "CLEAR"

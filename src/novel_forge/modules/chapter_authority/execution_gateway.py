@@ -45,6 +45,7 @@ from novel_forge.modules.production_execution import (
     RouteSnapshot,
     SkillBundle,
     SourcePolicy,
+    TargetScope,
     ValidationPolicy,
     default_capability_registry,
 )
@@ -204,12 +205,28 @@ def _provider_context_selection(
     return context
 
 
+def _provider_route_context_types(
+    stage: str, *, retrieval_projection: bool
+) -> tuple[str, ...]:
+    if retrieval_projection:
+        return ("best_draft_candidate",)
+    if stage in {"retrieval", "retrieval_query_expansion"}:
+        return ("chapter_memo",)
+    return ("context_bundle",)
+
+
 def _provider_token_contract(
     route: "ChapterExecutionRoute",
     *,
     route_identity: str,
     output_reserve: int,
+    execution_token_limit: int,
 ) -> TokenAccountingContract:
+    applicable_execution_limit = (
+        route.model_context_limit
+        if route.model_profile.model_provider == "scripted_provider_v2"
+        else execution_token_limit
+    )
     return build_route_token_accounting_contract(
         provider=route.model_profile.model_provider,
         model=route.model_profile.model_id,
@@ -217,6 +234,7 @@ def _provider_token_contract(
         accounting_method=route.token_accounting_method,
         accounting_evidence_ref=route.token_accounting_evidence_ref,
         model_context_limit=route.model_context_limit,
+        execution_token_limit=applicable_execution_limit,
         output_reserve=output_reserve,
         safety_margin=route.token_safety_margin,
         framing_overhead=route.token_framing_overhead,
@@ -229,6 +247,8 @@ def _provider_effective_context_policy(
     context_policy_payload: Mapping[str, Any],
     context_policy_hash: str,
     context_policy_ref: str,
+    route_identity: str,
+    route_allowed_physical_types: tuple[str, ...],
 ) -> dict[str, Any]:
     physical_allowed = tuple(
         str(value) for value in context_policy_payload.get("allowed_asset_types") or ()
@@ -240,6 +260,18 @@ def _provider_effective_context_policy(
     selected_physical = tuple(
         str(item.get("artifact_type") or "") for item in context_selection
     )
+    if not route_allowed_physical_types or any(
+        not value for value in route_allowed_physical_types
+    ):
+        raise KernelError(
+            "CONTEXT_POLICY_UNRESOLVED",
+            "Provider route has no immutable physical Context capability",
+        )
+    if set(selected_physical) - set(route_allowed_physical_types):
+        raise KernelError(
+            "CONTEXT_POLICY_CONFLICT",
+            "Provider route does not admit the frozen physical Context selection",
+        )
     if (
         not physical_allowed
         or any(not value for value in selected_physical)
@@ -267,57 +299,110 @@ def _provider_effective_context_policy(
             "selected_physical_types": list(selected_physical),
             "current_policy_compiler_invoked": False,
         }
-    if bundle_version != "authority-context-bundle-v8":
+    manifest = content.get("context_manifest")
+    if str(
+        content.get("schema_version") or ""
+    ) == "novelos.planning_context_bundle.v1" and not isinstance(manifest, Mapping):
+        if (
+            int(content.get("token_budget") or 0) != 16_000
+            or content.get("source_isolation") != "ABSTRACT_ASSETS_ONLY"
+            or not isinstance(content.get("input_versions"), list)
+        ):
+            raise KernelError(
+                "CONTEXT_POLICY_UNRESOLVED",
+                "historical Planning Context v1 violates its frozen contract",
+            )
         return {
-            "compiler_version": "typed-narrative-context-outer-admission-v1",
-            "context_contract_version": str(
-                content.get("schema_version") or bundle_version or "UNKNOWN"
-            ),
+            "compiler_version": "frozen-planning-context-v1-physical-admission-v1",
+            "context_contract_version": "novelos.planning_context_bundle.v1",
             "physical_allowed_types": sorted(physical_allowed),
             "physical_denied_types": sorted(physical_denied),
             "selected_physical_types": list(selected_physical),
-            "internal_context_policy": "OWNED_BY_TYPED_CONTEXT_CONTRACT",
+            "current_policy_compiler_invoked": False,
+            "historical_compatibility": "FROZEN_TYPED_PLANNING_V1",
         }
-    manifest = content.get("context_manifest")
-    effective = manifest.get("effective_policy") if isinstance(manifest, Mapping) else None
-    if not isinstance(manifest, Mapping) or not isinstance(effective, Mapping):
+    typed_schema = str(content.get("schema_version") or "")
+    typed_stage = {
+        "novelos.narrative_evaluation_context_bundle.v1": (
+            "narrative_semantic_evaluation"
+        ),
+        "novelos.reader_outcome_context_bundle.v1": "reader_outcome",
+        "novelos.reader_outcome_context_bundle.v2": "reader_outcome",
+    }.get(typed_schema)
+    if typed_stage and not isinstance(manifest, Mapping):
+        provider_view = build_provider_context_view(typed_stage, content, {})
+        return {
+            "compiler_version": "frozen-typed-context-physical-admission-v1",
+            "context_contract_version": typed_schema,
+            "provider_view_hash": canonical_hash(provider_view),
+            "physical_allowed_types": sorted(physical_allowed),
+            "physical_denied_types": sorted(physical_denied),
+            "selected_physical_types": list(selected_physical),
+            "current_policy_compiler_invoked": False,
+            "historical_compatibility": "FROZEN_TYPED_CONTEXT",
+        }
+    if bundle_version != "authority-context-bundle-v8" and not isinstance(
+        manifest, Mapping
+    ):
         raise KernelError(
             "CONTEXT_POLICY_UNRESOLVED",
-            "v8 Context does not carry its effective policy",
+            "typed narrative Context has no canonical compiler receipt",
+        )
+    effective = (
+        manifest.get("effective_policy") if isinstance(manifest, Mapping) else None
+    )
+    frozen_compilation = (
+        manifest.get("policy_compilation") if isinstance(manifest, Mapping) else None
+    )
+    frozen_inputs = (
+        frozen_compilation.get("input_policies")
+        if isinstance(frozen_compilation, Mapping)
+        else None
+    )
+    if (
+        not isinstance(manifest, Mapping)
+        or not isinstance(effective, Mapping)
+        or not isinstance(frozen_inputs, list)
+        or not frozen_inputs
+    ):
+        raise KernelError(
+            "CONTEXT_POLICY_UNRESOLVED",
+            "Context does not carry its frozen policy compiler inputs",
         )
     limits = effective.get("limits")
     if not isinstance(limits, Mapping):
         raise KernelError("CONTEXT_POLICY_UNRESOLVED", "Context limits are absent")
-    context_snapshot = ContextPolicySnapshot(
-        identity=PolicyIdentity(
-            policy_id="context-manifest:" + str(manifest.get("context_fingerprint") or ""),
-            version="context-policy-v1",
-            content_hash=str(manifest.get("context_fingerprint") or ""),
-            snapshot_ref="context-bundle:" + str(content.get("actual_context_digest") or ""),
-        ),
-        allowed_logical_kinds=tuple(effective.get("allowed_logical_kinds") or ()),
-        denied_logical_kinds=tuple(effective.get("denied_logical_kinds") or ()),
-        required_logical_kinds=tuple(effective.get("required_logical_kinds") or ()),
-        limits=ContextBudgetLimits(
-            total=int(limits.get("total") or 0),
-            sections=dict(limits.get("sections") or {}),
-            buckets=dict(limits.get("buckets") or {}),
-            classes=dict(limits.get("classes") or {}),
-            required_reservation=int(limits.get("required_reservation") or 0),
-        ),
-        permitted_truncation_strategies=tuple(
-            effective.get("permitted_truncation_strategies") or ()
-        ),
-        permitted_source_modes=tuple(effective.get("permitted_source_modes") or ()),
-        source_risk_threshold=int(effective.get("source_risk_threshold") or 0),
-        maximum_raw_source_ratio=float(
-            effective.get("maximum_raw_source_ratio") or 0
-        ),
-    )
+    try:
+        context_snapshots = tuple(
+            ContextPolicySnapshot.from_dict(item)
+            for item in frozen_inputs
+            if isinstance(item, Mapping)
+        )
+    except ValueError as exc:
+        raise KernelError("CONTEXT_POLICY_UNRESOLVED", str(exc)) from exc
+    if len(context_snapshots) != len(frozen_inputs):
+        raise KernelError(
+            "CONTEXT_POLICY_UNRESOLVED", "Context compiler input is not an object"
+        )
+    try:
+        reconstructed = compile_effective_context_policy(context_snapshots)
+    except ValueError as exc:
+        raise KernelError("CONTEXT_POLICY_UNRESOLVED", str(exc)) from exc
+    if dict(reconstructed.receipt) != dict(frozen_compilation) or any(
+        effective.get(key) != value
+        for key, value in reconstructed.effective_policy.to_dict().items()
+    ):
+        raise KernelError(
+            "CONTEXT_POLICY_IDENTITY_CONFLICT",
+            "frozen Context compiler receipt does not reconstruct exactly",
+        )
+    context_total = int(limits.get("total") or 0)
     pack_snapshot = ContextPolicySnapshot(
         identity=PolicyIdentity(
-            policy_id=str(context_policy_payload.get("policy_id") or context_policy_ref),
-            version="provider-context-route-v1",
+            policy_id=str(
+                context_policy_payload.get("policy_id") or context_policy_ref
+            ),
+            version="capability-pack-context-policy-v1",
             content_hash=context_policy_hash,
             snapshot_ref=context_policy_ref,
         ),
@@ -326,12 +411,43 @@ def _provider_effective_context_policy(
         limits=ContextBudgetLimits(
             total=int(context_policy_payload.get("max_tokens") or 0)
         ),
-        permitted_truncation_strategies=context_snapshot.permitted_truncation_strategies,
-        permitted_source_modes=context_snapshot.permitted_source_modes,
-        source_risk_threshold=context_snapshot.source_risk_threshold,
-        maximum_raw_source_ratio=context_snapshot.maximum_raw_source_ratio,
+        permitted_truncation_strategies=tuple(
+            effective.get("permitted_truncation_strategies") or ()
+        ),
+        permitted_source_modes=tuple(effective.get("permitted_source_modes") or ()),
+        source_risk_threshold=int(effective.get("source_risk_threshold") or 0),
+        maximum_raw_source_ratio=float(effective.get("maximum_raw_source_ratio") or 0),
     )
-    compilation = compile_effective_context_policy((context_snapshot, pack_snapshot))
+    route_payload = {
+        "route_identity": route_identity,
+        "physical_context_types": sorted(set(route_allowed_physical_types)),
+        "context_limit": context_total,
+    }
+    route_snapshot = ContextPolicySnapshot(
+        identity=PolicyIdentity(
+            policy_id="provider-route-context:" + route_identity,
+            version="provider-route-context-capability-v1",
+            content_hash=canonical_hash(route_payload),
+            snapshot_ref="provider-route:" + route_identity,
+        ),
+        allowed_physical_types=tuple(sorted(set(route_allowed_physical_types))),
+        limits=ContextBudgetLimits(total=context_total),
+        permitted_truncation_strategies=tuple(
+            effective.get("permitted_truncation_strategies") or ()
+        ),
+        permitted_source_modes=tuple(effective.get("permitted_source_modes") or ()),
+        source_risk_threshold=int(effective.get("source_risk_threshold") or 0),
+        maximum_raw_source_ratio=float(effective.get("maximum_raw_source_ratio") or 0),
+    )
+    compilation = compile_effective_context_policy(
+        (*context_snapshots, pack_snapshot, route_snapshot)
+    )
+    admitted_physical = set(compilation.effective_policy.allowed_physical_types)
+    if set(selected_physical) - admitted_physical:
+        raise KernelError(
+            "CONTEXT_POLICY_CONFLICT",
+            "Provider route does not admit the frozen physical Context selection",
+        )
     return dict(compilation.receipt)
 
 
@@ -435,11 +551,14 @@ class ChapterExecutionRoute:
             raise ValueError(
                 "embedding dimensions may only be bound to the retrieval route"
             )
-        if min(
-            self.model_context_limit,
-            self.token_safety_margin,
-            self.token_framing_overhead,
-        ) < 0:
+        if (
+            min(
+                self.model_context_limit,
+                self.token_safety_margin,
+                self.token_framing_overhead,
+            )
+            < 0
+        ):
             raise ValueError("Chapter route Token Accounting limits are invalid")
         definition = default_capability_registry().resolve(
             chapter_stage_capability(self.stage)
@@ -611,6 +730,15 @@ class PostgresChapterExecutionContractBinder:
         frozen_context_policy_payload = json.loads(
             attempt_snapshot.execution_snapshot.context_policy_payload_json
         )
+        route_identity = ":".join(
+            (
+                route.stage,
+                route.model_profile.model_provider,
+                route.model_profile.model_id,
+                route.release_sha,
+                attempt_snapshot.snapshot_hash,
+            )
+        )
         effective_context_policy = _provider_effective_context_policy(
             context_selection=context_selection,
             context_policy_payload=frozen_context_policy_payload,
@@ -618,6 +746,10 @@ class PostgresChapterExecutionContractBinder:
                 attempt_snapshot.execution_snapshot.context_policy_hash
             ),
             context_policy_ref=attempt_snapshot.execution_snapshot.context_policy_ref,
+            route_identity=route_identity,
+            route_allowed_physical_types=_provider_route_context_types(
+                stage, retrieval_projection=retrieval_projection
+            ),
         )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
@@ -743,7 +875,7 @@ class PostgresChapterExecutionContractBinder:
             chapter=int(metadata.get("chapter") or 0),
         )
         prompt, prompt_evidence = _materialize_production_codex_prompt(
-            target_scope=target_scope.to_dict(),
+            target_scope=target_scope,
             stage=stage,
             inputs=provider_inputs,
             materialization=contract,
@@ -751,24 +883,13 @@ class PostgresChapterExecutionContractBinder:
         stable_idempotency_key = str(
             request_payload.get("stable_idempotency_key") or ""
         )
-        timeout_seconds = int(
-            metadata.get("provider_request_timeout_seconds") or 0
-        )
+        timeout_seconds = int(metadata.get("provider_request_timeout_seconds") or 0)
         output_reserve = int(request_payload.get("max_output_tokens") or 0)
         if not stable_idempotency_key or timeout_seconds <= 0 or output_reserve <= 0:
             raise KernelError(
                 "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
                 "Provider admission requires stable identity, timeout, and output reserve",
             )
-        route_identity = ":".join(
-            (
-                route.stage,
-                route.model_profile.model_provider,
-                route.model_profile.model_id,
-                route.release_sha,
-                attempt_snapshot.snapshot_hash,
-            )
-        )
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
             model=route.model_profile.model_id,
@@ -784,6 +905,9 @@ class PostgresChapterExecutionContractBinder:
             route,
             route_identity=route_identity,
             output_reserve=output_reserve,
+            execution_token_limit=int(
+                metadata.get("provider_token_limit") or route.model_context_limit
+            ),
         )
         context_content = context_selection[0].get("content")
         context_bundle_tokens = (
@@ -796,9 +920,7 @@ class PostgresChapterExecutionContractBinder:
             token_contract,
             context_bundle_tokens=context_bundle_tokens,
             input_component_hashes=dict(
-                dict(prompt_evidence.get("provider_view") or {}).get(
-                    "component_hashes"
-                )
+                dict(prompt_evidence.get("provider_view") or {}).get("component_hashes")
                 or {}
             ),
             complete_request_coverage=(
@@ -1995,9 +2117,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
         stable_idempotency_key = str(
             request_payload.get("stable_idempotency_key") or ""
         )
-        timeout_seconds = int(
-            metadata.get("provider_request_timeout_seconds") or 0
-        )
+        timeout_seconds = int(metadata.get("provider_request_timeout_seconds") or 0)
         output_reserve = int(request_payload.get("max_output_tokens") or 0)
         if not stable_idempotency_key or timeout_seconds <= 0 or output_reserve <= 0:
             raise KernelError(
@@ -2028,14 +2148,15 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             route,
             route_identity=route_identity,
             output_reserve=output_reserve,
+            execution_token_limit=int(
+                metadata.get("provider_token_limit") or route.model_context_limit
+            ),
         )
         admission = prepare_provider_admission(
             envelope,
             token_contract,
             input_component_hashes=dict(
-                dict(prompt_evidence.get("provider_view") or {}).get(
-                    "component_hashes"
-                )
+                dict(prompt_evidence.get("provider_view") or {}).get("component_hashes")
                 or {}
             ),
             complete_request_coverage=(
@@ -2637,8 +2758,7 @@ class PostgresProductionExecutionPayloadResolver:
                 asset_version_id=admission_version_id,
             )
             if (
-                admission_document.asset_type
-                != "provider_request_admission_manifest"
+                admission_document.asset_type != "provider_request_admission_manifest"
                 or admission_document.content_hash
                 != str(capability_runtime.get("provider_admission_content_hash") or "")
             ):
@@ -2660,9 +2780,7 @@ class PostgresProductionExecutionPayloadResolver:
                     input_text=input_text,
                 )
             except ValueError as exc:
-                raise KernelError(
-                    "PROVIDER_REQUEST_IDENTITY_DRIFT", str(exc)
-                ) from exc
+                raise KernelError("PROVIDER_REQUEST_IDENTITY_DRIFT", str(exc)) from exc
             admission_receipt = ProviderAdmissionReceipt.from_dict(
                 dict(frozen_admission.get("provider_admission") or {})
             )
@@ -3368,7 +3486,7 @@ def _materialize_production_codex_prompt(
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
-        resolved_target_scope = dict(target_scope)
+        resolved_target_scope = TargetScope.from_dict(target_scope).to_dict()
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_TARGET_SCOPE_MISSING",
@@ -3424,6 +3542,16 @@ def _materialize_production_codex_prompt(
         )
     task_view = build_provider_task_view(stage, inputs)
     context_view = build_provider_context_view(stage, context_content, task_view)
+    context_manifest = context_content.get("context_manifest")
+    if isinstance(context_manifest, Mapping):
+        frozen_provider_view = context_manifest.get("provider_context_view")
+        if isinstance(frozen_provider_view, Mapping):
+            expected_view_hash = str(frozen_provider_view.get("content_hash") or "")
+            if not expected_view_hash or canonical_hash(context_view) != expected_view_hash:
+                raise KernelError(
+                    "PROVIDER_CONTEXT_VIEW_IDENTITY_MISMATCH",
+                    "materialized Provider Context differs from its frozen Manifest",
+                )
     knowledge_view = build_provider_knowledge_view(
         item for item in knowledge if isinstance(item, Mapping)
     )
@@ -3626,7 +3754,7 @@ def _materialize_source_intelligence_prompt(
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
-        resolved_target_scope = dict(target_scope)
+        resolved_target_scope = TargetScope.from_dict(target_scope).to_dict()
     else:
         raise KernelError(
             "SOURCE_PROVIDER_TARGET_SCOPE_MISSING",
@@ -3701,8 +3829,7 @@ def _materialize_source_intelligence_prompt(
             for key, value in source_components.items()
         },
         "component_utf8_byte_upper_bounds": {
-            key: len(value.encode("utf-8"))
-            for key, value in source_components.items()
+            key: len(value.encode("utf-8")) for key, value in source_components.items()
         },
         "component_accounting_precision": "OBSERVABILITY_ONLY_UPPER_BOUND",
         "provider_admission_uses_component_estimates": False,

@@ -35,6 +35,7 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+    PostgresPlanningExecutionPreparer,
     _recent_activated_repetition_keys,
     _realization_reference_contract,
     planning_fixture_response as _planning_fixture_response,
@@ -2091,6 +2092,100 @@ def _inputs(command: StoryPlanningGenerationCommand) -> tuple[FrozenPlanningInpu
         FrozenPlanningInput(role, version, HASH, role)
         for role, version in command.input_versions.items()
     )
+
+
+def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
+    command = _command("book_plan.generate")
+    selected_inputs = [
+        {
+            "role": "story_foundation",
+            "asset_version_id": "foundation-v1",
+            "asset_type": "story_foundation",
+            "content_hash": HASH,
+            "content": {
+                "premise": "A governed premise",
+                "operational_noise": "x" * 80_000,
+            },
+        }
+    ]
+    content = {
+        "schema_version": "novelos.planning_context_bundle.v1",
+        "book_id": command.book_id,
+        "planning_scope": command.planning_scope.value,
+        "logical_key": command.logical_key,
+        "input_versions": selected_inputs,
+        "arc_working_set": {},
+        "narrative_search": {},
+        "realization_reference_contract": {},
+        "narrative_qualification_profiles": [],
+        "token_budget": 16_000,
+    }
+    manifest = PostgresPlanningExecutionPreparer._planning_context_manifest(
+        command=command,
+        selected_inputs=selected_inputs,
+        content=content,
+    )
+
+    assert manifest["contract_version"] == "planning-context-manifest-v1"
+    assert manifest["provider_context_view"]["contract_version"] == (
+        "provider-context-view-v2"
+    )
+    assert len(manifest["policy_compilation"]["input_policies"]) == 3
+    assert manifest["token_accounting"]["accepted_tokens"] > 0
+    assert manifest["token_accounting"]["accepted_tokens"] < 16_000
+    assert manifest["token_accounting"]["precision"] == "ESTIMATE_ONLY"
+    assert all(
+        item["reason"] != "ACCEPTED_BOUNDARY_MISSING"
+        for item in manifest["candidate_decisions"]
+    )
+    assert manifest["selected_inputs"][0]["logical_context_kind"].startswith(
+        "planning_"
+    )
+    authority_input = next(
+        item
+        for item in manifest["selected_inputs"]
+        if item["asset_version_id"] == "foundation-v1"
+    )
+    assert authority_input["physical_asset_type"] == "story_foundation"
+    assert authority_input["provenance"][
+        "authority_asset_version_id"
+    ] == "foundation-v1"
+    assert {item["decision"] for item in manifest["candidate_decisions"]} == {
+        "SELECTED"
+    }
+
+
+def test_planning_context_rejects_duplicate_authority_representation() -> None:
+    command = _command("book_plan.generate")
+    selected_inputs = [
+        {
+            "role": "story_foundation",
+            "asset_version_id": asset_version_id,
+            "asset_type": "story_foundation",
+            "content_hash": HASH,
+            "content": {"premise": "same Authority source"},
+        }
+        for asset_version_id in ("shared-v1", "shared-v2")
+    ]
+    content = {
+        "schema_version": "novelos.planning_context_bundle.v1",
+        "book_id": command.book_id,
+        "planning_scope": command.planning_scope.value,
+        "logical_key": command.logical_key,
+        "input_versions": selected_inputs,
+        "arc_working_set": {},
+        "narrative_search": {},
+        "realization_reference_contract": {},
+        "narrative_qualification_profiles": [],
+        "token_budget": 16_000,
+    }
+
+    with pytest.raises(KernelError, match="dropped or deduplicated input"):
+        PostgresPlanningExecutionPreparer._planning_context_manifest(
+            command=command,
+            selected_inputs=selected_inputs,
+            content=content,
+        )
 
 
 @pytest.mark.parametrize("generator", sorted(GENERATOR_INPUT_ROLES))

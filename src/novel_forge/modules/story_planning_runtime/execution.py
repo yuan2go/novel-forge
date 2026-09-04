@@ -36,6 +36,25 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     read_external_effect_intent,
     read_succeeded_external_effect,
 )
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    _materialize_production_codex_prompt,
+    _provider_effective_context_policy,
+    _provider_process_timeout_seconds,
+)
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_provider_context_view,
+)
+from novel_forge.modules.context_builder.domain import (
+    ContextProfile,
+    select_context_candidates,
+)
+from novel_forge.modules.context_builder.governance import (
+    ContextBudgetLimits,
+    ContextPolicySnapshot,
+    PolicyIdentity,
+    compile_effective_context_policy,
+)
+from novel_forge.modules.context_contracts import ContextCandidate
 from novel_forge.modules.hierarchical_planning.domain import (
     CHAPTER_EXECUTION_STATE_KINDS,
     HORIZON_REALIZATION_LEVELS,
@@ -66,6 +85,12 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionCandidate,
     DomainExecutionCommand,
     DomainExecutionEvidence,
+)
+from novel_forge.modules.production_execution.provider_admission import (
+    ProviderRequestEnvelope,
+    build_route_token_accounting_contract,
+    prepare_provider_admission,
+    provider_request_protocol,
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
@@ -360,7 +385,6 @@ def _realization_reference_contract(
 
 @dataclass(frozen=True, slots=True)
 class PlanningExecutionRoute:
-
     model_profile: ModelProfile
     route_policy: RoutePolicy
     fallback_policy: FallbackPolicy
@@ -368,6 +392,11 @@ class PlanningExecutionRoute:
     runtime_host_id: str
     auth_profile_ref: str
     release_sha: str
+    model_context_limit: int = 0
+    token_accounting_method: str = ""
+    token_accounting_evidence_ref: str = ""
+    token_safety_margin: int = 256
+    token_framing_overhead: int = 16
 
     def __post_init__(self) -> None:
         if (
@@ -392,6 +421,15 @@ class PlanningExecutionRoute:
             raise ValueError("Planning execution route is incomplete")
         if len(self.release_sha) != 40:
             raise ValueError("Planning execution route requires a full release SHA")
+        if (
+            min(
+                self.model_context_limit,
+                self.token_safety_margin,
+                self.token_framing_overhead,
+            )
+            < 0
+        ):
+            raise ValueError("Planning route Token Accounting limits are invalid")
 
 
 def _canonical(value: Any) -> str:
@@ -2352,7 +2390,6 @@ class _PlanningExecutionBinding:
 
 
 class _PlanningGatewayEffectAdapter:
-
     production_execution_gateway_backed = True
 
     def __init__(
@@ -3074,7 +3111,6 @@ class _PlanningPepPort:
 
 
 class PostgresPlanningExecutionPreparer:
-
     production_execution_gateway_backed = True
 
     def __init__(
@@ -3210,6 +3246,35 @@ class PostgresPlanningExecutionPreparer:
                 else ":v1"
             )
         )
+        context_selection = [
+            {
+                "artifact_ref": f"asset-version:{context_document.asset_version_id}",
+                "asset_version_id": context_document.asset_version_id,
+                "artifact_type": "context_bundle",
+                "content_hash": context_document.content_hash,
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE",
+                "content": context_document.content,
+            }
+        ]
+        frozen_context_policy = json.loads(frozen.context_policy_payload_json)
+        route_identity = ":".join(
+            (
+                command.generator_operation_name,
+                self.planning_route.model_profile.model_provider,
+                self.planning_route.model_profile.model_id,
+                self.planning_route.release_sha,
+                attempt_snapshot.snapshot_hash,
+            )
+        )
+        effective_context_policy = _provider_effective_context_policy(
+            context_selection=context_selection,
+            context_policy_payload=frozen_context_policy,
+            context_policy_hash=frozen.context_policy_hash,
+            context_policy_ref=frozen.context_policy_ref,
+            route_identity=route_identity,
+            route_allowed_physical_types=("context_bundle",),
+        )
         materialization = {
             "schema_version": "novelos.planning_capability_materialization.v1",
             "stage": command.generator_operation_name,
@@ -3234,17 +3299,8 @@ class PostgresPlanningExecutionPreparer:
             "pack_artifact_materialization_hash": (
                 pack_materialization.materialization_hash
             ),
-            "context_selection": [
-                {
-                    "artifact_ref": f"asset-version:{context_document.asset_version_id}",
-                    "asset_version_id": context_document.asset_version_id,
-                    "artifact_type": "context_bundle",
-                    "content_hash": context_document.content_hash,
-                    "schema_version": "novelos.planning_context_bundle.v1",
-                    "source_eligibility": "PRODUCTION_ELIGIBLE",
-                    "content": context_document.content,
-                }
-            ],
+            "context_selection": context_selection,
+            "effective_context_policy": effective_context_policy,
             "knowledge_selection": [
                 item.to_dict(include_content=True)
                 for item in pack_materialization.required_knowledge
@@ -3417,6 +3473,122 @@ class PostgresPlanningExecutionPreparer:
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
             )
+            target_scope = TargetScope(
+                scope_kind=command.planning_scope.value.lower(),
+                scope_id=command.logical_key,
+                project_id=command.project_id,
+                book_id=command.book_id,
+            )
+            prompt, prompt_evidence = _materialize_production_codex_prompt(
+                target_scope=target_scope.to_dict(),
+                stage=command.generator_operation_name,
+                inputs=stable_request_payload["input"],
+                materialization=materialization,
+            )
+            output_reserve = int(stable_request_payload["max_output_tokens"])
+            route_identity = ":".join(
+                (
+                    command.generator_operation_name,
+                    planning_route.model_profile.model_provider,
+                    planning_route.model_profile.model_id,
+                    planning_route.release_sha,
+                    attempt_snapshot.snapshot_hash,
+                )
+            )
+            envelope = ProviderRequestEnvelope(
+                provider=planning_route.model_profile.model_provider,
+                model=planning_route.model_profile.model_id,
+                protocol=provider_request_protocol(
+                    planning_route.model_profile.model_provider
+                ),
+                input_text=prompt,
+                max_output_tokens=output_reserve,
+                timeout_seconds=_provider_process_timeout_seconds(
+                    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+                    max_attempts=PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+                ),
+                stable_idempotency_key=stable_key,
+            )
+            token_contract = build_route_token_accounting_contract(
+                provider=planning_route.model_profile.model_provider,
+                model=planning_route.model_profile.model_id,
+                route_identity=route_identity,
+                accounting_method=planning_route.token_accounting_method,
+                accounting_evidence_ref=(planning_route.token_accounting_evidence_ref),
+                model_context_limit=planning_route.model_context_limit,
+                execution_token_limit=(
+                    provider_reservation_tokens
+                    if provider_token_contract["source"]
+                    == "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
+                    else planning_route.model_context_limit
+                ),
+                output_reserve=output_reserve,
+                safety_margin=planning_route.token_safety_margin,
+                framing_overhead=planning_route.token_framing_overhead,
+            )
+            context_bundle_tokens = int(
+                context_document.content.get("estimated_tokens") or 0
+            )
+            admission = prepare_provider_admission(
+                envelope,
+                token_contract,
+                context_bundle_tokens=context_bundle_tokens,
+                input_component_hashes=dict(
+                    dict(prompt_evidence.get("provider_view") or {}).get(
+                        "component_hashes"
+                    )
+                    or {}
+                ),
+                complete_request_coverage=(
+                    "system_runtime_instructions",
+                    "prompt_template",
+                    "skill_instructions",
+                    "tool_policy_and_schemas",
+                    "structured_output_schema",
+                    "context_bundle",
+                    "knowledge_inputs",
+                    "request_envelope_and_framing",
+                    "output_reserve",
+                    "safety_margin",
+                ),
+            )
+            if admission.status != "ADMITTED":
+                raise KernelError(
+                    "PROVIDER_TOKEN_ADMISSION_REJECTED",
+                    (
+                        f"{admission.reason}: reserved={admission.total_reserved} "
+                        f"limit={admission.applicable_limit}"
+                    ),
+                )
+            if planning_route.model_profile.model_provider != "scripted_provider_v2":
+                provider_reservation_tokens = admission.total_reserved
+            admission_contract = {
+                "schema_version": "novelos.provider_request_admission.v1",
+                "provider_request_identity": envelope.to_identity_dict(),
+                "provider_admission": admission.to_dict(),
+                "effective_context_policy": effective_context_policy,
+                "prompt_materialization": prompt_evidence,
+                "capability_materialization_asset_version_id": (
+                    materialization_document.asset_version_id
+                ),
+                "capability_materialization_content_hash": (
+                    materialization_document.content_hash
+                ),
+            }
+            admission_document = self._ensure_contract(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                logical_ref=(
+                    "production_execution/provider_admissions/"
+                    + _token(
+                        f"{command.project_id}:{operation_id}:{attempt_id}:planning"
+                    )
+                ),
+                asset_type="provider_request_admission_manifest",
+                contract=admission_contract,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
             request_payload = {
                 **stable_request_payload,
                 "_production_execution": {
@@ -3430,6 +3602,15 @@ class PostgresPlanningExecutionPreparer:
                             materialization_document.content_hash
                         ),
                         "materialization_hash": materialization["materialization_hash"],
+                        "provider_admission_asset_version_id": (
+                            admission_document.asset_version_id
+                        ),
+                        "provider_admission_content_hash": (
+                            admission_document.content_hash
+                        ),
+                        "provider_request_envelope_hash": envelope.envelope_hash,
+                        "provider_admission": admission.to_dict(),
+                        "token_accounting_contract": token_contract.to_dict(),
                     }
                 },
             }
@@ -3460,6 +3641,19 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_EFFECT_INTENT_DRIFT",
                     "Planning retry differs from the first frozen Provider intent",
                 )
+            frozen_admission = capability_runtime.get("provider_admission")
+            if (
+                planning_route.model_profile.model_provider != "scripted_provider_v2"
+                and isinstance(frozen_admission, Mapping)
+            ):
+                provider_reservation_tokens = int(
+                    frozen_admission.get("total_reserved") or 0
+                )
+                if provider_reservation_tokens <= 0:
+                    raise KernelError(
+                        "PLANNING_PROVIDER_ADMISSION_INVALID",
+                        "frozen Planning admission has no bounded request usage",
+                    )
             materialization_document = self.query.require(
                 project_id=command.project_id,
                 asset_version_id=str(
@@ -4057,6 +4251,14 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
         }
+        content["context_manifest"] = self._planning_context_manifest(
+            command=command,
+            selected_inputs=selected,
+            content=content,
+        )
+        content["estimated_tokens"] = int(
+            content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        )
         context = self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
@@ -4076,6 +4278,319 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         return context, tuple(documents)
+
+    @staticmethod
+    def _planning_context_manifest(
+        *,
+        command: StoryPlanningGenerationCommand,
+        selected_inputs: list[dict[str, Any]],
+        content: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        token_budget = int(content.get("token_budget") or 0)
+        provider_view = build_provider_context_view(
+            command.generator_operation_name,
+            content,
+            {},
+        )
+        accepted_state_boundary = provider_view.get("accepted_state_boundary")
+        if not isinstance(accepted_state_boundary, Mapping):
+            raise KernelError(
+                "PLANNING_CONTEXT_BOUNDARY_INVALID",
+                "Planning Provider Context lacks its frozen accepted boundary",
+            )
+        accepted_state_boundary = dict(accepted_state_boundary)
+        sources = {
+            str(item.get("asset_version_id") or ""): item for item in selected_inputs
+        }
+        candidates: list[ContextCandidate] = []
+
+        def append_candidate(
+            *,
+            asset_version_id: str,
+            logical_kind: str,
+            physical_asset_type: str,
+            value: Any,
+            source_revision: str,
+            source_identity: str,
+            provenance: Mapping[str, Any],
+            section: str,
+            bucket: str,
+        ) -> None:
+            rendered = json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            projection_hash = canonical_hash(value)
+            semantic_value = (
+                value.get("content")
+                if isinstance(value, Mapping) and "content" in value
+                else value
+            )
+            semantic_hash = canonical_hash(semantic_value)
+            candidates.append(
+                ContextCandidate(
+                    asset_version_id=asset_version_id,
+                    asset_type=logical_kind,
+                    physical_asset_type=physical_asset_type,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    estimated_tokens=max(1, (len(rendered) + 3) // 4),
+                    content_digest=projection_hash,
+                    source_revision=source_revision,
+                    source_identity=source_identity,
+                    logical_narrative_identity=(
+                        f"{command.book_id}:{command.generator_operation_name}:"
+                        f"{logical_kind}:{source_identity}"
+                    ),
+                    semantic_representation_identity=(
+                        f"provider-context-view-v2:{semantic_hash}"
+                    ),
+                    safe_summary=rendered,
+                    compression_method="authority_projection",
+                    context_class="PROTECTED",
+                    required=True,
+                    provenance=dict(provenance),
+                    accepted_boundary=accepted_state_boundary,
+                    section=section,
+                    bucket=bucket,
+                )
+            )
+
+        segments = provider_view.get("segments")
+        if not isinstance(segments, list):
+            raise KernelError(
+                "PLANNING_CONTEXT_VIEW_INVALID",
+                "Planning Provider Context view has no projected segments",
+            )
+        for segment in segments:
+            if not isinstance(segment, Mapping):
+                raise KernelError(
+                    "PLANNING_CONTEXT_VIEW_INVALID",
+                    "Planning Provider Context segment must be an object",
+                )
+            asset_version_id = str(segment.get("asset_version_id") or "")
+            source = sources.get(asset_version_id)
+            if source is None:
+                raise KernelError(
+                    "PLANNING_CONTEXT_VIEW_SOURCE_UNBOUND",
+                    "Planning Provider Context segment has no frozen source",
+                )
+            role = str(segment.get("role") or "")
+            source_revision = str(source.get("content_hash") or "")
+            append_candidate(
+                asset_version_id=asset_version_id,
+                logical_kind=f"planning_segment:{role}",
+                physical_asset_type=str(source.get("asset_type") or ""),
+                value=segment,
+                source_revision=source_revision,
+                source_identity=asset_version_id,
+                provenance={
+                    "authority_asset_version_id": asset_version_id,
+                    "source_content_hash": source_revision,
+                    "planning_role": role,
+                    "projection_contract": "provider-context-view-v2",
+                },
+                section="PLANNING_INPUTS",
+                bucket=role or "INPUT",
+            )
+
+        envelope = {
+            key: provider_view[key]
+            for key in (
+                "contract_version",
+                "stage",
+                "narrative_position",
+                "accepted_state_boundary",
+                "selection_explanation",
+            )
+            if key in provider_view
+        }
+        envelope_hash = canonical_hash(envelope)
+        append_candidate(
+            asset_version_id=f"planning-context-envelope:{envelope_hash}",
+            logical_kind="planning_context_envelope",
+            physical_asset_type="planning_context_projection",
+            value=envelope,
+            source_revision=envelope_hash,
+            source_identity=(
+                f"planning-context-envelope:{command.generator_operation_name}:"
+                f"{command.logical_key}"
+            ),
+            provenance={
+                "authority": "StoryPlanningRuntime",
+                "projection_contract": "provider-context-view-v2",
+                "frozen_component_hash": envelope_hash,
+            },
+            section="PLANNING_CONTRACT",
+            bucket="planning_context_envelope",
+        )
+        for key in ("realization_reference_contract", "repair_context"):
+            if key not in provider_view:
+                continue
+            value = provider_view[key]
+            digest = canonical_hash(value)
+            repair_source = (
+                value.get("source_candidate")
+                if key == "repair_context" and isinstance(value, Mapping)
+                else None
+            )
+            repair_version_id = (
+                str(repair_source.get("asset_version_id") or "")
+                if isinstance(repair_source, Mapping)
+                else ""
+            )
+            repair_revision = (
+                str(repair_source.get("content_hash") or "")
+                if isinstance(repair_source, Mapping)
+                else ""
+            )
+            append_candidate(
+                asset_version_id=repair_version_id or f"{key}:{digest}",
+                logical_kind=f"planning_{key}",
+                physical_asset_type=(
+                    str(repair_source.get("asset_type") or "planning_context_projection")
+                    if isinstance(repair_source, Mapping)
+                    else "planning_context_projection"
+                ),
+                value=value,
+                source_revision=repair_revision or digest,
+                source_identity=repair_version_id or f"{key}:{command.logical_key}",
+                provenance={
+                    "authority": "StoryPlanningRuntime",
+                    "projection_contract": "provider-context-view-v2",
+                    "frozen_component_hash": digest,
+                    **(
+                        {"authority_asset_version_id": repair_version_id}
+                        if repair_version_id
+                        else {}
+                    ),
+                },
+                section="PLANNING_CONTRACT",
+                bucket=key,
+            )
+        allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
+        required = tuple(sorted({item.logical_context_kind for item in candidates}))
+        common = {
+            "allowed": list(allowed),
+            "required": list(required),
+            "token_budget": token_budget,
+        }
+        snapshots = (
+            ContextPolicySnapshot(
+                identity=PolicyIdentity(
+                    policy_id="planning-context-profile",
+                    version="context-profile-v1",
+                    content_hash=canonical_hash({**common, "kind": "profile"}),
+                    snapshot_ref="planning-context-profile:v1",
+                ),
+                allowed_logical_kinds=allowed,
+                required_logical_kinds=required,
+                limits=ContextBudgetLimits(total=token_budget),
+                permitted_source_modes=("generation",),
+                source_risk_threshold=0,
+            ),
+            ContextPolicySnapshot(
+                identity=PolicyIdentity(
+                    policy_id="planning-typed-stage:"
+                    + command.generator_operation_name,
+                    version="planning-context-contract-v1",
+                    content_hash=canonical_hash(
+                        {**common, "stage": command.generator_operation_name}
+                    ),
+                    snapshot_ref="planning-context-contract:"
+                    + command.generator_operation_name,
+                ),
+                allowed_logical_kinds=allowed,
+                required_logical_kinds=required,
+                limits=ContextBudgetLimits(total=token_budget),
+                permitted_source_modes=("generation",),
+                source_risk_threshold=0,
+            ),
+            ContextPolicySnapshot(
+                identity=PolicyIdentity(
+                    policy_id="planning-caller-context-limit",
+                    version="caller-context-limit-v1",
+                    content_hash=canonical_hash(
+                        {"token_budget": token_budget, "required": list(required)}
+                    ),
+                    snapshot_ref="command:planning-context-token-budget",
+                ),
+                allowed_logical_kinds=allowed,
+                required_logical_kinds=required,
+                limits=ContextBudgetLimits(total=token_budget),
+                permitted_source_modes=("generation",),
+                source_risk_threshold=0,
+            ),
+        )
+        compilation = compile_effective_context_policy(snapshots)
+        profile = ContextProfile(
+            name="planning",
+            allowed_asset_types=frozenset(allowed),
+            forbidden_asset_types=frozenset(),
+            required_asset_types=frozenset(required),
+            maximum_raw_source_ratio=0.0,
+            maximum_token_budget=token_budget,
+            source_risk_threshold=0,
+            generation_allowed_requirement=True,
+            copyright_mode="abstract_or_project_owned_only",
+            priority_rules=("required_first", "stable_identity"),
+        )
+        selection = select_context_candidates(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            profile=profile,
+            candidates=candidates,
+            token_budget=token_budget,
+            effective_policy=compilation.effective_policy,
+            authority_state_boundary=accepted_state_boundary,
+        )
+        if len(selection.selected) != len(candidates):
+            raise KernelError(
+                "PLANNING_CONTEXT_GOVERNANCE_BLOCKED",
+                "Planning typed Context cannot send a dropped or deduplicated input",
+            )
+        manifest = {
+            "type": "NarrativeContextManifest",
+            "contract_version": "planning-context-manifest-v1",
+            "scope": {
+                "project_id": command.project_id,
+                "book_id": command.book_id,
+                "planning_scope": command.planning_scope.value,
+                "logical_key": command.logical_key,
+            },
+            "provider_context_view": {
+                "contract_version": str(provider_view.get("contract_version") or ""),
+                "content_hash": canonical_hash(provider_view),
+            },
+            "effective_policy": compilation.effective_policy.to_dict(),
+            "policy_compilation": dict(compilation.receipt),
+            "selected_inputs": [
+                {
+                    "asset_version_id": item.asset_version_id,
+                    "physical_asset_type": item.physical_asset_type,
+                    "logical_context_kind": item.logical_context_kind,
+                    "source_identity": item.source_identity,
+                    "logical_narrative_identity": item.logical_narrative_identity,
+                    "semantic_representation_identity": (
+                        item.semantic_representation_identity
+                    ),
+                    "source_revision": item.source_revision,
+                    "estimated_tokens": item.estimated_tokens,
+                    "provenance": dict(item.provenance),
+                }
+                for item in selection.selected
+            ],
+            "candidate_decisions": [dict(item) for item in selection.decisions],
+            "deduplication_decisions": [
+                dict(item) for item in selection.deduplications
+            ],
+            "truncation_decisions": [dict(item) for item in selection.truncations],
+            "token_accounting": dict(selection.token_accounting),
+        }
+        manifest["context_fingerprint"] = canonical_hash(manifest)
+        return manifest
 
     def _append_narrative_intelligence_documents(
         self,

@@ -62,6 +62,10 @@ class _SyntheticSemanticProvider:
         self.invocations = 0
         self.recovery_authorizations = 0
 
+    @staticmethod
+    def provider_id_for_stage(_stage: str) -> str:
+        return "scripted_provider_v2"
+
     def for_recovery(self, **_kwargs: Any) -> "_SyntheticSemanticProvider":
         self.recovery_authorizations += 1
         return self

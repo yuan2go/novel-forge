@@ -159,11 +159,26 @@ def _admitted_remote_payload(request: ExecutionRequest, text: str) -> ResolvedEx
         evidence_ref="token-proof:openai-byte-fallback:v1",
         serialization_contract=envelope.protocol,
         model_context_limit=4096,
+        execution_token_limit=4096,
         output_reserve=64,
         safety_margin=32,
         framing_overhead=16,
     )
-    receipt = prepare_provider_admission(envelope, contract)
+    receipt = prepare_provider_admission(
+        envelope,
+        contract,
+        complete_request_coverage=(
+            "system_runtime_instructions",
+            "prompt_template",
+            "skill_instructions",
+            "tool_policy_and_schemas",
+            "structured_output_schema",
+            "context_bundle",
+            "request_envelope_and_framing",
+            "output_reserve",
+            "safety_margin",
+        ),
+    )
     return ResolvedExecutionPayload(
         request_payload=envelope.to_dict(),
         input_text=text,

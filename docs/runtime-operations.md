@@ -171,6 +171,26 @@ retained. The result establishes Provider runtime qualification only; it does no
 chapter acceptance, literary quality, human evidence, long-form stability or production
 operation.
 
+Every non-fixture Provider route also requires a route-bound admission contract before an
+ExternalEffect can be created. Configure the actual model context limit, accounting
+method, immutable evidence reference, framing allowance, safety margin and Source output
+reserve through the corresponding `NOVEL_FORGE_PROVIDER_*` and
+`NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE` settings in `.env.example`. The
+currently implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
+bytes are treated as a conservative provider/model-bound input-token upper bound, and the
+frozen evidence reference must justify the route's framing and limit assumptions. Generic
+character estimates are never used for admission. Missing or unproven accounting fails
+before Provider effect creation; Codex CLI remains fail-closed because its hidden request
+framing cannot currently satisfy the complete-request identity contract.
+
+The ContextBundle estimate is only an assembly limit. Admission separately counts the
+serialized system instruction, template, Skill, tool/schema material, Context projection,
+knowledge projection, request framing, output reserve and safety margin against the
+route/model context window. Book Opening additionally uses its frozen per-call token
+policy as the stricter limit. The admitted exact or conservative total is the token amount
+reserved in the Provider budget ledger; a ContextBundle that fits can therefore still be
+rejected before any ExternalEffect exists.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
@@ -186,6 +206,11 @@ operation.
 For Book Opening, use its progress query and recovery application. A process exit, an
 expired lease, or a completed inner semantic operation alone is insufficient to decide
 whether Provider work may be sent again.
+
+Provider retry first reloads any existing ExternalEffect intent and reuses its frozen
+request/admission identity. A historical remote intent that predates complete admission
+is not upgraded in place or reinterpreted with the current meter; dispatch remains
+fail-closed and recovery follows the owning effect policy.
 
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be

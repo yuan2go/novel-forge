@@ -1588,9 +1588,15 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 "PostgreSQL Full-Text Search / ts_rank"
             )
             assert retrieval["ranking"]["semantic_candidate_expansion"] is False
-            assert context["context_contract_version"] == "authority-context-bundle-v7"
+            assert context["context_contract_version"] == "authority-context-bundle-v8"
             manifest = dict(context["context_manifest"])
-            assert manifest["contract_version"] == "narrative-context-manifest-v3"
+            assert manifest["contract_version"] == "narrative-context-manifest-v4"
+            assert manifest["effective_policy"]["compiler_version"] == (
+                "effective-context-policy-compiler-v1"
+            )
+            assert manifest["token_accounting_contract"]["precision"] == (
+                "ESTIMATE_ONLY"
+            )
             assert manifest["token_budget"]["protected"] > 0
             assert (
                 manifest["token_budget"]["estimated_used"]

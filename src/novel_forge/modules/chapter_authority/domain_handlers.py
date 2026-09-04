@@ -142,11 +142,53 @@ def build_context_bundle(
             intent=execution_intent,
             intent_asset_version_id=execution_intent_asset_version_id,
         )
+    refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
+    ref_boundary = {
+        "accepted_through_chapter": max(0, int(plan["chapter"]) - 1),
+        "story_state_snapshot_version": refs.get(
+            "story_state_snapshot_version",
+            refs.get("story_state_snapshot_versions", ""),
+        ),
+        "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
+    }
+    declared_boundaries = {
+        json.dumps(
+            dict(item.get("accepted_boundary") or {}),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        for item in (governed_candidates or [])
+        if dict(item.get("accepted_boundary") or {})
+    }
+    if len(declared_boundaries) > 1:
+        raise KernelError(
+            "CHAPTER_CONTEXT_BOUNDARY_CONFLICT",
+            "frozen Context candidates disagree on their accepted boundary",
+        )
+    assembly_boundary = (
+        json.loads(next(iter(declared_boundaries)))
+        if declared_boundaries
+        else ref_boundary
+    )
+    if assembly_boundary.get("accepted_through_chapter") != ref_boundary[
+        "accepted_through_chapter"
+    ]:
+        raise KernelError(
+            "CHAPTER_CONTEXT_BOUNDARY_INVALID",
+            "frozen Context boundary differs from the Chapter execution cursor",
+        )
+    for key in ("story_state_snapshot_version", "canon_snapshot_version"):
+        if ref_boundary[key] and assembly_boundary.get(key) != ref_boundary[key]:
+            raise KernelError(
+                "CHAPTER_CONTEXT_BOUNDARY_INVALID",
+                "frozen Context boundary differs from its version references",
+            )
     candidates = [
         ContextCandidate(
             asset_version_id=str(item["asset_version_id"]),
             asset_type=str(item["asset_type"]),
             project_id=str(item["project_id"]),
+            book_id=str(item.get("book_id") or ""),
             estimated_tokens=int(item.get("estimated_tokens", 0)),
             relevance_score=float(item.get("relevance_score", item.get("score", 0))),
             qualification=str(item.get("qualification", "ELIGIBLE")),
@@ -236,6 +278,7 @@ def build_context_bundle(
             asset_version_id=plan_asset_version_id,
             asset_type="chapter_plan",
             project_id=project_id,
+            book_id=book_id,
             estimated_tokens=max(1, len(rendered_plan_context) // 4),
             relevance_score=1.0,
             content_digest=plan_content_hash,
@@ -245,6 +288,7 @@ def build_context_bundle(
             structured_facts=plan_structured_facts,
             context_class="PROTECTED",
             provenance={"authority": "PlanningAuthority"},
+            accepted_boundary=dict(assembly_boundary),
         ),
     )
     for asset_type, asset_version_id, content in (
@@ -280,6 +324,7 @@ def build_context_bundle(
                 asset_version_id=asset_version_id,
                 asset_type=asset_type,
                 project_id=project_id,
+                book_id=book_id,
                 estimated_tokens=max(1, len(rendered) // 4),
                 relevance_score=1.0,
                 content_digest=str(
@@ -294,9 +339,9 @@ def build_context_bundle(
                 structured_facts=(),
                 context_class="PROTECTED",
                 provenance={"authority": "ChapterWorkflow", "working_artifact": True},
+                accepted_boundary=dict(assembly_boundary),
             ),
         )
-    refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
     governed = build_authority_context_bundle(
         project_id=project_id,
         book_id=book_id,
@@ -317,14 +362,7 @@ def build_context_bundle(
         },
         target_capability_id=target_capability_id,
         capability_pack_snapshot_ref=capability_pack_snapshot_ref,
-        authority_state_boundary={
-            "accepted_through_chapter": max(0, int(plan["chapter"]) - 1),
-            "story_state_snapshot_version": refs.get(
-                "story_state_snapshot_version",
-                refs.get("story_state_snapshot_versions", ""),
-            ),
-            "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
-        },
+        authority_state_boundary=assembly_boundary,
         accessible_knowledge_fact_ids=_provider_accessible_fact_ids(plan),
         required_long_distance_fact_ids=tuple(
             str(item)

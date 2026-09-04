@@ -15,6 +15,9 @@ SUPPORTED_POLICY_VERSIONS = frozenset(
         "context-profile-v1",
         "caller-context-limit-v1",
         "provider-context-route-v1",
+        "capability-pack-context-policy-v1",
+        "provider-route-context-capability-v1",
+        "planning-context-contract-v1",
     }
 )
 
@@ -153,6 +156,54 @@ class ContextPolicySnapshot:
             "source_risk_threshold": self.source_risk_threshold,
             "maximum_raw_source_ratio": self.maximum_raw_source_ratio,
         }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "ContextPolicySnapshot":
+        identity = payload.get("identity")
+        limits = payload.get("limits")
+        if not isinstance(identity, Mapping) or not isinstance(limits, Mapping):
+            raise ValueError("CONTEXT_POLICY_UNRESOLVED: frozen policy is incomplete")
+        return cls(
+            identity=PolicyIdentity(
+                policy_id=str(identity.get("policy_id") or ""),
+                version=str(identity.get("version") or ""),
+                content_hash=str(identity.get("content_hash") or ""),
+                snapshot_ref=str(identity.get("snapshot_ref") or ""),
+            ),
+            allowed_logical_kinds=tuple(
+                str(value) for value in payload.get("allowed_logical_kinds") or ()
+            ),
+            allowed_physical_types=tuple(
+                str(value) for value in payload.get("allowed_physical_types") or ()
+            ),
+            denied_logical_kinds=tuple(
+                str(value) for value in payload.get("denied_logical_kinds") or ()
+            ),
+            denied_physical_types=tuple(
+                str(value) for value in payload.get("denied_physical_types") or ()
+            ),
+            required_logical_kinds=tuple(
+                str(value) for value in payload.get("required_logical_kinds") or ()
+            ),
+            limits=ContextBudgetLimits(
+                total=int(limits.get("total") or 0),
+                sections=dict(limits.get("sections") or {}),
+                buckets=dict(limits.get("buckets") or {}),
+                classes=dict(limits.get("classes") or {}),
+                required_reservation=int(limits.get("required_reservation") or 0),
+            ),
+            permitted_truncation_strategies=tuple(
+                str(value)
+                for value in payload.get("permitted_truncation_strategies") or ()
+            ),
+            permitted_source_modes=tuple(
+                str(value) for value in payload.get("permitted_source_modes") or ()
+            ),
+            source_risk_threshold=int(payload.get("source_risk_threshold") or 0),
+            maximum_raw_source_ratio=float(
+                payload.get("maximum_raw_source_ratio") or 0
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)

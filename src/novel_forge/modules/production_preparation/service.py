@@ -263,17 +263,6 @@ class ProductionPreparationService:
             )
             return ProductionPreparationResult(report=report, command=None)
 
-        # INVARIANT: evidence-only governance assets remain in frozen Context lineage
-        # without exposing their content to the model-facing view.
-        candidates = tuple(
-            self._context_candidate(
-                item,
-                evidence_only_types=profile.evidence_only_types,
-                task_narrative_projection=build_task_narrative_projection(chapter_plan),
-                chapter=request.chapter,
-            )
-            for item in selected
-        )
         version_refs: dict[str, object] = {}
         for kind, values in selected_by_type.items():
             key = CONTEXT_VERSION_REF_KEYS.get(kind, f"{kind}_versions")
@@ -282,6 +271,25 @@ class ProductionPreparationService:
                 if len(values) == 1 and kind not in COLLECTION_ASSET_TYPES
                 else [item.asset_version_id for item in values]
             )
+        accepted_boundary = {
+            "accepted_through_chapter": max(0, request.chapter - 1),
+            "story_state_snapshot_version": version_refs.get(
+                "story_state_snapshot_version",
+                version_refs.get("story_state_snapshot_versions", ""),
+            ),
+            "canon_snapshot_version": version_refs.get("canon_snapshot_version", ""),
+        }
+        candidates = tuple(
+            self._context_candidate(
+                item,
+                evidence_only_types=profile.evidence_only_types,
+                task_narrative_projection=build_task_narrative_projection(chapter_plan),
+                chapter=request.chapter,
+                book_id=request.book_id,
+                accepted_boundary=accepted_boundary,
+            )
+            for item in selected
+        )
         return ProductionPreparationResult(
             report=report,
             command=ChapterAuthorityCommand(
@@ -393,7 +401,16 @@ class ProductionPreparationService:
         evidence_only_types: tuple[str, ...],
         task_narrative_projection: dict[str, object],
         chapter: int,
+        book_id: str,
+        accepted_boundary: dict[str, object],
     ) -> dict[str, object]:
+        declared_scope = dict(item.content.get("scope") or {})
+        declared_book_id = str(item.content.get("book_id") or declared_scope.get("book_id") or "")
+        if declared_book_id and declared_book_id != book_id:
+            raise KernelError(
+                "PREPARATION_CROSS_BOOK_INPUT",
+                "production Context candidate belongs to another Book",
+            )
         evidence_only = item.asset_type in {
             "operator_checklist",
             "approval_decision",
@@ -461,6 +478,8 @@ class ProductionPreparationService:
                 item.content.get("physical_asset_type") or item.asset_type
             ),
             "project_id": item.project_id,
+            "book_id": book_id,
+            "accepted_boundary": dict(accepted_boundary),
             "selection_reason": item.selected_reason,
             "safe_summary": safe_summary,
             "structured_facts": structured_facts,

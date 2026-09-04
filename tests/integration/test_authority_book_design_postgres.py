@@ -559,6 +559,13 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                     Path(directory) / "objects"
                 ),
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "131072",
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": (
+                    "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
+                ),
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": (
+                    "test-proof:openai-byte-upper-bound:v1"
+                ),
                 "NOVEL_FORGE_APPLICATION_BUILD_ID": "semantic-provider-proof",
                 "NOVEL_FORGE_COMMIT_SHA": "b" * 40,
                 "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (

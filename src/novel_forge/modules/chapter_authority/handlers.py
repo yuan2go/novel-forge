@@ -949,6 +949,38 @@ class _ContextHandler:
                 "CONTEXT_RETRIEVAL_IDENTITY_MISMATCH",
                 "Context requires RetrievalResult for its exact Intent, Memo, and boundary",
             )
+        frozen_boundaries = {
+            json.dumps(
+                dict(item.get("accepted_boundary") or {}),
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            for item in request.command.get("context_candidates", [])
+            if dict(item.get("accepted_boundary") or {})
+        }
+        if len(frozen_boundaries) != 1:
+            raise KernelError(
+                "CONTEXT_ACCEPTED_BOUNDARY_UNRESOLVED",
+                "Context requires one frozen accepted boundary for every candidate",
+            )
+        governed_boundary = json.loads(next(iter(frozen_boundaries)))
+        retrieval_boundary = dict(retrieval.content.get("accepted_boundary") or {})
+        equivalent_boundary = {
+            "accepted_through_chapter": retrieval_boundary.get(
+                "accepted_through_chapter"
+            ),
+            "story_state_snapshot_version": retrieval_boundary.get(
+                "story_state_asset_version_id", ""
+            ),
+            "canon_snapshot_version": retrieval_boundary.get(
+                "canon_snapshot_asset_version_id", ""
+            ),
+        }
+        if governed_boundary != equivalent_boundary:
+            raise KernelError(
+                "CONTEXT_ACCEPTED_BOUNDARY_MISMATCH",
+                "Retrieval and governed Context use different accepted boundaries",
+            )
         campaign_result = retrieval.content.get("retrieval_campaign")
         if not isinstance(campaign_result, dict):
             raise KernelError(
@@ -988,6 +1020,8 @@ class _ContextHandler:
                 "physical_asset_type": str(best.get("source_artifact_type") or ""),
                 "content_hash": str(best.get("source_content_hash") or ""),
                 "project_id": request.project_id,
+                "book_id": str(request.command.get("book_id") or ""),
+                "accepted_boundary": dict(governed_boundary),
                 "estimated_tokens": max(
                     1, int(best.get("output_characters") or 0) // 4
                 ),

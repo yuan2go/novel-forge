@@ -11,6 +11,19 @@ _SUPPORTED_METHODS = {
     "OPENAI_UTF8_BYTES_UPPER_BOUND_V1": ("openai", "PROVEN_UPPER_BOUND"),
     "SCRIPTED_UTF8_BYTES_EXACT_V1": ("scripted_provider_v2", "EXACT"),
 }
+_SCRIPTED_PROVIDER_CONTEXT_BYTES = 262_144
+_REQUIRED_COMPLETE_COVERAGE = frozenset(
+    {
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin",
+    }
+)
 
 
 def provider_request_protocol(provider: str) -> str:
@@ -127,7 +140,8 @@ class TokenAccountingContract:
     output_reserve: int
     safety_margin: int
     framing_overhead: int
-    contract_version: str = "provider-token-accounting-v1"
+    execution_token_limit: int = 0
+    contract_version: str = "provider-token-accounting-v2"
 
     def __post_init__(self) -> None:
         if not all(
@@ -145,8 +159,26 @@ class TokenAccountingContract:
             )
         ):
             raise ValueError("TokenAccountingContract is incomplete")
+        if self.contract_version not in {
+            "provider-token-accounting-v1",
+            "provider-token-accounting-v2",
+        }:
+            raise ValueError("TokenAccountingContract version is unsupported")
+        if (
+            self.contract_version == "provider-token-accounting-v1"
+            and self.execution_token_limit == 0
+        ):
+            object.__setattr__(self, "execution_token_limit", self.model_context_limit)
+        if (
+            self.contract_version == "provider-token-accounting-v2"
+            and self.execution_token_limit <= 0
+        ):
+            raise ValueError(
+                "TokenAccountingContract v2 requires an execution token limit"
+            )
         if min(
             self.model_context_limit,
+            self.execution_token_limit,
             self.output_reserve,
             self.safety_margin,
             self.framing_overhead,
@@ -173,6 +205,11 @@ class TokenAccountingContract:
                 payload.get("serialization_contract") or ""
             ),
             model_context_limit=int(payload.get("model_context_limit") or 0),
+            execution_token_limit=int(
+                payload.get("execution_token_limit")
+                or payload.get("model_context_limit")
+                or 0
+            ),
             output_reserve=int(payload.get("output_reserve") or 0),
             safety_margin=int(payload.get("safety_margin") or 0),
             framing_overhead=int(payload.get("framing_overhead") or 0),
@@ -256,6 +293,7 @@ def build_route_token_accounting_contract(
     accounting_method: str,
     accounting_evidence_ref: str,
     model_context_limit: int,
+    execution_token_limit: int = 0,
     output_reserve: int,
     safety_margin: int,
     framing_overhead: int,
@@ -264,7 +302,7 @@ def build_route_token_accounting_contract(
         method = "SCRIPTED_UTF8_BYTES_EXACT_V1"
         precision = "EXACT"
         evidence_ref = "fixture-protocol:scripted-byte-meter:v1"
-        context_limit = model_context_limit or 65_536
+        context_limit = model_context_limit or _SCRIPTED_PROVIDER_CONTEXT_BYTES
     elif (
         provider == "openai"
         and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
@@ -297,6 +335,7 @@ def build_route_token_accounting_contract(
         evidence_ref=evidence_ref,
         serialization_contract=provider_request_protocol(provider),
         model_context_limit=context_limit,
+        execution_token_limit=execution_token_limit or context_limit,
         output_reserve=output_reserve,
         safety_margin=safety_margin,
         framing_overhead=framing_overhead,
@@ -314,6 +353,7 @@ def prepare_provider_admission(
     reason = "ADMITTED"
     status = "ADMITTED"
     supported = _SUPPORTED_METHODS.get(contract.accounting_method)
+    coverage = frozenset(complete_request_coverage)
     if (
         contract.provider != envelope.provider
         or contract.model != envelope.model
@@ -327,6 +367,11 @@ def prepare_provider_admission(
         status, reason = "REJECTED", "TOKEN_ACCOUNTING_UNPROVEN"
     elif envelope.max_output_tokens != contract.output_reserve:
         status, reason = "REJECTED", "OUTPUT_RESERVE_MISMATCH"
+    elif contract.contract_version == "provider-token-accounting-v2" and (
+        not _REQUIRED_COMPLETE_COVERAGE.issubset(coverage)
+        or not coverage.intersection({"context_bundle", "source_analysis_input"})
+    ):
+        status, reason = "REJECTED", "PROVIDER_REQUEST_COVERAGE_INCOMPLETE"
     provider_input = len(envelope.input_text.encode("utf-8"))
     components = {
         "provider_input": provider_input,
@@ -335,8 +380,17 @@ def prepare_provider_admission(
         "safety_margin": contract.safety_margin,
     }
     total = sum(components.values())
-    if status == "ADMITTED" and total > contract.model_context_limit:
-        status, reason = "REJECTED", "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
+    applicable_limit = min(
+        contract.model_context_limit,
+        contract.execution_token_limit,
+    )
+    if status == "ADMITTED" and total > applicable_limit:
+        status, reason = (
+            "REJECTED",
+            "EXECUTION_TOKEN_LIMIT_EXCEEDED"
+            if contract.execution_token_limit < contract.model_context_limit
+            else "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
+        )
     return ProviderAdmissionReceipt(
         status=status,
         reason=reason,
@@ -345,7 +399,7 @@ def prepare_provider_admission(
         accounting_contract=contract.to_dict(),
         component_usage=components,
         total_reserved=total,
-        applicable_limit=contract.model_context_limit,
+        applicable_limit=applicable_limit,
         context_bundle_tokens=max(0, int(context_bundle_tokens)),
         context_bundle_status=("VALID" if context_bundle_tokens >= 0 else "INVALID"),
         input_component_hashes=dict(input_component_hashes or {}),

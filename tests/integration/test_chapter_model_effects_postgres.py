@@ -205,6 +205,21 @@ class _RetryOnceMeasuredAdapter(_RetryableMeasuredAdapter):
         )
 
 
+class _AdmissionRejectingBinder:
+    def freeze_before_external_effect(self, **_kwargs: object) -> None:
+        raise KernelError(
+            "PROVIDER_TOKEN_ADMISSION_REJECTED",
+            "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
+        )
+
+
+class _GatewayAdmissionAdapter(_ModelAdapter):
+    production_execution_gateway_backed = True
+
+    def provider_id_for_stage(self, _stage: str) -> str:
+        return "openai"
+
+
 class ChapterModelEffectsPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -639,6 +654,30 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(
                 dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1}
             )
+
+    def test_provider_admission_rejection_creates_no_external_effect(self) -> None:
+        request = self._request()
+        adapter = _GatewayAdmissionAdapter()
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=adapter,
+            worker_id="admission-worker",
+            capability_binder=_AdmissionRejectingBinder(),
+        )
+
+        with self.assertRaisesRegex(
+            KernelError, "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
+        ):
+            port.invoke(request, stage="draft", payload={"prompt": "write"})
+
+        self.assertEqual(adapter.calls, 0)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_external_effect "
+                "WHERE operation_id=%s",
+                [request.operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
 
     def test_query_expansion_effect_is_typed_durable_and_replayed_once(self) -> None:
         request = replace(

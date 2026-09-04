@@ -2454,7 +2454,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertIn("SKILL_ACTIVATED", str(transcript_constraint[0]))
         self.assertIn("authority-context-bundle-v7", str(context_view[0]))
         self.assertIn("narrative-context-manifest-v3", str(context_view[0]))
+        self.assertIn("authority-context-bundle-v8", str(context_view[0]))
+        self.assertIn("narrative-context-manifest-v4", str(context_view[0]))
         self.assertIn("authority-context-bundle-v7", str(mkaos_view[0]))
+        self.assertIn("authority-context-bundle-v8", str(mkaos_view[0]))
 
     def test_0101_upgrade_bootstraps_semantic_generation_without_rewriting_history(
         self,

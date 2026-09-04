@@ -101,6 +101,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             "asset_version_id": asset_version_id,
             "asset_type": asset_type,
             "project_id": "project-a",
+            "book_id": "book-a",
             "estimated_tokens": 100,
             "relevance_score": 0.8,
             "content_digest": f"sha256:{asset_version_id}",
@@ -310,12 +311,18 @@ class ContextAuthorityDomainTests(unittest.TestCase):
     def test_narrative_context_manifest_is_replayable_and_records_knowledge_use(
         self,
     ) -> None:
+        accepted_boundary = {
+            "accepted_through_chapter": 11,
+            "story_state_snapshot_version": "story-state-v11",
+            "canon_snapshot_version": "canon-v11",
+        }
         plan = self.candidate(
             "plan-v12",
             "chapter_plan",
             estimated_tokens=80,
             relevance_score=1.0,
             narrative_function="current_chapter_plan",
+            accepted_boundary=accepted_boundary,
         )
         knowledge = self.candidate(
             "knowledge-pack-v4",
@@ -323,6 +330,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             estimated_tokens=60,
             relevance_score=0.8,
             narrative_function="conflict_escalation_constraints",
+            accepted_boundary=accepted_boundary,
         )
         state = self.candidate(
             "story-state-v11",
@@ -330,6 +338,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             estimated_tokens=70,
             relevance_score=0.9,
             narrative_function="accepted_narrative_state",
+            accepted_boundary=accepted_boundary,
             structured_facts=(
                 {
                     "state_kind": "character_knowledge",

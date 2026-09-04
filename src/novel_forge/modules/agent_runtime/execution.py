@@ -7,6 +7,7 @@ from uuid import NAMESPACE_URL, uuid5
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
     ChapterInputAsset,
+    resolve_stage_context_token_budget,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
@@ -21,6 +22,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
     reserve_provider_budget,
+    resolve_provider_token_reservation_contract,
     resolve_provider_budget_failure,
     settle_provider_budget,
 )
@@ -29,6 +31,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
     plan_external_effect,
+    read_external_effect_intent,
 )
 from novel_forge.modules.production_execution.domain_execution import (
     CandidateKind,
@@ -61,7 +64,6 @@ _STAGES = frozenset(
 
 
 class ChapterGatewayAgentExecutionPreparer:
-
     def __init__(
         self,
         database_url: str,
@@ -138,8 +140,45 @@ class ChapterGatewayAgentExecutionPreparer:
             stable_key=stable_key,
             execution_fencing_token=execution_fencing_token,
         )
+        frozen_context_ceiling = max(
+            (
+                int(item.content.get("token_budget") or 0)
+                for item in inputs
+                if item.asset_type == "context_bundle"
+            ),
+            default=0,
+        )
+        frozen_request_token_ceiling = resolve_stage_context_token_budget(
+            command, stage, default=frozen_context_ceiling
+        )
+        if frozen_request_token_ceiling <= 0:
+            raise KernelError(
+                "MODEL_EFFECT_PROVIDER_TOKEN_CEILING_REQUIRED",
+                "Agent-bound Provider execution requires a positive token ceiling",
+            )
+        provider_token_contract = resolve_provider_token_reservation_contract(
+            self.database_url,
+            operation_id=str(operation["operation_id"]),
+            project_id=str(operation["project_id"]),
+            currency="USD",
+            frozen_request_token_ceiling=frozen_request_token_ceiling,
+        )
+        provider_output_token_ceiling = int(
+            provider_token_contract["max_output_tokens"]
+        )
+        provider_budget_tokens = int(provider_token_contract["estimated_total_tokens"])
+        route = self.adapter.routes.get(stage)
+        provider_token_limit = (
+            provider_budget_tokens
+            if provider_token_contract["source"]
+            == "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
+            else int(getattr(route, "model_context_limit", 0) or 0)
+            or provider_budget_tokens
+        )
         payload = {
             "stage": stage,
+            "max_output_tokens": provider_output_token_ceiling,
+            "stable_idempotency_key": stable_key,
             "input": _stage_payload(stage, inputs),
             "trace_id": str(operation["trace_id"]),
             "correlation_id": str(operation["correlation_id"]),
@@ -154,6 +193,8 @@ class ChapterGatewayAgentExecutionPreparer:
                 "chapter": int(command["chapter_number"]),
                 "book_id": str(command["book_id"]),
                 "route_provider": self.adapter.provider_id_for_stage(stage),
+                "provider_request_timeout_seconds": self.lease_seconds * 5,
+                "provider_token_limit": provider_token_limit,
                 "input_artifacts": [
                     {
                         "artifact_ref": f"asset-version:{item.asset_version_id}",
@@ -171,6 +212,98 @@ class ChapterGatewayAgentExecutionPreparer:
                 ],
             },
         }
+        provider_admission_required = bool(
+            self.adapter.production_execution_gateway_backed
+            and self.adapter.provider_id_for_stage(stage) != "scripted_provider_v2"
+        )
+        existing_intent = read_external_effect_intent(
+            self.database_url,
+            effect_context,
+            effect_type="model.invoke",
+            stable_idempotency_key=stable_key,
+        )
+        if existing_intent is not None:
+            frozen_payload = dict(existing_intent["request_payload"])
+            expected_outer = {
+                key: value for key, value in payload.items() if key != "_production_execution"
+            }
+            frozen_outer = {
+                key: value
+                for key, value in frozen_payload.items()
+                if key != "_production_execution"
+            }
+            frozen_metadata = frozen_payload.get("_production_execution")
+            if (
+                frozen_outer != expected_outer
+                or existing_intent["provider"] != self.adapter.provider
+                or existing_intent["capability"] != f"model.{stage}"
+                or int(existing_intent["max_attempts"]) != 2
+                or not isinstance(frozen_metadata, Mapping)
+                or str(frozen_metadata.get("operation_id") or "")
+                != str(operation["operation_id"])
+                or str(frozen_metadata.get("attempt_id") or "") != attempt_id
+                or str(frozen_metadata.get("project_id") or "")
+                != str(operation["project_id"])
+                or str(frozen_metadata.get("book_id") or "") != str(command["book_id"])
+            ):
+                raise KernelError(
+                    "AGENT_EFFECT_INTENT_DRIFT",
+                    "Agent retry differs from the first frozen Provider intent",
+                )
+            frozen_runtime = frozen_metadata.get("capability_runtime")
+            if isinstance(frozen_runtime, Mapping):
+                frozen_admission = frozen_runtime.get("provider_admission")
+                if isinstance(frozen_admission, Mapping):
+                    frozen_total = int(frozen_admission.get("total_reserved") or 0)
+                    if frozen_total <= 0:
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_INVALID",
+                            "frozen Agent admission has no positive bounded usage",
+                        )
+                    provider_budget_tokens = frozen_total
+            payload = frozen_payload
+        else:
+            preflight = self.capability_binder.freeze_before_external_effect(
+                capability=f"model.{stage}",
+                request_payload=payload,
+                snapshot_fencing_token=recovery_fencing_token,
+                snapshot_worker_id=worker_id,
+            )
+            if provider_admission_required and (
+                preflight is None or preflight.provider_admission_artifact is None
+            ):
+                raise KernelError(
+                    "PROVIDER_ADMISSION_REQUIRED",
+                    "Agent execution cannot create an ExternalEffect without admission",
+                )
+            if preflight is not None:
+                if provider_admission_required:
+                    receipt = preflight.effect_binding.get("provider_admission")
+                    if not isinstance(receipt, Mapping):
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_REQUIRED",
+                            "Agent admission receipt is absent from the frozen binding",
+                        )
+                    provider_budget_tokens = int(receipt.get("total_reserved") or 0)
+                    if provider_budget_tokens <= 0:
+                        raise KernelError(
+                            "PROVIDER_ADMISSION_INVALID",
+                            "Agent admission has no positive bounded request usage",
+                        )
+                metadata = dict(payload["_production_execution"])
+                frozen_artifacts = list(metadata["input_artifacts"])
+                frozen_artifacts.append(preflight.materialization_artifact.to_dict())
+                if preflight.provider_admission_artifact is not None:
+                    frozen_artifacts.append(
+                        preflight.provider_admission_artifact.to_dict()
+                    )
+                metadata.update(
+                    {
+                        "input_artifacts": frozen_artifacts,
+                        "capability_runtime": dict(preflight.effect_binding),
+                    }
+                )
+                payload = {**payload, "_production_execution": metadata}
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -190,9 +323,7 @@ class ChapterGatewayAgentExecutionPreparer:
         effect_adapter: Any = self.adapter
         if bool(effect.get("replayed")):
             effect_adapter = self.adapter.for_recovery(
-                execution_id=(
-                    "chapter-execution:" + str(effect["external_effect_id"])
-                ),
+                execution_id=("chapter-execution:" + str(effect["external_effect_id"])),
                 external_effect_id=str(effect["external_effect_id"]),
                 operation_id=str(operation["operation_id"]),
                 attempt_id=attempt_id,
@@ -213,10 +344,21 @@ class ChapterGatewayAgentExecutionPreparer:
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
                 currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=0,
+                estimated_amount=str(
+                    provider_token_contract.get("estimated_cost_amount")
+                    or self.max_cost_per_call
+                ),
+                estimated_tokens=provider_budget_tokens,
                 chapter=int(command["chapter_number"]),
                 caps=self.budget_caps,
+                budget_scope_id=str(
+                    provider_token_contract.get("budget_scope_id") or ""
+                ),
+                expected_budget_scope_revision=(
+                    int(provider_token_contract["budget_scope_revision"])
+                    if provider_token_contract.get("budget_scope_revision") is not None
+                    else None
+                ),
             ),
         )
         payload["external_effect_id"] = str(effect["external_effect_id"])
@@ -276,9 +418,7 @@ class ChapterGatewayAgentExecutionPreparer:
             return execution_fencing_token, self.worker_id
         payload = row[0]
         metadata = (
-            payload.get("_production_execution")
-            if isinstance(payload, dict)
-            else None
+            payload.get("_production_execution") if isinstance(payload, dict) else None
         )
         if not isinstance(metadata, dict):
             raise KernelError(

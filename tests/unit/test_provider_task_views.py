@@ -658,6 +658,75 @@ def test_planning_provider_context_is_deterministically_bounded() -> None:
     assert view["selection_explanation"]["truncated_character_count"] == 68_000
 
 
+def test_planning_provider_context_projects_frozen_accepted_boundary() -> None:
+    view = build_provider_context_view(
+        "chapter_plan.generate",
+        {
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "book_id": "book-1",
+            "logical_key": "chapter:12",
+            "planning_scope": "CHAPTER",
+            "input_versions": [
+                {
+                    "role": "story_state",
+                    "asset_version_id": "story-state:v11",
+                    "asset_type": "story_state_snapshot",
+                    "content": {"accepted_through_chapter": 11},
+                },
+                {
+                    "role": "canon_snapshot",
+                    "asset_version_id": "canon:v11",
+                    "asset_type": "canon_snapshot",
+                    "content": {
+                        "authority_state_boundary": {
+                            "accepted_through_chapter": 11
+                        }
+                    },
+                },
+            ],
+        },
+        {},
+    )
+
+    assert view["accepted_state_boundary"] == {
+        "accepted_through_chapter": 11
+    }
+
+
+def test_planning_provider_context_rejects_conflicting_authority_boundaries() -> None:
+    with pytest.raises(
+        KernelError, match="Authority inputs disagree on the accepted boundary"
+    ):
+        build_provider_context_view(
+            "chapter_plan.generate",
+            {
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "book_id": "book-1",
+                "logical_key": "chapter:12",
+                "planning_scope": "CHAPTER",
+                "input_versions": [
+                    {
+                        "role": "story_state",
+                        "asset_version_id": "story-state:v11",
+                        "asset_type": "story_state_snapshot",
+                        "content": {"accepted_through_chapter": 11},
+                    },
+                    {
+                        "role": "canon_snapshot",
+                        "asset_version_id": "canon:v10",
+                        "asset_type": "canon_snapshot",
+                        "content": {
+                            "authority_state_boundary": {
+                                "accepted_through_chapter": 10
+                            }
+                        },
+                    },
+                ],
+            },
+            {},
+        )
+
+
 def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
     view = build_provider_context_view(
         "book_plan.generate",
