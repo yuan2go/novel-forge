@@ -13,9 +13,6 @@ from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     start_saga,
 )
-from novel_forge.modules.reader_calibration.proxy_policy import (
-    resolve_reader_proxy_policy,
-)
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -24,6 +21,7 @@ from novel_forge.modules.reader_judge_authority import ReaderJudgeRuntimeResolve
 from .contracts import BOOK_FOLLOWUP_DEFINITION_VERSION, ReaderOutcomeModelPort
 from .definitions import book_followup_operation_definitions
 from .registry import BookFollowupHandlerRegistry
+from .reader_policy_authority import PostgresReaderProxyPolicyAuthority
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +68,11 @@ class BookFollowupAuthorityApplication:
             reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
         )
         self.worker_id = worker_id
+        self.reader_policies = PostgresReaderProxyPolicyAuthority(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        )
 
     def admit(
         self, request: BookFollowupCommand, *, principal: Principal
@@ -79,6 +82,11 @@ class BookFollowupAuthorityApplication:
         principal.require(permission, request.project_id)
         if request.actor_id != principal.principal_id:
             raise PermissionError("Book follow-up actor must be the trusted Principal")
+        policy_snapshot = self.reader_policies.freeze_for_admission(
+            project_id=request.project_id,
+            idempotency_key=request.idempotency_key,
+            actor_id=principal.principal_id,
+        )
         definitions = book_followup_operation_definitions(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
@@ -87,7 +95,6 @@ class BookFollowupAuthorityApplication:
             for definition in definitions:
                 uow.repositories.definitions.register(definition)
             uow.commit()
-        policy = resolve_reader_proxy_policy(request.payload.get("reader_proxy_policy"))
         admitted = admit_command(
             self.database_url,
             {
@@ -109,7 +116,7 @@ class BookFollowupAuthorityApplication:
                     ],
                     "payload": {
                         **request.payload,
-                        "reader_proxy_policy": policy.snapshot(),
+                        "reader_proxy_policy_snapshot": policy_snapshot,
                     },
                 },
                 "input_assets": list(request.input_assets),

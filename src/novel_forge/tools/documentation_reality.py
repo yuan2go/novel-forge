@@ -126,8 +126,6 @@ SYSTEM_ROLES = frozenset(
 )
 NARRATIVE_NATURES = frozenset(
     {
-        "POLICY",
-        "EXECUTION_CONTRACT",
         "CONTAINER",
         "TRAJECTORY",
         "PLAN",
@@ -136,17 +134,21 @@ NARRATIVE_NATURES = frozenset(
         "ACCEPTED_ACTUAL",
         "PROJECTION",
         "EVIDENCE",
+        "EXECUTION_CONTRACT",
     }
 )
 NARRATIVE_RELATION_TYPES = frozenset(
     {
-        "EXECUTION_DEPENDENCY",
         "STRUCTURAL_CONTAINMENT",
         "CAUSAL_DEPENDENCY",
         "TEMPORAL_TRAJECTORY",
         "PLANNING_DEPENDENCY",
+        "EXECUTION_DEPENDENCY",
         "ACCEPTED_FACT_PROJECTION",
     }
+)
+NARRATIVE_DISPOSITIONS = frozenset(
+    {"KEEP", "MERGE", "SPLIT", "RENAME", "DEMOTE", "RETIRE", "ADD"}
 )
 RUNTIME_CHAIN_ROLES = frozenset(
     {
@@ -481,6 +483,8 @@ def _validate_narrative_model(
             by_id[identity] = item
         if item.get("nature") not in NARRATIVE_NATURES:
             _error(errors, f"{context}.nature is not recognized")
+        if item.get("disposition") not in NARRATIVE_DISPOSITIONS:
+            _error(errors, f"{context}.disposition is not recognized")
         if not str(item.get("owner") or "").strip():
             _error(errors, f"{context}.owner is missing")
         if not str(item.get("lifecycle_rule") or "").strip():
@@ -503,8 +507,6 @@ def _validate_narrative_model(
                 continue
             if relation.get("type") not in NARRATIVE_RELATION_TYPES:
                 _error(errors, f"{relation_context}.type is not recognized")
-            if item.get("nature") == "POLICY" and relation.get("type") == "STRUCTURAL_CONTAINMENT":
-                _error(errors, f"{relation_context}: execution policy cannot own structural narrative containment")
             target = str(relation.get("target") or "")
             if target not in by_id:
                 _error(errors, f"{relation_context}.target is unknown: {target}")

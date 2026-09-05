@@ -3,10 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from novel_forge.modules.reader_calibration.proxy_policy import (
-    resolve_reader_proxy_policy,
-)
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityAuxiliaryOutput,
     AuthorityHandlerOutput,
@@ -20,6 +16,7 @@ from novel_forge.modules.reader_judge_authority import (
 )
 
 from .contracts import ReaderOutcomeModelPort
+from .reader_policy import policy_from_snapshot
 from .domain import (
     LongformCheckpointType,
     build_longform_recap_outputs,
@@ -40,7 +37,8 @@ class ReaderOutcomeHandler:
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = _payload(request)
-        policy = resolve_reader_proxy_policy(payload.get("reader_proxy_policy"))
+        policy_snapshot = dict(payload.get("reader_proxy_policy_snapshot") or {})
+        policy = policy_from_snapshot(policy_snapshot)
         required = (
             "book_id",
             "chapter_id",
@@ -129,6 +127,7 @@ class ReaderOutcomeHandler:
                     payload["evaluation_profile_version"]
                 ),
                 "reader_judge_execution_snapshot": judge.to_dict(),
+                "reader_proxy_policy_snapshot": policy_snapshot,
             },
             reservation_tokens=context_token_budget,
         )
@@ -144,7 +143,7 @@ class ReaderOutcomeHandler:
         )
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         common_evidence = {
-            "reader_proxy_policy": policy.snapshot(),
+            "reader_proxy_policy_snapshot": policy_snapshot,
             "evidence_class": "READER_PROXY_ADVISORY",
             "provider": result.provider_id,
             "model": result.model_id,
@@ -181,12 +180,13 @@ class ReaderOutcomeHandler:
         continue_intent = float(decision["reader_state"]["continue_intent"])
         ordinal_band = (
             "HIGH"
-            if continue_intent >= policy.continuation_high_threshold
+            if continue_intent >= policy.ordinal_high
             else "MEDIUM"
-            if continue_intent >= policy.continuation_medium_threshold
+            if continue_intent >= policy.ordinal_medium
             else "LOW"
         )
         report = {
+            "reader_proxy_policy_snapshot": policy_snapshot,
             "type": "ReaderOutcomeReport",
             "contract_version": "reader-outcome-report-v1",
             "evidence_class": "READER_PROXY_ADVISORY",
@@ -405,12 +405,14 @@ class LongformRecapHandler:
             )
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         outputs = build_longform_recap_outputs(
-            policy=resolve_reader_proxy_policy(payload.get("reader_proxy_policy")),
             project_id=request.project_id,
             book_id=str(payload["book_id"]),
             chapter_range=(chapter_range[0], chapter_range[1]),
             checkpoint_type=checkpoint_type,
             observations=dict(payload.get("observations") or {}),
+            reader_policy=policy_from_snapshot(
+                dict(payload.get("reader_proxy_policy_snapshot") or {})
+            ),
         )
         accepted_input_lineage = {
             "observed_through_chapter": observed_through_chapter,
@@ -438,6 +440,9 @@ class LongformRecapHandler:
         }
         for output in outputs.values():
             if isinstance(output, dict):
+                output["reader_proxy_policy_snapshot"] = dict(
+                    payload["reader_proxy_policy_snapshot"]
+                )
                 output["observed_through_chapter"] = observed_through_chapter
                 output["accepted_input_lineage"] = dict(accepted_input_lineage)
         auxiliaries = [

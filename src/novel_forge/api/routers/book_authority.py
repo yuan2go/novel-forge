@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import uuid4
 
@@ -29,6 +29,32 @@ from novel_forge.modules.book_design_authority import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
+from novel_forge.modules.chapter_group_authority.policy import (
+    ChapterGroupExecutionPolicy,
+)
+from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
+
+
+@dataclass
+class ChapterGroupExecutionPolicyRequest:
+    project_id: str
+    actor_id: str
+    policy: ChapterGroupExecutionPolicy
+    workspace_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+
+@dataclass
+class ReaderProxyPolicyRequest:
+    project_id: str
+    actor_id: str
+    policy: ReaderProxyPolicy
+    workspace_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
@@ -59,6 +85,48 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
     )
+
+    @router.put("/policies/chapter-group-execution")
+    def configure_execution_policy(
+        request: ChapterGroupExecutionPolicyRequest,
+    ) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return _composition(ctx).chapter_groups.execution_policies.configure(
+                project_id=request.project_id,
+                policy=request.policy,
+                principal=principal,
+                workspace_id=request.workspace_id,
+                idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.put("/policies/reader-proxy")
+    def configure_reader_policy(request: ReaderProxyPolicyRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return _composition(ctx).followup.reader_policies.configure(
+                project_id=request.project_id,
+                policy=request.policy,
+                principal=principal,
+                workspace_id=request.workspace_id,
+                idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/books/{book_id}/opening-runs", status_code=202)
     def start_book_opening(

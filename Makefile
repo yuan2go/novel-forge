@@ -7,13 +7,13 @@ QUALIFICATION_COMPOSE ?= $(if $(strip $(NOVEL_FORGE_DOCKER_COMPOSE_BIN)),$(NOVEL
 P0_PROFILE ?= local
 P0_EVIDENCE_DIR ?= /tmp/novel-forge-p0
 PR_BASE_SHA ?= $(shell git merge-base HEAD origin/main)
-PR_EVIDENCE_PATH ?= $(P0_EVIDENCE_DIR)/pr-governance.json
+PR_EVIDENCE_DIR ?= /tmp/novel-forge-pr
 QUALIFICATION_CONFIG_TOKEN := 00000000000000000000000000000000
 QUALIFICATION_CONFIG_RUN_ID := p0-$(QUALIFICATION_CONFIG_TOKEN)
 QUALIFICATION_CONFIG_PROJECT := nf-p0-$(QUALIFICATION_CONFIG_TOKEN)-config
 QUALIFICATION_CONFIG_DATABASE := nf_p0_$(QUALIFICATION_CONFIG_TOKEN)_test
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release longform-retrieval-benchmark p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check historical-reality-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification proposal-lifecycle-check pr-governance narrative-qualification help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release longform-retrieval-benchmark p0-backend-list-gates p0-backend-static p0-backend-qualification api worker web-dev sync-skills sync-skills-dry-run check-skills instruction-reality-check test-reality-check historical-reality-check proposal-lifecycle-check pr-governance-checks pr-governance head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check documentation-reality-check d0-provider-probe real-provider-qualification help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -54,6 +54,8 @@ help:
 	@echo "make instruction-reality-check - verify every repository AI instruction source and copy"
 	@echo "make test-reality-check - classify every retained test and enforce proof ceilings"
 	@echo "make historical-reality-check - reject historical roadmap authority"
+	@echo "make proposal-lifecycle-check - verify unresolved proposal lifecycle and evidence isolation"
+	@echo "make pr-governance - enforce repository governance and exact-SHA P0 when implementation changes"
 	@echo "make head-integrity-check - fail on untracked or dangling runtime wiring"
 	@echo "make architecture-manifests-check - verify module/migration/worker/test/console manifests"
 	@echo "make architecture-fitness-check - enforce import, Legacy, Schema and entry classifications"
@@ -61,9 +63,6 @@ help:
 	@echo "make documentation-reality-check - verify canonical docs, evidence references, and comments"
 	@echo "make d0-provider-probe - run the fail-closed D0 Provider qualification probe"
 	@echo "make real-provider-qualification - run exact-SHA credentialed Provider qualification"
-	@echo "make proposal-lifecycle-check - validate scoped proposal lifecycle and authority exclusion"
-	@echo "make pr-governance - run canonical PR governance and required exact-SHA P0"
-	@echo "make narrative-qualification - inspect persisted narrative evidence and produce a blind review pack"
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests
@@ -185,6 +184,16 @@ test-reality-check:
 historical-reality-check:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.historical_reality --repo-root .
 
+proposal-lifecycle-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.proposal_lifecycle --repo-root .
+
+pr-governance-checks: sync-skills head-integrity-check validate check-skills
+
+pr-governance:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.pr_governance --repo-root . \
+		--base-sha "$(PR_BASE_SHA)" --profile "$(P0_PROFILE)" \
+		--output "$(PR_EVIDENCE_DIR)/pr-governance-$$(git rev-parse HEAD).json"
+
 head-integrity-check:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.head_integrity --repo-root .
 
@@ -219,12 +228,3 @@ real-provider-qualification:
 		--runtime-root "$${NOVEL_FORGE_REAL_PROVIDER_RUNTIME_ROOT}" \
 		--output "$${NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH}" \
 		--expected-sha "$${NOVEL_FORGE_REAL_PROVIDER_EXPECTED_SHA}"
-
-proposal-lifecycle-check:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.proposal_lifecycle --repo-root .
-
-pr-governance:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.pr_governance --base-sha "$(PR_BASE_SHA)" --profile $(P0_PROFILE) --output "$(PR_EVIDENCE_PATH)"
-
-narrative-qualification:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.narrative_qualification $(NARRATIVE_QUALIFICATION_ARGS)

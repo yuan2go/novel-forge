@@ -109,8 +109,10 @@ from . import (
     v20260902_0106_quality_qualification_scope_generalization,
     v20260903_0107_retrieval_campaign_runtime,
     v20260903_0108_context_governance_projection,
-    v20260905_0109_chapter_window_execution_policy,
-    v20260905_0110_narrative_completion_policy,
+    v20260905_0109_industrial_execution_policies,
+    v20260905_0110_chapter_mission_scene_contract,
+    v20260905_0111_whole_book_completion,
+    v20260905_0112_realization_execution_policy,
 )
 
 VERSION_MODULES = [
@@ -222,8 +224,10 @@ VERSION_MODULES = [
     v20260902_0106_quality_qualification_scope_generalization,
     v20260903_0107_retrieval_campaign_runtime,
     v20260903_0108_context_governance_projection,
-    v20260905_0109_chapter_window_execution_policy,
-    v20260905_0110_narrative_completion_policy,
+    v20260905_0109_industrial_execution_policies,
+    v20260905_0110_chapter_mission_scene_contract,
+    v20260905_0111_whole_book_completion,
+    v20260905_0112_realization_execution_policy,
 ]
 
 __all__ = ["VERSION_MODULES"]

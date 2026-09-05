@@ -20,6 +20,7 @@ from novel_forge.tools.backend_qualification_contract import (
     P0_PROOF_SCOPE,
     REQUIRED_GATE_ORDER,
 )
+from novel_forge.tools.pr_governance import validate_current_p0
 
 
 SHA = "a" * 40
@@ -59,7 +60,10 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "migration=failed"):
             build_ci_test_result(
                 commit_sha=SHA,
-                needs={"unit": {"result": "success"}, "migration": {"result": "failed"}},
+                needs={
+                    "unit": {"result": "success"},
+                    "migration": {"result": "failed"},
+                },
             )
 
     def test_release_manifest_requires_every_sha_bound_artifact_class(self) -> None:
@@ -70,7 +74,9 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 if path.suffix == ".json":
                     path.write_text(
-                        json.dumps({"tested_sha": SHA, "evidence_class": evidence_class}),
+                        json.dumps(
+                            {"tested_sha": SHA, "evidence_class": evidence_class}
+                        ),
                         encoding="utf-8",
                     )
                 else:
@@ -79,7 +85,9 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             self.assertEqual(manifest["status"], "PASS")
             self.assertEqual(set(manifest["artifacts"]), set(REQUIRED_ARTIFACT_FILES))
 
-            (root / REQUIRED_ARTIFACT_FILES["environment_metadata"].format(sha=SHA)).unlink()
+            (
+                root / REQUIRED_ARTIFACT_FILES["environment_metadata"].format(sha=SHA)
+            ).unlink()
             with self.assertRaisesRegex(ValueError, "environment_metadata"):
                 build_release_qualification(commit_sha=SHA, artifact_root=root)
 
@@ -169,9 +177,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "remaining_resource_count": 0,
                     "run_id": run_id,
                     "compose_project": compose_project,
-                    "receipt": (
-                        f"compose-resource-ownership-{compose_project}.json"
-                    ),
+                    "receipt": (f"compose-resource-ownership-{compose_project}.json"),
                 },
                 {
                     "phase": "compose-runtime",
@@ -180,9 +186,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     "remaining_resource_count": 0,
                     "run_id": run_id,
                     "compose_project": runtime_project,
-                    "receipt": (
-                        f"compose-resource-ownership-{runtime_project}.json"
-                    ),
+                    "receipt": (f"compose-resource-ownership-{runtime_project}.json"),
                 },
             ],
         }
@@ -283,6 +287,27 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
         self.assertEqual(report["migration"]["expected_head"], "manifest-head")
         self.assertEqual(report["migration"]["observed_head"], "manifest-head")
         self.assertFalse(report["dependency_snapshot"]["git_sha_alone_reproducible"])
+        plan = {"head_sha": SHA, "implementation_tree_sha": DIGEST}
+        validate_current_p0(report, plan=plan)
+        for location in ("top", "nested"):
+            with self.subTest(pr_identity_drift=location):
+                drifted = copy.deepcopy(report)
+                if location == "top":
+                    drifted["implementation_tree_sha"] = "sha256:" + "9" * 64
+                else:
+                    drifted["source_identity"]["implementation_tree_sha"] = (
+                        "sha256:" + "9" * 64
+                    )
+                with self.assertRaisesRegex(ValueError, "source identity"):
+                    validate_current_p0(
+                        drifted,
+                        plan={
+                            **plan,
+                            "implementation_tree_sha": drifted[
+                                "implementation_tree_sha"
+                            ],
+                        },
+                    )
         tampered_dependency = dict(dependency)
         tampered_dependency["packages"] = ["alpha==1", "beta==3"]
         with self.assertRaisesRegex(ValueError, "digest differs"):
@@ -360,9 +385,7 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
                     for gate in malformed["gates"]
                     if gate["gate_id"] == "resource-cleanup"
                 )
-                malformed_cleanup_gate["evidence"] = copy.deepcopy(
-                    malformed["cleanup"]
-                )
+                malformed_cleanup_gate["evidence"] = copy.deepcopy(malformed["cleanup"])
                 with self.assertRaisesRegex(ValueError, "cleanup"):
                     validate_p0_backend_qualification_report(
                         malformed,
@@ -417,9 +440,9 @@ class ReleaseRunEvidenceTests(unittest.TestCase):
             for gate in shared_database["gates"]
             if gate["gate_id"] == "postgresql-start"
         )
-        postgresql_start["evidence"]["database_identity"][
-            "database_name"
-        ] = "shared_database"
+        postgresql_start["evidence"]["database_identity"]["database_name"] = (
+            "shared_database"
+        )
         with self.assertRaisesRegex(ValueError, "run-owned and isolated"):
             validate_p0_backend_qualification_report(
                 shared_database,

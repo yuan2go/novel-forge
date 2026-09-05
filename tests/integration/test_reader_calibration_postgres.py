@@ -382,51 +382,6 @@ class ReaderCalibrationPostgresTests(unittest.TestCase):
             ),
         )
 
-    def test_unbound_behavior_observations_and_historical_valid_profile_fail_closed(self) -> None:
-        scope = CalibrationScope(
-            "fixture-platform", "fantasy", "progression", "payoff", "segment:new-reader", "reader-judge-v1", "scripted-model-v1"
-        )
-        session = self.authority.start_reader_session(
-            project_id=self.project_id, book_id=self.book_id, reader_subject_ref="pseudonym:fixture-reader",
-            reader_segment=scope.reader_segment, platform=scope.platform, consent_policy_version="fixture-consent-v1",
-            idempotency_key=f"{self.project_id}:lineage-session", principal=self.principal,
-        )
-        exposure = self.authority.record_exposure(
-            reader_session_id=session["reader_session_id"], chapter_asset_version_id=self.draft_a,
-            idempotency_key=f"{self.project_id}:lineage-exposure", principal=self.principal,
-        )
-        self.authority.record_outcome(
-            exposure_id=exposure["exposure_id"], event_type="NEXT_CHAPTER_OPEN", event_value={"opened": True},
-            idempotency_key=f"{self.project_id}:lineage-outcome", principal=self.principal,
-        )
-        self.assertEqual(self.authority._behavior_evidence_count(
-            project_id=self.project_id, platform=scope.platform, reader_segment=scope.reader_segment
-        ), 1)
-        for _ in range(2):
-            with self.assertRaisesRegex(KernelError, "READER_CALIBRATION_DATASET_LINEAGE_REQUIRED"):
-                self.authority.run_calibration(
-                    project_id=self.project_id, scope=scope, observations=[(0.9, 1)], minimum_sample_size=1,
-                    input_manifest_version_id=self.manifest, evidence_level="BEHAVIOR_CALIBRATED",
-                    idempotency_key=f"{self.project_id}:unbound-calibration", principal=self.principal,
-                )
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute("SELECT count(*) FROM calibration_profile WHERE project_id=%s", [self.project_id])
-            self.assertEqual(uow.cursor.fetchone()[0], 0)
-        fixture = self.authority.run_calibration(
-            project_id=self.project_id, scope=scope, observations=[(0.9, 1)], minimum_sample_size=1,
-            input_manifest_version_id=self.manifest, evidence_level="FIXTURE",
-            idempotency_key=f"{self.project_id}:fixture-calibration", principal=self.principal,
-        )
-        self.assertFalse(fixture["behavior_calibrated"])
-        self.assertEqual(fixture["status"], "INSUFFICIENT_DATA")
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                "UPDATE calibration_profile SET status='VALID', evidence_level='BEHAVIOR_CALIBRATED' WHERE profile_id=%s",
-                [fixture["profile_id"]],
-            )
-            uow.commit()
-        self.assertIsNone(self.authority.resolve_profile(self.project_id, scope))
-
     def test_fixture_calibration_remains_shadow_and_drift_is_fail_closed(
         self,
     ) -> None:

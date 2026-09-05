@@ -37,6 +37,7 @@ from novel_forge.modules.content_authority import (
     ContentAuthorityQuery,
 )
 from novel_forge.modules.book_authority.production import PostgresBookAuthority
+from novel_forge.modules.book_authority.completion import PostgresBookCompletionAuthority
 from novel_forge.modules.book_authority.composition import BookProductionComposition
 from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityApplication,
@@ -147,6 +148,7 @@ class AuthorityApiServices:
     content_authority_query: ContentAuthorityQuery
     provider_callback_service: ProviderCallbackAuthorityService
     book_authority_application: PostgresBookAuthority
+    book_completion_authority: PostgresBookCompletionAuthority
     book_production: BookProductionComposition
     project_authority_application: ProjectAuthorityApplication
     project_authority_query: ProjectAuthorityQuery
@@ -223,6 +225,9 @@ def create_authority_app(settings: IndustrialSettings):
             settings.database_url or "", provider_registry
         ),
         book_authority_application=book_production.authority,
+        book_completion_authority=PostgresBookCompletionAuthority(
+            settings.database_url, application_build_id=build_id, commit_sha=commit_sha,
+        ),
         book_production=book_production,
         project_authority_application=ProjectAuthorityApplication(
             settings.database_url,
@@ -300,6 +305,7 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.routers.book_authority import (
         create_router as create_book_router,
     )
+    from novel_forge.api.routers.book_completion import create_router as create_book_completion_router
     from novel_forge.api.routers.context import ProductRouterContext
     from novel_forge.api.routers.authority_projects import (
         create_router as create_project_router,
@@ -429,6 +435,11 @@ def create_authority_app(settings: IndustrialSettings):
                 models=product_model_map(),
                 services=services,
             )
+        )
+    )
+    app.include_router(
+        create_book_completion_router(
+            ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)
         )
     )
     app.include_router(

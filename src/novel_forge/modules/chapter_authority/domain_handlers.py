@@ -404,7 +404,10 @@ def build_context_bundle(
                 mission.get("why_this_chapter_exists") if mission_locked else objective
             ),
             "entry_state": dict(mission.get("entry_state") or {}),
-            "required_beats": list(mission.get("required_beats") or ()),
+            "required_beats": list(
+                (execution_intent or {}).get("required_beats")
+                or mission.get("required_beats") or ()
+            ),
             "required_state_transitions": list(
                 mission_outcomes.get("state_transitions", [])
                 if mission_locked

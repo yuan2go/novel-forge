@@ -1,139 +1,147 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import hashlib
-import json
-from typing import Any
+from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-def _json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-
-
-def _digest(value: Any) -> str:
-    return "sha256:" + hashlib.sha256(_json(value).encode()).hexdigest()
+CHAPTER_CONTRACT_SCHEMA_VERSION = "chapter-mission-scene.v2"
 
 
 @dataclass(frozen=True, slots=True)
 class ChapterMission:
-    source_asset_version_id: str
-    source_content_hash: str
-    chapter: int
-    payload_json: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "schema_version": "chapter-mission.v1",
-            "owner": "hierarchical-planning",
-            "source_asset_version_id": self.source_asset_version_id,
-            "source_content_hash": self.source_content_hash,
-            "chapter": self.chapter,
-            "requirements": json.loads(self.payload_json),
-        }
-
-    @property
-    def digest(self) -> str:
-        return _digest(self.to_dict())
+    chapter_number: int
+    intent: str
+    primary_function: str
+    arc_plan_version_ids: frozenset[str]
+    trajectory_refs: frozenset[str]
+    obligation_refs: frozenset[str]
+    state_transition_refs: frozenset[str]
+    realization_event_ids: frozenset[str]
 
 
 @dataclass(frozen=True, slots=True)
 class SceneArchitecture:
-    source_asset_version_id: str
-    source_content_hash: str
-    chapter: int
-    mission_digest: str
-    scenes_json: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "schema_version": "scene-architecture.v1",
-            "owner": "hierarchical-planning",
-            "source_asset_version_id": self.source_asset_version_id,
-            "source_content_hash": self.source_content_hash,
-            "chapter": self.chapter,
-            "mission_digest": self.mission_digest,
-            "dependency_kind": "PLANNING_DEPENDENCY",
-            "containment_kind": "STRUCTURAL_CONTAINMENT",
-            "scenes": json.loads(self.scenes_json),
-        }
-
-    @property
-    def digest(self) -> str:
-        return _digest(self.to_dict())
+    scene_ids: tuple[str, ...]
+    beat_refs: tuple[tuple[str, str], ...]
+    mission: ChapterMission
 
 
-def compile_chapter_contracts(
-    content: dict[str, Any], *, asset_version_id: str, content_hash: str,
-) -> tuple[ChapterMission, SceneArchitecture]:
-    chapter = content.get("chapter_number", content.get("chapter"))
-    transitions = content.get("required_state_transitions")
-    schedule = content.get("arc_schedule")
+def require_chapter_contracts(content: Mapping[str, Any]) -> SceneArchitecture:
     if (
-        type(chapter) is not int or chapter <= 0
-        or not asset_version_id or not content_hash
-        or not str(content.get("chapter_intent") or "").strip()
-        or not isinstance(transitions, list) or not transitions
-        or not isinstance(schedule, list) or not schedule
-        or not content.get("reader_experience")
-        or not content.get("expected_exit_state")
+        content.get("chapter_contract_schema_version")
+        != CHAPTER_CONTRACT_SCHEMA_VERSION
     ):
-        raise KernelError("CHAPTER_MISSION_INCOMPLETE", "mission requires exact source, change, trajectory, reader and exit commitments")
-    transition_entities: set[str] = set()
-    for item in transitions:
-        if not isinstance(item, dict) or not item.get("entity_key") or (
-            not item.get("state_kind") or item.get("from_state") == item.get("to_state")
-        ):
-            raise KernelError("CHAPTER_MISSION_TRANSITION_INVALID", "mission requires identifiable non-noop state changes")
-        entity = str(item["entity_key"])
-        if entity in transition_entities:
-            raise KernelError(
-                "SCENE_MISSION_TRANSITION_AMBIGUOUS",
-                "distinct state changes sharing an entity require typed scene transition references",
-            )
-        transition_entities.add(entity)
-    if any(not isinstance(item, dict) for item in schedule):
-        raise KernelError("CHAPTER_MISSION_TRAJECTORY_INVALID", "trajectory schedule entries must be objects")
-    arcs = {str(item.get("arc_plan_version_id") or "") for item in schedule}
-    required_arcs = {str(item["arc_plan_version_id"]) for item in schedule if item.get("role") != "HOLD" and item.get("arc_plan_version_id")}
-    if "" in arcs or not arcs:
-        raise KernelError("CHAPTER_MISSION_TRAJECTORY_INVALID", "mission must bind exact trajectory versions")
-    fields = (
-        "chapter_intent", "required_state_transitions", "arc_schedule",
-        "setups", "payoffs", "obligation_actions", "reader_experience",
-        "expected_exit_state", "prohibited_outcomes", "character_participation",
-        "knowledge_boundaries", "disclosures", "narrative_realization_slice",
-    )
-    mission = ChapterMission(asset_version_id, content_hash, chapter, _json({
-        key: content[key] for key in fields if key in content
-    }))
-    scenes = content.get("scene_plan")
-    if not isinstance(scenes, list) or not scenes or any(not isinstance(s, dict) for s in scenes):
-        raise KernelError("SCENE_ARCHITECTURE_REQUIRED", "scene architecture requires an ordered scene set")
-    ids = [str(scene.get("scene_id") or "") for scene in scenes]
-    if "" in ids or len(set(ids)) != len(ids):
-        raise KernelError("SCENE_ARCHITECTURE_IDENTITY_DUPLICATE", "scene identities must be unique")
-    realized_entities = {str(ref) for scene in scenes for ref in scene.get("state_transitions") or ()}
-    realized_arcs = {str(ref) for scene in scenes for ref in scene.get("arc_progress") or ()}
-    if realized_entities != transition_entities or not required_arcs <= realized_arcs or not realized_arcs <= arcs:
         raise KernelError(
-            "SCENE_MISSION_COVERAGE_INVALID",
-            "scenes must cover every mission state change and trajectory without undeclared contributions",
+            "CHAPTER_CONTRACT_VERSION_REQUIRED",
+            "new Chapter planning requires the current Mission and Scene contract",
         )
-    architecture = SceneArchitecture(asset_version_id, content_hash, chapter, mission.digest, _json(scenes))
-    return mission, architecture
+    realization = content.get("narrative_realization_slice") or {}
+    events = realization.get("events") or ()
+    event_ids = frozenset(str(item.get("event_id") or "") for item in events)
+    chapter_number = int(content.get("chapter_number") or content.get("chapter") or 0)
+    intent = str(content.get("chapter_intent") or "").strip()
+    primary = str(content.get("primary_function") or "").strip()
+    if (
+        chapter_number <= 0
+        or not intent
+        or not primary
+        or not event_ids
+        or "" in event_ids
+        or len(event_ids) != len(events)
+        or int(realization.get("accepted_through_chapter") or 0) >= chapter_number
+    ):
+        raise KernelError(
+            "CHAPTER_MISSION_INCOMPLETE",
+            "Mission needs intent, function and a future-only Frozen realization slice",
+        )
+    mission = ChapterMission(
+        chapter_number=chapter_number,
+        intent=intent,
+        primary_function=primary,
+        arc_plan_version_ids=frozenset(
+            str(item.get("arc_plan_version_id") or "")
+            for item in content.get("arc_schedule") or ()
+        ),
+        trajectory_refs=frozenset(
+            str(ref)
+            for item in content.get("character_participation") or ()
+            for ref in item.get("trajectory_refs") or ()
+        ),
+        obligation_refs=frozenset(
+            str(item.get("obligation_id") or "")
+            for item in content.get("obligation_actions") or ()
+        ),
+        state_transition_refs=frozenset(
+            str(item.get("entity_key") or "")
+            for item in content.get("required_state_transitions") or ()
+        ),
+        realization_event_ids=event_ids,
+    )
+    scenes = content.get("scene_plan") or ()
+    return validate_scene_mission_coverage(mission, scenes)
 
 
-def chapter_contract_evidence(content: dict[str, Any], *, asset_version_id: str, content_hash: str) -> dict[str, Any]:
-    mission, scenes = compile_chapter_contracts(content, asset_version_id=asset_version_id, content_hash=content_hash)
-    return {
-        "schema_version": "chapter-planning-boundaries.v1",
-        "chapter_mission": mission.to_dict(),
-        "chapter_mission_digest": mission.digest,
-        "scene_architecture": scenes.to_dict(),
-        "scene_architecture_digest": scenes.digest,
-        "gate": "STRUCTURAL_COVERAGE_PASS",
-        "proof_ceiling": "NARRATIVE_CONTRACT_ONLY",
-        "accepted_fact_mutation": False,
+def validate_scene_mission_coverage(
+    mission: ChapterMission, scenes: Any
+) -> SceneArchitecture:
+    scene_ids = tuple(str(item.get("scene_id") or "") for item in scenes)
+    if not scenes or "" in scene_ids or len(set(scene_ids)) != len(scene_ids):
+        raise KernelError(
+            "SCENE_MISSION_IDENTITY_INVALID", "Scenes need unique identities"
+        )
+    required_refs = {
+        "arc_progress": mission.arc_plan_version_ids,
+        "trajectory_refs": mission.trajectory_refs,
+        "obligation_refs": mission.obligation_refs,
+        "state_transitions": mission.state_transition_refs,
+        "realization_event_ids": mission.realization_event_ids,
     }
+    for field, expected in required_refs.items():
+        covered: set[str] = set()
+        for scene in scenes:
+            refs = scene.get(field)
+            if (
+                not isinstance(refs, list)
+                or any(
+                    not isinstance(ref, str) or not ref or ref not in expected
+                    for ref in refs
+                )
+                or len(set(refs)) != len(refs)
+            ):
+                raise KernelError(
+                    "SCENE_MISSION_REFERENCE_INVALID",
+                    f"Scene {field} must reference unique frozen Mission commitments",
+                )
+            covered.update(refs)
+        if covered != expected or "" in expected:
+            raise KernelError(
+                "SCENE_MISSION_COVERAGE_INCOMPLETE",
+                f"Scene Architecture does not realize all Mission {field}",
+            )
+    beat_refs: list[tuple[str, str]] = []
+    for scene in scenes:
+        beats = scene.get("beats") or ()
+        if not beats:
+            raise KernelError(
+                "SCENE_MISSION_BEAT_INVALID", "each Scene requires typed Beats"
+            )
+        for ordinal, beat in enumerate(beats, 1):
+            if (
+                not isinstance(beat, dict)
+                or not str(beat.get("beat_id") or "")
+                or beat.get("ordinal") != ordinal
+                or not str(beat.get("function") or "").strip()
+            ):
+                raise KernelError(
+                    "SCENE_MISSION_BEAT_INVALID", "current Beats must be typed"
+                )
+            beat_refs.append((str(scene["scene_id"]), str(beat["beat_id"])))
+    if len(set(beat_refs)) != len(beat_refs):
+        raise KernelError(
+            "SCENE_MISSION_BEAT_INVALID", "Beat identities must be Scene-unique"
+        )
+    return SceneArchitecture(
+        scene_ids=scene_ids, beat_refs=tuple(beat_refs), mission=mission
+    )

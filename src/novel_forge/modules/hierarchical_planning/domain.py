@@ -277,6 +277,7 @@ def validate_planning_contract(
     execution_scope: PlanExecutionScope,
     content: dict[str, Any],
     allow_pre_hierarchy_compatibility: bool = False,
+    require_current_chapter_contract: bool = False,
 ) -> PlanningContract:
     compatibility_fields = (
         {"narrative_event_chain"}
@@ -340,16 +341,17 @@ def validate_planning_contract(
                 "CHAPTER_GROUP_RANGE_INVALID",
                 "ChapterGroup chapter_range must contain exactly start and end",
             )
-        if any(type(item) is not int for item in chapter_range):
+        try:
+            start, end = map(int, chapter_range)
+        except (TypeError, ValueError) as exc:
             raise KernelError(
                 "CHAPTER_GROUP_RANGE_INVALID",
                 "ChapterGroup chapter_range must contain integer boundaries",
-            )
-        start, end = chapter_range
+            ) from exc
         if start <= 0 or end < start:
             raise KernelError(
                 "CHAPTER_GROUP_RANGE_INVALID",
-                "ChapterGroup must contain a positive ordered chapter range",
+                "ChapterGroup must contain a positive contiguous Chapter range",
             )
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
@@ -368,6 +370,13 @@ def validate_planning_contract(
             )
     if contract_type is PlanContractType.CHAPTER:
         _validate_chapter_arc_contributions(content["required_arc_contributions"])
+        if require_current_chapter_contract and content.get(
+            "narrative_architecture_version"
+        ) != "canonical-narrative-v1":
+            raise KernelError(
+                "CHAPTER_CONTRACT_VERSION_REQUIRED",
+                "new Chapter Mission activation requires canonical narrative semantics",
+            )
     if content.get("narrative_architecture_version") == "canonical-narrative-v1":
         _validate_canonical_narrative_contract(
             project_id,
@@ -376,6 +385,12 @@ def validate_planning_contract(
             content,
             allow_pre_hierarchy_compatibility=allow_pre_hierarchy_compatibility,
         )
+    if contract_type is PlanContractType.CHAPTER and (
+        require_current_chapter_contract or content.get("chapter_contract_schema_version")
+    ):
+        from .chapter_contracts import require_chapter_contracts
+
+        require_chapter_contracts(content)
     return PlanningContract(
         project_id=project_id,
         book_id=book_id,
@@ -605,12 +620,6 @@ def _validate_canonical_narrative_contract(
             )
     _validate_chapter_temporal_boundaries(content)
     _validate_scene_architecture(content, transition_keys)
-    from .chapter_contracts import compile_chapter_contracts
-
-    compile_chapter_contracts(
-        content, asset_version_id=str(content.get("contract_id") or "chapter-plan"),
-        content_hash="sha256:" + hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest(),
-    )
     scheduled_arcs = [str(item.get("arc_plan_version_id") or "") for item in schedule]
     contribution_arcs = {
         str(item.get("arc_plan_version_id") or "")
@@ -1695,7 +1704,9 @@ def validate_chapter_function_matrix(
             str((row.get("reader_experience") or {}).get("reward_mode") or "")
             for row in rows
         ]
-        if len(rows) > 1 and (len(set(emotions)) == 1 or len(set(reward_modes)) == 1):
+        if len(rows) > 1 and (
+            len(set(emotions)) == 1 or len(set(reward_modes)) == 1
+        ):
             issues.append({"code": "READER_EXPERIENCE_HOMOGENEITY"})
     blocking = bool(issues)
     if blocking:

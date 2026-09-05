@@ -31,8 +31,6 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
-from novel_forge.modules.hierarchical_planning.window_policy import ChapterWindowPolicy
-
 from .governed_scheduler import PostgresBookAuthorityScheduler
 from .production import (
     BookProductionState,
@@ -59,16 +57,18 @@ def _bounded_chapter_group_range(
     start_chapter: int,
     target_chapter_count: int,
     preferred_size: int,
-    policy: ChapterWindowPolicy = ChapterWindowPolicy(),
+    maximum_chapters: int = 8,
 ) -> tuple[int, int]:
-    try:
-        return policy.select(
-            start=start_chapter, target=target_chapter_count, preferred=preferred_size
-        )
-    except ValueError as exc:
+    if start_chapter <= 0 or target_chapter_count < start_chapter:
         raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID", str(exc)
-        ) from exc
+            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
+            "ChapterGroup horizon must begin inside the bounded Book",
+        )
+    remaining = target_chapter_count - start_chapter + 1
+    if preferred_size <= 0 or maximum_chapters <= 0:
+        raise ValueError("ChapterGroup execution window limits must be positive")
+    size = min(preferred_size, maximum_chapters, remaining)
+    return start_chapter, start_chapter + size - 1
 
 
 class PostgresBookProductionSupervisor:
@@ -778,11 +778,6 @@ class PostgresBookProductionSupervisor:
                 generator != "chapter_group_plan.generate" and replacement_plan is None
             ),
             arc_working_set=arc_working_set,
-            chapter_window_policy=(
-                self.chapter_groups.window_policy.snapshot()
-                if generator == "chapter_group_plan.generate"
-                else None
-            ),
             narrative_realization=(
                 self.realizations.require_current_for_chapter(
                     project_id=str(book["project_id"]),
@@ -806,13 +801,18 @@ class PostgresBookProductionSupervisor:
                     "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
                     "ChapterGroup cursor must belong to the projected Volume",
                 )
+            execution_policy = self.chapter_groups.execution_policies.freeze_for_book(
+                project_id=str(book["project_id"]),
+                book_run_id=str(book["book_run_id"]),
+                actor_id=self.principal.principal_id,
+            )
             group_start, group_end = _bounded_chapter_group_range(
                 start_chapter=chapter_number,
                 target_chapter_count=min(
                     int(book["target_chapter_count"]), volume_range[1]
                 ),
-                preferred_size=int(book["light_recap_cadence"]),
-                policy=self.chapter_groups.window_policy,
+                preferred_size=execution_policy["policy"]["preferred_chapters"],
+                maximum_chapters=execution_policy["policy"]["maximum_chapters"],
             )
             parent_state = str(book.get("active_story_state_version_id") or "")
             if accepted_through == 0:

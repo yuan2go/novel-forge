@@ -43,18 +43,15 @@ Semantic constraints use only `CURRENT_PROVEN_INVARIANT`, `CURRENT_RUNTIME_FACT`
 `UNRESOLVED_DESIGN_CONSTRAINT`. Only the first may be documented as an architecture
 invariant; the last always requires an explicit design review marker.
 
-Retained design candidates visibly declare `PROPOSAL` and `NOT_RUNTIME_AUTHORITY`.
-Their embedded `proposal-lifecycle.v1` metadata records `ACTIVE`,
-`PARTIALLY_IMPLEMENTED`, `BLOCKED`, `REJECTED`, or `RESOLVED`, an exact Git/implementation
-baseline, reviewed production scope, implemented/superseding references and evidence-backed
-remaining decisions. Scoped file, AST-symbol or JSON-projection witnesses must still
-match current sources. Partial implementation cannot retain `NOT_IMPLEMENTED`.
-
-`make proposal-lifecycle-check` rejects stale witnesses, contradictory source/projection
-claims, missing decisions, and proposal references in current Reality or runtime
-instructions. Project completed facts into canonical documentation and delete resolved,
-rejected or superseded candidates; Git history retains their history. Proposals remain
-outside current capability and qualification authority.
+Repository-local design candidates remain outside canonical documentation and runtime
+Authority. Each file in `architecture/proposals/` visibly declares `PROPOSAL` and
+`NOT_RUNTIME_AUTHORITY` and carries one inline lifecycle record: status, exact reviewed
+Reality baseline, scope, implemented/superseding references and unresolved decisions or
+work. The checker rejects stale scope/review windows, contradictory implementation
+claims, missing decisions beyond the closure window and retained terminal proposals.
+`NOT_IMPLEMENTED` is forbidden once implementation evidence exists. Project resolved,
+rejected or superseded decisions into current Reality where applicable, then delete the
+terminal file; Git preserves history. This is not an alternate runtime evidence registry.
 
 ## Comments and docstrings
 
@@ -87,11 +84,28 @@ normal backend identity scope.
 domain/runtime/Authority proof, migration compatibility, retirement guard, fixture
 protocol or qualification infrastructure. The Test Reality check derives production
 targets where possible and enforces semantic-slice proof ceilings; migration, retirement
-and fixture evidence cannot alone qualify current business capability. Each retained
-file has classification, owner, production target and proof ceiling. Mock-heavy current
-invariant tests require an explicit same-capability/target direct contract or runtime
-witness; otherwise they remain supporting fixture evidence. `HISTORICAL_REDUNDANT`
-files must be deleted, and a broad allowlist cannot replace direct semantic coverage.
+and fixture evidence cannot alone qualify current business capability.
+
+Mock-heavy domain tests are demoted to fixture support, including imported scripted or
+mock helpers. Current semantic slices also require direct contract/runtime tests of their
+declared concrete production targets; a manifest label or unrelated direct test cannot
+promote fixture evidence. Every retained test keeps an owner, classification, target and
+proof ceiling. `HISTORICAL_REDUNDANT` is forbidden, not an archival class to retain.
+
+## Every-change governance
+
+`make pr-governance PR_BASE_SHA=<exact-base-sha>` compares clean committed implementation
+identities and delegates to the repository's existing checks. Unchanged implementation
+still runs governance, with qualification `NOT_REQUIRED / SAME_IMPLEMENTATION`.
+Implementation changes run changed non-PostgreSQL tests and then the complete canonical
+exact-SHA P0, including PostgreSQL, migration and recovery tests. A failed child gate
+prevents PASS; the final source identity must remain unchanged.
+
+The checked workflow calls this same entry point. Provider, prompt, Skill, Context or
+execution changes invalidate previously retained real-Provider evidence through the
+implementation identity. The PR gate never itself confers Provider qualification.
+Repository-local enforcement does not establish remote Actions or branch protection;
+operators must verify those controls separately before claiming merge enforcement.
 
 ## Skills
 
@@ -120,26 +134,3 @@ controls, permissions, trace/cost evidence or quality gates.
 
 Never edit business code merely to make prose appear correct. A discovered architecture
 gap is a separate scoped change with its own executable acceptance evidence.
-
-## Every-PR governance
-
-The canonical local entry is `make pr-governance PR_BASE_SHA=<exact-base-sha>`.
-It compares canonical implementation-tree identities, checks a clean exact checkout,
-runs source/Reality, documentation, instruction, Test Reality, lifecycle, comment/lint
-ratchets and architecture gates, then selects changed focused tests. An implementation
-change invokes the existing complete exact-SHA P0 runner, including PostgreSQL,
-migration, runtime, recovery and cleanup. A proposal or documentation change with the
-same implementation requires governance validation and records
-`qualification=NOT_REQUIRED`, `qualification_reason=SAME_IMPLEMENTATION`.
-
-A Provider, Prompt, Skill, Context or Execution identity change invalidates related
-real-Provider evidence. The local gate conservatively requires exact implementation
-identity for every current Provider claim. Historical live reports remain `STALE`;
-matching durable response, receipt, recovery and measured usage evidence is required
-before `QUALIFIED` can be declared. Qualification machinery and fixture tests do not
-supply this external evidence.
-
-The checked-in CI workflow calls this same local entry and uploads its reports. Remote
-Actions are disabled and the main branch-protection API reports a repository-plan
-restriction. Remote enforcement is therefore `OPEN_WITH_REASON`; a checked-in workflow
-and a local PASS do not establish enforced remote merge protection.

@@ -1,117 +1,257 @@
 from __future__ import annotations
 
+from datetime import date
 import json
 from pathlib import Path
 import subprocess
 
 import pytest
 
-from novel_forge.tools.implementation_tree_identity import build_git_implementation_tree_identity
-from novel_forge.tools.proposal_lifecycle import check_proposal_lifecycle, review_witness
+from novel_forge.tools.implementation_tree_identity import (
+    build_git_implementation_tree_identity,
+)
+from novel_forge.tools.proposal_lifecycle import check_proposal_lifecycle
 
 
-def _git(root: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+TODAY = date(2026, 9, 5)
 
 
-def _repository(root: Path) -> tuple[Path, dict]:
-    source = root / "src/novel_forge/modules/example.py"
-    source.parent.mkdir(parents=True)
-    source.write_text("class CurrentContract:\n    enabled = True\n")
-    _git(root, "init", "-q")
-    _git(root, "add", ".")
-    _git(root, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline")
-    sha = _git(root, "rev-parse", "HEAD")
-    ref = {"path": source.relative_to(root).as_posix(), "symbol": "CurrentContract"}
-    record = {
-        "schema_version": "proposal-lifecycle.v1", "status": "PARTIALLY_IMPLEMENTED",
-        "reality_baseline": {"commit_sha": sha, "implementation_tree_sha": build_git_implementation_tree_identity(root, sha)["implementation_tree_sha"]},
-        "scope": [ref["path"]], "implemented_refs": [ref], "superseding_refs": [],
-        "reviewed_sources": [{**ref, "sha256": review_witness(root, ref)}],
-        "remaining_decisions": [{"id": "approval", "decision": "Choose independent approval criteria", "evidence_refs": [ref["path"]]}],
+def _write(root: Path, relative: str, content: str) -> None:
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+@pytest.fixture
+def proposal(tmp_path: Path) -> tuple[Path, dict]:
+    _write(tmp_path, "src/example.py", "def current_contract():\n    return True\n")
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Governance Test",
+            "-c",
+            "user.email=governance@example.invalid",
+            "commit",
+            "-qm",
+            "baseline",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    sha = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True
+    ).strip()
+    metadata = {
+        "schema_version": "novel-forge.proposal-lifecycle.v1",
+        "status": "ACTIVE",
+        "reviewed_on": "2026-09-05",
+        "review_due": "2026-10-05",
+        "reality_baseline": {
+            "sha": sha,
+            "implementation_tree_sha": build_git_implementation_tree_identity(
+                tmp_path, sha
+            )["implementation_tree_sha"],
+        },
+        "scope": ["src/example.py"],
+        "implemented_refs": [],
+        "superseding_refs": [],
+        "remaining_decisions": [
+            {
+                "id": "owner",
+                "description": "Choose owner for missing transition",
+                "evidence_refs": [
+                    {"path": "src/example.py", "symbol": "current_contract"}
+                ],
+                "absent_refs": [
+                    {"path": "src/example.py", "symbol": "future_contract"}
+                ],
+            }
+        ],
+        "remaining_work": [],
     }
-    return source, record
+    return tmp_path, metadata
 
 
-def _write(root: Path, record: dict, text: str = "") -> Path:
-    path = root / "architecture/proposals/example.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("**PROPOSAL**\n**NOT_RUNTIME_AUTHORITY**\n<!-- proposal-lifecycle\n" + json.dumps(record) + "\n-->\n" + text)
-    return path
+def _check(proposal: tuple[Path, dict], *, extra: str = "") -> dict:
+    root, metadata = proposal
+    _write(
+        root,
+        "architecture/proposals/design.md",
+        (
+            "# Design\n\n> **PROPOSAL**\n> **NOT_RUNTIME_AUTHORITY**\n"
+            "<!-- proposal-lifecycle\n" + json.dumps(metadata) + "\n-->\n" + extra
+        ),
+    )
+    return check_proposal_lifecycle(root, today=TODAY)
 
 
-def test_partial_proposal_uses_exact_reviewed_scope_and_tolerates_unrelated_symbols(tmp_path: Path) -> None:
-    source, record = _repository(tmp_path)
-    _write(tmp_path, record)
-    assert check_proposal_lifecycle(tmp_path)["status"] == "PASS"
-    source.write_text(source.read_text() + "\ndef unrelated():\n    return 42\n")
-    assert check_proposal_lifecycle(tmp_path)["status"] == "PASS"
-    source.write_text(source.read_text().replace("enabled = True", "enabled = False"))
-    report = check_proposal_lifecycle(tmp_path)
+def test_unresolved_proposal_has_bounded_code_bound_lifecycle(
+    proposal: tuple[Path, dict],
+) -> None:
+    report = _check(proposal)
+    assert report["status"] == "PASS", report["errors"]
+    assert report["retained_terminal_count"] == 0
+    assert report["proposals"][0]["remaining_decisions"] == 1
+
+
+@pytest.mark.parametrize("status", ["REJECTED", "RESOLVED"])
+def test_terminal_proposals_must_be_deleted(
+    proposal: tuple[Path, dict], status: str
+) -> None:
+    proposal[1]["status"] = status
+    report = _check(proposal)
     assert report["status"] == "FAIL"
-    assert any("stale lifecycle" in error for error in report["errors"])
+    assert report["retained_terminal_count"] == 1
+    assert any("projected and deleted" in error for error in report["errors"])
 
 
-@pytest.mark.parametrize("mutation, message", [
-    (lambda record: record.update(status=[]), "unsupported lifecycle status"),
-    (lambda record: record["reviewed_sources"][0].update(path=[]), "reference requires"),
-    (lambda record: record.update(status="RESOLVED"), "closed proposal"),
-    (lambda record: record.update(status="REJECTED"), "closed proposal"),
-    (lambda record: record.update(status="ACTIVE"), "contradicts lifecycle"),
-    (lambda record: record.update(remaining_decisions=[]), "retire resolved proposals"),
-    (lambda record: record.update(scope=[]), "scoped production path"),
-    (lambda record: record["reality_baseline"].update(implementation_tree_sha="sha256:" + "0" * 64), "baseline implementation identity differs"),
-    (lambda record: record["remaining_decisions"][0].update(evidence_refs=["missing.py"]), "reference missing"),
-    (lambda record: record["reviewed_sources"][0].update(symbol="Missing"), "contradicts executable symbol"),
-])
-def test_invalid_lifecycle_cannot_pass(tmp_path: Path, mutation, message: str) -> None:
-    _, record = _repository(tmp_path)
-    mutation(record)
-    _write(tmp_path, record)
-    report = check_proposal_lifecycle(tmp_path)
+def test_completed_scope_cannot_be_retained(proposal: tuple[Path, dict]) -> None:
+    proposal[1]["remaining_decisions"] = []
+    report = _check(proposal)
+    assert any("no remaining decisions or work" in error for error in report["errors"])
+
+
+def test_approved_but_unimplemented_scope_has_a_closure_deadline(
+    proposal: tuple[Path, dict],
+) -> None:
+    metadata = proposal[1]
+    metadata["remaining_work"] = metadata["remaining_decisions"]
+    metadata["remaining_decisions"] = []
+    metadata["decision_free_since"] = "2026-08-01"
+    assert any("closure window" in error for error in _check(proposal)["errors"])
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("reviewed_on", "2026-09-06"),
+        ("review_due", "2026-09-04"),
+        ("review_due", "2026-12-01"),
+    ],
+)
+def test_review_window_is_not_indefinite(
+    proposal: tuple[Path, dict], field: str, value: str
+) -> None:
+    proposal[1][field] = value
+    assert any("review window" in error for error in _check(proposal)["errors"])
+
+
+def test_scope_changes_invalidate_review_even_when_references_still_exist(
+    proposal: tuple[Path, dict],
+) -> None:
+    _write(proposal[0], "src/example.py", "def current_contract():\n    return False\n")
+    assert any(
+        "implementation scope changed" in error for error in _check(proposal)["errors"]
+    )
+
+
+def test_new_untracked_scope_code_invalidates_review(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["scope"] = ["src"]
+    _write(proposal[0], "src/new_contract.py", "VALUE = True\n")
+    assert any(
+        "implementation scope changed" in error for error in _check(proposal)["errors"]
+    )
+
+
+def test_baseline_digest_must_match_exact_git_source(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["reality_baseline"]["implementation_tree_sha"] = "sha256:" + "0" * 64
+    assert any("identity mismatch" in error for error in _check(proposal)["errors"])
+
+
+def test_partial_implementation_cannot_claim_nothing_implemented(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["status"] = "PARTIALLY_IMPLEMENTED"
+    proposal[1]["implemented_refs"] = [
+        {"path": "src/example.py", "symbol": "current_contract"}
+    ]
+    assert _check(proposal)["status"] == "PASS"
+    assert any(
+        "still claims NOT_IMPLEMENTED" in error
+        for error in _check(proposal, extra="**NOT_IMPLEMENTED**")["errors"]
+    )
+
+
+def test_remaining_absence_claim_cannot_contradict_current_symbol(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["remaining_decisions"][0]["absent_refs"][0]["symbol"] = (
+        "current_contract"
+    )
+    assert any("already implemented" in error for error in _check(proposal)["errors"])
+
+
+def test_implemented_evidence_cannot_reference_missing_symbol(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["status"] = "PARTIALLY_IMPLEMENTED"
+    proposal[1]["implemented_refs"] = [{"path": "src/example.py", "symbol": "missing"}]
+    assert any(
+        "contradicts current code" in error for error in _check(proposal)["errors"]
+    )
+
+
+def test_proposal_cannot_supply_its_own_implementation_evidence(
+    proposal: tuple[Path, dict],
+) -> None:
+    proposal[1]["implemented_refs"] = [{"path": "architecture/proposals/design.md"}]
+    assert any(
+        "cannot be implementation evidence" in error
+        for error in _check(proposal)["errors"]
+    )
+
+
+@pytest.mark.parametrize(
+    "surface",
+    [
+        "architecture/reality-evidence.json",
+        "architecture/manifests/backend-qualification-manifest.yaml",
+        "architecture/manifests/test-manifest.yaml",
+        "architecture/evidence/qualification.json",
+        "architecture/live-evidence/provider.json",
+        "skills/runtime/SKILL.md",
+    ],
+)
+def test_proposal_cannot_be_promoted_to_current_or_runtime_evidence(
+    proposal: tuple[Path, dict], surface: str
+) -> None:
+    root, _ = proposal
+    _write(root, surface, '{"evidence":"architecture/proposals/design.md"}')
+    _write(
+        root,
+        "architecture/manifests/ai-instruction-manifest.yaml",
+        json.dumps(
+            {
+                "sources": [{"patterns": ["skills/*/SKILL.md"]}],
+            }
+        ),
+    )
+    assert any(
+        "proposal reference in current/runtime Authority" in error
+        for error in _check(proposal)["errors"]
+    )
+
+
+def test_missing_markers_or_malformed_metadata_fail_closed(
+    proposal: tuple[Path, dict],
+) -> None:
+    root, _ = proposal
+    _write(root, "architecture/proposals/design.md", "<!-- proposal-lifecycle\n[]\n-->")
+    report = check_proposal_lifecycle(root, today=TODAY)
     assert report["status"] == "FAIL"
-    assert any(message in error for error in report["errors"])
+    assert any("must be an object" in error for error in report["errors"])
 
 
-def test_implemented_not_implemented_and_current_projection_contradictions_fail(tmp_path: Path) -> None:
-    _, record = _repository(tmp_path)
-    _write(tmp_path, record, "NOT_IMPLEMENTED")
-    assert any("NOT_IMPLEMENTED" in error for error in check_proposal_lifecycle(tmp_path)["errors"])
-    current = tmp_path / "architecture/reality-evidence.json"
-    current.write_text(json.dumps({"capabilities": [{"implemented": True}]}))
-    ref = {"path": current.relative_to(tmp_path).as_posix(), "json_pointer": "/capabilities/0/implemented", "expected": False}
-    record["scope"].append(ref["path"])
-    record["reviewed_sources"].append({**ref, "sha256": "not-an-allowed-override"})
-    _write(tmp_path, record)
-    assert any("contradicts current projection" in error for error in check_proposal_lifecycle(tmp_path)["errors"])
-
-
-@pytest.mark.parametrize("target", ["architecture/reality-evidence.json", "architecture/manifests/ai-instruction-manifest.yaml", "config/pack.json", "skills/review/SKILL.md", "src/novel_forge/modules/runtime.py"])
-def test_proposal_reference_cannot_establish_runtime_authority(tmp_path: Path, target: str) -> None:
-    _, record = _repository(tmp_path)
-    _write(tmp_path, record)
-    path = tmp_path / target
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"source": "architecture/proposals/example.md"}))
-    assert check_proposal_lifecycle(tmp_path)["status"] == "FAIL"
-
-
-def test_retired_proposal_can_be_deleted_after_projection(tmp_path: Path) -> None:
-    _, record = _repository(tmp_path)
-    path = _write(tmp_path, {**record, "status": "RESOLVED"})
-    assert check_proposal_lifecycle(tmp_path)["status"] == "FAIL"
-    path.unlink()
-    report = check_proposal_lifecycle(tmp_path)
+def test_deleting_resolved_proposal_leaves_no_retained_history(
+    proposal: tuple[Path, dict],
+) -> None:
+    report = check_proposal_lifecycle(proposal[0], today=TODAY)
     assert report["status"] == "PASS"
-    assert report["proposal_count"] == report["stale_resolved_proposals"] == 0
-
-
-def test_reference_symlink_escape_and_malformed_metadata_fail_closed(tmp_path: Path) -> None:
-    _, record = _repository(tmp_path)
-    record["reviewed_sources"] = ["invalid"]
-    _write(tmp_path, record)
-    assert check_proposal_lifecycle(tmp_path)["status"] == "FAIL"
-    link = tmp_path / "escape"
-    link.symlink_to(tmp_path.parent)
-    with pytest.raises(ValueError, match="outside repository"):
-        review_witness(tmp_path, {"path": "../secret"})
+    assert report["proposal_count"] == 0

@@ -6,8 +6,6 @@ from typing import Any, Mapping, Protocol, Sequence
 
 from psycopg.types.json import Jsonb
 
-from novel_forge.modules.hierarchical_planning.window_policy import ChapterWindowPolicy
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.story_design_authority.qualification import (
@@ -106,14 +104,9 @@ class NarrativeSearchRequest:
                     "ChapterGroup search requires an exact frozen chapter range"
                 )
             start, end = chapter_range
-            policy = (
-                ChapterWindowPolicy.from_snapshot(self.generation.chapter_window_policy)
-                if self.generation.chapter_window_policy is not None
-                else ChapterWindowPolicy()
-            )
-            policy.require_range(start, end)
             if (
                 start <= self.accepted_through_chapter
+                or start <= 0
                 or end < start
                 or self.planning_horizon.get("starts_at_chapter") != start
                 or self.planning_horizon.get("ends_at_chapter") != end
@@ -262,11 +255,8 @@ class PostgresNarrativeSearchApplication:
         qualified_branch_committer: NarrativeSearchQualifiedBranchCommitter
         | None = None,
     ) -> NarrativeSearchResult:
-        principal.require(
-            "story_planning.authority.execute", request.generation.project_id
-        )
-        request = self._freeze_window_policy(request)
         command = request.generation
+        principal.require("story_planning.authority.execute", command.project_id)
         self._probe(execution_probe)
         search_key, search_id, input_hash, parent_hash = self._search_identity(request)
         replayed = self._open_search(
@@ -621,66 +611,6 @@ class PostgresNarrativeSearchApplication:
                 item.candidate_asset_version_id for item in candidates
             ),
             replayed=True,
-        )
-
-    def _freeze_window_policy(
-        self, request: NarrativeSearchRequest
-    ) -> NarrativeSearchRequest:
-        command = request.generation
-        if command.generator_operation_name != "chapter_group_plan.generate":
-            return request
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                "SELECT planning_horizon FROM authority_story_narrative_search WHERE project_id=%s AND book_id=%s AND stable_idempotency_key=%s",
-                [
-                    command.project_id,
-                    command.book_id,
-                    f"{command.idempotency_key}:narrative-search",
-                ],
-            )
-            row = uow.cursor.fetchone()
-        if row is not None and "window_policy" not in dict(row[0]):
-            if (
-                not 3
-                <= request.planning_horizon["chapter_range"][1]
-                - request.planning_horizon["chapter_range"][0]
-                + 1
-                <= 8
-            ):
-                raise KernelError(
-                    "CHAPTER_WINDOW_LEGACY_RANGE_INVALID",
-                    "historical Search must preserve its original three-to-eight contract",
-                )
-            return replace(
-                request, generation=replace(command, chapter_window_policy=None)
-            )
-        snapshot = (
-            dict(row[0]["window_policy"])
-            if row is not None
-            else (
-                dict(command.chapter_window_policy)
-                if command.chapter_window_policy is not None
-                else ChapterWindowPolicy().snapshot()
-            )
-        )
-        if (
-            row is not None
-            and command.chapter_window_policy is not None
-            and dict(command.chapter_window_policy) != snapshot
-        ):
-            raise KernelError(
-                "CHAPTER_WINDOW_POLICY_REPLAY_DRIFT",
-                "Search window policy differs from its frozen admission",
-            )
-        policy = ChapterWindowPolicy.from_snapshot(snapshot)
-        policy.require_range(*request.planning_horizon["chapter_range"])
-        return replace(
-            request,
-            generation=replace(command, chapter_window_policy=policy.snapshot()),
-            planning_horizon={
-                **request.planning_horizon,
-                "window_policy": policy.snapshot(),
-            },
         )
 
     def _search_identity(

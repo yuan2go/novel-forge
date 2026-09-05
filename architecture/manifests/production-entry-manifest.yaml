@@ -2,6 +2,42 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "chapter_group.execution_policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/chapter_group_authority/policy.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).chapter_groups.execution_policies.configure",
+      "definition_factory": "novel_forge.modules.chapter_group_authority.policy:chapter_group_execution_policy_definitions"
+    },
+    {
+      "name": "reader_proxy.policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).followup.reader_policies.configure",
+      "definition_factory": "novel_forge.modules.book_followup_authority.reader_policy_authority:reader_proxy_policy_definitions"
+    },
+    {
+      "name": "book.completion.assess",
+      "source": "src/novel_forge/api/routers/book_completion.py",
+      "application_source": "src/novel_forge/modules/book_authority/completion.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.assess",
+      "definition_factory": "novel_forge.modules.book_authority.completion:book_completion_definitions"
+    },
+    {
+      "name": "book.completion.decide",
+      "source": "src/novel_forge/api/routers/book_completion.py",
+      "application_source": "src/novel_forge/modules/book_authority/completion.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.decide",
+      "definition_factory": "novel_forge.modules.book_authority.completion:book_completion_definitions"
+    },
+    {
       "name": "agent.definition.register",
       "source": "src/novel_forge/api/routers/agent_runtime.py",
       "application_source": "src/novel_forge/modules/agent_runtime/application.py",

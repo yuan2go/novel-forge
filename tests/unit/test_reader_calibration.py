@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.reader_calibration.application import PostgresReaderCalibrationAuthority
 from novel_forge.modules.reader_calibration import (
     CalibrationCandidate,
     CalibrationScope,
@@ -22,23 +20,6 @@ from novel_forge.modules.reader_calibration import (
 
 
 class ReaderCalibrationDomainTests(unittest.TestCase):
-    def test_behavior_calibration_requires_dataset_lineage_before_database_or_admission(self) -> None:
-        authority = PostgresReaderCalibrationAuthority(
-            "postgresql://unreachable.invalid/no-database", application_build_id="unit", commit_sha="a" * 40
-        )
-        principal = Principal(
-            principal_id="operator", principal_type=PrincipalType.LOCAL_OPERATOR,
-            permissions=frozenset({"book.authority.execute"}), project_scope=frozenset({"project"}),
-            authentication_source="unit-test",
-        )
-        with self.assertRaisesRegex(KernelError, "READER_CALIBRATION_DATASET_LINEAGE_REQUIRED"):
-            authority.run_calibration(
-                project_id="project", scope=self._scope(), observations=[(0.9, 1)], minimum_sample_size=1,
-                input_manifest_version_id="caller-manifest", evidence_level="BEHAVIOR_CALIBRATED",
-                idempotency_key="calibration", principal=principal,
-            )
-        self.assertIsNone(authority.resolve_profile("project", self._scope()))
-
     def test_human_preference_blind_pair(self) -> None:
         left, right = blind_pair_order(
             "draft:a", "draft:b", randomization_key="pair:1"

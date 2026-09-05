@@ -1,150 +1,253 @@
 from __future__ import annotations
 
-import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 
-from novel_forge.modules.book_production.checkpoints import (
-    PostgresBookNarrativeCheckpointAuthority,
+from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.book_authority.completion import (
+    PostgresBookCompletionAuthority,
+    HUMAN_POLICY_BLOCKER,
 )
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated
-from tests.integration import (
-    test_book_to_chapter_authority_vertical_postgres as book_support,
+from tests.integration.authority_postgres_support import (
+    DATABASE_URL,
+    ensure_migrated,
+    identifier,
+    insert_definition,
+    insert_operation,
+    seed_authority_project_book,
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def migrated() -> None:
+    ensure_migrated()
 
 
 @pytest.fixture
-def book_fixture():
-    ensure_migrated()
-    support = book_support.BookToChapterAuthorityVerticalPostgresTests()
-    failure = {"enabled": False}
-
-    def inject(point: str) -> None:
-        if failure["enabled"] and point == "after_book_completion_before_cursor":
-            raise RuntimeError("completion transaction interrupted")
-
-    fixture = support._new_book_fixture(target_chapter_count=1, failure_injector=inject)
-    try:
-        yield support, fixture, failure
-    finally:
-        support.doCleanups()
-
-
-def test_book_completion_requires_terminal_accepted_boundary(book_fixture) -> None:
-    _, fixture, _ = book_fixture
-    with pytest.raises(KernelError) as raised:
-        fixture["authority"].complete_book_checkpoint(
-            fixture["book"].book_run_id, chapter_number=1
+def scope() -> dict:
+    project_id = identifier("completion")
+    workspace_id = "workspace:" + project_id
+    book_id = "book:" + project_id
+    book_run_id = "run:" + project_id
+    seed_authority_project_book(
+        project_id=project_id, workspace_id=workspace_id, book_id=book_id
+    )
+    operation_id = "operation:" + book_run_id
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        insert_definition(uow.cursor, project_id)
+        insert_operation(
+            uow.cursor,
+            operation_id=operation_id,
+            definition_name=project_id,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            status="SUCCEEDED",
         )
-    assert raised.value.code == "BOOK_COMPLETION_ACCEPTED_BOUNDARY_REQUIRED"
-    book = fixture["authority"].require(fixture["book"].book_run_id)
-    assert book["whole_book_completion"] is None
-    assert book["state"] != "COMPLETED"
+        uow.cursor.execute(
+            "INSERT INTO authority_saga(saga_id,root_operation_id,project_id,status,trace_id,correlation_id) VALUES (%s,%s,%s,'SUCCEEDED',%s,%s)",
+            [book_run_id, operation_id, project_id, project_id, project_id],
+        )
+        uow.cursor.execute(
+            """INSERT INTO authority_book_production(
+            book_run_id,project_id,workspace_id,book_id,book_design_version,book_plan_version,
+            production_profile_version,longform_context_versions,root_operation_id,saga_id,
+            stable_idempotency_key,state,current_chapter,target_chapter_count,light_recap_cadence,formal_recap_cadence,input_mode
+        ) VALUES (%s,%s,%s,%s,'design:1','plan:1','profile:1',%s,%s,%s,%s,'READY',0,1,1,1,'LEGACY_FIXTURE_INPUT_MODE')""",
+            [
+                book_run_id,
+                project_id,
+                workspace_id,
+                book_id,
+                Jsonb(
+                    {
+                        "arc_plan_versions": ["source:1"],
+                        **{
+                            key: "source:1"
+                            for key in (
+                                "volume_plan_version",
+                                "character_state_version",
+                                "foreshadowing_state_version",
+                                "quality_trend_version",
+                                "reward_ledger_version",
+                                "promise_ledger_version",
+                            )
+                        },
+                    }
+                ),
+                operation_id,
+                book_run_id,
+                project_id,
+            ],
+        )
+        uow.commit()
+    return {
+        "project_id": project_id,
+        "workspace_id": workspace_id,
+        "book_run_id": book_run_id,
+        "principal": Principal(
+            principal_id="completion-operator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"book.authority.execute", "book.authority.query"}),
+            project_scope=frozenset({project_id}),
+            authentication_source="integration-test",
+        ),
+    }
 
 
-def test_book_completion_crash_rolls_back_and_replay_retains_exact_accepted_history(
-    book_fixture,
+def _authority() -> PostgresBookCompletionAuthority:
+    return PostgresBookCompletionAuthority(
+        DATABASE_URL, application_build_id="completion-tests", commit_sha="e" * 40
+    )
+
+
+def _command(scope: dict, key: str) -> dict:
+    return {
+        **scope,
+        "idempotency_key": key,
+        "trace_id": "trace:" + key,
+        "correlation_id": "correlation:" + key,
+    }
+
+
+def _decision(scope: dict, case: dict, key: str, **changes) -> dict:
+    return {
+        **_command(scope, key),
+        "case_id": case["case_id"],
+        "source_digest": case["source_digest"],
+        "expected_case_version": case["case_version"],
+        "expected_decision_version": 0,
+        "decision": "REJECTED",
+        "rationale": "Accepted history is incomplete.",
+        **changes,
+    }
+
+
+def test_assessment_is_versioned_replayable_and_has_atomic_kernel_evidence(
+    scope: dict,
 ) -> None:
-    support, fixture, failure = book_fixture
-    authority, book_run_id = fixture["authority"], fixture["book"].book_run_id
-    delegated = authority.submit_chapter(
-        support._chapter_command(fixture, chapter_number=1),
-        principal=fixture["principal"],
-    )
-    support._run_child(fixture, delegated["chapter_root_operation_id"])
-    authority.reconcile_chapter(delegated["chapter_request_id"])
-    authority.accept_chapter(
-        delegated["chapter_request_id"], principal=fixture["principal"]
-    )
-    before = authority.require(book_run_id)
+    authority = _authority()
+    key = identifier("assess")
+    first = authority.assess(**_command(scope, key))
+    replay = _authority().assess(**_command(scope, key))
+    assert first["status"] == "NEEDS_REMEDIATION"
+    assert replay["replayed"] is True
+    assert replay["case_id"] == first["case_id"]
+    assert replay["case_version"] == 1
+    queried = authority.require_case(**scope, case_id=first["case_id"])
+    assert queried["source_current"] is True
+    assert queried["decision"] is None
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
-            "SELECT acceptance_operation_id FROM authority_book_chapter_acceptance WHERE book_run_id=%s",
-            [book_run_id],
+            "SELECT status FROM authority_operation WHERE operation_id=%s",
+            [first["operation_id"]],
         )
-        acceptance_operation_id = str(uow.cursor.fetchone()[0])
-        PostgresBookNarrativeCheckpointAuthority._append_volume_checkpoint(
-            uow.cursor,
-            project_id=str(before["project_id"]),
-            book_id=str(before["book_id"]),
-            book_run_id=book_run_id,
-            volume_plan_version=before["longform_context_versions"][
-                "volume_plan_version"
-            ],
-            active_chapter_group="",
-            chapter_number=1,
-            target_chapter_count=1,
-            arc_status={},
-            reachability={"replan_required": False, "status": "REACHABLE"},
-            acceptance_operation_id=acceptance_operation_id,
-        )
+        assert uow.cursor.fetchone()[0] == "SUCCEEDED"
+        result = uow.repositories.operations.transaction_result(
+            first["operation_id"], scope["project_id"]
+        )["result"]
+        assert result["case_id"] == first["case_id"]
         uow.cursor.execute(
-            "SELECT state,volume_goal_status FROM authority_book_volume_checkpoint WHERE book_run_id=%s",
-            [book_run_id],
+            "SELECT COUNT(*) FROM authority_attempt WHERE operation_id=%s",
+            [first["operation_id"]],
         )
-        assert uow.cursor.fetchone() == ("COMPLETED", "NOT_PROVEN")
-        uow.commit()
-    failure["enabled"] = True
-    with pytest.raises(RuntimeError, match="completion transaction interrupted"):
-        authority.complete_book_checkpoint(book_run_id, chapter_number=1)
-    failed = authority.require(book_run_id)
-    assert failed["whole_book_completion"] is None
-    assert failed["version"] == before["version"]
-    failure["enabled"] = False
-    completed = authority.complete_book_checkpoint(book_run_id, chapter_number=1)
-    replayed = authority.complete_book_checkpoint(book_run_id, chapter_number=1)
-    report = completed["whole_book_completion"]
-    assert completed["state"] == "COMPLETED"
-    assert report == replayed["whole_book_completion"]
-    assert report["decision"] == "BLOCKED"
-    assert report["whole_book_accepted"] is False
-    assert (
-        report["snapshot"]["accepted_boundary"]["story_state_asset_version_id"]
-        == before["active_story_state_version_id"]
-    )
-    assert (
-        report["snapshot"]["accepted_boundary"]["canon_snapshot_asset_version_id"]
-        == before["active_canon_snapshot_version_id"]
-    )
+        assert uow.cursor.fetchone()[0] == 0
+
+
+def test_rollback_and_postcommit_response_loss_do_not_duplicate_cases(
+    scope: dict,
+) -> None:
+    key = identifier("recovery")
+
+    def before_commit(point: str) -> None:
+        if point == "after_completion_evidence":
+            raise RuntimeError("crash before commit")
+
+    with pytest.raises(RuntimeError, match="before commit"):
+        _authority().assess(**_command(scope, key), fault_injector=before_commit)
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             "SELECT COUNT(*) FROM authority_book_completion_case WHERE book_run_id=%s",
-            [book_run_id],
+            [scope["book_run_id"]],
         )
-        assert uow.cursor.fetchone()[0] == 1
+        assert uow.cursor.fetchone()[0] == 0
+
+    def response_loss(point: str) -> None:
+        if point == "after_operation_completion_before_response":
+            raise RuntimeError("response lost")
+
+    with pytest.raises(RuntimeError, match="response lost"):
+        _authority().assess(**_command(scope, key), fault_injector=response_loss)
+    replay = _authority().assess(**_command(scope, key))
+    assert replay["replayed"] is True
+    assert replay["case_version"] == 1
+
+
+def test_rejection_is_immutable_versioned_and_cas_protected(scope: dict) -> None:
+    first = _authority().assess(**_command(scope, identifier("assess")))
+    key = identifier("decide")
+    decision = _authority().decide(**_decision(scope, first, key))
+    assert decision["status"] == "REJECTED"
+    assert _authority().decide(**_decision(scope, first, key))["replayed"] is True
+    second = _authority().assess(**_command(scope, identifier("assess")))
+    assert second["case_version"] == 2
+    with pytest.raises(KernelError, match="cursor changed"):
+        _authority().decide(**_decision(scope, second, identifier("stale")))
+    with pytest.raises(KernelError, match="terminal completion evidence"):
+        _authority().decide(
+            **_decision(scope, first, identifier("repeat"), expected_decision_version=1)
+        )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        with pytest.raises(Exception, match="immutable"):
+            uow.cursor.execute(
+                "UPDATE authority_book_completion_case SET status='READY_FOR_EDITORIAL' WHERE case_id=%s",
+                [first["case_id"]],
+            )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        with pytest.raises(Exception, match="immutable"):
+            uow.cursor.execute(
+                "DELETE FROM authority_book_completion_decision WHERE decision_id=%s",
+                [decision["decision_id"]],
+            )
+
+
+def test_source_change_rejects_decision_without_rewriting_assessment(
+    scope: dict,
+) -> None:
+    case = _authority().assess(**_command(scope, identifier("assess")))
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "UPDATE authority_book_production SET state='PAUSED' WHERE book_run_id=%s",
+            [scope["book_run_id"]],
+        )
+        uow.commit()
+    with pytest.raises(KernelError, match="current exact accepted source"):
+        _authority().decide(**_decision(scope, case, identifier("decide")))
+    current = _authority().require_case(**scope, case_id=case["case_id"])
+    assert current["source_current"] is False
+    assert current["source_digest"] == case["source_digest"]
+
+
+def test_acceptance_is_durably_blocked_without_native_whole_book_human_policy(
+    scope: dict,
+) -> None:
+    case = _authority().assess(**_command(scope, identifier("assess")))
+    result = _authority().decide(
+        **_decision(scope, case, identifier("accept"), decision="ACCEPTED")
+    )
+    assert result["status"] == "BLOCKED"
+    assert HUMAN_POLICY_BLOCKER in result["blockers"]
+    assert "WAITING_EXTERNAL_HUMAN_EVIDENCE" in result["blockers"]
+    assert result["evidence_dimensions"]["HUMAN_EDITORIAL"] == "WAITING_EVIDENCE"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "SELECT accepted_through_chapter,state FROM authority_book_production WHERE book_run_id=%s",
+            [scope["book_run_id"]],
+        )
+        assert uow.cursor.fetchone() == (0, "READY")
         uow.cursor.execute(
             "SELECT COUNT(*) FROM authority_book_chapter_acceptance WHERE book_run_id=%s",
-            [book_run_id],
+            [scope["book_run_id"]],
         )
-        assert uow.cursor.fetchone()[0] == 1
-    with pytest.raises(
-        psycopg.errors.CheckViolation, match="terminal accepted boundary"
-    ):
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                """
-                INSERT INTO authority_book_completion_case(
-                    completion_case_id,book_run_id,project_id,book_id,
-                    acceptance_id,projection_set_id,chapter_number,
-                    operation_id,contract_version,content_hash,decision,report
-                )
-                SELECT completion_case_id||':forged',book_run_id,project_id,book_id,
-                       acceptance_id,projection_set_id,chapter_number,
-                       operation_id,contract_version,content_hash,decision,
-                       jsonb_set(report,
-                         '{snapshot,accepted_boundary,story_state_asset_version_id}',
-                         '"unrelated-story-state"'::jsonb)
-                FROM authority_book_completion_case WHERE book_run_id=%s
-                """,
-                [book_run_id],
-            )
-            uow.commit()
-    with pytest.raises(psycopg.errors.CheckViolation, match="immutable"):
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                "DELETE FROM authority_book_completion_case WHERE book_run_id=%s",
-                [book_run_id],
-            )
-            uow.commit()
+        assert uow.cursor.fetchone()[0] == 0

@@ -8,8 +8,6 @@ import re
 from types import MappingProxyType
 from typing import Any, Mapping
 
-from novel_forge.modules.hierarchical_planning.window_policy import ChapterWindowPolicy
-
 from novel_forge.modules.story_design_authority import PlanningScope
 from novel_forge.modules.narrative_state.measurements import project_narrative_load
 
@@ -274,7 +272,6 @@ class StoryPlanningGenerationCommand:
     narrative_search_hard_constraints: tuple[str, ...] = ()
     narrative_realization: Mapping[str, Any] | None = None
     opening_execution_binding: Mapping[str, Any] | None = None
-    chapter_window_policy: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -292,18 +289,6 @@ class StoryPlanningGenerationCommand:
             raise ValueError("Planning Generation command is incomplete")
         if self.generator_operation_name not in GENERATOR_SCOPE:
             raise ValueError("Planning Generator is not supported")
-        window_policy = dict(self.chapter_window_policy or {})
-        if self.chapter_window_policy is not None:
-            if self.generator_operation_name != "chapter_group_plan.generate":
-                raise ValueError(
-                    "execution window policy belongs to ChapterGroup planning"
-                )
-            ChapterWindowPolicy.from_snapshot(window_policy)
-        object.__setattr__(
-            self,
-            "chapter_window_policy",
-            MappingProxyType(window_policy) if window_policy else None,
-        )
         realization = dict(self.narrative_realization or {})
         if self.generator_operation_name == "chapter_plan.generate":
             expected_realization_fields = {
@@ -574,13 +559,9 @@ class StoryPlanningGenerationCommand:
                         "ChapterGroup Narrative Search requires an exact frozen chapter range"
                     )
                 start, end = chapter_range
-                (
-                    ChapterWindowPolicy.from_snapshot(window_policy)
-                    if window_policy
-                    else ChapterWindowPolicy()
-                ).require_range(start, end)
                 if (
                     start <= self.narrative_search_accepted_through_chapter
+                    or start <= 0
                     or end < start
                     or search_horizon.get("starts_at_chapter") != start
                     or search_horizon.get("ends_at_chapter") != end

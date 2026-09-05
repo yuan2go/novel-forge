@@ -17,7 +17,6 @@ from novel_forge.tools.documentation_reality import (
     SCHEMA_VERSION,
     STATUS_VOCABULARY,
     _validate_comment_ratchet,
-    _validate_narrative_model,
     check_repository,
 )
 from novel_forge.tools.implementation_tree_identity import (
@@ -298,31 +297,6 @@ def _bind_retained_p0_report(root: Path, inventory_path: Path) -> None:
 
 
 class DocumentationRealityTests(unittest.TestCase):
-    def test_execution_policy_and_realization_do_not_become_structural_containment(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            source = root / "src/contracts.py"
-            source.parent.mkdir()
-            source.write_text("class WindowPolicy: pass\nclass Realization: pass\nclass ChapterPlan: pass\n")
-            def entry(identity: str, nature: str, symbol: str, target: str) -> dict:
-                return {
-                    "id": identity, "nature": nature, "owner": "planning-authority",
-                    "lifecycle_rule": "Current immutable production contract",
-                    "evidence": [{"path": "src/contracts.py", "symbol": symbol}],
-                    "relationships": [{"type": "EXECUTION_DEPENDENCY", "target": target}],
-                }
-            inventory = {"narrative_model": [
-                entry("window", "POLICY", "WindowPolicy", "chapter"),
-                entry("realization", "EXECUTION_CONTRACT", "Realization", "chapter"),
-                entry("chapter", "PLAN", "ChapterPlan", "realization"),
-            ]}
-            errors: list[str] = []
-            _validate_narrative_model(root, inventory, errors)
-            self.assertEqual(errors, [])
-            inventory["narrative_model"][0]["relationships"][0]["type"] = "STRUCTURAL_CONTAINMENT"
-            _validate_narrative_model(root, inventory, errors)
-            self.assertIn("execution policy cannot own structural narrative containment", "\n".join(errors))
-
     def test_minimal_evidence_inventory_is_verified_against_real_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -378,6 +352,18 @@ class DocumentationRealityTests(unittest.TestCase):
             self.assertIn(
                 "current-system projection is stale", "\n".join(report["errors"])
             )
+
+    def test_narrative_object_requires_explicit_convergence_disposition(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            del inventory["narrative_model"][0]["disposition"]
+            inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
+            report = check_repository(root)
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn("disposition is not recognized", "\n".join(report["errors"]))
 
     def test_unresolved_constraint_requires_design_review(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -934,6 +920,7 @@ class DocumentationRealityTests(unittest.TestCase):
                 {
                     "id": "example-object",
                     "nature": "EVIDENCE",
+                    "disposition": "KEEP",
                     "owner": "example-authority",
                     "lifecycle_rule": "Created by the example function.",
                     "relationships": [],

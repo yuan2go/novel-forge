@@ -7,12 +7,7 @@ from novel_forge.modules.reader_calibration.domain import (
     ReaderJudgeQualificationStatus,
     evaluate_reader_outcome_consumption,
 )
-
-
-from novel_forge.modules.reader_calibration.proxy_policy import (
-    ReaderProxyPolicy,
-    READER_PROXY_POLICY_V1,
-)
+from .reader_policy import ReaderProxyPolicy
 
 
 class ReaderOutcomeGate(str, Enum):
@@ -56,7 +51,7 @@ def evaluate_reader_outcome(
     state: Mapping[str, Any],
     *,
     evidence: Sequence[Mapping[str, Any]],
-    policy: ReaderProxyPolicy = READER_PROXY_POLICY_V1,
+    policy: ReaderProxyPolicy = ReaderProxyPolicy(),
 ) -> dict[str, Any]:
 
     missing = [name for name in READER_STATE_DIMENSIONS if name not in state]
@@ -75,13 +70,40 @@ def evaluate_reader_outcome(
         normalized[name] = score
 
     issues: list[dict[str, Any]] = []
-    for rule in policy.rules:
-        name, code = rule.dimension, rule.code
-        high_is_bad, blocking, threshold = (
-            rule.high_is_bad,
-            rule.blocking,
-            rule.threshold,
-        )
+    for name, code, high_is_bad, blocking, threshold in (
+        ("confusion", "READER_CONFUSION_RISE", True, True, policy.confusion),
+        ("drop_risk", "DROP_RISK_HIGH", True, True, policy.drop_risk),
+        (
+            "repetition_fatigue",
+            "REPETITION_FATIGUE",
+            True,
+            False,
+            policy.repetition_fatigue,
+        ),
+        ("continue_intent", "CONTINUE_INTENT_LOW", False, True, policy.continue_intent),
+        ("trust", "READER_TRUST_LOW", False, False, policy.trust),
+        (
+            "character_attachment",
+            "CHARACTER_ATTACHMENT_LOW",
+            False,
+            False,
+            policy.character_attachment,
+        ),
+        (
+            "antagonist_pressure",
+            "ANTAGONIST_PRESSURE_DROP",
+            False,
+            False,
+            policy.antagonist_pressure,
+        ),
+        (
+            "payoff_satisfaction",
+            "PAYOFF_SATISFACTION_LOW",
+            False,
+            False,
+            policy.payoff_satisfaction,
+        ),
+    ):
         value = normalized[name]
         breached = value >= threshold if high_is_bad else value <= threshold
         if breached:
@@ -98,9 +120,9 @@ def evaluate_reader_outcome(
 
     blocking_count = sum(item["severity"] == "BLOCKING" for item in issues)
     major_count = len(issues) - blocking_count
-    if blocking_count >= policy.revision_required_blocking_count:
+    if blocking_count >= policy.revision_required_issue_count:
         gate = ReaderOutcomeGate.REVISION_REQUIRED
-    elif blocking_count == 1:
+    elif blocking_count:
         gate = ReaderOutcomeGate.REVISION_RECOMMENDED
     elif major_count >= policy.human_review_major_count:
         gate = ReaderOutcomeGate.HUMAN_REVIEW_REQUIRED
@@ -110,8 +132,8 @@ def evaluate_reader_outcome(
         gate = ReaderOutcomeGate.PASS
     return {
         "contract_version": "reader-outcome-decision-v2",
-        "reader_proxy_policy": policy.snapshot(),
         "evidence_class": "READER_PROXY_ADVISORY",
+        "reader_proxy_policy_version": policy.policy_version,
         "reader_state": normalized,
         "gate": gate.value,
         "issues": issues,
@@ -209,7 +231,7 @@ def build_longform_recap_outputs(
     chapter_range: tuple[int, int],
     checkpoint_type: LongformCheckpointType,
     observations: Mapping[str, Any],
-    policy: ReaderProxyPolicy = READER_PROXY_POLICY_V1,
+    reader_policy: ReaderProxyPolicy = ReaderProxyPolicy(),
 ) -> dict[str, Any]:
     start, end = chapter_range
     if not project_id or not book_id or start <= 0 or end < start:
@@ -276,7 +298,7 @@ def build_longform_recap_outputs(
     _add_if(
         deviations,
         reader_allowed
-        and float(reader.get("confusion") or 0) >= policy.recap_confusion_threshold,
+        and float(reader.get("confusion") or 0) >= reader_policy.recap_confusion,
         "READER_CONFUSION_RISE",
         "MAJOR",
         reader_evidence,
@@ -285,7 +307,7 @@ def build_longform_recap_outputs(
         deviations,
         reader_allowed
         and float(reader.get("repetition_fatigue") or 0)
-        >= policy.recap_repetition_threshold,
+        >= reader_policy.recap_repetition_fatigue,
         "REPETITION_FATIGUE",
         "MAJOR",
         reader_evidence,
@@ -336,7 +358,6 @@ def build_longform_recap_outputs(
         "chapter_range": [start, end],
         "checkpoint_type": checkpoint_type.value,
         "observation_snapshot": dict(observations),
-        "reader_proxy_policy": policy.snapshot(),
         "deviation_count": len(deviations),
         "plan_mutation_allowed": False,
         "reader_evidence_class": "READER_PROXY_ADVISORY",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from copy import deepcopy
 
 import pytest
 
@@ -193,6 +194,38 @@ def test_realization_is_not_a_plan_scale_or_accepted_actual() -> None:
         "event-choice",
     )
     assert realization.contract_digest.startswith("sha256:")
+
+
+def _extended_contract(chapters: int) -> NarrativeRealizationContract:
+    values = _contract().to_dict()
+    values["chapter_range"] = [1, chapters]
+    event = values["events"][0]
+    values["events"] = [
+        {
+            **deepcopy(event),
+            "event_id": f"event-{number}",
+            "slice_id": f"chapter-{number}",
+            "chapter_number": number,
+            "causes": [f"event-{number - 1}"] if number > 1 else [],
+            "next_event_ids": [f"event-{number + 1}"] if number < chapters else [],
+        }
+        for number in range(1, chapters + 1)
+    ]
+    values["proof"]["covered_event_ids"] = [
+        event["event_id"] for event in values["events"]
+    ]
+    return NarrativeRealizationContract.from_mapping(values)
+
+
+@pytest.mark.parametrize("chapters", [1, 2, 9, 12])
+def test_realization_length_is_not_a_narrative_invariant(chapters: int) -> None:
+    contract = _extended_contract(chapters)
+    assert len(contract.events) == chapters
+    assert contract.chapter_range == (1, chapters)
+    values = contract.to_dict()
+    values["events"].pop()
+    with pytest.raises(KernelError):
+        NarrativeRealizationContract.from_mapping(values)
 
 
 def test_realization_rejects_dangling_or_backward_causality() -> None:

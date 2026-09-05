@@ -33,13 +33,15 @@ def test_supervisor_derives_two_exact_four_chapter_horizons() -> None:
 @pytest.mark.parametrize(
     ("target", "preferred", "expected"),
     (
+        (1, 4, (1, 1)),
+        (2, 4, (1, 2)),
         (6, 4, (1, 4)),
         (9, 8, (1, 8)),
         (10, 8, (1, 8)),
         (11, 8, (1, 8)),
     ),
 )
-def test_supervisor_window_uses_policy_and_permits_terminal_fragments(
+def test_supervisor_chapter_group_horizon_allows_positive_terminal_windows(
     target: int, preferred: int, expected: tuple[int, int]
 ) -> None:
     assert (
@@ -50,6 +52,18 @@ def test_supervisor_window_uses_policy_and_permits_terminal_fragments(
         )
         == expected
     )
+
+
+def test_supervisor_execution_cap_is_configurable_and_independent_of_recap() -> None:
+    assert _bounded_chapter_group_range(
+        start_chapter=1, target_chapter_count=30, preferred_size=12, maximum_chapters=12
+    ) == (1, 12)
+    assert _bounded_chapter_group_range(
+        start_chapter=29,
+        target_chapter_count=30,
+        preferred_size=12,
+        maximum_chapters=12,
+    ) == (29, 30)
 
 
 @pytest.mark.parametrize(

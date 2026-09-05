@@ -4,6 +4,10 @@ import inspect
 from types import SimpleNamespace
 
 from novel_forge.api.routers.quality_qualification import create_router
+from novel_forge.api.routers.quality_qualification import (
+    SubjectBindingRequest,
+    BlindDecisionRequest,
+)
 
 
 def test_quality_qualification_router_exposes_operator_and_reviewer_safe_paths() -> (
@@ -40,3 +44,13 @@ def test_reviewer_pack_endpoint_never_accepts_or_returns_private_mapping() -> No
     assert "private_mapping" not in source
     assert "reviewer_pack" in source
     assert "record_human_decision" in source
+
+
+def test_quality_api_uses_frozen_campaign_bounds_instead_of_eight_chapter_limit() -> (
+    None
+):
+    for model in (SubjectBindingRequest, BlindDecisionRequest):
+        fields = model.model_json_schema()["properties"]
+        for name in ("chapter_start", "chapter_end"):
+            assert fields[name]["minimum"] == 1
+            assert "maximum" not in fields[name]

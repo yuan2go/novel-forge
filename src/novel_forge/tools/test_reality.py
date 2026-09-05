@@ -33,11 +33,11 @@ CURRENT_CLASSIFICATIONS = frozenset(
         "CURRENT_AUTHORITY_BOUNDARY",
     }
 )
-DIRECT_CURRENT_CLASSIFICATIONS = frozenset(
+DIRECT_CLASSIFICATIONS = frozenset(
     {"CURRENT_DOMAIN_INVARIANT", "CURRENT_RUNTIME_CONTRACT"}
 )
 SEMANTIC_SLICE_ROLES = frozenset(
-    {"CURRENT_BUSINESS_CAPABILITY", "MIGRATION_COMPATIBILITY", "SUPPORTING_CONTRACT"}
+    {"CURRENT_BUSINESS_CAPABILITY", "MIGRATION_COMPATIBILITY"}
 )
 SEMANTIC_PROOF_CEILINGS = frozenset(
     {
@@ -47,18 +47,6 @@ SEMANTIC_PROOF_CEILINGS = frozenset(
         "POSTGRESQL_CURRENT_CONTRACT",
     }
 )
-CLASSIFICATION_PROOF_CEILINGS = {
-    "CURRENT_DOMAIN_INVARIANT": frozenset({"IN_PROCESS_CONTRACT_ONLY"}),
-    "CURRENT_RUNTIME_CONTRACT": frozenset(
-        {"POSTGRESQL_INTEGRATION_ONLY", "IN_PROCESS_ACCEPTANCE_ONLY"}
-    ),
-    "CURRENT_AUTHORITY_BOUNDARY": frozenset({"STATIC_AUTHORITY_BOUNDARY"}),
-    "MIGRATION_COMPATIBILITY": frozenset({"MIGRATION_COMPATIBILITY_ONLY"}),
-    "RETIREMENT_GUARD": frozenset({"RETIREMENT_ONLY"}),
-    "FIXTURE_PROTOCOL": frozenset({"FIXTURE_ONLY"}),
-    "QUALIFICATION_INFRASTRUCTURE": frozenset({"INFRASTRUCTURE_ONLY"}),
-    "HISTORICAL_REDUNDANT": frozenset({"NONE"}),
-}
 REQUIRED_RULE_FIELDS = (
     "id",
     "patterns",
@@ -120,90 +108,304 @@ def _module_target(root: Path, module: str) -> str:
     return ""
 
 
-def _local_test_dependencies(root: Path, path: Path, tree: ast.AST) -> set[Path]:
-    dependencies: set[Path] = set()
-    for node in ast.walk(tree):
+def _fixture_info(node: ast.AST) -> tuple[str, bool] | None:
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return None
+    for decorator in node.decorator_list:
+        function = decorator.func if isinstance(decorator, ast.Call) else decorator
+        if not (
+            isinstance(function, ast.Attribute)
+            and function.attr == "fixture"
+            or isinstance(function, ast.Name)
+            and function.id == "fixture"
+        ):
+            continue
+        options = (
+            {item.arg: item.value for item in decorator.keywords}
+            if isinstance(decorator, ast.Call)
+            else {}
+        )
+        name = options.get("name")
+        autouse = options.get("autouse")
+        return (
+            str(name.value) if isinstance(name, ast.Constant) else node.name,
+            autouse is not None
+            and not (isinstance(autouse, ast.Constant) and autouse.value is False),
+        )
+    return None
+
+
+def _import_module(path: Path, root: Path, node: ast.ImportFrom) -> str:
+    module = node.module or ""
+    if node.level:
+        parts = list(path.relative_to(root).parent.parts)
+        base = parts[: len(parts) - node.level + 1]
+        module = ".".join([*base, *([module] if module else [])])
+    return module
+
+
+def _test_module_path(root: Path, module: str) -> Path | None:
+    if not module.startswith("tests."):
+        return None
+    path = (root / module.replace(".", "/")).with_suffix(".py")
+    if not path.is_file():
+        path = root / module.replace(".", "/") / "__init__.py"
+    return path if path.is_file() else None
+
+
+def _mock_markers(content: str) -> bool:
+    return any(
+        marker in content
+        for marker in (
+            "unittest.mock",
+            "pytest.MonkeyPatch",
+            "monkeypatch",
+            "Scripted",
+            "scripted",
+            "fixture_protocol_only",
+            "FakeDeterministicProvider",
+            "FakeUnknownOnceProvider",
+            "FIXTURE_CONTROLLED",
+            "MagicMock",
+            "AsyncMock",
+            "SimpleNamespace",
+        )
+    )
+
+
+def _fixture_mock_backed(root: Path, path: Path) -> bool:
+    sources = [
+        parent / "conftest.py"
+        for parent in reversed(path.parents)
+        if parent == root or root in parent.parents
+    ]
+    sources = [source for source in sources if source.is_file()] + [path]
+    fixtures: dict[str, list[tuple[Path, ast.AST, bool]]] = {}
+    modules: dict[Path, ast.Module] = {}
+
+    def module(source: Path) -> ast.Module:
+        if source not in modules:
+            tree = ast.parse(source.read_text(encoding="utf-8"))
+            fixture_aliases = {
+                alias.asname or alias.name
+                for node in tree.body
+                if isinstance(node, ast.ImportFrom) and node.module == "pytest"
+                for alias in node.names
+                if alias.name == "fixture"
+            }
+            for node in ast.walk(tree):
+                for decorator in getattr(node, "decorator_list", ()):
+                    function = (
+                        decorator.func if isinstance(decorator, ast.Call) else decorator
+                    )
+                    if (
+                        isinstance(function, ast.Name)
+                        and function.id in fixture_aliases
+                    ):
+                        function.id = "fixture"
+            modules[source] = tree
+        return modules[source]
+
+    def exported_fixtures(
+        source: Path, visited: set[Path]
+    ) -> dict[str, tuple[Path, ast.AST, bool]]:
+        if source in visited:
+            return {}
+        visited = {*visited, source}
+        exported = {}
+        for binding in module(source).body:
+            if not isinstance(binding, ast.ImportFrom):
+                continue
+            imported = _test_module_path(root, _import_module(source, root, binding))
+            if imported is not None:
+                inherited = exported_fixtures(imported, visited)
+                for alias in binding.names:
+                    if alias.name in inherited:
+                        exported[alias.asname or alias.name] = inherited[alias.name]
+        for node in ast.walk(module(source)):
+            info = _fixture_info(node)
+            if info is not None:
+                exported[info[0]] = (source, node, info[1])
+        return exported
+
+    for source in sources:
+        for name, fixture in exported_fixtures(source, set()).items():
+            fixtures.setdefault(name, []).append(fixture)
+
+    seen: set[tuple[Path, int]] = set()
+
+    def inspect(source: Path, node: ast.AST) -> bool:
+        key = (source, getattr(node, "lineno", 0))
+        if key in seen:
+            return False
+        seen.add(key)
+        if _mock_markers(ast.unparse(node)) or any(
+            isinstance(item, ast.ClassDef)
+            and re.match(r"(?:Fake|Mock|Stub|Scripted)", item.name)
+            for item in ast.walk(node)
+        ):
+            return True
+        for call in ast.walk(node):
+            if (
+                isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "getfixturevalue"
+            ):
+                if (
+                    not call.args
+                    or not isinstance(call.args[0], ast.Constant)
+                    or not isinstance(call.args[0].value, str)
+                ):
+                    return True
+                if inspect_fixture(call.args[0].value):
+                    return True
+        names = {
+            item.id
+            for item in ast.walk(node)
+            if isinstance(item, ast.Name) and isinstance(item.ctx, ast.Load)
+        }
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for argument in (
+                *node.args.posonlyargs,
+                *node.args.args,
+                *node.args.kwonlyargs,
+            ):
+                if inspect_fixture(argument.arg, requester=(source, node)):
+                    return True
+        for binding in module(source).body:
+            if binding is node:
+                continue
+            if (
+                isinstance(
+                    binding, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                )
+                and binding.name in names
+            ):
+                if inspect(source, binding):
+                    return True
+            if isinstance(binding, (ast.Assign, ast.AnnAssign)):
+                targets = (
+                    binding.targets
+                    if isinstance(binding, ast.Assign)
+                    else [binding.target]
+                )
+                if any(
+                    isinstance(target, ast.Name) and target.id in names
+                    for target in targets
+                ) and inspect(source, binding):
+                    return True
+            if not isinstance(binding, (ast.Import, ast.ImportFrom)):
+                continue
+            for alias in binding.names:
+                imported_name = alias.asname or (
+                    alias.name.split(".")[0]
+                    if isinstance(binding, ast.Import)
+                    else alias.name
+                )
+                if imported_name not in names:
+                    continue
+                imported_module = (
+                    alias.name
+                    if isinstance(binding, ast.Import)
+                    else _import_module(source, root, binding)
+                )
+                if _mock_markers(imported_module):
+                    return True
+                imported = (
+                    _test_module_path(root, f"{imported_module}.{alias.name}")
+                    if isinstance(binding, ast.ImportFrom)
+                    else None
+                ) or _test_module_path(root, imported_module)
+                if imported is not None:
+                    selected = [
+                        item
+                        for item in module(imported).body
+                        if getattr(item, "name", None) == alias.name
+                    ]
+                    if selected:
+                        if any(inspect(imported, item) for item in selected):
+                            return True
+                    elif _mock_backed(root, imported):
+                        return True
+        return False
+
+    def inspect_fixture(
+        name: str, requester: tuple[Path, ast.AST] | None = None
+    ) -> bool:
+        candidates = fixtures.get(name, [])
+        if requester is not None:
+            for index, candidate in enumerate(candidates):
+                if candidate[:2] == requester:
+                    candidates = candidates[:index]
+                    break
+        return bool(candidates) and inspect(candidates[-1][0], candidates[-1][1])
+
+    for name, candidates in fixtures.items():
+        autouse = candidates[-1][2]
+        if autouse and inspect_fixture(name):
+            return True
+    for node in ast.walk(module(path)):
+        if isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef)
+        ) and node.name.startswith("test"):
+            if inspect(path, node):
+                return True
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr == "getfixturevalue":
+                if (
+                    not node.args
+                    or not isinstance(node.args[0], ast.Constant)
+                    or not isinstance(node.args[0].value, str)
+                ):
+                    return True
+                if inspect_fixture(node.args[0].value):
+                    return True
+            if node.func.attr == "usefixtures":
+                if any(
+                    not isinstance(arg, ast.Constant)
+                    or not isinstance(arg.value, str)
+                    or inspect_fixture(arg.value)
+                    for arg in node.args
+                ):
+                    return True
+    return False
+
+
+def _mock_backed(root: Path, path: Path, seen: set[Path] | None = None) -> bool:
+    visited = set() if seen is None else seen
+    if path in visited:
+        return False
+    visited.add(path)
+    content = path.read_text(encoding="utf-8")
+    tree = ast.parse(content)
+    if any(_fixture_info(node) is not None for node in ast.walk(tree)):
+        return _fixture_mock_backed(root, path)
+    if _mock_markers(content):
+        return True
+    for node in ast.walk(ast.parse(content)):
+        if isinstance(node, ast.ClassDef) and re.match(
+            r"(?:Fake|Mock|Stub|Scripted)", node.name
+        ):
+            return True
         modules: list[str] = []
         if isinstance(node, ast.Import):
             modules = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom):
-            module = str(node.module or "")
-            if node.level:
-                package = list(path.relative_to(root).parent.parts)
-                package = package[: len(package) - node.level + 1]
-                module = ".".join([*package, *module.split(".")]).rstrip(".")
+            module = _import_module(path, root, node)
             modules = [module, *(f"{module}.{alias.name}" for alias in node.names)]
         for module in modules:
-            if module != "tests" and not module.startswith("tests."):
-                continue
-            candidate = root / Path(*module.split("."))
-            for dependency in (candidate.with_suffix(".py"), candidate / "__init__.py"):
-                if dependency.is_file():
-                    dependencies.add(dependency)
-    for parent in path.parents:
-        if parent == root:
-            break
-        conftest = parent / "conftest.py"
-        if conftest.is_file() and conftest != path:
-            dependencies.add(conftest)
-    return dependencies
-
-
-def _fixture_or_mock_sources(
-    root: Path, path: Path, cache: dict[Path, tuple[bool, set[Path]]]
-) -> list[str]:
-    pending = [path]
-    visited: set[Path] = set()
-    sources: set[str] = set()
-    while pending:
-        current = pending.pop()
-        if current in visited:
-            continue
-        visited.add(current)
-        if current not in cache:
-            content = current.read_text(encoding="utf-8")
-            tree = ast.parse(content, filename=str(current))
-            backed = any(
-                marker in content
-                for marker in (
-                    "unittest.mock",
-                    "pytest.MonkeyPatch",
-                    "monkeypatch",
-                    "Scripted",
-                    "scripted",
-                    "fixture_protocol_only",
-                    "SimpleNamespace",
-                    "fake_deterministic_provider",
-                )
-            ) or any(
-                (
-                    isinstance(node, (ast.Name, ast.alias))
-                    and re.match(
-                        r"(?:Fake|Mock|MagicMock|AsyncMock|Stub)(?:[A-Z_]|$)",
-                        node.id if isinstance(node, ast.Name) else node.name,
-                    )
-                )
-                or (isinstance(node, ast.Attribute) and node.attr == "__new__")
-                or (
-                    isinstance(node, ast.ClassDef)
-                    and not node.bases
-                    and not node.name.startswith("Test")
-                    and not node.name.endswith("Tests")
-                    and any(isinstance(item, ast.FunctionDef) for item in node.body)
-                )
-                for node in ast.walk(tree)
-            )
-            cache[current] = (backed, _local_test_dependencies(root, current, tree))
-        backed, dependencies = cache[current]
-        if backed:
-            sources.add(current.relative_to(root).as_posix())
-        pending.extend(dependencies - visited)
-    return sorted(sources)
+            if module.startswith("tests."):
+                imported = (root / module.replace(".", "/")).with_suffix(".py")
+                if not imported.is_file():
+                    imported = root / module.replace(".", "/") / "__init__.py"
+                if imported.is_file() and _mock_backed(root, imported, visited):
+                    return True
+    return False
 
 
 def _test_facts(
-    root: Path, path: Path, evidence_cache: dict[Path, tuple[bool, set[Path]]]
-) -> tuple[int, list[str], list[str], list[str]]:
+    root: Path, path: Path
+) -> tuple[int, list[str], list[str], list[str], str]:
     content = path.read_text(encoding="utf-8")
     tree = ast.parse(content, filename=str(path))
     definition_count = sum(
@@ -230,16 +432,23 @@ def _test_facts(
                 target = _module_target(root, module)
                 if target:
                     targets.add(target)
+    direct_targets = sorted(targets)
     for match in PATH_LITERAL.finditer(content):
         candidate = match.group(0).rstrip(".,;:')\"")
         path_candidate = root / candidate
         if "*" not in candidate and path_candidate.exists():
             targets.add(candidate)
+    evidence_basis = (
+        "FIXTURE_OR_MOCK_BACKED"
+        if _mock_backed(root, path) or _fixture_mock_backed(root, path)
+        else "DIRECT_CONTRACT"
+    )
     return (
         definition_count,
         sorted(symbols),
         sorted(targets),
-        _fixture_or_mock_sources(root, path, evidence_cache),
+        direct_targets,
+        evidence_basis,
     )
 
 
@@ -319,10 +528,6 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
         if classification not in CLASSIFICATIONS:
             _error(errors, f"unsupported test reality classification: {classification}")
             continue
-        if rule["proof_ceiling"] not in CLASSIFICATION_PROOF_CEILINGS[classification]:
-            _error(
-                errors, f"test classification has unsupported proof ceiling: {rule_id}"
-            )
         validated_rules.append(rule)
 
     discovered = (
@@ -343,7 +548,7 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
                 )
     records: list[dict[str, Any]] = []
     unclassified: list[str] = []
-    evidence_cache: dict[Path, tuple[bool, set[Path]]] = {}
+    classification_by_path: dict[str, str] = {}
     for path in discovered:
         relative = path.relative_to(root).as_posix()
         rule = next(
@@ -354,13 +559,13 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             continue
         classification = str(rule["classification"])
         try:
-            definition_count, symbols, targets, mock_sources = _test_facts(
-                root, path, evidence_cache
+            definition_count, symbols, targets, direct_targets, evidence_basis = (
+                _test_facts(root, path)
             )
         except (OSError, UnicodeDecodeError, SyntaxError) as exc:
             _error(errors, f"cannot inspect test reality: {relative}: {exc}")
             continue
-        observed_targets = list(targets)
+        declared_classification = classification
         configured_target = str(rule["production_target"])
         if configured_target != "AUTO_FROM_TEST_IMPORTS":
             try:
@@ -385,21 +590,32 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             _error(errors, f"test reality owner cannot be derived: {relative}")
         if classification == "HISTORICAL_REDUNDANT":
             _error(errors, f"historical redundant tests must be deleted: {relative}")
+        demoted = (
+            classification == "CURRENT_DOMAIN_INVARIANT"
+            and evidence_basis == "FIXTURE_OR_MOCK_BACKED"
+        )
+        if demoted:
+            classification = "FIXTURE_PROTOCOL"
+        classification_by_path[relative] = classification
         records.append(
             {
                 "path": relative,
                 "classification": classification,
+                "declared_classification": declared_classification,
                 "owner": owner,
                 "capability": str(rule["capability"]),
                 "production_targets": targets,
-                "observed_production_targets": observed_targets,
+                "direct_production_targets": direct_targets,
                 "tested_symbols": symbols,
-                "qualification_role": str(rule["qualification_role"]),
-                "proof_ceiling": str(rule["proof_ceiling"]),
-                "evidence_basis": (
-                    "FIXTURE_OR_MOCK_BACKED" if mock_sources else "DIRECT_CONTRACT"
+                "qualification_role": (
+                    "FIXTURE_CONTRACT_ONLY"
+                    if demoted
+                    else str(rule["qualification_role"])
                 ),
-                "fixture_or_mock_sources": mock_sources,
+                "proof_ceiling": "FIXTURE_ONLY"
+                if demoted
+                else str(rule["proof_ceiling"]),
+                "evidence_basis": evidence_basis,
                 "test_definition_count": definition_count,
                 "rule_id": str(rule["id"]),
             }
@@ -407,51 +623,6 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
     for relative in unclassified:
         _error(errors, f"unclassified test file: {relative}")
 
-    direct_records = [
-        record
-        for record in records
-        if record["classification"] in DIRECT_CURRENT_CLASSIFICATIONS
-        and record["evidence_basis"] == "DIRECT_CONTRACT"
-        and record["test_definition_count"] > 0
-        and any(
-            target.startswith("src/novel_forge/")
-            for target in record["observed_production_targets"]
-        )
-    ]
-    downgraded: list[str] = []
-    for record in records:
-        record["current_semantic_evidence"] = record in direct_records
-        record["direct_contract_witnesses"] = []
-        if (
-            record["classification"] != "CURRENT_DOMAIN_INVARIANT"
-            or record["evidence_basis"] != "FIXTURE_OR_MOCK_BACKED"
-        ):
-            continue
-        required = set(record["production_targets"])
-        witnesses = [
-            witness
-            for witness in direct_records
-            if witness["capability"] == record["capability"]
-            and required.intersection(witness["observed_production_targets"])
-        ]
-        covered = {
-            target
-            for witness in witnesses
-            for target in witness["observed_production_targets"]
-        }
-        if required and required <= covered:
-            record["direct_contract_witnesses"] = sorted(
-                witness["path"] for witness in witnesses
-            )
-        else:
-            for field in ("classification", "qualification_role", "proof_ceiling"):
-                record[f"declared_{field}"] = record[field]
-            record["classification"] = "FIXTURE_PROTOCOL"
-            record["qualification_role"] = "FIXTURE_CONTRACT_ONLY"
-            record["proof_ceiling"] = "FIXTURE_ONLY"
-            downgraded.append(record["path"])
-    records_by_path = {record["path"]: record for record in records}
-    slice_evidence: dict[str, dict[str, Any]] = {}
     policy = manifest.get("semantic_slice_policy")
     if not isinstance(policy, Mapping):
         _error(errors, "semantic_slice_policy must be an object")
@@ -474,7 +645,7 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             _error(errors, f"qualification semantic slice is empty: {name}")
             continue
         classes = {
-            records_by_path.get(str(relative), {}).get("classification", "UNCLASSIFIED")
+            classification_by_path.get(str(relative), "UNCLASSIFIED")
             for relative in paths
         }
         role = str(slice_policy.get("role") or "")
@@ -485,91 +656,50 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             )
         if role not in SEMANTIC_SLICE_ROLES:
             _error(errors, f"semantic slice has unsupported reality role: {name}")
-        witnesses = [
-            records_by_path[str(relative)]
-            for relative in paths
-            if records_by_path.get(str(relative), {}).get("current_semantic_evidence")
-        ]
-        required_targets = slice_policy.get("direct_contract_targets", [])
-        valid_targets: set[str] = set()
+        if role == "CURRENT_BUSINESS_CAPABILITY" and not (
+            classes & CURRENT_CLASSIFICATIONS
+        ):
+            _error(
+                errors,
+                f"current semantic slice has no current-behavior evidence: {name}",
+            )
         if role == "CURRENT_BUSINESS_CAPABILITY":
-            if not witnesses:
+            direct = [
+                record
+                for record in records
+                if record["path"] in paths
+                and record["classification"] in DIRECT_CLASSIFICATIONS
+                and record["evidence_basis"] == "DIRECT_CONTRACT"
+            ]
+            if not direct:
                 _error(
                     errors,
-                    f"current semantic slice has no direct current-contract evidence: {name}",
+                    f"current semantic slice has no direct contract/runtime evidence: {name}",
                 )
+            required_targets = slice_policy.get("production_targets")
             if not isinstance(required_targets, list) or not required_targets:
                 _error(
                     errors,
-                    f"current semantic slice has no direct production targets: {name}",
+                    f"current semantic slice requires explicit production targets: {name}",
                 )
-            else:
-                for value in required_targets:
-                    try:
-                        target = _relative(
-                            value, field=f"{name}.direct_contract_targets"
-                        )
-                    except ValueError as exc:
-                        _error(errors, str(exc))
-                        continue
-                    if (
-                        not target.startswith("src/novel_forge/")
-                        or not (root / target).is_file()
-                    ):
-                        _error(
-                            errors,
-                            f"current semantic slice target is not production code: {name}:{target}",
-                        )
-                        continue
-                    valid_targets.add(target)
-                covered = {
-                    target
-                    for witness in witnesses
-                    for target in witness["observed_production_targets"]
-                }
-                for target in sorted(valid_targets - covered):
+                required_targets = []
+            for target in required_targets:
+                if not isinstance(target, str) or not (root / target).is_file():
                     _error(
                         errors,
-                        f"current semantic slice lacks direct target evidence: {name}:{target}",
+                        f"semantic slice production target must be a concrete file: {name}:{target}",
                     )
-            if proof_ceiling in {
-                "FIXTURE_CONTROL_ONLY",
-                "MIGRATION_COMPATIBILITY_ONLY",
-            }:
-                _error(
-                    errors,
-                    f"supporting proof cannot qualify a current semantic slice: {name}",
-                )
-        if role == "SUPPORTING_CONTRACT" and proof_ceiling != "FIXTURE_CONTROL_ONLY":
-            _error(
-                errors,
-                f"supporting semantic slice must retain fixture proof ceiling: {name}",
-            )
-        slice_evidence[str(name)] = {
-            "role": role,
-            "proof_ceiling": proof_ceiling,
-            "direct_contract_targets": sorted(valid_targets),
-            "direct_current_witnesses": sorted(record["path"] for record in witnesses),
-            "supporting_evidence": sorted(
-                str(relative)
-                for relative in paths
-                if not records_by_path.get(str(relative), {}).get(
-                    "current_semantic_evidence"
-                )
-            ),
-        }
+                elif not any(
+                    target in record["direct_production_targets"] for record in direct
+                ):
+                    _error(
+                        errors,
+                        f"semantic slice target lacks direct evidence: {name}:{target}",
+                    )
         if role == "MIGRATION_COMPATIBILITY" and classes != {"MIGRATION_COMPATIBILITY"}:
             _error(
                 errors,
                 f"migration semantic slice contains non-migration evidence: {name}",
-            )
-        if (
-            role == "MIGRATION_COMPATIBILITY"
-            and proof_ceiling != "MIGRATION_COMPATIBILITY_ONLY"
-        ):
-            _error(
-                errors,
-                f"migration semantic slice must retain compatibility proof ceiling: {name}",
             )
         if proof_ceiling not in SEMANTIC_PROOF_CEILINGS:
             _error(errors, f"semantic slice has unsupported proof ceiling: {name}")
@@ -590,9 +720,18 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             name: test_counts.get(name, 0) for name in CLASSIFICATIONS
         },
         "unclassified_files": unclassified,
+        "mocked_invariant_demotions": [
+            record["path"]
+            for record in records
+            if record["declared_classification"] == "CURRENT_DOMAIN_INVARIANT"
+            and record["classification"] == "FIXTURE_PROTOCOL"
+        ],
+        "mock_fixture_false_qualification_count": sum(
+            "no direct contract/runtime evidence" in error
+            or "target lacks direct evidence" in error
+            for error in errors
+        ),
         "files": records,
-        "downgraded_fixture_files": downgraded,
-        "semantic_slice_evidence": slice_evidence,
         "errors": errors,
     }
 

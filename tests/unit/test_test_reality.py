@@ -39,14 +39,14 @@ def _fixture_manifest() -> dict[str, object]:
                 "capability": "current-domain",
                 "production_target": "AUTO_FROM_TEST_IMPORTS",
                 "qualification_role": "CURRENT_BUSINESS_SUPPORT",
-                "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY",
+                "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER",
             },
         ],
         "semantic_slice_policy": {
             "current_slice": {
                 "role": "CURRENT_BUSINESS_CAPABILITY",
                 "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER",
-                "direct_contract_targets": ["src/novel_forge/example.py"],
+                "production_targets": ["src/novel_forge/example.py"],
             },
             "migration_matrix": {
                 "role": "MIGRATION_COMPATIBILITY",
@@ -121,7 +121,7 @@ def test_current_capability_cannot_be_supported_only_by_migration_evidence(
 
     assert report["status"] == "FAIL"
     assert (
-        "current semantic slice has no direct current-contract evidence: current_slice"
+        "current semantic slice has no current-behavior evidence: current_slice"
         in report["errors"]
     )
 
@@ -174,44 +174,7 @@ def test_retained_historical_redundant_test_is_rejected(tmp_path: Path) -> None:
     )
 
 
-def _read_manifest(root: Path) -> dict[str, object]:
-    return json.loads((root / "architecture/manifests/test-manifest.yaml").read_text())
-
-
-def _save_manifest(root: Path, manifest: dict[str, object]) -> None:
-    _write(root / "architecture/manifests/test-manifest.yaml", json.dumps(manifest))
-
-
-def _set_current_slice(root: Path, paths: list[str]) -> None:
-    path = root / "architecture/manifests/backend-qualification-manifest.yaml"
-    payload = json.loads(path.read_text())
-    payload["semantic_slices"]["current_slice"] = paths
-    _write(path, json.dumps(payload))
-
-
-def _record(report: dict[str, object], path: str) -> dict[str, object]:
-    return next(record for record in report["files"] if record["path"] == path)
-
-
-def test_direct_current_contract_passes_without_upgrading_evidence(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "PASS", report["errors"]
-    assert report["semantic_slice_evidence"]["current_slice"][
-        "direct_current_witnesses"
-    ] == ["tests/unit/test_example.py"]
-    assert _record(report, "tests/unit/test_example.py")["proof_ceiling"] == (
-        "IN_PROCESS_CONTRACT_ONLY"
-    )
-
-
-def test_mock_only_current_slice_fails_and_retains_declared_metadata(
-    tmp_path: Path,
-) -> None:
+def test_mock_only_current_slice_fails_and_invariant_is_demoted(tmp_path: Path) -> None:
     _fixture_repository(tmp_path)
     _write(
         tmp_path / "tests/unit/test_example.py",
@@ -222,279 +185,244 @@ def test_mock_only_current_slice_fails_and_retains_declared_metadata(
     report = check_test_reality(tmp_path)
 
     assert report["status"] == "FAIL"
-    record = _record(report, "tests/unit/test_example.py")
+    assert report["mocked_invariant_demotions"] == ["tests/unit/test_example.py"]
+    assert report["mock_fixture_false_qualification_count"] > 0
+    record = next(
+        item for item in report["files"] if item["path"].endswith("test_example.py")
+    )
     assert record["classification"] == "FIXTURE_PROTOCOL"
-    assert record["declared_classification"] == "CURRENT_DOMAIN_INVARIANT"
-    assert record["qualification_role"] == "FIXTURE_CONTRACT_ONLY"
     assert record["proof_ceiling"] == "FIXTURE_ONLY"
-    assert record["declared_proof_ceiling"] == "IN_PROCESS_CONTRACT_ONLY"
-    assert record["owner"] == "platform"
-    assert record["production_targets"] == ["src/novel_forge/example.py"]
-    assert record["current_semantic_evidence"] is False
-    assert report["downgraded_fixture_files"] == ["tests/unit/test_example.py"]
 
 
-def test_matching_direct_witness_supports_mock_contract_but_never_promotes_it(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-    _write(
-        tmp_path / "tests/unit/test_mock_example.py",
-        "from unittest.mock import Mock\nfrom novel_forge.example import VALUE\n"
-        "def test_value():\n    assert Mock(return_value=VALUE)() == 1\n",
-    )
-    _set_current_slice(tmp_path, ["tests/unit/test_mock_example.py"])
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    record = _record(report, "tests/unit/test_mock_example.py")
-    assert record["classification"] == "CURRENT_DOMAIN_INVARIANT"
-    assert record["direct_contract_witnesses"] == ["tests/unit/test_example.py"]
-    assert record["current_semantic_evidence"] is False
-    _set_current_slice(
-        tmp_path, ["tests/unit/test_mock_example.py", "tests/unit/test_example.py"]
-    )
-    assert check_test_reality(tmp_path)["status"] == "PASS"
-
-
-@pytest.mark.parametrize(
-    "declared_target", ["AUTO_FROM_TEST_IMPORTS", "src/novel_forge/example.py"]
-)
-def test_unrelated_direct_witness_cannot_rescue_current_slice(
-    tmp_path: Path,
-    declared_target: str,
-) -> None:
+def test_unrelated_direct_test_does_not_rescue_mocked_target(tmp_path: Path) -> None:
     _fixture_repository(tmp_path)
     _write(tmp_path / "src/novel_forge/unrelated.py", "VALUE = 2\n")
     _write(
-        tmp_path / "tests/unit/test_unrelated.py",
-        "from novel_forge.unrelated import VALUE\ndef test_value():\n    assert VALUE == 2\n",
-    )
-    manifest = _read_manifest(tmp_path)
-    rule = dict(manifest["classification_rules"][1])
-    rule.update(
-        id="unrelated",
-        patterns=["tests/unit/test_unrelated.py"],
-        production_target=declared_target,
-    )
-    manifest["classification_rules"].insert(0, rule)
-    _save_manifest(tmp_path, manifest)
-    _set_current_slice(tmp_path, ["tests/unit/test_unrelated.py"])
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    assert (
-        "current semantic slice lacks direct target evidence: current_slice:src/novel_forge/example.py"
-        in report["errors"]
-    )
-
-
-def test_different_capability_does_not_witness_mock_domain_invariant(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-    _write(
-        tmp_path / "tests/unit/test_mock_example.py",
-        "from unittest.mock import Mock\nfrom novel_forge.example import VALUE\n"
-        "def test_value():\n    assert Mock(return_value=VALUE)() == 1\n",
-    )
-    manifest = _read_manifest(tmp_path)
-    rule = dict(manifest["classification_rules"][1])
-    rule.update(
-        id="mock",
-        patterns=["tests/unit/test_mock_example.py"],
-        capability="other-capability",
-    )
-    manifest["classification_rules"].insert(0, rule)
-    _save_manifest(tmp_path, manifest)
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "PASS", report["errors"]
-    assert (
-        _record(report, "tests/unit/test_mock_example.py")["classification"]
-        == "FIXTURE_PROTOCOL"
-    )
-
-
-@pytest.mark.parametrize(
-    ("classification", "ceiling"),
-    [
-        ("MIGRATION_COMPATIBILITY", "MIGRATION_COMPATIBILITY_ONLY"),
-        ("RETIREMENT_GUARD", "RETIREMENT_ONLY"),
-        ("FIXTURE_PROTOCOL", "FIXTURE_ONLY"),
-        ("QUALIFICATION_INFRASTRUCTURE", "INFRASTRUCTURE_ONLY"),
-        ("CURRENT_AUTHORITY_BOUNDARY", "STATIC_AUTHORITY_BOUNDARY"),
-    ],
-)
-def test_non_business_evidence_cannot_become_current_by_importing_production_code(
-    tmp_path: Path,
-    classification: str,
-    ceiling: str,
-) -> None:
-    _fixture_repository(tmp_path)
-    manifest = _read_manifest(tmp_path)
-    manifest["classification_rules"][1].update(
-        classification=classification, proof_ceiling=ceiling
-    )
-    _save_manifest(tmp_path, manifest)
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    assert (
-        "current semantic slice has no direct current-contract evidence: current_slice"
-        in report["errors"]
-    )
-
-
-def test_transitive_helper_mock_is_supporting_even_through_relative_import_cycle(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-    _write(
-        tmp_path / "tests/unit/test_example.py",
-        "from novel_forge.example import VALUE\nfrom tests.unit.helpers import result\n"
-        "def test_value():\n    assert result() == VALUE\n",
-    )
-    _write(tmp_path / "tests/unit/helpers.py", "from .doubles import result\n")
-    _write(
-        tmp_path / "tests/unit/doubles.py",
-        "from . import helpers\nfrom unittest.mock import Mock\nresult = Mock(return_value=1)\n",
-    )
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    record = _record(report, "tests/unit/test_example.py")
-    assert record["evidence_basis"] == "FIXTURE_OR_MOCK_BACKED"
-    assert record["fixture_or_mock_sources"] == ["tests/unit/doubles.py"]
-    assert record["current_semantic_evidence"] is False
-
-
-def test_fake_provider_is_never_direct_contract_evidence(tmp_path: Path) -> None:
-    _fixture_repository(tmp_path)
-    _write(
-        tmp_path / "tests/unit/test_example.py",
-        "from novel_forge.example import VALUE, FakeDeterministicProvider\n"
-        "def test_value():\n    assert FakeDeterministicProvider().result() == VALUE\n",
-    )
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    assert (
-        _record(report, "tests/unit/test_example.py")["evidence_basis"]
-        == "FIXTURE_OR_MOCK_BACKED"
-    )
-
-
-def test_fixture_control_slice_retains_explicit_supporting_ceiling(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-    manifest = _read_manifest(tmp_path)
-    manifest["semantic_slice_policy"]["current_slice"].update(
-        role="SUPPORTING_CONTRACT", proof_ceiling="FIXTURE_CONTROL_ONLY"
-    )
-    _save_manifest(tmp_path, manifest)
-    assert check_test_reality(tmp_path)["status"] == "PASS"
-    manifest["semantic_slice_policy"]["current_slice"]["proof_ceiling"] = (
-        "POSTGRESQL_CURRENT_CONTRACT"
-    )
-    _save_manifest(tmp_path, manifest)
-    report = check_test_reality(tmp_path)
-    assert report["status"] == "FAIL"
-    assert (
-        "supporting semantic slice must retain fixture proof ceiling: current_slice"
-        in report["errors"]
-    )
-
-
-def test_migration_and_fixture_classifications_cannot_raise_record_proof_ceiling(
-    tmp_path: Path,
-) -> None:
-    _fixture_repository(tmp_path)
-    manifest = _read_manifest(tmp_path)
-    manifest["classification_rules"][0]["proof_ceiling"] = "IN_PROCESS_CONTRACT_ONLY"
-    manifest["semantic_slice_policy"]["migration_matrix"]["proof_ceiling"] = (
-        "POSTGRESQL_CURRENT_CONTRACT"
-    )
-    _save_manifest(tmp_path, manifest)
-
-    report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    assert (
-        "test classification has unsupported proof ceiling: migration"
-        in report["errors"]
-    )
-    assert (
-        "migration semantic slice must retain compatibility proof ceiling: migration_matrix"
-        in report["errors"]
-    )
-
-
-@pytest.mark.parametrize(
-    "setup",
-    [
-        "from novel_forge.example import FakeDeterministicProvider as Adapter\nvalue = Adapter()\n",
-        "class _RecordingPort:\n    def execute(self):\n        return 1\nvalue = _RecordingPort()\n",
-        "from types import SimpleNamespace\nvalue = SimpleNamespace(result=1)\n",
-        "value = object.__new__(object)\n",
-    ],
-)
-def test_manual_or_aliased_doubles_cannot_hide_as_direct_contract(
-    tmp_path: Path,
-    setup: str,
-) -> None:
-    _fixture_repository(tmp_path)
-    _write(
         tmp_path / "tests/unit/test_example.py",
         "from novel_forge.example import VALUE\n"
-        + setup
-        + "def test_value():\n    assert VALUE == 1\n",
+        "def test_value(monkeypatch):\n    assert VALUE == 1\n",
     )
+    _write(
+        tmp_path / "tests/unit/test_unrelated.py",
+        "from novel_forge.unrelated import VALUE\n"
+        "def test_other():\n    assert VALUE == 2\n",
+    )
+    path = tmp_path / "architecture/manifests/backend-qualification-manifest.yaml"
+    qualification = json.loads(path.read_text())
+    qualification["semantic_slices"]["current_slice"].append(
+        "tests/unit/test_unrelated.py"
+    )
+    _write(path, json.dumps(qualification))
 
     report = check_test_reality(tmp_path)
 
-    assert report["status"] == "FAIL"
     assert (
-        _record(report, "tests/unit/test_example.py")["classification"]
-        == "FIXTURE_PROTOCOL"
+        "semantic slice target lacks direct evidence: current_slice:src/novel_forge/example.py"
+        in report["errors"]
     )
 
 
-def test_autouse_conftest_mock_is_part_of_test_evidence_lineage(tmp_path: Path) -> None:
+def test_current_slice_accepts_same_target_direct_support(tmp_path: Path) -> None:
+    _fixture_repository(tmp_path)
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "PASS", report["errors"]
+    assert report["mock_fixture_false_qualification_count"] == 0
+
+
+def test_manifest_target_cannot_replace_actual_test_import(tmp_path: Path) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/unit/test_example.py", "def test_empty():\n    assert True\n"
+    )
+    path = tmp_path / "architecture/manifests/test-manifest.yaml"
+    manifest = json.loads(path.read_text())
+    manifest["classification_rules"][1]["production_target"] = (
+        "src/novel_forge/example.py"
+    )
+    _write(path, json.dumps(manifest))
+    report = check_test_reality(tmp_path)
+    assert any("target lacks direct evidence" in error for error in report["errors"])
+
+
+def test_mock_in_transitive_relative_helper_cannot_hide_as_direct(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(tmp_path / "tests/unit/helpers.py", "from .nested import value\n")
+    _write(
+        tmp_path / "tests/unit/nested.py",
+        "from unittest.mock import Mock\nvalue = Mock()\n",
+    )
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        "from novel_forge.example import VALUE\nfrom .helpers import value\n"
+        "def test_value():\n    assert value() == VALUE\n",
+    )
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "FAIL"
+    assert report["mocked_invariant_demotions"] == ["tests/unit/test_example.py"]
+
+
+def test_custom_fake_and_runtime_classification_cannot_promote_fixture(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        "from novel_forge.example import VALUE\nclass FakeGateway: pass\n"
+        "def test_value():\n    assert VALUE == 1\n",
+    )
+    path = tmp_path / "architecture/manifests/test-manifest.yaml"
+    manifest = json.loads(path.read_text())
+    manifest["classification_rules"][1]["classification"] = "CURRENT_RUNTIME_CONTRACT"
+    _write(path, json.dumps(manifest))
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "FAIL"
+    assert any("target lacks direct evidence" in error for error in report["errors"])
+
+
+def test_path_literal_cannot_stand_in_for_direct_contract_import(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        'TARGET="src/novel_forge/example.py"\ndef test_value():\n    assert True\n',
+    )
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "FAIL"
+    record = next(
+        item for item in report["files"] if item["path"].endswith("test_example.py")
+    )
+    assert record["production_targets"] == ["src/novel_forge/example.py"]
+    assert record["direct_production_targets"] == []
+
+
+@pytest.mark.parametrize(
+    "mode", ["explicit", "autouse", "usefixtures", "dynamic", "literal_dynamic"]
+)
+def test_mocked_conftest_dependency_cannot_qualify_current_slice(
+    tmp_path: Path, mode: str
+) -> None:
     _fixture_repository(tmp_path)
     _write(
         tmp_path / "tests/conftest.py",
-        "import pytest\nfrom unittest.mock import patch\n"
-        "@pytest.fixture(autouse=True)\ndef override():\n"
-        "    with patch('novel_forge.example.VALUE', 1):\n        yield\n",
+        "import pytest\nfrom unittest.mock import Mock\n"
+        "@pytest.fixture\ndef response():\n    return Mock(return_value=1)\n",
     )
-
+    _write(
+        tmp_path / "tests/unit/conftest.py",
+        "import pytest\n"
+        f"@pytest.fixture(autouse={mode == 'autouse'})\n"
+        "def gateway(response):\n    return response\n",
+    )
+    test = {
+        "explicit": "def test_value(gateway):\n    assert gateway() == VALUE\n",
+        "autouse": "def test_value():\n    assert VALUE == 1\n",
+        "usefixtures": '@pytest.mark.usefixtures("gateway")\ndef test_value():\n    assert VALUE == 1\n',
+        "dynamic": 'def test_value(request):\n    name = "gateway"\n    assert request.getfixturevalue(name)() == VALUE\n',
+        "literal_dynamic": 'def test_value(request):\n    assert request.getfixturevalue("gateway")() == VALUE\n',
+    }[mode]
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        "import pytest\nfrom novel_forge.example import VALUE\n" + test,
+    )
     report = check_test_reality(tmp_path)
-
     assert report["status"] == "FAIL"
-    assert _record(report, "tests/unit/test_example.py")["fixture_or_mock_sources"] == [
-        "tests/conftest.py"
-    ]
+    assert report["mocked_invariant_demotions"] == ["tests/unit/test_example.py"]
 
 
-def test_empty_file_cannot_witness_a_current_contract(tmp_path: Path) -> None:
+def test_fixture_helper_and_same_name_ancestor_dependencies_are_followed(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/helpers.py",
+        "from unittest.mock import Mock\ndef response_value():\n    return Mock(return_value=1)\n",
+    )
+    _write(
+        tmp_path / "tests/conftest.py",
+        "import pytest\nfrom tests.helpers import response_value\n@pytest.fixture\ndef gateway():\n    return response_value()\n",
+    )
+    _write(
+        tmp_path / "tests/unit/conftest.py",
+        "import pytest\n@pytest.fixture\ndef gateway(gateway):\n    return gateway\n",
+    )
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        "from novel_forge.example import VALUE\ndef test_value(gateway):\n    assert gateway() == VALUE\n",
+    )
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "FAIL"
+    assert report["mocked_invariant_demotions"] == ["tests/unit/test_example.py"]
+
+
+@pytest.mark.parametrize(
+    "fixture_location",
+    ["tests/conftest.py", "tests/unit/conftest.py", "tests/unit/test_example.py"],
+)
+def test_unused_mock_fixture_does_not_demote_direct_database_contract(
+    tmp_path: Path, fixture_location: str
+) -> None:
+    _fixture_repository(tmp_path)
+    fixtures = (
+        "import pytest\nimport psycopg\nfrom unittest.mock import Mock\n"
+        "@pytest.fixture\ndef unused_gateway():\n    return Mock(return_value=1)\n"
+        "@pytest.fixture\ndef database():\n    return psycopg.connect('postgresql://localhost/test')\n"
+    )
+    test = (
+        "from novel_forge.example import VALUE\n"
+        "def test_value(database):\n    assert database.execute('SELECT 1').fetchone()[0] == VALUE\n"
+    )
+    _write(
+        tmp_path / fixture_location,
+        fixtures + (test if fixture_location.endswith("test_example.py") else ""),
+    )
+    if not fixture_location.endswith("test_example.py"):
+        _write(tmp_path / "tests/unit/test_example.py", test)
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "PASS", report["errors"]
+    assert report["mocked_invariant_demotions"] == []
+
+
+def test_direct_autouse_database_fixture_does_not_demote_current_slice(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/unit/conftest.py",
+        "import pytest\nimport psycopg\n@pytest.fixture(autouse=True)\ndef database():\n    with psycopg.connect('postgresql://localhost/test') as connection:\n        yield connection\n",
+    )
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "PASS", report["errors"]
+
+
+def test_imported_fixture_alias_and_helper_chain_remain_fixture_evidence(
+    tmp_path: Path,
+) -> None:
+    _fixture_repository(tmp_path)
+    _write(
+        tmp_path / "tests/unit/helpers.py",
+        "from pytest import fixture as fx\nfrom unittest.mock import Mock as Response\n@fx\ndef gateway():\n    return Response(return_value=1)\n",
+    )
+    _write(
+        tmp_path / "tests/unit/conftest.py",
+        "from .helpers import gateway as response\n",
+    )
+    _write(
+        tmp_path / "tests/unit/test_example.py",
+        "from novel_forge.example import VALUE\ndef test_value(response):\n    assert response() == VALUE\n",
+    )
+    report = check_test_reality(tmp_path)
+    assert report["status"] == "FAIL"
+    assert report["mocked_invariant_demotions"] == ["tests/unit/test_example.py"]
+
+
+def test_unused_fixture_helper_does_not_contaminate_direct_test(tmp_path: Path) -> None:
     _fixture_repository(tmp_path)
     _write(
         tmp_path / "tests/unit/test_example.py",
-        "from novel_forge.example import VALUE\n",
+        "import pytest\nfrom unittest.mock import Mock\nfrom novel_forge.example import VALUE\ndef response():\n    return Mock(return_value=1)\n@pytest.fixture\ndef unused_gateway():\n    return response()\ndef test_value():\n    assert VALUE == 1\n",
     )
-
     report = check_test_reality(tmp_path)
-
-    assert report["status"] == "FAIL"
-    assert (
-        report["semantic_slice_evidence"]["current_slice"]["direct_current_witnesses"]
-        == []
-    )
+    assert report["status"] == "PASS", report["errors"]

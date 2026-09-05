@@ -4,13 +4,31 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from novel_forge.tools.head_integrity import _pr_wrapper_reaches_canonical_p0, build_head_integrity_report
+from novel_forge.tools.head_integrity import build_head_integrity_report, _pr_gate_delegates_to_p0
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class HeadIntegrityTests(unittest.TestCase):
+    def test_pr_gate_must_execute_and_validate_p0_inside_implementation_branch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "src/novel_forge/tools/pr_governance.py"
+            path.parent.mkdir(parents=True)
+            body = (
+                "def run_pr_governance():\n"
+                "    if report['implementation_changed']:\n"
+                "        run(('make', 'p0-backend-qualification'))\n"
+                "        validate_current_p0(evidence, plan=report)\n"
+            )
+            path.write_text(body, encoding="utf-8")
+            self.assertTrue(_pr_gate_delegates_to_p0(root))
+            path.write_text(body.replace("        validate_current_p0", "        # validate_current_p0"), encoding="utf-8")
+            self.assertFalse(_pr_gate_delegates_to_p0(root))
+            path.write_text(body.replace("report['implementation_changed']", "False"), encoding="utf-8")
+            self.assertFalse(_pr_gate_delegates_to_p0(root))
+
     def test_tracked_import_cannot_target_untracked_runtime_module(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -58,22 +76,6 @@ class HeadIntegrityTests(unittest.TestCase):
             report.missing_exports,
             ("novel_forge.sample:MissingContract",),
         )
-
-    def test_pr_wrapper_requires_complete_canonical_p0_and_exact_report_validation(self) -> None:
-        source = (ROOT / "src/novel_forge/tools/pr_governance.py").read_text()
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            path = root / "src/novel_forge/tools/pr_governance.py"
-            path.parent.mkdir(parents=True)
-            path.write_text(source)
-            self.assertTrue(_pr_wrapper_reaches_canonical_p0(root))
-            for before, after in (
-                ('"scripts/run_p0_backend_qualification.py"', '"scripts/partial_tests.py"'),
-                ('expected_sha=report["head_sha"]', 'expected_sha=report["base_sha"]'),
-                ('if report["implementation_changed"]:', 'if False:'),
-            ):
-                path.write_text(source.replace(before, after))
-                self.assertFalse(_pr_wrapper_reaches_canonical_p0(root))
 
     def test_current_authority_head_is_complete_and_ci_collects_all_suites(self) -> None:
         report = build_head_integrity_report(ROOT)

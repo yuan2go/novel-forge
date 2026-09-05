@@ -9,7 +9,6 @@ from types import MappingProxyType
 from typing import Any, Iterable, Mapping, Sequence
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.reader_calibration.proxy_policy import READER_PROXY_POLICY_V1
 
 
 REPETITION_DIMENSIONS = (
@@ -106,8 +105,6 @@ class ReaderTrendEvidence:
     trend: str
     values: tuple[tuple[int, float], ...]
     evidence_class: str = "READER_PROXY_ADVISORY"
-    policy_version: str = READER_PROXY_POLICY_V1.version
-    policy_content_hash: str = READER_PROXY_POLICY_V1.snapshot()["content_hash"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,7 +130,6 @@ class LongitudinalQualityEvidence:
                 "repetition": {
                     key: asdict(value) for key, value in self.repetition.items()
                 },
-                "reader_proxy_policy": READER_PROXY_POLICY_V1.snapshot(),
                 "reader_trends": {
                     key: asdict(value) for key, value in self.reader_trends.items()
                 },
@@ -607,9 +603,9 @@ def _reader_trends(
                 delta = -delta
             trend = (
                 "IMPROVING"
-                if delta > READER_PROXY_POLICY_V1.trend_delta_threshold
+                if delta > 0.05
                 else "WORSENING"
-                if delta < -READER_PROXY_POLICY_V1.trend_delta_threshold
+                if delta < -0.05
                 else "STABLE"
             )
         reports[dimension] = ReaderTrendEvidence(

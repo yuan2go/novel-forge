@@ -1022,6 +1022,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 "segment_id": "narrative-segment:1",
             },
             "chapter_intent": "Force a witnessed choice that advances the central conflict.",
+            "chapter_contract_schema_version": "chapter-mission-scene.v2",
             "arc_schedule": [
                 {
                     "arc_plan_version_id": arc_id,
@@ -1119,6 +1120,12 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "narrative_time_relation": "ESTABLISHES",
                     "accessible_knowledge": [],
                     "arc_progress": list(arc_plan_ids or ("arc:primary",)),
+                    "trajectory_refs": ["character-arc:accountability"],
+                    "obligation_refs": ["promise:choice"],
+                    "realization_event_ids": [
+                        str(event["event_id"])
+                        for event in (command.get("narrative_realization") or {}).get("events") or ()
+                    ],
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
                     "entry_state": arc_entry_state,
@@ -1570,7 +1577,13 @@ def _canonical_narrative_provider_properties(
     return {
         **architecture,
         "narrative_segment_ref": segment_ref,
-        "chapter_intent": string,
+        "chapter_intent": {
+            **string,
+            "description": "Chapter Mission: the semantic purpose the Scene Architecture must realize.",
+        },
+        "chapter_contract_schema_version": {
+            "type": "string", "const": "chapter-mission-scene.v2",
+        },
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
@@ -1808,6 +1821,18 @@ def _canonical_narrative_provider_properties(
                             "this Scene; never prose or an Arc label."
                         ),
                     },
+                    "trajectory_refs": {
+                        **string_array,
+                        "description": "Exact character_participation.trajectory_refs realized in this Scene; all Mission trajectories must be covered.",
+                    },
+                    "obligation_refs": {
+                        **string_array,
+                        "description": "Exact obligation_actions.obligation_id values realized in this Scene; cover every Mission obligation without inventing one.",
+                    },
+                    "realization_event_ids": {
+                        **string_array,
+                        "description": "Exact frozen narrative_realization_slice event identities realized in this Scene; cover all events. These are planned execution commitments, never accepted facts.",
+                    },
                     "information_gain": {
                         **string_array,
                         "description": (
@@ -1869,7 +1894,6 @@ def planning_provider_output_schema(
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
-    chapter_window_policy: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -1887,15 +1911,6 @@ def planning_provider_output_schema(
             for item in (arc_plan_version_id, *related_arc_plan_version_ids)
             if item
         )
-    )
-    from novel_forge.modules.hierarchical_planning.window_policy import (
-        ChapterWindowPolicy,
-    )
-
-    window_policy = (
-        ChapterWindowPolicy.from_snapshot(chapter_window_policy)
-        if chapter_window_policy is not None
-        else ChapterWindowPolicy()
     )
     exact_group_range: tuple[int, int] | None = None
     exact_group_chapters: list[int] = []
@@ -1919,7 +1934,6 @@ def planning_provider_output_schema(
             raise ValueError(
                 "ChapterGroup Search provider schema requires a positive ordered range"
             )
-        window_policy.require_range(*exact_group_range)
         exact_group_chapters = list(
             range(exact_group_range[0], exact_group_range[1] + 1)
         )
@@ -2171,7 +2185,7 @@ def planning_provider_output_schema(
             properties[field] = {
                 "type": "array",
                 "minItems": len(exact_group_chapters) or 1,
-                "maxItems": len(exact_group_chapters) or window_policy.maximum_chapters,
+                **({"maxItems": len(exact_group_chapters)} if exact_group_chapters else {}),
                 "items": _strict_object(
                     {
                         "chapter_number": (
@@ -2346,6 +2360,18 @@ def planning_provider_output_schema(
         properties["narrative_realization_slice"] = _frozen_provider_value_schema(
             [realization]
         )
+        scene_properties = properties["scene_plan"]["items"]["properties"]
+        event_ids = [str(event["event_id"]) for event in realization["events"]]
+        scene_properties["realization_event_ids"]["items"] = {
+            "type": "string", "enum": event_ids,
+        }
+        obligation_ids = [str(item["obligation_id"]) for item in schedule_row["obligation_actions"]]
+        if obligation_ids:
+            scene_properties["obligation_refs"]["items"] = {
+                "type": "string", "enum": obligation_ids,
+            }
+        else:
+            scene_properties["obligation_refs"]["maxItems"] = 0
     if narrative_search:
         if contract_type is PlanContractType.CHAPTER:
             raise ValueError("Chapter planning is operational, not a search portfolio")
@@ -3245,7 +3271,6 @@ class PostgresPlanningExecutionPreparer:
             narrative_search_horizon=(command.narrative_search_planning_horizon),
             narrative_realization=command.narrative_realization,
             chapter_schedule_row=chapter_schedule_row,
-            chapter_window_policy=command.chapter_window_policy,
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
@@ -4462,9 +4487,7 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=repair_version_id or f"{key}:{digest}",
                 logical_kind=f"planning_{key}",
                 physical_asset_type=(
-                    str(
-                        repair_source.get("asset_type") or "planning_context_projection"
-                    )
+                    str(repair_source.get("asset_type") or "planning_context_projection")
                     if isinstance(repair_source, Mapping)
                     else "planning_context_projection"
                 ),

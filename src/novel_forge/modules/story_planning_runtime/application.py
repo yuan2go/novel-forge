@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, replace
+from dataclasses import asdict
 import re
 from typing import Any
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
-
-from novel_forge.modules.hierarchical_planning.window_policy import ChapterWindowPolicy
 
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerOutput,
@@ -325,21 +323,6 @@ class StoryPlanningGenerationApplication:
             raise PermissionError(
                 "Planning Generation actor must be the trusted Principal"
             )
-        if (
-            command.generator_operation_name == "chapter_group_plan.generate"
-            and command.chapter_window_policy is None
-        ):
-            frozen_command = self.find_frozen_generation_command(
-                project_id=command.project_id, idempotency_key=command.idempotency_key
-            )
-            if frozen_command is None:
-                command = replace(
-                    command, chapter_window_policy=ChapterWindowPolicy().snapshot()
-                )
-            elif frozen_command.chapter_window_policy is not None:
-                command = replace(
-                    command, chapter_window_policy=frozen_command.chapter_window_policy
-                )
         self._probe(execution_probe)
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions()
@@ -1593,6 +1576,7 @@ class StoryPlanningGenerationApplication:
                     parent_version_id=command.parent_version_id,
                     execution_scope=PlanExecutionScope.PLANNED,
                     content=content,
+                    require_current_chapter_contract=True,
                 )
                 if command.generator_operation_name == "arc_plan.generate":
                     expected_volume_scope = (
@@ -1862,7 +1846,6 @@ class StoryPlanningGenerationApplication:
                 command.narrative_search_hard_constraints
             ),
             narrative_realization=command.narrative_realization,
-            chapter_window_policy=command.chapter_window_policy,
         )
         return self.generate(repaired, principal=principal)
 
@@ -2646,6 +2629,11 @@ def chapter_plan_projection_definition(
 
 
 def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.hierarchical_planning.chapter_contracts import (
+        require_chapter_contracts,
+    )
+
+    require_chapter_contracts(candidate)
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")
@@ -2838,11 +2826,6 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         ),
         "narrative_realization": dict(command.narrative_realization or {}),
         "opening_execution_binding": dict(command.opening_execution_binding or {}),
-        **(
-            {"chapter_window_policy": dict(command.chapter_window_policy)}
-            if command.chapter_window_policy is not None
-            else {}
-        ),
     }
 
 
@@ -2910,11 +2893,6 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         opening_execution_binding=(
             dict(payload.get("opening_execution_binding") or {}) or None
         ),
-        chapter_window_policy=(
-            dict(payload["chapter_window_policy"])
-            if "chapter_window_policy" in payload
-            else None
-        ),
     )
 
 
@@ -2957,30 +2935,6 @@ def _authority_role_versions(
 def _validate_narrative_search_horizon(
     command: StoryPlanningGenerationCommand, content: dict[str, Any]
 ) -> None:
-    if command.generator_operation_name == "chapter_group_plan.generate":
-        candidate_range = content.get("chapter_range")
-        frozen_range = command.narrative_search_chapter_range
-        if frozen_range is not None and candidate_range != list(frozen_range):
-            raise KernelError(
-                "NARRATIVE_SEARCH_CHAPTER_GROUP_RANGE_MISMATCH",
-                "ChapterGroup candidate must preserve its exact frozen horizon",
-            )
-        if not isinstance(candidate_range, (list, tuple)) or len(candidate_range) != 2:
-            raise KernelError(
-                "CHAPTER_WINDOW_CANDIDATE_RANGE_INVALID",
-                "candidate must declare one bounded execution window",
-            )
-        policy = (
-            ChapterWindowPolicy.from_snapshot(command.chapter_window_policy)
-            if command.chapter_window_policy is not None
-            else ChapterWindowPolicy()
-        )
-        try:
-            policy.require_range(*candidate_range)
-        except ValueError as exc:
-            raise KernelError(
-                "CHAPTER_WINDOW_CANDIDATE_POLICY_EXCEEDED", str(exc)
-            ) from exc
     if (
         command.generator_operation_name == "book_plan.generate"
         and command.narrative_search_id

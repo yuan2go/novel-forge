@@ -26,6 +26,8 @@ PLAN_FIELDS = (
     "knowledge_boundaries", "disclosures", "required_state_transitions",
     "reader_experience", "scene_plan", "expected_exit_state",
     "narrative_realization_slice",
+    "chapter_contract_schema_version", "primary_function", "obligation_actions",
+    "required_arc_contributions",
 )
 LIST_FIELDS = frozenset({
     "cast", "relationship_pairs", "scene_sequence", "scene_goals", "character_goals",
@@ -36,6 +38,7 @@ LIST_FIELDS = frozenset({
     "reader_dropoff_risks", "payoff_schedule", "platform_rhythm", "conflict_escalation",
     "arc_schedule", "setups", "payoffs", "character_participation",
     "knowledge_boundaries", "disclosures", "required_state_transitions", "scene_plan",
+    "obligation_actions", "required_arc_contributions",
 })
 
 
@@ -135,6 +138,12 @@ def normalize_authoritative_chapter_plan(
         raise KernelError("CHAPTER_PLAN_CHAPTER_INVALID", "ChapterPlan chapter is missing") from exc
     if chapter != expected_chapter:
         raise KernelError("CHAPTER_PLAN_CHAPTER_MISMATCH", "ChapterPlan targets another chapter")
+    if content.get("chapter_contract_schema_version"):
+        from novel_forge.modules.hierarchical_planning.chapter_contracts import (
+            require_chapter_contracts,
+        )
+
+        require_chapter_contracts(content)
 
     mappings: dict[str, str] = {}
     objective = content.get("chapter_objective")
@@ -178,12 +187,6 @@ def normalize_authoritative_chapter_plan(
     normalized["source_extensions"] = {
         key: value for key, value in content.items() if key not in known
     }
-    if content.get("narrative_architecture_version") == "canonical-narrative-v1":
-        from novel_forge.modules.hierarchical_planning.chapter_contracts import chapter_contract_evidence
-
-        normalized["narrative_contracts"] = chapter_contract_evidence(
-            content, asset_version_id=asset_version_id, content_hash=content_hash
-        )
     profile = qualification_profile or LEGACY_COMPATIBILITY_PROFILE
     blocking = tuple(field for field in profile.required_fields if not normalized.get(field))
     warnings = tuple(
@@ -237,7 +240,8 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "character_participation", "knowledge_boundaries", "disclosures",
             "required_state_transitions", "reader_experience", "scene_plan",
             "expected_exit_state", "narrative_realization_slice",
-            "narrative_contracts",
+            "chapter_contract_schema_version", "primary_function", "obligation_actions",
+            "required_arc_contributions",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],
