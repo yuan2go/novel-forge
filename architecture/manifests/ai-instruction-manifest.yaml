@@ -53,6 +53,14 @@
       "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
     },
     {
+      "id": "blind-editorial-pack-instruction",
+      "patterns": ["src/novel_forge/schemas/narrative_qualification.py"],
+      "kind": "HUMAN_EDITORIAL_INSTRUCTION",
+      "owner": "narrative-qualification",
+      "consumer": "external-human-evaluator",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
       "id": "admin-embedded-instructions",
       "patterns": [
         "web/admin/app/features/editor/EditorPage.tsx",
