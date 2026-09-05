@@ -3324,6 +3324,31 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             WORKFLOW_MIGRATION_ID,
         )
 
+    if runtime_path == "RECAP_FAILURE_ISOLATION":
+        from novel_forge.modules.chapter_group_authority.policy import (
+            ChapterGroupExecutionPolicy,
+            PostgresChapterGroupExecutionPolicyAuthority,
+        )
+
+        policy_authority = PostgresChapterGroupExecutionPolicyAuthority(
+            DATABASE_URL,
+            application_build_id="core-functional-loop-fixture",
+            commit_sha=RELEASE_SHA,
+        )
+        policy_command = {
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "principal": principal,
+            "policy": ChapterGroupExecutionPolicy("recap-isolation-v1", 1, 1),
+            "idempotency_key": f"{project_id}:recap-isolation-policy",
+            "trace_id": f"trace:{project_id}:recap-isolation-policy",
+            "correlation_id": f"correlation:{project_id}",
+        }
+        configured = policy_authority.configure(**policy_command)
+        replayed = policy_authority.configure(**policy_command)
+        assert configured["operation_id"] == replayed["operation_id"]
+        assert replayed["replayed"] is True
+
     book_authority = composition.authority
     from fastapi import FastAPI
     from fastapi.testclient import TestClient

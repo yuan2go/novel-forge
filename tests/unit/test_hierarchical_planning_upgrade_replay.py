@@ -118,3 +118,18 @@ def test_previous_atomic_binding_receipt_replays_without_schema_upgrade(monkeypa
     assert _bind(authority)["replayed"] is True
     assert commands[0]["definition_version"] == "1.1.0"
     assert commands[0]["input"]["story_design_transition_operation_id"] == "story-transition:activate:v7"
+
+
+def test_new_binding_uses_current_contract_instead_of_legacy_replay_shape(monkeypatch: Any) -> None:
+    authority = _authority(replay_versions=[None])
+    commands: list[dict[str, Any]] = []
+
+    def execute(_database_url: str, command: dict[str, Any], **_options: Any) -> dict[str, Any]:
+        commands.append(command)
+        return {"operation_id": "binding:current", "replayed": False}
+
+    monkeypatch.setattr(planning_application, "execute_transaction_command", execute)
+    result = _bind(authority)
+    assert result["replayed"] is False
+    assert commands[0]["definition_version"] == PLAN_BINDING_DEFINITION_VERSION
+    assert commands[0]["input"]["story_design_transition_operation_id"] == "story-transition:activate:v7"

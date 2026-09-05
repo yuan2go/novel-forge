@@ -1597,7 +1597,28 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     correlation_id=f"correlation:{project_id}",
                 )
             )
-            if source_type == "chapter_plan":
+            if source_type in {"chapter_plan", "chapter_plan_version"}:
+                for attempt in (service, LegacyMigrationService(
+                    DATABASE_URL,
+                    application_build_id="legacy-domain-planning-restarted",
+                    commit_sha="f" * 40,
+                )):
+                    with self.assertRaisesRegex(KernelError, "CHAPTER_CONTRACT_VERSION_REQUIRED"):
+                        attempt.activate_domain_item(
+                            str(item[0]), expected_item_version=int(decision["item_version"])
+                        )
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute(
+                            "SELECT item_version, source_hash, target_asset_version_id FROM authority_legacy_migration_item WHERE migration_item_id=%s",
+                            [str(item[0])],
+                        )
+                        self.assertEqual(uow.cursor.fetchone(), (int(decision["item_version"]), str(item[2]), str(item[3])))
+                        uow.cursor.execute("SELECT COUNT(*) FROM story_plan_binding WHERE asset_version_id=%s", [str(item[3])])
+                        self.assertEqual(uow.cursor.fetchone()[0], 0)
+                        uow.cursor.execute("SELECT lifecycle FROM authority_asset_version WHERE asset_version_id=%s", [str(item[3])])
+                        self.assertNotEqual(uow.cursor.fetchone()[0], "ACTIVE")
+                continue
+            if source_type == "chapter_group_plan":
                 from novel_forge.modules.hierarchical_planning.application import (
                     PostgresHierarchicalPlanningAuthority,
                 )
@@ -1608,12 +1629,12 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     def fail_after_write(event):
                         checkpoint(event)
                         if event == "after_business_projection_update":
-                            raise RuntimeError("rollback imported chapter binding")
+                            raise RuntimeError("rollback imported group binding")
 
                     return execute(authority, uow, operation_id, fail_after_write)
 
                 with patch.object(PostgresHierarchicalPlanningAuthority, "_execute_transaction", rollback_binding):
-                    with self.assertRaisesRegex(RuntimeError, "rollback imported chapter binding"):
+                    with self.assertRaisesRegex(RuntimeError, "rollback imported group binding"):
                         service.activate_domain_item(str(item[0]), expected_item_version=int(decision["item_version"]))
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT COUNT(*) FROM story_plan_binding WHERE asset_version_id=%s", [str(item[3])])
@@ -1649,10 +1670,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             snapshot_root=verification_root,
             required_level="DOMAIN_NATIVE",
         )
-        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
-        self.assertEqual(verified["verification_status"], "PASS")
+        self.assertEqual(verified["status"], "FAILED", verified)
+        self.assertEqual(verified["run_completion_level"], "ARCHIVAL_RECONCILED")
+        self.assertEqual(verified["domain_validation_failures"], 2)
+        self.assertEqual(verified["verification_status"], "FAIL")
+        self.assertFalse(verified["domain_native_core_proven"])
+        self.assertTrue(verified["source_snapshot_verified"])
         self.assertEqual(verified["actual_domain_failures"], 0)
-        self.assertEqual(verified["pending_domain_native_count"], 0)
+        self.assertEqual(verified["pending_domain_native_count"], 2)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -1671,14 +1696,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [project_id, book_id],
             )
             bindings = list(uow.cursor.fetchall())
-        self.assertEqual(len(bindings), 7)
+        self.assertEqual(len(bindings), 5)
         counts_by_type = {
             contract_type: sum(1 for row in bindings if str(row[0]) == contract_type)
             for contract_type in {str(row[0]) for row in bindings}
         }
         self.assertEqual(
             counts_by_type,
-            {"BOOK": 2, "VOLUME": 1, "ARC": 1, "CHAPTER_GROUP": 1, "CHAPTER": 2},
+            {"BOOK": 2, "VOLUME": 1, "ARC": 1, "CHAPTER_GROUP": 1},
         )
         for contract_type, parent, _active, hierarchy_count in bindings:
             expected_hierarchy = (
@@ -1692,10 +1717,10 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 else 0
             )
             self.assertEqual(int(hierarchy_count), expected_hierarchy)
-            if str(contract_type) == "CHAPTER":
+            if str(contract_type) == "CHAPTER_GROUP":
                 self.assertEqual(
                     str(parent),
-                    activated["chapter_group_plan"]["target_asset_version_id"],
+                    activated["volume_plan"]["target_asset_version_id"],
                 )
 
     def test_story_design_migration_uses_versioned_server_validator_receipts(
