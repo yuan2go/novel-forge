@@ -1,0 +1,29 @@
+{
+  "schema_version": "novel-forge.real-provider-qualification.v1",
+  "created_at": "2026-09-05T18:21:47.287647+08:00",
+  "proof_scope": {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+      "external-effect-provider-control"
+    ],
+    "ceiling": "REAL_PROVIDER_RUNTIME",
+    "does_not_establish": [
+      "CHAPTER_ACCEPTED_ACTUAL",
+      "HUMAN_EDITORIAL_EVIDENCE",
+      "LONGITUDINAL_NARRATIVE_STABILITY",
+      "PRODUCTION_OPERATION"
+    ]
+  },
+  "result": "FAIL",
+  "release_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+  "expected_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+  "implementation_identity": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404",
+  "source_clean": true,
+  "current_real_provider": "NOT_PROVEN",
+  "failure": {
+    "type": "KernelError",
+    "message": "PROVIDER_TOKEN_ADMISSION_REJECTED: TOKEN_ACCOUNTING_UNPROVEN",
+    "code": "PROVIDER_TOKEN_ADMISSION_REJECTED"
+  }
+}

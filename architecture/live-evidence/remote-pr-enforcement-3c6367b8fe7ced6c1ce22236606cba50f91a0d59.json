@@ -1,0 +1,29 @@
+{
+  "schema_version": "novel-forge.remote-pr-enforcement-observation.v1",
+  "repository": "yuan2go/novel-forge",
+  "observed_at": "2026-09-05T10:22:15.880692+00:00",
+  "observed_at_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+  "implementation_identity": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404",
+  "status": "OPEN",
+  "observations": {
+    "actions_permissions": {
+      "returncode": 0,
+      "response": {
+        "enabled": false,
+        "sha_pinning_required": false
+      },
+      "diagnostic": ""
+    },
+    "branch_protection": {
+      "returncode": 1,
+      "response": {
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "status": "403"
+      },
+      "diagnostic": "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)"
+    }
+  },
+  "remote_mutations_performed": false,
+  "local_canonical_gate": "make pr-governance"
+}

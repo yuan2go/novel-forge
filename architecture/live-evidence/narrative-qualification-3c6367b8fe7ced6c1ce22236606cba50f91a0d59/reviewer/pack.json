@@ -1,0 +1,25 @@
+{
+  "instruction": "Read the supplied sequence independently. Record findings with sample tokens and text spans; no evaluation has been submitted by this pack.",
+  "pack_token": "editorial:81c63ede69eb40dbca100f7ec201c398",
+  "review_mode": "SINGLE_ARM_EDITORIAL",
+  "rubric_dimensions": [
+    "overall_preference",
+    "readability",
+    "character_credibility",
+    "scene_effectiveness",
+    "tension_momentum",
+    "emotional_impact",
+    "prose_quality",
+    "continuity",
+    "payoff_satisfaction",
+    "desire_to_continue"
+  ],
+  "samples": [
+    {
+      "sample_token": "sample:5e0bed9099ffc7d3489851e41e1a23b6",
+      "sequence_position": 1,
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave."
+    }
+  ],
+  "schema_version": "novel-forge.narrative-editorial-pack.v1"
+}
