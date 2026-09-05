@@ -3004,6 +3004,10 @@
         {
           "path": "tests/unit/test_chapter_mission_scene_contract.py",
           "symbol": "test_scene_cannot_descend_without_complete_mission_coverage"
+        },
+        {
+          "path": "tests/unit/test_hierarchical_planning.py",
+          "symbol": "HierarchicalPlanningDomainTests.test_single_chapter_window_requires_complete_row_without_false_repetition"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -4781,7 +4785,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:305ac519e5c40a4f423298548ed380e16f1212aacd8d10fb5ef0fb58954c6f78"
+    "implementation_tree_sha": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -5066,6 +5070,22 @@
         {
           "path": "src/novel_forge/modules/reader_calibration/application.py",
           "symbol": "PostgresReaderCalibrationAuthority.resolve_profile"
+        }
+      ]
+    },
+    {
+      "id": "single-window-comparison-applicability",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Chapter-function validation retains every per-row requirement for singleton execution windows; cross-row reader homogeneity is NOT_APPLICABLE with one observation and cannot establish diversity. Multi-row homogeneity remains blocking.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "validate_chapter_function_matrix"
+        },
+        {
+          "path": "tests/unit/test_hierarchical_planning.py",
+          "symbol": "HierarchicalPlanningDomainTests.test_single_chapter_window_requires_complete_row_without_false_repetition"
         }
       ]
     }

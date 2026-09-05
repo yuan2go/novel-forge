@@ -1695,7 +1695,7 @@ def validate_chapter_function_matrix(
             str((row.get("reader_experience") or {}).get("reward_mode") or "")
             for row in rows
         ]
-        if len(set(emotions)) == 1 or len(set(reward_modes)) == 1:
+        if len(rows) > 1 and (len(set(emotions)) == 1 or len(set(reward_modes)) == 1):
             issues.append({"code": "READER_EXPERIENCE_HOMOGENEITY"})
     blocking = bool(issues)
     if blocking:
@@ -1707,6 +1707,16 @@ def validate_chapter_function_matrix(
         "status": "PASSED",
         "chapter_count": len(rows),
         "group_objective": group_objective,
+        "reader_experience_comparison": {
+            "status": (
+                "NOT_APPLICABLE"
+                if len(rows) < 2
+                else "PASSED"
+                if any("narrative_density" in row for row in rows)
+                else "NOT_EVALUATED"
+            ),
+            "observation_count": len(rows),
+        },
         "issues": [],
     }
 

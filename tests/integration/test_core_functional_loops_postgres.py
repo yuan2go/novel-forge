@@ -3574,11 +3574,17 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 str(checkpoint_payload["parent_group_version_id"]),
             ],
         )
-        partial_realization = uow.cursor.fetchone()
-        assert partial_realization is not None
-        original_realization_id = str(partial_realization[0])
-        assert tuple(partial_realization[1:]) == (
-            "FROZEN",
+        checkpoint_realization = uow.cursor.fetchone()
+        assert checkpoint_realization is not None
+        original_realization_id = str(checkpoint_realization[0])
+        if runtime_path == "RECAP_FAILURE_ISOLATION":
+            assert len(frozen_realization_events) == 1
+            expected_realization_lifecycle = "EXECUTED"
+        else:
+            assert len(frozen_realization_events) > 1
+            expected_realization_lifecycle = "FROZEN"
+        assert tuple(checkpoint_realization[1:]) == (
+            expected_realization_lifecycle,
             len(frozen_realization_events),
             1,
             "EXECUTED",

@@ -109,6 +109,46 @@ class HierarchicalPlanningDomainTests(unittest.TestCase):
                 group_objective="force an irreversible local choice",
             )
 
+    def test_single_chapter_window_requires_complete_row_without_false_repetition(
+        self,
+    ) -> None:
+        row = {
+            **_matrix_row(
+                1,
+                primary_function="DISCOVERY",
+                ending_hook="new threat",
+            ),
+            "narrative_density": "MEDIUM",
+            "reader_experience": {
+                "target_emotion": "rising pressure",
+                "reward_mode": "DISCOVERY",
+            },
+            "arc_cadence": [
+                {"arc_plan_version_id": "arc:main:v1", "action": "ADVANCE"}
+            ],
+            "obligation_actions": [],
+        }
+        result = validate_chapter_function_matrix(
+            [row], group_objective="advance one accepted-reality window"
+        )
+        self.assertEqual(result["status"], "PASSED")
+        self.assertEqual(result["chapter_count"], 1)
+        self.assertEqual(
+            result["reader_experience_comparison"],
+            {"status": "NOT_APPLICABLE", "observation_count": 1},
+        )
+
+        with self.assertRaisesRegex(KernelError, "READER_EXPERIENCE_HOMOGENEITY"):
+            validate_chapter_function_matrix(
+                [row, {**row, "chapter_number": 2}],
+                group_objective="advance the next window",
+            )
+        with self.assertRaisesRegex(KernelError, "GROUP_OBJECTIVE_NO_PROGRESS"):
+            validate_chapter_function_matrix(
+                [{**row, "required_state_delta": {}}],
+                group_objective="advance one accepted-reality window",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

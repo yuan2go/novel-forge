@@ -113,13 +113,19 @@ These relations remain separate:
 | Accepted-fact projection | Book-accepted ChapterOutcome and projection-set identities determine Canon/Narrative State/trajectory views |
 
 `compile_chapter_contracts` rejects no-op or missing state changes, missing trajectory
-versions, duplicate scene identities, and omitted or undeclared scene contributions.
+versions, duplicate scene identities, ambiguous entity-only transition references,
+and omitted or undeclared scene contributions.
 Mission and Scene digests appear in normalized chapter-plan evidence and Provider views.
 The mission embedded in ChapterExecutionIntent is an execution projection: it binds
 these Planning digests to accepted-boundary and Memo instructions and owns no active
 planning state.
 The proof ceiling is `NARRATIVE_CONTRACT_ONLY`; structural coverage cannot establish
 literary quality, human approval or an independently persisted Scene Authority.
+
+A single-chapter execution window still requires every chapter-function row constraint.
+Its reader-experience homogeneity comparison reports `NOT_APPLICABLE` with one
+observation; this does not establish diversity or narrative quality. Comparisons across
+multiple rows retain their existing rejection criteria.
 
 ## Narrative validation descent
 
