@@ -489,7 +489,7 @@ class PostgresBookNarrativeCheckpointAuthority:
                 target_chapter_count,
                 chapter_number,
                 active_chapter_group,
-                "SATISFIED" if state == "COMPLETED" else "IN_PROGRESS",
+                "NOT_PROVEN" if state == "COMPLETED" else "IN_PROGRESS",
                 Jsonb(arc_status),
                 "AT_RISK" if reachability["replan_required"] else "TRACKING",
                 reachability["status"],

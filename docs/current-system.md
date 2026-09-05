@@ -269,6 +269,11 @@ versioned policy, frozen at admission and replayed unchanged after project polic
 Both configuration paths use governed commands, PostgreSQL integrity, trace, audit and
 outbox evidence. Their numeric defaults are not universal narrative invariants.
 
+A single-chapter execution window still requires every chapter-function row constraint.
+Its reader-experience homogeneity comparison reports `NOT_APPLICABLE` with one
+observation; this does not establish diversity or narrative quality. Comparisons across
+multiple rows retain their blocking homogeneity checks.
+
 Independent relationship/thematic trajectory portfolio activation remains unimplemented;
 current character/Arc contracts and accepted relationship projections do not establish
 that capability. It requires explicit design review rather than promotion of generic

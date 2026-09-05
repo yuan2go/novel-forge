@@ -23,7 +23,12 @@ class ChapterGroupRange:
     end: int
 
     def __post_init__(self) -> None:
-        if self.start <= 0 or self.end < self.start:
+        if (
+            type(self.start) is not int
+            or type(self.end) is not int
+            or self.start <= 0
+            or self.end < self.start
+        ):
             raise ValueError("ChapterGroup range is invalid")
 
     @property

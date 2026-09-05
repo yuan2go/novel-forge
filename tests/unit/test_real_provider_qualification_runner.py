@@ -280,6 +280,12 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             self.assertNotIn("provider-secret-value", stdout.getvalue())
             evidence = json.loads(retained)
             self.assertEqual(evidence["result"], "FAIL")
+            self.assertEqual(evidence["current_real_provider"], "NOT_PROVEN")
+            self.assertRegex(evidence["release_sha"], r"^[0-9a-f]{40}$")
+            self.assertRegex(
+                evidence["implementation_identity"], r"^sha256:[0-9a-f]{64}$"
+            )
+            self.assertEqual(evidence["expected_sha"], "a" * 40)
             self.assertEqual(
                 evidence["proof_scope"]["proves"],
                 ["external-effect-provider-control"],
