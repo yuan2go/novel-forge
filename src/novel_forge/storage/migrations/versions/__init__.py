@@ -113,6 +113,7 @@ from . import (
     v20260905_0110_chapter_mission_scene_contract,
     v20260905_0111_whole_book_completion,
     v20260905_0112_realization_execution_policy,
+    v20260905_0113_policy_completion_fk_indexes,
 )
 
 VERSION_MODULES = [
@@ -228,6 +229,7 @@ VERSION_MODULES = [
     v20260905_0110_chapter_mission_scene_contract,
     v20260905_0111_whole_book_completion,
     v20260905_0112_realization_execution_policy,
+    v20260905_0113_policy_completion_fk_indexes,
 ]
 
 __all__ = ["VERSION_MODULES"]

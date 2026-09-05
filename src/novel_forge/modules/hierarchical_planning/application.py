@@ -338,6 +338,10 @@ class PostgresHierarchicalPlanningAuthority:
         hierarchy_compatibility = str(row[7]) == "LEGACY_IMPORT" or bool(
             row[8] is not None and row[9] is not None and row[8] < row[9]
         )
+        require_current_chapter_contract = (
+            str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
+            and str(row[7]) != "LEGACY_IMPORT"
+        )
         contract = validate_planning_contract(
             project_id=project_id,
             book_id=book_id,
@@ -347,9 +351,7 @@ class PostgresHierarchicalPlanningAuthority:
             execution_scope=execution_scope,
             content=content,
             allow_pre_hierarchy_compatibility=hierarchy_compatibility,
-            require_current_chapter_contract=(
-                str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
-            ),
+            require_current_chapter_contract=require_current_chapter_contract,
         )
         if contract_type is PlanContractType.BOOK and not hierarchy_compatibility:
             self._require_qualified_foundation_for_book_plan(
@@ -360,7 +362,7 @@ class PostgresHierarchicalPlanningAuthority:
             )
         if contract_type is PlanContractType.CHAPTER and (
             not hierarchy_compatibility
-            or str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
+            or require_current_chapter_contract
         ):
             from novel_forge.storage.narrative_realization_repositories import (
                 NarrativeRealizationRepository,

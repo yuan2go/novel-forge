@@ -1597,9 +1597,53 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     correlation_id=f"correlation:{project_id}",
                 )
             )
-            activated[source_type] = service.activate_domain_item(
-                str(item[0]), expected_item_version=int(decision["item_version"])
-            )
+            if source_type == "chapter_plan":
+                from novel_forge.modules.hierarchical_planning.application import (
+                    PostgresHierarchicalPlanningAuthority,
+                )
+
+                execute = PostgresHierarchicalPlanningAuthority._execute_transaction
+
+                def rollback_binding(authority, uow, operation_id, checkpoint):
+                    def fail_after_write(event):
+                        checkpoint(event)
+                        if event == "after_business_projection_update":
+                            raise RuntimeError("rollback imported chapter binding")
+
+                    return execute(authority, uow, operation_id, fail_after_write)
+
+                with patch.object(PostgresHierarchicalPlanningAuthority, "_execute_transaction", rollback_binding):
+                    with self.assertRaisesRegex(RuntimeError, "rollback imported chapter binding"):
+                        service.activate_domain_item(str(item[0]), expected_item_version=int(decision["item_version"]))
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT COUNT(*) FROM story_plan_binding WHERE asset_version_id=%s", [str(item[3])])
+                    self.assertEqual(uow.cursor.fetchone()[0], 0)
+
+                bind = PostgresHierarchicalPlanningAuthority.bind_active_contract
+                receipts = []
+                commands = []
+
+                def capture_binding(authority, **command):
+                    commands.append(command)
+                    result = bind(authority, **command)
+                    receipts.append(result)
+                    return result
+
+                with patch.object(PostgresHierarchicalPlanningAuthority, "bind_active_contract", capture_binding):
+                    activated[source_type] = service.activate_domain_item(str(item[0]), expected_item_version=int(decision["item_version"]))
+                restarted = PostgresHierarchicalPlanningAuthority(
+                    DATABASE_URL,
+                    application_build_id="legacy-domain-planning-integration",
+                    commit_sha="f" * 40,
+                )
+                replay = restarted.bind_active_contract(**commands[0])
+                self.assertEqual(receipts[0]["operation_id"], replay["operation_id"])
+                self.assertFalse(receipts[0]["replayed"])
+                self.assertTrue(replay["replayed"])
+            else:
+                activated[source_type] = service.activate_domain_item(
+                    str(item[0]), expected_item_version=int(decision["item_version"])
+                )
         verified = service.verify(
             imported["migration_run_id"],
             snapshot_root=verification_root,
