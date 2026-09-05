@@ -28,7 +28,8 @@ Capability status uses only `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`, a
 `PRODUCTION_PROVEN`. Lower states never imply higher states. A class, fixture, test, or
 scripted Provider route is not production evidence.
 
-Design candidates are not current documentation. If an exceptional repository-local
-proposal is explicitly authorized, it must be isolated from this directory and carry
-all three labels: `PROPOSAL`, `NOT_IMPLEMENTED`, and `NOT_RUNTIME_AUTHORITY`. It must be
-removed when accepted, rejected, or abandoned.
+Design candidates are not current documentation. Repository-local proposals stay outside
+this directory and declare `PROPOSAL`, `NOT_RUNTIME_AUTHORITY` and their checked lifecycle
+status. `NOT_IMPLEMENTED` is invalid once implementation evidence exists. The inline
+lifecycle record binds the reviewed source baseline and unresolved decisions or work;
+terminal proposals must be projected where applicable and deleted.
