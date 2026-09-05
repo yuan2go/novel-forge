@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260905_0112_realization_execution_policy",
+  "migration_head": "20260905_0113_policy_completion_fk_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -2036,6 +2036,359 @@
           "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
         }
       ]
+    },
+    {
+      "id": "p0-backend-engineering-qualification-3c6367b8fe7c",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
+      "evidence_class": "p0_backend_engineering_qualification",
+      "gate": "make pr-governance -> canonical exact-SHA P0_PROFILE=local",
+      "observed_at_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+      "source_tree": "ad51bff6ceedbe51b81f5859ad3b8d67809fa123",
+      "implementation_tree_sha": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404",
+      "dependency_snapshot_digest": "sha256:28cc5c65bd733ca8dd6b63d0831d090a8caa008760dcf2fe2227ed5d7e341745",
+      "collected": 3735,
+      "passed": 3735,
+      "failed": 0,
+      "collections": [
+        {
+          "classification": "BACKEND_NON_POSTGRESQL",
+          "collected_nodes": 1700,
+          "junit_cases": 3134,
+          "passed": 3134,
+          "skipped": 0,
+          "complete": true
+        },
+        {
+          "classification": "MIGRATION_COMPATIBILITY",
+          "collected_nodes": 68,
+          "junit_cases": 81,
+          "passed": 81,
+          "skipped": 0,
+          "complete": true,
+          "repeated_in_postgresql_collection": true
+        },
+        {
+          "classification": "POSTGRESQL_REQUIRED",
+          "collected_nodes": 515,
+          "junit_cases": 601,
+          "passed": 601,
+          "skipped": 0,
+          "complete": true
+        }
+      ],
+      "gates": [
+        {
+          "id": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "id": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "id": "static-and-manifests",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-backend",
+          "status": "PASS"
+        },
+        {
+          "id": "postgresql-start",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-fresh",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-compatibility",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-postgresql-integration",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-head",
+          "status": "PASS"
+        },
+        {
+          "id": "query-plan-release",
+          "status": "PASS"
+        },
+        {
+          "id": "compose-runtime",
+          "status": "PASS"
+        },
+        {
+          "id": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "id": "evidence-finalization",
+          "status": "PASS"
+        }
+      ],
+      "migration": {
+        "applied_count": 110,
+        "expected_head": "20260905_0110_narrative_completion_policy",
+        "observed_head": "20260905_0110_narrative_completion_policy"
+      },
+      "cleanup": {
+        "status": "PASS",
+        "owned_resource_count": 20,
+        "remaining_resource_count": 0,
+        "phases": [
+          {
+            "compose_project": "nf-p0-cd6ab440ce2c4e2b802906e32a5660c0",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-cd6ab440ce2c4e2b802906e32a5660c0.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-cd6ab440ce2c4e2b802906e32a5660c0",
+            "status": "PASS"
+          },
+          {
+            "compose_project": "nf-p0-cd6ab440ce2c4e2b802906e32a5660c0-runtime",
+            "phase": "compose-runtime",
+            "receipt": "compose-resource-ownership-nf-p0-cd6ab440ce2c4e2b802906e32a5660c0-runtime.json",
+            "remaining_resource_count": 0,
+            "resource_count": 18,
+            "run_id": "p0-cd6ab440ce2c4e2b802906e32a5660c0",
+            "status": "PASS"
+          }
+        ]
+      },
+      "proof_scope": {
+        "ceiling": "LOCAL_BACKEND_ENGINEERING",
+        "does_not_establish": [
+          "ADMIN_UI_EXECUTION",
+          "CREDENTIALED_PROVIDER_EXECUTION",
+          "HUMAN_EDITORIAL_EVIDENCE",
+          "LONGITUDINAL_NARRATIVE_STABILITY",
+          "PRODUCTION_OPERATION"
+        ],
+        "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+        "proves": [
+          "runtime-composition",
+          "project-workspace-authority",
+          "command-attempt-lease-fence",
+          "capability-pack-instruction-runtime",
+          "external-effect-provider-control",
+          "source-import-and-knowledge",
+          "book-design-and-story-formation",
+          "story-design-authority",
+          "hierarchical-planning",
+          "narrative-realization",
+          "plan-change-authority",
+          "book-opening-workflow",
+          "book-production-coordination",
+          "chapter-group-coordination",
+          "context-and-retrieval",
+          "chapter-production-saga",
+          "review-revision-quality",
+          "book-chapter-acceptance",
+          "canon-and-narrative-state",
+          "reader-and-followup-evidence",
+          "agent-runtime",
+          "postgresql-persistence-and-migrations",
+          "retry-recovery-and-replay"
+        ],
+        "schema_version": "novel-forge.qualification-proof-scope.v1"
+      },
+      "qualification_report": {
+        "run_id": "p0-cd6ab440ce2c4e2b802906e32a5660c0",
+        "artifact_root": "novel-forge-p0-3c6367b8fe7c-cd6ab440ce2c4e2b802906e32a5660c0",
+        "artifact": "p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+        "sha256": "sha256:a14f1eb17822b2b845c6510bcede7353b5fc11c7e8adaabc29bd5f1a129de81b",
+        "retention": "REPOSITORY_HISTORICAL_AUDIT_ARTIFACT"
+      },
+      "qualification_evidence": [
+        {
+          "path": "architecture/evidence/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+          "locator": "\"tested_sha\": \"3c6367b8fe7ced6c1ce22236606cba50f91a0d59\""
+        }
+      ]
+    },
+    {
+      "id": "p0-backend-engineering-qualification-7a9e2c6dd926",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
+      "evidence_class": "p0_backend_engineering_qualification",
+      "gate": "make p0-backend-qualification P0_PROFILE=local",
+      "observed_at_sha": "7a9e2c6dd9261a115a2aac979df6e31961607c9c",
+      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+      "source_tree": "7f05daf837dfc89fc70f1317a2d3de57e60132cc",
+      "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a",
+      "dependency_snapshot_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+      "collected": 3806,
+      "passed": 3806,
+      "failed": 0,
+      "collections": [
+        {
+          "classification": "BACKEND_NON_POSTGRESQL",
+          "collected_nodes": 1764,
+          "junit_cases": 3200,
+          "passed": 3200,
+          "skipped": 0,
+          "complete": true
+        },
+        {
+          "classification": "MIGRATION_COMPATIBILITY",
+          "collected_nodes": 68,
+          "junit_cases": 81,
+          "passed": 81,
+          "skipped": 0,
+          "complete": true,
+          "repeated_in_postgresql_collection": true
+        },
+        {
+          "classification": "POSTGRESQL_REQUIRED",
+          "collected_nodes": 520,
+          "junit_cases": 606,
+          "passed": 606,
+          "skipped": 0,
+          "complete": true
+        }
+      ],
+      "gates": [
+        {
+          "id": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "id": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "id": "static-and-manifests",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-backend",
+          "status": "PASS"
+        },
+        {
+          "id": "postgresql-start",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-fresh",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-compatibility",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-postgresql-integration",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-head",
+          "status": "PASS"
+        },
+        {
+          "id": "query-plan-release",
+          "status": "PASS"
+        },
+        {
+          "id": "compose-runtime",
+          "status": "PASS"
+        },
+        {
+          "id": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "id": "evidence-finalization",
+          "status": "PASS"
+        }
+      ],
+      "migration": {
+        "applied_count": 113,
+        "expected_head": "20260905_0113_policy_completion_fk_indexes",
+        "observed_head": "20260905_0113_policy_completion_fk_indexes"
+      },
+      "cleanup": {
+        "status": "PASS",
+        "owned_resource_count": 20,
+        "remaining_resource_count": 0,
+        "phases": [
+          {
+            "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-dc13294a1d0e42059eec708593808d53.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+            "status": "PASS"
+          },
+          {
+            "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime",
+            "phase": "compose-runtime",
+            "receipt": "compose-resource-ownership-nf-p0-dc13294a1d0e42059eec708593808d53-runtime.json",
+            "remaining_resource_count": 0,
+            "resource_count": 18,
+            "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+            "status": "PASS"
+          }
+        ]
+      },
+      "proof_scope": {
+        "ceiling": "LOCAL_BACKEND_ENGINEERING",
+        "does_not_establish": [
+          "ADMIN_UI_EXECUTION",
+          "CREDENTIALED_PROVIDER_EXECUTION",
+          "HUMAN_EDITORIAL_EVIDENCE",
+          "LONGITUDINAL_NARRATIVE_STABILITY",
+          "PRODUCTION_OPERATION"
+        ],
+        "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+        "proves": [
+          "runtime-composition",
+          "project-workspace-authority",
+          "command-attempt-lease-fence",
+          "capability-pack-instruction-runtime",
+          "external-effect-provider-control",
+          "source-import-and-knowledge",
+          "book-design-and-story-formation",
+          "story-design-authority",
+          "hierarchical-planning",
+          "narrative-realization",
+          "plan-change-authority",
+          "book-opening-workflow",
+          "book-production-coordination",
+          "chapter-group-coordination",
+          "context-and-retrieval",
+          "chapter-production-saga",
+          "review-revision-quality",
+          "book-chapter-acceptance",
+          "whole-book-completion-cases",
+          "canon-and-narrative-state",
+          "reader-and-followup-evidence",
+          "agent-runtime",
+          "postgresql-persistence-and-migrations",
+          "retry-recovery-and-replay"
+        ],
+        "schema_version": "novel-forge.qualification-proof-scope.v1"
+      },
+      "qualification_report": {
+        "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+        "artifact_root": "novel-forge-p0-7a9e2c6dd926-dc13294a1d0e42059eec708593808d53",
+        "artifact": "p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+        "sha256": "sha256:60871b704aadf33c45fb6acdf9588766d55fad154064d8d0c637f24ebaaca3af",
+        "retention": "REPOSITORY_HISTORICAL_AUDIT_ARTIFACT"
+      },
+      "qualification_evidence": [
+        {
+          "path": "architecture/evidence/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+          "locator": "\"tested_sha\": \"7a9e2c6dd9261a115a2aac979df6e31961607c9c\""
+        }
+      ]
     }
   ],
   "qualification_failures": [],
@@ -4039,25 +4392,87 @@
       "concept": "whole-book-completion-cases",
       "fact_type": "CURRENT_RUNTIME_FACT",
       "owner": "Whole-book Completion Authority",
-      "production_entries": [{"path": "src/novel_forge/api/routers/book_completion.py", "symbol": "create_router"}],
-      "application": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"}],
-      "domain_symbols": [{"path": "src/novel_forge/modules/book_authority/completion_domain.py", "symbol": "assess_completion"}],
-      "commands_operations": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "book_completion_definitions"}],
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/book_completion.py",
+          "symbol": "create_router"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion_domain.py",
+          "symbol": "assess_completion"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "book_completion_definitions"
+        }
+      ],
       "state_ownership": {
-        "owned_state": ["completion case versions", "exact accepted-source bindings", "blocked and rejected decision versions"],
+        "owned_state": [
+          "completion case versions",
+          "exact accepted-source bindings",
+          "blocked and rejected decision versions"
+        ],
         "write_rule": "Only Whole-book Completion commits cases and decisions; accepted Chapter history remains immutable and outside its mutation rights.",
-        "evidence": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"}]
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/book_authority/completion.py",
+            "symbol": "PostgresBookCompletionAuthority"
+          }
+        ]
       },
-      "mutation_boundary": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority._execute"}],
-      "persistence": [{"path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py", "locator": "CREATE TABLE authority_book_completion_case"}],
-      "migrations": [{"path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py", "locator": "MIGRATION_ID = \"20260905_0111_whole_book_completion\"", "id": "20260905_0111_whole_book_completion"}],
-      "external_effects": {"mode": "NONE", "rule": "Completion reads native accepted and editorial evidence and appends PostgreSQL decisions; it does not call a Provider.", "evidence": []},
-      "upstream_dependencies": ["book-chapter-acceptance", "canon-and-narrative-state", "review-revision-quality"],
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority._execute"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py",
+          "locator": "CREATE TABLE authority_book_completion_case"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py",
+          "locator": "MIGRATION_ID = \"20260905_0111_whole_book_completion\"",
+          "id": "20260905_0111_whole_book_completion"
+        }
+      ],
+      "external_effects": {
+        "mode": "NONE",
+        "rule": "Completion reads native accepted and editorial evidence and appends PostgreSQL decisions; it does not call a Provider.",
+        "evidence": []
+      },
+      "upstream_dependencies": [
+        "book-chapter-acceptance",
+        "canon-and-narrative-state",
+        "review-revision-quality"
+      ],
       "downstream_consumers": [],
       "tests": [
-        {"path": "tests/unit/test_book_completion.py", "symbol": "test_terminal_cursor_and_observed_closure_only_prepare_editorial_case"},
-        {"path": "tests/integration/test_book_completion_postgres.py", "symbol": "test_rollback_and_postcommit_response_loss_do_not_duplicate_cases"},
-        {"path": "tests/integration/test_book_completion_postgres.py", "symbol": "test_acceptance_is_durably_blocked_without_native_whole_book_human_policy"}
+        {
+          "path": "tests/unit/test_book_completion.py",
+          "symbol": "test_terminal_cursor_and_observed_closure_only_prepare_editorial_case"
+        },
+        {
+          "path": "tests/integration/test_book_completion_postgres.py",
+          "symbol": "test_rollback_and_postcommit_response_loss_do_not_duplicate_cases"
+        },
+        {
+          "path": "tests/integration/test_book_completion_postgres.py",
+          "symbol": "test_acceptance_is_durably_blocked_without_native_whole_book_human_policy"
+        }
       ],
       "qualification_state": "EXECUTABLE",
       "qualification_run_ids": [],
@@ -4502,6 +4917,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260905_0112_realization_execution_policy.py",
           "locator": "MIGRATION_ID = \"20260905_0112_realization_execution_policy\"",
           "id": "20260905_0112_realization_execution_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260905_0113_policy_completion_fk_indexes.py",
+          "locator": "MIGRATION_ID = \"20260905_0113_policy_completion_fk_indexes\"",
+          "id": "20260905_0113_policy_completion_fk_indexes"
         }
       ],
       "external_effects": {
@@ -4795,7 +5215,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:a2c3af3449b9405e0e2399976e6b59d0768ca59e9171bcbf185a962f90cd9ba2"
+    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -4813,8 +5233,14 @@
       "statement": "Current Chapter activation requires Mission/Scene v2 views from one immutable Planning asset and exact Frozen realization. Semantic replan includes Mission, trajectory, obligation, Scene and execution commitments; replay-only older definitions cannot admit new production.",
       "design_review_required": false,
       "evidence": [
-        {"path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py", "symbol": "require_chapter_contracts"},
-        {"path": "src/novel_forge/modules/plan_change_authority/domain.py", "symbol": "semantic_plan_diff"}
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "require_chapter_contracts"
+        },
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/domain.py",
+          "symbol": "semantic_plan_diff"
+        }
       ]
     },
     {
@@ -4823,8 +5249,14 @@
       "statement": "Current Planning owns Arc plans and Character trajectory references, while Narrative State derives accepted relationship changes. Independent typed relationship/thematic trajectory portfolios and their activation/closure owner are not implemented; generic fields or Arc projection cannot prove this target capability.",
       "design_review_required": true,
       "evidence": [
-        {"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "PlanContractType"},
-        {"path": "src/novel_forge/modules/story_design_authority/qualification.py", "symbol": "required_qualification_profiles"}
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/qualification.py",
+          "symbol": "required_qualification_profiles"
+        }
       ]
     },
     {
@@ -4833,8 +5265,14 @@
       "statement": "Independent whole-book cases assess exact accepted history and append decisions, but native Quality human evidence is scoped to Chapter/Arc preference. A typed whole-book editorial authorization and closure-evaluator policy is absent; whole-book ACCEPTED is blocked rather than inferred from a completed cursor or AI review.",
       "design_review_required": true,
       "evidence": [
-        {"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"},
-        {"path": "src/novel_forge/modules/chapter_quality_authority/qualification.py", "symbol": "QualityCampaignManifest"}
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification.py",
+          "symbol": "QualityCampaignManifest"
+        }
       ]
     },
     {
@@ -5078,26 +5516,62 @@
     {
       "id": "whole-book-completion-authority",
       "role": "AUTHORITY",
-      "owns": ["immutable whole-book completion cases and source bindings", "append-only versioned rejection and blocked-decision evidence"],
-      "does_not_own": ["Book cursor or Chapter acceptance", "Canon or Narrative State mutation", "human evaluator authorization"],
+      "owns": [
+        "immutable whole-book completion cases and source bindings",
+        "append-only versioned rejection and blocked-decision evidence"
+      ],
+      "does_not_own": [
+        "Book cursor or Chapter acceptance",
+        "Canon or Narrative State mutation",
+        "human evaluator authorization"
+      ],
       "mutation_rule": "Assessment and decision use governed transactions, exact scope and source-digest/version CAS. Missing typed whole-book human policy blocks acceptance; no operation rewrites accepted Chapter history.",
-      "evidence": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"}]
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority"
+        }
+      ]
     },
     {
       "id": "chapter-group-execution-policy-authority",
       "role": "AUTHORITY",
-      "owns": ["execution policy versions and project selection", "immutable Book execution-policy bindings"],
-      "does_not_own": ["narrative trajectory quality", "Chapter attempts and effects", "Book acceptance"],
+      "owns": [
+        "execution policy versions and project selection",
+        "immutable Book execution-policy bindings"
+      ],
+      "does_not_own": [
+        "narrative trajectory quality",
+        "Chapter attempts and effects",
+        "Book acceptance"
+      ],
       "mutation_rule": "Configuration uses Command Kernel transactions with exact version, idempotency, audit and outbox; a Book binding never adopts later project selection on replay.",
-      "evidence": [{"path": "src/novel_forge/modules/chapter_group_authority/policy.py", "symbol": "PostgresChapterGroupExecutionPolicyAuthority"}]
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_group_authority/policy.py",
+          "symbol": "PostgresChapterGroupExecutionPolicyAuthority"
+        }
+      ]
     },
     {
       "id": "reader-proxy-policy-authority",
       "role": "AUTHORITY",
-      "owns": ["ReaderProxy policy versions and project selection", "immutable per-admission policy bindings"],
-      "does_not_own": ["human editorial judgment", "real reader causal claims", "Canon or active plans"],
+      "owns": [
+        "ReaderProxy policy versions and project selection",
+        "immutable per-admission policy bindings"
+      ],
+      "does_not_own": [
+        "human editorial judgment",
+        "real reader causal claims",
+        "Canon or active plans"
+      ],
       "mutation_rule": "Configuration is an idempotent governed command; admission freezes the selected policy before evaluation and retry cannot change its thresholds.",
-      "evidence": [{"path": "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py", "symbol": "PostgresReaderProxyPolicyAuthority"}]
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py",
+          "symbol": "PostgresReaderProxyPolicyAuthority"
+        }
+      ]
     },
     {
       "id": "project-workspace-authority",
@@ -5466,8 +5940,18 @@
       "disposition": "KEEP",
       "owner": "planning-authority",
       "lifecycle_rule": "Planning realization binds Character trajectory references to semantic Character Cast, Character Arc Portfolio or Book Plan versions. These references are not a separate plan scale and cannot advance accepted Character state.",
-      "evidence": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "locator": "\"CHARACTER_TRAJECTORY\""}],
-      "relationships": [{"type": "PLANNING_DEPENDENCY", "target": "chapter-mission"}]
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "locator": "\"CHARACTER_TRAJECTORY\""
+        }
+      ],
+      "relationships": [
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "chapter-mission"
+        }
+      ]
     },
     {
       "id": "relationship",
@@ -5475,8 +5959,18 @@
       "disposition": "SPLIT",
       "owner": "narrative-state-projection",
       "lifecycle_rule": "Accepted relationship state is normalized under Narrative State identities and derives from accepted outcomes. Relationship design remains Character/Foundation input; no independent active relationship trajectory plan is implied.",
-      "evidence": [{"path": "src/novel_forge/modules/narrative_state/contracts.py", "symbol": "normalize_relationship_state_changes"}],
-      "relationships": [{"type": "ACCEPTED_FACT_PROJECTION", "target": "narrative-state"}]
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/narrative_state/contracts.py",
+          "symbol": "normalize_relationship_state_changes"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "ACCEPTED_FACT_PROJECTION",
+          "target": "narrative-state"
+        }
+      ]
     },
     {
       "id": "whole-book-completion",
@@ -5484,7 +5978,12 @@
       "disposition": "ADD",
       "owner": "whole-book-completion-authority",
       "lifecycle_rule": "Immutable completion cases bind exact accepted Chapter/projection identities and closure findings. Versioned decisions can reject or record blockers; native whole-book editorial authorization is missing and ACCEPTED remains unavailable.",
-      "evidence": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"}],
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority"
+        }
+      ],
       "relationships": []
     },
     {
@@ -6305,7 +6804,12 @@
       "order": 19,
       "path_role": "CONDITIONAL",
       "owner": "whole-book-completion-authority",
-      "evidence": [{"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority.assess"}],
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "PostgresBookCompletionAuthority.assess"
+        }
+      ],
       "downstream": []
     }
   ]

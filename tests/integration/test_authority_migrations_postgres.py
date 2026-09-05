@@ -609,6 +609,57 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         )
         self.assertEqual(missing_foreign_key_indexes, [])
 
+    def test_policy_completion_index_upgrade_rolls_back_and_replays(self) -> None:
+        from tests.integration.test_book_projection_repair_upgrade_postgres import (
+            _apply_through,
+        )
+
+        _apply_through(self.test_url, "20260905_0112_realization_execution_policy")
+        with psycopg.connect(self.test_url) as connection:
+            before = connection.execute(
+                "SELECT migration_id, applied_at FROM nf_schema_migrations ORDER BY migration_id"
+            ).fetchall()
+            indexes_before = connection.execute(
+                "SELECT indexrelid FROM pg_index ORDER BY indexrelid"
+            ).fetchall()
+            pending = [
+                migration for migration in MIGRATIONS
+                if migration.migration_id not in {row[0] for row in before}
+            ]
+            self.assertTrue(pending, "the merged policy/completion schema needs a forward index repair")
+            with self.assertRaisesRegex(RuntimeError, "rollback index repair"):
+                with connection.transaction():
+                    for migration in pending:
+                        for statement in migration.upgrade_statements:
+                            connection.execute(statement)
+                    raise RuntimeError("rollback index repair")
+            self.assertEqual(
+                connection.execute("SELECT indexrelid FROM pg_index ORDER BY indexrelid").fetchall(),
+                indexes_before,
+            )
+        first = run_migrations(self.test_url)
+        self.assertTrue(first["ok"])
+        self.assertEqual(run_migrations(self.test_url), first)
+        with psycopg.connect(self.test_url) as connection:
+            after = dict(connection.execute(
+                "SELECT migration_id, applied_at FROM nf_schema_migrations"
+            ).fetchall())
+            self.assertTrue(all(after[revision] == applied_at for revision, applied_at in before))
+            missing = connection.execute(
+                """
+                SELECT constraint_row.conname FROM pg_constraint AS constraint_row
+                JOIN pg_class AS table_row ON table_row.oid=constraint_row.conrelid
+                WHERE constraint_row.contype='f' AND table_row.relname LIKE 'authority_%'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM pg_index AS index_row
+                      WHERE index_row.indrelid=constraint_row.conrelid
+                        AND index_row.indisvalid
+                        AND constraint_row.conkey::smallint[] <@ index_row.indkey::smallint[]
+                  )
+                """
+            ).fetchall()
+            self.assertEqual(missing, [])
+
     def test_0102_recovery_intent_requires_recovery_assessment_at_commit(
         self,
     ) -> None:

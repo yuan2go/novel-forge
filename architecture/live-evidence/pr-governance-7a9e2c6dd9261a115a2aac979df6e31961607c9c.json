@@ -1,0 +1,52 @@
+{
+  "base_implementation_tree_sha": "sha256:9059a782db774719e3dcfd2345637a5a713e865ed4e2a91c115065a25048dcbc",
+  "base_sha": "a6d76005efe1672272fa2829d44d2c9a94dd8ed5",
+  "changed_implementation_paths": [
+    "architecture/manifests/migration-manifest.yaml",
+    "src/novel_forge/storage/migrations/versions/__init__.py",
+    "src/novel_forge/storage/migrations/versions/v20260905_0113_policy_completion_fk_indexes.py",
+    "tests/integration/test_authority_legacy_migration_postgres.py",
+    "tests/integration/test_authority_migrations_postgres.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/unit/test_hierarchical_planning_upgrade_replay.py"
+  ],
+  "checks": [
+    {
+      "exit_code": 0,
+      "gate": "repository-governance"
+    },
+    {
+      "exit_code": 0,
+      "gate": "focused-tests"
+    },
+    {
+      "exit_code": 0,
+      "gate": "canonical-exact-sha-p0"
+    }
+  ],
+  "focused_test_paths": [
+    "tests/integration/test_authority_legacy_migration_postgres.py",
+    "tests/integration/test_authority_migrations_postgres.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/unit/test_hierarchical_planning_upgrade_replay.py"
+  ],
+  "head_sha": "7a9e2c6dd9261a115a2aac979df6e31961607c9c",
+  "implementation_changed": true,
+  "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a",
+  "p0_evidence": {
+    "path": "/private/tmp/nf-post-merge-p0-pr-qualification-v3/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+    "sha256": "sha256:60871b704aadf33c45fb6acdf9588766d55fad154064d8d0c637f24ebaaca3af"
+  },
+  "provider_evidence": [
+    {
+      "identity_status": "STALE",
+      "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+      "qualification_authority": "GOVERNED_PROVIDER_QUALIFICATION"
+    }
+  ],
+  "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+  "qualification": "PASS_EXACT_SHA_P0",
+  "qualification_reason": "IMPLEMENTATION_CHANGED",
+  "schema_version": "novel-forge.pr-governance.v1",
+  "status": "PASS"
+}

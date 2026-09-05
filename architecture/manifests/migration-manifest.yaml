@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260905_0112_realization_execution_policy",
+  "head": "20260905_0113_policy_completion_fk_indexes",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -114,6 +114,7 @@
     "20260905_0109_industrial_execution_policies",
     "20260905_0110_chapter_mission_scene_contract",
     "20260905_0111_whole_book_completion",
-    "20260905_0112_realization_execution_policy"
+    "20260905_0112_realization_execution_policy",
+    "20260905_0113_policy_completion_fk_indexes"
   ]
 }
