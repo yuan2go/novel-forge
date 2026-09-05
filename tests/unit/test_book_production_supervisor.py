@@ -33,13 +33,13 @@ def test_supervisor_derives_two_exact_four_chapter_horizons() -> None:
 @pytest.mark.parametrize(
     ("target", "preferred", "expected"),
     (
-        (6, 4, (1, 6)),
-        (9, 8, (1, 6)),
-        (10, 8, (1, 7)),
+        (6, 4, (1, 4)),
+        (9, 8, (1, 8)),
+        (10, 8, (1, 8)),
         (11, 8, (1, 8)),
     ),
 )
-def test_supervisor_chapter_group_horizon_avoids_terminal_fragments(
+def test_supervisor_window_uses_policy_and_permits_terminal_fragments(
     target: int, preferred: int, expected: tuple[int, int]
 ) -> None:
     assert (

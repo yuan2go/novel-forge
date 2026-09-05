@@ -1869,6 +1869,7 @@ def planning_provider_output_schema(
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
+    chapter_window_policy: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -1886,6 +1887,15 @@ def planning_provider_output_schema(
             for item in (arc_plan_version_id, *related_arc_plan_version_ids)
             if item
         )
+    )
+    from novel_forge.modules.hierarchical_planning.window_policy import (
+        ChapterWindowPolicy,
+    )
+
+    window_policy = (
+        ChapterWindowPolicy.from_snapshot(chapter_window_policy)
+        if chapter_window_policy is not None
+        else ChapterWindowPolicy()
     )
     exact_group_range: tuple[int, int] | None = None
     exact_group_chapters: list[int] = []
@@ -1905,10 +1915,11 @@ def planning_provider_output_schema(
                 "ChapterGroup Search provider schema requires an exact frozen horizon"
             )
         exact_group_range = (raw_range[0], raw_range[1])
-        if not 3 <= exact_group_range[1] - exact_group_range[0] + 1 <= 8:
+        if exact_group_range[0] <= 0 or exact_group_range[1] < exact_group_range[0]:
             raise ValueError(
-                "ChapterGroup Search provider schema requires three to eight Chapters"
+                "ChapterGroup Search provider schema requires a positive ordered range"
             )
+        window_policy.require_range(*exact_group_range)
         exact_group_chapters = list(
             range(exact_group_range[0], exact_group_range[1] + 1)
         )
@@ -2066,7 +2077,7 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": len(exact_group_chapters) or 3,
+                "minItems": len(exact_group_chapters) or 1,
                 "items": _strict_object(
                     {
                         "event_id": string,
@@ -2159,8 +2170,8 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": len(exact_group_chapters) or 3,
-                "maxItems": len(exact_group_chapters) or 8,
+                "minItems": len(exact_group_chapters) or 1,
+                "maxItems": len(exact_group_chapters) or window_policy.maximum_chapters,
                 "items": _strict_object(
                     {
                         "chapter_number": (
@@ -3234,6 +3245,7 @@ class PostgresPlanningExecutionPreparer:
             narrative_search_horizon=(command.narrative_search_planning_horizon),
             narrative_realization=command.narrative_realization,
             chapter_schedule_row=chapter_schedule_row,
+            chapter_window_policy=command.chapter_window_policy,
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
@@ -4450,7 +4462,9 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=repair_version_id or f"{key}:{digest}",
                 logical_kind=f"planning_{key}",
                 physical_asset_type=(
-                    str(repair_source.get("asset_type") or "planning_context_projection")
+                    str(
+                        repair_source.get("asset_type") or "planning_context_projection"
+                    )
                     if isinstance(repair_source, Mapping)
                     else "planning_context_projection"
                 ),

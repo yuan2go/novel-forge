@@ -33,8 +33,11 @@ CURRENT_CLASSIFICATIONS = frozenset(
         "CURRENT_AUTHORITY_BOUNDARY",
     }
 )
+DIRECT_CURRENT_CLASSIFICATIONS = frozenset(
+    {"CURRENT_DOMAIN_INVARIANT", "CURRENT_RUNTIME_CONTRACT"}
+)
 SEMANTIC_SLICE_ROLES = frozenset(
-    {"CURRENT_BUSINESS_CAPABILITY", "MIGRATION_COMPATIBILITY"}
+    {"CURRENT_BUSINESS_CAPABILITY", "MIGRATION_COMPATIBILITY", "SUPPORTING_CONTRACT"}
 )
 SEMANTIC_PROOF_CEILINGS = frozenset(
     {
@@ -44,6 +47,18 @@ SEMANTIC_PROOF_CEILINGS = frozenset(
         "POSTGRESQL_CURRENT_CONTRACT",
     }
 )
+CLASSIFICATION_PROOF_CEILINGS = {
+    "CURRENT_DOMAIN_INVARIANT": frozenset({"IN_PROCESS_CONTRACT_ONLY"}),
+    "CURRENT_RUNTIME_CONTRACT": frozenset(
+        {"POSTGRESQL_INTEGRATION_ONLY", "IN_PROCESS_ACCEPTANCE_ONLY"}
+    ),
+    "CURRENT_AUTHORITY_BOUNDARY": frozenset({"STATIC_AUTHORITY_BOUNDARY"}),
+    "MIGRATION_COMPATIBILITY": frozenset({"MIGRATION_COMPATIBILITY_ONLY"}),
+    "RETIREMENT_GUARD": frozenset({"RETIREMENT_ONLY"}),
+    "FIXTURE_PROTOCOL": frozenset({"FIXTURE_ONLY"}),
+    "QUALIFICATION_INFRASTRUCTURE": frozenset({"INFRASTRUCTURE_ONLY"}),
+    "HISTORICAL_REDUNDANT": frozenset({"NONE"}),
+}
 REQUIRED_RULE_FIELDS = (
     "id",
     "patterns",
@@ -105,7 +120,90 @@ def _module_target(root: Path, module: str) -> str:
     return ""
 
 
-def _test_facts(root: Path, path: Path) -> tuple[int, list[str], list[str], str]:
+def _local_test_dependencies(root: Path, path: Path, tree: ast.AST) -> set[Path]:
+    dependencies: set[Path] = set()
+    for node in ast.walk(tree):
+        modules: list[str] = []
+        if isinstance(node, ast.Import):
+            modules = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            module = str(node.module or "")
+            if node.level:
+                package = list(path.relative_to(root).parent.parts)
+                package = package[: len(package) - node.level + 1]
+                module = ".".join([*package, *module.split(".")]).rstrip(".")
+            modules = [module, *(f"{module}.{alias.name}" for alias in node.names)]
+        for module in modules:
+            if module != "tests" and not module.startswith("tests."):
+                continue
+            candidate = root / Path(*module.split("."))
+            for dependency in (candidate.with_suffix(".py"), candidate / "__init__.py"):
+                if dependency.is_file():
+                    dependencies.add(dependency)
+    for parent in path.parents:
+        if parent == root:
+            break
+        conftest = parent / "conftest.py"
+        if conftest.is_file() and conftest != path:
+            dependencies.add(conftest)
+    return dependencies
+
+
+def _fixture_or_mock_sources(
+    root: Path, path: Path, cache: dict[Path, tuple[bool, set[Path]]]
+) -> list[str]:
+    pending = [path]
+    visited: set[Path] = set()
+    sources: set[str] = set()
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        if current not in cache:
+            content = current.read_text(encoding="utf-8")
+            tree = ast.parse(content, filename=str(current))
+            backed = any(
+                marker in content
+                for marker in (
+                    "unittest.mock",
+                    "pytest.MonkeyPatch",
+                    "monkeypatch",
+                    "Scripted",
+                    "scripted",
+                    "fixture_protocol_only",
+                    "SimpleNamespace",
+                    "fake_deterministic_provider",
+                )
+            ) or any(
+                (
+                    isinstance(node, (ast.Name, ast.alias))
+                    and re.match(
+                        r"(?:Fake|Mock|MagicMock|AsyncMock|Stub)(?:[A-Z_]|$)",
+                        node.id if isinstance(node, ast.Name) else node.name,
+                    )
+                )
+                or (isinstance(node, ast.Attribute) and node.attr == "__new__")
+                or (
+                    isinstance(node, ast.ClassDef)
+                    and not node.bases
+                    and not node.name.startswith("Test")
+                    and not node.name.endswith("Tests")
+                    and any(isinstance(item, ast.FunctionDef) for item in node.body)
+                )
+                for node in ast.walk(tree)
+            )
+            cache[current] = (backed, _local_test_dependencies(root, current, tree))
+        backed, dependencies = cache[current]
+        if backed:
+            sources.add(current.relative_to(root).as_posix())
+        pending.extend(dependencies - visited)
+    return sorted(sources)
+
+
+def _test_facts(
+    root: Path, path: Path, evidence_cache: dict[Path, tuple[bool, set[Path]]]
+) -> tuple[int, list[str], list[str], list[str]]:
     content = path.read_text(encoding="utf-8")
     tree = ast.parse(content, filename=str(path))
     definition_count = sum(
@@ -137,22 +235,12 @@ def _test_facts(root: Path, path: Path) -> tuple[int, list[str], list[str], str]
         path_candidate = root / candidate
         if "*" not in candidate and path_candidate.exists():
             targets.add(candidate)
-    evidence_basis = (
-        "FIXTURE_OR_MOCK_BACKED"
-        if any(
-            marker in content
-            for marker in (
-                "unittest.mock",
-                "pytest.MonkeyPatch",
-                "monkeypatch",
-                "Scripted",
-                "scripted",
-                "fixture_protocol_only",
-            )
-        )
-        else "DIRECT_CONTRACT"
+    return (
+        definition_count,
+        sorted(symbols),
+        sorted(targets),
+        _fixture_or_mock_sources(root, path, evidence_cache),
     )
-    return definition_count, sorted(symbols), sorted(targets), evidence_basis
 
 
 def _owner_for_target(target: str) -> str:
@@ -231,20 +319,18 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
         if classification not in CLASSIFICATIONS:
             _error(errors, f"unsupported test reality classification: {classification}")
             continue
+        if rule["proof_ceiling"] not in CLASSIFICATION_PROOF_CEILINGS[classification]:
+            _error(
+                errors, f"test classification has unsupported proof ceiling: {rule_id}"
+            )
         validated_rules.append(rule)
 
     discovered = (
-        sorted(
-            path
-            for path in (root / "tests").rglob("test_*.py")
-            if path.is_file()
-        )
+        sorted(path for path in (root / "tests").rglob("test_*.py") if path.is_file())
         if (root / "tests").is_dir()
         else []
     )
-    discovered_relatives = {
-        path.relative_to(root).as_posix() for path in discovered
-    }
+    discovered_relatives = {path.relative_to(root).as_posix() for path in discovered}
     for rule in validated_rules:
         for pattern in rule["patterns"]:
             if not any(
@@ -257,28 +343,37 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
                 )
     records: list[dict[str, Any]] = []
     unclassified: list[str] = []
-    classification_by_path: dict[str, str] = {}
+    evidence_cache: dict[Path, tuple[bool, set[Path]]] = {}
     for path in discovered:
         relative = path.relative_to(root).as_posix()
-        rule = next((item for item in validated_rules if _matches(relative, item)), None)
+        rule = next(
+            (item for item in validated_rules if _matches(relative, item)), None
+        )
         if rule is None:
             unclassified.append(relative)
             continue
         classification = str(rule["classification"])
         try:
-            definition_count, symbols, targets, evidence_basis = _test_facts(root, path)
+            definition_count, symbols, targets, mock_sources = _test_facts(
+                root, path, evidence_cache
+            )
         except (OSError, UnicodeDecodeError, SyntaxError) as exc:
             _error(errors, f"cannot inspect test reality: {relative}: {exc}")
             continue
+        observed_targets = list(targets)
         configured_target = str(rule["production_target"])
         if configured_target != "AUTO_FROM_TEST_IMPORTS":
             try:
-                target = _relative(configured_target, field=f"{rule['id']}.production_target")
+                target = _relative(
+                    configured_target, field=f"{rule['id']}.production_target"
+                )
             except ValueError as exc:
                 _error(errors, str(exc))
             else:
                 if not (root / target).exists():
-                    _error(errors, f"test reality production target is missing: {target}")
+                    _error(
+                        errors, f"test reality production target is missing: {target}"
+                    )
                 targets.append(target)
                 targets = sorted(set(targets))
         if classification in CURRENT_CLASSIFICATIONS and not targets:
@@ -290,7 +385,6 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             _error(errors, f"test reality owner cannot be derived: {relative}")
         if classification == "HISTORICAL_REDUNDANT":
             _error(errors, f"historical redundant tests must be deleted: {relative}")
-        classification_by_path[relative] = classification
         records.append(
             {
                 "path": relative,
@@ -298,10 +392,14 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
                 "owner": owner,
                 "capability": str(rule["capability"]),
                 "production_targets": targets,
+                "observed_production_targets": observed_targets,
                 "tested_symbols": symbols,
                 "qualification_role": str(rule["qualification_role"]),
                 "proof_ceiling": str(rule["proof_ceiling"]),
-                "evidence_basis": evidence_basis,
+                "evidence_basis": (
+                    "FIXTURE_OR_MOCK_BACKED" if mock_sources else "DIRECT_CONTRACT"
+                ),
+                "fixture_or_mock_sources": mock_sources,
                 "test_definition_count": definition_count,
                 "rule_id": str(rule["id"]),
             }
@@ -309,6 +407,51 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
     for relative in unclassified:
         _error(errors, f"unclassified test file: {relative}")
 
+    direct_records = [
+        record
+        for record in records
+        if record["classification"] in DIRECT_CURRENT_CLASSIFICATIONS
+        and record["evidence_basis"] == "DIRECT_CONTRACT"
+        and record["test_definition_count"] > 0
+        and any(
+            target.startswith("src/novel_forge/")
+            for target in record["observed_production_targets"]
+        )
+    ]
+    downgraded: list[str] = []
+    for record in records:
+        record["current_semantic_evidence"] = record in direct_records
+        record["direct_contract_witnesses"] = []
+        if (
+            record["classification"] != "CURRENT_DOMAIN_INVARIANT"
+            or record["evidence_basis"] != "FIXTURE_OR_MOCK_BACKED"
+        ):
+            continue
+        required = set(record["production_targets"])
+        witnesses = [
+            witness
+            for witness in direct_records
+            if witness["capability"] == record["capability"]
+            and required.intersection(witness["observed_production_targets"])
+        ]
+        covered = {
+            target
+            for witness in witnesses
+            for target in witness["observed_production_targets"]
+        }
+        if required and required <= covered:
+            record["direct_contract_witnesses"] = sorted(
+                witness["path"] for witness in witnesses
+            )
+        else:
+            for field in ("classification", "qualification_role", "proof_ceiling"):
+                record[f"declared_{field}"] = record[field]
+            record["classification"] = "FIXTURE_PROTOCOL"
+            record["qualification_role"] = "FIXTURE_CONTRACT_ONLY"
+            record["proof_ceiling"] = "FIXTURE_ONLY"
+            downgraded.append(record["path"])
+    records_by_path = {record["path"]: record for record in records}
+    slice_evidence: dict[str, dict[str, Any]] = {}
     policy = manifest.get("semantic_slice_policy")
     if not isinstance(policy, Mapping):
         _error(errors, "semantic_slice_policy must be an object")
@@ -331,23 +474,103 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
             _error(errors, f"qualification semantic slice is empty: {name}")
             continue
         classes = {
-            classification_by_path.get(str(relative), "UNCLASSIFIED")
+            records_by_path.get(str(relative), {}).get("classification", "UNCLASSIFIED")
             for relative in paths
         }
         role = str(slice_policy.get("role") or "")
         proof_ceiling = str(slice_policy.get("proof_ceiling") or "")
         if "UNCLASSIFIED" in classes:
-            _error(errors, f"semantic slice contains unclassified test evidence: {name}")
+            _error(
+                errors, f"semantic slice contains unclassified test evidence: {name}"
+            )
         if role not in SEMANTIC_SLICE_ROLES:
             _error(errors, f"semantic slice has unsupported reality role: {name}")
-        if role == "CURRENT_BUSINESS_CAPABILITY" and not (
-            classes & CURRENT_CLASSIFICATIONS
+        witnesses = [
+            records_by_path[str(relative)]
+            for relative in paths
+            if records_by_path.get(str(relative), {}).get("current_semantic_evidence")
+        ]
+        required_targets = slice_policy.get("direct_contract_targets", [])
+        valid_targets: set[str] = set()
+        if role == "CURRENT_BUSINESS_CAPABILITY":
+            if not witnesses:
+                _error(
+                    errors,
+                    f"current semantic slice has no direct current-contract evidence: {name}",
+                )
+            if not isinstance(required_targets, list) or not required_targets:
+                _error(
+                    errors,
+                    f"current semantic slice has no direct production targets: {name}",
+                )
+            else:
+                for value in required_targets:
+                    try:
+                        target = _relative(
+                            value, field=f"{name}.direct_contract_targets"
+                        )
+                    except ValueError as exc:
+                        _error(errors, str(exc))
+                        continue
+                    if (
+                        not target.startswith("src/novel_forge/")
+                        or not (root / target).is_file()
+                    ):
+                        _error(
+                            errors,
+                            f"current semantic slice target is not production code: {name}:{target}",
+                        )
+                        continue
+                    valid_targets.add(target)
+                covered = {
+                    target
+                    for witness in witnesses
+                    for target in witness["observed_production_targets"]
+                }
+                for target in sorted(valid_targets - covered):
+                    _error(
+                        errors,
+                        f"current semantic slice lacks direct target evidence: {name}:{target}",
+                    )
+            if proof_ceiling in {
+                "FIXTURE_CONTROL_ONLY",
+                "MIGRATION_COMPATIBILITY_ONLY",
+            }:
+                _error(
+                    errors,
+                    f"supporting proof cannot qualify a current semantic slice: {name}",
+                )
+        if role == "SUPPORTING_CONTRACT" and proof_ceiling != "FIXTURE_CONTROL_ONLY":
+            _error(
+                errors,
+                f"supporting semantic slice must retain fixture proof ceiling: {name}",
+            )
+        slice_evidence[str(name)] = {
+            "role": role,
+            "proof_ceiling": proof_ceiling,
+            "direct_contract_targets": sorted(valid_targets),
+            "direct_current_witnesses": sorted(record["path"] for record in witnesses),
+            "supporting_evidence": sorted(
+                str(relative)
+                for relative in paths
+                if not records_by_path.get(str(relative), {}).get(
+                    "current_semantic_evidence"
+                )
+            ),
+        }
+        if role == "MIGRATION_COMPATIBILITY" and classes != {"MIGRATION_COMPATIBILITY"}:
+            _error(
+                errors,
+                f"migration semantic slice contains non-migration evidence: {name}",
+            )
+        if (
+            role == "MIGRATION_COMPATIBILITY"
+            and proof_ceiling != "MIGRATION_COMPATIBILITY_ONLY"
         ):
-            _error(errors, f"current semantic slice has no current-behavior evidence: {name}")
-        if role == "MIGRATION_COMPATIBILITY" and classes != {
-            "MIGRATION_COMPATIBILITY"
-        }:
-            _error(errors, f"migration semantic slice contains non-migration evidence: {name}")
+            _error(
+                errors,
+                f"migration semantic slice must retain compatibility proof ceiling: {name}",
+            )
         if proof_ceiling not in SEMANTIC_PROOF_CEILINGS:
             _error(errors, f"semantic slice has unsupported proof ceiling: {name}")
 
@@ -368,6 +591,8 @@ def check_test_reality(repo_root: str | Path) -> dict[str, Any]:
         },
         "unclassified_files": unclassified,
         "files": records,
+        "downgraded_fixture_files": downgraded,
+        "semantic_slice_evidence": slice_evidence,
         "errors": errors,
     }
 

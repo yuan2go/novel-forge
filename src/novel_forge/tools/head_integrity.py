@@ -296,6 +296,51 @@ def _required_import_failures(
     return failures
 
 
+def _pr_wrapper_reaches_canonical_p0(root: Path) -> bool:
+    path = root / "src/novel_forge/tools/pr_governance.py"
+    try:
+        module = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, SyntaxError):
+        return False
+    validator_imported = any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == "novel_forge.tools.release_run_evidence"
+        and any(alias.name == "validate_p0_backend_qualification_report" for alias in node.names)
+        for node in module.body
+    )
+    owner = next((node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == "run_pr_governance"), None)
+    if owner is None or not validator_imported:
+        return False
+    branch = next((
+        node for node in ast.walk(owner)
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Subscript)
+        and isinstance(node.test.value, ast.Name) and node.test.value.id == "report"
+        and isinstance(node.test.slice, ast.Constant) and node.test.slice.value == "implementation_changed"
+    ), None)
+    if branch is None:
+        return False
+    calls = [node for statement in branch.body for node in ast.walk(statement) if isinstance(node, ast.Call)]
+    canonical_invocation = any(
+        isinstance(call.func, ast.Name) and call.func.id == "execute"
+        and len(call.args) == 2 and isinstance(call.args[1], ast.List)
+        and {"scripts/run_p0_backend_qualification.py", "--profile", "--output"}.issubset({
+            item.value for item in call.args[1].elts if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        })
+        for call in calls
+    )
+    exact_validation = any(
+        isinstance(call.func, ast.Name) and call.func.id == "validate_p0_backend_qualification_report"
+        and any(
+            keyword.arg == "expected_sha" and isinstance(keyword.value, ast.Subscript)
+            and isinstance(keyword.value.value, ast.Name) and keyword.value.value.id == "report"
+            and isinstance(keyword.value.slice, ast.Constant) and keyword.value.slice.value == "head_sha"
+            for keyword in call.keywords
+        )
+        for call in calls
+    )
+    return canonical_invocation and exact_validation
+
+
 def _test_collection_failures(root: Path) -> set[str]:
     failures: set[str] = set()
     makefile = (root / "Makefile").read_text(encoding="utf-8") if (root / "Makefile").is_file() else ""
@@ -361,8 +406,19 @@ def _test_collection_failures(root: Path) -> set[str]:
         r"(?m)^p0-backend-qualification:[^\n]*\n(?P<recipe>(?:\t[^\n]*\n?)+)",
         makefile,
     )
-    common_entry = bool(
+    pr_make_match = re.search(
+        r"(?m)^pr-governance:[^\n]*\n(?P<recipe>(?:\t[^\n]*\n?)+)", makefile
+    )
+    workflow_reaches_p0 = (
         "make p0-backend-qualification" in workflow_commands
+        or (
+            "make pr-governance" in workflow_commands and pr_make_match is not None
+            and "novel_forge.tools.pr_governance --base-sha" in pr_make_match.group("recipe")
+            and _pr_wrapper_reaches_canonical_p0(root)
+        )
+    )
+    common_entry = bool(
+        workflow_reaches_p0
         and make_match is not None
         and "scripts/run_p0_backend_qualification.py"
         in make_match.group("recipe")

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
@@ -16,18 +18,20 @@ class ChapterGroupRepository:
                 group_run_id, project_id, book_id, book_run_id,
                 group_plan_version_id, volume_plan_version_id,
                 root_operation_id, saga_id, stable_idempotency_key,
-                chapter_start, chapter_end, accepted_through_chapter, state
+                chapter_start, chapter_end, accepted_through_chapter, state,
+                window_policy, window_policy_digest
             ) VALUES (
                 %(group_run_id)s, %(project_id)s, %(book_id)s,
                 %(book_run_id)s, %(group_plan_version_id)s,
                 %(volume_plan_version_id)s, %(root_operation_id)s,
                 %(saga_id)s, %(stable_idempotency_key)s,
                 %(chapter_start)s, %(chapter_end)s,
-                %(accepted_through_chapter)s, 'PREPARING'
+                %(accepted_through_chapter)s, 'PREPARING',
+                %(window_policy)s, %(window_policy_digest)s
             )
             ON CONFLICT(project_id, stable_idempotency_key) DO NOTHING
             """,
-            row,
+            {**row, "window_policy": Jsonb(row["window_policy"])},
         )
 
     def set_state(
@@ -210,7 +214,7 @@ class ChapterGroupRepository:
                    chapter_start, chapter_end, accepted_through_chapter,
                    active_chapter_number, active_chapter_request_id, state,
                    recap_operation_id, plan_adjustment_proposal_version_id,
-                   failure_reason, version
+                   failure_reason, version, window_policy, window_policy_digest
             FROM authority_chapter_group_production
             WHERE group_run_id=%s
             """,
@@ -242,6 +246,8 @@ class ChapterGroupRepository:
             "plan_adjustment_proposal_version_id",
             "failure_reason",
             "version",
+            "window_policy",
+            "window_policy_digest",
         )
         return dict(zip(fields, row, strict=True))
 

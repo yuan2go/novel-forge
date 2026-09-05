@@ -17,6 +17,7 @@ from novel_forge.tools.documentation_reality import (
     SCHEMA_VERSION,
     STATUS_VOCABULARY,
     _validate_comment_ratchet,
+    _validate_narrative_model,
     check_repository,
 )
 from novel_forge.tools.implementation_tree_identity import (
@@ -297,6 +298,31 @@ def _bind_retained_p0_report(root: Path, inventory_path: Path) -> None:
 
 
 class DocumentationRealityTests(unittest.TestCase):
+    def test_execution_policy_and_realization_do_not_become_structural_containment(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "src/contracts.py"
+            source.parent.mkdir()
+            source.write_text("class WindowPolicy: pass\nclass Realization: pass\nclass ChapterPlan: pass\n")
+            def entry(identity: str, nature: str, symbol: str, target: str) -> dict:
+                return {
+                    "id": identity, "nature": nature, "owner": "planning-authority",
+                    "lifecycle_rule": "Current immutable production contract",
+                    "evidence": [{"path": "src/contracts.py", "symbol": symbol}],
+                    "relationships": [{"type": "EXECUTION_DEPENDENCY", "target": target}],
+                }
+            inventory = {"narrative_model": [
+                entry("window", "POLICY", "WindowPolicy", "chapter"),
+                entry("realization", "EXECUTION_CONTRACT", "Realization", "chapter"),
+                entry("chapter", "PLAN", "ChapterPlan", "realization"),
+            ]}
+            errors: list[str] = []
+            _validate_narrative_model(root, inventory, errors)
+            self.assertEqual(errors, [])
+            inventory["narrative_model"][0]["relationships"][0]["type"] = "STRUCTURAL_CONTAINMENT"
+            _validate_narrative_model(root, inventory, errors)
+            self.assertIn("execution policy cannot own structural narrative containment", "\n".join(errors))
+
     def test_minimal_evidence_inventory_is_verified_against_real_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

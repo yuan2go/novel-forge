@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
-from typing import Any
+from typing import TYPE_CHECKING, Any, Callable
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -13,10 +13,12 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
 )
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.book_authority.production import (
-    PostgresBookAuthority,
-    SubmitBookChapterCommand,
-)
+
+if TYPE_CHECKING:
+    from novel_forge.modules.book_authority.production import (
+        PostgresBookAuthority,
+        SubmitBookChapterCommand,
+    )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.cancellation import (
     CancelCommand,
@@ -41,6 +43,10 @@ from novel_forge.modules.content_authority.scheduler import (
     ContentAuthorityScheduler,
 )
 from novel_forge.modules.hierarchical_planning import validate_chapter_function_matrix
+from novel_forge.modules.hierarchical_planning.window_policy import (
+    ChapterWindowPolicy,
+    LEGACY_CHAPTER_WINDOW_POLICY,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
@@ -192,6 +198,8 @@ class PostgresChapterGroupAuthority:
         application_build_id: str,
         commit_sha: str,
         worker_id: str = "chapter-group-authority-worker",
+        window_policy: ChapterWindowPolicy = ChapterWindowPolicy(),
+        failure_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError(
@@ -202,6 +210,8 @@ class PostgresChapterGroupAuthority:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.window_policy = window_policy
+        self.failure_injector = failure_injector
         self.registry = _Registry()
 
     def start(
@@ -217,6 +227,9 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_BOOK_SCOPE_MISMATCH",
                 "Book run belongs to another Project or Workspace",
             )
+        frozen_payload, existing_group = self._start_replay(command)
+        if existing_group is not None and existing_group["state"] != "PREPARING":
+            return existing_group
         plan = self._group_plan(command.project_id, command.group_plan_version_id)
         if plan["content_hash"] != command.group_plan_content_hash:
             raise KernelError(
@@ -224,7 +237,18 @@ class PostgresChapterGroupAuthority:
                 "frozen ChapterGroup Plan hash does not match",
             )
         content = dict(plan["content"])
-        chapter_range = ChapterGroupRange(*map(int, content["chapter_range"]))
+        chapter_range = ChapterGroupRange(*content["chapter_range"])
+        window_policy = self._frozen_window_policy(frozen_payload)
+        if (
+            frozen_payload is not None
+            and "window_policy" not in frozen_payload
+            and not 3 <= chapter_range.count <= 8
+        ):
+            raise KernelError(
+                "CHAPTER_WINDOW_LEGACY_RANGE_INVALID",
+                "historical window must preserve its original three-to-eight contract",
+            )
+        window_policy.require_range(chapter_range.start, chapter_range.end)
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
@@ -258,7 +282,9 @@ class PostgresChapterGroupAuthority:
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": [command.group_plan_version_id],
-                    "payload": asdict(command),
+                    "payload": frozen_payload
+                    if frozen_payload is not None
+                    else {**asdict(command), "window_policy": window_policy.snapshot()},
                 },
                 "input_assets": [
                     {
@@ -270,34 +296,30 @@ class PostgresChapterGroupAuthority:
             context=self._admission_context(principal),
         )
         root_operation_id = str(admitted["operation_id"])
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            operation = uow.repositories.attempt_runtime.operation_state(
-                root_operation_id, command.project_id
-            )
-        if operation["status"] == "ADMITTED":
-            for expected, target in (
-                ("ADMITTED", "READY"),
-                ("READY", "EXECUTING"),
-            ):
-                with AuthorityUnitOfWork(self.database_url) as uow:
-                    current = uow.repositories.attempt_runtime.operation_state(
-                        root_operation_id, command.project_id
-                    )
-                transition_operation(
-                    self.database_url,
-                    OperationTransitionCommand(
-                        operation_id=root_operation_id,
-                        project_id=command.project_id,
-                        expected_version=int(current["version"]),
-                        expected_status=expected,
-                        target_status=target,
-                        actor_id=principal.principal_id,
-                        reason="start governed ChapterGroup production",
-                        trace_id=command.trace_id,
-                        correlation_id=command.correlation_id,
-                        causation_id=str(book["root_operation_id"]),
-                    ),
+        self._probe("after_group_admission")
+        for expected, target in (("ADMITTED", "READY"), ("READY", "EXECUTING")):
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                current = uow.repositories.attempt_runtime.operation_state(
+                    root_operation_id, command.project_id
                 )
+            if current["status"] != expected:
+                continue
+            transition_operation(
+                self.database_url,
+                OperationTransitionCommand(
+                    operation_id=root_operation_id,
+                    project_id=command.project_id,
+                    expected_version=int(current["version"]),
+                    expected_status=expected,
+                    target_status=target,
+                    actor_id=principal.principal_id,
+                    reason="start governed ChapterGroup production",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    causation_id=str(book["root_operation_id"]),
+                ),
+            )
+            self._probe("after_group_root_" + target.lower())
         saga_id = str(
             start_saga(
                 self.database_url,
@@ -318,6 +340,8 @@ class PostgresChapterGroupAuthority:
                     "root_operation_id": root_operation_id,
                     "saga_id": saga_id,
                     "stable_idempotency_key": command.stable_idempotency_key,
+                    "window_policy": window_policy.snapshot(),
+                    "window_policy_digest": window_policy.digest,
                     "chapter_start": chapter_range.start,
                     "chapter_end": chapter_range.end,
                     "accepted_through_chapter": accepted_through,
@@ -365,6 +389,56 @@ class PostgresChapterGroupAuthority:
             uow.commit()
         return self.require(group_run_id)
 
+    def _start_replay(
+        self, command: StartChapterGroupCommand
+    ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation_id, command_payload->'payload'
+                FROM authority_operation
+                WHERE project_id=%s AND definition_name=%s
+                  AND idempotency_scope='project:chapter-group-production'
+                  AND idempotency_key=%s
+                """,
+                [command.project_id, ROOT_DEFINITION, command.stable_idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                return None, None
+            frozen = dict(row[1])
+            if {
+                key: value for key, value in frozen.items() if key != "window_policy"
+            } != asdict(command):
+                raise KernelError(
+                    "CHAPTER_GROUP_REPLAY_COMMAND_DRIFT",
+                    "ChapterGroup replay differs from its admitted command",
+                )
+            uow.cursor.execute(
+                "SELECT group_run_id FROM authority_chapter_group_production WHERE root_operation_id=%s",
+                [row[0]],
+            )
+            existing = uow.cursor.fetchone()
+            group = (
+                uow.repositories.chapter_group.require(str(existing[0]))
+                if existing
+                else None
+            )
+        return frozen, group
+
+    def _frozen_window_policy(
+        self, frozen: dict[str, Any] | None
+    ) -> ChapterWindowPolicy:
+        if frozen is None:
+            return self.window_policy
+        if "window_policy" not in frozen:
+            return LEGACY_CHAPTER_WINDOW_POLICY
+        return ChapterWindowPolicy.from_snapshot(frozen["window_policy"])
+
+    def _probe(self, point: str) -> None:
+        if self.failure_injector is not None:
+            self.failure_injector(point)
+
     def _require_replacement_group_snapshot(
         self,
         *,
@@ -399,6 +473,10 @@ class PostgresChapterGroupAuthority:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
+        from novel_forge.modules.book_authority.production import (
+            SubmitBookChapterCommand,
+        )
+
         group = self.require(group_run_id)
         principal.require("book.authority.execute", group["project_id"])
         chapter_range = ChapterGroupRange(
@@ -785,15 +863,16 @@ class PostgresChapterGroupAuthority:
                     causation_id=str(group["root_operation_id"]),
                 ),
             )
-            register_saga_step(
-                self.database_url,
-                self._group_context(group, principal),
-                str(group["saga_id"]),
-                operation_id,
-                f"{definition}:{suffix}",
-                ordinal,
-                "",
-            )
+            self._probe("after_group_step_ready:" + definition)
+        register_saga_step(
+            self.database_url,
+            self._group_context(group, principal),
+            str(group["saga_id"]),
+            operation_id,
+            f"{definition}:{suffix}",
+            ordinal,
+            "",
+        )
         ContentAuthorityScheduler(
             self.database_url,
             registry=self.registry,
@@ -929,9 +1008,7 @@ class PostgresChapterGroupAuthority:
             )
             uow.commit()
 
-    def _production_closure_inputs(
-        self, group: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _production_closure_inputs(self, group: dict[str, Any]) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

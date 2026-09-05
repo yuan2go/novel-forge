@@ -178,6 +178,12 @@ def normalize_authoritative_chapter_plan(
     normalized["source_extensions"] = {
         key: value for key, value in content.items() if key not in known
     }
+    if content.get("narrative_architecture_version") == "canonical-narrative-v1":
+        from novel_forge.modules.hierarchical_planning.chapter_contracts import chapter_contract_evidence
+
+        normalized["narrative_contracts"] = chapter_contract_evidence(
+            content, asset_version_id=asset_version_id, content_hash=content_hash
+        )
     profile = qualification_profile or LEGACY_COMPATIBILITY_PROFILE
     blocking = tuple(field for field in profile.required_fields if not normalized.get(field))
     warnings = tuple(
@@ -231,6 +237,7 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "character_participation", "knowledge_boundaries", "disclosures",
             "required_state_transitions", "reader_experience", "scene_plan",
             "expected_exit_state", "narrative_realization_slice",
+            "narrative_contracts",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],

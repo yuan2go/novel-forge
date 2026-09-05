@@ -69,6 +69,7 @@ from novel_forge.modules.book_authority.longform_projection import (
     project_accepted_longform,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.book_completion_repositories import BookCompletionRepository
 from novel_forge.storage.narrative_realization_repositories import (
     NarrativeRealizationRepository,
 )
@@ -125,7 +126,6 @@ class BookProductionState(StrEnum):
 
 
 class BookProductionStateClass(StrEnum):
-
     ACTIONABLE = "ACTIONABLE"
     DURABLE_WAIT = "DURABLE_WAIT"
     TERMINAL = "TERMINAL"
@@ -2187,6 +2187,16 @@ class PostgresBookAuthority:
             _operation_id: str,
             _checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            completion = None
+            if state is BookProductionState.COMPLETED:
+                completion = BookCompletionRepository(
+                    uow.cursor
+                ).assess_terminal_boundary(
+                    book_run_id=book_run_id,
+                    chapter_number=chapter_number,
+                    operation_id=_operation_id,
+                )
+                self._probe("after_book_completion_before_cursor")
             if not uow.repositories.book_authority.advance_if_version(
                 book_run_id=book_run_id,
                 chapter_number=chapter_number,
@@ -2201,6 +2211,7 @@ class PostgresBookAuthority:
                 "book_run_id": book_run_id,
                 "chapter_number": chapter_number,
                 "state": state.value,
+                "whole_book_completion": completion,
             }
 
         self._execute_mutation(
@@ -2250,6 +2261,7 @@ class PostgresBookAuthority:
                 [book_run_id],
             )
             row = uow.cursor.fetchone()
+            completion = BookCompletionRepository(uow.cursor).latest(book_run_id)
         if row is None:
             raise KernelError("BOOK_RUN_NOT_FOUND", "Book Authority run does not exist")
         fields = (
@@ -2285,7 +2297,10 @@ class PostgresBookAuthority:
             "input_snapshot_id",
             "input_mode",
         )
-        return dict(zip(fields, row, strict=True))
+        return {
+            **dict(zip(fields, row, strict=True)),
+            "whole_book_completion": completion,
+        }
 
     def _validate_input_snapshot(
         self, command: StartBookProductionCommand

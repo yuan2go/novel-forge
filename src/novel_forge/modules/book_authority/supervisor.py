@@ -31,6 +31,8 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
+from novel_forge.modules.hierarchical_planning.window_policy import ChapterWindowPolicy
+
 from .governed_scheduler import PostgresBookAuthorityScheduler
 from .production import (
     BookProductionState,
@@ -53,37 +55,23 @@ class BookProductionSupervisorTick:
 
 
 def _bounded_chapter_group_range(
-    *, start_chapter: int, target_chapter_count: int, preferred_size: int
+    *,
+    start_chapter: int,
+    target_chapter_count: int,
+    preferred_size: int,
+    policy: ChapterWindowPolicy = ChapterWindowPolicy(),
 ) -> tuple[int, int]:
-    if start_chapter <= 0 or target_chapter_count < start_chapter:
-        raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
-            "ChapterGroup horizon must begin inside the bounded Book",
+    try:
+        return policy.select(
+            start=start_chapter, target=target_chapter_count, preferred=preferred_size
         )
-    remaining = target_chapter_count - start_chapter + 1
-    if remaining < 3:
+    except ValueError as exc:
         raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
-            "ChapterGroup horizon cannot leave a one- or two-Chapter terminal fragment",
-        )
-    bounded_preference = min(8, max(3, preferred_size))
-    size = min(bounded_preference, remaining)
-    remainder = remaining - size
-    if remainder in {1, 2}:
-        if remaining <= 8:
-            size = remaining
-        else:
-            size -= 3 - remainder
-    if not 3 <= size <= 8 or remaining - size in {1, 2}:
-        raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
-            "ChapterGroup horizon cannot satisfy the governed three-to-eight Chapter boundary",
-        )
-    return start_chapter, start_chapter + size - 1
+            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID", str(exc)
+        ) from exc
 
 
 class PostgresBookProductionSupervisor:
-
     def __init__(
         self,
         authority: PostgresBookAuthority,
@@ -663,9 +651,7 @@ class PostgresBookProductionSupervisor:
         snapshot: dict[str, Any],
     ) -> dict[str, str]:
         foundation = snapshot.get("foundation_set")
-        bindings = (
-            foundation.get("bindings") if isinstance(foundation, dict) else None
-        )
+        bindings = foundation.get("bindings") if isinstance(foundation, dict) else None
         if not isinstance(bindings, list):
             raise KernelError(
                 "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
@@ -792,6 +778,11 @@ class PostgresBookProductionSupervisor:
                 generator != "chapter_group_plan.generate" and replacement_plan is None
             ),
             arc_working_set=arc_working_set,
+            chapter_window_policy=(
+                self.chapter_groups.window_policy.snapshot()
+                if generator == "chapter_group_plan.generate"
+                else None
+            ),
             narrative_realization=(
                 self.realizations.require_current_for_chapter(
                     project_id=str(book["project_id"]),
@@ -821,6 +812,7 @@ class PostgresBookProductionSupervisor:
                     int(book["target_chapter_count"]), volume_range[1]
                 ),
                 preferred_size=int(book["light_recap_cadence"]),
+                policy=self.chapter_groups.window_policy,
             )
             parent_state = str(book.get("active_story_state_version_id") or "")
             if accepted_through == 0:

@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from novel_forge.tools.head_integrity import build_head_integrity_report
+from novel_forge.tools.head_integrity import _pr_wrapper_reaches_canonical_p0, build_head_integrity_report
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +58,22 @@ class HeadIntegrityTests(unittest.TestCase):
             report.missing_exports,
             ("novel_forge.sample:MissingContract",),
         )
+
+    def test_pr_wrapper_requires_complete_canonical_p0_and_exact_report_validation(self) -> None:
+        source = (ROOT / "src/novel_forge/tools/pr_governance.py").read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "src/novel_forge/tools/pr_governance.py"
+            path.parent.mkdir(parents=True)
+            path.write_text(source)
+            self.assertTrue(_pr_wrapper_reaches_canonical_p0(root))
+            for before, after in (
+                ('"scripts/run_p0_backend_qualification.py"', '"scripts/partial_tests.py"'),
+                ('expected_sha=report["head_sha"]', 'expected_sha=report["base_sha"]'),
+                ('if report["implementation_changed"]:', 'if False:'),
+            ):
+                path.write_text(source.replace(before, after))
+                self.assertFalse(_pr_wrapper_reaches_canonical_p0(root))
 
     def test_current_authority_head_is_complete_and_ci_collects_all_suites(self) -> None:
         report = build_head_integrity_report(ROOT)

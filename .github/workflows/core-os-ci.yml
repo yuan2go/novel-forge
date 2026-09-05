@@ -31,8 +31,14 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - name: Install backend qualification dependencies
         run: python -m pip install -e ".[test,industrial]"
-      - name: Run canonical exact-SHA backend qualification
-        run: make p0-backend-qualification
+      - name: Run canonical repository PR gate
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$PR_BASE_SHA" ] || [ "$PR_BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            PR_BASE_SHA=$(git rev-parse HEAD^)
+          fi
+          make pr-governance PR_BASE_SHA="$PR_BASE_SHA"
       - name: Upload exact-SHA backend evidence
         if: always()
         uses: actions/upload-artifact@v4

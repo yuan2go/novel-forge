@@ -233,7 +233,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(str(child[0]), "CANCELLATION_REQUESTED")
         self.assertEqual(str(child[1]), "CANCELLATION_REQUESTED")
 
-    def _fixture(self) -> dict:
+    def _fixture(self, chapter_count: int = 3) -> dict:
         project_id = identifier("chapter-group")
         root = tempfile.TemporaryDirectory()
         self.addCleanup(root.cleanup)
@@ -316,7 +316,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 book_plan_version=versions.pop("book_plan_version"),
                 production_profile_version="production-profile:v1",
                 longform_context_versions=versions,
-                target_chapter_count=3,
+                target_chapter_count=chapter_count,
                 input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 light_recap_cadence=3,
                 formal_recap_cadence=10,
@@ -329,6 +329,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             operation_id=book.root_operation_id,
             volume_plan_version=versions["volume_plan_version"],
             candidates=candidates,
+            chapter_count=chapter_count,
         )
         return {
             "project_id": project_id,
@@ -392,6 +393,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         operation_id: str,
         volume_plan_version: str,
         candidates: list[dict],
+        chapter_count: int = 3,
     ) -> dict:
         first = next(
             item for item in candidates if item["asset_type"] == "chapter_plan"
@@ -413,12 +415,12 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 (1, "DISCOVERY", "threat revealed"),
                 (2, "ESCALATION", "cost revealed"),
                 (3, "REVERSAL", "choice demanded"),
-            )
+            )[:chapter_count]
         ]
         group_content = {
             "type": "ChapterGroupPlan",
             "local_objective": "force a public commitment",
-            "chapter_range": [1, 3],
+            "chapter_range": [1, chapter_count],
             "chapter_function_matrix": matrix,
         }
         group = ChapterGroupAuthorityPostgresTests._seed_asset(
@@ -428,7 +430,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             group_content,
         )
         chapter_plans: dict[int, dict] = {}
-        for chapter in (1, 2, 3):
+        for chapter in range(1, chapter_count + 1):
             content = {
                 **dict(first["content"]),
                 "chapter": chapter,

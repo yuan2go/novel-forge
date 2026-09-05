@@ -32,9 +32,12 @@
       "tests/integration/test_book_opening_recovery_regression_postgres.py",
       "tests/integration/test_book_opening_runtime_hardening_postgres.py",
       "tests/integration/test_book_opening_workflow_upgrade_postgres.py",
-      "tests/integration/test_book_projection_repair_upgrade_postgres.py"
+      "tests/integration/test_book_projection_repair_upgrade_postgres.py",
+      "tests/integration/test_chapter_window_legacy_upgrade_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
+      "tests/unit/test_provider_budget_scope.py",
+      "tests/unit/test_provider_token_admission.py",
       "tests/unit/test_d0_provider_qualification.py",
       "tests/unit/test_provider_adapter_v2.py",
       "tests/integration/test_d0_provider_qualification_authority_postgres.py",
@@ -47,6 +50,8 @@
       "tests/integration/test_provider_callback_authority_postgres.py"
     ],
     "story_design_plan_change_activation": [
+      "tests/unit/test_story_design_authority.py",
+      "tests/unit/test_plan_change_authority.py",
       "tests/integration/test_story_design_authority_postgres.py",
       "tests/integration/test_plan_change_authority_postgres.py",
       "tests/integration/test_story_planning_atomic_activation_postgres.py"
@@ -59,6 +64,8 @@
       "tests/integration/test_chapter_outcome_story_state_postgres.py"
     ],
     "book_opening_recovery": [
+      "tests/unit/test_book_opening_workflow.py",
+      "tests/integration/test_authority_runtime_job_postgres.py",
       "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",
       "tests/integration/test_book_opening_recovery_protocol_postgres.py",
       "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",

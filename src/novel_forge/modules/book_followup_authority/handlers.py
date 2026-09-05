@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from novel_forge.modules.reader_calibration.proxy_policy import (
+    resolve_reader_proxy_policy,
+)
+
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityAuxiliaryOutput,
     AuthorityHandlerOutput,
@@ -36,6 +40,7 @@ class ReaderOutcomeHandler:
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = _payload(request)
+        policy = resolve_reader_proxy_policy(payload.get("reader_proxy_policy"))
         required = (
             "book_id",
             "chapter_id",
@@ -134,9 +139,12 @@ class ReaderOutcomeHandler:
                 "MODEL_RESPONSE_INVALID",
                 "Reader Outcome response requires reader_state and evidence",
             )
-        decision = evaluate_reader_outcome(raw_state, evidence=raw_evidence)
+        decision = evaluate_reader_outcome(
+            raw_state, evidence=raw_evidence, policy=policy
+        )
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         common_evidence = {
+            "reader_proxy_policy": policy.snapshot(),
             "evidence_class": "READER_PROXY_ADVISORY",
             "provider": result.provider_id,
             "model": result.model_id,
@@ -173,9 +181,9 @@ class ReaderOutcomeHandler:
         continue_intent = float(decision["reader_state"]["continue_intent"])
         ordinal_band = (
             "HIGH"
-            if continue_intent >= 0.7
+            if continue_intent >= policy.continuation_high_threshold
             else "MEDIUM"
-            if continue_intent >= 0.4
+            if continue_intent >= policy.continuation_medium_threshold
             else "LOW"
         )
         report = {
@@ -397,6 +405,7 @@ class LongformRecapHandler:
             )
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         outputs = build_longform_recap_outputs(
+            policy=resolve_reader_proxy_policy(payload.get("reader_proxy_policy")),
             project_id=request.project_id,
             book_id=str(payload["book_id"]),
             chapter_range=(chapter_range[0], chapter_range[1]),

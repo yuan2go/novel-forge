@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from novel_forge.modules.reader_calibration.proxy_policy import READER_PROXY_POLICY_V1
+
 from novel_forge.api.authority_dependencies import (
     build_production_execution_composition,
     build_reader_outcome_model_port,
@@ -352,6 +354,11 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             reader_outputs = {
                 str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
             }
+            uow.cursor.execute(
+                "SELECT command_payload FROM authority_operation WHERE operation_id=%s",
+                [admission.operation_id],
+            )
+            frozen_command = uow.cursor.fetchone()[0]
         self.assertEqual(
             effect,
             (1, "model.reader_outcome", "SUCCEEDED", "reader_outcome"),
@@ -362,6 +369,14 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             {"READER_PROXY_ADVISORY"},
         )
         report = reader_outputs["reader_outcome.report"]
+        self.assertEqual(
+            report["reader_proxy_policy"], READER_PROXY_POLICY_V1.snapshot()
+        )
+        self.assertEqual(
+            frozen_command["payload"]["reader_proxy_policy"],
+            report["reader_proxy_policy"],
+        )
+        self.assertFalse(report["reader_proxy_policy"]["human_editorial_proof"])
         self.assertFalse(report["canon_mutation_allowed"])
         self.assertFalse(report["future_intent_actualization_allowed"])
         self.assertFalse(report["direct_plan_activation_allowed"])

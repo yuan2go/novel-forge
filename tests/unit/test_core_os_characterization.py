@@ -27,7 +27,7 @@ class CoreOsCharacterizationTests(unittest.TestCase):
         self.assertEqual(backend["name"], "P0 Backend Qualification")
         self.assertNotIn("needs", backend)
         self.assertIn('python -m pip install -e ".[test,industrial]"', commands)
-        self.assertIn("make p0-backend-qualification", commands)
+        self.assertIn("make pr-governance", commands)
         self.assertNotIn("npm", commands)
         self.assertNotIn("authority-parity-check", workflow_source)
         self.assertNotIn("web", workflow["jobs"])

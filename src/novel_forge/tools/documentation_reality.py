@@ -126,6 +126,8 @@ SYSTEM_ROLES = frozenset(
 )
 NARRATIVE_NATURES = frozenset(
     {
+        "POLICY",
+        "EXECUTION_CONTRACT",
         "CONTAINER",
         "TRAJECTORY",
         "PLAN",
@@ -138,6 +140,7 @@ NARRATIVE_NATURES = frozenset(
 )
 NARRATIVE_RELATION_TYPES = frozenset(
     {
+        "EXECUTION_DEPENDENCY",
         "STRUCTURAL_CONTAINMENT",
         "CAUSAL_DEPENDENCY",
         "TEMPORAL_TRAJECTORY",
@@ -500,6 +503,8 @@ def _validate_narrative_model(
                 continue
             if relation.get("type") not in NARRATIVE_RELATION_TYPES:
                 _error(errors, f"{relation_context}.type is not recognized")
+            if item.get("nature") == "POLICY" and relation.get("type") == "STRUCTURAL_CONTAINMENT":
+                _error(errors, f"{relation_context}: execution policy cannot own structural narrative containment")
             target = str(relation.get("target") or "")
             if target not in by_id:
                 _error(errors, f"{relation_context}.target is unknown: {target}")

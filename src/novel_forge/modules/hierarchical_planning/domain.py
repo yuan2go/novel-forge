@@ -340,17 +340,16 @@ def validate_planning_contract(
                 "CHAPTER_GROUP_RANGE_INVALID",
                 "ChapterGroup chapter_range must contain exactly start and end",
             )
-        try:
-            start, end = map(int, chapter_range)
-        except (TypeError, ValueError) as exc:
+        if any(type(item) is not int for item in chapter_range):
             raise KernelError(
                 "CHAPTER_GROUP_RANGE_INVALID",
                 "ChapterGroup chapter_range must contain integer boundaries",
-            ) from exc
-        if start <= 0 or end < start or not 3 <= end - start + 1 <= 8:
+            )
+        start, end = chapter_range
+        if start <= 0 or end < start:
             raise KernelError(
                 "CHAPTER_GROUP_RANGE_INVALID",
-                "ChapterGroup must contain three to eight Chapters",
+                "ChapterGroup must contain a positive ordered chapter range",
             )
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
@@ -606,6 +605,12 @@ def _validate_canonical_narrative_contract(
             )
     _validate_chapter_temporal_boundaries(content)
     _validate_scene_architecture(content, transition_keys)
+    from .chapter_contracts import compile_chapter_contracts
+
+    compile_chapter_contracts(
+        content, asset_version_id=str(content.get("contract_id") or "chapter-plan"),
+        content_hash="sha256:" + hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest(),
+    )
     scheduled_arcs = [str(item.get("arc_plan_version_id") or "") for item in schedule]
     contribution_arcs = {
         str(item.get("arc_plan_version_id") or "")

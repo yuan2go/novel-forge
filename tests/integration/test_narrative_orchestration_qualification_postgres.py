@@ -1477,6 +1477,10 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             plan_version, plan_hash, plan = artifacts_by_chapter[int(chapter_number)][
                 "chapter.plan"
             ]
+            boundaries = plan["narrative_contracts"]
+            assert boundaries["gate"] == "STRUCTURAL_COVERAGE_PASS"
+            assert boundaries["scene_architecture"]["mission_digest"] == boundaries["chapter_mission_digest"]
+            assert boundaries["chapter_mission"]["source_asset_version_id"] == plan["source_chapter_plan_asset_version_id"]
             frozen_working_set = dict(plan["constraint_envelope"]["arc_working_set"])
             expected = frozen_working_set["working_set_digest"]
             assert chapter_admission["arc_working_set_digest"] == expected
@@ -1521,6 +1525,9 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 == refs["canon_snapshot_version"]
             )
             mission = dict(intent["chapter_mission"])
+            assert mission["planning_contract_binding"]["role"] == "EXECUTION_PROJECTION"
+            assert mission["planning_contract_binding"]["chapter_mission_digest"] == boundaries["chapter_mission_digest"]
+            assert mission["planning_contract_binding"]["scene_architecture_digest"] == boundaries["scene_architecture_digest"]
             assert {
                 "why_this_chapter_exists",
                 "entry_state",

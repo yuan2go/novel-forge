@@ -26,16 +26,11 @@ from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
     admit_command,
 )
-from novel_forge.modules.content_authority.scheduler import (
-    ContentAuthorityScheduler,
-)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
     BlindScope,
-    CalibrationCandidate,
     CalibrationScope,
-    CalibrationStatus,
     JudgeMode,
     PreferenceChoice,
     HumanBlindDecision,
@@ -45,7 +40,6 @@ from .domain import (
     mode_after_drift,
     preference_bias_report,
     require_exposure_denominator,
-    resolve_calibration_profile,
 )
 from .blind_export import BlindExportBundle
 
@@ -1363,6 +1357,11 @@ class PostgresReaderCalibrationAuthority:
         principal.require("book.authority.execute", project_id)
         if evidence_level not in {"FIXTURE", "BEHAVIOR_CALIBRATED"}:
             raise ValueError("calibration evidence level is invalid")
+        if evidence_level == "BEHAVIOR_CALIBRATED":
+            raise KernelError(
+                "READER_CALIBRATION_DATASET_LINEAGE_REQUIRED",
+                "Behavior calibration requires typed authoritative observation-to-event dataset lineage; caller observations and aggregate exposure counts cannot qualify it",
+            )
         metrics = calibration_metrics(
             observations, minimum_sample_size=minimum_sample_size
         )
@@ -1371,17 +1370,13 @@ class PostgresReaderCalibrationAuthority:
             platform=scope.platform,
             reader_segment=scope.reader_segment,
         )
-        if (
-            evidence_level != "BEHAVIOR_CALIBRATED"
-            or behavior_evidence_count < minimum_sample_size
-        ):
-            metrics = {
-                **metrics,
-                "calibration_status": "INSUFFICIENT_DATA",
-                "behavior_probability_allowed": False,
-                "evidence_boundary": "NON_PRODUCTION_OR_FIXTURE_DATA",
-                "behavior_evidence_count": behavior_evidence_count,
-            }
+        metrics = {
+            **metrics,
+            "calibration_status": "INSUFFICIENT_DATA",
+            "behavior_probability_allowed": False,
+            "evidence_boundary": "NON_PRODUCTION_OR_FIXTURE_DATA",
+            "behavior_evidence_count": behavior_evidence_count,
+        }
         status = str(metrics["calibration_status"])
         operation_id = self._execute(
             "reader.calibration.run",
@@ -1512,10 +1507,7 @@ class PostgresReaderCalibrationAuthority:
             "status": status,
             "judge_mode": "SHADOW",
             "metrics": metrics,
-            "behavior_calibrated": (
-                status == "VALID"
-                and evidence_level == "BEHAVIOR_CALIBRATED"
-            ),
+            "behavior_calibrated": False,
         }
 
     def record_drift(
@@ -1588,30 +1580,7 @@ class PostgresReaderCalibrationAuthority:
     def resolve_profile(
         self, project_id: str, scope: CalibrationScope
     ) -> dict[str, Any] | None:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT profile_id, platform, genre, subgenre, chapter_type,
-                       reader_segment, judge_profile, model_version,
-                       sample_size, minimum_sample_size, status
-                FROM calibration_profile
-                WHERE project_id=%s
-                """,
-                [project_id],
-            )
-            rows = uow.cursor.fetchall()
-        candidates = [
-            CalibrationCandidate(
-                profile_id=str(row[0]),
-                scope=CalibrationScope(*map(str, row[1:8])),
-                sample_size=int(row[8]),
-                minimum_sample_size=int(row[9]),
-                status=CalibrationStatus(str(row[10])),
-            )
-            for row in rows
-        ]
-        selected = resolve_calibration_profile(scope, candidates)
-        return asdict(selected) if selected is not None else None
+        return None
 
     def _execute(
         self,
@@ -1624,6 +1593,8 @@ class PostgresReaderCalibrationAuthority:
         input_assets: tuple[dict[str, str], ...],
         principal: Principal,
     ) -> str:
+        from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
+
         self._register_definitions()
         admitted = admit_command(
             self.database_url,

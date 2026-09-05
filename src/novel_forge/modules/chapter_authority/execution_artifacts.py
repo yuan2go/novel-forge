@@ -420,6 +420,15 @@ def build_chapter_execution_intent(
             chapter_plan.get("narrative_realization_slice") or {}
         ),
     }
+    boundaries = chapter_plan.get("narrative_contracts")
+    if isinstance(boundaries, Mapping):
+        mission_body["planning_contract_binding"] = {
+            "chapter_mission_digest": str(boundaries["chapter_mission_digest"]),
+            "scene_architecture_digest": str(boundaries["scene_architecture_digest"]),
+            "source_asset_version_id": str(boundaries["chapter_mission"]["source_asset_version_id"]),
+            "source_content_hash": str(boundaries["chapter_mission"]["source_content_hash"]),
+            "role": "EXECUTION_PROJECTION",
+        }
     mission = {**mission_body, "mission_fingerprint": _hash(mission_body)}
     intent = {
         "type": "ChapterExecutionIntent",

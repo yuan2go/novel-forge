@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260903_0108_context_governance_projection",
+  "migration_head": "20260905_0110_narrative_completion_policy",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -1687,7 +1687,7 @@
     },
     {
       "id": "p0-backend-engineering-qualification-60736675",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
       "observed_at_sha": "60736675043481751e5c3853f322bb26e79ab7ee",
@@ -2136,10 +2136,8 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -2226,10 +2224,8 @@
           "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -2323,10 +2319,8 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -2422,10 +2416,8 @@
           "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -2537,10 +2529,8 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -2674,10 +2664,8 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -2807,10 +2795,8 @@
           "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -2903,10 +2889,8 @@
           "symbol": "StoryDesignAuthorityPostgresTests.test_activation_supersedes_old_version"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3012,12 +2996,18 @@
         {
           "path": "tests/integration/test_hierarchical_planning_postgres.py",
           "symbol": "HierarchicalPlanningPostgresTests.test_arc_crosses_volumes_and_relations_form_closure"
+        },
+        {
+          "path": "tests/unit/test_chapter_mission_scene_contract.py",
+          "symbol": "test_mission_and_scene_share_immutable_source_and_separate_fingerprints"
+        },
+        {
+          "path": "tests/unit/test_chapter_mission_scene_contract.py",
+          "symbol": "test_scene_cannot_descend_without_complete_mission_coverage"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3115,10 +3105,8 @@
           "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3214,10 +3202,8 @@
           "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3330,10 +3316,8 @@
           "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     },
     {
@@ -3453,10 +3437,8 @@
           "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_acceptance_freezes_typed_execution_plan_for_chapter_outcome"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3527,6 +3509,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260730_0040_chapter_group_authority.py",
           "locator": "MIGRATION_ID = \"20260730_0040_chapter_group_authority\"",
           "id": "20260730_0040_chapter_group_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260905_0109_chapter_window_execution_policy.py",
+          "id": "20260905_0109_chapter_window_execution_policy",
+          "locator": "MIGRATION_ID = \"20260905_0109_chapter_window_execution_policy\""
         }
       ],
       "external_effects": {
@@ -3553,12 +3540,14 @@
         {
           "path": "tests/integration/test_chapter_group_authority_postgres.py",
           "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
+        },
+        {
+          "path": "tests/unit/test_chapter_window_policy.py",
+          "symbol": "test_window_policy_accepts_terminal_and_risk_driven_positive_sizes"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3718,10 +3707,8 @@
           "symbol": "test_bounded_expansion_improves_hard_recall_without_context_or_leakage_regression"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3836,10 +3823,8 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -3958,10 +3943,8 @@
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4041,6 +4024,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260730_0036_book_canon_checkpoint.py",
           "locator": "MIGRATION_ID = \"20260730_0036_book_canon_checkpoint\"",
           "id": "20260730_0036_book_canon_checkpoint"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260905_0110_narrative_completion_policy.py",
+          "id": "20260905_0110_narrative_completion_policy",
+          "locator": "MIGRATION_ID = \"20260905_0110_narrative_completion_policy\""
         }
       ],
       "external_effects": {
@@ -4063,12 +4051,18 @@
         {
           "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
           "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership"
+        },
+        {
+          "path": "tests/unit/test_book_completion_policy.py",
+          "symbol": "test_cursor_exhaustion_and_closed_arcs_do_not_claim_whole_book_acceptance"
+        },
+        {
+          "path": "tests/integration/test_book_completion_postgres.py",
+          "symbol": "test_book_completion_crash_rolls_back_and_replay_retains_exact_accepted_history"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4183,10 +4177,8 @@
           "symbol": "test_truth_actual_state_plan_context_and_knowledge_ownership_stays_separate"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4304,12 +4296,14 @@
         {
           "path": "tests/integration/test_reader_calibration_postgres.py",
           "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
+        },
+        {
+          "path": "tests/unit/test_book_completion_policy.py",
+          "symbol": "test_reader_proxy_policy_rejects_tampered_thresholds_or_calibration_claims"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -4427,10 +4421,8 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4539,10 +4531,8 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4650,10 +4640,8 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-60736675"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     }
   ],
@@ -4793,7 +4781,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae"
+    "implementation_tree_sha": "sha256:a8297c94fa6160808f7af26b9f0e4e35e440bf6c72a3b34cd954bd19de901e36"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -4891,21 +4879,17 @@
     },
     {
       "id": "chapter-group-three-to-eight",
-      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
-      "statement": "Current code rejects ChapterGroup ranges outside three to eight Chapters, but the repository does not prove this number as a final business invariant.",
-      "design_review_required": true,
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "ChapterGroup ranges are positive execution windows governed by a frozen versioned ChapterWindowPolicy; no universal minimum of three or maximum of eight is a narrative invariant.",
+      "design_review_required": false,
       "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/window_policy.py",
+          "symbol": "ChapterWindowPolicy"
+        },
         {
           "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
           "symbol": "ChapterGroupRange"
-        },
-        {
-          "path": "src/novel_forge/modules/book_authority/supervisor.py",
-          "symbol": "_bounded_chapter_group_range"
-        },
-        {
-          "path": "tests/integration/test_chapter_group_authority_postgres.py",
-          "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
         }
       ]
     },
@@ -5023,17 +5007,65 @@
     },
     {
       "id": "reader-proxy-thresholds",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Reader Calibration owns a registered versioned and content-hashed ReaderProxyPolicy frozen into admitted follow-up operations; thresholds are uncalibrated advisory policy and cannot establish human preference or editorial proof.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/reader_calibration/proxy_policy.py",
+          "symbol": "ReaderProxyPolicy"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/proxy_policy.py",
+          "symbol": "resolve_reader_proxy_policy"
+        }
+      ]
+    },
+    {
+      "id": "chapter-mission-scene-single-source",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "ChapterMission and SceneArchitecture compile from one exact immutable Chapter Plan version. Scene Architecture binds Mission digest and exactly covers declared Mission state changes and Arc contributions; the evidence ceiling is narrative contract only.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "compile_chapter_contracts"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "chapter_contract_evidence"
+        }
+      ]
+    },
+    {
+      "id": "whole-book-acceptance-contract",
       "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
-      "statement": "Reader Outcome advisory thresholds are hard-coded current behavior without a versioned policy owner.",
+      "statement": "Book-owned completion assessment is durable and independent of terminal cursor completion, but whole-book acceptance remains blocked without a typed authoritative ending/closure and independent editorial approval contract.",
       "design_review_required": true,
       "evidence": [
         {
-          "path": "src/novel_forge/modules/book_followup_authority/domain.py",
-          "symbol": "evaluate_reader_outcome"
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "assess_whole_book_completion"
         },
         {
-          "path": "tests/integration/test_book_followup_authority_postgres.py",
-          "symbol": "BookFollowupAuthorityPostgresTests.test_reader_outcome_uses_pep_external_effect_and_replays_once"
+          "path": "src/novel_forge/storage/book_completion_repositories.py",
+          "symbol": "BookCompletionRepository"
+        }
+      ]
+    },
+    {
+      "id": "reader-calibration-dataset-lineage",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "statement": "Behavior calibration lacks an authoritative typed observation-to-exposure/outcome dataset binding. Admission rejects BEHAVIOR_CALIBRATED before I/O, historical unbound VALID profiles do not resolve, and fixture diagnostics cannot claim calibrated probabilities.",
+      "design_review_required": true,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority.run_calibration"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority.resolve_profile"
         }
       ]
     }
@@ -5103,7 +5135,8 @@
       "role": "AUTHORITY",
       "owns": [
         "typed planning contracts",
-        "active plan bindings"
+        "active plan bindings",
+        "Chapter Mission and Scene Architecture source contracts"
       ],
       "does_not_own": [
         "semantic design",
@@ -5114,6 +5147,10 @@
         {
           "path": "src/novel_forge/modules/hierarchical_planning/application.py",
           "symbol": "PostgresHierarchicalPlanningAuthority"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "compile_chapter_contracts"
         }
       ]
     },
@@ -5127,9 +5164,11 @@
       ],
       "does_not_own": [
         "plan scale",
-        "accepted chapter actual"
+        "accepted chapter actual",
+        "attempt lease and fence",
+        "ExternalEffect receipts"
       ],
-      "mutation_rule": "Realization proposals require qualification, approval, and freezing before execution evidence.",
+      "mutation_rule": "Planning owns realization qualification, approval and freezing of causal readiness; execution evidence remains Command Kernel-owned.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/realization_application.py",
@@ -5163,23 +5202,29 @@
       "owns": [
         "book production state",
         "accepted chapter cursor",
-        "chapter acceptance transaction"
+        "chapter acceptance transaction",
+        "whole-book completion assessment"
       ],
       "does_not_own": [
         "chapter attempt state",
-        "provider receipts"
+        "provider receipts",
+        "unproven whole-book editorial approval"
       ],
       "mutation_rule": "Book Authority delegates Chapter work and alone accepts its outcome into Book reality.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
           "symbol": "PostgresBookAuthority"
+        },
+        {
+          "path": "src/novel_forge/storage/book_completion_repositories.py",
+          "symbol": "BookCompletionRepository"
         }
       ]
     },
     {
       "id": "chapter-group-authority",
-      "role": "AUTHORITY",
+      "role": "COORDINATOR",
       "owns": [
         "chapter group range",
         "sequential child coordination",
@@ -5189,7 +5234,7 @@
         "chapter saga internals",
         "accepted book cursor"
       ],
-      "mutation_rule": "ChapterGroup records references to child commands and outcomes without copying their execution state.",
+      "mutation_rule": "ChapterGroup advances only its own coordination state under a frozen execution-window policy; Book and Chapter commands retain their own acceptance and execution facts.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/chapter_group_authority/application.py",
@@ -5453,7 +5498,7 @@
       ],
       "relationships": [
         {
-          "type": "STRUCTURAL_CONTAINMENT",
+          "type": "EXECUTION_DEPENDENCY",
           "target": "chapter-group"
         },
         {
@@ -5518,18 +5563,22 @@
     },
     {
       "id": "chapter-group",
-      "nature": "CONTAINER",
+      "nature": "POLICY",
       "owner": "chapter-group-authority",
-      "lifecycle_rule": "A ChapterGroup is a bounded planning and coordination window, not an execution-state copy.",
+      "lifecycle_rule": "ChapterGroup coordinates a frozen policy-bounded execution window; it does not structurally own narrative Chapters or copy child execution state.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
           "symbol": "ChapterGroupRange"
+        },
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/window_policy.py",
+          "symbol": "ChapterWindowPolicy"
         }
       ],
       "relationships": [
         {
-          "type": "STRUCTURAL_CONTAINMENT",
+          "type": "EXECUTION_DEPENDENCY",
           "target": "chapter-plan"
         }
       ]
@@ -5538,7 +5587,7 @@
       "id": "chapter-plan",
       "nature": "PLAN",
       "owner": "planning-authority",
-      "lifecycle_rule": "A Chapter plan is the operational typed plan for one Chapter and remains distinct from its realization and actual outcome.",
+      "lifecycle_rule": "The immutable operational Chapter Plan is the sole active Planning source for separately digested Chapter Mission and Scene Architecture contracts.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
@@ -5547,11 +5596,15 @@
       ],
       "relationships": [
         {
-          "type": "STRUCTURAL_CONTAINMENT",
-          "target": "scene-beat"
+          "type": "PLANNING_DEPENDENCY",
+          "target": "chapter-mission"
         },
         {
           "type": "PLANNING_DEPENDENCY",
+          "target": "scene-architecture"
+        },
+        {
+          "type": "EXECUTION_DEPENDENCY",
           "target": "narrative-realization"
         }
       ]
@@ -5576,9 +5629,9 @@
     },
     {
       "id": "narrative-realization",
-      "nature": "PROPOSAL",
+      "nature": "EXECUTION_CONTRACT",
       "owner": "narrative-realization-authority",
-      "lifecycle_rule": "Narrative Realization is a separately approved event-chain contract; it is neither a plan scale nor accepted actual.",
+      "lifecycle_rule": "Planning-owned Narrative Realization freezes a qualified causal event chain and accepted-boundary readiness. Command Kernel remains owner of attempt/effect state; generated realization is not accepted actual.",
       "evidence": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
@@ -5591,7 +5644,7 @@
       ],
       "relationships": [
         {
-          "type": "CAUSAL_DEPENDENCY",
+          "type": "EXECUTION_DEPENDENCY",
           "target": "draft"
         }
       ]
@@ -5705,6 +5758,64 @@
         {
           "type": "CAUSAL_DEPENDENCY",
           "target": "chapter-plan"
+        }
+      ]
+    },
+    {
+      "id": "chapter-mission",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "Read/validation contract compiled from the exact Chapter Plan version with separate content digest; it has no independent active pointer.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "ChapterMission"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "PLANNING_DEPENDENCY",
+          "target": "scene-architecture"
+        }
+      ]
+    },
+    {
+      "id": "scene-architecture",
+      "nature": "PLAN",
+      "owner": "planning-authority",
+      "lifecycle_rule": "Ordered Scene contract binds the exact Mission digest and must cover its required state/trajectory commitments; it shares the immutable Chapter Plan source.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+          "symbol": "SceneArchitecture"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "STRUCTURAL_CONTAINMENT",
+          "target": "scene-beat"
+        }
+      ]
+    },
+    {
+      "id": "whole-book-completion",
+      "nature": "EVIDENCE",
+      "owner": "book-authority",
+      "lifecycle_rule": "Book-owned immutable assessment binds the exact terminal accepted projection and returns BLOCKED while typed ending/editorial approval is missing; it never creates whole-book acceptance or changes Accepted Actual.",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "symbol": "assess_whole_book_completion"
+        },
+        {
+          "path": "src/novel_forge/storage/book_completion_repositories.py",
+          "symbol": "BookCompletionRepository"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "ACCEPTED_FACT_PROJECTION",
+          "target": "accepted-actual"
         }
       ]
     }

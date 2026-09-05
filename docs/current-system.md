@@ -49,14 +49,14 @@ ownership boundaries are:
 | Book Design Authority | foundation-qualified BookDesign candidates and active design pointer | Story Design activation or accepted chapter actual |
 | Story Design Authority | semantic candidates, decisions and active semantic versions | typed plan activation |
 | Hierarchical Planning / Plan Change | typed plan contracts, active bindings and future-only replacements | semantic design or executed history |
-| Narrative Realization Authority | approved and frozen event-chain realization contracts | plan scale or accepted actual |
-| Book Authority | book run, accepted cursor and chapter-acceptance transaction | Chapter attempts or Provider receipts |
-| ChapterGroup Authority | bounded child coordination and group closure | child saga internals or Book acceptance |
+| Planning-owned Narrative Realization Authority | approved and frozen causal/event-chain execution-readiness contracts | attempts, leases, effects, accepted actual or a second planning owner |
+| Book Authority | book run, accepted cursor, chapter acceptance and whole-book completion assessment | Chapter attempts, Provider receipts or unproven whole-book editorial approval |
+| ChapterGroup coordinator | policy-bounded child coordination and group closure | child saga internals, structural narrative ownership or Book acceptance |
 | Chapter Authority | chapter saga, draft/revision candidates and release artifacts | accepted Canon or Book cursor |
 | Quality Qualification Authority | frozen quality subjects, evidence and decisions | draft text or Book acceptance |
 | Canon Approval Authority | Canon approval and re-extraction decisions | raw extraction candidates |
 | Narrative State projection | deterministic as-of view over Book-accepted evidence | source outcomes or Canon decisions |
-| Reader/recap/calibration Authorities | observation, proxy, preference and proposal evidence | Canon, executed history or active plans |
+| Reader/recap/calibration Authorities | observation, proxy, preference and proposal evidence; Reader Calibration owns versioned proxy policy | Canon, executed history, active plans or human editorial proof |
 | Source and MKAOS Authorities | source lineage, abstractions, knowledge decisions and packs | draft prose or accepted story facts |
 | Agent Runtime Authority | definitions, bindings, sessions, checkpoints and transcript provenance | domain assets or narrative truth |
 | Command Kernel / Provider effect Authority | Operation, Attempt, Lease, Fence, ExternalEffect and receipt lifecycle | domain activation |
@@ -69,28 +69,80 @@ interchangeable even when represented in the same database.
 
 ## Narrative object model
 
-The runtime does not implement one universal narrative tree. It distinguishes structural
-containment, causal dependency, temporal trajectory, planning dependency and
-accepted-fact projection.
+The following dispositions describe current contracts and explicit missing semantics.
+`ADD` with `DESIGN_REVIEW_REQUIRED` identifies an absent contract; it does not claim an
+implemented owner or acceptance route. Existing names remain where a rename would add
+only a second representation.
 
-| Object | Current nature | Key relationship |
+| Concept | Disposition and current implementation | Owner / boundary |
 |---|---|---|
-| Story Foundation | qualified input container | binds semantic evidence to Book Design |
-| Book Design | candidate | informs Volume and Arc planning after activation |
-| Volume | plan/container | structurally contains Segment and ChapterGroup windows |
-| Narrative Segment | plan | expresses ordered progression and handoff, not universal Arc parentage |
-| Narrative Arc | trajectory plan | has independent identity and may cross Volumes |
-| Arc trajectory | projection | moves only from accepted ChapterOutcome evidence |
-| ChapterGroup | coordination container | contains a bounded sequence of Chapter plans, not Chapter execution state |
-| Chapter Plan | operational plan | contains scene/beat intent and depends on active higher plans |
-| Scene / Beat | plan component | schedules state and information movement toward a candidate draft |
-| Narrative Realization | proposal/contract | approved event-chain realization, separate from plan scale and actual |
-| Draft / revision | candidate | cannot become Canon or accepted actual by generation alone |
-| Accepted Actual | accepted fact | created only by Book chapter acceptance |
-| Canon | approved projection | extraction is merely a proposal |
-| Narrative State | projection | deterministic as-of view over accepted evidence |
-| Obligation | trajectory | setup, due-window and payoff state across accepted chapters |
-| Reader State | evidence | may motivate a proposal but cannot directly rewrite truth or plans |
+| Story Intent | `KEEP` creative Foundation input and layer-specific intent evaluation | Story Design semantic decisions |
+| Foundation | `KEEP` `QualifiedFoundationSet` with exact version, content, qualification and activation bindings | Book Design owns the composite binding; Story Design owns bound semantic facts |
+| Theme | `KEEP` semantic candidate and qualified Foundation role | Story Design; thematic claim is distinct from accepted thematic progression |
+| Reader Promise | `KEEP` versioned semantic candidate and Foundation binding | Story Design; neither proxy preference nor popularity evidence |
+| Ending | `KEEP` ending-intent candidate and binding; whole-book ending approval is `DESIGN_REVIEW_REQUIRED` | Story Design intent; no inferred whole-book acceptance |
+| World | `KEEP` semantic world-bible candidate and qualified binding | Story Design; no duplicate World Authority |
+| Character | `KEEP` cast candidate and binding | Story Design intent; accepted character state is projected separately |
+| Relationship | `SPLIT` intent/constraint versus accepted-state projection; independent typed trajectory aggregate remains `DESIGN_REVIEW_REQUIRED` | Story Design intent, Book-accepted state |
+| Book Architecture | `KEEP` BookDesign semantic input plus activated `BOOK` planning contract | Book Design owns candidate decisions; Planning owns typed plan activation |
+| Volume / Segment | `KEEP` structural/planning intervals and progression constraints | Planning; neither is a universal Arc parent |
+| Narrative Arc | `KEEP` independently identified cross-Volume trajectory plan | Planning intent; accepted trajectory projection changes at Book acceptance |
+| Character / Relationship / Thematic Trajectory | `SPLIT` intent, scheduled progression and accepted projection; independent typed portfolio lifecycle remains `DESIGN_REVIEW_REQUIRED` | Existing Planning and accepted-fact boundaries remain owners |
+| Obligation | `KEEP` setup/debt, dependency, due window and payoff evidence | Planning schedules actions; Book acceptance projects actual resolution |
+| ChapterGroup | `DEMOTE` execution window with frozen `ChapterWindowPolicy` | Coordinator retains references; policy bounds execution, never narrative truth |
+| Chapter Plan | `SPLIT` Mission and Scene contracts compiled from the same immutable source version | One Planning activation source; no parallel active pointers |
+| Chapter Mission | `ADD` typed `chapter-mission.v1` with source version/hash and exact trajectory/state/reader/exit commitments | Planning contract compiler; structural proof only |
+| Scene Architecture | `ADD` typed `scene-architecture.v1`, own digest and exact Mission digest dependency | Planning; scene contributions must cover Mission changes/arcs exactly |
+| Scene / Beat | `KEEP` ordered scene and beat intent inside Chapter Plan | Structural containment and planned causal/information progression |
+| Narrative Realization | `KEEP` Planning-owned causal execution-readiness contract and accepted-boundary bindings | Generated/frozen realization is not accepted actual; Kernel owns execution state |
+| Draft / Revision | `KEEP` immutable candidates and revision lineage | Chapter Authority; review/quality gates precede Book acceptance |
+| Accepted Actual | `KEEP` immutable Book-accepted outcome/projection boundary | Book chapter-acceptance transaction; future replans cannot rewrite it |
+| Canon | `KEEP` governed approval and accepted-fact projection | Canon decisions and Book acceptance remain distinct |
+| Narrative State | `KEEP` deterministic as-of projection | Rebuildable from Book-accepted evidence |
+| Reader Evidence | `KEEP` observations and advisory proxy/preference views | Reader Calibration policy is versioned and explicitly uncalibrated; calibrated behavior requires unavailable typed dataset lineage |
+| Whole-book Completion | `ADD` durable terminal accepted-boundary assessment; acceptance is `DESIGN_REVIEW_REQUIRED` | Book Authority persists `BLOCKED` cases; no editorial acceptance is fabricated |
+
+These relations remain separate:
+
+| Relation | Current meaning |
+|---|---|
+| Structural containment | Chapter owns ordered Scene/Beat location; Volume/Segment describe structural spans |
+| Trajectory | Arc/state/relationship/obligation change crosses structural spans |
+| Planning dependency | Exact approved upstream versions constrain downstream planning; Scene binds its Mission digest |
+| Execution dependency | Realization, Context, Provider admission and attempt contracts freeze the inputs used by execution |
+| Accepted-fact projection | Book-accepted ChapterOutcome and projection-set identities determine Canon/Narrative State/trajectory views |
+
+`compile_chapter_contracts` rejects no-op or missing state changes, missing trajectory
+versions, duplicate scene identities, and omitted or undeclared scene contributions.
+Mission and Scene digests appear in normalized chapter-plan evidence and Provider views.
+The mission embedded in ChapterExecutionIntent is an execution projection: it binds
+these Planning digests to accepted-boundary and Memo instructions and owns no active
+planning state.
+The proof ceiling is `NARRATIVE_CONTRACT_ONLY`; structural coverage cannot establish
+literary quality, human approval or an independently persisted Scene Authority.
+
+## Narrative validation descent
+
+Layer-specific evaluation profiles and typed validators carry the current descent. The
+existing eleven `NarrativeDesignLayer` profiles map onto the abstraction levels below;
+a chapter count is an experiment sample size, never a product validation level. A
+missing target contract stays blocked rather than being replaced with more prose.
+
+| Level | Input → output / Authority | Gate, evidence and prerequisite for descent | Revision / replan semantics |
+|---|---|---|---|
+| Intent | Creative input → qualified intent candidate / Story Design | Intent profile and immutable evaluation lineage; qualified input before Foundation assembly | New candidate/decision; no mutation of accepted history |
+| Foundation | Exact Theme/Promise/Ending/World/Cast bindings → qualified set / Story Design facts and Book Design binding | Six exact role/version dependencies, activation/content hashes, qualification receipts and Planning current-binding gate | Replace exact semantic versions and requalify dependents |
+| Book Architecture | Qualified Foundation + design → active Book plan / Book Design and Planning | Semantic architecture evaluation, typed schema/lineage and activation gate | Future Plan Change validates dependencies and preserves executed/accepted spans |
+| Trajectory Portfolio | Book/Volume/Arc, character development and obligation design → scheduled trajectory commitments / Planning | Arc graph, character development, disclosure/obligation and scheduling profiles; independent typed relationship/thematic portfolio acceptance is `DESIGN_REVIEW_REQUIRED` | Replan only unexecuted future commitments; retain accepted trajectory facts |
+| Chapter Mission | Active plans and accepted boundary → typed Mission / Planning | Exact source version, non-noop state changes, Arc versions, reader/exit requirements and chapter-plan evaluation | New Chapter Plan version; downstream Scene digest must bind the new Mission |
+| Scene Architecture | Mission → ordered Scene/Beat contract / Planning | Scene evaluation plus exact Mission transition/Arc coverage and distinct digest; failure blocks canonical plan admission | Replace the source plan; recompile both contracts without a second active source |
+| Prose | Qualified plan + governed Context/Realization → Draft/Revision candidates / Chapter Authority | Provider admission, durable effects, review issues, revision and quality gates; upstream contracts required before generation | Immutable new candidate, issue-resolution lineage and bounded retries |
+| Acceptance | Qualified candidate/ChapterOutcome → Accepted Actual / Book and Canon decision boundaries | Chapter quality/release evidence, exact outcome and atomic accepted projection transaction | Corrections need explicit owner decisions; future replan cannot rewrite acceptance |
+| Longitudinal Narrative | Accepted projection sequence → drift/Arc/obligation and completion evidence / Quality, Reader and Book owners | Accepted trajectory/payoff/repetition/reader-trend evidence; whole-book ending/editorial approval is `DESIGN_REVIEW_REQUIRED`, human evidence is `WAITING_EVIDENCE` | Evidence may request future revisions; it cannot directly activate plans or grant whole-book acceptance |
+
+Generator and evaluator operation identities are distinct. Scripted evaluation is
+contract evidence only. A model judge can issue evaluation evidence but cannot become
+the human evaluator or the semantic activation owner.
 
 ## Bounded long-form retrieval
 
@@ -137,9 +189,10 @@ retain hashes and component identities rather than duplicating prompt or raw Sou
 bodies; Source Intelligence reconstructs transient Source bytes and must reproduce the
 admitted hash.
 
-The current migration head advances only the two read-only Context/MKAOS usage views to
-recognize bundle v7/v8 and manifest v3/v4. It adds no writable Context state or alternate
-Narrative Authority; the machine projection owns the exact migration identity.
+The Context projection migration makes the read-only Context/MKAOS usage views recognize
+bundle v7/v8 and manifest v3/v4. It adds no writable Context state or alternate Narrative
+Authority. Policy and completion migrations are separate forward-only contracts; the
+machine projection owns the exact migration identity.
 
 ## Executable novel-production chain
 
@@ -155,7 +208,7 @@ Project scope
   -> active typed plans
   -> approved Narrative Realization
   -> Book production + ChapterGroup coordination
-  -> Chapter plan
+  -> Chapter Mission + Scene Architecture from one Chapter Plan
   -> frozen retrieval union + ContextBundle
   -> durable Chapter saga
   -> conditional Provider/object-store ExternalEffects
@@ -169,7 +222,9 @@ Project scope
 
 The logical design chain is therefore distributed across owners. There is no single
 production command that starts from an idea and owns a finished book, and terminal Book
-cursor completion is not a separate whole-book acceptance decision. The synchronous
+cursor completion is not a whole-book acceptance decision. The Book-owned completion
+assessment reads the exact terminal accepted projection, persists its content hash and
+blockers, and returns `BLOCKED` while typed ending/editorial approval is unavailable. The synchronous
 `ChapterAuthorityApplication.run` seam is fixture-guarded; the production path is durable
 admission plus scheduler ticks. These absences are explicit machine boundaries, not
 implicit capabilities.
@@ -209,10 +264,23 @@ horizons, five Book Opening layers and the minimum evaluator behavior are curren
 facts, not claims of final design. Quality thresholds, retry counts and context budgets
 are configurable policies. The pre-hierarchy import flag is compatibility-only.
 
-Two constraints remain unresolved: the hard three-to-eight ChapterGroup range lacks
-evidence of final business necessity, and reader-proxy thresholds lack a versioned policy
-owner. Current code continues to enforce them; documentation must not rationalize them as
-proven invariants.
+ChapterGroup size is a configurable execution policy. Positive windows may be terminal
+or risk-bounded; the default maximum is a policy setting, and no minimum of three is a
+narrative invariant. Reader proxy thresholds belong to a versioned, content-hashed
+Reader Calibration policy frozen into admitted follow-up work. Unknown or altered policy
+snapshots fail replay validation. The v1 thresholds remain uncalibrated advisory rules.
+
+`run_calibration` rejects `BEHAVIOR_CALIBRATED` before metrics, database access or command
+admission because caller observations have no typed authoritative exposure/outcome-event
+binding. Aggregate behavior counts remain fixture diagnostics and cannot establish that
+lineage. `resolve_profile` returns no admissible profile while the dataset contract is
+absent, including previously stored unbound `VALID` rows. Fixture calibration continues
+to persist `INSUFFICIENT_DATA`, `SHADOW` and `behavior_calibrated=false`.
+
+Independent typed trajectory portfolio lifecycle, whole-book ending/editorial approval,
+and authoritative Reader calibration dataset lineage remain explicit
+`DESIGN_REVIEW_REQUIRED` boundaries. They do not
+justify duplicate active state, reinterpret accepted history, or raise proof ceilings.
 
 ## Qualification ceiling
 
@@ -228,3 +296,11 @@ engineering only. Credentialed Provider execution is separately qualified and be
 stale when implementation or instruction identity changes. Neither route establishes
 admin UI execution, human editorial evidence, longitudinal narrative stability or
 production operation. No current capability is `PRODUCTION_PROVEN`.
+
+The retained live Provider reports target different implementation identities and remain
+historical evidence. Current credentialed execution and real accepted-chapter production
+are `NOT_PROVEN` until an admitted external route supplies new exact-identity evidence.
+Human editorial remains `WAITING_EVIDENCE`; AI self-review and fixture preferences cannot
+close that boundary. Continuous samples must be selected for trajectory/obligation and
+quality-drift coverage, with engineering, narrative correctness, human, reader,
+longitudinal and production evidence retained separately.

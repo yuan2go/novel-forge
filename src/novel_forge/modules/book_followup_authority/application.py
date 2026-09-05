@@ -13,6 +13,9 @@ from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     start_saga,
 )
+from novel_forge.modules.reader_calibration.proxy_policy import (
+    resolve_reader_proxy_policy,
+)
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -84,6 +87,7 @@ class BookFollowupAuthorityApplication:
             for definition in definitions:
                 uow.repositories.definitions.register(definition)
             uow.commit()
+        policy = resolve_reader_proxy_policy(request.payload.get("reader_proxy_policy"))
         admitted = admit_command(
             self.database_url,
             {
@@ -103,7 +107,10 @@ class BookFollowupAuthorityApplication:
                     "input_asset_version_ids": [
                         item["asset_version_id"] for item in request.input_assets
                     ],
-                    "payload": request.payload,
+                    "payload": {
+                        **request.payload,
+                        "reader_proxy_policy": policy.snapshot(),
+                    },
                 },
                 "input_assets": list(request.input_assets),
                 "root_operation_id": request.root_operation_id,

@@ -24,12 +24,16 @@
         "tests/unit/test_release_run_evidence.py",
         "tests/unit/test_skill_sync.py",
         "tests/unit/test_test_reality.py",
+        "tests/unit/test_narrative_qualification.py",
+        "tests/integration/test_narrative_qualification_postgres.py",
         "tests/unit/test_worker_fleet_evidence.py",
         "tests/architecture/test_architecture_fitness.py",
         "tests/architecture/test_architecture_manifests.py",
         "tests/architecture/test_backend_qualification_boundaries.py",
         "tests/architecture/test_head_integrity.py",
-        "tests/architecture/test_release_entrypoint_contract.py"
+        "tests/architecture/test_release_entrypoint_contract.py",
+        "tests/unit/test_proposal_lifecycle.py",
+        "tests/unit/test_pr_governance.py"
       ],
       "classification": "QUALIFICATION_INFRASTRUCTURE",
       "owner": "repository-qualification",
@@ -37,6 +41,16 @@
       "production_target": "src/novel_forge/tools/backend_qualification.py",
       "qualification_role": "QUALIFICATION_MECHANICS_ONLY",
       "proof_ceiling": "INFRASTRUCTURE_ONLY"
+    },
+    {
+      "id": "provider-budget-lock-support",
+      "patterns": ["tests/unit/test_provider_budget_lock_support.py"],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel-authority",
+      "capability": "provider-budget-lock-order",
+      "production_target": "src/novel_forge/modules/command_kernel/budget_runtime.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
     },
     {
       "id": "retired-runtime-guards",
@@ -146,27 +160,46 @@
     },
     "provider_hard_stop_and_callback": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
-      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER",
+      "direct_contract_targets": [
+        "src/novel_forge/modules/command_kernel/budget_runtime.py",
+        "src/novel_forge/modules/production_execution/provider_admission.py"
+      ]
     },
     "provider_effect_fixture_control": {
-      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "role": "SUPPORTING_CONTRACT",
       "proof_ceiling": "FIXTURE_CONTROL_ONLY"
     },
     "story_design_plan_change_activation": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
-      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT",
+      "direct_contract_targets": [
+        "src/novel_forge/modules/story_design_authority/__init__.py",
+        "src/novel_forge/modules/plan_change_authority/domain.py"
+      ]
     },
     "backend_vertical_slice": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
-      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT",
+      "direct_contract_targets": [
+        "src/novel_forge/modules/chapter_outcome/__init__.py"
+      ]
     },
     "book_opening_recovery": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
-      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT",
+      "direct_contract_targets": [
+        "src/novel_forge/modules/book_authority/opening_workflow.py",
+        "src/novel_forge/modules/runtime_job/__init__.py"
+      ]
     },
     "bounded_retrieval_context": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
-      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT",
+      "direct_contract_targets": [
+        "src/novel_forge/modules/context_builder/retrieval_campaign.py",
+        "src/novel_forge/modules/context_builder/production_retrieval.py"
+      ]
     }
   }
 }

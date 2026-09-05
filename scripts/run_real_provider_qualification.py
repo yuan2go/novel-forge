@@ -1060,7 +1060,15 @@ def main() -> int:
             "created_at": datetime.now().astimezone().isoformat(),
             "proof_scope": PROOF_SCOPE,
             "result": "FAIL",
-            "failure": {"type": type(exc).__name__, "message": safe_message},
+            "release_sha": _git("rev-parse", "HEAD"),
+            "expected_sha": args.expected_sha,
+            "implementation_identity": build_implementation_tree_identity(ROOT)["implementation_tree_sha"],
+            "source_clean": not bool(_git("status", "--porcelain", "--untracked-files=all")),
+            "current_real_provider": "NOT_PROVEN",
+            "failure": {
+                "type": type(exc).__name__, "message": safe_message,
+                "code": str(getattr(exc, "code", "")),
+            },
         }
         output.write_text(
             json.dumps(failure, ensure_ascii=False, indent=2) + "\n",

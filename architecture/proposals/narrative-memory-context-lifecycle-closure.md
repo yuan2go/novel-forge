@@ -2,16 +2,103 @@
 
 > **PROPOSAL**
 >
-> **NOT_IMPLEMENTED**
+> **PARTIALLY_IMPLEMENTED**
 >
 > **NOT_RUNTIME_AUTHORITY**
 >
-> **UMBRELLA WORK PACKAGE — REQUIRES SEQUENTIAL PR APPROVAL**
+Status: `PARTIALLY_IMPLEMENTED`; only the scoped executable witnesses below are current facts.
+Reality baseline: `4c6ebdb774052e1d46f72d0cfbc0541aed22fc52`
+Baseline implementation identity: `sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae`
 
-Status: written specification awaiting final human approval  
-Reality baseline: `07a9e20adc932e65a17ecd26d9923ad89f1ad450`  
-Baseline implementation identity:
-`sha256:72e7a3499d062379b3b5a90ada593d4c42d91e4e21b8da2aaec8df180eb0531b`
+<!-- proposal-lifecycle
+{
+  "schema_version": "proposal-lifecycle.v1",
+  "status": "PARTIALLY_IMPLEMENTED",
+  "reality_baseline": {
+    "commit_sha": "4c6ebdb774052e1d46f72d0cfbc0541aed22fc52",
+    "implementation_tree_sha": "sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae"
+  },
+  "scope": [
+    "src/novel_forge/modules/command_kernel/maintenance.py",
+    "src/novel_forge/modules/context_builder/domain.py",
+    "src/novel_forge/modules/context_builder/embedding_projection.py",
+    "src/novel_forge/modules/context_builder/governance.py",
+    "src/novel_forge/modules/context_builder/memory.py",
+    "src/novel_forge/modules/context_builder/retrieval_campaign.py",
+    "src/novel_forge/storage/migrations/versions/v20260903_0108_context_governance_projection.py"
+  ],
+  "implemented_refs": [
+    {
+      "path": "src/novel_forge/modules/context_builder/governance.py",
+      "symbol": "compile_effective_context_policy"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py",
+      "symbol": "select_context_candidates"
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260903_0108_context_governance_projection.py"
+    }
+  ],
+  "superseding_refs": [],
+  "remaining_decisions": [
+    {
+      "id": "digest-authority-lineage",
+      "decision": "DESIGN_REVIEW_REQUIRED: select concrete revision-bound Digest consumers and source/freshness contracts; current memory layers do not implement Narrative Digest lifecycle.",
+      "evidence_refs": [
+        "src/novel_forge/modules/context_builder/memory.py"
+      ]
+    },
+    {
+      "id": "diagnostic-gc",
+      "decision": "DESIGN_REVIEW_REQUIRED: approve diagnostic semantic classes, retention durations and protected-evidence exclusions before a destructive retention executor.",
+      "evidence_refs": [
+        "src/novel_forge/modules/command_kernel/maintenance.py"
+      ]
+    },
+    {
+      "id": "representation-cutover",
+      "decision": "DESIGN_REVIEW_REQUIRED: resolve typed Digest source integrity and PREPARING generation validation before read cutover, tombstone and purge; source Authority remains protected.",
+      "evidence_refs": [
+        "src/novel_forge/modules/context_builder/embedding_projection.py",
+        "src/novel_forge/modules/context_builder/retrieval_campaign.py"
+      ]
+    }
+  ],
+  "reviewed_sources": [
+    {
+      "path": "src/novel_forge/modules/context_builder/governance.py",
+      "symbol": "compile_effective_context_policy",
+      "sha256": "5ac7d3b8d063df4f0c98b565889a1ab666807179650a4684b14c0e82a29bf231"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py",
+      "symbol": "select_context_candidates",
+      "sha256": "994e65656cf7bbefe6bcebcee21931a981527eff1974071029436f7ec015e1b3"
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260903_0108_context_governance_projection.py",
+      "sha256": "c4234f7ca41d5cfd05180f41524eee72ea44574afeae6de5506b71e68b621c0c"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/memory.py",
+      "sha256": "bc979eb6c6ce62a241871889d07f3f431009034c31d0e858fe4851858f55f7f2"
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/maintenance.py",
+      "sha256": "6a2c7530a1c3fc892ba852680f574193ac6190dd8ce18505ac33345c2d0c9ccb"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+      "sha256": "5dda7d42c624ecf8bc5f65c7e07761d93b58c694af1b932f659a2013e1e910e2"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/retrieval_campaign.py",
+      "sha256": "eb9bc7c8d6afcfee465a2d296b1d19d0b3b158e4e9efe5cc889334042ae55b33"
+    }
+  ]
+}
+-->
 
 ## 1. Reading and approval contract
 
@@ -24,12 +111,12 @@ documentation.
 
 The words `must`, `shall`, `owner`, and `gate` below specify the design that an
 implementation PR must satisfy after approval. They do not change current behavior.
-No production code, DDL, migration, runtime instruction, or current-system document is
-changed by this specification.
+Gate A has landed in executable code and migration 0108; the remaining proposed
+Digest, diagnostic retention, and representation lifecycle contracts are not runtime Authority.
 
 This is an umbrella work package. Implementation is split into PR-A through PR-E.
-Each PR starts from the then-current merged `origin/main`, receives a fresh migration
-identifier if it needs DDL, and must be qualified before the next dependent PR starts.
+Remaining dependent implementation starts from the then-current merged `origin/main`, receives a fresh migration
+identifier if it needs DDL, and must be qualified before dependent work is accepted.
 
 ## 2. Mission, scope, and non-goals
 
@@ -63,6 +150,14 @@ This work package does not:
   that a narrower RuntimeJob executor is insufficient.
 
 ## 3. Current-reality delta
+### Implemented Gate A projection
+
+The former Gate A gaps are implemented by the scoped witnesses above: effective policy
+compilation, multidimensional context limits and complete inclusion decisions, v8
+manifest projection, and provider-bound admission. The remaining tables describe unimplemented
+Gates B–E design inputs. Gate A design material is retired to Git history. Gate A is not evidence that Digest, diagnostic retention,
+representation cutover, or real Provider qualification has been completed.
+
 
 ### 3.1 Evidence anchors
 
@@ -107,12 +202,6 @@ window.
 
 | Gate | Capability | Current state | Disposition | Delta closure |
 |---|---|---|---|---|
-| A | Context types and candidates | `EXISTING` | `EXTEND` | Keep `ContextProfile`, `ContextClass`, `ContextCandidate`, and `ContextSelection`; add section/bucket/class limits and complete decisions. |
-| A | Canonical assembly seam | `EXISTING` | `EXTEND` | Refactor the current function seam; introduce a facade/class only if it removes real orchestration duplication. |
-| A | Eligibility/source isolation | `PARTIAL` | `EXTEND` | Move stale/superseded/diagnostic denial before selection and make allowlist provenance explicit. |
-| A | Effective policy semantics | `PARTIAL` | `EXTEND` | Deterministically compile Capability Pack/Execution, Stage, and Context profiles. |
-| A | Token accounting | `PARTIAL` | `SUPERSEDE` | Replace generic estimates as hard proof with a provider/model/tokenizer-bound contract. Estimates may remain ranking hints only. |
-| A | Manifest/replay | `EXISTING` | `EXTEND` | Add a new manifest version and freeze v7 replay semantics permanently. |
 | B | Structured Narrative Digest | `MISSING` | `NEW` | Add revision-bound, provenance-bound, rebuildable projections for scopes with real consumers. |
 | B | Digest freshness/head selection | `MISSING` | `NEW` | Separate `CURRENT`, `VALID_AS_OF`, `SUPERSEDED`, and `INVALIDATED`; normal head advance preserves historical validity. |
 | C | Diagnostic semantic classes | `PARTIAL` | `NEW` | Separate protected source evidence from redacted diagnostic projections. |
@@ -130,8 +219,6 @@ window.
 
 | Current production call path | Current limitation | Approved landing point |
 |---|---|---|
-| Chapter command → `handlers.build_context_bundle` → `build_authority_context_bundle` | total estimate only; policy inputs are not compiled into one frozen effective contract | PR-A extends this same seam with compiler, accounting, complete decisions, and a new manifest version |
-| Execution Gateway → rendered request → Provider ExternalEffect | prompt estimate is not provider/model-bound complete admission proof | PR-A adds a Provider admission calculation before effect creation |
 | Book acceptance transaction → accepted projection set → retrieval documents | flat text projections; no formal Digest identity or freshness | PR-B adds post-acceptance Digest projection through the existing operation/runtime boundary |
 | Retrieval intent → accepted-boundary discovery → lexical/structured set → optional semantic rerank → frozen round/result | only AssetVersion source; no representation generation | PR-D adds typed Digest source and generation membership without changing truth ownership |
 | Chapter-authority worker → schedule missing embedding → attempt/effect/reconcile | only current document source shape | PR-D extends source loading and permits PREPARING-generation embeddings before activation |
@@ -246,192 +333,6 @@ resident. `RETENTION_MANAGED` means Gate C or E owns a bounded policy now.
 | Diagnostic fingerprint/window aggregate | Diagnostic | Diagnostic Projection | yes | denied | `RETENTION_MANAGED` | yes | yes after retention horizon | operational trend, not proof Authority |
 | Diagnostic observation idempotency receipt | Ephemeral diagnostic control | Diagnostic Projection | replaceable by bounded scan/window rules | denied | `RETENTION_MANAGED` with explicit horizon | aggregate/delete | yes | cannot become a permanent per-event table |
 | Build/CI output and tool debug output | Ephemeral | build/runtime environment | yes | denied | TTL/outside Narrative lifecycle | no | yes when not retained qualification evidence | qualification summary/hash is stored separately |
-
-## 6. Gate A — Context Governance Closure
-
-### 6.1 One canonical assembly seam
-
-Gate A keeps `build_authority_context_bundle` and its direct selection helpers as the
-canonical seam. A `ContextAssembler` class is permitted only if it hides material
-policy compilation, token accounting, or persistence orchestration behind a smaller
-stable interface. A forwarding class that merely calls the existing functions is
-forbidden.
-
-The canonical flow becomes:
-
-```text
-typed stored artifacts
-→ candidate construction
-→ eligibility / freshness / source-policy filtering
-→ deterministic effective-policy compilation
-→ deduplication by logical source and equivalence key
-→ required-first section/bucket/class selection
-→ permitted truncation with provenance
-→ ContextBundle accounting
-→ immutable Context Manifest
-→ complete Provider admission accounting
-→ ExternalEffect admission or fail-closed result
-```
-
-Every candidate receives stable fields for source kind and ID, logical source key,
-source revision/hash, accepted boundary, Context class, section, bucket, token cost,
-required/optional disposition, eligibility state, provenance, and deterministic
-tie-break identity. Existing AssetVersion candidates remain supported.
-
-Default-denied inputs include build logs, stack traces, raw exceptions, Provider debug
-payloads, retry chatter, tool debug output, SQL/debug logs, obsolete revisions,
-rejected generations, superseded planning, unrelated workflow artifacts, and every
-unknown asset/context type. An Agent or operation contract may allow a diagnostic type
-only for a diagnostic/recovery task; that permission never leaks into a prose context.
-
-### 6.2 Effective Context policy compiler
-
-The compiler is a pure, versioned contract. It consumes immutable snapshots of:
-
-1. Capability Pack and Production Execution `ContextPolicy`;
-2. `ProductionStageProfile`;
-3. `ContextProfile`;
-4. command/requested Context limit, which may only reduce a limit;
-5. Provider route capability constraints relevant to Context representation.
-
-It emits one `EffectiveContextPolicy`, a compiler receipt, or a typed fail-closed error.
-The compiler rules are:
-
-| Conflict | Deterministic rule |
-|---|---|
-| allowed types | intersection of every applicable allowlist; absence is not implicit permission |
-| denied types/modes | union; deny wins over allow and required |
-| total, section, bucket, and class limits | minimum of every applicable positive limit; a caller can narrow, never widen |
-| raw-source ratio/risk | most restrictive limit and mode |
-| compression/truncation | permitted only when every applicable policy permits the exact method for that class |
-| required sources/types | union after alias normalization; each item must survive all denies and be uniquely satisfiable |
-| required item conflicts with deny | compile error `CONTEXT_REQUIRED_SOURCE_DENIED` |
-| required items exceed any effective limit | admission error `CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE` |
-| missing/unknown policy identity or unsupported version | `CONTEXT_POLICY_UNRESOLVED`; fail closed |
-| ambiguous aliases or duplicate policy identity with different hash | `CONTEXT_POLICY_IDENTITY_CONFLICT`; fail closed |
-
-An unspecified per-section limit does not create an unlimited section. It falls back to
-the most restrictive applicable safety ceiling and the total limit. Section, bucket,
-and class budgets are all enforced; satisfying one never permits exceeding another.
-
-The new Manifest freezes:
-
-- every input policy ID, version, content hash, and snapshot reference;
-- compiler identity/version and normalized compiler inputs;
-- the complete compiled allow/deny/required sets;
-- total, section, bucket, and class limits;
-- source, compression, truncation, and dedupe rules;
-- compile result and reason codes.
-
-### 6.3 Selection, truncation, deduplication, and observation
-
-Selection remains deterministic. The sort key is frozen by manifest version and must
-end in a stable unique identity. Required candidates are processed before optional
-candidates, but being required does not bypass denial, staleness, provenance, or any
-budget.
-
-Deduplication uses the logical source/equivalence key, not text equality alone. It emits
-a winner, loser, equivalence basis, and `DUPLICATE_REPRESENTATION` reason. A candidate
-whose representation is not in the active read generation is rejected before ranking.
-
-Truncation is type-specific and deterministic. It is forbidden for protected Context
-classes and for any candidate without a declared truncation strategy, source coverage,
-and resulting content hash. Partial arbitrary string slicing is not a semantic
-compaction method.
-
-Every candidate has exactly one final decision:
-
-```text
-SELECTED | DROPPED | TRUNCATED_THEN_SELECTED | ERROR_REQUIRED_UNAVAILABLE
-```
-
-Reason codes include at least denied type, wrong project/book, wrong accepted boundary,
-stale/invalidated, superseded representation, wrong read generation, missing
-provenance, duplicate representation, section limit, bucket limit, class limit, total
-Context limit, source risk, wrong workflow stage, wrong allowed use, invalid accounting,
-and explicit contract exclusion.
-
-The Manifest and metrics record:
-
-```text
-total_candidate_tokens
-accepted_tokens
-tokens_by_section
-tokens_by_bucket
-tokens_by_class
-candidate_count
-accepted_count
-dropped_count
-truncated_count
-decision_count_by_reason
-source_revision
-policy_input_identities
-compiler_version
-token_accounting_identity
-```
-
-### 6.4 Provider/model-bound TokenAccounting contract
-
-Generic `len(text) / 4`, UTF-8 byte ratios, or similar estimates may be retained only
-for ranking or early pessimistic screening. They are not a hard Provider admission
-guarantee.
-
-`TokenAccountingContract` freezes:
-
-- provider and route identity;
-- model identity and revision/alias resolution evidence;
-- tokenizer/accounting implementation identity and version;
-- message serialization/framing version;
-- tool and output-schema serialization version;
-- accounting method: exact tokenizer or conservatively proven upper bound;
-- evidence/calibration identity for an upper-bound method;
-- model context limit;
-- output reserve policy;
-- safety-margin policy and amount;
-- unsupported content/multimodal cases;
-- result precision: `EXACT`, `PROVEN_UPPER_BOUND`, or `UNPROVEN`.
-
-Two separate budgets are mandatory:
-
-```text
-ContextBundle budget
-  = selected narrative working-memory content only
-
-Complete Provider admission budget
-  = system instructions
-  + runtime/role/Skill instructions
-  + tool definitions
-  + input/output schemas
-  + request/message envelope
-  + ContextBundle
-  + non-context task payload
-  + output reserve
-  + safety margin
-```
-
-Admission requires the complete sum to be less than or equal to both the selected
-route/model limit and the applicable execution/cost policy limit. If any serialized
-component cannot be counted or conservatively bounded for that exact provider/model,
-the result is `UNPROVEN` and the call fails closed before ExternalEffect creation.
-Observed Provider usage is recorded for reconciliation and calibration; it does not
-retroactively prove pre-admission correctness.
-
-### 6.5 Manifest versioning and replay
-
-The current `authority-context-bundle-v7` and
-`authority-context-selection-v2-four-class` semantics are frozen as a legacy replay
-implementation. A new manifest/bundle version must use an explicit version dispatcher.
-
-Historical v7 replay:
-
-- consumes the exact v7 inputs and frozen ordering/estimate rules;
-- never invokes the new policy compiler or TokenAccounting contract;
-- never reinterprets v7 freshness, class, or budget decisions;
-- verifies historical hashes and emits a replay comparison;
-- is allowed to report that v7 lacked a new proof, but cannot rewrite the old result.
-
-New manifests freeze the effective policy, accounting contract, read generation,
-candidate decisions, selected payload hashes, and complete Provider admission receipt.
 
 ## 7. Gate B — Structured Narrative Digest
 
@@ -1088,42 +989,17 @@ The proof includes secret-shaped headers/tokens and oversized exception material
 ingress and verifies none is persisted in either diagnostic projection or protected
 RuntimeJob evidence.
 
-## 15. PR dependency and acceptance matrix
+## 15. Remaining implementation dependency
 
-The umbrella work package is delivered as separate sequential/stacked PRs, never as one
-long-lived implementation branch:
+Structured Digest (B) requires the implemented Context governance seam. Retrieval
+representation lifecycle (D) depends on an approved Digest source contract. Validated
+cutover and purge (E) depend on D. Diagnostic retention (C) is independent of narrative
+representation state and must preserve protected evidence.
 
-```text
-PR-A Context Governance Closure
-  └─→ PR-B Structured Narrative Digest
-        └─→ PR-D Retrieval Lifecycle Closure
-              └─→ PR-E Derived Narrative Representation Compaction/Purge
-
-PR-C Diagnostic Retention + GC may proceed independently after its shared runtime
-dependencies are available, but it does not block B/D design work and never shares
-Narrative lifecycle state.
-```
-
-| PR | Depends on | Implementation acceptance before merge | Exact-SHA requalification before next dependent PR |
-|---|---|---|---|
-| A — Context Governance Closure | approved Spec, current main | policy compiler conflicts; section/bucket/class/total budgets; required preservation; optional eviction; stale/superseded/diagnostic rejection; dedupe/truncation reasons; provider/model-bound admission; v7 replay fixtures; real Provider gateway fail-closed integration | fresh + supported upgrade if DDL; PostgreSQL/context/replay/recovery; canonical validation; exact-SHA evidence |
-| B — Structured Narrative Digest | merged A | four consumer-driven scopes only; structured projection; provenance/source-set hash; `CURRENT`/`VALID_AS_OF`/`SUPERSEDED`/`INVALIDATED`; head advance; rebuild; invalid source; partial failure/retry; chapter aggregation correctness; canonical read remains available | fetch new main/new worktree; fresh/upgrade PostgreSQL; operation/effect/recovery; exact-SHA evidence |
-| C — Diagnostic Retention + GC | approved Spec and required merged runtime primitives | classification; redaction/size bound; no secrets; aggregation/dedup; receipt expiry; protected source never deleted; TTL/dry-run/bounded batch; active reference; interruption/resume; real RuntimeJob vertical slice | fetch new main/new worktree; fresh/upgrade PostgreSQL; RuntimeJob lease/fence/recovery; exact-SHA evidence |
-| D — Retrieval Lifecycle Closure | merged B; merged A for Context integration | typed FK/XOR; accepted-boundary metadata/lexical/semantic order; Digest integration; active generation uniqueness; no duplicate old/new; inactive lexical/embedding prebuild; partial indexing and effect reconciliation; stale exclusion; loss/rebuild; campaign/replay generation freeze | fetch new main/new worktree; fresh/upgrade PostgreSQL; query-plan proof; embedding/provider recovery; Context E2E; exact-SHA evidence |
-| E — Derived Narrative Representation Compaction/Purge | merged D; Gate C infrastructure may be reused only at primitive level | eligibility/dry-run; minimal state guards; prebuild/coverage/probe validation; atomic cutover; post-verify; tombstone/grace; reference protection; crash at every boundary; idempotent payload purge; post-purge semantic/retrieval proof; zero Authority/evidence deletion | fetch new main/new worktree; fresh/upgrade PostgreSQL; query plans; Compose/runtime/recovery; resource cleanup; canonical exact-SHA evidence |
-
-After each merge, the next PR must:
-
-1. fetch latest `origin/main`;
-2. record exact baseline and implementation identity;
-3. create a new isolated branch/worktree;
-4. run baseline Reality/Documentation/Instruction/Test/Historical/architecture gates;
-5. implement only that PR's gate;
-6. run focused unit, integration, PostgreSQL, migration, concurrency, recovery, and
-   replay tests before requesting merge;
-7. run repository canonical validation, fresh and supported upgrade migration, relevant
-   query-plan/Compose/resource-cleanup proof, and exact-SHA qualification;
-8. mark unrun proof `NOT_RUN`, never inferred `PASS`.
+Each implementation needs focused domain and PostgreSQL tests, fresh and supported
+upgrade migrations, interruption/recovery/replay, and the canonical exact-SHA P0 gate.
+Destructive retention or representation cutover additionally requires concrete policy
+approval and the coverage, reference-protection and rollback contracts above.
 
 ## 16. Gate-level proof ceilings
 
@@ -1211,13 +1087,11 @@ These are implementation-time design checks, not permission to widen scope:
     are necessary destructive gates. They do not establish prose equivalence or human
     narrative quality.
 
-## 18. Approval boundary
+## 18. Remaining review boundary
 
-Final approval of this Spec authorizes planning and implementation of PR-A only under
-its listed acceptance gate. It does not authorize simultaneous PR-A–PR-E production
-changes, reservation of migration numbers, protected-data archive/purge, or alteration
-of current Authority ownership.
-
-After this Spec is committed, work stops for human approval. No production code, DDL,
-migration, runtime behavior, current-system documentation, Agent instruction, or Skill
-is modified in this design stage.
+The retained B–E designs are review inputs. Their unresolved source typing, consumer
+selection, retention durations, protected-evidence exclusions and cutover validation
+policies must be resolved before dependent destructive behavior is implemented.
+Current Context governance, Accepted Actual, Canon, and Narrative State ownership
+remain executable facts outside this proposal. No retained proposal grants runtime
+permission, qualification, or deletion authority.

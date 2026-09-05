@@ -15,9 +15,11 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class ChapterGroupAuthorityDomainTests(unittest.TestCase):
-    def test_group_range_is_three_to_eight_chapters(self) -> None:
+    def test_group_range_has_positive_ordered_boundaries(self) -> None:
         self.assertEqual(ChapterGroupRange(3, 5).count, 3)
-        for boundaries in ((1, 2), (1, 9), (0, 3)):
+        self.assertEqual(ChapterGroupRange(1, 1).count, 1)
+        self.assertEqual(ChapterGroupRange(1, 12).count, 12)
+        for boundaries in ((2, 1), (True, 3), (0, 3)):
             with self.assertRaises(ValueError):
                 ChapterGroupRange(*boundaries)
 

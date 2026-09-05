@@ -144,6 +144,39 @@ passing exact-revision run proves the listed current backend capabilities at
 `LONGITUDINAL_NARRATIVE_STABILITY`, or `PRODUCTION_OPERATION`. These are evidence
 boundaries, not a product or narrative development sequence.
 
+## Every-PR gate
+
+Run the repository-local gate from a clean branch with an exact ancestor base revision:
+
+```bash
+make pr-governance PR_BASE_SHA="$(git merge-base HEAD origin/main)" \
+  PR_EVIDENCE_PATH=/tmp/novel-forge-pr/pr-governance.json
+```
+
+The gate runs canonical governance checks and changed focused tests. If canonical
+implementation identity changed, it calls the existing full P0 runner and validates its
+exact SHA and implementation identity. If only proposal/documentation/evidence content
+changed, governance still runs and qualification records `NOT_REQUIRED` with
+`SAME_IMPLEMENTATION`. Plan inspection is available without claiming a passed gate:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.pr_governance \
+  --base-sha "$(git merge-base HEAD origin/main)" --plan
+```
+
+A failed check records `FAIL` and prevents downstream PASS. Reports and command logs stay
+outside the checkout. The CI workflow invokes this local gate and uploads its artifacts;
+it does not define another qualification list. Actions are disabled and the branch
+protection API is unavailable under the current repository plan, so remote enforcement
+remains `OPEN_WITH_REASON`.
+
+The PR gate treats different implementation identities in retained live Provider reports
+as `STALE`. A current Provider claim requires durable real-response/receipt evidence,
+ambiguous-loss recovery without resend, measured usage/latency, and a matching observed
+revision. To explicitly require that claim during local governance, pass
+`--claim-current-provider-qualified` and an optional `--provider-evidence` report to
+`novel_forge.tools.pr_governance`; missing current evidence fails the claim.
+
 ## Credentialed Provider qualification
 
 Credentialed Provider qualification is intentionally separate from P0. The only live
@@ -191,6 +224,55 @@ policy as the stricter limit. The admitted exact or conservative total is the to
 reserved in the Provider budget ledger; a ContextBundle that fits can therefore still be
 rejected before any ExternalEffect exists.
 
+## Narrative evidence qualification
+
+Narrative qualification reads persisted design, plan, accepted-boundary and evaluation
+evidence from a caller-selected PostgreSQL database. It does not generate chapters or
+supply external evidence. Run its read-only evidence inspection with:
+
+```bash
+NOVEL_FORGE_DATABASE_URL='postgresql://...' \
+  make narrative-qualification \
+  NARRATIVE_QUALIFICATION_ARGS='--output-dir /tmp/novel-forge-narrative-qualification'
+```
+
+Use `--book-run-id` to select one Book run and repeat `--capability` to select the
+narrative abilities the accepted sample must exercise. `--database-config` reads a local
+configuration containing the database URL. Select a new output directory for each run;
+existing packs are not overwritten. `--engineering-evidence` optionally validates a
+canonical P0 report against the current identity; absent evidence leaves engineering
+`NOT_PROVEN`.
+
+The report's `collection_status=PASS` means evidence collection succeeded, not narrative
+qualification. It retains separate engineering, narrative correctness, human editorial,
+reader evidence, longitudinal stability and production dimensions. Accepted progress
+retains exact chapter/outcome/Canon/state/plan/realization lineage and available Provider,
+usage and receipt references. Missing drift dimensions remain `NOT_OBSERVED`; missing
+longitudinal evidence remains `EVIDENCE_NOT_YET_SUFFICIENT`.
+
+Give human evaluators only `/tmp/novel-forge-narrative-qualification/reviewer/pack.json`; `/tmp/novel-forge-narrative-qualification/private/mapping.json` retains the hidden
+sample-to-lineage mapping. The blind pack is single-arm when no legitimate comparator
+exists. It is a request for human evidence; an AI judge or an empty evaluator field
+cannot close human qualification. Human editorial remains `WAITING_EVIDENCE` until
+independent submitted evidence satisfies the owning contract.
+
+Use the abstraction descent documented in `docs/current-system.md`: Intent,
+Foundation, Book Architecture, Trajectory Portfolio, Mission, Scene, Prose, Acceptance,
+and Longitudinal Narrative. Chapter counts describe the selected experiment only.
+Upstream schema/evaluation failures must block dependent prose qualification. Preserve
+continuity, trajectory, obligation/closure, causal progression and drift observations
+against accepted narrative progress rather than reducing them to one total score.
+
+Book completion assessment uses the exact terminal accepted boundary and its projection
+hash. It persists a separate `BLOCKED` case when typed whole-book ending approval or
+independent human editorial evidence is absent. That case is recovery evidence, not a
+whole-book acceptance receipt. Reader proxy reports freeze the registered policy version
+and hash and retain their uncalibrated advisory proof ceiling. Behavior calibration
+admission fails with `READER_CALIBRATION_DATASET_LINEAGE_REQUIRED` until each observation
+can be bound to an authoritative typed Reader-event dataset. Unrelated exposure counts
+or a caller evidence-level field cannot establish that binding; historical unbound
+`VALID` profiles do not resolve, while fixture diagnostics remain available.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
@@ -221,11 +303,12 @@ resolved from durable evidence before replay.
 Local tests and Compose runs use fixtures unless a separately controlled route and live
 evidence say otherwise. Keep these claims distinct:
 
-- engineering qualification;
-- migration and recovery qualification;
-- real-Provider execution;
-- human/editorial evidence;
-- long-form stability;
+- engineering, migration and recovery qualification;
+- narrative correctness;
+- real-Provider and accepted-chapter production evidence;
+- independent human editorial evidence;
+- reader observations and their evidence class;
+- longitudinal narrative stability;
 - production operation.
 
 The release-evidence builder in `src/novel_forge/tools/release_run_evidence.py` records

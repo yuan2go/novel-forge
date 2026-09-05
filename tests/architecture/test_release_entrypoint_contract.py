@@ -65,7 +65,12 @@ class ReleaseEntrypointContractTests(unittest.TestCase):
         self.assertNotIn("postgres-init", source)
         self.assertNotIn("postgres-sync", source)
         self.assertIn('test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"', source)
-        self.assertIn("make p0-backend-qualification", source)
+        self.assertIn("make pr-governance", source)
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("novel_forge.tools.pr_governance --base-sha", makefile)
+        gate = (ROOT / "src/novel_forge/tools/pr_governance.py").read_text(encoding="utf-8")
+        self.assertIn('"scripts/run_p0_backend_qualification.py", "--profile"', gate)
+        self.assertIn("validate_p0_backend_qualification_report", gate)
         self.assertIn("p0-backend-qualification-${{ github.sha }}", source)
 
 
