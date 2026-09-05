@@ -1,0 +1,163 @@
+{
+  "schema_version": "novel-forge.owned-resource-recheck.v1",
+  "generated_at": "2026-09-05T16:38:39.402844+00:00",
+  "status": "PASS",
+  "scope": "This closure's run-owned Compose containers, networks, volumes and image tags",
+  "projects": [
+    {
+      "compose_project": "nf-p0-03d84cdca9f04c088d112ddc2dbeb641",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-9363dffbbdda410ca034873e378b8152",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-9ecdf73b7541467ca158b1838f071dda-focused",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-9fa2564e8bff441cba6d5cd4c2e5162f-focused",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-e103ac7a39ce4fe4943010ac18d36308",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    },
+    {
+      "compose_project": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime",
+      "container": [],
+      "network": [],
+      "volume": [],
+      "image_tags": []
+    }
+  ],
+  "removed_owned_image_tags": [
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-agent-authority-worker:latest",
+      "image_id": "sha256:2b4c573d70cea6809342a246ba5b35ad6c47764caee6518e8a7cb3140862a03e"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-authority-api:latest",
+      "image_id": "sha256:04184ca4fe078ebce8f130fcd2e41f29dac22da9aaafba3eb12fff90f038c4f4"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-authority-migration:latest",
+      "image_id": "sha256:286187d9b98203c1d99784e1b084a495ec044a53259968525b256279ce5ccf3a"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-book-authority-worker:latest",
+      "image_id": "sha256:2cf607e7a1c7584ced130d381129f4824e5c9cec8a6fb7d38a7d3a2f4efcf874"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-book-followup-authority-worker:latest",
+      "image_id": "sha256:2cd1068dd39d705a7e4dfabc11337b6cae91c0ceec0ac2089cf7d6fcff3ce1f7"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-chapter-authority-worker:latest",
+      "image_id": "sha256:84d7a39be292b993c6fadfaceee232a0caaee1bd367d102c2694b797da48a7cd"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-content-authority-worker:latest",
+      "image_id": "sha256:6a052ed945dbe8229ed19fc60818a7c4b83d0e5afaebeabe5975af530a7a0eb4"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-maintenance-worker:latest",
+      "image_id": "sha256:044304356e28e3b1ba025f3f898bc0f7a4363c87741104b078912d267863ec11"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-mkaos-authority-worker:latest",
+      "image_id": "sha256:29b0e578def215ade71217592c971e1cb16251bb2f50e59bd60feb231c83de1d"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-outbox-worker:latest",
+      "image_id": "sha256:4f703766d75e865fc5c656cacc3d65dd688be226e9c763cb92a364af1f6e4c86"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-source-authority-worker:latest",
+      "image_id": "sha256:ad7cc118ebf9e5a7ceb22d8e32015410e244b00f2a01eb2bc5cc7938d114ebbb"
+    },
+    {
+      "reference": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime-source-import-worker:latest",
+      "image_id": "sha256:42e4af2035c1de468a5be86efa19e6ba9e1eff3d7fe5b53524e07f1075336991"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-agent-authority-worker:latest",
+      "image_id": "sha256:dea8fa112b63a1467ca2131a5e5c457de5a34bb598eaf748760a5c04fb7e8055"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-authority-api:latest",
+      "image_id": "sha256:89848cd9db7e396b44ddcc8a0cc1178257cdac5c0cffbac0ad8a8a2923d7c04e"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-authority-migration:latest",
+      "image_id": "sha256:41a120be8d1d2dbc611d6f86582dff83be5b4b5b60a69dcc1ab927317fe142c3"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-book-authority-worker:latest",
+      "image_id": "sha256:7ed7ad7715ac07371b4f640840d1e885b34c88bfcddbfab1b84f3aa055f171b4"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-book-followup-authority-worker:latest",
+      "image_id": "sha256:bcb9177224c1e3cbd9af988482a320f3643d2f22383052fb740eebb6b2c6e677"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-chapter-authority-worker:latest",
+      "image_id": "sha256:84bd1291904ef489d9574c4ff4378d54d8c3a47bd45ff0f6d8a7f2a5baa9e7d8"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-content-authority-worker:latest",
+      "image_id": "sha256:a8f293dec2399d7abb6b2e626f7f3b9e694d9e53b012d3f64cbbdec76049bc31"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-maintenance-worker:latest",
+      "image_id": "sha256:1acb91a6c37dd0ced5b3cd0d3b42be08afb8e2d3850e433624df440e710a5337"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-mkaos-authority-worker:latest",
+      "image_id": "sha256:0b0268c09709a630e34e5441b97d46cce5f01bad7f0333022e37a28b7d343e89"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-outbox-worker:latest",
+      "image_id": "sha256:a270c6308d629f9bb50f8365f8d1dc46af2cc2747aa578c18a8819b4efc7beaa"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-source-authority-worker:latest",
+      "image_id": "sha256:b331dd1ac4db4f380bbbacea5b37b2143a3b499240d69f9784365a45a5c00bde"
+    },
+    {
+      "reference": "nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime-source-import-worker:latest",
+      "image_id": "sha256:c8987f95804eab376da74b919b184828d4971da86b16d328772a25e3264e697f"
+    }
+  ],
+  "remaining_resource_count": 0
+}
