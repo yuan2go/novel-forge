@@ -58,6 +58,9 @@ from novel_forge.modules.production_execution.security import (
     assert_no_inline_secrets,
     redact_secret_text,
 )
+from novel_forge.modules.production_execution.provider_admission import (
+    build_route_token_accounting_contract,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import run_migrations
 from novel_forge.storage.object_store import MinioObjectStore
@@ -416,6 +419,113 @@ def _outside_repository(path: Path) -> bool:
     return False
 
 
+def _provider_readiness(
+    *, provider: str, model: str, env: Mapping[str, str], codex_login_available: bool
+) -> dict[str, Any]:
+    credentials_available = (
+        codex_login_available
+        if provider == "codex-cli"
+        else bool(str(env.get("OPENAI_API_KEY") or "").strip())
+    )
+    method = str(env.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD") or "")
+    evidence_ref = str(
+        env.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF") or ""
+    )
+    context_limit = int(env.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT") or 0)
+    contract = build_route_token_accounting_contract(
+        provider=provider,
+        model=model,
+        route_identity="qualification-preflight",
+        accounting_method=method,
+        accounting_evidence_ref=evidence_ref,
+        model_context_limit=context_limit,
+        execution_token_limit=max(1, context_limit),
+        output_reserve=1,
+        safety_margin=256,
+        framing_overhead=16,
+    )
+    blockers = []
+    if not credentials_available:
+        blockers.append("EXTERNAL_CREDENTIAL_MISSING")
+    if contract.precision == "UNPROVEN":
+        blockers.append("ENGINEERING_ADMISSION_BLOCKED:TOKEN_ACCOUNTING_UNPROVEN")
+    missing = [
+        name
+        for name, present in (
+            ("MODEL_CONTEXT_LIMIT", context_limit > 0),
+            ("TOKEN_ACCOUNTING_METHOD", bool(method)),
+            ("TOKEN_ACCOUNTING_EVIDENCE_REF", bool(evidence_ref)),
+        )
+        if not present
+    ]
+    if missing:
+        blockers.append("RUNTIME_ACCOUNTING_CONTRACT_MISSING")
+    return {
+        "provider": provider,
+        "model": model,
+        "credential_status": "AVAILABLE" if credentials_available else "MISSING",
+        "credential_observation": "CLI_LOGIN_STATUS"
+        if provider == "codex-cli"
+        else "ENVIRONMENT_PRESENCE_ONLY",
+        "token_accounting_precision": contract.precision,
+        "runtime_contract_missing_fields": missing,
+        "blockers": blockers,
+        "status": "BLOCKED" if blockers else "READY_FOR_LIVE_QUALIFICATION",
+        "real_model_call": False,
+        "provider_request_sent": False,
+        "CURRENT_REAL_PROVIDER": "NOT_PROVEN",
+        "REAL_CHAPTER_ACCEPTED_ACTUAL": "NOT_PROVEN",
+    }
+
+
+def _current_preflight(args: argparse.Namespace) -> dict[str, Any]:
+    commit_sha = _git("rev-parse", "HEAD")
+    identity = build_implementation_tree_identity(ROOT)
+    clean = not bool(_git("status", "--porcelain", "--untracked-files=normal"))
+    login_available = False
+    if args.provider == "codex-cli":
+        executable = Path(args.codex_executable).expanduser().resolve()
+        if executable.is_file():
+            login_available = (
+                subprocess.run(
+                    (str(executable), "login", "status"),
+                    cwd=ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                ).returncode
+                == 0
+            )
+    readiness = _provider_readiness(
+        provider=args.provider,
+        model=args.model,
+        env=os.environ,
+        codex_login_available=login_available,
+    )
+    blockers = list(readiness["blockers"])
+    if commit_sha != args.expected_sha:
+        blockers.append("EXPECTED_SHA_MISMATCH")
+    if not clean:
+        blockers.append("UNCOMMITTED_IMPLEMENTATION")
+    if args.provider != "codex-cli":
+        blockers.append("ENGINEERING_QUALIFICATION_RUNNER_UNSUPPORTED")
+    return {
+        "schema_version": "novel-forge.real-provider-preflight.v1",
+        "created_at": datetime.now().astimezone().isoformat(),
+        "release_sha": commit_sha,
+        "expected_sha": args.expected_sha,
+        "implementation_identity": identity["implementation_tree_sha"],
+        "worktree_clean": clean,
+        "requested_proof_scope": PROOF_SCOPE,
+        "established_capabilities": [],
+        **readiness,
+        "blockers": blockers,
+        "status": "BLOCKED" if blockers else "READY_FOR_LIVE_QUALIFICATION",
+        "result": "NOT_PROVEN",
+    }
+
+
 def _runtime_environment(
     *,
     commit_sha: str,
@@ -431,6 +541,17 @@ def _runtime_environment(
     executions.mkdir(parents=True, exist_ok=True)
     objects.mkdir(parents=True, exist_ok=True)
     return {
+        **{
+            key: str(os.environ[key])
+            for key in (
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD",
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF",
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT",
+                "NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN",
+                "NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD",
+            )
+            if key in os.environ
+        },
         "NOVEL_FORGE_ENVIRONMENT": "validation",
         "NOVEL_FORGE_APPLICATION_BUILD_ID": "real-provider-qualification",
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
@@ -573,14 +694,10 @@ def _provider_process_evidence(
     runtime_root: Path, *, execution_id: str
 ) -> dict[str, Any]:
     receipts: list[dict[str, Any]] = []
-    for path in sorted(
-        runtime_root.glob("codex-executions/*/process-receipt.json")
-    ):
+    for path in sorted(runtime_root.glob("codex-executions/*/process-receipt.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
         if str(payload.get("execution_id") or "") == execution_id:
-            assert_no_inline_secrets(
-                payload, label="real Provider process receipt"
-            )
+            assert_no_inline_secrets(payload, label="real Provider process receipt")
             receipts.append(dict(payload))
     if len(receipts) != 1:
         raise RuntimeError(
@@ -594,12 +711,8 @@ def _provider_process_evidence(
         "NOVEL_FORGE_MINIO_ACCESS_KEY",
         "NOVEL_FORGE_MINIO_SECRET_KEY",
     }
-    environment_keys = {
-        str(value) for value in receipt.get("environment_keys") or ()
-    }
-    leaked_environment_keys = sorted(
-        environment_keys & forbidden_environment_keys
-    )
+    environment_keys = {str(value) for value in receipt.get("environment_keys") or ()}
+    leaked_environment_keys = sorted(environment_keys & forbidden_environment_keys)
     if leaked_environment_keys:
         raise RuntimeError(
             "real Provider process received credential environment keys: "
@@ -661,10 +774,15 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("qualification HEAD differs from --expected-sha")
     if _git("status", "--porcelain", "--untracked-files=normal"):
         raise RuntimeError("real Provider qualification requires a clean worktree")
+    preflight = _current_preflight(args)
+    if preflight["status"] != "READY_FOR_LIVE_QUALIFICATION":
+        return preflight
     output = Path(args.output).expanduser().resolve()
     runtime_root = Path(args.runtime_root).expanduser().resolve()
     if not _outside_repository(output) or not _outside_repository(runtime_root):
-        raise RuntimeError("live evidence and runtime state must stay outside the repository")
+        raise RuntimeError(
+            "live evidence and runtime state must stay outside the repository"
+        )
     if runtime_root.exists():
         raise RuntimeError("runtime root must not already exist")
     executable = str(Path(args.codex_executable).expanduser().resolve())
@@ -857,18 +975,14 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if dispatch_count != 1 or receipt_count != 1 or recon_count != 1:
         raise RuntimeError("Provider recovery created duplicate execution evidence")
-    assert_no_inline_secrets(
-        provider_evidence, label="real Provider response evidence"
-    )
+    assert_no_inline_secrets(provider_evidence, label="real Provider response evidence")
     production = dict(provider_evidence.get("production_execution") or {})
     execution_request = dict(production.get("execution_request") or {})
     execution_handle = dict(production.get("execution_handle") or {})
     execution_result = dict(production.get("execution_result") or {})
     route_snapshot = dict(production.get("route_snapshot") or {})
     capability_runtime = dict(provider_evidence.get("capability_runtime") or {})
-    system_instruction = dict(
-        capability_runtime.get("system_instruction") or {}
-    )
+    system_instruction = dict(capability_runtime.get("system_instruction") or {})
     prompt_template = dict(capability_runtime.get("prompt_template") or {})
     skill = dict(capability_runtime.get("skill") or {})
     provider_request_identity = str(
@@ -984,15 +1098,11 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "request_hash": live_evidence.request_hash,
                 "response_hash": live_evidence.response_hash,
                 "provider_execution_id": live_evidence.provider_execution_id,
-                "provider_request_identity": (
-                    live_evidence.provider_request_identity
-                ),
+                "provider_request_identity": (live_evidence.provider_request_identity),
                 "dispatch_count": dispatch_count,
                 "receipt_count": receipt_count,
                 "reconciliation_count": recon_count,
-                "provider_execution_count": decision[
-                    "provider_execution_count"
-                ],
+                "provider_execution_count": decision["provider_execution_count"],
                 "duplicate_external_effect_count": decision[
                     "duplicate_external_effect_count"
                 ],
@@ -1018,10 +1128,14 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--database-url", required=True)
-    parser.add_argument("--runtime-root", required=True)
+    parser.add_argument("--database-url")
+    parser.add_argument("--runtime-root")
     parser.add_argument("--output", required=True)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument(
+        "--provider", choices=("codex-cli", "openai"), default="codex-cli"
+    )
+    parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument(
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
@@ -1032,32 +1146,41 @@ def main() -> int:
     )
     parser.add_argument(
         "--reasoning-effort",
-        default=os.environ.get(
-            "NOVEL_FORGE_REAL_PROVIDER_REASONING_EFFORT", "medium"
-        ),
+        default=os.environ.get("NOVEL_FORGE_REAL_PROVIDER_REASONING_EFFORT", "medium"),
     )
-    parser.add_argument("--minio-endpoint", required=True)
+    parser.add_argument("--minio-endpoint")
     parser.add_argument(
         "--minio-access-key",
         default=os.environ.get("NOVEL_FORGE_MINIO_ACCESS_KEY", "novel_forge"),
     )
     parser.add_argument(
         "--minio-secret-key",
-        default=os.environ.get(
-            "NOVEL_FORGE_MINIO_SECRET_KEY", "novel_forge_secret"
-        ),
+        default=os.environ.get("NOVEL_FORGE_MINIO_SECRET_KEY", "novel_forge_secret"),
     )
     parser.add_argument("--minio-secure", action="store_true")
     args = parser.parse_args()
+    if not args.preflight_only and not all(
+        (args.database_url, args.runtime_root, args.minio_endpoint)
+    ):
+        parser.error(
+            "live qualification requires database-url, runtime-root and minio-endpoint"
+        )
     output = Path(args.output).expanduser().resolve()
+    if not _outside_repository(output):
+        parser.error("qualification evidence must stay outside the repository")
     output.parent.mkdir(parents=True, exist_ok=True)
     try:
-        result = _run(args)
+        result = _current_preflight(args) if args.preflight_only else _run(args)
     except BaseException as exc:
         safe_message = redact_secret_text(exc)
         failure = {
             "schema_version": "novel-forge.real-provider-qualification.v1",
             "created_at": datetime.now().astimezone().isoformat(),
+            "release_sha": _git("rev-parse", "HEAD"),
+            "expected_sha": args.expected_sha,
+            "implementation_identity": build_implementation_tree_identity(ROOT)[
+                "implementation_tree_sha"
+            ],
             "proof_scope": PROOF_SCOPE,
             "result": "FAIL",
             "failure": {"type": type(exc).__name__, "message": safe_message},
@@ -1068,18 +1191,24 @@ def main() -> int:
         )
         print(json.dumps(failure, ensure_ascii=False), flush=True)
         return 1
+    assert_no_inline_secrets(result, label="Provider qualification result")
     output.write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     print(
         json.dumps(
-            {"proof_output": str(output), "proof_scope": result["proof_scope"]},
+            {
+                "proof_output": str(output),
+                "result": result["result"],
+                "proof_scope": result.get("proof_scope"),
+                "requested_proof_scope": result.get("requested_proof_scope"),
+            },
             ensure_ascii=False,
         ),
         flush=True,
     )
-    return 0
+    return 0 if result["result"] == "PASS" else 1
 
 
 if __name__ == "__main__":

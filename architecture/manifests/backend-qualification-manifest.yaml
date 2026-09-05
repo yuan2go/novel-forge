@@ -23,6 +23,20 @@
     "evidence-finalization"
   ],
   "semantic_slices": {
+    "versioned_execution_and_reader_policy": [
+      "tests/unit/test_runtime_policy_contracts.py",
+      "tests/integration/test_runtime_policies_postgres.py",
+      "tests/integration/test_chapter_group_authority_postgres.py"
+    ],
+    "chapter_mission_scene_contract": [
+      "tests/unit/test_chapter_mission_scene_contracts.py",
+      "tests/integration/test_hierarchical_planning_postgres.py",
+      "tests/integration/test_narrative_orchestration_qualification_postgres.py"
+    ],
+    "whole_book_completion_boundary": [
+      "tests/unit/test_book_completion.py",
+      "tests/integration/test_book_completion_postgres.py"
+    ],
     "migration_matrix": [
       "tests/integration/test_authority_migrations_postgres.py",
       "tests/integration/test_authority_schema_postgres.py",
@@ -35,18 +49,23 @@
       "tests/integration/test_book_projection_repair_upgrade_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
+      "tests/unit/test_provider_token_admission.py",
+      "tests/integration/test_external_effect_admission_contract_postgres.py",
       "tests/unit/test_d0_provider_qualification.py",
       "tests/unit/test_provider_adapter_v2.py",
       "tests/integration/test_d0_provider_qualification_authority_postgres.py",
       "tests/integration/test_provider_callback_authority_postgres.py"
     ],
     "provider_effect_fixture_control": [
+      "tests/integration/test_external_effect_admission_contract_postgres.py",
       "tests/integration/test_chapter_model_effects_postgres.py",
       "tests/integration/test_d0_provider_qualification_authority_postgres.py",
       "tests/integration/test_provider_budget_runtime_postgres.py",
       "tests/integration/test_provider_callback_authority_postgres.py"
     ],
     "story_design_plan_change_activation": [
+      "tests/unit/test_story_design_validators.py",
+      "tests/unit/test_plan_change_authority.py",
       "tests/integration/test_story_design_authority_postgres.py",
       "tests/integration/test_plan_change_authority_postgres.py",
       "tests/integration/test_story_planning_atomic_activation_postgres.py"
@@ -59,6 +78,8 @@
       "tests/integration/test_chapter_outcome_story_state_postgres.py"
     ],
     "book_opening_recovery": [
+      "tests/unit/test_book_opening_workflow.py",
+      "tests/unit/test_book_opening_progress.py",
       "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",
       "tests/integration/test_book_opening_recovery_protocol_postgres.py",
       "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",
@@ -95,6 +116,7 @@
       "chapter-production-saga",
       "review-revision-quality",
       "book-chapter-acceptance",
+      "whole-book-completion-cases",
       "canon-and-narrative-state",
       "reader-and-followup-evidence",
       "agent-runtime",

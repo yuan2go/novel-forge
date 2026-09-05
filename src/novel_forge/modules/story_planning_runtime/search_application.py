@@ -106,7 +106,8 @@ class NarrativeSearchRequest:
             start, end = chapter_range
             if (
                 start <= self.accepted_through_chapter
-                or not 3 <= end - start + 1 <= 8
+                or start <= 0
+                or end < start
                 or self.planning_horizon.get("starts_at_chapter") != start
                 or self.planning_horizon.get("ends_at_chapter") != end
             ):
@@ -235,7 +236,6 @@ class NarrativeSearchQualifiedBranchCommitter(Protocol):
 
 
 class PostgresNarrativeSearchApplication:
-
     def __init__(
         self,
         database_url: str,

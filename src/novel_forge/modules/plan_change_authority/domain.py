@@ -47,6 +47,21 @@ SEMANTIC_FIELDS = {
     "closure_conditions": "ARC_COMPLETION_CRITERIA_CHANGED",
     "target_window": "ARC_TARGET_WINDOW_CHANGED",
     "chapter_function_matrix": "NARRATIVE_SCHEDULING_CHANGED",
+    "chapter_intent": "CHAPTER_MISSION_CHANGED",
+    "primary_function": "CHAPTER_MISSION_CHANGED",
+    "required_state_delta": "CHAPTER_MISSION_CHANGED",
+    "required_arc_contributions": "TRAJECTORY_COMMITMENT_CHANGED",
+    "arc_schedule": "TRAJECTORY_COMMITMENT_CHANGED",
+    "character_participation": "TRAJECTORY_COMMITMENT_CHANGED",
+    "required_state_transitions": "CHAPTER_MISSION_CHANGED",
+    "obligation_actions": "OBLIGATION_COMMITMENT_CHANGED",
+    "setups": "OBLIGATION_COMMITMENT_CHANGED",
+    "payoffs": "OBLIGATION_COMMITMENT_CHANGED",
+    "knowledge_boundaries": "CHAPTER_KNOWLEDGE_BOUNDARY_CHANGED",
+    "disclosures": "DISCLOSURE_OBLIGATION_CHANGED",
+    "narrative_realization_slice": "REALIZATION_EXECUTION_COMMITMENT_CHANGED",
+    "narrative_event_chain": "REALIZATION_EXECUTION_COMMITMENT_CHANGED",
+    "chapter_contract_schema_version": "CHAPTER_CONTRACT_SCHEMA_CHANGED",
     "scene_plan": "SCENE_ARCHITECTURE_CHANGED",
     "expected_exit_state": "EXPECTED_EXIT_STATE_CHANGED",
     "planning_horizon": "PLANNING_HORIZON_CHANGED",
@@ -82,7 +97,7 @@ def semantic_plan_diff(
     before: dict[str, Any], after: dict[str, Any]
 ) -> tuple[SemanticFieldChange, ...]:
     changes: list[SemanticFieldChange] = []
-    fields = sorted(set(SEMANTIC_FIELDS) | (set(before) & HIGH_RISK_FIELDS))
+    fields = sorted(set(SEMANTIC_FIELDS) | HIGH_RISK_FIELDS)
     for field in fields:
         old = before.get(field)
         new = after.get(field)
@@ -120,6 +135,21 @@ def classify_plan_change_risk(
         "arc_segments",
         "arc_relations",
         "chapter_function_matrix",
+        "chapter_intent",
+        "primary_function",
+        "required_state_delta",
+        "required_arc_contributions",
+        "arc_schedule",
+        "character_participation",
+        "required_state_transitions",
+        "obligation_actions",
+        "setups",
+        "payoffs",
+        "knowledge_boundaries",
+        "disclosures",
+        "narrative_realization_slice",
+        "narrative_event_chain",
+        "chapter_contract_schema_version",
         "scene_plan",
         "commitment_contract",
         "world_realization",

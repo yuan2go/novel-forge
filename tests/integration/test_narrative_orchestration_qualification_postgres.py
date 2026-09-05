@@ -1521,11 +1521,25 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 == refs["canon_snapshot_version"]
             )
             mission = dict(intent["chapter_mission"])
+            assert plan["chapter_contract_schema_version"] == "chapter-mission-scene.v2"
+            assert intent["contract_version"] == "chapter-execution-intent-v3"
+            assert "required_beats" not in mission
+            assert intent["required_beats"]
+            assert set(mission["trajectory_refs"]) == {
+                str(ref) for scene in intent["scene_plans"] for ref in scene["trajectory_refs"]
+            }
+            assert set(mission["obligation_refs"]) == {
+                str(ref) for scene in intent["scene_plans"] for ref in scene["obligation_refs"]
+            }
+            assert {str(event["event_id"]) for event in mission["narrative_realization"]["events"]} == {
+                str(ref) for scene in intent["scene_plans"] for ref in scene["realization_event_ids"]
+            }
             assert {
                 "why_this_chapter_exists",
                 "entry_state",
                 "required_outcomes",
-                "required_beats",
+                "trajectory_refs",
+                "obligation_refs",
                 "arc_contributions",
                 "forbidden_changes",
                 "knowledge_and_disclosure_boundaries",
@@ -1562,7 +1576,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 == mission["mission_fingerprint"]
             )
             assert context_expectations["entry_state"] == mission["entry_state"]
-            assert context_expectations["required_beats"] == mission["required_beats"]
+            assert context_expectations["required_beats"] == intent["required_beats"]
             assert (
                 context_expectations["required_arc_contributions"]
                 == mission["arc_contributions"]

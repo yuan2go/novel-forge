@@ -17,6 +17,7 @@ from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
     BookFollowupCommand,
 )
+from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
 from novel_forge.modules.book_followup_authority.contracts import (
     BOOK_FOLLOWUP_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
@@ -37,6 +38,7 @@ from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
+    seed_authority_project_book,
 )
 from tests.integration.capability_pack_postgres_support import (
     RELEASE_SHA,
@@ -183,6 +185,9 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.project_id = identifier("book-followup-project")
+        seed_authority_project_book(
+            project_id=self.project_id, book_id=f"book:{self.project_id}"
+        )
         self.temp = tempfile.TemporaryDirectory()
         settings = IndustrialSettings(
             root=Path(self.temp.name),
@@ -299,6 +304,15 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         )
 
         admission = self.app.admit(command, principal=self.principal)
+        self.app.reader_policies.configure(
+            project_id=self.project_id,
+            workspace_id=f"workspace:{self.project_id}",
+            principal=self.principal,
+            idempotency_key="reader-policy:v2",
+            trace_id=identifier("policy-trace"),
+            correlation_id=command.correlation_id,
+            policy=ReaderProxyPolicy(policy_version="stricter-v2", confusion=0.05),
+        )
         result = self.app.run_or_recover(admission)
         replay = self.app.admit(command, principal=self.principal)
         replay_result = self.app.run_or_recover(replay)
@@ -362,6 +376,10 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             {"READER_PROXY_ADVISORY"},
         )
         report = reader_outputs["reader_outcome.report"]
+        self.assertEqual(
+            report["reader_proxy_policy_snapshot"]["policy"]["policy_version"],
+            "reader-proxy-thresholds-v1",
+        )
         self.assertFalse(report["canon_mutation_allowed"])
         self.assertFalse(report["future_intent_actualization_allowed"])
         self.assertFalse(report["direct_plan_activation_allowed"])
@@ -490,7 +508,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             {
                 "contract_version": "canon-snapshot-v2",
                 "project_id": self.project_id,
-                "book_id": "book:1",
+                "book_id": f"book:{self.project_id}",
                 "accepted_through_chapter": 10,
                 "current_facts": [],
             },
@@ -501,7 +519,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             {
                 "contract_version": "story-state-snapshot-v2",
                 "project_id": self.project_id,
-                "book_id": "book:1",
+                "book_id": f"book:{self.project_id}",
                 "accepted_through_chapter": 10,
                 "current_state": {},
             },
@@ -512,13 +530,13 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             {
                 "contract_version": "chapter-outcome-v3",
                 "project_id": self.project_id,
-                "book_id": "book:1",
+                "book_id": f"book:{self.project_id}",
                 "chapter_number": 10,
             },
             "chapter-outcome-recap",
         )
         payload = {
-            "book_id": "book:1",
+            "book_id": f"book:{self.project_id}",
             "checkpoint_type": "ARC_CHECKPOINT",
             "chapter_range": [1, 10],
             "book_design_version": "book-design:v1",
@@ -579,12 +597,11 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(proposal["required_authority"], "PLAN_CHANGE_AUTHORITY")
         self.assertEqual(proposal["decision_status"], "AUTHORITY_PENDING")
 
-    @staticmethod
     def reader_payload(
-        draft: dict[str, str], canon: dict[str, str]
+        self, draft: dict[str, str], canon: dict[str, str]
     ) -> dict[str, object]:
         return {
-            "book_id": "book:1",
+            "book_id": f"book:{self.project_id}",
             "chapter_id": "chapter:1",
             "chapter_number": 1,
             "final_draft_asset_version": draft["asset_version_id"],

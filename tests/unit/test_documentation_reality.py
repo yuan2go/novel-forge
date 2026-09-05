@@ -353,6 +353,18 @@ class DocumentationRealityTests(unittest.TestCase):
                 "current-system projection is stale", "\n".join(report["errors"])
             )
 
+    def test_narrative_object_requires_explicit_convergence_disposition(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_valid_repository(root)
+            inventory_path = root / "architecture" / "reality-evidence.json"
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            del inventory["narrative_model"][0]["disposition"]
+            inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
+            report = check_repository(root)
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn("disposition is not recognized", "\n".join(report["errors"]))
+
     def test_unresolved_constraint_requires_design_review(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -908,6 +920,7 @@ class DocumentationRealityTests(unittest.TestCase):
                 {
                     "id": "example-object",
                     "nature": "EVIDENCE",
+                    "disposition": "KEEP",
                     "owner": "example-authority",
                     "lifecycle_rule": "Created by the example function.",
                     "relationships": [],

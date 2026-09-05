@@ -20,6 +20,8 @@
         "tests/unit/test_instruction_surface.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_production_reachability.py",
+        "tests/unit/test_proposal_lifecycle.py",
+        "tests/unit/test_pr_governance.py",
         "tests/unit/test_pytest_collection_evidence.py",
         "tests/unit/test_release_run_evidence.py",
         "tests/unit/test_skill_sync.py",
@@ -140,32 +142,76 @@
     }
   ],
   "semantic_slice_policy": {
+    "versioned_execution_and_reader_policy": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_group_authority/policy.py",
+        "src/novel_forge/modules/book_followup_authority/reader_policy.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "chapter_mission_scene_contract": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "whole_book_completion_boundary": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/book_authority/completion_domain.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
     "migration_matrix": {
       "role": "MIGRATION_COMPATIBILITY",
       "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
     },
     "provider_hard_stop_and_callback": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/production_execution/provider_admission.py",
+        "src/novel_forge/modules/command_kernel/external_effect_runtime.py"
+      ],
       "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
     },
     "provider_effect_fixture_control": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/command_kernel/external_effect_runtime.py"
+      ],
       "proof_ceiling": "FIXTURE_CONTROL_ONLY"
     },
     "story_design_plan_change_activation": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/story_design_authority/validators.py",
+        "src/novel_forge/modules/plan_change_authority/domain.py"
+      ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     },
     "backend_vertical_slice": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_outcome/__init__.py"
+      ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     },
     "book_opening_recovery": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/book_authority/opening_workflow.py",
+        "src/novel_forge/modules/book_authority/opening_progress.py"
+      ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     },
     "bounded_retrieval_context": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/context_builder/production_retrieval.py",
+        "src/novel_forge/modules/context_builder/retrieval_campaign.py"
+      ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     }
   }

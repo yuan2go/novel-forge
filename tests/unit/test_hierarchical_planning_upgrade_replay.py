@@ -8,6 +8,7 @@ from novel_forge.modules.hierarchical_planning import (
     PostgresHierarchicalPlanningAuthority,
 )
 from novel_forge.storage.authority_repositories import IdempotencyConflictError
+from novel_forge.modules.hierarchical_planning.definitions import PLAN_BINDING_DEFINITION_VERSION
 
 
 class _Principal:
@@ -89,7 +90,7 @@ def test_v1_worker_race_is_reread_once_and_replayed_as_v1(monkeypatch: Any) -> N
         **_options: Any,
     ) -> dict[str, Any]:
         commands.append(command)
-        if command["definition_version"] == "1.1.0":
+        if command["definition_version"] == PLAN_BINDING_DEFINITION_VERSION:
             raise IdempotencyConflictError("v1 worker won the stable key")
         return {"operation_id": "planning-binding:v1", "replayed": True}
 
@@ -99,7 +100,21 @@ def test_v1_worker_race_is_reread_once_and_replayed_as_v1(monkeypatch: Any) -> N
 
     assert result["operation_id"] == "planning-binding:v1"
     assert [command["definition_version"] for command in commands] == [
-        "1.1.0",
+        PLAN_BINDING_DEFINITION_VERSION,
         "1.0.0",
     ]
     assert "story_design_transition_operation_id" not in commands[1]["input"]
+
+
+def test_previous_atomic_binding_receipt_replays_without_schema_upgrade(monkeypatch: Any) -> None:
+    authority = _authority(replay_versions=["1.1.0"])
+    commands: list[dict[str, Any]] = []
+
+    def execute(_database_url: str, command: dict[str, Any], **_options: Any) -> dict[str, Any]:
+        commands.append(command)
+        return {"operation_id": "binding:historical", "replayed": True}
+
+    monkeypatch.setattr(planning_application, "execute_transaction_command", execute)
+    assert _bind(authority)["replayed"] is True
+    assert commands[0]["definition_version"] == "1.1.0"
+    assert commands[0]["input"]["story_design_transition_operation_id"] == "story-transition:activate:v7"

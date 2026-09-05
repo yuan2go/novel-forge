@@ -33,6 +33,79 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class RealProviderQualificationRunnerTests(unittest.TestCase):
+    def test_authenticated_codex_is_engineering_blocked_not_credential_missing(
+        self,
+    ) -> None:
+        result = RUNNER._provider_readiness(
+            provider="codex-cli", model="gpt-test", env={}, codex_login_available=True
+        )
+        self.assertEqual(result["credential_status"], "AVAILABLE")
+        self.assertNotIn("EXTERNAL_CREDENTIAL_MISSING", result["blockers"])
+        self.assertIn(
+            "ENGINEERING_ADMISSION_BLOCKED:TOKEN_ACCOUNTING_UNPROVEN",
+            result["blockers"],
+        )
+        self.assertIn("RUNTIME_ACCOUNTING_CONTRACT_MISSING", result["blockers"])
+        self.assertFalse(result["provider_request_sent"])
+        self.assertEqual(result["CURRENT_REAL_PROVIDER"], "NOT_PROVEN")
+
+    def test_openai_missing_credential_does_not_erase_accounting_readiness(
+        self,
+    ) -> None:
+        result = RUNNER._provider_readiness(
+            provider="openai",
+            model="gpt-test",
+            codex_login_available=False,
+            env={
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": "OPENAI_UTF8_BYTES_UPPER_BOUND_V1",
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": "contract:fixture",
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "100000",
+            },
+        )
+        self.assertEqual(result["credential_status"], "MISSING")
+        self.assertEqual(result["token_accounting_precision"], "PROVEN_UPPER_BOUND")
+        self.assertEqual(result["blockers"], ["EXTERNAL_CREDENTIAL_MISSING"])
+        self.assertFalse(result["real_model_call"])
+
+    def test_preflight_never_labels_dirty_identity_as_current_qualification(
+        self,
+    ) -> None:
+        with (
+            patch.object(
+                RUNNER, "_git", side_effect=["a" * 40, " M implementation.py"]
+            ),
+            patch.object(
+                RUNNER,
+                "build_implementation_tree_identity",
+                return_value={"implementation_tree_sha": "b" * 40},
+            ),
+            patch.dict(RUNNER.os.environ, {}, clear=True),
+        ):
+            result = RUNNER._current_preflight(
+                RUNNER.argparse.Namespace(
+                    expected_sha="c" * 40,
+                    provider="openai",
+                    model="gpt-test",
+                    codex_executable="/missing/codex",
+                )
+            )
+        self.assertEqual(result["implementation_identity"], "b" * 40)
+        self.assertEqual(result["established_capabilities"], [])
+        self.assertNotIn("proof_scope", result)
+        self.assertEqual(
+            validate_proof_scope(
+                result["requested_proof_scope"],
+                policy=load_historical_reality_policy(ROOT),
+            ),
+            [],
+        )
+        self.assertEqual(result["result"], "NOT_PROVEN")
+        self.assertIn("EXPECTED_SHA_MISMATCH", result["blockers"])
+        self.assertIn("UNCOMMITTED_IMPLEMENTATION", result["blockers"])
+        self.assertIn(
+            "ENGINEERING_QUALIFICATION_RUNNER_UNSUPPORTED", result["blockers"]
+        )
+
     def test_live_evidence_uses_the_typed_current_proof_scope(self) -> None:
         policy = load_historical_reality_policy(ROOT)
 
@@ -82,9 +155,7 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             env["NOVEL_FORGE_RUNTIME_HOST_ID"],
             "host:provider-qualification:" + "a" * 12,
         )
-        self.assertEqual(
-            env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER"], "codex-cli"
-        )
+        self.assertEqual(env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER"], "codex-cli")
         self.assertEqual(env["NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL"], "gpt-test")
         self.assertEqual(
             env["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"],
@@ -136,9 +207,7 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
             receipt_dir.mkdir(parents=True)
             stdout_path = receipt_dir / "stdout.log"
             stderr_path = receipt_dir / "stderr.log"
-            stdout_path.write_text(
-                "api_key=provider-secret-value\n", encoding="utf-8"
-            )
+            stdout_path.write_text("api_key=provider-secret-value\n", encoding="utf-8")
             stderr_path.write_text("", encoding="utf-8")
             (receipt_dir / "process-receipt.json").write_text(
                 json.dumps(

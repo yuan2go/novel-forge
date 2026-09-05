@@ -127,12 +127,13 @@ def test_planning_binding_definition_persists_atomic_transition_identity() -> No
         commit_sha="a" * 40,
     )[0]
 
-    assert PLAN_BINDING_DEFINITION_VERSION == "1.1.0"
+    assert PLAN_BINDING_DEFINITION_VERSION == "1.2.0"
     assert (
         "story_design_transition_operation_id"
         in definition["command_schema"]["required"]
     )
     assert definition["policy"]["atomic_story_design_activation"] is True
+    assert definition["policy"]["chapter_contract_schema_version"] == "chapter-mission-scene.v2"
 
 
 def test_activation_replay_reuses_the_original_transition_operation_identity() -> None:

@@ -39,8 +39,8 @@ class SubjectBindingRequest(BaseModel):
     subject_id: str = Field(min_length=1)
     scope_type: str = Field(pattern="^(CHAPTER|ARC)$")
     scope_key: str = Field(min_length=1)
-    chapter_start: int = Field(ge=1, le=8)
-    chapter_end: int = Field(ge=1, le=8)
+    chapter_start: int = Field(ge=1)
+    chapter_end: int = Field(ge=1)
     arc_plan_version_ids: list[str] = Field(default_factory=list)
     canonical_asset_version_id: str = Field(min_length=1)
     canonical_content_hash: str = Field(pattern="^sha256:")
@@ -76,8 +76,8 @@ class BlindDecisionRequest(BaseModel):
     protocol_version: str = Field(min_length=1)
     evaluation_version: str = Field(min_length=1)
     scope_type: str
-    chapter_start: int = Field(ge=1, le=8)
-    chapter_end: int = Field(ge=1, le=8)
+    chapter_start: int = Field(ge=1)
+    chapter_end: int = Field(ge=1)
     choice: str
     dimension_scores: dict[str, dict[str, int | None]]
     confidence: float = Field(ge=0, le=1)

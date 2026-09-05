@@ -161,7 +161,13 @@ NOVEL_FORGE_REAL_PROVIDER_EVIDENCE_PATH='/tmp/novel-forge-provider-evidence.json
 make real-provider-qualification
 ```
 
-The runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
+The runner first records exact-identity credential and complete-request admission
+preflight. A missing API key, an unsupported qualification transport and unproven Codex
+request accounting are distinct blockers; a ChatGPT login is not a token-admission
+contract. Blocked preflight writes evidence without creating runtime or database state.
+It cannot confer current Provider or real-Chapter qualification.
+
+After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider
 completion, reconciles from the persistent execution receipt, and requires one dispatch,
 one receipt and one execution identity. Only `D0QualificationAuthority.execute_live` may
@@ -190,6 +196,31 @@ route/model context window. Book Opening additionally uses its frozen per-call t
 policy as the stricter limit. The admitted exact or conservative total is the token amount
 reserved in the Provider budget ledger; a ContextBundle that fits can therefore still be
 rejected before any ExternalEffect exists.
+
+## Narrative qualification and completion
+
+The read-only narrative report consumes a real PostgreSQL Book scope and the exact tested
+implementation identity. It has no fixture fallback:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.narrative_qualification \
+  --repo-root . --project-id <project-id> --book-id <book-id> \
+  --expected-sha <tested-sha> --implementation-tree-sha <sha256-identity> \
+  --p0-report <canonical-p0-report> --output /tmp/narrative-qualification.json
+```
+
+Set `NOVEL_FORGE_DATABASE_URL` to the owned evidence database. Exit status 2 means the
+written report is not proven or failed; it is not permission to ignore blockers. A fixture
+Book retains fixture and historical receipt identity. Upper-layer failure prevents
+downstream qualification; chapter count only describes the sample. Human Editorial waits
+for independent human evidence, while Reader, Longitudinal and Production proof remain
+separate. A real-Provider runtime probe alone cannot establish an accepted real chapter.
+
+The trusted Book Completion API creates immutable cases, queries exact scoped cases and
+records version-checked decisions. Assessment reads accepted history; it cannot complete
+a Book cursor or repair Canon. A new case/version is required after changed source
+evidence. Whole-book acceptance remains blocked until its native editorial authorization
+contract is defined; generic Chapter/Arc preferences and AI review do not substitute.
 
 ## Failure and recovery procedure
 

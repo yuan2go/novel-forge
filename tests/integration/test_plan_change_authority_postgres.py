@@ -78,6 +78,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             extra={
                 "objective": "save the city without surrendering agency",
                 "ending_contract": "choose agency and accept public cost",
+                "reader_promise": "public justice carries a personal cost",
             },
         )
         source_evidence = self._seed_asset(
@@ -168,6 +169,11 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             "ENDING_CONTRACT_CHANGED",
             {item["change_type"] for item in proposal["semantic_diff"]},
         )
+        self.assertIn(
+            "READER_PROMISE_CHANGED",
+            {item["change_type"] for item in proposal["semantic_diff"]},
+        )
+        self.assertEqual(proposal_replay["semantic_diff"], proposal["semantic_diff"])
         self.assertEqual(
             self.planning.require_binding(
                 project_id=self.project_id,

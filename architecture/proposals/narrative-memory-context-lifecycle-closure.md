@@ -2,16 +2,59 @@
 
 > **PROPOSAL**
 >
-> **NOT_IMPLEMENTED**
+> **PARTIALLY_IMPLEMENTED — GATE A IMPLEMENTED; GATES B–E UNRESOLVED**
 >
 > **NOT_RUNTIME_AUTHORITY**
 >
-> **UMBRELLA WORK PACKAGE — REQUIRES SEQUENTIAL PR APPROVAL**
+> **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
-Status: written specification awaiting final human approval  
-Reality baseline: `07a9e20adc932e65a17ecd26d9923ad89f1ad450`  
+Status: `PARTIALLY_IMPLEMENTED`
+Reality baseline: `4c6ebdb774052e1d46f72d0cfbc0541aed22fc52`
 Baseline implementation identity:
-`sha256:72e7a3499d062379b3b5a90ada593d4c42d91e4e21b8da2aaec8df180eb0531b`
+`sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae`
+
+<!-- proposal-lifecycle
+{
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "PARTIALLY_IMPLEMENTED",
+  "reviewed_on": "2026-09-05",
+  "review_due": "2026-10-05",
+  "reality_baseline": {
+    "sha": "4c6ebdb774052e1d46f72d0cfbc0541aed22fc52",
+    "implementation_tree_sha": "sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae"
+  },
+  "scope": [
+    "src/novel_forge/modules/context_builder",
+    "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "src/novel_forge/modules/production_execution",
+    "src/novel_forge/storage/migrations",
+    "src/novel_forge/workers/runtime_groups.py"
+  ],
+  "implemented_refs": [
+    {"path": "src/novel_forge/modules/context_builder/governance.py", "symbol": "compile_effective_context_policy"},
+    {"path": "src/novel_forge/modules/context_builder/domain.py", "symbol": "build_authority_context_bundle", "contains": "authority-context-bundle-v8"},
+    {"path": "src/novel_forge/modules/context_builder/domain.py", "symbol": "replay_context_bundle"},
+    {"path": "src/novel_forge/modules/chapter_authority/execution_gateway.py", "symbol": "_provider_effective_context_policy"}
+  ],
+  "superseding_refs": [],
+  "remaining_decisions": [
+    {"id": "digest-consumer-contract", "description": "DESIGN_REVIEW_REQUIRED: consumer-specific structured Digest coverage, deterministic generation and accepted-head timing.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/memory.py", "symbol": "NarrativeMemoryLayer"}]},
+    {"id": "diagnostic-retention-policy", "description": "DESIGN_REVIEW_REQUIRED: indexed per-source scan watermarks, replay/lookback bounds and observation receipt horizon.", "evidence_refs": [{"path": "src/novel_forge/workers/runtime_groups.py"}]},
+    {"id": "representation-cutover-policy", "description": "DESIGN_REVIEW_REQUIRED: frozen coverage corpus, safe payload/header migration and fenced cutover/rollback behavior.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/production_retrieval.py"}]}
+  ],
+  "remaining_work": [
+    {"id": "gate-b-digest", "description": "Revision-bound structured Narrative Digest and freshness/head selection.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/memory.py"}], "absent_refs": [{"path": "src/novel_forge/modules/context_builder/digest.py"}]},
+    {"id": "gate-c-retention", "description": "Governed diagnostic projection, bounded retention and resumable GC.", "evidence_refs": [{"path": "src/novel_forge/workers/runtime_groups.py"}]},
+    {"id": "gate-d-generations", "description": "Typed multi-source retrieval and active representation generations with prebuilt embeddings.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/production_retrieval.py"}]},
+    {"id": "gate-e-derived-lifecycle", "description": "Coverage-gated cutover, tombstone, grace and derived payload purge without protected-evidence deletion.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/embedding_projection.py"}]}
+  ]
+}
+-->
+
+Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen
+replay contract, eligibility decisions and Provider admission accounting. Gates B–E
+remain design scope. The detailed prescriptions below describe their intended
+constraints; they cannot establish current capability or authorize implementation.
 
 ## 1. Reading and approval contract
 
@@ -24,8 +67,9 @@ documentation.
 
 The words `must`, `shall`, `owner`, and `gate` below specify the design that an
 implementation PR must satisfy after approval. They do not change current behavior.
-No production code, DDL, migration, runtime instruction, or current-system document is
-changed by this specification.
+Implemented Gate A behavior is defined by its executable references above. The
+remaining specification does not change production code, DDL, runtime instructions
+or current-system documentation.
 
 This is an umbrella work package. Implementation is split into PR-A through PR-E.
 Each PR starts from the then-current merged `origin/main`, receives a fresh migration
@@ -107,12 +151,12 @@ window.
 
 | Gate | Capability | Current state | Disposition | Delta closure |
 |---|---|---|---|---|
-| A | Context types and candidates | `EXISTING` | `EXTEND` | Keep `ContextProfile`, `ContextClass`, `ContextCandidate`, and `ContextSelection`; add section/bucket/class limits and complete decisions. |
-| A | Canonical assembly seam | `EXISTING` | `EXTEND` | Refactor the current function seam; introduce a facade/class only if it removes real orchestration duplication. |
-| A | Eligibility/source isolation | `PARTIAL` | `EXTEND` | Move stale/superseded/diagnostic denial before selection and make allowlist provenance explicit. |
-| A | Effective policy semantics | `PARTIAL` | `EXTEND` | Deterministically compile Capability Pack/Execution, Stage, and Context profiles. |
-| A | Token accounting | `PARTIAL` | `SUPERSEDE` | Replace generic estimates as hard proof with a provider/model/tokenizer-bound contract. Estimates may remain ranking hints only. |
-| A | Manifest/replay | `EXISTING` | `EXTEND` | Add a new manifest version and freeze v7 replay semantics permanently. |
+| A | Context types and candidates | `IMPLEMENTED` | `KEEP` | Section/bucket/class limits and complete inclusion/exclusion decisions exist in the current selector. |
+| A | Canonical assembly seam | `IMPLEMENTED` | `KEEP` | Existing assembly compiles frozen policy and emits a v8 manifest. |
+| A | Eligibility/source isolation | `IMPLEMENTED` | `KEEP` | Stale/superseded/diagnostic denial precedes selection with explicit provenance. |
+| A | Effective policy semantics | `IMPLEMENTED` | `KEEP` | Capability Pack/Execution, Stage and Context profiles compile to one effective contract. |
+| A | Token accounting | `IMPLEMENTED` | `KEEP` | Provider/model accounting admission fails closed; estimates remain selection hints. |
+| A | Manifest/replay | `IMPLEMENTED` | `KEEP` | v8 records compiler/admission evidence while v7 replay semantics remain frozen. |
 | B | Structured Narrative Digest | `MISSING` | `NEW` | Add revision-bound, provenance-bound, rebuildable projections for scopes with real consumers. |
 | B | Digest freshness/head selection | `MISSING` | `NEW` | Separate `CURRENT`, `VALID_AS_OF`, `SUPERSEDED`, and `INVALIDATED`; normal head advance preserves historical validity. |
 | C | Diagnostic semantic classes | `PARTIAL` | `NEW` | Separate protected source evidence from redacted diagnostic projections. |
@@ -130,8 +174,8 @@ window.
 
 | Current production call path | Current limitation | Approved landing point |
 |---|---|---|
-| Chapter command → `handlers.build_context_bundle` → `build_authority_context_bundle` | total estimate only; policy inputs are not compiled into one frozen effective contract | PR-A extends this same seam with compiler, accounting, complete decisions, and a new manifest version |
-| Execution Gateway → rendered request → Provider ExternalEffect | prompt estimate is not provider/model-bound complete admission proof | PR-A adds a Provider admission calculation before effect creation |
+| Chapter command → `handlers.build_context_bundle` → `build_authority_context_bundle` | Gate A complete; later Digest and generation contracts remain absent | Preserve compiler, accounting, complete decisions and frozen v8 manifest |
+| Execution Gateway → rendered request → Provider ExternalEffect | Gate A admission is implemented; real Provider execution still requires separate current evidence | Preserve admission before ExternalEffect creation |
 | Book acceptance transaction → accepted projection set → retrieval documents | flat text projections; no formal Digest identity or freshness | PR-B adds post-acceptance Digest projection through the existing operation/runtime boundary |
 | Retrieval intent → accepted-boundary discovery → lexical/structured set → optional semantic rerank → frozen round/result | only AssetVersion source; no representation generation | PR-D adds typed Digest source and generation membership without changing truth ownership |
 | Chapter-authority worker → schedule missing embedding → attempt/effect/reconcile | only current document source shape | PR-D extends source loading and permits PREPARING-generation embeddings before activation |
@@ -1218,6 +1262,6 @@ its listed acceptance gate. It does not authorize simultaneous PR-A–PR-E produ
 changes, reservation of migration numbers, protected-data archive/purge, or alteration
 of current Authority ownership.
 
-After this Spec is committed, work stops for human approval. No production code, DDL,
-migration, runtime behavior, current-system documentation, Agent instruction, or Skill
-is modified in this design stage.
+Remaining decisions require design review before their dependent contracts can be
+implemented. Completed Gate A is governed by executable code and current evidence;
+this retained proposal cannot supersede that behavior or confer qualification.

@@ -148,6 +148,32 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         self.realization_generation_operation_id = operation_id
         self.realization_inputs = inputs
 
+    def test_new_chapter_binding_rejects_pre_mission_contract_without_writes(self) -> None:
+        book = self._activate_and_bind(PlanContractType.BOOK, "book:main")
+        volume = self._activate_and_bind(PlanContractType.VOLUME, "volume:1", parent=book)
+        group = self._activate_and_bind(PlanContractType.CHAPTER_GROUP, "group:1", parent=volume)
+        candidate_id = self._activate_design(
+            PlanContractType.CHAPTER, "chapter:1", parent_version_id=group["asset_version_id"],
+        )
+        for attempt in ("initial", "retry"):
+            with self.assertRaisesRegex(KernelError, "CHAPTER_CONTRACT_VERSION_REQUIRED"):
+                self.planning.bind_active_contract(
+                    project_id=self.project_id, book_id=self.book_id,
+                    asset_version_id=candidate_id, contract_type=PlanContractType.CHAPTER,
+                    parent_version_id=group["asset_version_id"],
+                    **self._binding_command(candidate_id, attempt),
+                )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM story_plan_binding WHERE asset_version_id=%s", [candidate_id]
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM active_story_plan_version WHERE project_id=%s AND logical_key='chapter:1'",
+                [self.project_id],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+
     def test_book_volume_group_hierarchy_and_parent_versions(self) -> None:
         book = self._activate_and_bind(
             PlanContractType.BOOK,

@@ -22,6 +22,7 @@ DEFAULT_REQUIRED_IMPORTS = (
     "novel_forge.storage.migrations.versions",
 )
 
+
 @dataclass(frozen=True, slots=True)
 class HeadIntegrityReport:
     tracked_file_count: int
@@ -70,7 +71,9 @@ def build_head_integrity_report(
     tracked = tracked_paths if tracked_paths is not None else _git_tracked_paths(root)
     source_root = root / "src"
     package_root = source_root / "novel_forge"
-    python_files = tuple(sorted(package_root.rglob("*.py"))) if package_root.exists() else ()
+    python_files = (
+        tuple(sorted(package_root.rglob("*.py"))) if package_root.exists() else ()
+    )
     missing_imports: set[str] = set()
     untracked_dependencies: set[str] = set()
     missing_exports: set[str] = set()
@@ -93,8 +96,7 @@ def build_head_integrity_report(
         if path.name == "__init__.py":
             module_name = _module_name(path, source_root)
             missing_exports.update(
-                f"{module_name}:{name}"
-                for name in _missing_static_exports(tree)
+                f"{module_name}:{name}" for name in _missing_static_exports(tree)
             )
 
     registry_targets = _registry_target_failures(root, tracked)
@@ -122,11 +124,7 @@ def _git_tracked_paths(root: Path) -> set[str]:
         raise RuntimeError(
             "HEAD_INTEGRITY_GIT_REQUIRED: repository tracking state is unavailable"
         )
-    return {
-        item.decode("utf-8")
-        for item in result.stdout.split(b"\0")
-        if item
-    }
+    return {item.decode("utf-8") for item in result.stdout.split(b"\0") if item}
 
 
 def _internal_dependencies(
@@ -146,7 +144,9 @@ def _internal_dependencies(
         modules: list[str] = []
         if isinstance(node, ast.Import):
             modules.extend(
-                alias.name for alias in node.names if alias.name.startswith("novel_forge")
+                alias.name
+                for alias in node.names
+                if alias.name.startswith("novel_forge")
             )
         elif isinstance(node, ast.ImportFrom):
             base = _absolute_import_module(
@@ -171,9 +171,7 @@ def _internal_dependencies(
     return dependencies, unresolved
 
 
-def _absolute_import_module(
-    *, current_package: str, module: str, level: int
-) -> str:
+def _absolute_import_module(*, current_package: str, module: str, level: int) -> str:
     if level == 0:
         return module
     parts = current_package.split(".")
@@ -282,9 +280,7 @@ def _registry_target_failures(root: Path, tracked: set[str]) -> set[str]:
     return failures
 
 
-def _required_import_failures(
-    root: Path, required_imports: Iterable[str]
-) -> set[str]:
+def _required_import_failures(root: Path, required_imports: Iterable[str]) -> set[str]:
     failures: set[str] = set()
     if not (root / "src").is_dir():
         return failures
@@ -296,11 +292,65 @@ def _required_import_failures(
     return failures
 
 
+def _pr_gate_delegates_to_p0(root: Path) -> bool:
+    path = root / "src/novel_forge/tools/pr_governance.py"
+    if not path.is_file():
+        return False
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return False
+    for function in tree.body:
+        if (
+            not isinstance(function, ast.FunctionDef)
+            or function.name != "run_pr_governance"
+        ):
+            continue
+        for node in ast.walk(function):
+            if not isinstance(node, ast.If) or not isinstance(node.test, ast.Subscript):
+                continue
+            if ast.unparse(node.test) != "report['implementation_changed']":
+                continue
+            calls = [
+                call
+                for statement in node.body
+                for call in ast.walk(statement)
+                if isinstance(call, ast.Call)
+            ]
+            canonical = any(
+                isinstance(call.func, ast.Name)
+                and call.func.id == "run"
+                and call.args
+                and isinstance(call.args[0], (ast.List, ast.Tuple))
+                and [
+                    value.value
+                    for value in call.args[0].elts[:2]
+                    if isinstance(value, ast.Constant)
+                ]
+                == ["make", "p0-backend-qualification"]
+                for call in calls
+            )
+            validated = any(
+                isinstance(call.func, ast.Name)
+                and call.func.id == "validate_current_p0"
+                for call in calls
+            )
+            if canonical and validated:
+                return True
+    return False
+
+
 def _test_collection_failures(root: Path) -> set[str]:
     failures: set[str] = set()
-    makefile = (root / "Makefile").read_text(encoding="utf-8") if (root / "Makefile").is_file() else ""
+    makefile = (
+        (root / "Makefile").read_text(encoding="utf-8")
+        if (root / "Makefile").is_file()
+        else ""
+    )
     workflow_path = root / ".github" / "workflows" / "core-os-ci.yml"
-    workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.is_file() else ""
+    workflow = (
+        workflow_path.read_text(encoding="utf-8") if workflow_path.is_file() else ""
+    )
     qualification_runner_path = root / "scripts" / "run_p0_backend_qualification.py"
     qualification_runner = (
         qualification_runner_path.read_text(encoding="utf-8")
@@ -313,7 +363,11 @@ def _test_collection_failures(root: Path) -> set[str]:
         failures.add("Makefile:head-integrity-check")
     try:
         workflow_document = yaml.safe_load(workflow)
-        jobs = workflow_document.get("jobs") if isinstance(workflow_document, dict) else None
+        jobs = (
+            workflow_document.get("jobs")
+            if isinstance(workflow_document, dict)
+            else None
+        )
         workflow_commands = "\n".join(
             str(step.get("run") or "")
             for job in (jobs or {}).values()
@@ -333,10 +387,7 @@ def _test_collection_failures(root: Path) -> set[str]:
         qualification = load_qualification_manifest(root)
     except (QualificationContractError, FileNotFoundError, ValueError) as exc:
         complete_collection_paths: set[str] = set()
-        failures.add(
-            "backend-qualification-manifest:"
-            f"{type(exc).__name__}:{exc}"
-        )
+        failures.add(f"backend-qualification-manifest:{type(exc).__name__}:{exc}")
     else:
         complete_collection_paths = {
             path
@@ -361,17 +412,24 @@ def _test_collection_failures(root: Path) -> set[str]:
         r"(?m)^p0-backend-qualification:[^\n]*\n(?P<recipe>(?:\t[^\n]*\n?)+)",
         makefile,
     )
+    pr_make_match = re.search(
+        r"(?m)^pr-governance:[^\n]*\n(?P<recipe>(?:\t[^\n]*\n?)+)",
+        makefile,
+    )
+    pr_common_entry = bool(
+        "make pr-governance" in workflow_commands
+        and pr_make_match is not None
+        and "-m novel_forge.tools.pr_governance" in pr_make_match.group("recipe")
+        and _pr_gate_delegates_to_p0(root)
+    )
     common_entry = bool(
-        "make p0-backend-qualification" in workflow_commands
+        ("make p0-backend-qualification" in workflow_commands or pr_common_entry)
         and make_match is not None
-        and "scripts/run_p0_backend_qualification.py"
-        in make_match.group("recipe")
+        and "scripts/run_p0_backend_qualification.py" in make_match.group("recipe")
         and "from novel_forge.tools.backend_qualification import main"
         in qualification_runner
     )
     for suite in ("tests/unit", "tests/integration", "tests/acceptance"):
-        if suite in workflow_commands:
-            continue
         if common_entry and suite in complete_collection_paths:
             continue
         failures.add(f"core-os-ci:{suite}")
