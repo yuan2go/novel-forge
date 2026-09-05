@@ -1,6 +1,6 @@
 {
   "schema_version": "novel-forge.post-merge-drift-audit.v1",
-  "fact_type": "CURRENT_RUNTIME_FACT",
+  "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
   "audit_scope": "POST_MERGE_ENGINEERING_BASELINE",
   "comparison_p0": {
     "tested_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
@@ -1043,5 +1043,7 @@
     "sha256": "sha256:f08e77dbeab6130a5eb21aeb838a0615b5d429ec675dd3d1748202933883a396",
     "remaining_resource_count": 0
   },
-  "owned_resource_residue": 0
+  "owned_resource_residue": 0,
+  "runtime_authority": "NOT_RUNTIME_AUTHORITY",
+  "qualification_authority": "RETAINED_CANONICAL_P0_REPORT_ONLY"
 }
