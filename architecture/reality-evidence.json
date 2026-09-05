@@ -2212,6 +2212,183 @@
           "locator": "\"tested_sha\": \"3c6367b8fe7ced6c1ce22236606cba50f91a0d59\""
         }
       ]
+    },
+    {
+      "id": "p0-backend-engineering-qualification-7a9e2c6dd926",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
+      "evidence_class": "p0_backend_engineering_qualification",
+      "gate": "make p0-backend-qualification P0_PROFILE=local",
+      "observed_at_sha": "7a9e2c6dd9261a115a2aac979df6e31961607c9c",
+      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+      "source_tree": "7f05daf837dfc89fc70f1317a2d3de57e60132cc",
+      "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a",
+      "dependency_snapshot_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+      "collected": 3806,
+      "passed": 3806,
+      "failed": 0,
+      "collections": [
+        {
+          "classification": "BACKEND_NON_POSTGRESQL",
+          "collected_nodes": 1764,
+          "junit_cases": 3200,
+          "passed": 3200,
+          "skipped": 0,
+          "complete": true
+        },
+        {
+          "classification": "MIGRATION_COMPATIBILITY",
+          "collected_nodes": 68,
+          "junit_cases": 81,
+          "passed": 81,
+          "skipped": 0,
+          "complete": true,
+          "repeated_in_postgresql_collection": true
+        },
+        {
+          "classification": "POSTGRESQL_REQUIRED",
+          "collected_nodes": 520,
+          "junit_cases": 606,
+          "passed": 606,
+          "skipped": 0,
+          "complete": true
+        }
+      ],
+      "gates": [
+        {
+          "id": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "id": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "id": "static-and-manifests",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-backend",
+          "status": "PASS"
+        },
+        {
+          "id": "postgresql-start",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-fresh",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-compatibility",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-postgresql-integration",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-head",
+          "status": "PASS"
+        },
+        {
+          "id": "query-plan-release",
+          "status": "PASS"
+        },
+        {
+          "id": "compose-runtime",
+          "status": "PASS"
+        },
+        {
+          "id": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "id": "evidence-finalization",
+          "status": "PASS"
+        }
+      ],
+      "migration": {
+        "applied_count": 113,
+        "expected_head": "20260905_0113_policy_completion_fk_indexes",
+        "observed_head": "20260905_0113_policy_completion_fk_indexes"
+      },
+      "cleanup": {
+        "status": "PASS",
+        "owned_resource_count": 20,
+        "remaining_resource_count": 0,
+        "phases": [
+          {
+            "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-dc13294a1d0e42059eec708593808d53.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+            "status": "PASS"
+          },
+          {
+            "compose_project": "nf-p0-dc13294a1d0e42059eec708593808d53-runtime",
+            "phase": "compose-runtime",
+            "receipt": "compose-resource-ownership-nf-p0-dc13294a1d0e42059eec708593808d53-runtime.json",
+            "remaining_resource_count": 0,
+            "resource_count": 18,
+            "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+            "status": "PASS"
+          }
+        ]
+      },
+      "proof_scope": {
+        "ceiling": "LOCAL_BACKEND_ENGINEERING",
+        "does_not_establish": [
+          "ADMIN_UI_EXECUTION",
+          "CREDENTIALED_PROVIDER_EXECUTION",
+          "HUMAN_EDITORIAL_EVIDENCE",
+          "LONGITUDINAL_NARRATIVE_STABILITY",
+          "PRODUCTION_OPERATION"
+        ],
+        "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+        "proves": [
+          "runtime-composition",
+          "project-workspace-authority",
+          "command-attempt-lease-fence",
+          "capability-pack-instruction-runtime",
+          "external-effect-provider-control",
+          "source-import-and-knowledge",
+          "book-design-and-story-formation",
+          "story-design-authority",
+          "hierarchical-planning",
+          "narrative-realization",
+          "plan-change-authority",
+          "book-opening-workflow",
+          "book-production-coordination",
+          "chapter-group-coordination",
+          "context-and-retrieval",
+          "chapter-production-saga",
+          "review-revision-quality",
+          "book-chapter-acceptance",
+          "whole-book-completion-cases",
+          "canon-and-narrative-state",
+          "reader-and-followup-evidence",
+          "agent-runtime",
+          "postgresql-persistence-and-migrations",
+          "retry-recovery-and-replay"
+        ],
+        "schema_version": "novel-forge.qualification-proof-scope.v1"
+      },
+      "qualification_report": {
+        "run_id": "p0-dc13294a1d0e42059eec708593808d53",
+        "artifact_root": "novel-forge-p0-7a9e2c6dd926-dc13294a1d0e42059eec708593808d53",
+        "artifact": "p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+        "sha256": "sha256:60871b704aadf33c45fb6acdf9588766d55fad154064d8d0c637f24ebaaca3af",
+        "retention": "REPOSITORY_HISTORICAL_AUDIT_ARTIFACT"
+      },
+      "qualification_evidence": [
+        {
+          "path": "architecture/evidence/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+          "locator": "\"tested_sha\": \"7a9e2c6dd9261a115a2aac979df6e31961607c9c\""
+        }
+      ]
     }
   ],
   "qualification_failures": [],
