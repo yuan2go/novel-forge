@@ -1,0 +1,1049 @@
+{
+  "schema_version": "novel-forge.post-merge-drift-audit.v1",
+  "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
+  "audit_scope": "POST_MERGE_ENGINEERING_BASELINE",
+  "comparison_p0": {
+    "tested_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+    "generated_at": "2026-09-05T10:49:33+00:00",
+    "implementation_identity": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404",
+    "status": "HISTORICAL_COMPATIBILITY_FACT",
+    "report": "architecture/evidence/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+    "sha256": "sha256:a14f1eb17822b2b845c6510bcede7353b5fc11c7e8adaabc29bd5f1a129de81b"
+  },
+  "changed_path_count": 122,
+  "changed_implementation_path_count": 108,
+  "category_counts": {
+    "runtime_wiring_and_gate_entry": 6,
+    "retained_evidence": 8,
+    "manifests": 6,
+    "proposal_design_input": 2,
+    "reality_projection": 1,
+    "canonical_docs": 3,
+    "qualification_tooling": 8,
+    "production_code": 37,
+    "schema_migrations": 7,
+    "tests": 44
+  },
+  "changes": [
+    {
+      "path": ".github/workflows/core-os-ci.yml",
+      "change": "M",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "Makefile",
+      "change": "M",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/evidence/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/narrative-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59/report.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/narrative-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59/reviewer/pack.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/pr-governance-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/real-provider-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/remote-pr-enforcement-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/resource-cleanup-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/live-evidence/test-reality-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+      "change": "A",
+      "category": "retained_evidence",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/manifests/ai-instruction-manifest.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/manifests/backend-qualification-manifest.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/manifests/historical-reality-policy.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/manifests/migration-manifest.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/manifests/production-entry-manifest.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/manifests/test-manifest.yaml",
+      "change": "M",
+      "category": "manifests",
+      "implementation_covered": true
+    },
+    {
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "change": "M",
+      "category": "proposal_design_input",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "change": "M",
+      "category": "proposal_design_input",
+      "implementation_covered": false
+    },
+    {
+      "path": "architecture/reality-evidence.json",
+      "change": "M",
+      "category": "reality_projection",
+      "implementation_covered": false
+    },
+    {
+      "path": "docs/current-system.md",
+      "change": "M",
+      "category": "canonical_docs",
+      "implementation_covered": false
+    },
+    {
+      "path": "docs/development.md",
+      "change": "M",
+      "category": "canonical_docs",
+      "implementation_covered": false
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "change": "M",
+      "category": "canonical_docs",
+      "implementation_covered": false
+    },
+    {
+      "path": "scripts/run_real_provider_qualification.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/api/authority_app.py",
+      "change": "M",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/api/routers/book_authority.py",
+      "change": "M",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/api/routers/book_completion.py",
+      "change": "A",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/api/routers/quality_qualification.py",
+      "change": "M",
+      "category": "runtime_wiring_and_gate_entry",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/authority_handler_runtime/policy_commands.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/completion.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/completion_domain.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/production.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/supervisor.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/handlers.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/reader_policy.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_artifacts.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/policy.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/longitudinal.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/narrative_qualification.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/narrative_qualification_sources.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/definitions.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/window_policy.py",
+      "change": "D",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/plan_change_authority/domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/reader_calibration/application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/reader_calibration/proxy_policy.py",
+      "change": "D",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/qualification.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/domain.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/search_application.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/schemas/narrative_qualification.py",
+      "change": "D",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/book_completion_repositories.py",
+      "change": "D",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/chapter_group_repositories.py",
+      "change": "M",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/__init__.py",
+      "change": "M",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0109_chapter_window_execution_policy.py",
+      "change": "D",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0109_industrial_execution_policies.py",
+      "change": "A",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0110_chapter_mission_scene_contract.py",
+      "change": "A",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0110_narrative_completion_policy.py",
+      "change": "D",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py",
+      "change": "A",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0112_realization_execution_policy.py",
+      "change": "A",
+      "category": "schema_migrations",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/versioned_policy_repository.py",
+      "change": "A",
+      "category": "production_code",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/backend_qualification_contract.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/documentation_reality.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/head_integrity.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/narrative_qualification.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/pr_governance.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/proposal_lifecycle.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "src/novel_forge/tools/test_reality.py",
+      "change": "M",
+      "category": "qualification_tooling",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/architecture/test_head_integrity.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/architecture/test_release_entrypoint_contract.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_book_completion_accepted_history_postgres.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_book_completion_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_book_followup_authority_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_chapter_group_authority_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_chapter_window_legacy_upgrade_postgres.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_chapter_window_policy_postgres.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_external_effect_admission_contract_postgres.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_hierarchical_planning_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_narrative_orchestration_qualification_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_narrative_qualification_postgres.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_narrative_qualification_report_postgres.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_plan_change_authority_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_reader_calibration_postgres.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/integration/test_runtime_policies_postgres.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_book_completion.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_book_completion_policy.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_book_production_supervisor.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_group_authority.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_mission_scene_contract.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_mission_scene_contracts.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_window_policy.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_core_os_characterization.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_documentation_reality.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_hierarchical_planning_upgrade_replay.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_narrative_qualification.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_narrative_qualification_report.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_narrative_realization.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_plan_change_authority.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_pr_governance.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_progressive_narrative_qualification.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_proposal_lifecycle.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_provider_budget_lock_support.py",
+      "change": "D",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_provider_budget_scope.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_quality_qualification_api.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_reader_calibration.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_reader_judge_authority.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_real_provider_qualification_runner.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_release_run_evidence.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_runtime_policy_contracts.py",
+      "change": "A",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_story_planning_atomic_activation.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_story_planning_runtime.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    },
+    {
+      "path": "tests/unit/test_test_reality.py",
+      "change": "M",
+      "category": "tests",
+      "implementation_covered": true
+    }
+  ],
+  "migration_audit": {
+    "current_head": "20260905_0112_realization_execution_policy",
+    "registered_count": 112,
+    "unique_ids": 112,
+    "unchanged_shared_migration_count": 108,
+    "rewritten_shared_migrations": [],
+    "premerge_branch_migrations_removed": [
+      "src/novel_forge/storage/migrations/versions/v20260905_0109_chapter_window_execution_policy.py",
+      "src/novel_forge/storage/migrations/versions/v20260905_0110_narrative_completion_policy.py"
+    ],
+    "merged_main_migrations_added": [
+      "src/novel_forge/storage/migrations/versions/v20260905_0109_industrial_execution_policies.py",
+      "src/novel_forge/storage/migrations/versions/v20260905_0110_chapter_mission_scene_contract.py",
+      "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py",
+      "src/novel_forge/storage/migrations/versions/v20260905_0112_realization_execution_policy.py"
+    ],
+    "migrations_changed_by_this_closure": true,
+    "qualification_head": "20260905_0113_policy_completion_fk_indexes",
+    "closure_migrations_added": [
+      "20260905_0113_policy_completion_fk_indexes"
+    ]
+  },
+  "parallel_implementation_audit": {
+    "retired_parallel_paths_absent": [
+      "src/novel_forge/modules/hierarchical_planning/window_policy.py",
+      "src/novel_forge/modules/reader_calibration/proxy_policy.py",
+      "src/novel_forge/storage/book_completion_repositories.py",
+      "src/novel_forge/schemas/narrative_qualification.py"
+    ],
+    "current_owners": [
+      "src/novel_forge/modules/chapter_group_authority/policy.py",
+      "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py",
+      "src/novel_forge/modules/book_authority/completion.py",
+      "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py"
+    ],
+    "parallel_implementation_truth": 0
+  },
+  "preflight_findings": [
+    "Reality projection identity differs from merged main implementation",
+    "Retained 3c6367b8 report has no qualification_runs index",
+    "Proposal lifecycle review baseline predates merged implementation",
+    "Canonical proposal label prose conflicts with executable partial lifecycle"
+  ],
+  "runtime_business_semantics_changed": false,
+  "provider_narrative_human_longitudinal_qualification_performed": false,
+  "initial_main": {
+    "sha": "a6d76005efe1672272fa2829d44d2c9a94dd8ed5",
+    "source_tree": "eca1ec3288012965a38847b0f6a9770cb86db47a",
+    "implementation_tree_sha": "sha256:9059a782db774719e3dcfd2345637a5a713e865ed4e2a91c115065a25048dcbc"
+  },
+  "drift_inventory_baseline": "initial_main compared with comparison_p0",
+  "qualified_merged_main": {
+    "sha": "e444c1aa85c94667e9d12084a6e4558e296da94e",
+    "source_tree": "9b5a6fedc55dcb6010003f4d13ee9d86252217f4",
+    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a"
+  },
+  "status": "COMPLETE",
+  "qualification": {
+    "tested_sha": "e444c1aa85c94667e9d12084a6e4558e296da94e",
+    "source_tree": "9b5a6fedc55dcb6010003f4d13ee9d86252217f4",
+    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a",
+    "dependency_snapshot_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+    "report": "architecture/evidence/p0-backend-qualification-e444c1aa85c94667e9d12084a6e4558e296da94e.json",
+    "report_sha256": "sha256:ced5ffb63867c90bd289f1de1453c7ba79fc58e9404f3e2d600e6673be0aa235",
+    "status": "PASS",
+    "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "qualified_capability_count": 24
+  },
+  "repairs": [
+    {
+      "path": "architecture/reality-evidence.json",
+      "change": "Bind projection to merged-main identity; restore prior retained report as historical; qualify only current P0 proof scope."
+    },
+    {
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "change": "Refresh reviewed-source baseline metadata only; design and unresolved decisions unchanged."
+    },
+    {
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "change": "Refresh reviewed-source baseline metadata only; design and unresolved decisions unchanged."
+    },
+    {
+      "path": "docs/README.md",
+      "change": "Align lifecycle label prose with the current executable partial-implementation rule."
+    },
+    {
+      "path": "tests/integration/test_authority_legacy_migration_postgres.py",
+      "change": "Preserve merged-main imported Chapter Mission/Frozen Realization gate. Verify independent import approval cannot activate incomplete Chapter contracts, retry/restart leaves no binding, and current-version ChapterGroup rollback/committed replay remains valid."
+    },
+    {
+      "path": "tests/integration/test_core_functional_loops_postgres.py",
+      "change": "Configure the single-chapter recap-isolation window through the existing versioned execution-policy Authority; retain original Realization completion and failed-sidecar isolation assertions."
+    },
+    {
+      "path": "tests/unit/test_hierarchical_planning_upgrade_replay.py",
+      "change": "Prove new binding uses the current contract version; historical receipt replay remains separately covered."
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0113_policy_completion_fk_indexes.py",
+      "change": "Append 11 missing policy/completion foreign-key indexes without modifying published migrations or business constraints; upgrade rollback and replay verified."
+    }
+  ],
+  "closure_implementation_drift_from_merged_main": [],
+  "repair_implementation_drift_from_initial_main": [
+    "architecture/manifests/migration-manifest.yaml",
+    "src/novel_forge/storage/migrations/versions/__init__.py",
+    "src/novel_forge/storage/migrations/versions/v20260905_0113_policy_completion_fk_indexes.py",
+    "tests/integration/test_authority_legacy_migration_postgres.py",
+    "tests/integration/test_authority_migrations_postgres.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/unit/test_hierarchical_planning_upgrade_replay.py"
+  ],
+  "unchanged_gate_policy_instruction_path_count": 518,
+  "published_main_migrations_byte_identical_count": 112,
+  "latest_main_is_ancestor_of_tested_revision": true,
+  "failure_root_causes": [
+    {
+      "gate": "migration-compatibility",
+      "failure": "missing policy/completion foreign-key indexes",
+      "resolution": "forward-only 0113 supporting indexes"
+    },
+    {
+      "gate": "migration-compatibility",
+      "failure": "legacy fixture expected current Chapter activation without Mission/Frozen Realization",
+      "resolution": "keep current production admission unchanged; assert refusal and no writes after restart"
+    },
+    {
+      "gate": "pytest-postgresql-integration",
+      "failure": "recap fixture used sidecar cadence to imply the execution window",
+      "resolution": "configure the existing execution-policy Authority; retain the single-event closure and failure-isolation assertions"
+    }
+  ],
+  "runtime_business_semantics_preservation": "All non-migration production source files are byte-identical to initial merged main. Only the forward index migration and its registry change production source; native admission gates and accepted history remain unchanged.",
+  "focused_resource_cleanup": [
+    {
+      "schema_version": "novel-forge.focused-resource-cleanup.v1",
+      "project": "nf-p0-9ecdf73b7541467ca158b1838f071dda-focused",
+      "run_id": "p0-9ecdf73b7541467ca158b1838f071dda",
+      "status": "PASS",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      },
+      "remaining_resource_count": 0
+    },
+    {
+      "status": "PASS",
+      "compose_project": "nf-p0-9fa2564e8bff441cba6d5cd4c2e5162f-focused",
+      "run_id": "p0-9fa2564e8bff441cba6d5cd4c2e5162f",
+      "resources": {
+        "container": [],
+        "network": [],
+        "volume": []
+      },
+      "remaining_resource_count": 0
+    }
+  ],
+  "focused_verification": {
+    "unit": {
+      "passed": 23
+    },
+    "postgresql": {
+      "passed": 5
+    },
+    "pre_fix_reproduction": {
+      "failed": 2,
+      "duration_seconds": 12.08
+    },
+    "regression_red_before_fix": {
+      "failed": 2,
+      "duration_seconds": 8.8
+    }
+  },
+  "first_canonical_attempt": {
+    "tested_sha": "127d5c3f6f5f63d22af3d823bf1663715ab89d92",
+    "implementation_identity": "sha256:9059a782db774719e3dcfd2345637a5a713e865ed4e2a91c115065a25048dcbc",
+    "status": "FAIL",
+    "failed_gate": "migration-compatibility",
+    "failed_tests": [
+      "tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_clean_database_applies_complete_migration_chain",
+      "tests/integration/test_authority_legacy_migration_postgres.py::LegacyMigrationAuthorityPostgresTests::test_planning_migration_builds_active_hierarchy_after_approval"
+    ],
+    "owned_resource_residue": 0,
+    "report": "architecture/live-evidence/p0-backend-failure-127d5c3f6f5f63d22af3d823bf1663715ab89d92.json",
+    "report_sha256": "sha256:e0a99d576f52690214aab57279f8915b18ff176911d010c6311d77a903315a27"
+  },
+  "superseded_canonical_attempt": {
+    "tested_sha": "528d5ac228ffd8deac8fd4ec36f2916444fb5971",
+    "implementation_identity": "sha256:c92f182d291b89901102ef69505d0ee80318368deb94bb933e51560c44b604b8",
+    "status": "FAIL",
+    "failed_gate": "pytest-postgresql-integration",
+    "passed": 519,
+    "failed": 1,
+    "report": "architecture/live-evidence/p0-backend-failure-528d5ac228ffd8deac8fd4ec36f2916444fb5971.json",
+    "report_sha256": "sha256:5f918d14542ed1faf17798772e9196292fbc93f8579f18679abbfba6eb91305c",
+    "owned_resource_residue": 0,
+    "fact_type": "HISTORICAL_COMPATIBILITY_FACT"
+  },
+  "retained_gate_artifact_digests_match_p0": true,
+  "retained_gate_artifacts": [
+    {
+      "artifact": "backend-pytest-collection.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/backend-pytest-collection.json",
+      "sha256": "sha256:4db4c30395e18f3014370058a8311fd73a82c997d300d9922d3c1e1d7a50b487"
+    },
+    {
+      "artifact": "backend-pytest.xml",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/backend-pytest.xml",
+      "sha256": "sha256:2396a66d346dc1600602a08864be0ba96764fbb0274e871f32f6bc18850001c2"
+    },
+    {
+      "artifact": "compose-resource-ownership-nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/compose-resource-ownership-nf-p0-e103ac7a39ce4fe4943010ac18d36308-runtime.json",
+      "sha256": "sha256:0f8d3e26b86f6db8363c5e448c26b044b5e4f97f400f376e2ee97486ce41230c"
+    },
+    {
+      "artifact": "compose-resource-ownership-nf-p0-e103ac7a39ce4fe4943010ac18d36308.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/compose-resource-ownership-nf-p0-e103ac7a39ce4fe4943010ac18d36308.json",
+      "sha256": "sha256:e99f82438f74cdca69eb74868698f42c7bd8f2ae93366146dbb8a7ac73cd50c5"
+    },
+    {
+      "artifact": "compose-runtime.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/compose-runtime.json",
+      "sha256": "sha256:8cb50c272cf7c3ae100820a5d14c611c97046087e1f6d66b8944ac48b0649f0e"
+    },
+    {
+      "artifact": "documentation-reality.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/documentation-reality.json",
+      "sha256": "sha256:c2373f17d6640ca6ac57aca58be4ac2cc555d501ebb5065f5944d1de90ffb8e2"
+    },
+    {
+      "artifact": "migration-compatibility-collection.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/migration-compatibility-collection.json",
+      "sha256": "sha256:584e0d180e8aa006fe785490a863a28bb4eed0b021381a4baab8cf9d409c8cbf"
+    },
+    {
+      "artifact": "migration-compatibility-pytest.xml",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/migration-compatibility-pytest.xml",
+      "sha256": "sha256:530163846238eba0e2a4d19ff3e1402e7257477f0b7725fd959267a68ca2ce21"
+    },
+    {
+      "artifact": "postgresql-pytest-collection.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/postgresql-pytest-collection.json",
+      "sha256": "sha256:e82cfe58f05e624e7f44af84cf1da2d2b442a4276030457586652acc130155c0"
+    },
+    {
+      "artifact": "postgresql-pytest.xml",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/postgresql-pytest.xml",
+      "sha256": "sha256:5ae9c6d1c918927f24cbc0b2e1889602e90b4ffac03bee12941aadd03543f3e1"
+    },
+    {
+      "artifact": "query-plan.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/query-plan.json",
+      "sha256": "sha256:4545f7067afa90e7e765b67d4650f78efbef85d9a2f59ce8ccd753c2ede70842"
+    },
+    {
+      "artifact": "static-and-manifests.json",
+      "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/static-and-manifests.json",
+      "sha256": "sha256:b3f696a465892bcdfc0ffa5e219207972cf179bfc10a81c1164876324aecd33a"
+    }
+  ],
+  "make_validate": {
+    "tested_sha": "e444c1aa85c94667e9d12084a6e4558e296da94e",
+    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a",
+    "status": "PASS",
+    "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/make-validate.log",
+    "sha256": "sha256:27afccda03f3e31c38f2191305e63c7f03e3e9873018865c7d89604206fdd189"
+  },
+  "premerge_pr_governance": {
+    "report": "architecture/live-evidence/pr-governance-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+    "sha256": "sha256:a0c4b64877e1d92ad486818f7a4d95b4d2d5627c6173f3e0798f31ca6ac8255f",
+    "status": "PASS",
+    "fact_type": "HISTORICAL_COMPATIBILITY_FACT"
+  },
+  "repair_merge": {
+    "pull_request": "https://github.com/yuan2go/novel-forge/pull/59",
+    "merged_sha": "e444c1aa85c94667e9d12084a6e4558e296da94e"
+  },
+  "owned_resource_recheck": {
+    "status": "PASS",
+    "repository_path": "architecture/live-evidence/post-merge-p0-e444c1aa85c94667e9d12084a6e4558e296da94e/owned-resource-recheck.json",
+    "sha256": "sha256:f08e77dbeab6130a5eb21aeb838a0615b5d429ec675dd3d1748202933883a396",
+    "remaining_resource_count": 0
+  },
+  "owned_resource_residue": 0,
+  "runtime_authority": "NOT_RUNTIME_AUTHORITY",
+  "qualification_authority": "RETAINED_CANONICAL_P0_REPORT_ONLY"
+}
