@@ -1,0 +1,64 @@
+{
+  "schema_version": "novel-forge.owned-resource-cleanup-observation.v1",
+  "observed_at": "2026-09-05T13:08:29.714350+00:00",
+  "observed_at_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+  "implementation_identity": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404",
+  "status": "PASS",
+  "ownership_scope": "ONLY_PROJECTS_CREATED_FOR_THIS_QUALIFICATION",
+  "remaining_resource_count": 0,
+  "projects": [
+    {
+      "project": "nf-convergence-a5daeef490024f259809ca340299022b",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    {
+      "project": "nf-live-43c9c0cd470e424c932800f4799b7772",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    {
+      "project": "nf-p0-46df19d921584bcd8de2fb94f05a9a7d",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    {
+      "project": "nf-p0-cd6ab440ce2c4e2b802906e32a5660c0",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    {
+      "project": "nf-p0-cd6ab440ce2c4e2b802906e32a5660c0-runtime",
+      "remaining_resources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    }
+  ],
+  "live_ownership_before_cleanup": {
+    "project": "nf-live-43c9c0cd470e424c932800f4799b7772",
+    "owned_resources": {
+      "containers": [
+        "90e5b157e90b",
+        "3ec5f3a722d5"
+      ],
+      "networks": [
+        "ee4da868e85b"
+      ],
+      "volumes": []
+    }
+  }
+}

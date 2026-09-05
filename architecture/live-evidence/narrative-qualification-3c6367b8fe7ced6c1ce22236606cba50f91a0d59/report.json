@@ -1,0 +1,1131 @@
+{
+  "accepted_chapters": [
+    {
+      "acceptance_id": "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9",
+      "acceptance_operation_id": "5fc9167c-2515-44c2-97af-0aaa3763b567",
+      "accepted_draft_asset_version_id": "authority-output:1c30472b-a636-42c0-a96c-f440e7c8adbc:chapter.best_candidate:v1",
+      "canon_snapshot_asset_version_id": "authority-output:5fc9167c-2515-44c2-97af-0aaa3763b567:chapter.canon.current:v1",
+      "chapter_number": 1,
+      "chapter_outcome_asset_version_id": "authority-output:5fc9167c-2515-44c2-97af-0aaa3763b567:chapter.outcome:v1",
+      "chapter_plan_asset_version_id": "authority-output:9690ed13-6d24-4737-ba4e-4f41ae011953:chapter.plan:v1",
+      "chapter_request_id": "chapter-request:e37522b929903b1197efc1fab2314c2004c336989a264dd6779f81ff89a07ba3",
+      "chapter_root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+      "longform_projection_set_id": "longform-projection:23f481ea9ce62e30268286da95af87d68be98ac9b0a209112e123a2db4998d9c",
+      "narrative_realization_asset_version_id": "",
+      "narrative_realization_contract_digest": "",
+      "narrative_realization_id": "",
+      "planning_boundaries": {
+        "gate": "NOT_PROVEN",
+        "reason": "PLANNING_SOURCE_IDENTITY_NOT_OBSERVED"
+      },
+      "provider_effects": [
+        {
+          "capability": "model.canon_extraction",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "b16adcb0-afa3-4da8-a550-e811a7c86059"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "1d7986e8-c530-44f8-a129-b960fb973d5e",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 210.897,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "6ca110c3-e0fb-4f26-a011-dfa57214a551"
+          ],
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            5
+          ],
+          "receipt_payload_hashes": [
+            "sha256:8fc6117cde5ab2bb229c1d1b798496a5809eaf79c954d02efa63dfac974b6c1e"
+          ],
+          "request_hash": "sha256:348c72540a242a446a1a75a7e9acf4c7e20f0738f4499068367c89c150dc1336",
+          "response_hash": "sha256:0e3738c4d0bf711859d8cb028c741627c876339f12e55a707b7b33eb158b686d",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.draft",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "4d89f65f-ca1b-417f-8494-3c770aff0f46"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "1e6d4dcc-8261-4b75-9a39-cfe9a1e34fb2",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 224.941,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "d279af17-bd25-4071-befc-fce32c6fd427"
+          ],
+          "model_id": "scripted_provider_v2-draft",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            1
+          ],
+          "receipt_payload_hashes": [
+            "sha256:bc6744af4be0749efa6c3d5a2206a1b583f6d2ad76779bf933ba794cf6a54a41"
+          ],
+          "request_hash": "sha256:bdfc26d428fcc01f0147a52150dfa2be4c16f5acd1b817c10bd5022faa48c793",
+          "response_hash": "sha256:59f3b7a18f385e39b7320a0cd423a61fa705b89e18fd94371f9655614e8f753e",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.review",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "09600be6-1dfe-4349-a52a-d5b862400160"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "2973a8f4-5286-4c02-a087-50a56e54e9db",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 217.071,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "ff201367-3ed6-435e-ae63-0ce36b268e6c"
+          ],
+          "model_id": "scripted_provider_v2-review",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            2
+          ],
+          "receipt_payload_hashes": [
+            "sha256:d59a72e52af81b018b3fe378d6b2e8964f148cb7628ba001dd7af4e11ccff6f5"
+          ],
+          "request_hash": "sha256:2d6150700a18dbeed01d5636ff8c848d58314d494c5600a8838ed55d50b4aea4",
+          "response_hash": "sha256:542f5345eed0765e13564ad8232001ea3daf1b86c7d853e4c33a685eb651c21a",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.quality_commercial",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "948f4d84-3e42-4fc3-8407-99e7e54b6253"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "487937ad-f8d2-4ed6-8f0b-9f8152a50d58",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 225.928,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "ba25d0ab-f45f-4747-b133-786a0da1ab29"
+          ],
+          "model_id": "scripted_provider_v2-quality_commercial",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            7
+          ],
+          "receipt_payload_hashes": [
+            "sha256:29f3ab701f63ba84eeab33920b54d4849cb11d2f77a8a1c4893d5f49e324cde6"
+          ],
+          "request_hash": "sha256:807eecc6d3ad1049f11969b4f6b897cfbe2478a8f234ffda9e41e697045eb3ec",
+          "response_hash": "sha256:cdd76067c9f47adc602e0dfa39089133bb7aebd4df969bf09d702f0b08e545d4",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.quality_structural",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "6d260b62-5134-4ef9-8948-30ad4eb65c70"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "5ba26afc-a619-45f4-9f4c-82c6ff7cbdab",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 238.196,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "591f2a7a-ad86-402a-a4b1-7b4f82023c3c"
+          ],
+          "model_id": "scripted_provider_v2-quality_structural",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            6
+          ],
+          "receipt_payload_hashes": [
+            "sha256:63ae4bfeb0f9150e5d0b2ee7a11e11023a4d53c92d95042ae41fb1c786f1264f"
+          ],
+          "request_hash": "sha256:5085e1c31b52099693aec1085a3ab168492c72ebc4ae0d35ddd67622342c2bb3",
+          "response_hash": "sha256:7c703de18268c6814e26a17f01478744ec9843b432c8cf77c43cc54ceca51cd5",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.rereview",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "7d52ba94-08ac-4f95-ac0b-8dbf74cd2036"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "5ef8186a-5330-4de4-b684-a8f3ec047eab",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 217.766,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "843be2e6-1bf2-42f3-9c3c-ef8e23f75e1f"
+          ],
+          "model_id": "scripted_provider_v2-rereview",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            4
+          ],
+          "receipt_payload_hashes": [
+            "sha256:80d1e59751166c92d1c1aa8872ec842e7d5d219adea9b692eca4a3764abfb938"
+          ],
+          "request_hash": "sha256:b6e75aba6765c6e3b21e7e1d5d65e2fd7d43dde4d0e7341ec0a87b1303d7c9b4",
+          "response_hash": "sha256:42cca18aa4d1a7b1bb02571fa502c9d314a867dafc5bb58e439bdfd11d178e46",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.quality_platform",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "9f3ff74f-e71f-42ae-9c58-9769d178ccc8"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "9aa82a1d-b5c8-4615-aa67-ff115f0924e8",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 235.67,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "93e982e2-1da7-449c-a78a-18f63e21b46d"
+          ],
+          "model_id": "scripted_provider_v2-quality_platform",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            10
+          ],
+          "receipt_payload_hashes": [
+            "sha256:f4380b9ac664afb09fc4188ad591487587da684b74946f9d9485207f4844a41e"
+          ],
+          "request_hash": "sha256:4ae649d012d31569fb2a7d897126017f89e1c511a3b2564b20ea16b7249d9a48",
+          "response_hash": "sha256:85659148e56b86cc3a5075d26e3f07e313ecf77f4a8bb55e82c03ebadbcaf196",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.quality_longform",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "13af7157-daf3-47b8-8645-dda1c7e1e7ff"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "a0fed409-fc4d-4852-8d1c-b02648ecd68d",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 222.81,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "5e258e5a-02dc-478f-acb8-10c08cac4d9d"
+          ],
+          "model_id": "scripted_provider_v2-quality_longform",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            9
+          ],
+          "receipt_payload_hashes": [
+            "sha256:10906f8ea12ec7099cc59ac0e4125874694f9b6c82729ed795accf7124a6b0c4"
+          ],
+          "request_hash": "sha256:44caaac706df3e2e7f73a0a3b75d6b332e9b94f912cb3889cdc5ec776a669827",
+          "response_hash": "sha256:0336cae2b03535ac2112a0149c79ced2ba26d970ffa47246976abcf9c036f40b",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.quality_source_originality",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "b3053497-9f8d-43a3-ac15-6abd004c69b2"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "ae765aa9-946d-4970-a7ac-9392dedde1ff",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 224.744,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "67e4ba7d-3a2e-4fc0-902b-c2433f07aefe"
+          ],
+          "model_id": "scripted_provider_v2-quality_source_originality",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            8
+          ],
+          "receipt_payload_hashes": [
+            "sha256:f3b656c59b6624dac72f168926ed7ac925be95d069cc5dd3c47d756a4bb66374"
+          ],
+          "request_hash": "sha256:791522736a58fe10dda8bdebe3b1722a0336e16c52735678aff2d042928c3044",
+          "response_hash": "sha256:ae5309deca877cefc82edc665bfc2eb9fb3e6e91894650f8d5a5e5c74b590abf",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        },
+        {
+          "capability": "model.revision",
+          "complete_real_receipt": false,
+          "cost_ledger_ids": [
+            "eb955551-5b0e-447e-a048-079c59c59f05"
+          ],
+          "dispatch_count": 1,
+          "external_effect_id": "fe7e7e7f-c124-42f0-8170-72274f7fe565",
+          "external_model_provider": "scripted_provider_v2",
+          "fixture_backed": true,
+          "latency": {
+            "duration_ms": 224.624,
+            "measurement": "DURABLE_DISPATCH_WALL_CLOCK"
+          },
+          "model_call_log_ids": [
+            "6b292fe8-0e50-485a-b0fa-c68bb84726a4"
+          ],
+          "model_id": "scripted_provider_v2-revision",
+          "provider": "production_execution_gateway",
+          "provider_admission_asset_version_ids": [],
+          "provider_admission_hash": "",
+          "provider_admission_verified": false,
+          "provider_request_id": "",
+          "receipt_ids": [
+            3
+          ],
+          "receipt_payload_hashes": [
+            "sha256:a13ce22ed45ffea88ec36f740d41de9648781324d4ebd30cee72e9b6d926e4c4"
+          ],
+          "request_hash": "sha256:3a79ea26541ae443669969a28b8f62437b109fd3afc9ddd911aa7a188955b4ad",
+          "response_hash": "sha256:04408495963f15b9bec39f7507897bbb97b2c542d304a65b9f5d0a1ccd069940",
+          "response_identity_matches": false,
+          "root_operation_id": "2b2bc89c-d428-42b6-a259-949cb28a6b68",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0
+          }
+        }
+      ],
+      "quality_aggregate_asset_version_id": "authority-output:2d317d3c-cc75-44a2-b966-854348bd967d:chapter.quality:v1",
+      "real_provider_accepted_actual": "NOT_PROVEN",
+      "source_commit_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "source_implementation_matches": false,
+      "story_state_asset_version_id": "authority-output:5fc9167c-2515-44c2-97af-0aaa3763b567:chapter.story_state:v1"
+    }
+  ],
+  "blind_pack": {
+    "comparison_baseline": "NOT_FABRICATED_SINGLE_ARM_REVIEW",
+    "human_editorial_status": "WAITING_EVIDENCE",
+    "pack_token": "editorial:81c63ede69eb40dbca100f7ec201c398",
+    "private_mapping_hash": "sha256:c505d3c1fe1896b82eac8249887c3fe918c815c4668b5ac2286e85205c618a40",
+    "private_path": "/private/tmp/nf-industrial-narrative-final-3c6367b8/private/mapping.json",
+    "public_content_hash": "sha256:44dbe38d0fd9e37b7cbf9a529ba6db3c1304bf03545e2ab8aa2b0e72305d85f1",
+    "public_path": "reviewer/pack.json",
+    "sample_count": 1
+  },
+  "collection_status": "PASS",
+  "design_evidence": {
+    "arc_portfolio_plan_versions": [],
+    "book_plan_version": "",
+    "design_admission_status": "NOT_PROVEN",
+    "foundation_set": {},
+    "foundation_set_digest": "",
+    "input_snapshot_id": "",
+    "missing_evidence_is_not_design_approval": true,
+    "qualification": {},
+    "qualification_hash": "",
+    "upstream_gate_observed": false,
+    "volume_portfolio_plan_versions": []
+  },
+  "dimensions": {
+    "engineering": {
+      "evidence_refs": [
+        "/tmp/nf-industrial-final-qualification-v3/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+        "sha256:b527c2e1a9b915a9a89a5c92495ccf2542f6370911877e146b4a6f8a22321fce"
+      ],
+      "limitations": [
+        "P0 does not establish narrative, human, Provider or production quality."
+      ],
+      "proof_ceiling": "LOCAL_BACKEND_ENGINEERING",
+      "status": "QUALIFIED"
+    },
+    "human_editorial": {
+      "evidence_refs": [],
+      "limitations": [
+        "AI Judge, fixture preferences and an exported pack are not human evaluation."
+      ],
+      "proof_ceiling": "EXTERNAL_HUMAN_DECISIONS_ONLY",
+      "status": "WAITING_EVIDENCE"
+    },
+    "longitudinal_stability": {
+      "evidence_refs": [
+        "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+      ],
+      "limitations": [
+        "A capability-scoped continuous sample does not prove long-form stability; no chapter-count threshold upgrades this status."
+      ],
+      "proof_ceiling": "BOUNDED_ACCEPTED_PROGRESS_OBSERVATIONS",
+      "status": "EVIDENCE_NOT_YET_SUFFICIENT"
+    },
+    "narrative_correctness": {
+      "evidence_refs": [
+        "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+      ],
+      "limitations": [
+        "Accepted gates establish their bounded contract, not whole-book editorial quality."
+      ],
+      "proof_ceiling": "ACCEPTED_AUTHORITY_CONTRACT_ONLY",
+      "status": "NOT_PROVEN"
+    },
+    "production_evidence": {
+      "evidence_refs": [],
+      "limitations": [
+        "Local acceptance and an external call do not prove sustained production operation."
+      ],
+      "proof_ceiling": "NO_PRODUCTION_OPERATION_STUDY",
+      "status": "NOT_PROVEN"
+    },
+    "reader_evidence": {
+      "evidence_refs": [],
+      "limitations": [
+        "Reader events require their own exposure, calibration and production evidence; AI Reader Proxy stays separate."
+      ],
+      "proof_ceiling": "OBSERVATIONS_WITHOUT_CAUSAL_OR_PRODUCTION_QUALIFICATION",
+      "status": "NOT_PROVEN"
+    }
+  },
+  "implementation": {
+    "commit_sha": "3c6367b8fe7ced6c1ce22236606cba50f91a0d59",
+    "implementation_tree_sha": "sha256:600901bf8c1a26cbd3e362554c2371ec363f7e8d767bcfbbead076855e89d404"
+  },
+  "limitations": [
+    "Collection PASS means the report schema and source queries succeeded; six qualification dimensions remain separate.",
+    "Fixture or scripted accepted facts support engineering diagnostics only.",
+    "The canonical accepted-quality loader retains its bounded horizon and fails closed if a rollup is required."
+  ],
+  "longitudinal_observations": {
+    "accepted_history_only": true,
+    "chapter_range": [
+      1,
+      1
+    ],
+    "contract_version": "accepted-longitudinal-quality-v1",
+    "momentum": {
+      "activity_chapters": [
+        1
+      ],
+      "antagonist_response_count": 0,
+      "causal_event_coverage": 1.0,
+      "ending_propulsion_chapters": [],
+      "irreversible_change_chapters": [],
+      "longest_stagnation_run": 0,
+      "observed_chapters": [
+        1
+      ],
+      "obstacle_escalation_chapters": [],
+      "progress_chapters": [
+        1
+      ],
+      "protagonist_decision_count": 0,
+      "stagnation_chapters": [],
+      "status": "DECLINING"
+    },
+    "observation_status": "MEASURED",
+    "promise_payoff": {
+      "false_promise_ids": [],
+      "overdue_ids": [],
+      "payoff_cadence_gaps": [],
+      "payoff_chapters": [],
+      "payoff_clustering": null,
+      "payoff_latencies": [],
+      "repeated_delay_ids": [],
+      "status": "NOT_OBSERVED",
+      "timelines": [],
+      "unresolved_debt_ids": []
+    },
+    "reader_proxy_policy": {
+      "calibration_status": "UNCALIBRATED_POLICY",
+      "content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+      "continuation_high_threshold": 0.7,
+      "continuation_medium_threshold": 0.4,
+      "evidence_class": "READER_PROXY_ADVISORY",
+      "human_editorial_proof": false,
+      "human_review_major_count": 3,
+      "owner": "ReaderCalibration",
+      "recap_confusion_threshold": 0.65,
+      "recap_repetition_threshold": 0.65,
+      "revision_required_blocking_count": 2,
+      "rules": [
+        {
+          "blocking": true,
+          "code": "READER_CONFUSION_RISE",
+          "dimension": "confusion",
+          "high_is_bad": true,
+          "threshold": 0.75
+        },
+        {
+          "blocking": true,
+          "code": "DROP_RISK_HIGH",
+          "dimension": "drop_risk",
+          "high_is_bad": true,
+          "threshold": 0.75
+        },
+        {
+          "blocking": false,
+          "code": "REPETITION_FATIGUE",
+          "dimension": "repetition_fatigue",
+          "high_is_bad": true,
+          "threshold": 0.65
+        },
+        {
+          "blocking": true,
+          "code": "CONTINUE_INTENT_LOW",
+          "dimension": "continue_intent",
+          "high_is_bad": false,
+          "threshold": 0.35
+        },
+        {
+          "blocking": false,
+          "code": "READER_TRUST_LOW",
+          "dimension": "trust",
+          "high_is_bad": false,
+          "threshold": 0.45
+        },
+        {
+          "blocking": false,
+          "code": "CHARACTER_ATTACHMENT_LOW",
+          "dimension": "character_attachment",
+          "high_is_bad": false,
+          "threshold": 0.45
+        },
+        {
+          "blocking": false,
+          "code": "ANTAGONIST_PRESSURE_DROP",
+          "dimension": "antagonist_pressure",
+          "high_is_bad": false,
+          "threshold": 0.4
+        },
+        {
+          "blocking": false,
+          "code": "PAYOFF_SATISFACTION_LOW",
+          "dimension": "payoff_satisfaction",
+          "high_is_bad": false,
+          "threshold": 0.45
+        }
+      ],
+      "trend_delta_threshold": 0.05,
+      "version": "reader-proxy-policy-v1"
+    },
+    "reader_source_asset_version_ids": [],
+    "reader_trends": {
+      "antagonist_pressure": {
+        "dimension": "antagonist_pressure",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "character_attachment": {
+        "dimension": "character_attachment",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "confusion": {
+        "dimension": "confusion",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "continue_intent": {
+        "dimension": "continue_intent",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "curiosity": {
+        "dimension": "curiosity",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "drop_risk": {
+        "dimension": "drop_risk",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "payoff_satisfaction": {
+        "dimension": "payoff_satisfaction",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "promise_expectation": {
+        "dimension": "promise_expectation",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "repetition_fatigue": {
+        "dimension": "repetition_fatigue",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "satisfaction": {
+        "dimension": "satisfaction",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      },
+      "trust": {
+        "dimension": "trust",
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "policy_content_hash": "sha256:e05890f208f8a8cc135ddc5b3d597eda8c189a910cd34a29e6acbb4a347d5d61",
+        "policy_version": "reader-proxy-policy-v1",
+        "status": "NOT_OBSERVED",
+        "trend": "NOT_OBSERVED",
+        "values": []
+      }
+    },
+    "repetition": {
+      "antagonist_response": {
+        "dimension": "antagonist_response",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "chapter_structure": {
+        "dimension": "chapter_structure",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "conflict_solution": {
+        "dimension": "conflict_solution",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "dialogue_behavior": {
+        "dimension": "dialogue_behavior",
+        "dominant_ratio": 1.0,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": 1,
+        "observed_chapter_count": 1,
+        "repeated_signature_hashes": [],
+        "status": "INSUFFICIENT_EVIDENCE"
+      },
+      "emotional_beat": {
+        "dimension": "emotional_beat",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "hook_pattern": {
+        "dimension": "hook_pattern",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "information_release": {
+        "dimension": "information_release",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "plot_pattern": {
+        "dimension": "plot_pattern",
+        "dominant_ratio": 1.0,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": 1,
+        "observed_chapter_count": 1,
+        "repeated_signature_hashes": [],
+        "status": "INSUFFICIENT_EVIDENCE"
+      },
+      "prose_style": {
+        "dimension": "prose_style",
+        "dominant_ratio": 1.0,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": 1,
+        "observed_chapter_count": 1,
+        "repeated_signature_hashes": [],
+        "status": "INSUFFICIENT_EVIDENCE"
+      },
+      "protagonist_reaction": {
+        "dimension": "protagonist_reaction",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      },
+      "scene_function": {
+        "dimension": "scene_function",
+        "dominant_ratio": null,
+        "lexical_similarity": null,
+        "lexical_similarity_decides": false,
+        "longest_streak": null,
+        "observed_chapter_count": 0,
+        "repeated_signature_hashes": [],
+        "status": "NOT_OBSERVED"
+      }
+    },
+    "source_acceptance_ids": [
+      "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+    ],
+    "source_accepted_asset_version_ids": [
+      "authority-output:5fc9167c-2515-44c2-97af-0aaa3763b567:chapter.outcome:v1"
+    ]
+  },
+  "progress_observations": [
+    {
+      "acceptance_id": "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9",
+      "average_sentence_length": 11.3333,
+      "chapter_number": 1,
+      "character_ids": [],
+      "drift_evidence": {
+        "character_flattening": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        },
+        "context_pollution": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        },
+        "continuity_debt": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        },
+        "exposition_inflation": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        },
+        "plot_drift": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        },
+        "promise_debt": {
+          "measurement": {
+            "narrative_debt_score": 0,
+            "promise_payoff": {
+              "false_promise_ids": [],
+              "overdue_ids": [],
+              "payoff_cadence_gaps": [],
+              "payoff_chapters": [],
+              "payoff_clustering": null,
+              "payoff_latencies": [],
+              "repeated_delay_ids": [],
+              "status": "NOT_OBSERVED",
+              "timelines": [],
+              "unresolved_debt_ids": []
+            }
+          },
+          "status": "BOUNDED_ACCEPTED_OBSERVATION"
+        },
+        "repetition_drift": {
+          "measurement": {
+            "antagonist_response": {
+              "dimension": "antagonist_response",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "chapter_structure": {
+              "dimension": "chapter_structure",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "conflict_solution": {
+              "dimension": "conflict_solution",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "dialogue_behavior": {
+              "dimension": "dialogue_behavior",
+              "dominant_ratio": 1.0,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": 1,
+              "observed_chapter_count": 1,
+              "repeated_signature_hashes": [],
+              "status": "INSUFFICIENT_EVIDENCE"
+            },
+            "emotional_beat": {
+              "dimension": "emotional_beat",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "hook_pattern": {
+              "dimension": "hook_pattern",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "information_release": {
+              "dimension": "information_release",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "plot_pattern": {
+              "dimension": "plot_pattern",
+              "dominant_ratio": 1.0,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": 1,
+              "observed_chapter_count": 1,
+              "repeated_signature_hashes": [],
+              "status": "INSUFFICIENT_EVIDENCE"
+            },
+            "prose_style": {
+              "dimension": "prose_style",
+              "dominant_ratio": 1.0,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": 1,
+              "observed_chapter_count": 1,
+              "repeated_signature_hashes": [],
+              "status": "INSUFFICIENT_EVIDENCE"
+            },
+            "protagonist_reaction": {
+              "dimension": "protagonist_reaction",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            },
+            "scene_function": {
+              "dimension": "scene_function",
+              "dominant_ratio": null,
+              "lexical_similarity": null,
+              "lexical_similarity_decides": false,
+              "longest_streak": null,
+              "observed_chapter_count": 0,
+              "repeated_signature_hashes": [],
+              "status": "NOT_OBSERVED"
+            }
+          },
+          "status": "BOUNDED_SIGNATURE_OBSERVATION"
+        },
+        "stakes_inflation": {
+          "measurement": null,
+          "status": "NOT_PROVEN"
+        }
+      },
+      "narrative_debt_score": 0,
+      "narrative_progress": {
+        "active_arc_ids": [],
+        "causal_progress_event_ids": [
+          "narrative-event:sha256:23df2bd54f18f995f1aa8d69ff8535339c1db224cd67bd4cb9eb96467d8002af",
+          "narrative-event:sha256:42dbd1f656c4785b2d768cb091fc67b5fc37d3eaf3e4687a2a79bb24f97e1727"
+        ],
+        "goal_progress_units": 0
+      },
+      "open_obligation_ids": [],
+      "quality_gate": "PASSED_WITH_UNCALIBRATED",
+      "semantic_repetition_signatures": {
+        "antagonist_response": [],
+        "chapter_structure": [],
+        "conflict_solution": [],
+        "dialogue_behavior": [
+          "sha256:40fddb8a12799d65cefe6aa465d6db16ae64e36821163775046d39d3c7a3e511"
+        ],
+        "emotional_beat": [],
+        "hook_pattern": [],
+        "information_release": [],
+        "plot_pattern": [
+          "sha256:e7bd22ee2f23be5dceddad632558582f26a9231aaf992d83f799ab1293c88bfe"
+        ],
+        "prose_style": [
+          "sha256:f9818a522a1f442d2f50f451253ea7d9e58dc13c81bf909d1f27f3385ea82824"
+        ],
+        "protagonist_reaction": [],
+        "scene_function": []
+      }
+    }
+  ],
+  "real_chapter_production": {
+    "acceptance_ids": [],
+    "missing_evidence": [
+      "No accepted chapter has complete current nonfixture Draft/Review/Revision/Quality Provider admission, receipt, usage and cost lineage."
+    ],
+    "proof_ceiling": "EXACT_IMPLEMENTATION_REAL_ACCEPTED_CHAPTER_ONLY",
+    "status": "NOT_PROVEN"
+  },
+  "sampling": {
+    "capability_coverage": {
+      "arc_closure": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      },
+      "causal_progression": {
+        "acceptance_ids": [
+          "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+        ],
+        "qualification": "NOT_PROVEN",
+        "rationale": "Use accepted capability observations and the intervening sequence; presence is not a semantic quality decision.",
+        "status": "SUPPORTING_OBSERVATIONS"
+      },
+      "character_trajectory": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      },
+      "continuity": {
+        "acceptance_ids": [
+          "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+        ],
+        "qualification": "NOT_PROVEN",
+        "rationale": "Use accepted capability observations and the intervening sequence; presence is not a semantic quality decision.",
+        "status": "SUPPORTING_OBSERVATIONS"
+      },
+      "escalation": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      },
+      "obligation_setup_payoff": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      },
+      "quality_drift": {
+        "acceptance_ids": [
+          "chapter-acceptance:e0ff8f94f9c6b45c55f0d7ea005e2d492c61368d7aa5591edd558bc37fa9fca9"
+        ],
+        "qualification": "NOT_PROVEN",
+        "rationale": "Use accepted capability observations and the intervening sequence; presence is not a semantic quality decision.",
+        "status": "SUPPORTING_OBSERVATIONS"
+      },
+      "reader_promise": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      },
+      "relationship_trajectory": {
+        "acceptance_ids": [],
+        "qualification": "NOT_PROVEN",
+        "rationale": "The accepted observation contract does not supply evidence for this capability in this sample.",
+        "status": "NOT_OBSERVED"
+      }
+    },
+    "chapter_numbers": [
+      1
+    ],
+    "continuous": true,
+    "rationale": "Retain the complete available accepted sequence and its missing capability observations; chapter numbers are sample coordinates, never validation stages.",
+    "requested_capabilities": [
+      "continuity",
+      "character_trajectory",
+      "relationship_trajectory",
+      "obligation_setup_payoff",
+      "causal_progression",
+      "escalation",
+      "reader_promise",
+      "arc_closure",
+      "quality_drift"
+    ],
+    "sample_size": 1,
+    "selection": "ALL_AVAILABLE_ACCEPTED_PROGRESS_WITH_EXACT_LINEAGE"
+  },
+  "schema_version": "novel-forge.narrative-qualification.v1",
+  "source": {
+    "accepted_snapshot_hash": "sha256:bcdc0bf55a55f94419627a3b9133f67ea4b38ac21ac9c24ea673ea30d1380c2d",
+    "book_id": "book:book-authority-control-cea30fa1-4aa6-42ae-8a1a-6c9e2aaace46",
+    "book_run_id": "book-run:2570964d-d41f-497f-af78-429ae1e4b276",
+    "fixture_backed": true,
+    "kind": "POSTGRESQL_REPEATABLE_READ_ACCEPTED_AUTHORITY",
+    "observed_at": "2026-09-05T13:06:09.578308+00:00",
+    "project_id": "book-authority-control-cea30fa1-4aa6-42ae-8a1a-6c9e2aaace46"
+  }
+}
