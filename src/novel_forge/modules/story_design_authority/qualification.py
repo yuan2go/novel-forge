@@ -27,6 +27,7 @@ class NarrativeDesignLayer(StrEnum):
     NARRATIVE_SCHEDULING = "NARRATIVE_SCHEDULING"
     NARRATIVE_REALIZATION_PROOF = "NARRATIVE_REALIZATION_PROOF"
     CHAPTER_EXECUTION_PLAN = "CHAPTER_EXECUTION_PLAN"
+    CHAPTER_MISSION = "CHAPTER_MISSION"
     SCENE_ARCHITECTURE = "SCENE_ARCHITECTURE"
 
 
@@ -387,8 +388,8 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
         ),
         "chapter_plan.generate": (
             _profile(
-                NarrativeDesignLayer.CHAPTER_EXECUTION_PLAN,
-                "chapter-execution-plan-semantic-v1",
+                NarrativeDesignLayer.CHAPTER_MISSION,
+                "chapter-mission-semantic-v2",
                 GENERATOR_CATALOG["chapter_plan.generate"].capability,
                 "chapter-outline",
                 "UPSTREAM_ALIGNMENT",
@@ -396,10 +397,11 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
                 "CHARACTER_CAUSALITY",
                 "KNOWLEDGE_BOUNDARY_COHERENCE",
                 "EXIT_STATE_REACHABILITY",
+                "OBLIGATION_COMMITMENT_COVERAGE",
             ),
             _profile(
                 NarrativeDesignLayer.SCENE_ARCHITECTURE,
-                "scene-architecture-semantic-v1",
+                "scene-architecture-semantic-v2",
                 GENERATOR_CATALOG["chapter_plan.generate"].capability,
                 "narrative-beat-design",
                 "SCENE_PURPOSE",
@@ -408,6 +410,7 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
                 "STATE_TRANSITION_COVERAGE",
                 "READER_EFFECT",
                 "CHAPTER_EXIT_REACHABILITY",
+                "MISSION_REALIZATION_COVERAGE",
             ),
         ),
     }

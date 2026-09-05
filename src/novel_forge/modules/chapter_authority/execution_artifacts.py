@@ -30,7 +30,9 @@ def validate_chapter_execution_intent(
     source_plan = normalized.get("source_chapter_plan")
     if (
         normalized.get("type") != "ChapterExecutionIntent"
-        or normalized.get("contract_version") != "chapter-execution-intent-v2"
+        or normalized.get("contract_version") not in {
+            "chapter-execution-intent-v2", "chapter-execution-intent-v3"
+        }
         or not isinstance(mission, Mapping)
         or not isinstance(source_plan, Mapping)
         or not source_plan.get("locked")
@@ -99,6 +101,30 @@ def validate_chapter_execution_intent(
         raise KernelError(
             "CHAPTER_MISSION_REALIZATION_INVALID",
             "ExecutionIntent does not preserve its Frozen realization slice",
+        )
+    if normalized.get("contract_version") == "chapter-execution-intent-v3":
+        from novel_forge.modules.hierarchical_planning.chapter_contracts import (
+            ChapterMission,
+            validate_scene_mission_coverage,
+        )
+
+        validate_scene_mission_coverage(
+            ChapterMission(
+                chapter_number=int(normalized["chapter"]),
+                intent=str(mission["why_this_chapter_exists"]),
+                primary_function=str(mission["primary_function"]),
+                arc_plan_version_ids=frozenset(mission_arc_ids),
+                trajectory_refs=frozenset(mission["trajectory_refs"]),
+                obligation_refs=frozenset(mission["obligation_refs"]),
+                state_transition_refs=frozenset(
+                    str(item["entity_key"])
+                    for item in mission["required_outcomes"]["state_transitions"]
+                ),
+                realization_event_ids=frozenset(
+                    str(item["event_id"]) for item in realization["events"]
+                ),
+            ),
+            normalized.get("scene_plans") or (),
         )
     return dict(intent)
 
@@ -174,6 +200,13 @@ def build_chapter_execution_intent(
     chapter_plan: Mapping[str, Any],
     accepted_inputs: Iterable[Mapping[str, Any]],
 ) -> dict[str, Any]:
+    current_contract = None
+    if chapter_plan.get("chapter_contract_schema_version"):
+        from novel_forge.modules.hierarchical_planning.chapter_contracts import (
+            require_chapter_contracts,
+        )
+
+        current_contract = require_chapter_contracts(chapter_plan)
 
     chapter = int(
         chapter_plan.get("chapter") or chapter_plan.get("chapter_number") or 0
@@ -245,6 +278,13 @@ def build_chapter_execution_intent(
                 "conflict": str(raw.get("conflict") or ""),
                 "participants": [str(item) for item in raw.get("participants") or ()],
                 "arc_progress": [str(item) for item in raw.get("arc_progress") or ()],
+                **(
+                    {
+                        field: list(raw[field])
+                        for field in ("trajectory_refs", "obligation_refs", "realization_event_ids")
+                    }
+                    if current_contract is not None else {}
+                ),
                 "information_gain": [
                     str(item) for item in raw.get("information_gain") or ()
                 ],
@@ -421,9 +461,21 @@ def build_chapter_execution_intent(
         ),
     }
     mission = {**mission_body, "mission_fingerprint": _hash(mission_body)}
+    if current_contract is not None:
+        mission_body.pop("required_beats")
+        mission_body.update({
+            "primary_function": current_contract.mission.primary_function,
+            "trajectory_refs": sorted(current_contract.mission.trajectory_refs),
+            "obligation_refs": sorted(current_contract.mission.obligation_refs),
+        })
+        mission = {**mission_body, "mission_fingerprint": _hash(mission_body)}
     intent = {
         "type": "ChapterExecutionIntent",
-        "contract_version": "chapter-execution-intent-v2",
+        "contract_version": (
+            "chapter-execution-intent-v3" if current_contract is not None
+            else "chapter-execution-intent-v2"
+        ),
+        **({"required_beats": required_beats} if current_contract is not None else {}),
         "project_id": project_id,
         "chapter": chapter,
         "source_chapter_plan": {

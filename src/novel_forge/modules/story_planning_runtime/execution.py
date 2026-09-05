@@ -1022,6 +1022,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 "segment_id": "narrative-segment:1",
             },
             "chapter_intent": "Force a witnessed choice that advances the central conflict.",
+            "chapter_contract_schema_version": "chapter-mission-scene.v2",
             "arc_schedule": [
                 {
                     "arc_plan_version_id": arc_id,
@@ -1119,6 +1120,12 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "narrative_time_relation": "ESTABLISHES",
                     "accessible_knowledge": [],
                     "arc_progress": list(arc_plan_ids or ("arc:primary",)),
+                    "trajectory_refs": ["character-arc:accountability"],
+                    "obligation_refs": ["promise:choice"],
+                    "realization_event_ids": [
+                        str(event["event_id"])
+                        for event in (command.get("narrative_realization") or {}).get("events") or ()
+                    ],
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
                     "entry_state": arc_entry_state,
@@ -1570,7 +1577,13 @@ def _canonical_narrative_provider_properties(
     return {
         **architecture,
         "narrative_segment_ref": segment_ref,
-        "chapter_intent": string,
+        "chapter_intent": {
+            **string,
+            "description": "Chapter Mission: the semantic purpose the Scene Architecture must realize.",
+        },
+        "chapter_contract_schema_version": {
+            "type": "string", "const": "chapter-mission-scene.v2",
+        },
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
@@ -1808,6 +1821,18 @@ def _canonical_narrative_provider_properties(
                             "this Scene; never prose or an Arc label."
                         ),
                     },
+                    "trajectory_refs": {
+                        **string_array,
+                        "description": "Exact character_participation.trajectory_refs realized in this Scene; all Mission trajectories must be covered.",
+                    },
+                    "obligation_refs": {
+                        **string_array,
+                        "description": "Exact obligation_actions.obligation_id values realized in this Scene; cover every Mission obligation without inventing one.",
+                    },
+                    "realization_event_ids": {
+                        **string_array,
+                        "description": "Exact frozen narrative_realization_slice event identities realized in this Scene; cover all events. These are planned execution commitments, never accepted facts.",
+                    },
                     "information_gain": {
                         **string_array,
                         "description": (
@@ -1905,9 +1930,9 @@ def planning_provider_output_schema(
                 "ChapterGroup Search provider schema requires an exact frozen horizon"
             )
         exact_group_range = (raw_range[0], raw_range[1])
-        if not 3 <= exact_group_range[1] - exact_group_range[0] + 1 <= 8:
+        if exact_group_range[0] <= 0 or exact_group_range[1] < exact_group_range[0]:
             raise ValueError(
-                "ChapterGroup Search provider schema requires three to eight Chapters"
+                "ChapterGroup Search provider schema requires a positive ordered range"
             )
         exact_group_chapters = list(
             range(exact_group_range[0], exact_group_range[1] + 1)
@@ -2066,7 +2091,7 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": len(exact_group_chapters) or 3,
+                "minItems": len(exact_group_chapters) or 1,
                 "items": _strict_object(
                     {
                         "event_id": string,
@@ -2159,8 +2184,8 @@ def planning_provider_output_schema(
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
-                "minItems": len(exact_group_chapters) or 3,
-                "maxItems": len(exact_group_chapters) or 8,
+                "minItems": len(exact_group_chapters) or 1,
+                **({"maxItems": len(exact_group_chapters)} if exact_group_chapters else {}),
                 "items": _strict_object(
                     {
                         "chapter_number": (
@@ -2335,6 +2360,18 @@ def planning_provider_output_schema(
         properties["narrative_realization_slice"] = _frozen_provider_value_schema(
             [realization]
         )
+        scene_properties = properties["scene_plan"]["items"]["properties"]
+        event_ids = [str(event["event_id"]) for event in realization["events"]]
+        scene_properties["realization_event_ids"]["items"] = {
+            "type": "string", "enum": event_ids,
+        }
+        obligation_ids = [str(item["obligation_id"]) for item in schedule_row["obligation_actions"]]
+        if obligation_ids:
+            scene_properties["obligation_refs"]["items"] = {
+                "type": "string", "enum": obligation_ids,
+            }
+        else:
+            scene_properties["obligation_refs"]["maxItems"] = 0
     if narrative_search:
         if contract_type is PlanContractType.CHAPTER:
             raise ValueError("Chapter planning is operational, not a search portfolio")

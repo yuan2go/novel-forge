@@ -14,12 +14,13 @@ env:
 
 jobs:
   backend-qualification:
-    name: P0 Backend Qualification
+    name: Repository PR Governance
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
       P0_PROFILE: ci
       P0_EVIDENCE_DIR: /tmp/novel-forge-p0
+      PR_EVIDENCE_DIR: /tmp/novel-forge-pr
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,13 +32,25 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - name: Install backend qualification dependencies
         run: python -m pip install -e ".[test,industrial]"
-      - name: Run canonical exact-SHA backend qualification
-        run: make p0-backend-qualification
-      - name: Upload exact-SHA backend evidence
+      - name: Resolve exact comparison baseline
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          base_sha="$EVENT_BASE_SHA"
+          if test -z "$base_sha" || test "$base_sha" = 0000000000000000000000000000000000000000; then
+            base_sha="$(git rev-parse HEAD^)"
+          fi
+          git cat-file -e "$base_sha^{commit}"
+          echo "PR_BASE_SHA=$base_sha" >> "$GITHUB_ENV"
+      - name: Run canonical repository PR governance
+        run: make pr-governance
+      - name: Upload governance and exact-SHA backend evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p0-backend-qualification-${{ github.sha }}
-          path: /tmp/novel-forge-p0/**
+          name: repository-pr-governance-${{ github.sha }}
+          path: |
+            /tmp/novel-forge-pr/**
+            /tmp/novel-forge-p0/**
           if-no-files-found: error
           retention-days: 30

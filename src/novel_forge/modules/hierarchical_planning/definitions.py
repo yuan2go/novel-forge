@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-PLAN_BINDING_DEFINITION_VERSION = "1.1.0"
+PLAN_BINDING_DEFINITION_VERSION = "1.2.0"
 PLAN_BINDING_HANDLER_KEY = "novel_forge.hierarchical_planning.binding.transaction"
 NARRATIVE_REALIZATION_DEFINITION_VERSION = "1.0.0"
 NARRATIVE_REALIZATION_HANDLER_KEY = (
@@ -74,7 +74,7 @@ def plan_binding_definitions(
                 "additionalProperties": False,
             },
             "handler_key": PLAN_BINDING_HANDLER_KEY,
-            "handler_contract_version": "planning-binding-handler-v2",
+            "handler_contract_version": "planning-binding-handler-v3",
             "application_build_id": application_build_id,
             "commit_sha": commit_sha,
             "execution_mode": "transactional",
@@ -100,6 +100,7 @@ def plan_binding_definitions(
                 "expected_active_version_required": True,
                 "legacy_writer": "disabled",
                 "atomic_story_design_activation": True,
+                "chapter_contract_schema_version": "chapter-mission-scene.v2",
             },
             "completion_contract": {
                 "version": "planning.binding.activate.completion.v1",

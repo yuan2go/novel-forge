@@ -42,6 +42,18 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "EXECUTED_PLAN_RETCON_ONLY"):
             require_approvable_scope("EXECUTED")
 
+    def test_new_high_risk_commitment_cannot_hide_as_an_unchanged_plan(self) -> None:
+        changes = semantic_plan_diff(
+            {"objective": "cross the river"},
+            {"objective": "cross the river", "reader_promise": "justice has a cost"},
+        )
+        self.assertEqual([item.field for item in changes], ["reader_promise"])
+        self.assertIsNone(changes[0].before)
+        self.assertEqual(
+            classify_plan_change_risk(changes, target_execution_scope="PLANNED"),
+            PlanChangeRisk.HIGH,
+        )
+
     def test_semantic_diff_covers_progressive_design_scopes(self) -> None:
         changes = semantic_plan_diff(
             {

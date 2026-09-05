@@ -1576,6 +1576,7 @@ class StoryPlanningGenerationApplication:
                     parent_version_id=command.parent_version_id,
                     execution_scope=PlanExecutionScope.PLANNED,
                     content=content,
+                    require_current_chapter_contract=True,
                 )
                 if command.generator_operation_name == "arc_plan.generate":
                     expected_volume_scope = (
@@ -2628,6 +2629,11 @@ def chapter_plan_projection_definition(
 
 
 def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.hierarchical_planning.chapter_contracts import (
+        require_chapter_contracts,
+    )
+
+    require_chapter_contracts(candidate)
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")

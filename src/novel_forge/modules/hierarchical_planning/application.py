@@ -60,6 +60,7 @@ _RELATIONS = {
 _PLAN_BINDING_DEFINITION_NAME = "planning.binding.activate"
 _PLAN_BINDING_IDEMPOTENCY_SCOPE = "book:planning-binding"
 _LEGACY_PLAN_BINDING_DEFINITION_VERSION = "1.0.0"
+_HISTORICAL_PLAN_BINDING_VERSIONS = frozenset({"1.0.0", "1.1.0"})
 
 
 class PostgresHierarchicalPlanningAuthority:
@@ -183,7 +184,7 @@ class PostgresHierarchicalPlanningAuthority:
                 project_id=project_id,
                 idempotency_key=idempotency_key,
             )
-            if raced_version != _LEGACY_PLAN_BINDING_DEFINITION_VERSION:
+            if raced_version not in _HISTORICAL_PLAN_BINDING_VERSIONS:
                 raise
             result = execute(raced_version)
         binding = self.require_binding(
@@ -218,7 +219,7 @@ class PostgresHierarchicalPlanningAuthority:
             or str(row[2]) != project_id
             or str(row[1])
             not in {
-                _LEGACY_PLAN_BINDING_DEFINITION_VERSION,
+                *_HISTORICAL_PLAN_BINDING_VERSIONS,
                 PLAN_BINDING_DEFINITION_VERSION,
             }
         ):
@@ -236,7 +237,7 @@ class PostgresHierarchicalPlanningAuthority:
         uow.cursor.execute(
             """
             SELECT project_id, command_payload, actor_id,
-                   trace_id, correlation_id, causation_operation_id
+                   trace_id, correlation_id, causation_operation_id, definition_version
             FROM authority_operation
             WHERE operation_id=%s
             """,
@@ -346,6 +347,9 @@ class PostgresHierarchicalPlanningAuthority:
             execution_scope=execution_scope,
             content=content,
             allow_pre_hierarchy_compatibility=hierarchy_compatibility,
+            require_current_chapter_contract=(
+                str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
+            ),
         )
         if contract_type is PlanContractType.BOOK and not hierarchy_compatibility:
             self._require_qualified_foundation_for_book_plan(
@@ -354,7 +358,10 @@ class PostgresHierarchicalPlanningAuthority:
                 book_id=book_id,
                 content=content,
             )
-        if contract_type is PlanContractType.CHAPTER and not hierarchy_compatibility:
+        if contract_type is PlanContractType.CHAPTER and (
+            not hierarchy_compatibility
+            or str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
+        ):
             from novel_forge.storage.narrative_realization_repositories import (
                 NarrativeRealizationRepository,
             )

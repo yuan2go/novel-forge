@@ -88,7 +88,7 @@ def test_every_qualification_profile_binds_a_governed_execution_capability() -> 
         (
             "chapter_plan.generate",
             {
-                NarrativeDesignLayer.CHAPTER_EXECUTION_PLAN,
+                NarrativeDesignLayer.CHAPTER_MISSION,
                 NarrativeDesignLayer.SCENE_ARCHITECTURE,
             },
         ),
@@ -165,7 +165,7 @@ def test_provider_schema_is_strict_and_exposes_no_universal_judge() -> None:
     evaluations = schema["properties"]["evaluations"]
     assert evaluations["minItems"] == evaluations["maxItems"] == 2
     assert set(evaluations["items"]["properties"]["layer"]["enum"]) == {
-        "CHAPTER_EXECUTION_PLAN",
+        "CHAPTER_MISSION",
         "SCENE_ARCHITECTURE",
     }
     assert validate_chapter_provider_output_against_schema(

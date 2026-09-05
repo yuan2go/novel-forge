@@ -16,14 +16,15 @@ class ChapterGroupRepository:
                 group_run_id, project_id, book_id, book_run_id,
                 group_plan_version_id, volume_plan_version_id,
                 root_operation_id, saga_id, stable_idempotency_key,
-                chapter_start, chapter_end, accepted_through_chapter, state
+                chapter_start, chapter_end, accepted_through_chapter, state,
+                execution_policy_snapshot
             ) VALUES (
                 %(group_run_id)s, %(project_id)s, %(book_id)s,
                 %(book_run_id)s, %(group_plan_version_id)s,
                 %(volume_plan_version_id)s, %(root_operation_id)s,
                 %(saga_id)s, %(stable_idempotency_key)s,
                 %(chapter_start)s, %(chapter_end)s,
-                %(accepted_through_chapter)s, 'PREPARING'
+                %(accepted_through_chapter)s, 'PREPARING', %(execution_policy_snapshot)s
             )
             ON CONFLICT(project_id, stable_idempotency_key) DO NOTHING
             """,
@@ -210,7 +211,7 @@ class ChapterGroupRepository:
                    chapter_start, chapter_end, accepted_through_chapter,
                    active_chapter_number, active_chapter_request_id, state,
                    recap_operation_id, plan_adjustment_proposal_version_id,
-                   failure_reason, version
+                   failure_reason, version, execution_policy_snapshot
             FROM authority_chapter_group_production
             WHERE group_run_id=%s
             """,
@@ -242,6 +243,7 @@ class ChapterGroupRepository:
             "plan_adjustment_proposal_version_id",
             "failure_reason",
             "version",
+            "execution_policy_snapshot",
         )
         return dict(zip(fields, row, strict=True))
 

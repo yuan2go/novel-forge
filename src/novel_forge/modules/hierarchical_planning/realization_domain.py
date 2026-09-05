@@ -469,7 +469,6 @@ class NarrativeRealizationContract:
             or isinstance(end, bool)
             or start <= 0
             or end < start
-            or end - start + 1 > 8
         ):
             raise KernelError(
                 "REALIZATION_SLICE_INVALID", "realization chapter range is invalid"

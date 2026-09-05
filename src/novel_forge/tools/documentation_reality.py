@@ -134,6 +134,7 @@ NARRATIVE_NATURES = frozenset(
         "ACCEPTED_ACTUAL",
         "PROJECTION",
         "EVIDENCE",
+        "EXECUTION_CONTRACT",
     }
 )
 NARRATIVE_RELATION_TYPES = frozenset(
@@ -142,8 +143,12 @@ NARRATIVE_RELATION_TYPES = frozenset(
         "CAUSAL_DEPENDENCY",
         "TEMPORAL_TRAJECTORY",
         "PLANNING_DEPENDENCY",
+        "EXECUTION_DEPENDENCY",
         "ACCEPTED_FACT_PROJECTION",
     }
+)
+NARRATIVE_DISPOSITIONS = frozenset(
+    {"KEEP", "MERGE", "SPLIT", "RENAME", "DEMOTE", "RETIRE", "ADD"}
 )
 RUNTIME_CHAIN_ROLES = frozenset(
     {
@@ -478,6 +483,8 @@ def _validate_narrative_model(
             by_id[identity] = item
         if item.get("nature") not in NARRATIVE_NATURES:
             _error(errors, f"{context}.nature is not recognized")
+        if item.get("disposition") not in NARRATIVE_DISPOSITIONS:
+            _error(errors, f"{context}.disposition is not recognized")
         if not str(item.get("owner") or "").strip():
             _error(errors, f"{context}.owner is missing")
         if not str(item.get("lifecycle_rule") or "").strip():

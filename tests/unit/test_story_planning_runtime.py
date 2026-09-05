@@ -55,6 +55,23 @@ from novel_forge.modules.story_planning_runtime import (
 HASH = "sha256:" + "a" * 64
 
 
+@pytest.mark.parametrize("removed", ["chapter_contract_schema_version", "narrative_architecture_version"])
+def test_current_chapter_activation_cannot_use_import_compatibility_to_downgrade(removed: str) -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {"planning_command": {"logical_key": "chapter:1", "parent_version_id": "chapter-group:v1"}},
+    )
+    content.pop(removed)
+    with pytest.raises(KernelError, match="CHAPTER_CONTRACT_VERSION_REQUIRED"):
+        validate_planning_contract(
+            project_id="project-1", book_id="book-1",
+            contract_type=PlanContractType.CHAPTER, asset_version_id="chapter:new",
+            parent_version_id="chapter-group:v1", execution_scope=PlanExecutionScope.PLANNED,
+            content=content, allow_pre_hierarchy_compatibility=True,
+            require_current_chapter_contract=True,
+        )
+
+
 def _realization_slice(
     *, chapter_number: int = 1, parent_version_id: str = "chapter-group:v1"
 ) -> dict[str, object]:

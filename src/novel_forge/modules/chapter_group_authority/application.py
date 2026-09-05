@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -13,10 +13,12 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
 )
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.book_authority.production import (
-    PostgresBookAuthority,
-    SubmitBookChapterCommand,
-)
+
+if TYPE_CHECKING:
+    from novel_forge.modules.book_authority.production import (
+        PostgresBookAuthority,
+        SubmitBookChapterCommand,
+    )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.cancellation import (
     CancelCommand,
@@ -49,6 +51,7 @@ from .domain import (
     require_next_chapter,
     state_after_acceptance,
 )
+from .policy import PostgresChapterGroupExecutionPolicyAuthority
 
 
 DEFINITION_VERSION = "1.0.0"
@@ -203,6 +206,11 @@ class PostgresChapterGroupAuthority:
         self.commit_sha = commit_sha
         self.worker_id = worker_id
         self.registry = _Registry()
+        self.execution_policies = PostgresChapterGroupExecutionPolicyAuthority(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        )
 
     def start(
         self, command: StartChapterGroupCommand, *, principal: Principal
@@ -225,6 +233,16 @@ class PostgresChapterGroupAuthority:
             )
         content = dict(plan["content"])
         chapter_range = ChapterGroupRange(*map(int, content["chapter_range"]))
+        execution_policy = self.execution_policies.freeze_for_book(
+            project_id=command.project_id,
+            book_run_id=command.book_run_id,
+            actor_id=principal.principal_id,
+        )
+        if chapter_range.count > execution_policy["policy"]["maximum_chapters"]:
+            raise KernelError(
+                "CHAPTER_GROUP_EXECUTION_POLICY_LIMIT",
+                "ChapterGroup exceeds the frozen Book execution window policy",
+            )
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
@@ -258,7 +276,10 @@ class PostgresChapterGroupAuthority:
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": [command.group_plan_version_id],
-                    "payload": asdict(command),
+                    "payload": {
+                        **asdict(command),
+                        "execution_policy_snapshot": execution_policy,
+                    },
                 },
                 "input_assets": [
                     {
@@ -321,6 +342,7 @@ class PostgresChapterGroupAuthority:
                     "chapter_start": chapter_range.start,
                     "chapter_end": chapter_range.end,
                     "accepted_through_chapter": accepted_through,
+                    "execution_policy_snapshot": Jsonb(execution_policy),
                 }
             )
             uow.commit()
@@ -399,6 +421,10 @@ class PostgresChapterGroupAuthority:
         *,
         principal: Principal,
     ) -> dict[str, Any]:
+        from novel_forge.modules.book_authority.production import (
+            SubmitBookChapterCommand,
+        )
+
         group = self.require(group_run_id)
         principal.require("book.authority.execute", group["project_id"])
         chapter_range = ChapterGroupRange(
@@ -929,9 +955,7 @@ class PostgresChapterGroupAuthority:
             )
             uow.commit()
 
-    def _production_closure_inputs(
-        self, group: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _production_closure_inputs(self, group: dict[str, Any]) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

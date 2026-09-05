@@ -53,7 +53,11 @@ class BookProductionSupervisorTick:
 
 
 def _bounded_chapter_group_range(
-    *, start_chapter: int, target_chapter_count: int, preferred_size: int
+    *,
+    start_chapter: int,
+    target_chapter_count: int,
+    preferred_size: int,
+    maximum_chapters: int = 8,
 ) -> tuple[int, int]:
     if start_chapter <= 0 or target_chapter_count < start_chapter:
         raise KernelError(
@@ -61,29 +65,13 @@ def _bounded_chapter_group_range(
             "ChapterGroup horizon must begin inside the bounded Book",
         )
     remaining = target_chapter_count - start_chapter + 1
-    if remaining < 3:
-        raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
-            "ChapterGroup horizon cannot leave a one- or two-Chapter terminal fragment",
-        )
-    bounded_preference = min(8, max(3, preferred_size))
-    size = min(bounded_preference, remaining)
-    remainder = remaining - size
-    if remainder in {1, 2}:
-        if remaining <= 8:
-            size = remaining
-        else:
-            size -= 3 - remainder
-    if not 3 <= size <= 8 or remaining - size in {1, 2}:
-        raise KernelError(
-            "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
-            "ChapterGroup horizon cannot satisfy the governed three-to-eight Chapter boundary",
-        )
+    if preferred_size <= 0 or maximum_chapters <= 0:
+        raise ValueError("ChapterGroup execution window limits must be positive")
+    size = min(preferred_size, maximum_chapters, remaining)
     return start_chapter, start_chapter + size - 1
 
 
 class PostgresBookProductionSupervisor:
-
     def __init__(
         self,
         authority: PostgresBookAuthority,
@@ -663,9 +651,7 @@ class PostgresBookProductionSupervisor:
         snapshot: dict[str, Any],
     ) -> dict[str, str]:
         foundation = snapshot.get("foundation_set")
-        bindings = (
-            foundation.get("bindings") if isinstance(foundation, dict) else None
-        )
+        bindings = foundation.get("bindings") if isinstance(foundation, dict) else None
         if not isinstance(bindings, list):
             raise KernelError(
                 "BOOK_SUPERVISOR_FOUNDATION_CONTEXT_MISSING",
@@ -815,12 +801,18 @@ class PostgresBookProductionSupervisor:
                     "BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID",
                     "ChapterGroup cursor must belong to the projected Volume",
                 )
+            execution_policy = self.chapter_groups.execution_policies.freeze_for_book(
+                project_id=str(book["project_id"]),
+                book_run_id=str(book["book_run_id"]),
+                actor_id=self.principal.principal_id,
+            )
             group_start, group_end = _bounded_chapter_group_range(
                 start_chapter=chapter_number,
                 target_chapter_count=min(
                     int(book["target_chapter_count"]), volume_range[1]
                 ),
-                preferred_size=int(book["light_recap_cadence"]),
+                preferred_size=execution_policy["policy"]["preferred_chapters"],
+                maximum_chapters=execution_policy["policy"]["maximum_chapters"],
             )
             parent_state = str(book.get("active_story_state_version_id") or "")
             if accepted_through == 0:

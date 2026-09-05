@@ -561,7 +561,8 @@ class StoryPlanningGenerationCommand:
                 start, end = chapter_range
                 if (
                     start <= self.narrative_search_accepted_through_chapter
-                    or not 3 <= end - start + 1 <= 8
+                    or start <= 0
+                    or end < start
                     or search_horizon.get("starts_at_chapter") != start
                     or search_horizon.get("ends_at_chapter") != end
                 ):

@@ -24,10 +24,12 @@ class CoreOsCharacterizationTests(unittest.TestCase):
             str(step.get("run") or "") for step in backend["steps"]
         )
 
-        self.assertEqual(backend["name"], "P0 Backend Qualification")
+        self.assertEqual(backend["name"], "Repository PR Governance")
         self.assertNotIn("needs", backend)
         self.assertIn('python -m pip install -e ".[test,industrial]"', commands)
-        self.assertIn("make p0-backend-qualification", commands)
+        self.assertIn("make pr-governance", commands)
+        from novel_forge.tools.head_integrity import _pr_gate_delegates_to_p0
+        self.assertTrue(_pr_gate_delegates_to_p0(ROOT))
         self.assertNotIn("npm", commands)
         self.assertNotIn("authority-parity-check", workflow_source)
         self.assertNotIn("web", workflow["jobs"])

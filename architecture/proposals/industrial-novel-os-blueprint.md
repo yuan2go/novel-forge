@@ -2,14 +2,70 @@
 
 > **PROPOSAL**
 >
-> **NOT_IMPLEMENTED**
+> **PARTIALLY_IMPLEMENTED — REMAINING DECISIONS REQUIRE DESIGN REVIEW**
 >
 > **NOT_RUNTIME_AUTHORITY**
 
-Status: design-ready for human approval  
-Scope: target narrative domain and business architecture  
-Current-reality baseline: `2efcfbe7ea168c6edd88592a9c1ee175be4e470e`  
-Baseline implementation identity: `sha256:72e7a3499d062379b3b5a90ada593d4c42d91e4e21b8da2aaec8df180eb0531b`
+Status: `PARTIALLY_IMPLEMENTED`
+Scope: unresolved target narrative domain and business architecture decisions
+Current-reality baseline: `4c6ebdb774052e1d46f72d0cfbc0541aed22fc52`
+Baseline implementation identity: `sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae`
+
+<!-- proposal-lifecycle
+{
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "PARTIALLY_IMPLEMENTED",
+  "reviewed_on": "2026-09-05",
+  "review_due": "2026-10-05",
+  "reality_baseline": {
+    "sha": "4c6ebdb774052e1d46f72d0cfbc0541aed22fc52",
+    "implementation_tree_sha": "sha256:4fea9493881f8bacb57f3d0117c77b35f25aa13ccf6cda2371e3abc950a628ae"
+  },
+  "scope": [
+    "src/novel_forge/modules/story_design_authority",
+    "src/novel_forge/modules/book_design_authority",
+    "src/novel_forge/modules/hierarchical_planning",
+    "src/novel_forge/modules/book_authority",
+    "src/novel_forge/modules/chapter_group_authority",
+    "src/novel_forge/modules/book_followup_authority",
+    "src/novel_forge/modules/reader_judge_authority",
+    "src/novel_forge/modules/context_builder",
+    "src/novel_forge/storage/migrations",
+    "src/novel_forge/storage/book_authority_repositories.py"
+  ],
+  "implemented_refs": [
+    {"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "validate_planning_contract"},
+    {"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "_validate_scene_architecture"},
+    {"path": "src/novel_forge/modules/book_design_authority/foundation.py", "symbol": "FoundationBinding"},
+    {"path": "src/novel_forge/modules/story_design_authority/application.py", "symbol": "PostgresStoryDesignAssetAuthority"},
+    {"path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py", "symbol": "ChapterMission"},
+    {"path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py", "symbol": "SceneArchitecture"},
+    {"path": "src/novel_forge/modules/chapter_group_authority/policy.py", "symbol": "ChapterGroupExecutionPolicy"},
+    {"path": "src/novel_forge/modules/book_followup_authority/reader_policy.py", "symbol": "ReaderProxyPolicy"},
+    {"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"},
+    {"path": "src/novel_forge/modules/context_builder/governance.py", "symbol": "compile_effective_context_policy"}
+  ],
+  "superseding_refs": [],
+  "remaining_decisions": [
+    {"id": "optional-volume", "description": "DESIGN_REVIEW_REQUIRED: optional Volume versus an implicit persisted Volume and its constraints.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "PlanContractType"}]},
+    {"id": "segment-boundaries", "description": "DESIGN_REVIEW_REQUIRED: segment identity and boundary changes across accepted chapters.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "validate_planning_contract"}]},
+    {"id": "trajectory-storage", "description": "DESIGN_REVIEW_REQUIRED: typed common trajectory persistence versus separate physical schemas.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "_validate_arc_relations"}]},
+    {"id": "strategic-approval-risk", "description": "DESIGN_REVIEW_REQUIRED: delegated versus mandatory human approval for strategic changes.", "evidence_refs": [{"path": "src/novel_forge/modules/story_design_authority/domain.py", "symbol": "DesignApproval"}]},
+    {"id": "completion-human-quorum", "description": "DESIGN_REVIEW_REQUIRED: independent human/editorial completion evidence and quorum by publication class.", "evidence_refs": [{"path": "src/novel_forge/modules/chapter_quality_authority/qualification.py"}]},
+    {"id": "reader-data-policy", "description": "DESIGN_REVIEW_REQUIRED: real reader consent, cohort retention, privacy and causal attribution policy.", "evidence_refs": [{"path": "src/novel_forge/modules/reader_judge_authority/domain.py"}]},
+    {"id": "retrospective-correction", "description": "DESIGN_REVIEW_REQUIRED: erratum, compensating fact or edition boundaries for accepted factual errors.", "evidence_refs": [{"path": "src/novel_forge/storage/book_authority_repositories.py"}]}
+  ],
+  "remaining_work": []
+}
+-->
+
+The retained scope is the seven unresolved decisions below. Typed Chapter Mission and
+Scene Architecture, immutable Foundation bindings, versioned execution/reader policy,
+whole-book completion cases and governed Context compilation exist in executable code.
+Their presence does not establish narrative, human, reader, longitudinal or production
+qualification. Every implementation change
+inside the declared scope invalidates this lifecycle review until the baseline is
+refreshed against code.
 
 ## Reading contract
 
@@ -46,7 +102,7 @@ conditions. It does not mean that an Agent or Provider owns narrative truth.
 - Retrospective rewriting of accepted history through a future-plan edit.
 - Treating source material, retrieval results, model output, or reader reaction as
   accepted narrative fact.
-- Implementing this blueprint in this design review.
+- Treating unresolved design prescriptions as an implementation claim.
 
 ## 2. Design inputs and evidence boundary
 
@@ -65,8 +121,10 @@ semantics:
 - Narrative Arc is already independent of Volume containment and may cross volumes.
 - Current Book `COMPLETED` is a production cursor result, not a whole-book editorial
   acceptance.
-- Current `ChapterGroup = 3–8 chapters` and fixed reader-proxy thresholds are unresolved
-  design constraints, not proven domain invariants.
+- ChapterGroup limits and reader-proxy thresholds are versioned owned policy, not
+  universal domain invariants. The default execution cap is configurable.
+- Whole-book Completion has independent immutable case/rejection/block commands;
+  acceptance remains blocked pending native whole-book editorial policy and evidence.
 - Current qualification ceiling is local backend engineering. It does not establish a
   credentialed Provider, human editorial quality, longitudinal stability, production
   operation, or an Admin UI path.
@@ -138,7 +196,7 @@ implementation.
 | Story Intent | `NEW_REQUIRED_CONCEPT` | `PLAN` | Smallest strategic statement of topic, premise, audience, form, and creative risk; precedes Foundation. |
 | Story Foundation | `KEEP` | `PLAN` | Approved composite snapshot referencing exact Theme, Reader Promise, Ending Intent, World, Character, and Relationship versions; it does not copy their state. |
 | Book Design | `RENAME` | `CANDIDATE` then `PLAN` | Becomes Book Architecture Candidate before approval and Book Architecture after activation. |
-| Story Design | `MERGE` | `POLICY` / workflow label | Retire as an omnibus domain object; use it only as a formation workflow over specialized candidate owners. |
+| Story Design | `KEEP` | `AUTHORITY` | Owns activation of the six Foundation semantic asset roles. Book Design binds their exact immutable qualified versions without copying semantic ownership. |
 | World | `KEEP` | `PLAN` | Versioned rules, costs, institutions, resources, geography, and permitted change mechanisms. |
 | Character | `KEEP` | `PLAN` | Identity, drives, constraints, competencies, initial state, and intended transformation envelope. |
 | Relationship | `SPLIT` | `PLAN` plus `PROJECTION` | Separate relationship definition/constraints from accepted relationship state and its trajectory. |
@@ -159,7 +217,7 @@ implementation.
 | Chapter Mission | `NEW_REQUIRED_CONCEPT` | `PLAN` | The chapter's required narrative change: function, conflict, information gain, trajectory deltas, obligation actions, payoff, and exit pressure. |
 | Scene | `KEEP` | `STRUCTURAL_CONTAINER` plus `PLAN` | Ordered unit with viewpoint, time/place, goal, resistance, turn, outcome, and transition. |
 | Beat | `KEEP` | `PLAN` | Atomic narrative action/reaction/revelation/decision unit within a Scene; stable identity supports traceability. |
-| Narrative Realization | `DEMOTE_TO_EXECUTION_ARTIFACT` | `EXECUTION_CONTRACT` | Frozen binding of approved intent, accepted boundary, plan versions, context manifest, Provider contract, budgets, and attempt lineage. It is not accepted story content. |
+| Narrative Realization | `KEEP` | `EXECUTION_CONTRACT` | Frozen binding of approved intent, accepted boundary, plan versions, context manifest, Provider contract, budgets, and attempt lineage. It is not accepted story content. |
 | Draft | `KEEP` | `CANDIDATE` | Immutable prose candidate tied to one realization attempt and exact context/instruction/provider identity. |
 | Revision | `KEEP` | `CANDIDATE` | New candidate plus issue-resolution map and diff lineage; never an in-place overwrite. |
 | Accepted Actual | `KEEP` | `ACCEPTED_FACT` | Immutable accepted narrative events/outcomes at an exact chapter boundary. This is the source for accepted-history projections. |
@@ -295,10 +353,10 @@ An obligation cannot disappear through context compression or plan replacement.
 | Current Authority or boundary | Decision | Target owner and sole fact ownership |
 |---|---|---|
 | Project Authority | `KEEP` | Project/workspace identity, lifecycle, bindings, and tenancy. |
-| Story Design Authority | `SPLIT` | Story Foundation Authority; World Authority; Character & Relationship Authority. The formation workflow coordinates them. |
-| Book Design Authority | `KEEP` | Preserve the owner boundary under the clearer Book Architecture Authority name; it owns Book/Volume/Segment structural plan versions. |
+| Story Design Authority | `KEEP` | Owns the six Foundation semantic asset roles; specialization does not create duplicate or physically separate owners. |
+| Book Design Authority | `KEEP` | Owns Book Architecture and immutable QualifiedFoundationSet binding; typed structural plan activation remains Planning Authority-owned. |
 | Planning Authority | `SPLIT` | Trajectory Authority owns typed trajectory plans; Chapter Planning Authority owns Chapter Mission and Scene Architecture activation. |
-| Narrative Realization Authority | `MOVE_OWNERSHIP` | Production Execution Authority owns frozen realization contracts and attempts; it owns no narrative truth. |
+| Narrative Realization Authority | `KEEP` | Independent logical owner of the frozen execution contract; Command Kernel owns attempts, leases and fences. It owns no narrative truth. |
 | Plan Change Authority | `KEEP` | Narrow it to Change Authority ownership of impact cases, approvals, and command requests; each affected domain owner commits its own replacement. |
 | Book Authority | `SPLIT` | Book Production Authority owns cursor/admission; Chapter Acceptance Authority owns atomic accepted chapter actuals. |
 | ChapterGroup Authority | `RETIRE` | Retire it as a domain Authority. Rolling Window Coordinator schedules bounded work and owns only window execution state. |
@@ -338,7 +396,7 @@ protocol.
 | Stage | Owner | Input → output | State and gate | Human / Agent / Provider | Persistence and recovery |
 |---|---|---|---|---|---|
 | Idea/topic discovery | Story Foundation Authority | market/source-safe evidence → Story Intent candidates | candidate; originality and feasibility gate | Agent proposes; human may select; Provider assists only | candidate lineage; retries create new versions |
-| Foundation | specialized Foundation owners | approved Intent → Theme/Promise/Ending/World/Character/Relationship candidates | qualified then approved | specialist Agents; human risk-based approval | versioned assets; partial failure resumes per asset |
+| Foundation | Story Design Authority | approved Intent → six Foundation semantic asset roles, including Character/Relationship definitions | qualified then approved | specialist Agents; human risk-based approval | versioned assets; immutable qualified bindings; partial failure resumes per asset |
 | Book architecture | Book Architecture Authority | active Foundation → Book/Volume/Segment architecture | approved active future architecture | Book Architect Agent proposes; human approves strategic risk | immutable versions and active pointer; replacement after impact analysis |
 | Trajectory planning | Trajectory Authority | architecture + Foundation → Arc/Character/Relationship/Theme trajectories and obligations | active portfolio gate | planner Agents propose; independent review | graph versions, dependencies, checkpoints; no accepted-state mutation |
 | Rolling planning | Rolling Window Coordinator | actual boundary + active future plans → bounded mission queue | policy-bounded, not chapter-count qualification | deterministic coordinator; Agents elaborate | window state disposable/rebuildable; leases and checkpoints |
@@ -350,7 +408,7 @@ protocol.
 | Stage | Owner | Input → output | State and gate | Human / Agent / Provider | Persistence and recovery |
 |---|---|---|---|---|---|
 | Context compilation | Context Compiler service under Production Execution | accepted boundary + exact plans + allowed knowledge → Context Manifest/Bundle | source isolation, coverage, leakage, token gates | retrieval may rank; no model-selected truth | immutable manifest and candidate union; deterministic replay |
-| Realization preparation | Production Execution Authority | frozen plan/context/policy → Realization Contract | identity/budget/permission gate | Agent requests; no narrative decision | command/attempt/lease/fence; idempotent admission |
+| Realization preparation | Narrative Realization Authority | frozen plan/context/policy → Realization Contract | identity/budget/permission gate | Agent requests; no narrative decision | independent frozen contract; kernel-owned command/attempt/lease/fence |
 | Prose generation | Chapter Production Authority | Realization Contract → Draft Candidate | schema and receipt gate | Prose Agent invokes Provider through governed effect | ExternalEffect intent/receipt/cost; reconcile unknown before resend |
 | Review/diagnosis | Quality Authority | Draft + plans + accepted state → Review Issues/evaluations | independent rubric gates | machine checks + independent LLM judges + optional human | evidence immutable; judge identity recorded |
 | Revision | Chapter Production Authority | candidate + accepted issue set → Revision Candidate | issue-resolution and regression gate | Editor Agent proposes patch; Provider bounded | new artifact/version/diff; bounded attempts and escalation |
@@ -576,20 +634,20 @@ ExternalEffect, or lost Authority approval causes a hard stop—not an improvise
 | Target capability | Current state | Current owner | Gap type | Action | Dependency | Risk | Design confidence |
 |---|---|---|---|---|---|---|---|
 | Story Intent as approved strategic object | Formation inputs exist, but no independent approved object | Story Design Authority | `MISSING_DOMAIN_CONCEPT` | `ADD` | Foundation contracts | medium | high |
-| Specialized Foundation ownership | All foundation roles share one umbrella activation boundary | Story Design Authority | `WRONG_OWNERSHIP` | `REFACTOR` | asset transition and activation protocol | high | high |
+| Foundation ownership | Six semantic roles have one Story Design owner; Book Design owns immutable qualified bindings | Story Design Authority | `IMPLEMENTED` | `KEEP` | native binding validation | bounded | high |
 | Book Architecture terminology/lifecycle | Book Design candidate and current pointer exist | Book Design Authority | `WRONG_HIERARCHY` | `REFACTOR` | compatibility projection | medium | high |
 | Relationship definition/state/trajectory separation | Data is distributed across character, plans, and state views | Story Design / Planning; Narrative State is projection | `MISSING_DOMAIN_CONCEPT` | `ADD` | Character and Trajectory Authorities | high | high |
 | Segment as structural interval, not Arc parent | Segment exists as a typed plan; relationship typing is incomplete | Planning Authority | `WRONG_HIERARCHY` | `REFACTOR` | structural relation schema | medium | high |
 | Typed cross-structure trajectories | Arc is first-class; character/relationship evolution lacks an equal lifecycle | Planning Authority; actual progress is projected | `MISSING_DOMAIN_CONCEPT` | `ADD` | Trajectory Authority | high | high |
 | Thematic actual trajectory | Theme contract exists without accepted-evidence progression | Story Design Authority | `MISSING_DOMAIN_CONCEPT` | `ADD` | Accepted Actual projection | medium | medium |
-| Adaptive rolling execution window | ChapterGroup is a domain coordinator with a fixed 3–8 range | ChapterGroup Authority | `SEMANTIC_FOSSIL` | `RETIRE` | policy/config and planning readiness | high | high |
-| Chapter Mission separated from execution detail | Current Chapter plan combines semantic and execution levels | Planning Authority | `WRONG_HIERARCHY` | `REFACTOR` | Planning schema and activation | high | high |
-| Scene/Beat production contract | Validation objects exist; full activation lifecycle is incomplete | Planning and Chapter Authorities | `ENGINEERING_GAP` | `ADD` | Chapter Planning and Production | high | high |
-| Realization as execution-only contract | Separate Authority/lifecycle already distinguishes it from plan and actual | Narrative Realization Authority | `WRONG_OWNERSHIP` | `REFACTOR` | Production Execution Authority | medium | high |
+| Adaptive rolling execution window | ChapterGroup coordination consumes a versioned configurable execution policy | ChapterGroup execution policy owner | `IMPLEMENTED` | `KEEP` | exact frozen policy binding | bounded | high |
+| Chapter Mission separated from execution detail | Typed Mission is owned by the Chapter plan, independently referenced by Scene Architecture | Planning Authority | `IMPLEMENTED` | `KEEP` | schema-backed planning activation | bounded | high |
+| Scene/Beat production contract | Scene Architecture binds exact Mission and validates mission coverage | Planning and Chapter Authorities | `IMPLEMENTED` | `KEEP` | typed planning contract | bounded | high |
+| Realization as execution-only contract | Separate owner/lifecycle distinguishes frozen contract from plan and actual; kernel retains attempts | Narrative Realization Authority | `IMPLEMENTED` | `KEEP` | execution boundary | bounded | high |
 | Chapter acceptance distinct from Book cursor | One Authority owns cursor and atomic chapter acceptance | Book Authority | `WRONG_OWNERSHIP` | `REFACTOR` | atomic acceptance transaction | high | medium |
 | Typed Canon conflict/correction decisions | Approval/re-extraction exists; retrospective correction is incomplete | Canon Authority | `MISSING_ACCEPTANCE` | `ADD` | Accepted Actual and projection versioning | high | medium |
-| Reader evidence causality and privacy gates | Proxy/preference/calibration evidence uses hard thresholds | Reader Evidence Authority | `SEMANTIC_FOSSIL` | `REPLACE` | cohort and privacy contracts | high | high |
-| Whole-book Completion Authority | Terminal production cursor only | Book Authority | `MISSING_ACCEPTANCE` | `ADD` | closure dossier and all projections | critical | high |
+| Reader evidence causality and privacy gates | Proxy thresholds have versioned owned policy; privacy/causal qualification remains unresolved | Reader Evidence Authority | `MISSING_EVIDENCE` | `DESIGN_REVIEW_REQUIRED` | cohort and privacy contracts | high | high |
+| Whole-book Completion Authority | Immutable full-history cases and independent rejection/block decisions exist; acceptance cannot bypass missing native human policy | Book Completion Authority | `MISSING_ACCEPTANCE_POLICY` | `DESIGN_REVIEW_REQUIRED` | typed native whole-book editorial policy/evaluator | critical | high |
 | Layer-specific narrative gates | Progressive layers exist, but not the full target approval chain | Story Design, Planning, and Quality Authorities | `MISSING_GATE` | `REFACTOR` | ontology and evidence taxonomy | high | high |
 | Human editorial evidence protocol | Blind protocol support exists; no whole-book human acceptance proof | Quality Authority | `MISSING_EVIDENCE` | `ADD` | reviewer identity/privacy and Completion Case | high | high |
 | Real reader/production learning | Evidence objects exist; current proof is fixture/scripted | Reader Evidence Authority | `MISSING_EVIDENCE` | `ADD` | publication and privacy | high | high |
@@ -635,20 +693,20 @@ receive an explicit human decision before its affected contract can be implement
    every Book receives an implicit Volume for uniform constraints.
 2. `DESIGN_REVIEW_REQUIRED`: exact Narrative Segment identity and boundary-change rules
    after chapters within the segment have been accepted.
-3. `DESIGN_REVIEW_REQUIRED`: whether World and Character/Relationship require separate
-   services or separate logical Authorities within one deployable module.
-4. `DESIGN_REVIEW_REQUIRED`: one generic trajectory storage protocol with typed payloads
+3. `DESIGN_REVIEW_REQUIRED`: one generic trajectory storage protocol with typed payloads
    versus separate physical schemas for Narrative, Character, Relationship, and Theme.
-5. `DESIGN_REVIEW_REQUIRED`: risk policy specifying which strategic changes require
+4. `DESIGN_REVIEW_REQUIRED`: risk policy specifying which strategic changes require
    mandatory human approval and which may use delegated approval.
-6. `DESIGN_REVIEW_REQUIRED`: minimum independent human/editorial evidence and quorum for
+5. `DESIGN_REVIEW_REQUIRED`: minimum independent human/editorial evidence and quorum for
    Whole-book Completion at each publication class.
-7. `DESIGN_REVIEW_REQUIRED`: reader-data privacy, consent, cohort retention, and causal
+6. `DESIGN_REVIEW_REQUIRED`: reader-data privacy, consent, cohort retention, and causal
    attribution policy before real behavior can drive adaptation proposals.
-8. `DESIGN_REVIEW_REQUIRED`: correction semantics when an accepted factual error cannot
+7. `DESIGN_REVIEW_REQUIRED`: correction semantics when an accepted factual error cannot
    be repaired prospectively—erratum, compensating canon fact, or new edition boundary.
 
-Unresolved decision count: **8**.
+Unresolved decision count: **7**. Foundation ownership is resolved by the implemented
+single Story Design owner and Book Design's immutable binding; a physical service split
+is not a prerequisite for one-fact/one-Authority semantics.
 
 ## 18. Implementation implications and approval boundary
 
@@ -666,7 +724,7 @@ Any implementation must preserve these already-proven engineering constraints:
 - future-only replacement with explicit impact and invalidation;
 - evidence claims limited to the exact implementation identity and proof scope.
 
-Human approval must explicitly accept or amend the ontology dispositions, Authority
-splits, ChapterGroup/`3–8` decision, layer gates, Whole-book Completion owner, and the
-eight unresolved decisions. Until then, this file remains non-authoritative and the
-current implementation and current documentation remain unchanged.
+The seven unresolved decisions need explicit evidence-backed review before the affected
+contracts can change. Implemented dispositions above are projections of executable
+references, not authority granted by this proposal. This retained design input never
+overrides current implementation, current documentation or qualification evidence.

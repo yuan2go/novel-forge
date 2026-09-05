@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import asdict, replace
 
 import pytest
 
@@ -9,6 +9,8 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityInputAsset,
 )
 from novel_forge.modules.book_followup_authority.handlers import ReaderOutcomeHandler
+from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
+from novel_forge.storage.versioned_policy_repository import policy_hash
 from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.reader_calibration import (
@@ -129,6 +131,13 @@ def _request() -> AuthorityHandlerRequest:
         content={"text": "fixture"},
     )
     payload = {
+        "reader_proxy_policy_snapshot": {
+            "owner": "READER_PROXY",
+            "project_id": "project-1",
+            "subject_id": "operation-1",
+            "policy": asdict(ReaderProxyPolicy()),
+            "policy_hash": policy_hash(asdict(ReaderProxyPolicy())),
+        },
         "book_id": "book-1",
         "chapter_id": "chapter:4",
         "chapter_number": 4,

@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from dataclasses import replace
+
+import psycopg
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
@@ -31,7 +34,17 @@ from novel_forge.modules.chapter_group_authority import (
     PostgresChapterGroupAuthority,
     StartChapterGroupCommand,
 )
+from novel_forge.modules.chapter_group_authority.policy import (
+    ChapterGroupExecutionPolicy,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.hierarchical_planning.realization_application import (
+    NarrativeRealizationCommand,
+    PostgresNarrativeRealizationApplication,
+)
+from novel_forge.modules.hierarchical_planning.realization_domain import (
+    NarrativeRealizationContract,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration import (
     test_postgresql_only_chapter_slice as chapter_fixture,
@@ -44,12 +57,343 @@ from tests.integration.authority_postgres_support import (
 from tests.integration.test_book_to_chapter_authority_vertical_postgres import (
     BookToChapterAuthorityVerticalPostgresTests,
 )
+from tests.integration.hierarchy_closure_postgres_support import (
+    seed_ready_story_foundation,
+)
+from tests.unit.test_narrative_realization import _extended_contract
 
 
 class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         ensure_migrated()
+
+    def test_nine_chapter_realization_freezes_and_replays_without_count_invariant(
+        self,
+    ) -> None:
+        fixture = self._fixture(group_chapters=9)
+        project_id, book_id = fixture["project_id"], fixture["book_id"]
+        workspace_id = f"workspace:{project_id}"
+        principal = replace(
+            fixture["principal"],
+            permissions=fixture["principal"].permissions
+            | {"story_design.authority.execute"},
+        )
+        foundation = seed_ready_story_foundation(
+            DATABASE_URL,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            principal=principal,
+            target_chapters=9,
+            release_sha="f" * 40,
+        )
+        group_authority = fixture["group_authority"]
+        group_authority.execution_policies.configure(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            principal=principal,
+            policy=ChapterGroupExecutionPolicy("nine-v1", 9, 9),
+            idempotency_key="nine-window-policy",
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        group = group_authority.start(
+            StartChapterGroupCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                actor_id=principal.principal_id,
+                trace_id=identifier("trace"),
+                correlation_id=identifier("correlation"),
+                stable_idempotency_key="nine-window",
+                book_run_id=fixture["book"].book_run_id,
+                group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+                group_plan_content_hash=fixture["group_plan"]["content_hash"],
+            ),
+            principal=principal,
+        )
+        self.assertEqual(group["chapter_end"], 9)
+        value = _extended_contract(9).to_dict()
+        value.update(
+            realization_id=f"realization:{project_id}",
+            project_id=project_id,
+            book_id=book_id,
+            chapter_group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+            chapter_group_content_hash=fixture["group_plan"]["content_hash"],
+            foundation_set_digest=foundation["foundation_set_digest"],
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT longform_context_versions->>'volume_plan_version' FROM authority_book_production WHERE book_run_id=%s",
+                [fixture["book"].book_run_id],
+            )
+            volume_id = uow.cursor.fetchone()[0]
+        arc = self._seed_asset(
+            project_id,
+            "planning_generation_candidate",
+            "arc",
+            {"cross_volume_scope": [volume_id]},
+        )
+        state = self._seed_asset(project_id, "narrative_state", "boundary-state", {})
+        canon = self._seed_asset(project_id, "canon_snapshot", "boundary-canon", {})
+        content = self._seed_asset(
+            project_id,
+            "narrative_realization",
+            "realization-content",
+            {"events": value["events"]},
+        )
+        proof = self._seed_asset(
+            project_id,
+            "narrative_design_evaluation",
+            "realization-proof",
+            value["proof"],
+        )
+        value.update(
+            content_asset_version_id=content["asset_version_id"],
+            content_hash=content["content_hash"],
+            proof_asset_version_id=proof["asset_version_id"],
+            proof_hash=proof["content_hash"],
+        )
+        value["proof"].update(
+            semantic_evaluation_asset_version_id=proof["asset_version_id"],
+            semantic_evaluation_hash=proof["content_hash"],
+        )
+        value["arc_plan_bindings"] = [
+            {
+                "arc_id": "arc-main",
+                "asset_version_id": arc["asset_version_id"],
+                "content_hash": arc["content_hash"],
+            }
+        ]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """INSERT INTO story_plan_binding(
+                    binding_id, project_id, book_id, contract_type, logical_key,
+                    asset_version_id, execution_scope, freshness, created_by_operation_id
+                ) VALUES (%s,%s,%s,'ARC','arc:main',%s,'FROZEN','CURRENT',%s)""",
+                [
+                    f"arc-binding:{project_id}",
+                    project_id,
+                    book_id,
+                    arc["asset_version_id"],
+                    fixture["book"].root_operation_id,
+                ],
+            )
+            uow.cursor.execute(
+                """INSERT INTO active_story_plan_version(
+                    project_id, book_id, logical_key, binding_id,
+                    asset_version_id, activated_by_operation_id
+                ) VALUES (%s,%s,'arc:main',%s,%s,%s)""",
+                [
+                    project_id,
+                    book_id,
+                    f"arc-binding:{project_id}",
+                    arc["asset_version_id"],
+                    fixture["book"].root_operation_id,
+                ],
+            )
+            uow.cursor.execute(
+                """INSERT INTO story_plan_binding(
+                    binding_id, project_id, book_id, contract_type, logical_key,
+                    asset_version_id, execution_scope, freshness, created_by_operation_id
+                ) SELECT %s,project_id,book_id,'BOOK','book:main',book_plan_version,
+                    'FROZEN','CURRENT',root_operation_id
+                  FROM authority_book_production WHERE book_run_id=%s""",
+                [f"book-binding:{project_id}", fixture["book"].book_run_id],
+            )
+            uow.cursor.execute(
+                """INSERT INTO authority_book_production_input_snapshot(
+                    snapshot_id,project_id,workspace_id,book_id,expected_book_version,
+                    book_record_version,book_design_version,book_plan_version,
+                    current_volume_plan_version,volume_portfolio_plan_versions,
+                    active_arc_plan_versions,arc_portfolio_plan_versions,
+                    current_relevant_arc_plan_versions,current_chapter_group_plan_version,
+                    production_profile_version,reader_segment_version,
+                    reader_contract_version,platform_profile_version,
+                    character_state_version,foreshadowing_state_version,
+                    quality_trend_version,reward_ledger_version,promise_ledger_version,
+                    capability_pack_deployment_refs,release_sha,snapshot_hash,
+                    resolved_by_operation_id,initial_story_state_version,
+                    initial_canon_snapshot_version,foundation_set_digest
+                ) SELECT %s,project_id,workspace_id,book_id,1,book_design_version,
+                    book_design_version,book_plan_version,
+                    longform_context_versions->>'volume_plan_version',
+                    jsonb_build_array(longform_context_versions->>'volume_plan_version'),
+                    jsonb_build_array(%s::text),jsonb_build_array(%s::text),
+                    jsonb_build_array(%s::text),%s,
+                    longform_context_versions->>'platform_profile_version',
+                    longform_context_versions->>'reader_segment_version',
+                    longform_context_versions->>'reader_contract_version',
+                    longform_context_versions->>'platform_profile_version',
+                    longform_context_versions->>'character_state_version',
+                    longform_context_versions->>'foreshadowing_state_version',
+                    longform_context_versions->>'quality_trend_version',
+                    longform_context_versions->>'reward_ledger_version',
+                    longform_context_versions->>'promise_ledger_version',
+                    '[]'::jsonb,%s,%s,root_operation_id,%s,%s,%s
+                  FROM authority_book_production WHERE book_run_id=%s""",
+                [
+                    f"snapshot:{project_id}",
+                    *([arc["asset_version_id"]] * 3),
+                    fixture["group_plan"]["asset_version_id"],
+                    "f" * 40,
+                    "sha256:" + hashlib.sha256(project_id.encode()).hexdigest(),
+                    state["asset_version_id"],
+                    canon["asset_version_id"],
+                    foundation["foundation_set_digest"],
+                    fixture["book"].book_run_id,
+                ],
+            )
+            uow.cursor.execute(
+                "UPDATE authority_book_production SET input_snapshot_id=%s WHERE book_run_id=%s",
+                [f"snapshot:{project_id}", fixture["book"].book_run_id],
+            )
+            uow.cursor.execute(
+                """SELECT state.asset_version_id, state.content_hash,
+                          canon.asset_version_id, canon.content_hash
+                   FROM authority_book_production AS production
+                   JOIN authority_book_production_input_snapshot AS snapshot
+                     ON snapshot.snapshot_id=production.input_snapshot_id
+                   JOIN authority_asset_version AS state
+                     ON state.asset_version_id=snapshot.initial_story_state_version
+                   JOIN authority_asset_version AS canon
+                     ON canon.asset_version_id=snapshot.initial_canon_snapshot_version
+                   WHERE production.book_run_id=%s""",
+                [fixture["book"].book_run_id],
+            )
+            state_id, state_hash, canon_id, canon_hash = uow.cursor.fetchone()
+            uow.commit()
+        value["accepted_boundary"].update(
+            story_state_version_id=state_id,
+            story_state_content_hash=state_hash,
+            canon_version_id=canon_id,
+            canon_content_hash=canon_hash,
+        )
+        authority = PostgresNarrativeRealizationApplication(
+            DATABASE_URL,
+            application_build_id="realization-policy-test",
+            commit_sha="f" * 40,
+        )
+        common = dict(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            realization_id=value["realization_id"],
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+            reason="fixture verifies configurable execution range contract",
+        )
+        qualified = authority.execute(
+            NarrativeRealizationCommand(
+                **common,
+                definition_name="planning.realization.qualify",
+                expected_version=0,
+                idempotency_key="qualify-nine",
+                contract=NarrativeRealizationContract.from_mapping(value),
+            ),
+            principal=principal,
+        )
+        approved = authority.execute(
+            NarrativeRealizationCommand(
+                **common,
+                definition_name="planning.realization.approve",
+                expected_version=qualified["version"],
+                idempotency_key="approve-nine",
+            ),
+            principal=principal,
+        )
+        command = NarrativeRealizationCommand(
+            **common,
+            definition_name="planning.realization.freeze",
+            expected_version=approved["version"],
+            idempotency_key="freeze-nine",
+        )
+
+        def lose_response(name: str) -> None:
+            if name == "after_operation_completion_before_response":
+                raise RuntimeError("freeze committed response lost")
+
+        authority.fault_injector = lose_response
+        with self.assertRaisesRegex(RuntimeError, "freeze committed"):
+            authority.execute(command, principal=principal)
+        recovered = PostgresNarrativeRealizationApplication(
+            DATABASE_URL,
+            application_build_id="realization-policy-test",
+            commit_sha="f" * 40,
+        ).execute(command, principal=principal)
+        self.assertTrue(recovered["replayed"])
+        self.assertEqual(recovered["lifecycle"], "FROZEN")
+        self.assertEqual((recovered["chapter_start"], recovered["chapter_end"]), (1, 9))
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_narrative_realization_event WHERE realization_id=%s",
+                [value["realization_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 9)
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_narrative_realization_consumption WHERE realization_id=%s",
+                [value["realization_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+
+    def test_one_chapter_execution_window_freezes_policy_across_restart_and_replay(
+        self,
+    ) -> None:
+        fixture = self._fixture(group_chapters=1)
+        authority = fixture["group_authority"]
+        principal = fixture["principal"]
+        config = {
+            "project_id": fixture["project_id"],
+            "workspace_id": f"workspace:{fixture['project_id']}",
+            "principal": principal,
+            "trace_id": identifier("trace"),
+            "correlation_id": identifier("correlation"),
+        }
+        authority.execution_policies.configure(
+            **config,
+            idempotency_key="window:v1",
+            policy=ChapterGroupExecutionPolicy("one-v1", 1, 1),
+        )
+        command = StartChapterGroupCommand(
+            project_id=fixture["project_id"],
+            workspace_id=config["workspace_id"],
+            actor_id=principal.principal_id,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+            stable_idempotency_key="one-window",
+            book_run_id=fixture["book"].book_run_id,
+            group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+            group_plan_content_hash=fixture["group_plan"]["content_hash"],
+        )
+        original = authority.start(command, principal=principal)
+        self.assertEqual(original["chapter_end"] - original["chapter_start"] + 1, 1)
+        authority.execution_policies.configure(
+            **config,
+            idempotency_key="window:v2",
+            policy=ChapterGroupExecutionPolicy("twelve-v2", 12, 12),
+        )
+        recovered = PostgresChapterGroupAuthority(
+            DATABASE_URL,
+            book_authority=fixture["book_authority"],
+            application_build_id="chapter-group-integration",
+            commit_sha="f" * 40,
+        ).start(command, principal=principal)
+        self.assertEqual(recovered["group_run_id"], original["group_run_id"])
+        self.assertEqual(
+            recovered["execution_policy_snapshot"],
+            original["execution_policy_snapshot"],
+        )
+        self.assertEqual(
+            recovered["execution_policy_snapshot"]["policy"]["maximum_chapters"], 1
+        )
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    "UPDATE authority_chapter_group_production SET execution_policy_snapshot=NULL WHERE group_run_id=%s",
+                    [original["group_run_id"]],
+                )
+                uow.commit()
 
     def test_chapter_group_three_chapter_vertical_and_rolling_horizon(
         self,
@@ -233,7 +577,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(str(child[0]), "CANCELLATION_REQUESTED")
         self.assertEqual(str(child[1]), "CANCELLATION_REQUESTED")
 
-    def _fixture(self) -> dict:
+    def _fixture(self, *, group_chapters: int = 3) -> dict:
         project_id = identifier("chapter-group")
         root = tempfile.TemporaryDirectory()
         self.addCleanup(root.cleanup)
@@ -316,7 +660,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 book_plan_version=versions.pop("book_plan_version"),
                 production_profile_version="production-profile:v1",
                 longform_context_versions=versions,
-                target_chapter_count=3,
+                target_chapter_count=group_chapters,
                 input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 light_recap_cadence=3,
                 formal_recap_cadence=10,
@@ -329,6 +673,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             operation_id=book.root_operation_id,
             volume_plan_version=versions["volume_plan_version"],
             candidates=candidates,
+            group_chapters=group_chapters,
         )
         return {
             "project_id": project_id,
@@ -392,6 +737,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         operation_id: str,
         volume_plan_version: str,
         candidates: list[dict],
+        group_chapters: int = 3,
     ) -> dict:
         first = next(
             item for item in candidates if item["asset_type"] == "chapter_plan"
@@ -409,16 +755,19 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 "ending_hook": hook,
                 "prohibited_outcomes": ["premature closure"],
             }
-            for chapter, function, hook in (
-                (1, "DISCOVERY", "threat revealed"),
-                (2, "ESCALATION", "cost revealed"),
-                (3, "REVERSAL", "choice demanded"),
-            )
+            for chapter in range(1, group_chapters + 1)
+            for function, hook in [
+                (
+                    ("DISCOVERY", "threat revealed"),
+                    ("ESCALATION", "cost revealed"),
+                    ("REVERSAL", "choice demanded"),
+                )[(chapter - 1) % 3]
+            ]
         ]
         group_content = {
             "type": "ChapterGroupPlan",
             "local_objective": "force a public commitment",
-            "chapter_range": [1, 3],
+            "chapter_range": [1, group_chapters],
             "chapter_function_matrix": matrix,
         }
         group = ChapterGroupAuthorityPostgresTests._seed_asset(
@@ -428,7 +777,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             group_content,
         )
         chapter_plans: dict[int, dict] = {}
-        for chapter in (1, 2, 3):
+        for chapter in range(1, group_chapters + 1):
             content = {
                 **dict(first["content"]),
                 "chapter": chapter,

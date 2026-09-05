@@ -57,6 +57,7 @@ P0_PROOF_SCOPE = {
         "chapter-production-saga",
         "review-revision-quality",
         "book-chapter-acceptance",
+        "whole-book-completion-cases",
         "canon-and-narrative-state",
         "reader-and-followup-evidence",
         "agent-runtime",
