@@ -244,13 +244,19 @@ exact boundary, subject and frozen policy. Operator decisions enter through
 Resume the existing production job after approval. Decisions do not waive quality,
 Canon reconciliation or acceptance invariants.
 
-Chapter workflow contract 3.3.0 and Capability Pack 2.2.0 require structured
+Chapter workflow contract 3.3.1 and Capability Pack 2.2.1 require structured
 realization slots and the current quality dimensions. Published text-only Scene beats
 use an explicitly marked frozen representation adapter; their source digest and
 ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs. An older frozen operation
 retains its original definition and receipts; a worker with another contract version
 rejects it with `AUTHORITY_HANDLER_CONTRACT_STALE`. Resume such an in-flight operation
 with its matching release rather than rewriting its frozen input or resending effects.
+
+Provider Context projection rejects an eligible segment count or relevant fact count
+that exceeds its declared budget. A passing Context correctness receipt does not permit
+the renderer to discard those facts. Rebuild the governed selection before dispatch;
+the limit error is not permission to expand the budget or retry a different payload
+under the same frozen operation.
 
 ## Failure and recovery procedure
 

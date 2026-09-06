@@ -668,14 +668,6 @@ def build_provider_context_view(
     omitted_facts = 0
     omitted_segments = 0
     for raw in segments:
-        if len(rendered) >= _MAX_SEGMENTS:
-            omitted_segments += 1
-            omitted_facts += (
-                len(raw.get("structured_facts") or [])
-                if isinstance(raw, Mapping)
-                else 0
-            )
-            continue
         if not isinstance(raw, Mapping) or raw.get("allowed_use") == "evidence_only":
             omitted_segments += 1
             continue
@@ -712,13 +704,23 @@ def build_provider_context_view(
                     ),
                 )
             ]
-        included_facts = selected_facts[:_MAX_FACTS_PER_SEGMENT]
-        omitted_facts += len(facts) - len(included_facts)
-        selected_facts = included_facts
+        if len(selected_facts) > _MAX_FACTS_PER_SEGMENT:
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+                "relevant accepted facts exceed the Provider segment budget; "
+                "rebuild the governed task projection before dispatch",
+            )
+        omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
         if not summary and not selected_facts:
             omitted_segments += 1
             continue
+        if len(rendered) >= _MAX_SEGMENTS:
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+                "eligible Context segments exceed the Provider budget; "
+                "rebuild the governed selection before dispatch",
+            )
         rendered.append(
             {
                 "asset_version_id": str(raw.get("asset_version_id") or ""),
@@ -761,7 +763,7 @@ def build_provider_context_view(
         "task_narrative_projection": _compact(dict(projection)),
         "segments": rendered,
         "selection_explanation": {
-            "policy": "minimum-sufficient-context-v2",
+            "policy": "minimum-sufficient-context-v3",
             "included_segment_count": len(rendered),
             "included_fact_count": sum(
                 len(item["structured_facts"]) for item in rendered

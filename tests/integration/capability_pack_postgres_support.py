@@ -641,7 +641,10 @@ class CapabilityPackPostgresHarness:
             runtime.execute_admin(register, principal=self.agent_admin)
             runtime.execute_admin(activate, principal=self.agent_admin)
 
-    def run_draft_attempt(self, *, chapter_number: int = 1) -> dict[str, Any]:
+    def run_draft_attempt(
+        self, *, chapter_number: int = 1,
+        extra_context_candidates: tuple[dict[str, Any], ...] = (),
+    ) -> dict[str, Any]:
         chapter_plan = self._chapter_plan_candidate(chapter_number)
         with tempfile.TemporaryDirectory(prefix="novel-forge-pack-snapshot-") as root:
             settings = IndustrialSettings(
@@ -681,7 +684,7 @@ class CapabilityPackPostgresHarness:
                         f"chapter-{chapter_number}"
                     ),
                     preparation_report={"decision": "READY", "fixture": True},
-                    context_candidates=(chapter_plan,),
+                    context_candidates=(chapter_plan, *extra_context_candidates),
                 ),
                 principal=operator,
             )

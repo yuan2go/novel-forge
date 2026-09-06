@@ -299,6 +299,49 @@ def test_provider_admission_rejects_tampered_context_correctness_receipt() -> No
         build_provider_context_view("draft", context, task)
 
 
+def test_provider_cannot_silently_drop_relevant_accepted_facts_after_context_gate() -> None:
+    context = _context(0)
+    context["context_segments"][0]["structured_facts"] = [
+        {
+            "state_kind": "character_knowledge",
+            "entity_key": f"character_id=character:lin|fact_id=fact:required-{index}",
+            "state": {
+                "character_id": "character:lin",
+                "fact_id": f"fact:required-{index}",
+                "status": "KNOWN",
+            },
+        }
+        for index in range(33)
+    ]
+    context["task_narrative_projection"]["fact_refs"] = [
+        f"fact:required-{index}" for index in range(33)
+    ]
+
+    with pytest.raises(KernelError, match="CONTEXT_PROJECTION_TOO_BROAD"):
+        build_provider_context_view(
+            "draft", context, build_provider_task_view("draft", {"plan": _plan()})
+        )
+
+
+def test_provider_cannot_silently_drop_eligible_context_segments() -> None:
+    context = _context(0)
+    context["context_segments"] = [
+        {
+            "asset_version_id": f"material:{index}",
+            "asset_type": "material_card",
+            "safe_summary": f"Required causal preparation {index}.",
+            "structured_facts": [],
+            "allowed_use": "generation",
+        }
+        for index in range(25)
+    ]
+
+    with pytest.raises(KernelError, match="CONTEXT_PROJECTION_TOO_BROAD"):
+        build_provider_context_view(
+            "draft", context, build_provider_task_view("draft", {"plan": _plan()})
+        )
+
+
 def test_reader_outcome_uses_its_own_bounded_task_and_context_views() -> None:
     task = build_provider_task_view(
         "reader_outcome",

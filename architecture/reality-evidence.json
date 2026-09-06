@@ -2741,7 +2741,7 @@
     },
     {
       "id": "p0-backend-engineering-qualification-8e43eb27db57",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "make p0-backend-qualification P0_PROFILE=local",
       "observed_at_sha": "8e43eb27db57b321becf07d95542eec9e9017ffb",
@@ -2907,7 +2907,7 @@
         "artifact": "p0-backend-qualification-8e43eb27db57b321becf07d95542eec9e9017ffb.json",
         "repository_path": "architecture/evidence/p0-backend-qualification-8e43eb27db57b321becf07d95542eec9e9017ffb.json",
         "sha256": "sha256:fb807c9ee5de79f83554b5aad091d3d9ce19af60e37918d03596683e60a16fc7",
-        "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
+        "retention": "REPOSITORY_HISTORICAL_AUDIT_ARTIFACT"
       },
       "qualification_evidence": [
         {
@@ -3219,10 +3219,8 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3309,10 +3307,8 @@
           "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3406,10 +3402,8 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3505,10 +3499,8 @@
           "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3620,10 +3612,8 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -3757,10 +3747,8 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3890,10 +3878,8 @@
           "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -4002,10 +3988,8 @@
           "symbol": "test_intent_compiler_preserves_source_and_routes_only_declared_constraints"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4153,10 +4137,8 @@
           "symbol": "test_scene_planning_cannot_promote_reader_fact_belief_or_suspicion_to_knowledge"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4270,10 +4252,8 @@
           "symbol": "test_structured_realization_scopes_specialists_and_preserves_slot_revisions"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4369,10 +4349,8 @@
           "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4485,10 +4463,8 @@
           "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     },
     {
@@ -4629,10 +4605,8 @@
           "symbol": "test_book_input_resolver_freezes_active_authorities_and_planning_pack"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4731,10 +4705,8 @@
           "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4896,12 +4868,18 @@
         {
           "path": "tests/unit/test_longform_retrieval_benchmark.py",
           "symbol": "test_bounded_expansion_improves_hard_recall_without_context_or_leakage_regression"
+        },
+        {
+          "path": "tests/unit/test_provider_task_views.py",
+          "symbol": "test_provider_cannot_silently_drop_relevant_accepted_facts_after_context_gate"
+        },
+        {
+          "path": "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
+          "symbol": "test_provider_context_fact_limit_blocks_before_durable_dispatch"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5016,10 +4994,8 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -5138,10 +5114,8 @@
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5257,10 +5231,8 @@
           "symbol": "test_book_input_resolver_freezes_active_authorities_and_planning_pack"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5349,10 +5321,8 @@
           "symbol": "test_acceptance_is_durably_blocked_without_native_whole_book_human_policy"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5513,10 +5483,8 @@
           "symbol": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5636,10 +5604,8 @@
           "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -5757,10 +5723,8 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5909,10 +5873,8 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -6020,10 +5982,8 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-8e43eb27db57"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     }
   ],
@@ -6163,7 +6123,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:c6e29db48b78fe6a36a0a4d50e88f6e0120dc6e1fed43b38ed8496d1d50cb4de"
+    "implementation_tree_sha": "sha256:af6f4c616a0113aad799b6a00cf66075d9c6df0400e9213c2827f26d96cf05a3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

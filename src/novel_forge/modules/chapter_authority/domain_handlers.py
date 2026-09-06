@@ -452,7 +452,7 @@ def build_context_bundle(
                 for arc_id, content in sorted((frozen_arc_plans or {}).items())
             ],
         },
-        "provider_projection_contract_version": "minimum-sufficient-context-v2",
+        "provider_projection_contract_version": "minimum-sufficient-context-v3",
     }
 
 
