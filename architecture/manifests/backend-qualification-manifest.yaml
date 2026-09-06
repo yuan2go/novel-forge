@@ -86,6 +86,8 @@
       "tests/integration/test_chapter_outcome_story_state_postgres.py"
     ],
     "book_opening_recovery": [
+      "tests/unit/test_book_opening_runtime_job_policy.py",
+      "tests/integration/test_book_opening_workflow_nodes_postgres.py",
       "tests/unit/test_book_opening_workflow.py",
       "tests/unit/test_book_opening_progress.py",
       "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",

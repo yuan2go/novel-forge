@@ -4461,6 +4461,14 @@
         {
           "path": "tests/integration/test_book_opening_workflow_failures_postgres.py",
           "symbol": "test_node_completion_response_loss_replays_receipt_without_provider_send"
+        },
+        {
+          "path": "tests/unit/test_book_opening_runtime_job_policy.py",
+          "symbol": "test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result"
+        },
+        {
+          "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
+          "symbol": "test_committed_node_response_survives_a_terminal_heartbeat_race"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6123,7 +6131,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:af6f4c616a0113aad799b6a00cf66075d9c6df0400e9213c2827f26d96cf05a3"
+    "implementation_tree_sha": "sha256:e2654f0a173d548108fa6d112a6c05f0675a3a339e54661619ab17685554c903"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

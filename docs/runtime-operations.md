@@ -274,6 +274,10 @@ For Book Opening, use its progress query and recovery application. A process exi
 expired lease, or a completed inner semantic operation alone is insufficient to decide
 whether Provider work may be sent again.
 
+When an Opening node returns its committed result and a late heartbeat observes the
+released lease, the worker verifies the exact node receipt before preserving that
+result. A lost completion response still resolves from the receipt as a replay.
+
 Provider retry first reloads any existing ExternalEffect intent and reuses its frozen
 request/admission identity. A historical remote intent that predates complete admission
 is not upgraded in place or reinterpreted with the current meter; dispatch remains
