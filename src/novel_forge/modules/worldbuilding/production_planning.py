@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import asdict, dataclass
+import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -14,6 +15,9 @@ from .dynamics import (
     candidate_transition,
     require_contract_fields,
     require_text_fields,
+    evaluate_requirement,
+    state_index,
+    validate_world_state_rules,
 )
 
 
@@ -162,48 +166,92 @@ def _simulate_preparation(
     target: WorldTransition,
     path: Mapping[str, Any],
     chapter_number: int,
-) -> list[dict[str, Any]]:
-    working = deepcopy(reality)
-    working.setdefault("events", []).extend(
-        {"event_id": entry["source_event_id"]}
-        for entries in reality.get("current_state", {}).values()
-        for entry in entries
-        if entry.get("source_event_id")
-    )
-    schedule: list[dict[str, Any]] = []
-    local_names = [step["transition"]["transition_id"] for step in path["steps"]]
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    from novel_forge.modules.narrative_state.causal_batch import compile_causal_batch
+    from .working_state import preview_preparation_transition
+
+    steps = path["steps"]
+    local_names = [step["transition"]["transition_id"] for step in steps]
     if len(local_names) != len(set(local_names)) or target.transition_id in local_names:
         raise KernelError(
             "WORLD_PREPARATION_IDENTITY_COLLISION",
             "preparation steps and target need distinct batch-local names",
         )
-    last_offset = -1
-    for step in path["steps"]:
-        transition = WorldTransition.from_mapping(step["transition"])
-        if step["chapter_offset"] < last_offset:
+    known = {
+        entry.get("source_event_id", "") for entry in state_index(reality).values()
+    }
+    known.update(event.get("event_id", "") for event in reality.get("events", []))
+    known.update(reality.get("foundation_cause_refs", []))
+    known.discard("")
+    nodes = []
+    by_name = {step["transition"]["transition_id"]: step for step in steps}
+    for raw in [*(step["transition"] for step in steps), asdict(target)]:
+        refs = list(raw["cause_refs"])
+        if raw["transition_id"] == target.transition_id:
+            refs = list(
+                dict.fromkeys([*refs, *(f"local:{name}" for name in local_names)])
+            )
+        nodes.append(
+            {
+                "event_id": f"planning:{path['path_id']}:{raw['transition_id']}",
+                "state_kind": raw["state_kind"],
+                "identity": {"entity_key": raw["entity_key"]},
+                "story_time": raw["story_time"],
+                "mutation": {
+                    "payload": {
+                        "causal_batch": {
+                            "contract_version": "causal-batch-event.v1",
+                            "local_id": raw["transition_id"],
+                            "depends_on": refs,
+                        }
+                    }
+                },
+            }
+        )
+    graph = compile_causal_batch(nodes, accepted_ids=frozenset(known))
+    schedule = []
+    for node in graph.ordered:
+        name = node["mutation"]["payload"]["causal_batch"]["local_id"]
+        if name == target.transition_id:
+            continue
+        step = by_name[name]
+        if any(
+            by_name[parent]["chapter_offset"] > step["chapter_offset"]
+            for parent in graph.ancestors[name]
+        ):
             raise KernelError(
                 "WORLD_PREPARATION_ORDER_INVALID",
-                "a dependency cannot be scheduled after its effect",
+                "a preparation cause cannot be scheduled after its effect",
             )
-        last_offset = step["chapter_offset"]
-        receipt = candidate_transition(transition, working)
-        if not receipt["eligible"]:
+        working = deepcopy(reality)
+        working.setdefault("events", []).extend(
+            {"event_id": identity} for identity in known
+        )
+        for prior in schedule:
+            if prior["transition"]["transition_id"] not in graph.ancestors[name]:
+                continue
+            working["current_state"], simulated = preview_preparation_transition(
+                reality=working,
+                transition=WorldTransition.from_mapping(prior["transition"]),
+                chapter_number=prior["chapter_number"],
+                path_id=path["path_id"],
+            )
+            working["events"].append(simulated)
+        transition = WorldTransition.from_mapping(step["transition"])
+        if not candidate_transition(transition, working)["eligible"]:
             raise KernelError(
                 "WORLD_PREPARATION_UNSUPPORTED",
                 "a preparation step has unfulfilled modeled preconditions",
             )
-        from .working_state import preview_preparation_transition
-
-        working["current_state"], simulated = preview_preparation_transition(
+        preview_preparation_transition(
             reality=working,
             transition=transition,
             chapter_number=chapter_number + step["chapter_offset"],
             path_id=path["path_id"],
         )
-        working.setdefault("events", []).append(simulated)
         schedule.append(
             {
-                "transition": asdict(transition),
+                "transition": json.loads(json.dumps(asdict(transition))),
                 "chapter_number": chapter_number + step["chapter_offset"],
                 "depends_on": list(transition.cause_refs),
                 "expected_effect": dict(transition.changes),
@@ -211,12 +259,29 @@ def _simulate_preparation(
                 "path_id": path["path_id"],
             }
         )
+    working = deepcopy(reality)
+    working.setdefault("events", []).extend(
+        {"event_id": identity} for identity in known
+    )
+    for step in schedule:
+        working["current_state"], simulated = preview_preparation_transition(
+            reality=working,
+            transition=WorldTransition.from_mapping(step["transition"]),
+            chapter_number=step["chapter_number"],
+            path_id=path["path_id"],
+        )
+        working["events"].append(simulated)
+    validate_world_state_rules(
+        reality=reality,
+        state=state_index(working),
+        affected_kinds={step["transition"]["state_kind"] for step in schedule},
+    )
     if not candidate_transition(target, working)["eligible"]:
         raise KernelError(
             "WORLD_PREPARATION_INSUFFICIENT",
             "preparation does not establish the modeled target preconditions",
         )
-    return schedule
+    return schedule, working
 
 
 def compile_world_plan(
@@ -344,8 +409,6 @@ def compile_world_plan(
                 ),
             }
         )
-        if evaluated.get("rejection"):
-            continue
         preferred = judgment["preferred_path_id"]
         if preferred and preferred not in {
             path["path_id"] for path in source["preparation_paths"]
@@ -358,13 +421,15 @@ def compile_world_plan(
         if not evaluated["eligible"]:
             for path in source["preparation_paths"]:
                 try:
-                    schedule = _simulate_preparation(
+                    schedule, simulated = _simulate_preparation(
                         reality=reality,
                         target=future.transition,
                         path=path,
                         chapter_number=chapter_number,
                     )
-                    paths.append({**path, "schedule": schedule})
+                    paths.append(
+                        {**path, "schedule": schedule, "simulation": simulated}
+                    )
                 except KernelError as exc:
                     base["rejected_paths"].append(
                         {
@@ -376,6 +441,43 @@ def compile_world_plan(
             if not paths:
                 continue
         paths.sort(key=lambda path: (path["path_id"] != preferred, path["path_id"]))
+        if paths and evaluated.get("rejection"):
+            proven = build_causal_plan(
+                reality=paths[0]["simulation"],
+                candidates=(future,),
+                chapter_number=chapter_number,
+                intent_revision_id=intent_version_id,
+            )
+            evaluated = {**proven["candidate_futures"][0], "eligible": False}
+            baseline_index = state_index(reality)
+            receipts = {
+                r.requirement_id: evaluate_requirement(r, baseline_index)
+                for r in (
+                    *future.transition.requirements,
+                    *future.transition.epistemic_basis,
+                )
+            }
+            evaluated["requirements"] = list(receipts.values())
+            plan["causal_debts"] = [
+                {
+                    **debt,
+                    "preparation": receipts[debt["requirement_id"]],
+                    "status": "DISCHARGED_BY_ACCEPTED_REALITY"
+                    if receipts[debt["requirement_id"]]["satisfied"]
+                    else "PREPARATION_REQUIRED",
+                    "discharge_evidence": receipts[debt["requirement_id"]][
+                        "source_event_id"
+                    ]
+                    if receipts[debt["requirement_id"]]["satisfied"]
+                    else "",
+                }
+                for debt in proven["causal_debts"]
+            ]
+            base["candidate_futures"][-1] = {
+                **base["candidate_futures"][-1],
+                **evaluated,
+            }
+            base["candidate_futures"][-1].pop("rejection", None)
         viable.append(
             {"candidate": evaluated, "debts": plan["causal_debts"], "paths": paths}
         )
@@ -440,7 +542,11 @@ def compile_world_plan(
             "selected_path_id": paths[0]["path_id"] if paths else "",
             "preparation_schedule": paths[0]["schedule"] if paths else [],
             "alternative_paths": [
-                {key: value for key, value in path.items() if key != "schedule"}
+                {
+                    key: value
+                    for key, value in path.items()
+                    if key not in {"schedule", "simulation"}
+                }
                 for path in paths[1:]
             ],
         }

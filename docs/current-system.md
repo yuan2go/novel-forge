@@ -273,7 +273,10 @@ The explicit `planning.causal.propose` API remains a manual proposal input.
 
 Only the selected preparation path creates commitments. Its steps bind dependencies,
 future Chapter windows and expected effects. Private preparation uses the Narrative
-State reducers but has no accepted authority. Planning completion cannot discharge a
+State reducers but has no accepted authority. A target may cite its own declared preparation
+events: the complete path graph is validated before target eligibility, with exact historical
+references and path-local scope. Provider array order does not determine dependency order.
+Planning completion cannot discharge a
 commitment: repayment requires an exact accepted predicate event. Approved replacement
 Intent can retire unfulfilled preparation while preserving its original decision and
 accepted history. An expired unfulfilled window produces an accepted cancellation;
@@ -298,7 +301,9 @@ preparation commitments remain outside the Reader view.
 Explicit batch-local event names and dependencies order same-chapter acceptance.
 Each event validates against the frozen baseline plus its verified ancestors through
 the same reducers. Cycles, unknown references, future causes, unordered writes and
-cross-character knowledge fail before the atomic commit. Local names resolve to exact
+cross-character knowledge fail before the atomic commit. Compiled rules are also checked
+against the combined final projection, including effects outside each event's ancestor set.
+Local names resolve to exact
 accepted event identities in Why traces. Independent simultaneous events remain legal;
 travel uses the affected entity's clock. Retry reuses frozen Context and confirmed
 Provider outputs, and ChapterGroup recovery consumes a committed Book acceptance

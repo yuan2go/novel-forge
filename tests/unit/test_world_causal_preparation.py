@@ -295,3 +295,90 @@ def test_duplicate_preparation_event_names_are_rejected_before_chapter_planning(
         result["rejected_paths"][0]["rejection"]["code"]
         == "WORLD_PREPARATION_IDENTITY_COLLISION"
     )
+
+
+def test_local_goal_support_requires_validated_own_preparation_path():
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    generated = generated_paths()
+    generated["candidates"][0]["transition"]["cause_refs"] = ["local:gather"]
+    result = compile_world_plan(
+        reality=reality_state(),
+        generated=generated,
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    assert result["disposition"] == "PREPARATION_REQUIRED"
+    assert result["selected_path_id"] == "gather-path"
+    assert result["preparation_schedule"][0]["transition"]["transition_id"] == "gather"
+    assert result["causal_debts"][0]["status"] == "PREPARATION_REQUIRED"
+    assert result["causal_debts"][0]["discharge_evidence"] == ""
+    assert result["rejected_paths"][0]["path_id"] == "trade-path"
+    assert (
+        result["rejected_paths"][0]["rejection"]["code"]
+        == "WORLD_BATCH_REFERENCE_UNKNOWN"
+    )
+
+
+@pytest.mark.parametrize(
+    "bad_ref", ["event:invented", "local:foreign-path", "local:departure"]
+)
+def test_preparation_cannot_legitimize_unknown_or_cyclic_target_sources(bad_ref):
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    generated = generated_paths()
+    generated["candidates"][0]["transition"]["cause_refs"] = [bad_ref]
+    result = compile_world_plan(
+        reality=reality_state(),
+        generated=generated,
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    assert result["disposition"] == "BLOCKED"
+    assert not result["preparation_schedule"]
+
+
+def test_preparation_topology_is_independent_of_provider_array_order():
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    generated = generated_paths()
+    target = generated["candidates"][0]
+    target["preparation_paths"] = target["preparation_paths"][:1]
+    path = target["preparation_paths"][0]
+    first = path["steps"][0]
+    first["transition"]["story_time"].update(start_ordinal=11, end_ordinal=11)
+    second = deepcopy(first)
+    second["transition"].update(transition_id="pack", cause_refs=["local:gather"])
+    second["transition"]["story_time"].update(start_ordinal=12, end_ordinal=12)
+    second["chapter_offset"] = 1
+    path["steps"].append(second)
+    target["transition"]["cause_refs"] = ["local:pack"]
+    options = dict(
+        reality=reality_state(),
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    ordered = compile_world_plan(generated=generated, **options)
+    assert ordered["disposition"] == "PREPARATION_REQUIRED"
+    before = deepcopy(generated)
+    path["steps"].reverse()
+    shuffled = compile_world_plan(generated=generated, **options)
+    assert shuffled["preparation_schedule"] == ordered["preparation_schedule"]
+    assert before["candidates"][0]["preparation_paths"][0]["steps"] == list(
+        reversed(path["steps"])
+    )

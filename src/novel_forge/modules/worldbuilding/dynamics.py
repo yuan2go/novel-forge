@@ -282,6 +282,29 @@ class WorldTransition:
         )
 
 
+def validate_world_state_rules(
+    *, reality: Mapping[str, Any], state: Mapping[tuple[str, str], Mapping[str, Any]],
+    affected_kinds: set[str],
+) -> None:
+    for rule_source in reality.get("world_rule_constraints", []):
+        from .foundation import WorldRule
+
+        rule = WorldRule.from_mapping(rule_source["rule"])
+        if (
+            rule.enforcement in {"SOFT_CAUSAL", "MECHANISM"}
+            or not affected_kinds.intersection(rule.applicability)
+        ):
+            continue
+        if (
+            rule.predicate is None
+            or not evaluate_requirement(rule.predicate, state)["satisfied"]
+        ):
+            raise KernelError(
+                "WORLD_COMPILED_RULE_VIOLATION",
+                f"world transition violates compiled rule {rule.rule_id} from {rule_source['asset_version_id']}",
+            )
+
+
 def validate_world_transition(
     transition: WorldTransition, reality: Mapping[str, Any]
 ) -> tuple[dict[str, Any], ...]:
@@ -301,23 +324,7 @@ def validate_world_transition(
     post_state[(transition.state_kind.value, transition.entity_key)] = {
         "state": {**old, **changes}
     }
-    for rule_source in reality.get("world_rule_constraints", []):
-        from .foundation import WorldRule
-
-        rule = WorldRule.from_mapping(rule_source["rule"])
-        if (
-            rule.enforcement in {"SOFT_CAUSAL", "MECHANISM"}
-            or transition.state_kind.value not in rule.applicability
-        ):
-            continue
-        if (
-            rule.predicate is None
-            or not evaluate_requirement(rule.predicate, post_state)["satisfied"]
-        ):
-            raise KernelError(
-                "WORLD_COMPILED_RULE_VIOLATION",
-                f"world transition violates compiled rule {rule.rule_id} from {rule_source['asset_version_id']}",
-            )
+    validate_world_state_rules(reality=reality, state=post_state, affected_kinds={transition.state_kind.value})
     for (kind, _), entry in state.items():
         payload = dict(entry.get("state") or {})
         if (
