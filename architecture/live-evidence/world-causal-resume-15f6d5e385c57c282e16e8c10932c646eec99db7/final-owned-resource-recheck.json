@@ -1,0 +1,43 @@
+{
+  "schema_version": "owned-resource-recheck.v1",
+  "checked_at": "2026-09-06T19:50:09.378350+00:00",
+  "tested_sha": "15f6d5e385c57c282e16e8c10932c646eec99db7",
+  "implementation_tree_sha": "sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a",
+  "scope": "THIS_WORK_PACKAGE_OWNED_RESOURCES_ONLY",
+  "removed_development_container": "4417805cc30a3902e14e96c713cd5e605c6e300cc2b08a8474c014cd861992f6",
+  "removed_development_volumes": [
+    "cf7d620c38673c1b8ad789f7e2873b3c33467610999792061c773fbdae30d2e8"
+  ],
+  "checked_run_ids": [
+    "p0-44aac867dcc54138b01aa8d7351cdf23",
+    "p0-959bd3919b464cb9a56b4a3fcff6b6be",
+    "p0-fa0a9b1ecbc94f3dba803119c1714857"
+  ],
+  "canonical_p0_cleanup": {
+    "phases": [
+      {
+        "compose_project": "nf-p0-44aac867dcc54138b01aa8d7351cdf23",
+        "phase": "postgresql",
+        "receipt": "compose-resource-ownership-nf-p0-44aac867dcc54138b01aa8d7351cdf23.json",
+        "remaining_resource_count": 0,
+        "resource_count": 2,
+        "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23",
+        "status": "PASS"
+      },
+      {
+        "compose_project": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+        "phase": "compose-runtime",
+        "receipt": "compose-resource-ownership-nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime.json",
+        "remaining_resource_count": 0,
+        "resource_count": 18,
+        "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23",
+        "status": "PASS"
+      }
+    ],
+    "remaining_resource_count": 0,
+    "status": "PASS"
+  },
+  "remaining_resources": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}

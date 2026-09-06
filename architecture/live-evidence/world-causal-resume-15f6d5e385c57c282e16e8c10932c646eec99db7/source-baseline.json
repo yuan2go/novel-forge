@@ -1,0 +1,14 @@
+{
+  "start_main_sha": "88100f821ae3f0bdcf00577dada8610ebece72a7",
+  "final_checked_main_sha": "88100f821ae3f0bdcf00577dada8610ebece72a7",
+  "start_source_tree": "65b28a58c4438b12858d0eaf349bf4d756ebefe6",
+  "start_implementation_tree_sha": "sha256:d069d07df10e5d1522cdee9c309e7dc938b24fa3eda44c569d11fb4ca089c59b",
+  "tested_sha": "15f6d5e385c57c282e16e8c10932c646eec99db7",
+  "tested_source_tree": "75c8db38862132e6bcff90cbc5c0282cb0f7802d",
+  "implementation_tree_sha": "sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a",
+  "branch": "codex/world-causal-resume-20260907",
+  "worktree": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/world-causal-resume-20260907",
+  "worktree_at_p0": "CLEAN",
+  "post_p0_commit_policy": "EVIDENCE_ONLY_WITH_IDENTICAL_IMPLEMENTATION_IDENTITY",
+  "push_or_merge_performed": false
+}

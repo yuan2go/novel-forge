@@ -1,0 +1,220 @@
+{
+  "schema_version": "retained-engineering-artifacts.v1",
+  "tested_sha": "15f6d5e385c57c282e16e8c10932c646eec99db7",
+  "implementation_tree_sha": "sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a",
+  "p0_run_id": "p0-44aac867dcc54138b01aa8d7351cdf23",
+  "qualification_report": {
+    "path": "architecture/evidence/p0-backend-qualification-15f6d5e385c57c282e16e8c10932c646eec99db7.json",
+    "sha256": "sha256:c1494b9a8c2e79301b709b5d48d5fe965fb56e3655f137670b0a5f6a599d22dd"
+  },
+  "losslessly_compressed_originals": [
+    {
+      "original_path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/postgresql-pytest.xml",
+      "original_size_bytes": 104693615,
+      "original_sha256": "sha256:d4e7d5160441086f5cc07c50bf0055896482e9532cafe05279ce3cac8f26cb7e",
+      "retained_path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/postgresql-pytest.xml.gz",
+      "retained_sha256": "sha256:40b6046aa3d5b7208e111d574fc230672a7b733069d2d0609bb7016ad4e215df",
+      "encoding": "gzip",
+      "lossless": true
+    }
+  ],
+  "full_production_observations": {
+    "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/production-wiring-observation-full.json.gz",
+    "sha256": "sha256:a8033a19e79bc7f59d41dbd20586afa53541fd81622dbc928933fbd5a052e54d",
+    "uncompressed_sha256": "sha256:aa6d932ec89451859dc88cdd9d0249562f8a2b1288488c523dcba16e55f82a45",
+    "encoding": "gzip"
+  },
+  "current_run_artifacts": [
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/backend-pytest-collection.json",
+      "size_bytes": 261713,
+      "sha256": "sha256:32ffaee8a3f7aa53749d287ad9653a8771d740dd2a9e8e4892ddd88fe3212dae"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/backend-pytest-process.json",
+      "size_bytes": 5591,
+      "sha256": "sha256:5da69baf21ddf57656c7adbe770c12de859a2f898d40a163bb9989a49d7b21e5"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/backend-pytest.xml",
+      "size_bytes": 311053,
+      "sha256": "sha256:47b623cb579b310f7693b680f5bd6970391dae45e5126053fc28154238f6d96c"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/compose-resource-ownership-nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime.json",
+      "size_bytes": 4802,
+      "sha256": "sha256:11c977ee99428707cc483ee09dffece30d193323a838ab1e227c936ef4bf9b57"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/compose-resource-ownership-nf-p0-44aac867dcc54138b01aa8d7351cdf23.json",
+      "size_bytes": 695,
+      "sha256": "sha256:57d04aa8f3ba3030ef80e98d83377b6ceb83c7b713a51d7510d4a7b6c2661a8b"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/compose-runtime-process.json",
+      "size_bytes": 26163,
+      "sha256": "sha256:6beafd882232a75ef0cedbfce7bff8a0cf0655ed64ccef04333e01a2456759f7"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/compose-runtime.json",
+      "size_bytes": 30001,
+      "sha256": "sha256:97034ccdcc2f3ac048ec55134b45a68d0242379233db457334d373548143c8d7"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/documentation-reality-process.json",
+      "size_bytes": 883,
+      "sha256": "sha256:5edbb63adb620f85829e9d46fbee29dfc970cc30bba072c4286dca43684478b8"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/documentation-reality.json",
+      "size_bytes": 771,
+      "sha256": "sha256:4584a5034fd8ceae8c0d076df2e0ba36e2688c6f4af0d3df6d70d0afb5c48a58"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/migration-compatibility-collection.json",
+      "size_bytes": 12806,
+      "sha256": "sha256:52a89410f30493aaaa1ac729d7736e1ed1c794a6d6b90b2abe4c53537f87c1f7"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/migration-compatibility-process.json",
+      "size_bytes": 227,
+      "sha256": "sha256:7b867e2cfc1ca1770f1dd73d51a6d439fa8dd03b630389b414a063525c8b2dbd"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/migration-compatibility-pytest.xml",
+      "size_bytes": 17054,
+      "sha256": "sha256:743072b812340b7b722a7405cfb58cde3d05e462ef7512d89b70cdc8e2953561"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/migration-fresh-process.json",
+      "size_bytes": 23558,
+      "sha256": "sha256:7d9cc8505146c0d1ed9a19dcc932cc076d635f95e8674082e4333a6ee0af2579"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/postgresql-pytest-collection.json",
+      "size_bytes": 95368,
+      "sha256": "sha256:df6deb6688bbec08b60e0d9b5a0430ce32c0d8433175d22f0c7e197b9af4f72f"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/postgresql-pytest-process.json",
+      "size_bytes": 13881,
+      "sha256": "sha256:0efb77a152b5872ce0e402b4c4a4d8be25008aac9fff41cced662300ad8525e1"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/postgresql-pytest.xml.gz",
+      "size_bytes": 12639489,
+      "sha256": "sha256:40b6046aa3d5b7208e111d574fc230672a7b733069d2d0609bb7016ad4e215df"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/query-plan-process.json",
+      "size_bytes": 55156,
+      "sha256": "sha256:0874d1a8ff1a4bf99f198bcdbab3eea724314c87453b4658838583bf2bbdb780"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/query-plan.json",
+      "size_bytes": 50854,
+      "sha256": "sha256:29f8680f4ecd7e8a360bbbbf0210c89ee5c11ab2c1a880c91a2c154a526bbba4"
+    },
+    {
+      "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/novel-forge-p0-15f6d5e385c5-44aac867dcc54138b01aa8d7351cdf23/static-and-manifests.json",
+      "size_bytes": 632905,
+      "sha256": "sha256:d3da2af14b6deedd735f2d272f7c9c70b74f13c2f4e641a1eea26c8d4e3d2aa0"
+    }
+  ],
+  "production_observation": {
+    "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/production-wiring-observation.json",
+    "sha256": "sha256:8acd99e39ff2d27dfffb9b91c1a6fce70f4f68e1d7a38702792c43b4bb6de841"
+  },
+  "prior_attempts": [
+    {
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
+      "status": "FAIL",
+      "tested_sha": "35c21e26039a5d90c2384e28d51042d3506e2f66",
+      "implementation_tree_sha": "sha256:ee968889765df808c98b524bf040aabee69f2a6cc202423c436af134ea1e1973",
+      "report": {
+        "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/p0-backend-qualification-35c21e26039a5d90c2384e28d51042d3506e2f66.json",
+        "sha256": "sha256:6474139132e98870ec17541851297c57f78c43f35c1884ca1eceb580ed45bcda"
+      },
+      "artifacts": [
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/interruption-reason.json",
+          "sha256": "sha256:fc01e258ce0f988aa1bc6be41e3a4f5e82764b6827bd501b96087a6fc0ceb5b2"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/backend-pytest-collection.json",
+          "sha256": "sha256:de006e6bba535aab1c2b5792498b73aac63ca1808d01ba20f1f9fbac7fdbfc70"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/backend-pytest-process.json",
+          "sha256": "sha256:43ce05512ac1be0f604535241f053043f7323a5e792aefb02e491e5a29fabf32"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/backend-pytest.xml",
+          "sha256": "sha256:29d79a1430bf172544bc096908eecd2d3a79326c63a7c40e7b35bac1057d4a37"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/compose-resource-ownership-nf-p0-959bd3919b464cb9a56b4a3fcff6b6be.json",
+          "sha256": "sha256:6b986b66a60a2f8c2ed484e1b2e84a8bfa86f464f7e47b1174a743c68f9f1a3f"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/documentation-reality-process.json",
+          "sha256": "sha256:9c007edf368ac7afd35a3c87d9763f5c6780aebec42969e41d3bb8d593244c75"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/documentation-reality.json",
+          "sha256": "sha256:23fff5311625d5d4647c68225363a34afe6a403893d4ff511334b3ce5431f0f3"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/migration-compatibility-collection.json",
+          "sha256": "sha256:34c9c2fb6c0b91f6e9f6cef187dad315d2eff8d038c5d075ed62e940a3fe8cfd"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/migration-compatibility-process.json",
+          "sha256": "sha256:2c086bdaa30eb612e6b520676d521c3abc5afeddb6db865879a8b6452420dd04"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/migration-compatibility-pytest.xml",
+          "sha256": "sha256:024ee5e98e12c56b4cf5ffda338e6481bf49b9fa66cb0d34a062e14449215e76"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/migration-fresh-process.json",
+          "sha256": "sha256:286e58f1ef46b075d0362552e1ff93f961375d05269c3323693af23aaae75c53"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/postgresql-pytest-collection.json",
+          "sha256": "sha256:2e1a4e06802434ed5652ecf35184424e0462f3d5ed3926d854553c72fdb3ad25"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/postgresql-pytest-process.json",
+          "sha256": "sha256:8d660c09fc214f20461c345e99611491ac08aaaac536c1060dfdaa04ef2e4d7b"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/postgresql-pytest.xml",
+          "sha256": "sha256:4dba39c032b5d5e2e79ebd0f9450e399fe7c832cfb31d2ca343018be1217dd65"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/novel-forge-p0-35c21e26039a-959bd3919b464cb9a56b4a3fcff6b6be/static-and-manifests.json",
+          "sha256": "sha256:6b78c500937b8debcc6d076014c1b6b8fdc19f393479e1389e54dfed33e5df39"
+        },
+        {
+          "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/prior-attempts/p0-35c21e26/p0-backend-qualification-35c21e26039a5d90c2384e28d51042d3506e2f66.json",
+          "sha256": "sha256:6474139132e98870ec17541851297c57f78c43f35c1884ca1eceb580ed45bcda"
+        }
+      ]
+    }
+  ],
+  "resource_recheck": {
+    "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/final-owned-resource-recheck.json",
+    "sha256": "sha256:6f228e8150f8c39481f1fe4d8d4045673d6a4b6bbe2ca810055c3f6c44c9815f"
+  },
+  "source_baseline": {
+    "path": "architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/source-baseline.json",
+    "sha256": "sha256:3400c99a89dd8707f63bfaae0d9a89b8fa2c6c47cde84d428237fe971b81a725"
+  },
+  "independent_evidence_status": {
+    "REAL_PROVIDER_SMOKE": "BLOCKED_EXPLICIT_AUTHORIZED_BUDGET_NOT_PROVIDED",
+    "HUMAN_EDITORIAL": "WAITING_EXTERNAL_HUMAN_EVIDENCE",
+    "LONGITUDINAL_NARRATIVE": "NOT_PROVEN",
+    "PRODUCTION_OPERATION": "NOT_PROVEN"
+  }
+}
