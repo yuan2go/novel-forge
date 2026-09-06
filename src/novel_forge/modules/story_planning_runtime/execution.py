@@ -3126,7 +3126,10 @@ class _PlanningPepPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=f"{asset_type}:{request.operation_id}:{request.attempt_id}",
+                asset_id=(
+                    f"{asset_type}:{request.operation_id}:{request.attempt_id}"
+                    + (f":{request.stage}" if request.stage.startswith("world_candidates.") else "")
+                ),
                 asset_type=asset_type,
                 schema_version=f"{asset_type}.v1",
                 logical_ref=logical_ref,
@@ -3199,6 +3202,37 @@ class PostgresPlanningExecutionPreparer:
         definition: GeneratorDefinition,
         attempt_snapshot: CapabilityPackAttemptSnapshot,
     ) -> PreparedPlanningExecution:
+        from .world_preparation import PlanningWorldPreparation
+        from novel_forge.modules.production_execution.domain_execution import DomainModelOperation
+
+        arguments = dict(operation_id=operation_id, attempt_id=attempt_id, fencing_token=fencing_token, worker_id=worker_id, command=command, inputs=inputs, definition=definition, attempt_snapshot=attempt_snapshot)
+        action = None
+        if command.world_preparation_request:
+            def execute_stage(stage):
+                prepared = self._prepare_stage(**arguments, provider_stage=stage)
+                return prepared.execution_port.execute(DomainExecutionCommand(
+                    capability=definition.capability, operation=DomainModelOperation.GENERATE,
+                    candidate_kind=CandidateKind.GENERATION, prompt=stage.name, context=stage.task,
+                ))
+            action = PlanningWorldPreparation(self).prepare(operation_id=operation_id, command=command, execute_stage=execute_stage)
+        return self._prepare_stage(**arguments, world_action=action)
+
+    def _prepare_stage(
+        self,
+        *,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        worker_id: str,
+        command: StoryPlanningGenerationCommand,
+        inputs: tuple[FrozenPlanningInput, ...],
+        definition: GeneratorDefinition,
+        attempt_snapshot: CapabilityPackAttemptSnapshot,
+        provider_stage: Any = None,
+        world_action: AuthorityAssetDocument | None = None,
+    ) -> PreparedPlanningExecution:
+        stage_name = provider_stage.name if provider_stage is not None else command.generator_operation_name
+        stage_identity = provider_stage.name if provider_stage is not None else "planning"
         if worker_id != self.worker_id:
             raise KernelError(
                 "PLANNING_WORKER_IDENTITY_DRIFT",
@@ -3221,6 +3255,11 @@ class PostgresPlanningExecutionPreparer:
             command=command,
             inputs=inputs,
         )
+        if provider_stage is not None:
+            context_document, source_document = self._world_context_bundle(
+                operation_id=operation_id, command=command, base=context_document, stage=provider_stage,
+            )
+            input_documents = (*input_documents, source_document)
         chapter_schedule_row: dict[str, Any] | None = None
         if command.planning_scope.value == PlanContractType.CHAPTER.value:
             by_role = {
@@ -3285,6 +3324,9 @@ class PostgresPlanningExecutionPreparer:
                 else ":v1"
             )
         )
+        if provider_stage is not None:
+            output_schema = dict(provider_stage.output_schema)
+            output_schema_ref = f"schema:{stage_name}:v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",
@@ -3316,7 +3358,7 @@ class PostgresPlanningExecutionPreparer:
         )
         materialization = {
             "schema_version": "novelos.planning_capability_materialization.v1",
-            "stage": command.generator_operation_name,
+            "stage": stage_name,
             "capability_requirement": definition.capability,
             "attempt_snapshot": {
                 "snapshot_id": attempt_snapshot.snapshot_id,
@@ -3364,7 +3406,7 @@ class PostgresPlanningExecutionPreparer:
         materialization["materialization_hash"] = canonical_hash(materialization)
         materialization_ref = (
             "production_execution/capability_materializations/"
-            + _token(f"{command.project_id}:{operation_id}:{attempt_id}:planning")
+            + _token(f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}")
         )
         effect_context = EffectCommandContext(
             operation_id=operation_id,
@@ -3374,6 +3416,8 @@ class PostgresPlanningExecutionPreparer:
             correlation_id=command.correlation_id,
         )
         stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
+        if provider_stage is not None:
+            stable_key = f"{operation_id}:{definition.capability}:{stage_identity}:v1"
         planning_route = self.planning_route
         authoritative_envelope = build_planning_constraint_envelope(
             project_id=command.project_id,
@@ -3412,7 +3456,7 @@ class PostgresPlanningExecutionPreparer:
             provider_token_contract["estimated_total_tokens"]
         )
         stable_request_payload = {
-            "stage": command.generator_operation_name,
+            "stage": stage_name,
             "max_output_tokens": provider_token_contract["max_output_tokens"],
             "provider_token_contract": provider_token_contract,
             "input": {
@@ -3496,6 +3540,15 @@ class PostgresPlanningExecutionPreparer:
             "correlation_id": command.correlation_id,
             "operation_id": operation_id,
         }
+        if provider_stage is not None:
+            stable_request_payload["input"] = {"world_preparation": dict(provider_stage.task)}
+        elif world_action is not None:
+            from novel_forge.modules.canon_graph.background import public_world_direction
+            stable_request_payload["input"]["world_preparation"] = public_world_direction({
+                "asset_version_id": world_action.asset_version_id,
+                "content_hash": world_action.content_hash,
+                "action": world_action.content["contract"],
+            })
         existing_intent = read_external_effect_intent(
             self.database_url,
             effect_context,
@@ -3520,7 +3573,7 @@ class PostgresPlanningExecutionPreparer:
             )
             prompt, prompt_evidence = _materialize_production_codex_prompt(
                 target_scope=target_scope.to_dict(),
-                stage=command.generator_operation_name,
+                stage=stage_name,
                 inputs=stable_request_payload["input"],
                 materialization=materialization,
             )
@@ -3620,7 +3673,7 @@ class PostgresPlanningExecutionPreparer:
                 logical_ref=(
                     "production_execution/provider_admissions/"
                     + _token(
-                        f"{command.project_id}:{operation_id}:{attempt_id}:planning"
+                        f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
                     )
                 ),
                 asset_type="provider_request_admission_manifest",
@@ -3803,6 +3856,8 @@ class PostgresPlanningExecutionPreparer:
             reservation_id=reservation_id,
             output_schema_ref=output_schema_ref,
             frozen=frozen,
+            stage_name=stage_name,
+            stage_identity=stage_identity,
         )
         session = self.execution_transport.session_for_project(command.project_id)
         adapter = _PlanningGatewayEffectAdapter(
@@ -3866,9 +3921,11 @@ class PostgresPlanningExecutionPreparer:
         reservation_id: str,
         output_schema_ref: str,
         frozen: Any,
+        stage_name: str,
+        stage_identity: str,
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
-        suffix = command.planning_scope.value.lower()
+        suffix = command.planning_scope.value.lower() if stage_identity == "planning" else stage_identity.replace(".", "_")
         profile_id = f"planning.{suffix}.default"
         profile = ModelProfile(
             profile_id=profile_id,
@@ -3908,10 +3965,10 @@ class PostgresPlanningExecutionPreparer:
         )
         context_ref = f"asset-version:{context_document.asset_version_id}"
         route_ref = "production_execution/routes/" + _token(
-            f"{command.project_id}:{operation_id}:{attempt_id}:planning"
+            f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
         )
         input_ref = "production_execution/inputs/" + _token(
-            f"{command.project_id}:{operation_id}:{attempt_id}:planning"
+            f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
         )
         pointers = (
             ArtifactPointer(
@@ -4070,7 +4127,7 @@ class PostgresPlanningExecutionPreparer:
             target_scope=target,
             domain=capability.domain.value,
             task_kind=graph["definition_name"],
-            stage=command.generator_operation_name,
+            stage=stage_name,
             capability=definition.capability,
             importance_class="HIGH",
             risk_class=capability.risk_class.value,
@@ -4318,18 +4375,50 @@ class PostgresPlanningExecutionPreparer:
         )
         return context, tuple(documents)
 
+    def _world_context_bundle(self, *, operation_id, command, base, stage):
+        source = self.query.require(project_id=command.project_id, asset_version_id=stage.task["source_ref"]["asset_version_id"])
+        if source.content_hash != stage.task["source_ref"]["content_hash"]:
+            raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "world role projection must retain its exact source version")
+        content = {**base.content, "world_preparation": dict(stage.task)}
+        content["token_budget"] = stage.task["policy"]["context_token_budget"]
+        selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id, "asset_type": source.asset_type, "content_hash": source.content_hash, "content": source.content}]
+        content["input_versions"] = selected
+        content["context_manifest"] = self._planning_context_manifest(command=command, selected_inputs=selected, content=content, provider_stage=stage)
+        content["estimated_tokens"] = content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        logical_ref = f"world_preparation/context/{operation_id}/{stage.name}"
+        try:
+            frozen = self.query.require(project_id=command.project_id, logical_ref=logical_ref)
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+        else:
+            if frozen.content != content:
+                raise KernelError("WORLD_CONTEXT_FROZEN_CONFLICT", "retry cannot replace the confirmed world stage Context")
+            return frozen, source
+        document = self.writer.materialize_output(AuthorityAssetWriteCommand(
+            operation_id=operation_id, project_id=command.project_id,
+            asset_id=f"world-context:{operation_id}:{stage.name}", asset_type="context_bundle",
+            schema_version="novelos.planning_context_bundle.v1", logical_ref=logical_ref,
+            category="planning_context", output_key=f"planning.context_bundle.{stage.name}", role="context_bundle",
+            content=content, qualification_policy="world-role-context-v1", trace_id=command.trace_id,
+            correlation_id=command.correlation_id, reference_asset_ids=(source.asset_id,),
+        ))
+        return document, source
+
     @staticmethod
     def _planning_context_manifest(
         *,
         command: StoryPlanningGenerationCommand,
         selected_inputs: list[dict[str, Any]],
         content: Mapping[str, Any],
+        provider_stage: Any = None,
     ) -> dict[str, Any]:
+        stage_name = provider_stage.name if provider_stage is not None else command.generator_operation_name
         token_budget = int(content.get("token_budget") or 0)
         provider_view = build_provider_context_view(
-            command.generator_operation_name,
+            stage_name,
             content,
-            {},
+            {"world_preparation": dict(provider_stage.task)} if provider_stage is not None else {},
         )
         accepted_state_boundary = provider_view.get("accepted_state_boundary")
         if not isinstance(accepted_state_boundary, Mapping):
@@ -4380,7 +4469,7 @@ class PostgresPlanningExecutionPreparer:
                     source_revision=source_revision,
                     source_identity=source_identity,
                     logical_narrative_identity=(
-                        f"{command.book_id}:{command.generator_operation_name}:"
+                        f"{command.book_id}:{stage_name}:"
                         f"{logical_kind}:{source_identity}"
                     ),
                     semantic_representation_identity=(
@@ -4454,7 +4543,7 @@ class PostgresPlanningExecutionPreparer:
             value=envelope,
             source_revision=envelope_hash,
             source_identity=(
-                f"planning-context-envelope:{command.generator_operation_name}:"
+                f"planning-context-envelope:{stage_name}:"
                 f"{command.logical_key}"
             ),
             provenance={
@@ -4510,6 +4599,10 @@ class PostgresPlanningExecutionPreparer:
                 bucket=key,
             )
         allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
+        if provider_stage is not None:
+            source_ref = provider_stage.task["source_ref"]
+            append_candidate(asset_version_id=source_ref["asset_version_id"], logical_kind="world_role_task", physical_asset_type="world_preparation_source", value=provider_stage.task, source_revision=source_ref["content_hash"], source_identity=f"world-task:{stage_name}:{source_ref['asset_version_id']}", provenance={"authority_asset_version_id": source_ref["asset_version_id"], "source_content_hash": source_ref["content_hash"], "projection_contract": "world-provider-task.v1"}, section="WORLD_TASK", bucket=provider_stage.task["role"])
+            allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
         required = tuple(sorted({item.logical_context_kind for item in candidates}))
         common = {
             "allowed": list(allowed),
@@ -4533,13 +4626,13 @@ class PostgresPlanningExecutionPreparer:
             ContextPolicySnapshot(
                 identity=PolicyIdentity(
                     policy_id="planning-typed-stage:"
-                    + command.generator_operation_name,
+                    + stage_name,
                     version="planning-context-contract-v1",
                     content_hash=canonical_hash(
-                        {**common, "stage": command.generator_operation_name}
+                        {**common, "stage": stage_name}
                     ),
                     snapshot_ref="planning-context-contract:"
-                    + command.generator_operation_name,
+                    + stage_name,
                 ),
                 allowed_logical_kinds=allowed,
                 required_logical_kinds=required,

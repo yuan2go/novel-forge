@@ -98,7 +98,7 @@ accepted-fact projection.
 | Canon | approved projection | extraction is merely a proposal |
 | Narrative State | projection | deterministic as-of view over accepted evidence |
 | Narrative Reality revision | immutable accepted-source binding | exact Outcome, state, Canon, acceptance and parent revision; no independent fact writer |
-| World transition / Candidate Future | causal proposal | deterministic rules constrain candidate evolution; only observed and accepted effects advance reality |
+| World transition / Candidate Future | causal proposal | deterministic rules constrain candidate evolution; only Book-accepted observed or governed background effects advance reality |
 | Causal requirement / debt | predicate / preparation commitment | eligibility requires accepted support; actual payoff evidence discharges accepted debt |
 | Scene realization slot | prose candidate component | dynamically selected capability and actor knowledge scope; deterministic ordered integration |
 | Planned / accepted Obligation | planning commitment / accepted projection | planned actions never rewrite accepted setup/payoff history |
@@ -253,14 +253,57 @@ story time, actor, changes and accepted causes. Known Character actions require 
 own accepted knowledge or belief predicates. The world
 clock advances from accepted world transitions, independently of narrative flashforwards.
 
-`planning.causal.propose` binds the current Reality and qualified Creative Foundation.
-It rejects invalid world transitions and evaluates causal requirements before ranking
-eligible futures across the declared Director dimensions. Missing predicates become
-causal preparation debts. The result is an existing Narrative Governance Action consumed
-by subsequent planning. It cannot change World, Character, Reader, Obligation or Canon
-facts. Canon observation preserves typed world transitions; Book acceptance rechecks
-causes, world invariants and the exact origin of causal debt. Only accepted payoff
-source evidence can fulfill that debt.
+Native Book supervision requests world preparation before Chapter planning. The
+Planning operation freezes the approved Foundation set, current Intent, Book input
+snapshot, accepted frontier, world rules, approved Character definitions, active Planning
+window, ControlPolicy and bounded production policy.
+Before the first acceptance, the baseline is a content-bound Foundation projection;
+there is no synthetic chapter-zero acceptance. Subsequent rounds bind the exact
+Narrative Reality revision.
+
+`world_candidates.generate` and `world_candidates.evaluate` use the existing Planning
+Capability Pack, Context admission, Provider Effect, receipt and budget boundaries.
+The first stage supplies proposed transitions and preparation alternatives; the second
+supplies Director dimensions and reasons. Deterministic rules reject unsupported
+identities, causes, epistemic bases, quantities and times before selection. Candidate,
+path, step, chapter-window, world-time and Context limits are frozen policy. A reasoned
+`NO_OP` or `DEFER` is a valid result. Exhausted legal alternatives produce `BLOCKED`.
+Model explanations remain hypotheses; formal checks cover the modeled predicates only.
+The explicit `planning.causal.propose` API remains a manual proposal input.
+
+Only the selected preparation path creates commitments. Its steps bind dependencies,
+future Chapter windows and expected effects. Private preparation uses the Narrative
+State reducers but has no accepted authority. Planning completion cannot discharge a
+commitment: repayment requires an exact accepted predicate event. Approved replacement
+Intent can retire unfulfilled preparation while preserving its original decision and
+accepted history. An expired unfulfilled window produces an accepted cancellation;
+renewal creates a new commitment linked to that retirement event.
+
+Selected background events enter Canon reconciliation with a governed source origin
+that binds the source, generation, evaluation, selected transition and acceptance
+policy. They carry no fabricated prose span. Book acceptance checks that the complete
+background payload still equals that decision, then commits background and observed
+facts in the same acceptance transaction and Reality lineage. Major changes retain
+Canon and ControlPolicy approval gates. Rejecting the chapter leaves no background
+fact. An accepted event cannot be withdrawn by a later Director choice.
+
+World and Director Context can inspect their governed source projection. Writer and
+Chapter Context exclude private world bindings and undisclosed background facts,
+including previous-outcome and retrieval summaries. A planned disclosure references
+an existing accepted event; only its accepted presentation changes the selected
+character or reader audience. It does not create the objective event again. Disclosure
+projects the selected fact without its private decision or causal explanation; hidden
+preparation commitments remain outside the Reader view.
+
+Explicit batch-local event names and dependencies order same-chapter acceptance.
+Each event validates against the frozen baseline plus its verified ancestors through
+the same reducers. Cycles, unknown references, future causes, unordered writes and
+cross-character knowledge fail before the atomic commit. Local names resolve to exact
+accepted event identities in Why traces. Independent simultaneous events remain legal;
+travel uses the affected entity's clock. Retry reuses frozen Context and confirmed
+Provider outputs, and ChapterGroup recovery consumes a committed Book acceptance
+whose response was lost. New generation contracts are versioned separately from
+historical frozen commands, which retain their original stage set.
 
 Creative Foundation authoring can compile explicitly labeled natural-language Intent
 clauses into goal, required/forbidden constraints, tone, pacing, relationship, Arc,

@@ -222,6 +222,14 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             purpose=str(inputs.get("purpose") or ""),
             query_plan_fingerprint=str(inputs.get("query_plan_fingerprint") or ""),
         )
+    if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+        task = inputs.get("world_preparation")
+        if not isinstance(task, Mapping) or task.get("contract_version") != "world-provider-task.v1" or task.get("fact_mutation_allowed") is not False:
+            raise KernelError("WORLD_PROVIDER_TASK_INVALID", "world stages require their exact frozen role projection")
+        expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
+        if task.get("role") != expected_role:
+            raise KernelError("WORLD_PROVIDER_ROLE_INVALID", "world stage cannot consume another role's context")
+        return _task(stage, world_preparation=_compact(task))
     if stage in _PLANNING_STAGES:
         command = inputs.get("planning_command")
         if not isinstance(command, Mapping):
@@ -281,6 +289,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         return _task(
             stage,
             planning_command=_compact(command),
+            world_preparation=_compact(inputs.get("world_preparation") or {}),
             frozen_inputs=_compact(frozen_inputs),
             authoritative_narrative_load=_compact(authoritative_load),
             arc_working_set=_compact(arc_working_set),
@@ -333,9 +342,10 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             turn_number=int(inputs.get("turn_number") or 0),
         )
     if stage == "draft":
+        from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
             stage,
-            chapter_plan=_compact(inputs.get("plan")),
+            chapter_plan=_compact(without_private_world(inputs.get("plan"))),
             style=_compact(inputs.get("style")),
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
@@ -371,10 +381,11 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             prior_blocking_issues=issues,
         )
     if stage == "canon_extraction":
+        from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
             stage,
             accepted_revision=_prose(inputs.get("revision")),
-            execution_expectations=_compact(inputs.get("execution_expectations")),
+            execution_expectations=_compact(without_private_world(inputs.get("execution_expectations"))),
         )
     if stage.startswith("quality_"):
         return _task(
@@ -484,16 +495,25 @@ def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
             for key in ("volume_plan_version_id", "segment_id")
             if segment_ref.get(key)
         },
+        "authorized_epistemic_fact_refs": sorted(provider_accessible_fact_ids(plan)),
         "character_ids": clean(characters),
         "arc_refs": clean(arcs),
         "fact_refs": clean(facts),
         "belief_refs": clean(beliefs),
         "disclosure_refs": clean(disclosures),
+        "authorized_disclosure_fact_refs": sorted({str(item["fact_id"]) for item in plan.get("disclosures") or () if isinstance(item, Mapping) and item.get("fact_id") and str(item.get("audience") or "").upper() in {"READER", "ALL"} and str(item.get("mode") or "").upper() in {"HINT", "PARTIAL", "MISDIRECT", "CONFIRM"}}),
         "state_entity_refs": clean(state_entities),
         "obligation_refs": clean(obligations),
         "world_rule_refs": clean(world_rules),
         "character_development": character_development,
     }
+
+
+def provider_accessible_fact_ids(plan: Mapping[str, Any]) -> set[str]:
+    boundaries = [{str(fact) for fact in scene.get("accessible_knowledge") or () if str(fact)} for scene in plan.get("scene_plan") or () if isinstance(scene, Mapping) and str(scene.get("focalization") or "") != "OMNISCIENT"]
+    accessible = set.intersection(*boundaries) if boundaries else set()
+    accessible.update(str(item["fact_id"]) for item in plan.get("disclosures") or () if isinstance(item, Mapping) and item.get("fact_id") and str(item.get("audience") or "").upper() in {"READER", "ALL"} and str(item.get("mode") or "").upper() != "WITHHOLD")
+    return accessible
 
 
 def project_narrative_state_facts(
@@ -503,7 +523,15 @@ def project_narrative_state_facts(
     chapter: int,
 ) -> list[dict[str, Any]]:
 
-    materialized = [dict(item) for item in facts]
+    authorized_disclosures = set(projection.get("authorized_disclosure_fact_refs") or ())
+    from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    materialized = [disclosed_fact_projection(item) for item in facts if not (
+        ((item.get("state") or {}).get("fact_origin") or {}).get("kind") in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}
+        and str(item.get("source_event_id") or "") not in authorized_disclosures
+    )]
+    if projection.get("contract_version") == "chapter-task-narrative-projection-v1":
+        accessible = set(projection.get("authorized_epistemic_fact_refs") or ())
+        materialized = [item for item in materialized if item.get("state_kind") not in {"character_knowledge", "character_belief"} or str((item.get("state") or {}).get("fact_id") or (item.get("state") or {}).get("proposition_id") or "") in accessible]
     selectors = _selectors(projection, {})
     if not selectors:
         if len(materialized) <= _MAX_FACTS_PER_SEGMENT:
@@ -521,6 +549,16 @@ def project_narrative_state_facts(
             "Chapter execution selectors resolve more than the bounded fact limit",
         )
     return deepcopy(selected)
+
+
+def project_retrieved_state_context(content: Mapping[str, Any], *, projection: Mapping[str, Any], chapter: int) -> dict[str, Any]:
+    facts = list(content.get("structured_facts") or [])
+    if not any(isinstance(item, Mapping) and item.get("state_kind") for item in facts):
+        return dict(content)
+    state_facts = [item for item in facts if item.get("state_kind")]
+    metadata = [item for item in facts if not item.get("state_kind")]
+    filtered = project_narrative_state_facts(state_facts, projection=projection, chapter=chapter)
+    return {**content, "structured_facts": [*filtered, *metadata], "safe_summary": "Governed accepted state projection at the frozen chapter boundary.", "omitted_state_fact_count": len(state_facts) - len(filtered)}
 
 
 def build_provider_context_view(
@@ -561,6 +599,14 @@ def build_provider_context_view(
                 task_view.get("query_plan_fingerprint") or ""
             ),
         }
+    if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+        task = task_view.get("world_preparation") or {}
+        if context_bundle.get("world_preparation") != task:
+            raise KernelError("WORLD_CONTEXT_IDENTITY_MISMATCH", "world task differs from its frozen role Context")
+        return {"contract_version": "provider-context-view-v2", "stage": stage,
+                "source_isolation": "FROZEN_WORLD_ROLE_PROJECTION_ONLY", "protected": True,
+                "accepted_state_boundary": {"project_id": context_bundle["project_id"], "book_id": context_bundle["book_id"], "accepted_through_chapter": task["accepted_through_chapter"], "baseline_id": task["baseline_id"], "baseline_kind": task["baseline_kind"]},
+                "segments": [{"asset_version_id": task["source_ref"]["asset_version_id"], "role": task["role"], "content": {"source_ref": task["source_ref"], "context_projection_hash": task["projection_identity"]}}]}
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
@@ -1236,7 +1282,8 @@ def _build_planning_context_view(
     if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
-            "projected Planning Provider Context exceeds its deterministic size boundary",
+            "projected Planning Provider Context exceeds its deterministic size boundary: "
+            + json.dumps({"total": _serialized_character_count(view), "segments": [{"role": item["role"], "characters": _serialized_character_count(item)} for item in projected], "repair": _serialized_character_count(view.get("repair_context", {})), "references": _serialized_character_count(view.get("realization_reference_contract", {}))}, sort_keys=True),
         )
     return view
 
@@ -1345,6 +1392,17 @@ def _planning_selectors(
     return frozenset(references)
 
 
+def project_world_planning_window(inputs: Iterable[Mapping[str, Any]], *, chapter: int, window: int) -> list[dict[str, Any]]:
+    result = []
+    for item in inputs:
+        content = deepcopy(item["content"])
+        if item["role"] == "chapter_group_plan":
+            content["chapter_function_matrix"] = [row for row in content.get("chapter_function_matrix", []) if chapter <= int(row["chapter_number"]) < chapter + window]
+        projected, omitted, truncated = _project_planning_content(stage="chapter_plan.generate", role=item["role"], content=content, chapter=0 if item["role"] == "chapter_group_plan" else chapter, selectors=frozenset())
+        result.append({"role": item["role"], "asset_version_id": item["asset_version_id"], "content_hash": item["content_hash"], "content": projected, "omitted_items": omitted, "truncated_characters": truncated})
+    return result
+
+
 def _project_planning_content(
     *,
     stage: str,
@@ -1353,6 +1411,8 @@ def _project_planning_content(
     chapter: int,
     selectors: frozenset[str],
 ) -> tuple[dict[str, Any], int, int]:
+    if role == "previous_chapter_outcome":
+        return _compact(_pick(content, "chapter_number", "scene_outcomes", "arc_evidence", "realization_evidence", "reader_state_observations")), 0, 0
     payload = content.get("candidate_payload", content)
     if role == "creative_foundation" and isinstance(payload, Mapping) and "narrative_intent" in payload:
         from novel_forge.modules.story_design_authority.intent import NarrativeIntent
@@ -1678,6 +1738,7 @@ def _state_fact_references(fact: Mapping[str, Any]) -> frozenset[str]:
     visit(
         {
             "entity_key": fact.get("entity_key"),
+            "source_event_id": fact.get("source_event_id"),
             "state": fact.get("state") or {},
         }
     )

@@ -615,7 +615,12 @@ def validate_deterministic_continuity(
     if chapter <= 0:
         raise ValueError("chapter must be positive")
     state = {kind: _state_items(values) for kind, values in historical_state.items()}
-    conflicts: list[dict[str, Any]] = validate_observed_world_changes(extraction=extraction, historical_state=historical_state)
+    world_binding = (planned_execution or {}).get("world_preparation") or {}
+    frozen_world = (world_binding.get("frozen_source") or {}).get("reality")
+    conflicts: list[dict[str, Any]] = validate_observed_world_changes(
+        extraction=extraction, historical_state=historical_state,
+        frozen_reality=frozen_world,
+    )
     profiles = tuple(dict(item) for item in identity_profiles)
     conflicts.extend(
         _deterministic_identity_pronoun_conflicts(
@@ -1441,6 +1446,25 @@ def _bind_narrative_entity_versions(
             item["entity_version"] = (
                 int((existing or {}).get("entity_version") or 0) + 1
             )
+
+    tagged = [(kind, item) for kind, items in changes.items() for item in items if item.get("causal_batch")]
+    if tagged:
+        from novel_forge.modules.narrative_state.causal_batch import compile_causal_batch
+        from novel_forge.modules.narrative_state.contracts import NarrativeStateKind, _identity_for
+        nodes = []
+        for kind, item in tagged:
+            identity = _identity_for(NarrativeStateKind(kind), item, ordinal=0, source="canon_patch")
+            prior = next((value for value in historical_state.get(kind, []) if value.get("entity_key") == identity.entity_key), {})
+            item["entity_version"] = int(prior.get("entity_version") or 0) + 1
+            nodes.append({"event_id": "pending:" + item["causal_batch"]["local_id"], "state_kind": kind, "identity": identity.to_dict(), "story_time": item.get("story_time"), "mutation": {"payload": item}})
+        accepted_refs = frozenset(ref for _, item in tagged for ref in item["causal_batch"]["depends_on"] if not ref.startswith("local:"))
+        batch = compile_causal_batch(nodes, accepted_ids=accepted_refs)
+        versions = {}
+        for event in batch.ordered:
+            item = event["mutation"]["payload"]
+            key = (event["state_kind"], event["identity"]["entity_key"])
+            item["entity_version"] = versions.get(key, item["entity_version"] - 1) + 1
+            versions[key] = item["entity_version"]
 
 
 def _validate_lifecycle_transition(

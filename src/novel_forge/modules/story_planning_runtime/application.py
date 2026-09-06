@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import re
 from typing import Any
 from uuid import uuid4
@@ -124,8 +124,9 @@ _AUTHORITY_INPUT_ASSET_TYPES = {
 
 
 class _PlanningGenerationHandler:
-    def __init__(self, binder: PlanningExecutionBinder) -> None:
+    def __init__(self, binder: PlanningExecutionBinder, database_url: str = "") -> None:
         self.binder = binder
+        self.database_url = database_url
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
@@ -193,18 +194,8 @@ class _PlanningGenerationHandler:
                 "PLANNING_EXECUTION_EVIDENCE_DRIFT",
                 "PEP candidate evidence differs from the current Authority Attempt",
             )
-        return AuthorityHandlerOutput(
-            # WHY: One generic worker Operation has one frozen output contract.
-            # The concrete candidate kind remains frozen in the Generator
-            # Definition and candidate content; it cannot change the admitted
-            # OperationDefinition output selector mid-Attempt.
-            asset_type="planning_generation_candidate",
-            output_key="story_planning.candidate",
-            role="primary",
-            content=candidate.authority_content(
-                project_id=command.project_id,
-                book_id=command.book_id,
-                constraint_envelope=build_planning_constraint_envelope(
+        world_refs = ()
+        envelope = build_planning_constraint_envelope(
                     project_id=command.project_id,
                     book_id=command.book_id,
                     generation_operation_id=request.operation_id,
@@ -216,12 +207,33 @@ class _PlanningGenerationHandler:
                     },
                     candidate_payload=candidate.candidate_payload,
                     arc_working_set=command.arc_working_set,
-                ),
+                )
+        if command.world_preparation_request:
+            from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+            from .world_preparation import require_world_action
+            action = require_world_action(AuthorityAssetQuery(self.database_url), command=command, operation_id=request.operation_id)
+            source = AuthorityAssetQuery(self.database_url).require(project_id=command.project_id, asset_version_id=action.content["contract"]["source"]["asset_version_id"])
+            envelope["world_preparation"] = {"asset_version_id": action.asset_version_id, "content_hash": action.content_hash, "action": action.content["contract"], "frozen_source": source.content["contract"]}
+            envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
+            world_refs = (action.asset_version_id,)
+        return AuthorityHandlerOutput(
+            # WHY: One generic worker Operation has one frozen output contract.
+            # The concrete candidate kind remains frozen in the Generator
+            # Definition and candidate content; it cannot change the admitted
+            # OperationDefinition output selector mid-Attempt.
+            asset_type="planning_generation_candidate",
+            output_key="story_planning.candidate",
+            role="primary",
+            content=candidate.authority_content(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                constraint_envelope=envelope,
             ),
             qualification_policy="story-planning-candidate-only-v1",
             reference_asset_version_ids=(
                 *(item.asset_version_id for item in inputs),
                 *command.change_evidence_version_ids,
+                *world_refs,
             ),
             evidence=evidence,
             # INVARIANT: Generation only creates an immutable candidate.  Semantic
@@ -233,7 +245,7 @@ class _PlanningGenerationHandler:
 
 
 class StoryPlanningGenerationHandlerRegistry:
-    def __init__(self, binder: PlanningExecutionBinder) -> None:
+    def __init__(self, binder: PlanningExecutionBinder, database_url: str = "") -> None:
         generation = AuthorityHandlerRegistration(
             definition_name=STORY_PLANNING_GENERATION_DEFINITION,
             definition_version=STORY_PLANNING_GENERATION_VERSION,
@@ -243,7 +255,7 @@ class StoryPlanningGenerationHandlerRegistry:
             output_key="story_planning.candidate",
             role="primary",
             completion_topic="story_planning.candidate.materialized",
-            handler=_PlanningGenerationHandler(binder),
+            handler=_PlanningGenerationHandler(binder, database_url),
         )
         self.items = {
             STORY_PLANNING_GENERATION_DEFINITION: generation,
@@ -261,9 +273,9 @@ class StoryPlanningGenerationHandlerRegistry:
         self, definition_name: str, definition_version: str
     ) -> AuthorityHandlerRegistration:
         item = self.items.get(definition_name)
-        if item is None or item.definition_version != definition_version:
+        if item is None or definition_version not in {STORY_PLANNING_GENERATION_VERSION, "1.11.0"}:
             raise KeyError((definition_name, definition_version))
-        return item
+        return replace(item, definition_version=definition_version)
 
 
 class StoryPlanningGenerationApplication:
@@ -290,7 +302,7 @@ class StoryPlanningGenerationApplication:
         self.worker_id = worker_id
         self.allow_scripted_evaluation_fixture = allow_scripted_evaluation_fixture
         self.narrative_evaluator_principal = narrative_evaluator_principal
-        self.registry = StoryPlanningGenerationHandlerRegistry(execution_binder)
+        self.registry = StoryPlanningGenerationHandlerRegistry(execution_binder, database_url)
         self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
             database_url,
             application_build_id=application_build_id,
@@ -324,8 +336,11 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation actor must be the trusted Principal"
             )
         self._probe(execution_probe)
+        replay = self._terminal_generation_replay(command)
+        if replay is not None:
+            return replay
         definition = GENERATOR_CATALOG[command.generator_operation_name]
-        self._register_definitions()
+        self._register_definitions(command.execution_contract_version)
         frozen_inputs = self._resolve_inputs(command)
         if command.generator_operation_name == "book_plan.generate":
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -394,7 +409,7 @@ class StoryPlanningGenerationApplication:
             self.database_url,
             {
                 "definition_name": STORY_PLANNING_GENERATION_DEFINITION,
-                "definition_version": STORY_PLANNING_GENERATION_VERSION,
+                "definition_version": command.execution_contract_version,
                 "project_id": command.project_id,
                 "workspace_id": command.workspace_id,
                 "book_id": command.book_id,
@@ -1041,6 +1056,10 @@ class StoryPlanningGenerationApplication:
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
             self._require_frozen_realization_slice(generation_command)
+            binding = (candidate["content"].get("constraint_envelope") or {}).get("world_preparation")
+            if binding:
+                from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+                WorldPreparationRepository(uow.cursor).validate_binding(project_id=generation["project_id"], book_id=generation["book_id"], binding=binding)
             checkpoint("after_domain_validation")
             content = {
                 **_chapter_runtime_projection(dict(candidate["content"])),
@@ -1182,6 +1201,30 @@ class StoryPlanningGenerationApplication:
         )
         self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
         return projection
+
+    def _terminal_generation_replay(self, command: StoryPlanningGenerationCommand) -> PlanningGenerationResult | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT op.operation_id, op.command_payload->'payload', op.status, g.status, g.candidate_asset_version_id FROM authority_operation op LEFT JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND op.definition_name=%s AND op.idempotency_scope='book:story-planning-generation' AND op.idempotency_key=%s", [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key])
+            row = uow.cursor.fetchone()
+        if row is None:
+            if command.execution_contract_version != "1.12.0":
+                raise KernelError("PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY", "historical Planning definitions may only resume their already admitted commands")
+            return None
+        if dict(row[1]) != _command_payload(command):
+            raise KernelError("PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT", "replay must use the exact immutable admitted Planning command")
+        if row[2] != "SUCCEEDED" or not row[4]:
+            return None
+        state = self.story_design.require(project_id=command.project_id, asset_version_id=str(row[4]))
+        if row[3] == "REPAIR_REQUIRED":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT 1 FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL' LIMIT 1", [row[4]])
+                failed = uow.cursor.fetchone() is not None
+            if failed:
+                return PlanningGenerationResult(str(row[0]), str(row[4]), PlanningGenerationStatus.REPAIR_REQUIRED, state, replayed=True)
+        if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
+            return None
+        binding = self.planning.require_binding(project_id=command.project_id, asset_version_id=str(row[4])) if state["lifecycle"] == "ACTIVE" else None
+        return PlanningGenerationResult(str(row[0]), str(row[4]), PlanningGenerationStatus(state["lifecycle"]), state, binding, True)
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1824,6 +1867,7 @@ class StoryPlanningGenerationApplication:
             )
         self._update_generation_status(operation_id, "REPAIR_REQUIRED")
         repaired = StoryPlanningGenerationCommand(
+            world_preparation_request=command.world_preparation_request,
             project_id=command.project_id,
             workspace_id=command.workspace_id,
             book_id=command.book_id,
@@ -2550,12 +2594,13 @@ class StoryPlanningGenerationApplication:
             )
         )
 
-    def _register_definitions(self) -> None:
+    def _register_definitions(self, definition_version: str) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(
                 story_planning_generation_definition(
                     application_build_id=self.application_build_id,
                     commit_sha=self.commit_sha,
+                    definition_version=definition_version,
                 )
             )
             for definition in GENERATOR_CATALOG.values():
@@ -2716,7 +2761,7 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
 
 
 def story_planning_generation_definition(
-    *, application_build_id: str, commit_sha: str
+    *, application_build_id: str, commit_sha: str, definition_version: str = STORY_PLANNING_GENERATION_VERSION
 ) -> dict[str, Any]:
     schema = {
         "type": "object",
@@ -2730,7 +2775,7 @@ def story_planning_generation_definition(
     }
     return {
         "name": STORY_PLANNING_GENERATION_DEFINITION,
-        "definition_version": STORY_PLANNING_GENERATION_VERSION,
+        "definition_version": definition_version,
         "family": "story_planning_runtime",
         "enabled": True,
         "definition_status": "implemented_validation_pending",
@@ -2802,6 +2847,7 @@ def story_planning_generation_definition(
 
 def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
     return {
+        **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version != "1.11.0" else {}),
         "project_id": command.project_id,
         "workspace_id": command.workspace_id,
         "book_id": command.book_id,
@@ -2850,11 +2896,14 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         ),
         "narrative_realization": dict(command.narrative_realization or {}),
         "opening_execution_binding": dict(command.opening_execution_binding or {}),
+        **({"world_preparation_request": dict(command.world_preparation_request)} if command.world_preparation_request else {}),
     }
 
 
 def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCommand:
     return StoryPlanningGenerationCommand(
+        execution_contract_version=str(payload.get("execution_contract_version") or "1.11.0"),
+        world_preparation_request=dict(payload.get("world_preparation_request") or {}) or None,
         project_id=str(payload.get("project_id") or ""),
         workspace_id=str(payload.get("workspace_id") or ""),
         book_id=str(payload.get("book_id") or ""),

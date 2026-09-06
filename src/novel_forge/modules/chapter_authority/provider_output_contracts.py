@@ -238,7 +238,7 @@ def _revision_schema() -> dict[str, Any]:
     )
 
 
-def _canon_schema() -> dict[str, Any]:
+def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
     evidence_fields = {
         "evidence_start": {"type": "number", "minimum": 0},
         "evidence_end": {"type": "number", "minimum": 1},
@@ -330,6 +330,23 @@ def _canon_schema() -> dict[str, Any]:
         "belief_confidence": {"type": "number", "minimum": 0, "maximum": 1},
         **evidence_fields,
     }
+    if causal_batch:
+        change_properties.update({
+            "world_mechanism": _object_schema({"rule_id": {"type": "string"}, "asset_version_id": {"type": "string"}, "content_hash": {"type": "string"}}, required=("rule_id", "asset_version_id", "content_hash")),
+            "causal_batch": _object_schema({
+                "contract_version": {"type": "string", "enum": ["causal-batch-event.v1"]},
+                "local_id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"},
+                "depends_on": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": True, "maxItems": 128},
+            }, required=("contract_version", "local_id", "depends_on")),
+            "story_time": _object_schema({
+                "timeline_id": {"type": "string", "minLength": 1},
+                "start_ordinal": {"type": "integer", "minimum": 0},
+                "end_ordinal": {"type": "integer", "minimum": 0},
+                "precision": {"type": "string", "enum": ["EXACT", "ORDERED", "RANGE"]},
+                "label": {"type": "string"},
+            }, required=("timeline_id", "start_ordinal", "end_ordinal", "precision", "label")),
+            "world_transition": _object_schema({"payload_json": {"type": "string", "minLength": 2}}, required=("payload_json",)),
+        })
     change_required = {"summary", *evidence_fields}
     change = _object_schema(
         {
@@ -359,7 +376,7 @@ def _canon_schema() -> dict[str, Any]:
         item_schema = properties[field]["items"]
         item_schema["properties"][identity] = {"type": "string", "minLength": 1}
         item_schema["properties"]["world_transition"] = _object_schema({"payload_json": {"type": "string", "minLength": 2}}, required=("payload_json",))
-        item_schema["required"].extend((identity, "world_transition"))
+        item_schema["required"].extend(key for key in (identity, "world_transition") if key not in item_schema["required"])
     properties["arc_evidence"] = {
         "type": "array",
         "items": _object_schema(
@@ -810,7 +827,7 @@ def _retrieval_query_expansion_schema() -> dict[str, Any]:
     )
 
 
-def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
+def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) -> dict[str, Any]:
 
     if stage == "draft":
         schema = _draft_schema()
@@ -821,7 +838,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
     elif stage == "revision":
         schema = _revision_schema()
     elif stage == "canon_extraction":
-        schema = _canon_schema()
+        schema = _canon_schema(causal_batch=causal_batch)
     elif stage in _QUALITY_STAGES:
         schema = _quality_schema()
     elif stage == "reader_outcome":
@@ -838,9 +855,10 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
     return {"$schema": _SCHEMA_DIALECT, **schema}
 
 
-def chapter_provider_output_schema_ref(stage: str) -> str:
-    chapter_provider_output_schema(stage)
+def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False) -> str:
+    chapter_provider_output_schema(stage, causal_batch=causal_batch)
     version = (
+        "v15" if causal_batch and stage == "canon_extraction" else
         "v14"
         if stage == "canon_extraction"
         else "v2"
@@ -1016,6 +1034,8 @@ def validate_chapter_provider_output_semantics(
                     )
                 else:
                     slot = _canon_change_semantic_slot(field, item)
+                    if item.get("causal_batch"):
+                        slot += (item["causal_batch"]["local_id"],)
                 fingerprint = json.dumps(
                     item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
                 )

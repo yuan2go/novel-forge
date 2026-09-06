@@ -286,6 +286,8 @@ def validate_world_transition(
     transition: WorldTransition, reality: Mapping[str, Any]
 ) -> tuple[dict[str, Any], ...]:
     state = state_index(reality)
+    if "approved_entity_ids" in reality and transition.actor_id not in set(reality["approved_entity_ids"]) | {entry["state"].get("character_id") for (kind, _), entry in state.items() if kind == "character_state"}:
+        raise KernelError("WORLD_ACTOR_UNKNOWN", "transition actors must resolve to approved Foundation or accepted character identities")
     old = dict(
         (state.get((transition.state_kind.value, transition.entity_key)) or {}).get(
             "state"
@@ -293,6 +295,8 @@ def validate_world_transition(
         or {}
     )
     changes = dict(transition.changes)
+    from .mechanisms import require_world_mechanism
+    mechanism = require_world_mechanism(transition, reality, state)
     post_state = dict(state)
     post_state[(transition.state_kind.value, transition.entity_key)] = {
         "state": {**old, **changes}
@@ -302,7 +306,7 @@ def validate_world_transition(
 
         rule = WorldRule.from_mapping(rule_source["rule"])
         if (
-            rule.enforcement == "SOFT_CAUSAL"
+            rule.enforcement in {"SOFT_CAUSAL", "MECHANISM"}
             or transition.state_kind.value not in rule.applicability
         ):
             continue
@@ -321,16 +325,17 @@ def validate_world_transition(
             and payload.get("character_id") == transition.actor_id
             and str(payload.get("life_status") or payload.get("status") or "").upper()
             == "DEAD"
+            and not (mechanism == "REVIVAL" and changes.get("life_status") == "ALIVE")
         ):
             raise KernelError(
                 "WORLD_DEAD_ACTOR", "a canonically dead actor cannot perform an action"
             )
     if (
-        any(
+        (transition.actor_id in reality.get("approved_character_ids", []) or any(
             kind == "character_state"
             and entry.get("state", {}).get("character_id") == transition.actor_id
             for (kind, _), entry in state.items()
-        )
+        ))
         and not transition.epistemic_basis
     ):
         raise KernelError(
@@ -365,6 +370,7 @@ def validate_world_transition(
         (old.get("unique") is True or changes.get("unique") is True)
         and isinstance(changes.get("location_ids"), list)
         and len(set(changes["location_ids"])) != 1
+        and mechanism != "MULTIPRESENCE"
     ):
         raise KernelError(
             "WORLD_UNIQUE_ITEM_DUPLICATED", "a unique item has one current location"
@@ -373,6 +379,7 @@ def validate_world_transition(
         old.get("location_id")
         and changes.get("location_id") != old.get("location_id")
         and "location_id" in changes
+        and mechanism != "INSTANT_TRAVEL"
     ):
         distance = changes.get("travel_distance")
         speed = old.get("max_travel_speed")
@@ -392,11 +399,26 @@ def validate_world_transition(
                 "WORLD_TRAVEL_TIME_UNCERTAIN",
                 "quantitative travel requires exact elapsed story time",
             )
-        if distance > speed * (transition.story_time.start_ordinal - latest_ordinal):
+        departure_ordinal = latest_ordinal
+        if reality.get("world_dynamics_contract") == "world-dynamics.v2":
+            clock_key = f"{transition.state_kind.value}|{transition.entity_key}|{transition.story_time.timeline_id}"
+            departure_ordinal = reality.get("entity_clocks", {}).get(clock_key)
+            entry_time = (state.get((transition.state_kind.value, transition.entity_key)) or {}).get("story_time")
+            if isinstance(entry_time, Mapping):
+                time = StoryTime.from_dict(dict(entry_time))
+                if time.timeline_id == transition.story_time.timeline_id and time.precision != "UNSPECIFIED":
+                    departure_ordinal = max(departure_ordinal or 0, time.end_ordinal)
+            if not isinstance(departure_ordinal, int) or isinstance(departure_ordinal, bool) or departure_ordinal < 0:
+                raise KernelError("WORLD_ENTITY_TIME_REQUIRED", "travel requires this entity's frozen location time")
+            if departure_ordinal > transition.story_time.start_ordinal:
+                raise KernelError("WORLD_TIME_REGRESSION", "travel cannot begin before this entity's preceding event")
+        if distance > speed * (transition.story_time.start_ordinal - departure_ordinal):
             raise KernelError(
                 "WORLD_TRAVEL_IMPOSSIBLE",
                 "travel distance exceeds elapsed time and canonical speed",
             )
+    if str(old.get("life_status") or "").upper() == "DEAD" and changes.get("life_status") == "ALIVE" and mechanism != "REVIVAL":
+        raise KernelError("WORLD_REVIVAL_RULE_REQUIRED", "revival requires an explicit approved world mechanism")
     for field in (
         "balance",
         "balance_after",
@@ -415,7 +437,7 @@ def validate_world_transition(
                 "resource and temporal quantities must remain finite and nonnegative",
             )
     if "power_level" in changes and changes["power_level"] != old.get("power_level"):
-        if changes["power_level"] not in old.get("allowed_power_transitions", []):
+        if changes["power_level"] not in old.get("allowed_power_transitions", []) and mechanism != "POWER_TRANSITION":
             raise KernelError(
                 "WORLD_POWER_TRANSITION_FORBIDDEN",
                 "power transitions require an explicit canonical rule",
@@ -436,7 +458,14 @@ def validate_world_transition(
 def candidate_transition(
     transition: WorldTransition, reality: Mapping[str, Any]
 ) -> dict[str, Any]:
-    if not str(reality.get("revision_id") or "").startswith("reality:sha256:"):
+    approved_foundation = (
+        reality.get("world_dynamics_contract") == "world-dynamics.v2"
+        and reality.get("baseline_kind") == "APPROVED_FOUNDATION"
+        and str(reality.get("revision_id") or "").startswith("foundation:sha256:")
+        and reality.get("chapter_number") == 0
+        and bool(reality.get("foundation_cause_refs"))
+    )
+    if not approved_foundation and not str(reality.get("revision_id") or "").startswith("reality:sha256:"):
         raise KernelError(
             "WORLD_REALITY_REQUIRED",
             "World Dynamics requires an exact accepted Reality revision",
@@ -449,6 +478,8 @@ def candidate_transition(
         str(event.get("event_id") or "") for event in reality.get("events", [])
     )
     known_causes.discard("")
+    if reality.get("world_dynamics_contract") == "world-dynamics.v2":
+        known_causes.update(reality.get("foundation_cause_refs", []))
     if not set(transition.cause_refs).issubset(known_causes):
         raise KernelError(
             "WORLD_CAUSAL_SOURCE_UNKNOWN",

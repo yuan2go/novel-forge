@@ -1382,6 +1382,13 @@ class PostgresBookAuthority:
                 if initial_state is not None:
                     previous_reality["current_state"] = dict(initial_state.get("current_state") or {})
             previous_reality["world_rule_constraints"], _ = NarrativeRealityRepository(uow.cursor).frozen_world_rules(book_run_id=request["book_run_id"])
+            from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+            world_baseline = WorldPreparationRepository(uow.cursor).validate_acceptance(
+                project_id=request["project_id"], book_id=book["book_id"],
+                binding=(chapter_plan_content.get("constraint_envelope") or {}).get("world_preparation") or {}, outcome=outcome_content,
+            )
+            if world_baseline is not None:
+                previous_reality = world_baseline
             validate_actual_world_events(previous_reality=previous_reality, chapter_outcome=outcome_content)
             from novel_forge.storage.causal_planning_repositories import CausalPlanningRepository
             CausalPlanningRepository(uow.cursor).validate_obligation_origins(book_run_id=request["book_run_id"], previous_reality=previous_reality, chapter_outcome=outcome_content)

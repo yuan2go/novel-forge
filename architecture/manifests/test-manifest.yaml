@@ -8,6 +8,54 @@
   ],
   "classification_rules": [
     {
+      "id": "world-causal-batch",
+      "patterns": [
+        "tests/unit/test_world_causal_batch.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/world_reconciliation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-preparation-planning",
+      "patterns": [
+        "tests/unit/test_world_causal_preparation.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "hierarchical-planning",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/worldbuilding/production_planning.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "background-fact-origin",
+      "patterns": [
+        "tests/unit/test_governed_background_actual.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/background.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "accepted-preparation-obligation",
+      "patterns": [
+        "tests/unit/test_causal_preparation_acceptance.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/causal_preparation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "qualification-infrastructure",
       "patterns": [
         "tests/unit/test_architecture_manifest.py",
@@ -42,7 +90,9 @@
     },
     {
       "id": "retired-runtime-guards",
-      "patterns": ["tests/architecture/test_retired_compatibility_runtime.py"],
+      "patterns": [
+        "tests/architecture/test_retired_compatibility_runtime.py"
+      ],
       "classification": "RETIREMENT_GUARD",
       "owner": "repository-architecture",
       "capability": "retired-runtime-absence",
@@ -52,7 +102,9 @@
     },
     {
       "id": "agent-harness-fixture-protocol",
-      "patterns": ["tests/unit/test_unified_agent_harness.py"],
+      "patterns": [
+        "tests/unit/test_unified_agent_harness.py"
+      ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "agent-runtime-authority",
       "capability": "agent-harness-protocol",
@@ -62,7 +114,9 @@
     },
     {
       "id": "synthetic-retrieval-benchmark-protocol",
-      "patterns": ["tests/unit/test_longform_retrieval_benchmark.py"],
+      "patterns": [
+        "tests/unit/test_longform_retrieval_benchmark.py"
+      ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "context-builder-authority",
       "capability": "synthetic-longform-retrieval-benchmark",
@@ -72,7 +126,9 @@
     },
     {
       "id": "retrieval-campaign-domain-invariants",
-      "patterns": ["tests/unit/test_retrieval_campaign.py"],
+      "patterns": [
+        "tests/unit/test_retrieval_campaign.py"
+      ],
       "classification": "CURRENT_DOMAIN_INVARIANT",
       "owner": "context-builder-authority",
       "capability": "bounded-retrieval-campaign",
@@ -102,7 +158,9 @@
     },
     {
       "id": "current-authority-boundaries",
-      "patterns": ["tests/architecture/test_*.py"],
+      "patterns": [
+        "tests/architecture/test_*.py"
+      ],
       "classification": "CURRENT_AUTHORITY_BOUNDARY",
       "owner": "repository-architecture",
       "capability": "current-authority-boundaries",
@@ -112,7 +170,9 @@
     },
     {
       "id": "current-postgresql-runtime-contracts",
-      "patterns": ["tests/integration/test_*.py"],
+      "patterns": [
+        "tests/integration/test_*.py"
+      ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "runtime-authorities",
       "capability": "postgresql-runtime",
@@ -122,7 +182,9 @@
     },
     {
       "id": "current-acceptance-contracts",
-      "patterns": ["tests/acceptance/test_*.py"],
+      "patterns": [
+        "tests/acceptance/test_*.py"
+      ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "runtime-authorities",
       "capability": "backend-acceptance",
@@ -132,7 +194,9 @@
     },
     {
       "id": "current-domain-invariants",
-      "patterns": ["tests/unit/test_*.py"],
+      "patterns": [
+        "tests/unit/test_*.py"
+      ],
       "classification": "CURRENT_DOMAIN_INVARIANT",
       "owner": "AUTO_FROM_PRODUCTION_TARGET",
       "capability": "current-domain-and-runtime-policy",

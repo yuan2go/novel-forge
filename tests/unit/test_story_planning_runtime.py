@@ -2104,6 +2104,19 @@ def _command(generator: str) -> StoryPlanningGenerationCommand:
     )
 
 
+def test_world_runtime_contract_preserves_historical_frozen_commands():
+    from novel_forge.modules.story_planning_runtime.application import _command_payload, _command_from_payload
+    command = _command("chapter_plan.generate")
+    current = _command_payload(command)
+    assert current["execution_contract_version"] == "1.12.0"
+    assert _command_from_payload(current) == command
+    historical = {key: value for key, value in current.items() if key != "execution_contract_version"}
+    replay = _command_from_payload(historical)
+    assert replay.execution_contract_version == "1.11.0"
+    assert not replay.world_preparation_request
+    assert _command_payload(replay) == historical
+
+
 def _inputs(command: StoryPlanningGenerationCommand) -> tuple[FrozenPlanningInput, ...]:
     return tuple(
         FrozenPlanningInput(role, version, HASH, role)

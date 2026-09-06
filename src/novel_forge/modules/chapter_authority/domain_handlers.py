@@ -394,6 +394,7 @@ def build_context_bundle(
         "forbidden_source_count": 0,
         "task_narrative_projection": task_narrative_projection,
         "chapter_execution_expectations": {
+            **({"world_preparation": dict(plan["constraint_envelope"]["world_preparation"])} if (plan.get("constraint_envelope") or {}).get("world_preparation") else {}),
             "contract_version": "chapter-execution-expectations-v3",
             "chapter_plan_asset_version_id": plan_asset_version_id,
             "chapter_execution_intent_asset_version_id": (
@@ -457,23 +458,8 @@ def build_context_bundle(
 
 
 def _provider_accessible_fact_ids(plan: dict[str, Any]) -> set[str]:
-
-    scene_boundaries = [
-        {str(fact) for fact in scene.get("accessible_knowledge") or () if str(fact)}
-        for scene in plan.get("scene_plan") or ()
-        if isinstance(scene, dict)
-        and str(scene.get("focalization") or "") != "OMNISCIENT"
-    ]
-    accessible = set.intersection(*scene_boundaries) if scene_boundaries else set()
-    accessible.update(
-        str(item.get("fact_id") or "")
-        for item in plan.get("disclosures") or ()
-        if isinstance(item, dict)
-        and str(item.get("audience") or "").upper() in {"READER", "ALL"}
-        and str(item.get("mode") or "").upper() != "WITHHOLD"
-        and str(item.get("fact_id") or "")
-    )
-    return accessible
+    from .provider_views import provider_accessible_fact_ids
+    return provider_accessible_fact_ids(plan)
 
 
 def normalize_draft_result(
@@ -703,6 +689,15 @@ def build_canon_patch(
                 **(facts[0] if len(facts) == 1 and isinstance(facts[0], dict) else {}),
             }
         )
+    world_binding = ((context_bundle or {}).get("chapter_execution_expectations") or {}).get("world_preparation") or {}
+    frozen_world = (world_binding.get("frozen_source") or {}).get("reality")
+    if frozen_world:
+        for kind, entries in frozen_world["current_state"].items():
+            historical_kind = {"canon_fact": "canon_snapshot", "timeline_event": "timeline_snapshot", "reward_event": "reward_ledger"}.get(kind, kind)
+            historical_state[historical_kind] = [
+                {**entry, **entry["state"], **_entity_key_components(entry["entity_key"]), "asset_version_id": world_binding["action"]["source"]["asset_version_id"]}
+                for entry in entries
+            ]
     if int(revision.get("chapter", 0)) > 1 and not historical_state.get(
         "canon_snapshot"
     ):

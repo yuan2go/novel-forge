@@ -1,0 +1,478 @@
+from copy import deepcopy
+from dataclasses import asdict, dataclass
+from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.hierarchical_planning.causal_domain import (
+    CandidateFuture,
+    build_causal_plan,
+)
+from novel_forge.modules.narrative_state.reality import narrative_hash
+
+from .dynamics import (
+    WorldTransition,
+    candidate_transition,
+    require_contract_fields,
+    require_text_fields,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class WorldProductionPolicy:
+    version: str = "world-production-policy.v1"
+    max_candidates: int = 4
+    max_paths_per_candidate: int = 3
+    max_preparation_steps: int = 4
+    planning_window_chapters: int = 4
+    max_provider_stages: int = 2
+    context_token_budget: int = 8192
+    max_world_time_advance: int = 1000
+
+    def __post_init__(self) -> None:
+        bounds = (
+            (self.max_candidates, 16),
+            (self.max_paths_per_candidate, 8),
+            (self.max_preparation_steps, 16),
+            (self.planning_window_chapters, 32),
+            (self.context_token_budget, 16000),
+            (self.max_world_time_advance, 1_000_000),
+        )
+        if (
+            self.version != "world-production-policy.v1"
+            or self.max_provider_stages != 2
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or not 1 <= value <= maximum
+                for value, maximum in bounds
+            )
+        ):
+            raise KernelError(
+                "WORLD_PRODUCTION_POLICY_INVALID",
+                "world preparation requires a frozen bounded policy",
+            )
+
+
+def validate_generated_candidates(
+    generated: Mapping[str, Any], policy: WorldProductionPolicy
+) -> list[Mapping[str, Any]]:
+    require_contract_fields(generated, required={"disposition", "reason", "candidates"})
+    require_text_fields(generated, ("disposition", "reason"))
+    candidates = generated["candidates"]
+    if not isinstance(candidates, list) or len(candidates) > policy.max_candidates:
+        raise KernelError(
+            "WORLD_GENERATION_BOUND_EXCEEDED",
+            "candidate generation exceeded its frozen portfolio bound",
+        )
+    if generated["disposition"] not in {"CANDIDATES", "NO_OP", "DEFER"} or bool(
+        candidates
+    ) != (generated["disposition"] == "CANDIDATES"):
+        raise KernelError(
+            "WORLD_GENERATION_DISPOSITION_INVALID",
+            "only a candidate portfolio may contain proposed events",
+        )
+    identities: set[str] = set()
+    for candidate in candidates:
+        require_contract_fields(
+            candidate,
+            required={
+                "transition",
+                "affected_entities",
+                "world_consequences",
+                "arc_refs",
+                "obligation_refs",
+                "risks",
+                "rationale",
+                "soft_assumptions",
+                "narrative_preferences",
+                "preparation_paths",
+            },
+            optional={"information_scope"},
+        )
+        information = candidate.get("information_scope")
+        if information is not None:
+            require_contract_fields(
+                information, required={"reader_exposure", "reveal_event_ids"}
+            )
+            if (
+                information["reader_exposure"] not in {"CONCEAL", "REVEAL"}
+                or not isinstance(information["reveal_event_ids"], list)
+                or any(
+                    not isinstance(ref, str) or not ref
+                    for ref in information["reveal_event_ids"]
+                )
+                or bool(information["reveal_event_ids"])
+                != (information["reader_exposure"] == "REVEAL")
+            ):
+                raise KernelError(
+                    "WORLD_INFORMATION_SCOPE_INVALID",
+                    "information scope must explicitly select or conceal accepted events",
+                )
+        transition = WorldTransition.from_mapping(candidate["transition"])
+        if transition.transition_id in identities:
+            raise KernelError(
+                "WORLD_GENERATION_IDENTITY_COLLISION",
+                "generated futures need unique batch-local identities",
+            )
+        identities.add(transition.transition_id)
+        paths = candidate["preparation_paths"]
+        if not isinstance(paths, list) or len(paths) > policy.max_paths_per_candidate:
+            raise KernelError(
+                "WORLD_GENERATION_BOUND_EXCEEDED",
+                "preparation alternatives exceed the frozen search bound",
+            )
+        path_ids: set[str] = set()
+        for path in paths:
+            require_contract_fields(path, required={"path_id", "steps", "rationale"})
+            require_text_fields(path, ("path_id", "rationale"))
+            if path["path_id"] in path_ids:
+                raise KernelError(
+                    "WORLD_GENERATION_IDENTITY_COLLISION",
+                    "preparation paths need unique names",
+                )
+            path_ids.add(path["path_id"])
+            steps = path["steps"]
+            if (
+                not isinstance(steps, list)
+                or not 1 <= len(steps) <= policy.max_preparation_steps
+            ):
+                raise KernelError(
+                    "WORLD_GENERATION_BOUND_EXCEEDED",
+                    "preparation path exceeds its frozen depth",
+                )
+            for step in steps:
+                require_contract_fields(step, required={"transition", "chapter_offset"})
+                offset = step["chapter_offset"]
+                if (
+                    isinstance(offset, bool)
+                    or not isinstance(offset, int)
+                    or not 0 <= offset < policy.planning_window_chapters
+                ):
+                    raise KernelError(
+                        "WORLD_PREPARATION_WINDOW_INVALID",
+                        "preparation must remain inside the unaccepted planning window",
+                    )
+                WorldTransition.from_mapping(step["transition"])
+    return candidates
+
+
+def _simulate_preparation(
+    *,
+    reality: Mapping[str, Any],
+    target: WorldTransition,
+    path: Mapping[str, Any],
+    chapter_number: int,
+) -> list[dict[str, Any]]:
+    working = deepcopy(reality)
+    working.setdefault("events", []).extend(
+        {"event_id": entry["source_event_id"]}
+        for entries in reality.get("current_state", {}).values()
+        for entry in entries
+        if entry.get("source_event_id")
+    )
+    schedule: list[dict[str, Any]] = []
+    local_names = [step["transition"]["transition_id"] for step in path["steps"]]
+    if len(local_names) != len(set(local_names)) or target.transition_id in local_names:
+        raise KernelError(
+            "WORLD_PREPARATION_IDENTITY_COLLISION",
+            "preparation steps and target need distinct batch-local names",
+        )
+    last_offset = -1
+    for step in path["steps"]:
+        transition = WorldTransition.from_mapping(step["transition"])
+        if step["chapter_offset"] < last_offset:
+            raise KernelError(
+                "WORLD_PREPARATION_ORDER_INVALID",
+                "a dependency cannot be scheduled after its effect",
+            )
+        last_offset = step["chapter_offset"]
+        receipt = candidate_transition(transition, working)
+        if not receipt["eligible"]:
+            raise KernelError(
+                "WORLD_PREPARATION_UNSUPPORTED",
+                "a preparation step has unfulfilled modeled preconditions",
+            )
+        from .working_state import preview_preparation_transition
+
+        working["current_state"], simulated = preview_preparation_transition(
+            reality=working,
+            transition=transition,
+            chapter_number=chapter_number + step["chapter_offset"],
+            path_id=path["path_id"],
+        )
+        working.setdefault("events", []).append(simulated)
+        schedule.append(
+            {
+                "transition": asdict(transition),
+                "chapter_number": chapter_number + step["chapter_offset"],
+                "depends_on": list(transition.cause_refs),
+                "expected_effect": dict(transition.changes),
+                "status": "PLANNED_NOT_ACCEPTED",
+                "path_id": path["path_id"],
+            }
+        )
+    if not candidate_transition(target, working)["eligible"]:
+        raise KernelError(
+            "WORLD_PREPARATION_INSUFFICIENT",
+            "preparation does not establish the modeled target preconditions",
+        )
+    return schedule
+
+
+def compile_world_plan(
+    *,
+    reality: Mapping[str, Any],
+    generated: Mapping[str, Any],
+    evaluation: Mapping[str, Any],
+    policy: WorldProductionPolicy,
+    chapter_number: int,
+    intent_version_id: str,
+) -> dict[str, Any]:
+    candidates = validate_generated_candidates(generated, policy)
+    require_contract_fields(evaluation, required={"evaluations"})
+    rows = evaluation["evaluations"]
+    if not isinstance(rows, list):
+        raise KernelError(
+            "WORLD_DIRECTOR_REFERENCE_INVALID",
+            "Director must evaluate the exact generated portfolio",
+        )
+    judged: dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        require_contract_fields(
+            row,
+            required={"transition_id", "dimensions", "rationale", "preferred_path_id"},
+        )
+        require_text_fields(row, ("transition_id", "rationale"))
+        if row["transition_id"] in judged:
+            raise KernelError(
+                "WORLD_DIRECTOR_REFERENCE_INVALID",
+                "Director cannot duplicate a candidate evaluation",
+            )
+        judged[row["transition_id"]] = row
+    if set(judged) != {
+        candidate["transition"]["transition_id"] for candidate in candidates
+    }:
+        raise KernelError(
+            "WORLD_DIRECTOR_REFERENCE_INVALID",
+            "Director cannot invent or omit generated candidates",
+        )
+    base = {
+        "contract_version": "world-production-plan.v1",
+        "authority": "PLANNING_PROPOSAL",
+        "baseline_id": reality["revision_id"],
+        "accepted_through_chapter": reality["chapter_number"],
+        "chapter_number": chapter_number,
+        "intent_version_id": intent_version_id,
+        "policy": asdict(policy),
+        "reason": generated["reason"],
+        "fact_mutation_allowed": False,
+        "selected_candidate_id": "",
+        "selected_path_id": "",
+        "causal_debts": [],
+        "candidate_futures": [],
+        "preparation_schedule": [],
+        "alternative_paths": [],
+        "rejected_paths": [],
+    }
+    if not candidates:
+        return _seal({**base, "disposition": generated["disposition"]})
+    viable: list[dict[str, Any]] = []
+    for source in candidates:
+        name = source["transition"]["transition_id"]
+        judgment = judged[name]
+        transitions = [
+            source["transition"],
+            *(
+                step["transition"]
+                for path in source["preparation_paths"]
+                for step in path["steps"]
+            ),
+        ]
+        if any(
+            raw["story_time"]["end_ordinal"]
+            > int(
+                reality.get("world_clock", {}).get(raw["story_time"]["timeline_id"], 0)
+            )
+            + policy.max_world_time_advance
+            for raw in transitions
+        ):
+            base["candidate_futures"].append(
+                {
+                    "transition_id": name,
+                    "eligible": False,
+                    "rejection": {
+                        "code": "WORLD_PRODUCTION_TIME_BOUND",
+                        "message": "candidate or preparation exceeds the frozen world time horizon",
+                    },
+                    "dimensions": dict(judgment["dimensions"]),
+                }
+            )
+            continue
+        future = CandidateFuture.from_mapping(
+            {
+                key: value
+                for key, value in {
+                    **source,
+                    "dimensions": judgment["dimensions"],
+                    "rationale": judgment["rationale"],
+                }.items()
+                if key
+                not in {
+                    "preparation_paths",
+                    "soft_assumptions",
+                    "narrative_preferences",
+                    "information_scope",
+                }
+            }
+        )
+        plan = build_causal_plan(
+            reality=reality,
+            candidates=(future,),
+            chapter_number=chapter_number,
+            intent_revision_id=intent_version_id,
+        )
+        evaluated = plan["candidate_futures"][0]
+        base["candidate_futures"].append(
+            {
+                **evaluated,
+                "hypotheses": source["soft_assumptions"],
+                "narrative_preferences": source["narrative_preferences"],
+                "preparation_paths": source["preparation_paths"],
+                "information_scope": source.get(
+                    "information_scope",
+                    {"reader_exposure": "CONCEAL", "reveal_event_ids": []},
+                ),
+            }
+        )
+        if evaluated.get("rejection"):
+            continue
+        preferred = judgment["preferred_path_id"]
+        if preferred and preferred not in {
+            path["path_id"] for path in source["preparation_paths"]
+        }:
+            raise KernelError(
+                "WORLD_DIRECTOR_REFERENCE_INVALID",
+                "Director preferred path must exist in the generated portfolio",
+            )
+        paths = []
+        if not evaluated["eligible"]:
+            for path in source["preparation_paths"]:
+                try:
+                    schedule = _simulate_preparation(
+                        reality=reality,
+                        target=future.transition,
+                        path=path,
+                        chapter_number=chapter_number,
+                    )
+                    paths.append({**path, "schedule": schedule})
+                except KernelError as exc:
+                    base["rejected_paths"].append(
+                        {
+                            **path,
+                            "target_transition_id": name,
+                            "rejection": {"code": exc.code, "message": str(exc)},
+                        }
+                    )
+            if not paths:
+                continue
+        paths.sort(key=lambda path: (path["path_id"] != preferred, path["path_id"]))
+        viable.append(
+            {"candidate": evaluated, "debts": plan["causal_debts"], "paths": paths}
+        )
+    if not viable:
+        return _seal(
+            {
+                **base,
+                "disposition": "BLOCKED",
+                "reason": "No candidate has a legal modeled preparation path; revise the future goal or provide new accepted support.",
+            }
+        )
+    viable.sort(
+        key=lambda item: (
+            -item["candidate"]["rank_value"],
+            item["candidate"]["candidate_id"],
+        )
+    )
+    selected = viable[0]
+    paths = selected["paths"]
+    selected_source = next(
+        item
+        for item in base["candidate_futures"]
+        if item.get("candidate_id") == selected["candidate"]["candidate_id"]
+    )
+    disclosure_projection = []
+    for event_id in selected_source["information_scope"]["reveal_event_ids"]:
+        entry = next(
+            (
+                entry
+                for entries in reality["current_state"].values()
+                for entry in entries
+                if entry.get("source_event_id") == event_id
+            ),
+            None,
+        )
+        if entry is None:
+            raise KernelError(
+                "WORLD_DISCLOSURE_SOURCE_UNKNOWN",
+                "planned disclosure must reference an exact accepted fact in the frozen scope",
+            )
+        from novel_forge.modules.narrative_state.information import (
+            disclosed_fact_projection,
+        )
+
+        disclosure_projection.append(
+            {
+                "fact_id": event_id,
+                "audience": "READER",
+                "mode": "CONFIRM",
+                "source": disclosed_fact_projection(entry),
+            }
+        )
+    return _seal(
+        {
+            **base,
+            "disposition": "ELIGIBLE"
+            if selected["candidate"]["eligible"]
+            else "PREPARATION_REQUIRED",
+            "selected_candidate_id": selected["candidate"]["candidate_id"],
+            "disclosure_projection": disclosure_projection,
+            "causal_debts": _renew_cancelled_preparation(selected["debts"], reality),
+            "selected_path_id": paths[0]["path_id"] if paths else "",
+            "preparation_schedule": paths[0]["schedule"] if paths else [],
+            "alternative_paths": [
+                {key: value for key, value in path.items() if key != "schedule"}
+                for path in paths[1:]
+            ],
+        }
+    )
+
+
+def _renew_cancelled_preparation(
+    debts: list[dict[str, Any]], reality: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    prior = {
+        entry["state"]["obligation_id"]: entry
+        for entry in reality["current_state"].get("narrative_obligation", [])
+    }
+    result = deepcopy(debts)
+    for debt in result:
+        for _ in range(len(prior) + 1):
+            old = prior.get(debt["debt_id"])
+            if old is None or old["state"].get("status") != "CANCELLED":
+                break
+            if not old.get("source_event_id"):
+                raise KernelError(
+                    "WORLD_PREPARATION_RETIREMENT_UNPROVEN",
+                    "renewal requires an exact accepted retirement event",
+                )
+            debt["debt_id"] = "causal-debt:" + narrative_hash(
+                {
+                    "prior_debt_id": debt["debt_id"],
+                    "retirement_event_id": old["source_event_id"],
+                }
+            )
+    return result
+
+
+def _seal(value: dict[str, Any]) -> dict[str, Any]:
+    return {**value, "plan_digest": narrative_hash(value)}

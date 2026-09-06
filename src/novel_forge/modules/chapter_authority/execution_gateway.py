@@ -123,6 +123,8 @@ _PLANNING_STAGES = frozenset(
         "arc_plan.generate",
         "chapter_group_plan.generate",
         "chapter_plan.generate",
+        "world_candidates.generate",
+        "world_candidates.evaluate",
     }
 )
 
@@ -1017,10 +1019,11 @@ class PostgresChapterExecutionContractBinder:
         stage: str,
         request_payload: Mapping[str, Any],
     ) -> tuple[dict[str, Any], str]:
-        del request_payload
+        inputs = request_payload.get("input") or {}
+        causal_batch = bool((inputs.get("execution_expectations") or {}).get("world_preparation"))
         return chapter_provider_output_schema(
-            stage
-        ), chapter_provider_output_schema_ref(stage)
+            stage, causal_batch=causal_batch
+        ), chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
 
     def bind(
         self,
@@ -3217,6 +3220,23 @@ def _stage_semantic_contract(
             "A non-PASS verdict must include a concrete repair_directive; PASS must "
             "leave repair_directive empty. Do not activate, revise, or replace the "
             "candidate, and do not infer evidence outside the frozen candidate."
+        )
+    if stage == "world_candidates.generate":
+        return (
+            "Generate only bounded candidate world transitions from the supplied frozen Foundation, Intent and accepted Reality. "
+            "Copy all Authority references exactly. Propose hard preconditions, optional preparation paths, costs, "
+            "consequences, information scope and soft assumptions separately. Never omit a hard predicate to make "
+            "an event eligible. Preparation steps are proposals, not completed facts. Use explicit local: names "
+            "for intra-batch dependencies; never invent accepted event IDs. Honor all frozen search and planning "
+            "bounds. Return an evidence-based NO_OP or DEFER when advancement is unnecessary. "
+            "OFF_CAMERA and UNDERCURRENT proposals must not grant Reader or character knowledge."
+        )
+    if stage == "world_candidates.evaluate":
+        return (
+            "Evaluate every supplied candidate exactly once against the frozen Director dimensions. "
+            "Give reasons grounded in the supplied Foundation, Intent and Reality; compare the supplied preparation "
+            "paths without inventing new paths, scores from third parties, facts or Authority identifiers. "
+            "A high narrative score never overrides hard preconditions. This result recommends plans only."
         )
     if stage in _PLANNING_STAGES:
         contract = (

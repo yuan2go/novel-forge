@@ -1487,7 +1487,8 @@ def _activate_plan_chain(
     return activated
 
 
-def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request: pytest.FixtureRequest) -> None:
+@pytest.mark.parametrize("autonomous_world", [False, True, pytest.param("causal_preparation", id="causal-preparation"), pytest.param("intra_chapter", id="intra-chapter"), *[pytest.param(value, id=value) for value in ("intra_chapter_missing", "intra_chapter_cycle", "manual_director", "acceptance_recovery", "provider_recovery", "concurrent_workers", "perturbed_foundation")]])
+def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request: pytest.FixtureRequest, autonomous_world: bool | str) -> None:
     test_case = request.node
     harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
     _activate_planning_pack(harness)
@@ -1576,7 +1577,12 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
     }
 
     from tests.integration.narrative_reality_vertical_support import compiled_world_fixture
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=compiled_world_fixture())
+    approved_world = compiled_world_fixture()
+    if autonomous_world == "perturbed_foundation":
+        approved_world["entities"] = [{"entity_id": "faction:harbor", "kind": "FACTION"}]
+        approved_world["rules"][0]["rule_id"] = "harbor-pressure"
+        approved_world["rules"][0]["predicate"].update(entity_key="world_state_id=harbor-pressure", value="RISING")
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=approved_world)
     from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
     PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
     with transaction() as connection, connection.cursor() as cursor:
@@ -1647,7 +1653,11 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
         from tests.integration.narrative_reality_vertical_support import NativeRealityTransportFixture, execute_native_reality_vertical
-        native_transport = NativeRealityTransportFixture()
+        if autonomous_world:
+            from tests.integration.world_causal_production_support import AutonomousWorldTransport
+            native_transport = AutonomousWorldTransport(scenario=autonomous_world if isinstance(autonomous_world, str) else "delayed_disclosure")
+        else:
+            native_transport = NativeRealityTransportFixture()
         execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=native_transport, planning_fixture_factory=native_transport.planning)
         chapter_application = build_chapter_authority_application(
             settings, execution=execution, env=env
@@ -1658,6 +1668,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             execution=execution,
             env=env,
             chapter_application=chapter_application,
+            planning_post_provider_fault_injector=native_transport.post_provider_checkpoint if autonomous_world else None,
         )
         request = OpenBookProductionRequest(
             project_id=project_id,
@@ -1887,7 +1898,11 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             assert str(budget_binding[1]).startswith("budget-scope:")
             assert budget_binding[2] == 1
 
-        native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
+        if autonomous_world:
+            from tests.integration.world_causal_production_support import execute_autonomous_world_vertical
+            native_evidence = execute_autonomous_world_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
+        else:
+            native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
         assert native_evidence["proof_ceiling"] == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
         test_case.user_properties.append(("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True)))
         execution.close()
@@ -3014,7 +3029,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     project_id = harness.project_id
     workspace_id = harness.workspace_id
     book_id = harness.book_ids[0]
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=6)
+    from tests.integration.narrative_reality_vertical_support import compiled_world_fixture, NativeRealityTransportFixture
+    approved_world = compiled_world_fixture()
+    for rule in approved_world["rules"]:
+        rule.update(enforcement="SOFT_CAUSAL", predicate=None)
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=6, world_foundation=approved_world)
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
     )
@@ -3118,7 +3137,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         return result
 
     production_execution = build_production_execution_composition(
-        settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture
+        settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=NativeRealityTransportFixture().planning
     )
     chapter_application = build_chapter_authority_application(
         settings, execution=production_execution, env=runtime_env
@@ -3127,7 +3146,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def build_worker_runtime():
         worker_execution = build_production_execution_composition(
-            settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture
+            settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=NativeRealityTransportFixture().planning
         )
         worker_chapter = build_chapter_authority_application(
             settings, execution=worker_execution, env=runtime_env
@@ -3667,6 +3686,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         assert denied.status_code == 409, denied.text
         assert code in denied.text
     causal_arguments = {key: value for key, value in causal_payload.items() if key != "actor_id"}
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT COUNT(*) FROM authority_asset WHERE project_id=%s AND asset_type='narrative_governance_action'", [project_id])
+        prior_governance_actions = uow.cursor.fetchone()[0]
     for checkpoint in ("after_causal_validation", "after_causal_proposal_event", "before_operation_completion"):
         application = PostgresCausalPlanningApplication(DATABASE_URL, application_build_id="core-functional-loop-fixture", commit_sha=RELEASE_SHA, fault_injector=lose_at(checkpoint))
         with pytest.raises(ProcessLoss):
@@ -3675,7 +3697,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             uow.cursor.execute("SELECT COUNT(*) FROM authority_operation WHERE project_id=%s AND definition_name='planning.causal.propose'", [project_id])
             assert uow.cursor.fetchone()[0] == 0
             uow.cursor.execute("SELECT COUNT(*) FROM authority_asset WHERE project_id=%s AND asset_type='narrative_governance_action'", [project_id])
-            assert uow.cursor.fetchone()[0] == 0
+            assert uow.cursor.fetchone()[0] == prior_governance_actions
     application = PostgresCausalPlanningApplication(DATABASE_URL, application_build_id="core-functional-loop-fixture", commit_sha=RELEASE_SHA, fault_injector=lose_at("after_operation_completion_before_response"))
     with pytest.raises(ProcessLoss):
         application.propose(principal=principal, book_run_id=book.book_run_id, **causal_arguments)

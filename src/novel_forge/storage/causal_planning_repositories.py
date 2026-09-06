@@ -204,6 +204,10 @@ class CausalPlanningRepository:
             if payload.get("obligation_type") != "CAUSAL_DEBT":
                 continue
             predicate = asdict(causal_obligation_requirement(payload))
+            if (payload.get("fact_origin") or {}).get("kind") == "GOVERNED_PREPARATION":
+                from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+                WorldPreparationRepository(self.cursor).validate_preparation_origin(project_id=chapter_outcome["project_id"], book_run_id=book_run_id, previous_reality=previous_reality, outcome=chapter_outcome, payload=payload, predicate=predicate, existing=payload["obligation_id"] in previous)
+                continue
             self.cursor.execute(
                 """
                 SELECT version.content FROM authority_asset_version version

@@ -915,6 +915,8 @@ def build_production_execution_composition(
             "chapter_group_plan.generate",
             "chapter_plan.generate",
             "narrative_semantic_evaluation",
+            "world_candidates.generate",
+            "world_candidates.evaluate",
         }:
             return validated
         semantic = validate_chapter_provider_output_semantics(stage, validated)
@@ -936,6 +938,10 @@ def build_production_execution_composition(
         }:
             fixture = planning_fixture_factory or planning_fixture_response
             return fixture(stage, inputs)
+        if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+            if planning_fixture_factory is None:
+                raise ValueError("world preparation requires an explicit fixture transport")
+            return planning_fixture_factory(stage, inputs)
         fixture = chapter_fixture_factory or default_chapter_fixture_response
         return fixture(stage, inputs)
 
@@ -1569,6 +1575,7 @@ def build_book_production_composition(
     execution: ProductionExecutionComposition,
     chapter_application: ChapterAuthorityApplication,
     env: Mapping[str, str] | None = None,
+    planning_post_provider_fault_injector: Callable[[str], None] | None = None,
 ) -> BookProductionComposition:
 
     if not settings.database_url:
@@ -1584,6 +1591,7 @@ def build_book_production_composition(
         settings,
         execution=execution,
         env=values,
+        post_provider_fault_injector=planning_post_provider_fault_injector,
     )
     preparation = build_production_preparation_service(settings)
     chapter_groups = PostgresChapterGroupAuthority(

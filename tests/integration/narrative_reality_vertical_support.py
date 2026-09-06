@@ -65,6 +65,10 @@ class NativeRealityTransportFixture:
             planning_fixture_response,
         )
 
+        if stage == "world_candidates.generate":
+            return {"disposition": "NO_OP", "reason": "This retained manual-direction fixture supplies no autonomous world advancement.", "candidates": []}
+        if stage == "world_candidates.evaluate":
+            return {"evaluations": []}
         result = planning_fixture_response(stage, inputs)
         if stage == "chapter_plan.generate" and not self.rejected_scene:
             result["character_participation"][0]["known_fact_ids"] = [
@@ -108,12 +112,9 @@ class NativeRealityTransportFixture:
         return result
 
 
-def execute_native_reality_vertical(
-    *, composition, chapter_application, snapshot, generic, transport
-):
+def admit_native_production(*, composition, snapshot, generic):
     principal = composition.principal
     project_id, book_id = snapshot.project_id, snapshot.book_id
-    database_url = composition.authority.database_url
     admitted = composition.authority.start(
         StartBookProductionCommand(
             project_id=project_id,
@@ -149,6 +150,16 @@ def execute_native_reality_vertical(
         ),
         principal=principal,
     )
+    return admitted
+
+
+def execute_native_reality_vertical(
+    *, composition, chapter_application, snapshot, generic, transport
+):
+    admitted = admit_native_production(composition=composition, snapshot=snapshot, generic=generic)
+    principal = composition.principal
+    project_id = snapshot.project_id
+    database_url = composition.authority.database_url
     worker = Principal(
         principal_id="native-reality-fixture-worker",
         principal_type=PrincipalType.WORKER,

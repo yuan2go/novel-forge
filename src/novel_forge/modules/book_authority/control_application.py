@@ -173,6 +173,7 @@ class PostgresBookControlApplication:
                 project_id=project_id,
                 book_run_id=book_run_id,
                 chapter_number=chapter_number,
+                subject_version_id=subject_version_id,
             )
         if subjects.get("DIRECTOR") != subject_version_id:
             raise KernelError(

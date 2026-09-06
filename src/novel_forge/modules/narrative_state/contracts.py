@@ -589,7 +589,7 @@ class NarrativeStateEvent:
                 "NARRATIVE_EVENT_VERSION_INVALID",
                 "Story Time and causality require Narrative State event v3",
             )
-        expected = _event_id(
+        expected = narrative_event_id(
             state_kind=self.state_kind,
             scope=self.scope,
             identity=self.identity,
@@ -1143,34 +1143,7 @@ def _build_event(
             "v2 Narrative State input uses a legacy temporal or supersession alias",
         )
     legacy_obligation_adapter = bool(raw.get("_legacy_obligation_adapter"))
-    payload = {
-        key: _deep_copy(value)
-        for key, value in raw.items()
-        if key
-        not in {
-            "effective_from_chapter",
-            "effective_to_chapter",
-            "effective_chapter",
-            "chapter",
-            "narrative_position",
-            "volume_id",
-            "arc_id",
-            "sequence_id",
-            "sequence_ordinal",
-            "entity_version",
-            "canon_status",
-            "_legacy_obligation_adapter",
-            "supersedes_event_id",
-            "supersedes_version_id",
-            "supersedes_asset_version_id",
-            "confidence",
-            "coverage",
-            "extraction_evidence",
-            "evidence",
-            "story_time",
-            "causality",
-        }
-    }
+    payload = narrative_event_payload(raw)
     if (
         state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION
         and str(payload.get("status") or "").upper() == "FULFILLED"
@@ -1254,7 +1227,7 @@ def _build_event(
     entity_version = int(raw.get("entity_version") or 1)
     canon_status = str(raw.get("canon_status") or "APPROVED_CANON_PATCH")
     return NarrativeStateEvent(
-        event_id=_event_id(
+        event_id=narrative_event_id(
             state_kind=state_kind,
             scope=scope,
             identity=identity,
@@ -1371,7 +1344,7 @@ def _derived_causality(
     )
 
 
-def _event_id(
+def narrative_event_id(
     *,
     state_kind: NarrativeStateKind,
     scope: NarrativeScope,
@@ -1515,6 +1488,37 @@ def _identity_for(
             )
     entity_key = "|".join(f"{key}={value}" for key, value in components)
     return NarrativeIdentity(state_kind.value, entity_key, components)
+
+
+def narrative_event_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: _deep_copy(value)
+        for key, value in raw.items()
+        if key
+        not in {
+            "effective_from_chapter",
+            "effective_to_chapter",
+            "effective_chapter",
+            "chapter",
+            "narrative_position",
+            "volume_id",
+            "arc_id",
+            "sequence_id",
+            "sequence_ordinal",
+            "entity_version",
+            "canon_status",
+            "_legacy_obligation_adapter",
+            "supersedes_event_id",
+            "supersedes_version_id",
+            "supersedes_asset_version_id",
+            "confidence",
+            "coverage",
+            "extraction_evidence",
+            "evidence",
+            "story_time",
+            "causality",
+        }
+    }
 
 
 def _semantics_for(

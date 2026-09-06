@@ -44,6 +44,10 @@ def project_reality_view(
         {"state_kind": kind, **entry}
         for kind in REALITY_VIEWS[view]
         for entry in reality["current_state"].get(kind, [])
+        if view != "reader" or (
+            entry["state"].get("reader_visibility") != "HIDDEN"
+            and (entry["state"].get("fact_origin") or {}).get("kind") not in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}
+        )
     ]
     entries.sort(key=lambda entry: (entry["state_kind"], entry["entity_key"]))
     selected = entries[offset : offset + limit]
@@ -110,6 +114,7 @@ def project_why_trace(reality: Mapping[str, Any], *, event_id: str) -> dict[str,
             "NARRATIVE_WHY_EVENT_UNKNOWN",
             "Why trace requires an event in the accepted Reality",
         )
+    locals_by_outcome = {(event["provenance"]["chapter_outcome_id"], event["mutation"]["payload"]["causal_batch"]["local_id"]): event["event_id"] for event in events.values() if event.get("mutation", {}).get("payload", {}).get("causal_batch")}
     queue = [event_id]
     visited: set[str] = set()
     nodes = []
@@ -125,8 +130,9 @@ def project_why_trace(reality: Mapping[str, Any], *, event_id: str) -> dict[str,
             external_refs.add(current)
             continue
         nodes.append(event)
-        for cause in event.get("causality", {}).get("cause_refs", []):
-            edges.append({"cause": cause, "effect": current})
+        for declared_cause in event.get("causality", {}).get("cause_refs", []):
+            cause = locals_by_outcome.get((event.get("provenance", {}).get("chapter_outcome_id"), declared_cause[6:]), declared_cause) if declared_cause.startswith("local:") else declared_cause
+            edges.append({"cause": cause, "effect": current, **({"batch_local_reference": declared_cause} if declared_cause.startswith("local:") else {})})
             if cause not in visited:
                 queue.append(cause)
     return {

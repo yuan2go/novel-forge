@@ -147,6 +147,7 @@ def test_checkpoint_pending_records_accepted_checkpoint_without_dispatching() ->
         "accepted_through_chapter": 4,
     }
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
     supervisor._checkpoint_if_needed = lambda _book: {
         "volume_checkpoint": {"checkpoint_id": "volume-checkpoint:4"}
@@ -355,6 +356,7 @@ def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> Non
         }
 
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=require)
     supervisor.replan = SimpleNamespace(
         start=start,
@@ -453,6 +455,7 @@ def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> N
         ),
     )
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
     supervisor.replan = replan
 

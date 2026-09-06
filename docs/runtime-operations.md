@@ -233,9 +233,30 @@ causes. Reader response evidence remains advisory and separate from narrated Rea
 Knowledge. `/reality/context` requires a declared role and token budget; character
 roles also require an explicit character scope.
 
-Submit candidate futures through `/runs/{book_run_id}/causal-plans` with the current
-Reality revision and active Creative Foundation version. The result is planning
-input. A stale revision is rejected; it cannot be used to mutate accepted state.
+Native Book production generates and evaluates world candidates before Chapter planning.
+Its resolved input snapshot must bind an approved compiled World Foundation and active
+plans. The first Chapter uses those initial conditions without a synthetic acceptance.
+`/runs/{book_run_id}/causal-plans` remains an explicitly manual proposal entry, with the
+current Reality revision and active Creative Foundation version. Its result is planning
+input; a stale revision cannot mutate accepted state.
+
+For an authorized real-Provider smoke, use the same `/commands` entry and Book/Chapter
+workers with the approved real routes, Capability Pack and frozen budget scope. The
+operator-reviewed command JSON identifies the isolated Book, resolved input snapshot,
+target and idempotency key; it contains no candidates, requirements or Director scores:
+
+```bash
+curl --fail-with-body -H 'Content-Type: application/json' \
+  --data-binary @approved-book-command.json \
+  "$NOVEL_FORGE_API_BASE/product/production/book-authority/commands"
+```
+
+The Book worker schedules `world_candidates.generate`, `world_candidates.evaluate`
+and ordinary Planning automatically. Inspect the generated `world_preparation` source,
+output and action assets, their ExternalEffect receipts, the active Chapter plan and
+the accepted Reality's fact origins. Keep rejected outputs and unknown-effect recovery
+records. No real-Provider claim is available without credentials, an explicit budget
+and the actual run; scripted transport receipts have a separate proof ceiling.
 
 Configure the versioned Book Control policy through `/policies/book-control`, then
 inspect `/runs/{book_run_id}/control-readiness`. A pending decision identifies the

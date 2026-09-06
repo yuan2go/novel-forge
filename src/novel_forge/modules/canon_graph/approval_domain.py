@@ -72,6 +72,13 @@ def build_canon_change_proposal(
             if item.get("predicate") == "accepted_revision_digest":
                 continue
             evidence = dict(item.get("extraction_evidence") or {})
+            origin = dict(item.get("fact_origin") or {})
+            background = origin.get("kind") == "GOVERNED_BACKGROUND"
+            preparation = origin.get("kind") == "GOVERNED_PREPARATION"
+            if preparation and (origin.get("contract_version") != "world-preparation-origin.v1" or not origin.get("action_asset_version_id") or not origin.get("action_content_hash") or field != "obligation_changes" or evidence):
+                raise KernelError("CANON_PREPARATION_EVIDENCE_REQUIRED", "preparation proposal requires its selected Planning origin")
+            if background and (origin.get("contract_version") != "world-fact-origin.v1" or not all(origin.get(key) for key in ("action_asset_version_id", "action_content_hash", "source", "generation", "evaluation", "transition_digest")) or evidence):
+                raise KernelError("CANON_BACKGROUND_EVIDENCE_REQUIRED", "background proposal requires governed decision lineage and no prose evidence")
             confidence = float(item.get("confidence", 0.0))
             if not 0 <= confidence <= 1:
                 raise KernelError(
@@ -83,13 +90,13 @@ def build_canon_change_proposal(
                 item.get("approval_requirement") == "REQUIRED"
                 or impact in HIGH_IMPACT_CHANGE_TYPES
             )
-            if approval_required and not str(evidence.get("excerpt_digest") or ""):
+            if approval_required and not background and not str(evidence.get("excerpt_digest") or ""):
                 raise KernelError(
                     "CANON_HIGH_IMPACT_EVIDENCE_REQUIRED",
                     "high-impact Canon changes require an evidence digest",
                 )
             span = dict(evidence.get("span") or {})
-            if approval_required and not _valid_span(span):
+            if approval_required and not background and not _valid_span(span):
                 raise KernelError(
                     "CANON_HIGH_IMPACT_EVIDENCE_SPAN_INVALID",
                     "high-impact Canon changes require a valid evidence span",
@@ -119,6 +126,8 @@ def build_canon_change_proposal(
                     "previous Canon state belongs to another project",
                 )
             identity_components = _semantic_identity_components(field, item)
+            if item.get("causal_batch"):
+                identity_components = (*identity_components, item["causal_batch"]["local_id"])
             semantic_identity = json.dumps(
                 {
                     "field": field,
@@ -160,6 +169,7 @@ def build_canon_change_proposal(
                         "revision_asset_version_id"
                     ],
                     "evidence_span": span,
+                    **({"fact_origin": origin} if background or preparation else {}),
                     "evidence_digest": str(evidence.get("excerpt_digest") or ""),
                     "confidence": confidence,
                     "impact_level": "high" if approval_required else "normal",

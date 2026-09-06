@@ -1,0 +1,781 @@
+import json
+
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    default_chapter_fixture_response,
+)
+from novel_forge.modules.story_planning_runtime.execution import (
+    planning_fixture_response,
+)
+from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.workers.book_authority import (
+    execute_book_coordination_claim,
+    schedule_book_coordination_jobs,
+)
+from tests.integration.narrative_reality_vertical_support import admit_native_production
+
+
+class AutonomousWorldTransport:
+    def __init__(self, scenario="delayed_disclosure"):
+        self.calls = []
+        self.scenario = scenario
+        self.faults = []
+
+    def post_provider_checkpoint(self, point):
+        if (
+            self.scenario == "provider_recovery"
+            and not self.faults
+            and point == "after_provider_receipt_before_budget_settlement"
+            and self.calls[-1]["stage"] == "world_candidates.generate"
+        ):
+            self.faults.append(point)
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            raise KernelError(
+                "MODEL_EFFECT_RETRYABLE_WORLD_PROOF",
+                "injected process loss after confirmed world Provider receipt",
+            )
+
+    def planning(self, stage, inputs):
+        self.calls.append({"stage": stage, "input": json.loads(json.dumps(inputs))})
+        if stage == "world_candidates.generate":
+            task = inputs["world_preparation"]
+            rule = next(
+                rule
+                for rule in task["world_foundation"]["rules"]
+                if rule["enforcement"] != "SOFT_CAUSAL"
+            )
+            predicate = rule["predicate"]
+            actor = task["approved_entity_ids"][0]
+            tick = max(task["world_clock"].values(), default=0) + 1
+            proposed = {
+                "transition_id": "advance-faction-pressure",
+                "actor_id": actor,
+                "camera": "OFF_CAMERA",
+                "story_time": {
+                    "timeline_id": "main",
+                    "start_ordinal": tick,
+                    "end_ordinal": tick,
+                    "precision": "EXACT",
+                    "label": "",
+                },
+                "action": "act on the approved faction pressure",
+                "state_kind": predicate["state_kind"],
+                "entity_key": predicate["entity_key"],
+                "changes": {predicate["field"]: predicate["value"]},
+                "requirements": [],
+                "epistemic_basis": [],
+                "cause_refs": [task["foundation_cause_refs"][0]],
+            }
+            result = {
+                "disposition": "CANDIDATES",
+                "reason": "The approved faction pressure can advance off camera.",
+                "candidates": [
+                    {
+                        "transition": {"payload_json": json.dumps(proposed)},
+                        "affected_entities": [actor],
+                        "world_consequences": [
+                            "Faction pressure advances without public disclosure."
+                        ],
+                        "arc_refs": [],
+                        "obligation_refs": [],
+                        "risks": [],
+                        "rationale": "Approved rule and initial faction provide causal support.",
+                        "information_scope": {
+                            "reader_exposure": "CONCEAL",
+                            "reveal_event_ids": [],
+                        },
+                        "soft_assumptions": ["The faction chooses to act."],
+                        "narrative_preferences": ["Delay disclosure."],
+                        "preparation_paths": [],
+                    }
+                ],
+            }
+            if self.scenario == "causal_preparation":
+                from copy import deepcopy
+
+                step = deepcopy(proposed)
+                step["transition_id"] = "prepare-inquiry"
+                step["changes"]["prepared"] = True
+                proposed["transition_id"] = "complete-prepared-inquiry"
+                proposed["changes"]["goal_reached"] = True
+                proposed["requirements"] = [
+                    {
+                        "requirement_id": "prepared-inquiry",
+                        "state_kind": "world_state",
+                        "entity_key": "world_state_id=council-inquiry",
+                        "field": "prepared",
+                        "operator": "EQUALS",
+                        "value": True,
+                    }
+                ]
+                supports = [
+                    entry
+                    for entry in task["context_projection"]["selection"]
+                    if entry["entity_key"] == "world_state_id=council-inquiry"
+                ]
+                if supports:
+                    proposed["cause_refs"] = [supports[0]["source_event_id"]]
+                candidate = result["candidates"][0]
+                candidate["transition"] = {"payload_json": json.dumps(proposed)}
+                candidate["preparation_paths"] = [
+                    {
+                        "path_id": "prepare-inquiry-path",
+                        "rationale": "Establish the missing preparation before the target.",
+                        "steps": [
+                            {
+                                "chapter_offset": 0,
+                                "transition": {"payload_json": json.dumps(step)},
+                            }
+                        ],
+                    }
+                ]
+            elif task["accepted_through_chapter"]:
+                hidden = next(
+                    entry
+                    for entry in task["context_projection"]["selection"]
+                    if (entry["state"].get("fact_origin") or {}).get("kind")
+                    == "GOVERNED_BACKGROUND"
+                )
+                proposed.update(
+                    {
+                        "transition_id": "reveal-accepted-notice",
+                        "camera": "ON_CAMERA",
+                        "state_kind": "disclosure_event",
+                        "entity_key": "disclosure_id=accepted-notice",
+                        "changes": {
+                            "disclosure_id": "accepted-notice",
+                            "fact_id": hidden["source_event_id"],
+                            "audience": "READER",
+                            "disclosure_mode": "CONFIRM",
+                        },
+                        "cause_refs": [hidden["source_event_id"]],
+                    }
+                )
+                result["candidates"][0]["transition"] = {
+                    "payload_json": json.dumps(proposed)
+                }
+                result["candidates"][0]["information_scope"] = {
+                    "reader_exposure": "REVEAL",
+                    "reveal_event_ids": [hidden["source_event_id"]],
+                }
+        elif stage == "world_candidates.evaluate":
+            from novel_forge.modules.hierarchical_planning.causal_domain import (
+                DIRECTOR_DIMENSIONS,
+            )
+
+            result = {
+                "evaluations": [
+                    {
+                        "transition_id": item["transition"]["transition_id"],
+                        "dimensions": dict.fromkeys(DIRECTOR_DIMENSIONS, 0.8),
+                        "rationale": "The generated transition follows the supplied rule and preserves information asymmetry.",
+                        "preferred_path_id": "",
+                    }
+                    for item in inputs["world_preparation"]["generated_portfolio"][
+                        "candidates"
+                    ]
+                ]
+            }
+        else:
+            result = planning_fixture_response(stage, inputs)
+            if stage == "chapter_plan.generate":
+                for disclosure in inputs.get("world_preparation", {}).get(
+                    "disclosures", []
+                ):
+                    result["disclosures"].append(
+                        {
+                            "disclosure_id": "accepted-notice",
+                            "fact_id": disclosure["fact_id"],
+                            "audience": "READER",
+                            "mode": "CONFIRM",
+                            "presentation_channel": "DOCUMENT",
+                            "earliest_chapter": result["chapter_number"],
+                        }
+                    )
+                    result["knowledge_boundaries"].append(
+                        {
+                            "layer": "READER_KNOWLEDGE",
+                            "subject_id": "reader",
+                            "fact_id": disclosure["fact_id"],
+                            "status": "KNOWN",
+                            "available_from_chapter": result["chapter_number"],
+                        }
+                    )
+        self.calls[-1]["output"] = result
+        return result
+
+    def __call__(self, stage, inputs):
+        self.calls.append({"stage": stage, "input": json.loads(json.dumps(inputs))})
+        result = default_chapter_fixture_response(stage, inputs)
+        prose = "The dated notice confirms that the council inquiry was already open."
+        if stage == "draft" and any(
+            item["disclosure_id"] == "accepted-notice"
+            for item in inputs["plan"].get("disclosures", [])
+        ):
+            result["scene_artifacts"][-1]["text"] += " " + prose
+            result["text"] = "\n\n".join(
+                item["text"] for item in result["scene_artifacts"]
+            )
+        if (
+            self.scenario.startswith("intra_chapter")
+            and stage == "draft"
+            and int(inputs["plan"]["chapter"]) == 1
+        ):
+            result["scene_artifacts"][-1]["text"] += (
+                " Mara receives a signed message identifying the meeting room. Using the message, Mara redirects the messenger."
+            )
+            result["text"] = "\n\n".join(
+                item["text"] for item in result["scene_artifacts"]
+            )
+        if (
+            self.scenario.startswith("intra_chapter")
+            and stage == "canon_extraction"
+            and int(inputs["revision"]["chapter"]) == 1
+        ):
+            text = inputs["revision"]["text"]
+            received = "Mara receives a signed message identifying the meeting room."
+            acted = "Using the message, Mara redirects the messenger."
+
+            def time(tick):
+                return {
+                    "timeline_id": "main",
+                    "start_ordinal": tick,
+                    "end_ordinal": tick,
+                    "precision": "EXACT",
+                    "label": "",
+                }
+
+            result["character_knowledge_changes"].append(
+                {
+                    "character_id": "mara",
+                    "fact_id": "meeting-room",
+                    "status": "KNOWN",
+                    "summary": received,
+                    "evidence_start": text.index(received),
+                    "evidence_end": text.index(received) + len(received),
+                    "confidence": 1.0,
+                    "causal_batch": {
+                        "contract_version": "causal-batch-event.v1",
+                        "local_id": "receive-message",
+                        "depends_on": [],
+                    },
+                    "story_time": time(1),
+                }
+            )
+            transition = {
+                "transition_id": "act-on-message",
+                "actor_id": "mara",
+                "camera": "ON_CAMERA",
+                "story_time": time(2),
+                "action": acted,
+                "state_kind": "consequence_state",
+                "entity_key": "consequence_id=redirect-message",
+                "changes": {"status": "REDIRECTED"},
+                "requirements": [],
+                "epistemic_basis": [
+                    {
+                        "requirement_id": "mara-received-message",
+                        "state_kind": "character_knowledge",
+                        "entity_key": "character_id=mara|fact_id=meeting-room",
+                        "field": "status",
+                        "operator": "EQUALS",
+                        "value": "KNOWN",
+                    }
+                ],
+                "cause_refs": ["local:receive-message"],
+            }
+            result["consequence_changes"].append(
+                {
+                    "consequence_id": "redirect-message",
+                    "status": "REDIRECTED",
+                    "summary": acted,
+                    "evidence_start": text.index(acted),
+                    "evidence_end": text.index(acted) + len(acted),
+                    "confidence": 1.0,
+                    "world_transition": {"payload_json": json.dumps(transition)},
+                    "causal_batch": {
+                        "contract_version": "causal-batch-event.v1",
+                        "local_id": "act-on-message",
+                        "depends_on": ["local:receive-message"],
+                    },
+                    "story_time": time(2),
+                }
+            )
+        if stage == "canon_extraction":
+            for disclosure in inputs.get("execution_expectations", {}).get(
+                "disclosures", []
+            ):
+                if disclosure["disclosure_id"] != "accepted-notice":
+                    continue
+                text = inputs["revision"]["text"]
+                start = text.index(prose)
+                result["disclosure_events"] = [
+                    item
+                    for item in result["disclosure_events"]
+                    if item.get("disclosure_id") != disclosure["disclosure_id"]
+                ]
+                result["disclosure_events"].append(
+                    {
+                        "disclosure_id": disclosure["disclosure_id"],
+                        "fact_id": disclosure["fact_id"],
+                        "audience": "READER",
+                        "disclosure_mode": "CONFIRM",
+                        "presentation_channel": "DOCUMENT",
+                        "summary": prose,
+                        "evidence_start": start,
+                        "evidence_end": start + len(prose),
+                        "confidence": 1.0,
+                    }
+                )
+        if stage == "canon_extraction" and self.scenario == "intra_chapter_missing":
+            result["character_knowledge_changes"] = []
+        if stage == "canon_extraction" and self.scenario == "intra_chapter_cycle":
+            result["character_knowledge_changes"][-1]["causal_batch"]["depends_on"] = [
+                "local:act-on-message"
+            ]
+        self.calls[-1]["output"] = result
+        return result
+
+
+def execute_autonomous_world_vertical(
+    *, composition, chapter_application, snapshot, generic, transport
+):
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    if transport.scenario == "manual_director":
+        from novel_forge.modules.book_authority.control_policy import ControlPolicy
+
+        composition.controls.configure(
+            project_id=snapshot.project_id,
+            workspace_id=snapshot.workspace_id,
+            policy=ControlPolicy(
+                policy_version="native-director-review-v1", mode="MANUAL_DIRECTOR"
+            ),
+            principal=composition.principal,
+            idempotency_key=f"{snapshot.project_id}:control-policy",
+            trace_id=f"{snapshot.project_id}:control-policy",
+            correlation_id=snapshot.project_id,
+        )
+    admitted = admit_native_production(
+        composition=composition, snapshot=snapshot, generic=generic
+    )
+    jobs = RuntimeJobAuthority(composition.authority.database_url)
+    coordination = []
+    first_reality = None
+    decisions = []
+    acceptance_faults = []
+    lease_takeovers = []
+    armed = False
+
+    def acceptance_failure(point):
+        nonlocal armed
+        if point == "after_chapter_acceptance":
+            if not acceptance_faults:
+                acceptance_faults.append(point)
+                raise RuntimeError("injected world acceptance rollback")
+            armed = True
+        if (
+            point == "after_operation_completion_before_response"
+            and armed
+            and len(acceptance_faults) == 1
+        ):
+            acceptance_faults.append(point)
+            raise RuntimeError("injected world acceptance response loss")
+
+    if transport.scenario == "acceptance_recovery":
+        composition.authority.failure_injector = acceptance_failure
+    for _ in range(60):
+        schedule_book_coordination_jobs(
+            composition.query, jobs, limit=1, book_run_id=admitted.book_run_id
+        )
+        if transport.scenario == "concurrent_workers" and not lease_takeovers:
+            from concurrent.futures import ThreadPoolExecutor
+            import time
+            import pytest
+
+            def compete(worker):
+                return jobs.claim(
+                    runtime_group="book",
+                    worker_id=worker,
+                    lease_seconds=1,
+                    job_kinds=("BOOK_COORDINATION_TICK",),
+                    subject_kind="BOOK_RUN",
+                    subject_id=admitted.book_run_id,
+                )
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                competed = list(
+                    pool.map(compete, ("world-worker-one", "world-worker-two"))
+                )
+            held = [item for item in competed if item is not None]
+            assert len(held) == 1
+            abandoned = held[0]
+            time.sleep(1.1)
+            successor = compete("world-worker-successor")
+            assert (
+                successor is not None
+                and successor.runtime_job_id == abandoned.runtime_job_id
+            )
+            assert successor.fencing_token > abandoned.fencing_token
+            with pytest.raises(KernelError):
+                jobs.complete(abandoned, {"forged": "late predecessor"})
+            lease_takeovers.append(
+                {
+                    "abandoned_attempt_id": abandoned.attempt_id,
+                    "successor_attempt_id": successor.attempt_id,
+                }
+            )
+            result = execute_book_coordination_claim(
+                jobs, composition, successor, lease_seconds=1
+            )
+            coordination.append(result)
+            assert jobs.complete(successor, result)["replayed"] is True
+            continue
+        claim = jobs.claim(
+            runtime_group="book",
+            worker_id="world-causal-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_COORDINATION_TICK",),
+            subject_kind="BOOK_RUN",
+            subject_id=admitted.book_run_id,
+        )
+        assert claim is not None, {
+            "coordination": coordination,
+            "book": composition.authority.require(admitted.book_run_id),
+        }
+        try:
+            result = execute_book_coordination_claim(jobs, composition, claim)
+        except RuntimeError as exc:
+            if transport.scenario != "acceptance_recovery" or not str(exc).startswith(
+                "injected world acceptance"
+            ):
+                raise
+            if len(acceptance_faults) == 1:
+                assert (
+                    composition.authority.require(admitted.book_run_id)[
+                        "accepted_through_chapter"
+                    ]
+                    == 0
+                )
+            continue
+        except KernelError as exc:
+            if (
+                exc.code != "MODEL_EFFECT_RETRYABLE_WORLD_PROOF"
+                or transport.scenario != "provider_recovery"
+            ):
+                raise
+            assert (
+                composition.authority.require(admitted.book_run_id)[
+                    "accepted_through_chapter"
+                ]
+                == 0
+            )
+            continue
+        coordination.append(result)
+        assert jobs.complete(claim, result)["replayed"] is True
+        if result["action"] == "WAIT_CONTROL_DECISION":
+            assert transport.scenario == "manual_director"
+            readiness = composition.controls.readiness(
+                project_id=snapshot.project_id, book_run_id=admitted.book_run_id
+            )
+            gate = next(
+                item
+                for item in readiness["gates"]
+                if item["status"] == "WAITING_OPERATOR"
+            )
+            decisions.append(
+                composition.controls.decide(
+                    principal=composition.principal,
+                    project_id=snapshot.project_id,
+                    book_run_id=admitted.book_run_id,
+                    chapter_number=readiness["chapter_number"],
+                    boundary=gate["boundary"],
+                    subject_version_id=gate["subject_version_id"],
+                    decision="APPROVE",
+                    reason="Fixture operator decision verifies governance only",
+                    idempotency_key=f"{admitted.book_run_id}:approve:{gate['subject_version_id']}",
+                    trace_id=admitted.book_run_id,
+                    correlation_id=admitted.book_run_id,
+                )
+            )
+            continue
+        if result["state"] == "PLAN_APPROVAL_PENDING":
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+            with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT status, report FROM authority_story_planning_validation_report WHERE project_id=%s AND status='FAIL'",
+                    [snapshot.project_id],
+                )
+                reports = uow.cursor.fetchall()
+            raise AssertionError(
+                {
+                    "generation": composition.planning.require_generation(
+                        result["operation_id"]
+                    ),
+                    "validation_failures": reports,
+                }
+            )
+        if result["action"] == "DISPATCH_CHAPTER":
+            stages = [call["stage"] for call in transport.calls]
+            generated_task = next(
+                call["input"]["world_preparation"]
+                for call in reversed(transport.calls)
+                if call["stage"] == "world_candidates.generate"
+            )
+            assert generated_task.get("character_definitions"), (
+                "World reasoning requires the approved character goals and definitions"
+            )
+            assert {
+                item["role"] for item in generated_task.get("planning_window", [])
+            } >= {"book_plan", "arc_plans", "chapter_group_plan"}, (
+                "World generation and Director need the exact approved planning window"
+            )
+            assert "world_candidates.generate" in stages, (
+                "native Supervisor must generate candidates before Chapter dispatch"
+            )
+            assert "world_candidates.evaluate" in stages, (
+                "Director evidence must come from the governed Provider evaluation stage"
+            )
+            assert (
+                stages.index("world_candidates.generate")
+                < stages.index("world_candidates.evaluate")
+                < stages.index("chapter_plan.generate")
+            )
+            scheduler = chapter_application.scheduler(
+                principal=Principal(
+                    principal_id="world-causal-worker",
+                    principal_type=PrincipalType.WORKER,
+                    permissions=composition.principal.permissions
+                    - {"book.authority.approve_replan"},
+                    project_scope=composition.principal.project_scope,
+                    authentication_source="postgres-native-world-worker-fixture",
+                )
+            )
+            for _ in range(80):
+                try:
+                    tick = scheduler.tick(
+                        project_id=snapshot.project_id,
+                        root_operation_id=result["operation_id"],
+                    )
+                except KernelError as exc:
+                    expected = {
+                        "intra_chapter_missing": "WORLD_BATCH_REFERENCE_UNKNOWN",
+                        "intra_chapter_cycle": "WORLD_BATCH_CAUSAL_CYCLE",
+                    }.get(transport.scenario)
+                    if expected is None or exc.code != expected:
+                        raise
+                    assert (
+                        composition.authority.require(admitted.book_run_id)[
+                            "accepted_through_chapter"
+                        ]
+                        == 0
+                    )
+                    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+                    with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                        uow.cursor.execute(
+                            "SELECT count(*) FROM authority_narrative_reality_revision WHERE book_run_id=%s",
+                            [admitted.book_run_id],
+                        )
+                        assert uow.cursor.fetchone()[0] == 0
+                        uow.cursor.execute(
+                            "SELECT count(*) FROM authority_reality_event_index WHERE book_run_id=%s",
+                            [admitted.book_run_id],
+                        )
+                        assert uow.cursor.fetchone()[0] == 0
+                    return {
+                        "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+                        "rejection": exc.code,
+                        "book_run_id": admitted.book_run_id,
+                        "calls": transport.calls,
+                        "partial_reality_commits": 0,
+                    }
+                if tick.saga_status == "SUCCEEDED":
+                    break
+            else:
+                raise AssertionError("native chapter exhausted its bounded schedule")
+        book = composition.authority.require(admitted.book_run_id)
+        if int(book["accepted_through_chapter"]) == 1 and first_reality is None:
+            reality = composition.query.narrative_reality(
+                book_run_id=admitted.book_run_id
+            )
+            background = [
+                event
+                for event in reality["events"]
+                if event["mutation"]["payload"].get("fact_origin", {}).get("kind")
+                == "GOVERNED_BACKGROUND"
+            ]
+            assert background, (
+                "accepted background events need non-prose source evidence"
+            )
+            assert not any(
+                entry["state"].get("fact_id") == background[0]["event_id"]
+                for entry in reality["current_state"]["reader_knowledge"]
+            )
+            first_reality = reality
+            if transport.scenario == "intra_chapter":
+                assert any(
+                    entry["state"].get("character_id") == "mara"
+                    and entry["state"].get("fact_id") == "meeting-room"
+                    for entry in reality["current_state"]["character_knowledge"]
+                )
+                assert any(
+                    event["causality"]["cause_refs"] == ["local:receive-message"]
+                    for event in reality["events"]
+                    if event["state_kind"] == "consequence_state"
+                )
+                acted = next(
+                    event
+                    for event in reality["events"]
+                    if event["mutation"]["payload"]
+                    .get("causal_batch", {})
+                    .get("local_id")
+                    == "act-on-message"
+                )
+                received = next(
+                    event
+                    for event in reality["events"]
+                    if event["mutation"]["payload"]
+                    .get("causal_batch", {})
+                    .get("local_id")
+                    == "receive-message"
+                )
+                why = composition.query.reality_view(
+                    book_run_id=admitted.book_run_id,
+                    view="why",
+                    event_id=acted["event_id"],
+                )
+                assert any(
+                    edge["cause"] == received["event_id"]
+                    and edge["effect"] == acted["event_id"]
+                    for edge in why["edges"]
+                )
+                assert "local:receive-message" not in why["external_evidence_refs"]
+            if transport.scenario == "causal_preparation":
+                debts = [
+                    entry["state"]
+                    for entry in reality["current_state"]["narrative_obligation"]
+                    if entry["state"].get("obligation_type") == "CAUSAL_DEBT"
+                ]
+                assert (
+                    len(debts) == 1
+                    and debts[0]["status"] == "OPEN"
+                    and not debts[0]["payoff_evidence"]
+                )
+                reader = composition.query.reality_view(
+                    book_run_id=admitted.book_run_id, view="reader"
+                )
+                assert not any(
+                    entry["state"].get("obligation_type") == "CAUSAL_DEBT"
+                    for entry in reader["entries"]
+                )
+            assert (
+                len(
+                    [
+                        call
+                        for call in transport.calls
+                        if call["stage"] == "world_candidates.generate"
+                    ]
+                )
+                == 1
+            )
+            assert (
+                len(
+                    [
+                        call
+                        for call in transport.calls
+                        if call["stage"] == "world_candidates.evaluate"
+                    ]
+                )
+                == 1
+            )
+            if transport.scenario == "perturbed_foundation":
+                assert (
+                    background[0]["mutation"]["payload"]["world_state_id"]
+                    == "harbor-pressure"
+                )
+                assert background[0]["mutation"]["payload"]["status"] == "RISING"
+                return {
+                    "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+                    "book_run_id": admitted.book_run_id,
+                    "scenario": transport.scenario,
+                    "calls": transport.calls,
+                    "reality_revision_id": reality["revision_id"],
+                    "background_event_ids": [event["event_id"] for event in background],
+                }
+        if int(book["accepted_through_chapter"]) >= 2:
+            reality = composition.query.narrative_reality(
+                book_run_id=admitted.book_run_id
+            )
+            assert first_reality is not None
+            background = [
+                event
+                for event in first_reality["events"]
+                if (event["mutation"]["payload"].get("fact_origin") or {}).get("kind")
+                == "GOVERNED_BACKGROUND"
+            ]
+            fact_id = background[0]["event_id"]
+            if transport.scenario != "causal_preparation":
+                assert any(
+                    entry["state"].get("fact_id") == fact_id
+                    and entry["state"].get("status") == "KNOWN"
+                    for entry in reality["current_state"]["reader_knowledge"]
+                )
+                assert not any(
+                    (event["mutation"]["payload"].get("fact_origin") or {}).get("kind")
+                    == "GOVERNED_BACKGROUND"
+                    for event in reality["events"]
+                )
+            else:
+                debts = [
+                    entry["state"]
+                    for entry in reality["current_state"]["narrative_obligation"]
+                    if entry["state"].get("obligation_type") == "CAUSAL_DEBT"
+                ]
+                assert (
+                    len(debts) == 1
+                    and debts[0]["status"] == "FULFILLED"
+                    and debts[0]["payoff_evidence"]["event_id"] == fact_id
+                )
+                assert any(
+                    entry["state"].get("goal_reached") is True
+                    for entry in reality["current_state"]["world_state"]
+                )
+            assert not any(
+                entry["state"].get("fact_id") == fact_id
+                for entry in reality["current_state"]["character_knowledge"]
+            )
+            assert (
+                composition.query.narrative_reality(
+                    book_run_id=admitted.book_run_id, chapter_number=1
+                )
+                == first_reality
+            )
+            from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+
+            rebuilt = NarrativeStateRebuildService(
+                composition.authority.database_url
+            ).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
+            assert rebuilt.projection["current_state"] == reality["current_state"]
+            if transport.scenario == "manual_director":
+                assert len(decisions) == 2
+            if transport.scenario == "acceptance_recovery":
+                assert len(acceptance_faults) == 2
+            if transport.scenario == "provider_recovery":
+                assert len(transport.faults) == 1
+            return {
+                "faults": [*transport.faults, *acceptance_faults],
+                "editorial_decisions": decisions,
+                "lease_takeovers": lease_takeovers,
+                "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+                "book_run_id": admitted.book_run_id,
+                "scenario": transport.scenario,
+                "calls": transport.calls,
+                "reality_revision_id": reality["revision_id"],
+                "background_event_ids": [event["event_id"] for event in background],
+            }
+    raise AssertionError(
+        "autonomous production failed to reach one accepted Reality within its bounded schedule"
+    )
