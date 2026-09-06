@@ -1500,6 +1500,7 @@ def _activate_plan_chain(
                 "multi_preparation",
                 "historical_disclosure",
                 "process_recovery",
+                "smoke_command",
                 "reader_partial",
                 "character_disclosure",
                 "reader_misdirect",

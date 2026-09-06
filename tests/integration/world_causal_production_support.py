@@ -210,7 +210,7 @@ class AutonomousWorldTransport:
                 result["candidates"][0]["transition"] = {
                     "payload_json": json.dumps(proposed)
                 }
-            if self.scenario == "multi_preparation":
+            if self.scenario in {"multi_preparation", "smoke_command"}:
                 from copy import deepcopy
 
                 if task["accepted_through_chapter"]:
@@ -633,6 +633,17 @@ def execute_autonomous_world_vertical(
     admitted = admit_native_production(
         composition=composition, snapshot=snapshot, generic=generic
     )
+    if transport.scenario == "smoke_command":
+        import time
+        from scripts.run_world_production_smoke import drive
+        records = []
+        worker = Principal(principal_id="smoke-command-worker", principal_type=PrincipalType.WORKER, permissions=composition.principal.permissions - {"book.authority.approve_replan"}, project_scope=composition.principal.project_scope, authentication_source="owned-native-smoke-command-test")
+        reason = drive(composition=composition, chapter=chapter_application, book_run_id=admitted.book_run_id, worker=worker, events=records.append, maximum_ticks=60, deadline=time.monotonic()+240)
+        assert reason == "ACCEPTED_TARGET_REACHED", records
+        reality = composition.query.narrative_reality(book_run_id=admitted.book_run_id)
+        assert any(row["state"].get("goal_reached") for row in reality["current_state"]["world_state"])
+        assert len([call for call in transport.calls if call["stage"] == "world_candidates.generate"]) == 3
+        return {"proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY", "scenario": "smoke_command", "book_run_id": admitted.book_run_id, "calls": transport.calls, "native_smoke_ticks": records, "reality_revision_id": reality["revision_id"]}
     if transport.scenario == "process_recovery":
         from tests.integration.world_process_recovery_support import (
             run_process_recovery,

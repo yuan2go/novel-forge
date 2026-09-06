@@ -295,3 +295,17 @@ class RealProviderQualificationRunnerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_world_smoke_requires_explicit_budgets_and_a_controlled_project():
+    from scripts.run_world_production_smoke import validate_configuration, CAPS
+    import pytest
+    with pytest.raises(ValueError, match='authorized budget'):
+        validate_configuration({})
+    values = {**dict.fromkeys(CAPS, '1.00'), 'NOVEL_FORGE_ENVIRONMENT': 'validation', 'NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID': 'reviewed-operator', 'NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE': 'isolated-project'}
+    validate_configuration(values)
+    for key in CAPS:
+        with pytest.raises(ValueError, match='authorized budget'):
+            validate_configuration({**values, key: 'NaN'})
+    with pytest.raises(ValueError, match='isolated project'):
+        validate_configuration({**values, 'NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE': '*'})

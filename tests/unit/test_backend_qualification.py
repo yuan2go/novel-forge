@@ -829,3 +829,25 @@ class BackendQualificationCliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_query_plan_accepts_bitmap_index_only_for_its_own_relation():
+    from types import SimpleNamespace
+    import pytest
+    from scripts.qualify_authority_query_plans import _qualify_plan
+
+    def connection(node):
+        return SimpleNamespace(execute=lambda _: SimpleNamespace(fetchone=lambda: ([{"Plan": node}],)))
+
+    bitmap = {"Node Type": "Bitmap Heap Scan", "Relation Name": "events", "Plans": [
+        {"Node Type": "Bitmap Index Scan", "Index Name": "events_scope_idx"}
+    ]}
+    result = _qualify_plan(connection(bitmap), name="history", relation="events", query="SELECT 1")
+    assert result["index_names"] == ["events_scope_idx"]
+    for scan in ("Seq Scan", "Bitmap Heap Scan"):
+        unrelated = {"Node Type": "Nested Loop", "Plans": [
+            {"Node Type": scan, "Relation Name": "events"},
+            {"Node Type": "Index Scan", "Relation Name": "other", "Index Name": "other_idx"},
+        ]}
+        with pytest.raises(RuntimeError, match="planner qualification failed"):
+            _qualify_plan(connection(unrelated), name="history", relation="events", query="SELECT 1")
