@@ -6,6 +6,8 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
+from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+
 from novel_forge.modules.authoring.projections import (
     build_hook_debt_projection,
     build_recent_trail_entry,
@@ -379,6 +381,7 @@ class BookAuthorityRepository:
         )
         inserted = self.cursor.rowcount == 1
         self.commit_longform_projection_set(longform_projection_set)
+        NarrativeRealityRepository(self.cursor).project_acceptance(acceptance_id)
         if before_cursor_advance is not None:
             before_cursor_advance()
         self.cursor.execute(

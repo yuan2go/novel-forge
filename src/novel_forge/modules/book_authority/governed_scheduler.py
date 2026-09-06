@@ -64,9 +64,14 @@ class PostgresBookAuthorityScheduler:
             return self._result(book_run_id, before, "RECONCILE_CHAPTER")
         if before in self._CHAPTER_ACCEPTANCE_STATES:
             request = self._active_request(book)
-            accepted = self.authority.accept_chapter(
-                request["chapter_request_id"], principal=self.principal
-            )
+            try:
+                accepted = self.authority.accept_chapter(
+                    request["chapter_request_id"], principal=self.principal
+                )
+            except KernelError as exc:
+                if exc.code != "BOOK_CONTROL_APPROVAL_REQUIRED":
+                    raise
+                return self._result(book_run_id, before, "WAIT_CONTROL_DECISION")
             return self._result(
                 book_run_id,
                 before,

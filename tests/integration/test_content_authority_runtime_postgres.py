@@ -994,6 +994,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             "creative",
             {
                 "objective": "Establish a costly public-truth mystery engine.",
+                "narrative_intent_source": "goal: Public evidence forces a costly choice\nmust_have: Earned discovery\nmust_not: Uncaused resurrection\ntone: restrained\nallowed_deviation: Scene order only",
                 "target_reader": "adult speculative mystery readers",
                 "why_worth_writing": "Public truth creates responsibility.",
                 "genre": "speculative mystery",
@@ -1007,6 +1008,10 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "serialization_potential": "each district exposes a distinct bargain",
             },
         )
+        compiled_creative = self.read_content(creative["asset_version_id"])["candidate_payload"]
+        self.assertNotIn("narrative_intent_source", compiled_creative)
+        self.assertEqual(compiled_creative["narrative_intent"]["must_not"], ["Uncaused resurrection"])
+        self.assertEqual(compiled_creative["intent_compiler_version"], "labeled-narrative-intent.v1")
         creative_parent = {"CREATIVE_FOUNDATION": creative}
         theme = author_foundation(
             "story_design.theme_contract.author",

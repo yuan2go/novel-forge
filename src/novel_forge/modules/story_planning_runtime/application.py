@@ -386,7 +386,7 @@ class StoryPlanningGenerationApplication:
             )
         input_assets = self._replay_ordered_input_assets(
             command=command,
-            resolved_input_assets=input_assets,
+            resolved_input_assets=_canonical_admission_assets(input_assets),
         )
         payload = _command_payload(command)
         self._probe(execution_probe)
@@ -1504,6 +1504,13 @@ class StoryPlanningGenerationApplication:
                 replayed,
             )
         if state["approval"] == "APPROVED":
+            if definition.risk_class != "HIGH" and command.auto_approve_low_risk:
+                activated = self.activate_candidate(
+                    candidate_asset_version_id, principal=principal,
+                    idempotency_key=f"{command.idempotency_key}:auto-activate",
+                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                )
+                return PlanningGenerationResult(operation_id, candidate_asset_version_id, PlanningGenerationStatus.ACTIVE, activated["story_design"], activated["planning_binding"], replayed)
             self._update_generation_status(operation_id, "APPROVED")
             return PlanningGenerationResult(
                 operation_id,
@@ -1561,6 +1568,8 @@ class StoryPlanningGenerationApplication:
                             "Frozen Scheduling input does not contain one complete Chapter row",
                         ) from exc
                     _validate_chapter_schedule_binding(content, schedule_row)
+                    from novel_forge.modules.hierarchical_planning.epistemic_validation import validate_planned_character_knowledge
+                    validate_planned_character_knowledge(content, self._require_asset(project_id=command.project_id, asset_version_id=command.input_versions["story_state"])["content"])
                 validation = validate_story_design_candidate(
                     content=content,
                     project_id=command.project_id,
@@ -1755,6 +1764,21 @@ class StoryPlanningGenerationApplication:
             "message": error.message,
             "candidate_asset_version_id": candidate_asset_version_id,
         }
+        if error.code.startswith(("SCENE_", "BEAT_", "REALIZATION_")):
+            report["directed_rejection"] = {
+                "contract_version": "planning-directed-rejection.v1",
+                "source_boundary": "SCENE_REALIZATION_CONTRACT",
+                "target_generator": command.generator_operation_name,
+                "target_candidate_version_id": candidate_asset_version_id,
+                "frozen_input_versions": {
+                    item["role"]: item["asset_version_id"]
+                    for item in self.require_generation(operation_id)["input_snapshot"]
+                },
+                "repair_number": command.repair_number,
+                "maximum_repairs": definition.maximum_structural_regenerations,
+                "restart_scope": "REJECTED_CANDIDATE_AND_DEPENDENT_UNEXECUTED_NODES",
+                "accepted_history_mutation_allowed": False,
+            }
         report_hash = self._record_validation(
             operation_id=operation_id,
             candidate_asset_version_id=candidate_asset_version_id,
@@ -3287,3 +3311,13 @@ __all__ = [
     "chapter_plan_projection_definition",
     "story_planning_generation_definition",
 ]
+
+
+def _canonical_admission_assets(assets: list[dict[str, str]]) -> list[dict[str, str]]:
+    by_id: dict[str, dict[str, str]] = {}
+    for asset in assets:
+        identity = asset.get("asset_version_id")
+        if not identity or not asset.get("content_hash") or (identity in by_id and by_id[identity] != asset):
+            raise KernelError("PLANNING_GENERATION_ADMISSION_SNAPSHOT_INVALID", "Planning roles sharing an AssetVersion must agree on its exact content identity")
+        by_id.setdefault(identity, dict(asset))
+    return list(by_id.values())

@@ -1,0 +1,271 @@
+{
+  "schema_version": "query-plan-readonly-diagnostic.v1",
+  "run_id": "p0-6040cd8570144f39b15494d3e6320861",
+  "observations": [
+    {
+      "observed_at": "2026-09-06T07:20:53.312726+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 0.051457,
+            "query_prefix": "\n            INSERT INTO authority_operation(\n                operation_id,definition_name,definition_version,project_id,status,\n                root_"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 1,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.634303+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.514163+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-06T07:20:58.408309+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 1.16043,
+            "query_prefix": "\n            INSERT INTO state_event(\n                event_id,aggregate_type,aggregate_id,project_id,event_type,\n                event_version,sequen"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 1,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.634303+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.514163+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-06T07:21:03.488672+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 0.867648,
+            "query_prefix": "\n            INSERT INTO authority_asset(asset_id,project_id,asset_type)\n            SELECT $1 || ':asset:' || value,\n                   $1 || ':proje"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 1,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.634303+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.514163+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-06T07:21:08.601962+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 0.867369,
+            "query_prefix": "\n            INSERT INTO authority_narrative_retrieval_document(\n                retrieval_document_id,project_id,book_id,\n                source_asse"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 1,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.634303+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:20:13.514163+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-06T07:21:13.770809+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 5.994668,
+            "query_prefix": "\n            INSERT INTO authority_narrative_retrieval_document(\n                retrieval_document_id,project_id,book_id,\n                source_asse"
+          },
+          {
+            "state": "active",
+            "wait_event_type": "Timeout",
+            "wait_event": "VacuumDelay",
+            "duration_seconds": 0.041957,
+            "query_prefix": "autovacuum: ANALYZE public.authority_runtime_job"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 5883,
+            "tuples": 0,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:21:13.820998+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 2842,
+            "tuples": 0,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:21:13.647744+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-06T07:21:18.894299+00:00",
+      "data": {
+        "active": [
+          {
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "duration_seconds": 0.196878,
+            "query_prefix": "ANALYZE authority_book_production"
+          }
+        ],
+        "relations": [
+          {
+            "name": "authority_operation",
+            "pages": 5883,
+            "tuples": 100000,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": "2026-09-06T07:21:18.143838+00:00",
+            "last_autoanalyze": "2026-09-06T07:21:13.820998+00:00"
+          },
+          {
+            "name": "authority_narrative_retrieval_document",
+            "pages": 0,
+            "tuples": -1,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": null,
+            "last_autoanalyze": "2026-09-06T07:11:08.401167+00:00"
+          },
+          {
+            "name": "authority_asset_version",
+            "pages": 2842,
+            "tuples": 100000,
+            "live": 0,
+            "dead": 0,
+            "last_analyze": "2026-09-06T07:21:18.774047+00:00",
+            "last_autoanalyze": "2026-09-06T07:21:13.647744+00:00"
+          }
+        ]
+      }
+    }
+  ]
+}

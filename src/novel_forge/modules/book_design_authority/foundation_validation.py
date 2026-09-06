@@ -88,6 +88,9 @@ def _required_fields(content: Mapping[str, Any], fields: tuple[str, ...], role: 
 def _validate_creative(
     content: Mapping[str, Any], _parents: Mapping[FoundationRole, Mapping[str, Any]]
 ) -> None:
+    if "narrative_intent" in content:
+        from novel_forge.modules.story_design_authority.intent import NarrativeIntent
+        NarrativeIntent.from_mapping(content["narrative_intent"])
     normalized = dict(content)
     aliases = {
         "target_reader": "target_audience",
@@ -164,6 +167,9 @@ def _validate_reader_promise(
 def _validate_world(
     content: Mapping[str, Any], parents: Mapping[FoundationRole, Mapping[str, Any]]
 ) -> None:
+    if "world_foundation" in content:
+        from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+        WorldFoundation.from_mapping(content["world_foundation"])
     rules = content.get("rules") or content.get("world_rules")
     if not isinstance(rules, list) or not rules:
         raise KernelError(

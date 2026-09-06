@@ -7,6 +7,12 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 _CHARACTER_SEMANTIC_FIELDS = (
+    "background",
+    "trauma",
+    "personality",
+    "bias",
+    "risk_preference",
+    "habits",
     "role",
     "desire",
     "need",

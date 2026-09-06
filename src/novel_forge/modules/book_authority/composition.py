@@ -20,6 +20,8 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
 )
 
+from novel_forge.modules.hierarchical_planning.causal_application import PostgresCausalPlanningApplication
+
 from .input_resolver import BookProductionInputResolver
 from .opening import (
     BookOpeningAdmission,
@@ -53,6 +55,15 @@ class BookProductionComposition:
     projection_repair: PostgresBookProjectionRepairAuthority
     opening: PostgresBookOpeningApplication | None = None
     formation: StoryFormationApplication | None = None
+
+    @property
+    def controls(self):
+        from .control_application import PostgresBookControlApplication
+        return PostgresBookControlApplication(self.authority.database_url, application_build_id=self.authority.application_build_id, commit_sha=self.authority.commit_sha)
+
+    @property
+    def causal_planning(self) -> PostgresCausalPlanningApplication:
+        return PostgresCausalPlanningApplication(self.authority.database_url, application_build_id=self.authority.application_build_id, commit_sha=self.authority.commit_sha)
 
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         return self.supervisor.tick(book_run_id)

@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.contracts import (
+    NarrativeObligationType,
     atomize_character_knowledge_changes,
     normalize_character_belief_changes,
     normalize_relationship_state_changes,
@@ -20,6 +21,12 @@ _QUALITY_STAGES = {
     "quality_platform",
 }
 _CANON_FIELDS = (
+    "world_state_changes",
+    "faction_state_changes",
+    "location_state_changes",
+    "consequence_changes",
+    "conflict_state_changes",
+
     "canon_facts",
     "character_state_changes",
     "relationship_changes",
@@ -42,6 +49,12 @@ _CANON_FIELDS = (
     "disclosure_events",
 )
 _CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
+    "world_state_changes": (("world_state_id",),),
+    "faction_state_changes": (("faction_id",),),
+    "location_state_changes": (("location_id",),),
+    "consequence_changes": (("consequence_id",),),
+    "conflict_state_changes": (("conflict_id",),),
+
     "character_state_changes": (("character_id",),),
     "relationship_changes": (("source_id", "target_id"),),
     "timeline_events": (("event_id",),),
@@ -69,6 +82,12 @@ _CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
     "disclosure_events": (("disclosure_id",),),
 }
 _CANON_SCHEMA_REQUIRED_IDENTITIES: dict[str, tuple[str, ...]] = {
+    "world_state_changes": ("world_state_id",),
+    "faction_state_changes": ("faction_id",),
+    "location_state_changes": ("location_id",),
+    "consequence_changes": ("consequence_id",),
+    "conflict_state_changes": ("conflict_id",),
+
     "character_state_changes": ("character_id",),
     "relationship_changes": ("source_id", "target_id"),
     "timeline_events": ("event_id",),
@@ -126,10 +145,18 @@ def _nullable(schema: dict[str, Any]) -> dict[str, Any]:
     return value
 
 
+def _scene_artifacts_schema() -> dict[str, Any]:
+    return {"type": "array", "items": _object_schema({
+        "slot_id": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1},
+        "used_fact_ids": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    }, required=("slot_id", "text", "used_fact_ids"))}
+
+
 def _draft_schema() -> dict[str, Any]:
     return _object_schema(
-        {"text": {"type": "string", "minLength": 1}},
-        required=("text",),
+        {"text": {"type": "string", "minLength": 1}, "scene_artifacts": _scene_artifacts_schema()},
+        required=("text", "scene_artifacts"),
     )
 
 
@@ -200,13 +227,14 @@ def _revision_schema() -> dict[str, Any]:
                     "or other operator metadata in this string."
                 ),
             },
+            "scene_artifacts": _scene_artifacts_schema(),
             "resolved_issue_codes": {
                 "type": "array",
                 "minItems": 1,
                 "items": {"type": "string", "minLength": 1},
             },
         },
-        required=("text", "resolved_issue_codes"),
+        required=("text", "resolved_issue_codes", "scene_artifacts"),
     )
 
 
@@ -242,6 +270,7 @@ def _canon_schema() -> dict[str, Any]:
         "objects in the same semantic slot."
     )
     change_properties = {
+
         "summary": {"type": "string", "minLength": 1},
         "effective_from_chapter": {"type": "number", "minimum": 1},
         "supersedes_event_id": {"type": "string"},
@@ -322,6 +351,15 @@ def _canon_schema() -> dict[str, Any]:
         }
         for field in _CANON_FIELDS
     }
+    for field, identity in {
+        "world_state_changes": "world_state_id", "faction_state_changes": "faction_id",
+        "location_state_changes": "location_id", "consequence_changes": "consequence_id",
+        "conflict_state_changes": "conflict_id",
+    }.items():
+        item_schema = properties[field]["items"]
+        item_schema["properties"][identity] = {"type": "string", "minLength": 1}
+        item_schema["properties"]["world_transition"] = _object_schema({"payload_json": {"type": "string", "minLength": 2}}, required=("payload_json",))
+        item_schema["required"].extend((identity, "world_transition"))
     properties["arc_evidence"] = {
         "type": "array",
         "items": _object_schema(
@@ -442,18 +480,10 @@ def _canon_schema() -> dict[str, Any]:
                 "obligation_id": {"type": "string", "minLength": 1},
                 "obligation_type": {
                     "type": "string",
-                    "enum": [
-                        "PROMISE",
-                        "FORESHADOWING",
-                        "MYSTERY",
-                        "CONFLICT",
-                        "OPEN_LOOP",
-                        "HOOK",
-                        "CHARACTER_COMMITMENT",
-                        "READER_EXPECTATION",
-                        "NARRATIVE_DEBT",
-                    ],
+                    "enum": [kind.value for kind in NarrativeObligationType],
                 },
+                "causal_requirement": _nullable(_object_schema({"payload_json": {"type": "string", "minLength": 2}}, required=("payload_json",))),
+                "causal_plan_asset_version_id": _nullable({"type": "string", "minLength": 1}),
                 "from_status": _nullable({"type": "string"}),
                 "status": {
                     "type": "string",
@@ -500,6 +530,8 @@ def _canon_schema() -> dict[str, Any]:
             required=(
                 "obligation_id",
                 "obligation_type",
+                "causal_requirement",
+                "causal_plan_asset_version_id",
                 "from_status",
                 "status",
                 "priority",
@@ -809,13 +841,17 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v13"
+        "v14"
         if stage == "canon_extraction"
         else "v2"
-        if stage in _QUALITY_STAGES
+        if stage in _QUALITY_STAGES | {"draft", "revision"}
         else "v1"
     )
     return f"schema:chapter-provider-output:{stage}:{version}"
+
+
+def canon_provider_array_fields() -> tuple[str, ...]:
+    return (*_CANON_FIELDS, "arc_evidence", "realization_evidence")
 
 
 def validate_chapter_provider_output_schema(
@@ -881,6 +917,9 @@ def validate_chapter_provider_output_semantics(
                     "Disclosure requires one fact_id or proposition_id",
                 )
         for obligation in normalized.get("obligation_changes", []):
+            if obligation.get("obligation_type") == "CAUSAL_DEBT":
+                from novel_forge.modules.narrative_state.causal_obligations import causal_obligation_requirement
+                causal_obligation_requirement(obligation)
             if str(obligation.get("status") or "").upper() == "FULFILLED" and not (
                 isinstance(obligation.get("payoff_evidence"), Mapping)
                 and str(obligation["payoff_evidence"].get("asset_version_id") or "")

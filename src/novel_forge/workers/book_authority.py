@@ -328,6 +328,7 @@ def _execute_book_opening_claim(
     lease_seconds: int,
 ) -> dict[str, object]:
     expected_version = int(claim.input_snapshot.get("observed_version", -1))
+    result: dict[str, object] | None = None
     try:
         # INVARIANT: Opening.execute_run atomically moves RuntimeJob/Attempt and the
         # BookOpening execution chain to RUNNING before releasing any semantic
@@ -356,7 +357,7 @@ def _execute_book_opening_claim(
         workflow_node_id = str(claim.input_snapshot.get("workflow_node_id") or "")
         if workflow_node_id:
             try:
-                return opening.require_node_execution_result(
+                durable_result = opening.require_node_execution_result(
                     opening_run_id=claim.subject_id,
                     workflow_node_id=workflow_node_id,
                     opening_execution_id=str(
@@ -366,6 +367,13 @@ def _execute_book_opening_claim(
                         claim.input_snapshot.get("execution_generation") or 0
                     ),
                 )
+                if (
+                    getattr(exc, "code", "") == "AUTHORITY_LEASE_HEARTBEAT_FAILED"
+                    and result is not None
+                    and {**result, "replayed": True} == durable_result
+                ):
+                    return result
+                return durable_result
             except KernelError as durable_exc:
                 if durable_exc.code != "BOOK_OPENING_NODE_RESULT_NOT_FOUND":
                     raise

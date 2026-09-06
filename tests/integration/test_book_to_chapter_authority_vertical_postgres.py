@@ -1294,16 +1294,24 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             0,
         )
         failure["enabled"] = False
-        accepted = fixture["authority"].accept_chapter(
-            delegated["chapter_request_id"],
-            principal=fixture["principal"],
-        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT COUNT(*) FROM authority_narrative_reality_revision WHERE book_run_id=%s", [fixture["book"].book_run_id])
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            concurrent = list(workers.map(lambda _: fixture["authority"].accept_chapter(delegated["chapter_request_id"], principal=fixture["principal"]), range(2)))
+        accepted = concurrent[0]
+        self.assertTrue(all(item["accepted_through_chapter"] == 1 for item in concurrent))
         replay = fixture["authority"].accept_chapter(
             delegated["chapter_request_id"],
             principal=fixture["principal"],
         )
         self.assertEqual(accepted["accepted_through_chapter"], 1)
         self.assertEqual(replay["accepted_through_chapter"], 1)
+        from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            chain = NarrativeRealityRepository(uow.cursor).verify_replay(book_run_id=fixture["book"].book_run_id)
+            self.assertEqual(chain["accepted_count"], 1)
 
     def test_book_does_not_precreate_all_chapters(self) -> None:
         fixture = self._new_book_fixture(target_chapter_count=100)

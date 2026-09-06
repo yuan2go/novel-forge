@@ -1,0 +1,14 @@
+{
+  "schema_version": "owned-diagnostic-resource-cleanup.v1",
+  "observed_at": "2026-09-06T06:55:29.312488+00:00",
+  "container_id": "c635fd71db5538ca1b927c49ef6a5a7008bfbe8e93d3877de79953165db1916d",
+  "container_name": "nf-opening-heartbeat-20260906-pg",
+  "ownership_label": "novel-forge.task=opening-heartbeat-20260906",
+  "owned_volumes": [
+    "d71fc138355b45a0dd1f5d6b77d061f5450ae0b1facd0b75fcc26d95b8929518"
+  ],
+  "remaining_containers": [],
+  "remaining_volumes": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}

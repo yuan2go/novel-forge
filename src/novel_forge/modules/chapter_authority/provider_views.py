@@ -337,11 +337,18 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             stage,
             chapter_plan=_compact(inputs.get("plan")),
             style=_compact(inputs.get("style")),
+            realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
         return _task(stage, chapter=_prose(inputs.get("draft")))
     if stage == "revision":
-        payload: dict[str, Any] = {"chapter": _prose(inputs.get("draft"))}
+        source = dict(inputs.get("draft") or {})
+        payload: dict[str, Any] = {"chapter": _prose(source)}
+        if source.get("realization_contract"):
+            payload["chapter"].pop("text", None)
+            payload["realization_contract"] = deepcopy(source["realization_contract"])
+            payload["scene_artifacts"] = deepcopy(source["scene_artifacts"])
+            payload["composition_digest"] = source["composition_digest"]
         if inputs.get("required_actions") is not None:
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
@@ -661,14 +668,6 @@ def build_provider_context_view(
     omitted_facts = 0
     omitted_segments = 0
     for raw in segments:
-        if len(rendered) >= _MAX_SEGMENTS:
-            omitted_segments += 1
-            omitted_facts += (
-                len(raw.get("structured_facts") or [])
-                if isinstance(raw, Mapping)
-                else 0
-            )
-            continue
         if not isinstance(raw, Mapping) or raw.get("allowed_use") == "evidence_only":
             omitted_segments += 1
             continue
@@ -705,13 +704,23 @@ def build_provider_context_view(
                     ),
                 )
             ]
-        included_facts = selected_facts[:_MAX_FACTS_PER_SEGMENT]
-        omitted_facts += len(facts) - len(included_facts)
-        selected_facts = included_facts
+        if len(selected_facts) > _MAX_FACTS_PER_SEGMENT:
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+                "relevant accepted facts exceed the Provider segment budget; "
+                "rebuild the governed task projection before dispatch",
+            )
+        omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
         if not summary and not selected_facts:
             omitted_segments += 1
             continue
+        if len(rendered) >= _MAX_SEGMENTS:
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+                "eligible Context segments exceed the Provider budget; "
+                "rebuild the governed selection before dispatch",
+            )
         rendered.append(
             {
                 "asset_version_id": str(raw.get("asset_version_id") or ""),
@@ -754,7 +763,7 @@ def build_provider_context_view(
         "task_narrative_projection": _compact(dict(projection)),
         "segments": rendered,
         "selection_explanation": {
-            "policy": "minimum-sufficient-context-v2",
+            "policy": "minimum-sufficient-context-v3",
             "included_segment_count": len(rendered),
             "included_fact_count": sum(
                 len(item["structured_facts"]) for item in rendered
@@ -1344,6 +1353,29 @@ def _project_planning_content(
     chapter: int,
     selectors: frozenset[str],
 ) -> tuple[dict[str, Any], int, int]:
+    payload = content.get("candidate_payload", content)
+    if role == "creative_foundation" and isinstance(payload, Mapping) and "narrative_intent" in payload:
+        from novel_forge.modules.story_design_authority.intent import NarrativeIntent
+        target = {"book_plan.generate": "BOOK", "volume_plan.generate": "VOLUME", "arc_plan.generate": "ARC", "chapter_group_plan.generate": "NEAR_TERM", "chapter_plan.generate": "CHAPTER"}[stage]
+        return NarrativeIntent.from_mapping(payload["narrative_intent"]).route(target=target), 0, 0
+    if role == "world_bible" and isinstance(payload, Mapping) and "world_foundation" in payload:
+        from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+        WorldFoundation.from_mapping(payload["world_foundation"])
+        world = deepcopy(payload["world_foundation"])
+        if _serialized_character_count(world) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+            raise KernelError("WORLD_FOUNDATION_SCOPE_TOO_BROAD", "compile a smaller world scope before Provider admission")
+        return {"authority": "QUALIFIED_DESIGN_CONSTRAINTS", "world_foundation": world}, 0, 0
+    if role.startswith("narrative_governance_action:") and content.get("contract_version") == "causal-planning-action.v1":
+        plan = content["causal_plan"]
+        selected_id = plan["selected_candidate_id"]
+        selected = [item for item in plan["candidate_futures"] if item.get("candidate_id") == selected_id]
+        return {
+            "contract_version": "causal-direction-context.v1", "authority": "PLANNING_PROPOSAL",
+            "reality_revision_id": plan["reality_revision_id"], "plan_digest": plan["plan_digest"],
+            "selected_direction": selected,
+            "preparation_required": [debt for debt in plan["causal_debts"] if debt["status"] == "PREPARATION_REQUIRED"],
+            "preserve_accepted_history": True,
+        }, 0, 0
     if role == "story_state" and content.get("contract_version") == (
         "story-state-snapshot-v2"
     ):

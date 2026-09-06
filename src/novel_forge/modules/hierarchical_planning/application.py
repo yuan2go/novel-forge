@@ -335,6 +335,8 @@ class PostgresHierarchicalPlanningAuthority:
                 "planning binding requires an active, qualified Story Design candidate",
             )
         content = dict(row[3])
+        from novel_forge.storage.book_control_repositories import BookControlRepository
+        editorial_decisions = BookControlRepository(uow.cursor).require_planning_approval(project_id=project_id, book_id=book_id, contract_type=contract_type.value, subject_version_id=asset_version_id, actor_id=str(operation[2]))
         hierarchy_compatibility = str(row[7]) == "LEGACY_IMPORT" or bool(
             row[8] is not None and row[9] is not None and row[8] < row[9]
         )
@@ -351,6 +353,13 @@ class PostgresHierarchicalPlanningAuthority:
                 str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
             ),
         )
+        epistemic_state_sources: tuple[dict[str, str], ...] = ()
+        if contract_type is PlanContractType.CHAPTER:
+            from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+
+            epistemic_state_sources = NarrativeRealityRepository(uow.cursor).validate_chapter_knowledge(
+                project_id=project_id, book_id=book_id, plan=content,
+            )
         if contract_type is PlanContractType.BOOK and not hierarchy_compatibility:
             self._require_qualified_foundation_for_book_plan(
                 uow.cursor,
@@ -603,6 +612,8 @@ class PostgresHierarchicalPlanningAuthority:
                     "execution_scope": execution_scope.value,
                     "content_hash": str(row[4]),
                     "decision_evidence": decision_evidence,
+                    "editorial_decisions": list(editorial_decisions),
+                    "epistemic_state_sources": list(epistemic_state_sources),
                     "story_design_transition_operation_id": (
                         story_design_transition_operation_id
                     ),

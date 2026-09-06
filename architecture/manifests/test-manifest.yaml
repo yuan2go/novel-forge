@@ -142,6 +142,20 @@
     }
   ],
   "semantic_slice_policy": {
+    "narrative_reality_causal_chain": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/narrative_state/reality.py",
+        "src/novel_forge/modules/worldbuilding/dynamics.py",
+        "src/novel_forge/modules/worldbuilding/foundation.py",
+        "src/novel_forge/modules/hierarchical_planning/causal_domain.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "narrative_reality_projection_upgrade": {
+      "role": "MIGRATION_COMPATIBILITY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
     "versioned_execution_and_reader_policy": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
       "production_targets": [

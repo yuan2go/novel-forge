@@ -270,7 +270,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
             "-c",
             (
                 "import json,sys; "
-                "json.dump({'text':'Validated chapter.'},open(sys.argv[1],'w')); "
+                "json.dump({'text':'Validated chapter.','scene_artifacts':[]},open(sys.argv[1],'w')); "
                 "print(sys.argv[2])"
             ),
             str(result_path),
@@ -286,7 +286,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
                         input_text=input_text,
                         working_directory=tmp,
                         timeout_seconds=5,
-                        output_schema_version="schema:chapter-provider-output:draft:v1",
+                        output_schema_version="schema:chapter-provider-output:draft:v2",
                         command=command,
                         output_schema=chapter_provider_output_schema("draft"),
                         capability_evidence={
@@ -312,7 +312,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
 
     assert result.outcome is ExecutionOutcome.SUCCEEDED
     evidence = store.get_record(request.execution_id).raw_evidence
-    assert evidence["result"] == {"text": "Validated chapter."}
+    assert evidence["result"] == {"text": "Validated chapter.", "scene_artifacts": []}
     assert evidence["usage"]["measurement"] == "MEASURED"
     assert set(evidence["validation_checks"]) == {
         "output_schema",
@@ -357,7 +357,7 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
                         input_text="prompt",
                         working_directory=tmp,
                         timeout_seconds=5,
-                        output_schema_version="schema:chapter-provider-output:draft:v1",
+                        output_schema_version="schema:chapter-provider-output:draft:v2",
                         command=command,
                         output_schema=chapter_provider_output_schema("draft"),
                     )

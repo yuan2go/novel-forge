@@ -2,6 +2,15 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "planning.causal.propose",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/hierarchical_planning/causal_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).causal_planning.propose",
+      "definition_factory": "novel_forge.modules.hierarchical_planning.causal_application:causal_planning_definition"
+    },
+    {
       "name": "chapter_group.execution_policy.configure",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/chapter_group_authority/policy.py",
@@ -234,6 +243,24 @@
       "dispatch": "inline_atomic",
       "api_call": "self.planning.bind_active_contract",
       "definition_factory": "novel_forge.modules.hierarchical_planning.definitions:plan_binding_definitions"
+    },
+    {
+      "name": "book.control_policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/control_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).controls.configure",
+      "definition_factory": "novel_forge.modules.book_authority.control_application:control_policy_definition"
+    },
+    {
+      "name": "book.control.decide",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/control_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).controls.decide",
+      "definition_factory": "novel_forge.modules.book_authority.control_application:control_decision_definition"
     }
   ]
 }

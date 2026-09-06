@@ -67,12 +67,12 @@ class QualityCorrectionFixture(DeterministicFixtureChapterProvider):
             draft = payload["draft"]
             return self._result(
                 stage,
-                {
+                self.structured_fixture_output(stage, payload, {
                     "text": (
                         f"{draft['text']} The corrected timeline now matches "
                         "the frozen Canon evidence."
                     )
-                },
+                }),
             )
         if stage.startswith("quality_"):
             statuses = []
@@ -144,12 +144,12 @@ class CanonConflictQualityCorrectionFixture(DeterministicFixtureChapterProvider)
             draft = payload["draft"]
             return self._result(
                 stage,
-                {
+                self.structured_fixture_output(stage, payload, {
                     "text": (
                         f"{draft['text']} The governed exception consumes one "
                         "irreplaceable seal as its explicit cost."
                     )
-                },
+                }),
             )
         if stage == "canon_extraction":
             text = str(payload["revision"].get("text") or "")

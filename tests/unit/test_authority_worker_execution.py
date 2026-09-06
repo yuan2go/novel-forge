@@ -23,6 +23,10 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
             ),
             (KernelError("INPUT_INVALID", "bad"), WorkerFailureClass.FINAL_FAILURE),
             (
+                KernelError("CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD", "replan"),
+                WorkerFailureClass.FINAL_FAILURE,
+            ),
+            (
                 KernelError("EFFECT_STATE_UNKNOWN", "unknown"),
                 WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
             ),

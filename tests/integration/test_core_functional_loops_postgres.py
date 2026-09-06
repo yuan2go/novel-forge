@@ -741,6 +741,7 @@ def _seed_inputs(
     *,
     target_chapter_count: int = 3,
     governance_action: tuple[str, str] | None = None,
+    world_foundation: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -924,6 +925,7 @@ def _seed_inputs(
         principal=formation_principal,
         target_chapters=target_chapter_count,
         release_sha=RELEASE_SHA,
+        world_foundation=world_foundation,
     )
     result.update(hierarchy["asset_versions"])
     result["foundation_set_digest"] = hierarchy["foundation_set_digest"]
@@ -1485,7 +1487,8 @@ def _activate_plan_chain(
     return activated
 
 
-def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() -> None:
+def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request: pytest.FixtureRequest) -> None:
+    test_case = request.node
     harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
     _activate_planning_pack(harness)
     project_id = harness.project_id
@@ -1572,7 +1575,14 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
         "reader_promise",
     }
 
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=3)
+    from tests.integration.narrative_reality_vertical_support import compiled_world_fixture
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=compiled_world_fixture())
+    from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+    PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s", [f"{project_id}:platform-profile-v1"])
+        cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'approval_decision')", [f"fixture:{project_id}:native-approval", project_id])
+        cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) SELECT %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',content,content_hash,'integration-fixture.v1' FROM authority_asset_version WHERE asset_version_id=%s", [f"fixture:{project_id}:native-approval:v1", f"fixture:{project_id}:native-approval", f"{project_id}:approval-v1"])
     with transaction() as connection, connection.cursor() as cursor:
         for asset_type in ("reader_segment_profile", "reader_contract"):
             asset_id = f"fixture:{project_id}:opening:{asset_type}"
@@ -1636,7 +1646,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.narrative_reality_vertical_support import NativeRealityTransportFixture, execute_native_reality_vertical
+        native_transport = NativeRealityTransportFixture()
+        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=native_transport, planning_fixture_factory=native_transport.planning)
         chapter_application = build_chapter_authority_application(
             settings, execution=execution, env=env
         )
@@ -1794,87 +1806,91 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
             )
         assert opening_detail.status_code == 200
         assert opening_detail.json()["lifecycle"] == "COMPLETE"
-        execution.close()
 
-    assert replay.replayed is True
-    assert replay.opening_run_id == admission.opening_run_id
-    assert replay.runtime_job_id == admission.runtime_job_id
-    assert opening_run["lifecycle"] == "COMPLETE"
-    assert len(opened["search_ids"]) == 4
-    assert opened["book_design_version"] == generic["book_design"]
-    assert snapshot.book_plan_version == opened["book_plan_version"]
-    assert snapshot.current_volume_plan_version == opened["volume_plan_version"]
-    assert set(snapshot.arc_portfolio_plan_versions) == set(opened["arc_plan_versions"])
-    assert snapshot.initial_story_state_version == (generic["initial_story_state"])
-    with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute(
-            """
-            SELECT COUNT(*), COUNT(*) FILTER (WHERE status='ACTIVATED')
-            FROM authority_story_narrative_search
-            WHERE project_id=%s AND book_id=%s
-            """,
-            [project_id, book_id],
-        )
-        assert uow.cursor.fetchone() == (4, 4)
-        uow.cursor.execute(
-            """
-            SELECT COUNT(*), COUNT(*) FILTER (WHERE candidate.status='SELECTED')
-            FROM authority_story_narrative_search_candidate AS candidate
-            JOIN authority_story_narrative_search AS search
-              ON search.search_id=candidate.search_id
-            WHERE search.project_id=%s AND search.book_id=%s
-            """,
-            [project_id, book_id],
-        )
-        assert uow.cursor.fetchone() == (12, 4)
-        uow.cursor.execute(
-            """
-            SELECT COUNT(*),
-                   COUNT(checkpoint.checkpoint_id),
-                   COUNT(DISTINCT checkpoint.opening_execution_id),
-                   BOOL_AND(
-                       checkpoint.evidence_version=1
-                       AND checkpoint.evidence_hash=candidate.branch_evidence_hash
-                       AND checkpoint.semantic_work_key=(
-                           'narrative-search-branch:' || candidate.search_id || ':' ||
-                           candidate.branch_key
+        assert replay.replayed is True
+        assert replay.opening_run_id == admission.opening_run_id
+        assert replay.runtime_job_id == admission.runtime_job_id
+        assert opening_run["lifecycle"] == "COMPLETE"
+        assert len(opened["search_ids"]) == 4
+        assert opened["book_design_version"] == generic["book_design"]
+        assert snapshot.book_plan_version == opened["book_plan_version"]
+        assert snapshot.current_volume_plan_version == opened["volume_plan_version"]
+        assert set(snapshot.arc_portfolio_plan_versions) == set(opened["arc_plan_versions"])
+        assert snapshot.initial_story_state_version == (generic["initial_story_state"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(*) FILTER (WHERE status='ACTIVATED')
+                FROM authority_story_narrative_search
+                WHERE project_id=%s AND book_id=%s
+                """,
+                [project_id, book_id],
+            )
+            assert uow.cursor.fetchone() == (4, 4)
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(*) FILTER (WHERE candidate.status='SELECTED')
+                FROM authority_story_narrative_search_candidate AS candidate
+                JOIN authority_story_narrative_search AS search
+                  ON search.search_id=candidate.search_id
+                WHERE search.project_id=%s AND search.book_id=%s
+                """,
+                [project_id, book_id],
+            )
+            assert uow.cursor.fetchone() == (12, 4)
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*),
+                       COUNT(checkpoint.checkpoint_id),
+                       COUNT(DISTINCT checkpoint.opening_execution_id),
+                       BOOL_AND(
+                           checkpoint.evidence_version=1
+                           AND checkpoint.evidence_hash=candidate.branch_evidence_hash
+                           AND checkpoint.semantic_work_key=(
+                               'narrative-search-branch:' || candidate.search_id || ':' ||
+                               candidate.branch_key
+                           )
+                           AND node.node_kind IN (
+                               'BOOK_PLAN','VOLUME_PORTFOLIO','INITIAL_ARC_SCOPE'
+                           )
                        )
-                       AND node.node_kind IN (
-                           'BOOK_PLAN','VOLUME_PORTFOLIO','INITIAL_ARC_SCOPE'
-                       )
-                   )
-            FROM authority_story_narrative_search_candidate AS candidate
-            JOIN authority_story_narrative_search AS search
-              ON search.search_id=candidate.search_id
-            LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
-              ON checkpoint.opening_run_id=%s
-             AND checkpoint.evidence_type='NARRATIVE_SEARCH_BRANCH'
-             AND checkpoint.evidence_id=candidate.membership_id
-            LEFT JOIN authority_book_opening_workflow_node AS node
-              ON node.opening_run_id=checkpoint.opening_run_id
-             AND node.workflow_node_id=checkpoint.workflow_node_id
-            WHERE search.project_id=%s AND search.book_id=%s
-            """,
-            [
-                admission.opening_run_id,
-                project_id,
-                book_id,
-            ],
-        )
-        assert uow.cursor.fetchone() == (12, 12, 3, True)
-        uow.cursor.execute(
-            """
-            SELECT budget_contract_state,budget_scope_id,budget_scope_revision
-            FROM authority_book_opening_run
-            WHERE opening_run_id=%s
-            """,
-            [admission.opening_run_id],
-        )
-        budget_binding = uow.cursor.fetchone()
-        assert budget_binding is not None
-        assert budget_binding[0] == "BOUND"
-        assert str(budget_binding[1]).startswith("budget-scope:")
-        assert budget_binding[2] == 1
+                FROM authority_story_narrative_search_candidate AS candidate
+                JOIN authority_story_narrative_search AS search
+                  ON search.search_id=candidate.search_id
+                LEFT JOIN authority_book_opening_semantic_checkpoint AS checkpoint
+                  ON checkpoint.opening_run_id=%s
+                 AND checkpoint.evidence_type='NARRATIVE_SEARCH_BRANCH'
+                 AND checkpoint.evidence_id=candidate.membership_id
+                LEFT JOIN authority_book_opening_workflow_node AS node
+                  ON node.opening_run_id=checkpoint.opening_run_id
+                 AND node.workflow_node_id=checkpoint.workflow_node_id
+                WHERE search.project_id=%s AND search.book_id=%s
+                """,
+                [
+                    admission.opening_run_id,
+                    project_id,
+                    book_id,
+                ],
+            )
+            assert uow.cursor.fetchone() == (12, 12, 3, True)
+            uow.cursor.execute(
+                """
+                SELECT budget_contract_state,budget_scope_id,budget_scope_revision
+                FROM authority_book_opening_run
+                WHERE opening_run_id=%s
+                """,
+                [admission.opening_run_id],
+            )
+            budget_binding = uow.cursor.fetchone()
+            assert budget_binding is not None
+            assert budget_binding[0] == "BOUND"
+            assert str(budget_binding[1]).startswith("budget-scope:")
+            assert budget_binding[2] == 1
+
+        native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
+        assert native_evidence["proof_ceiling"] == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
+        test_case.user_properties.append(("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True)))
+        execution.close()
 
 
 def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> None:
@@ -3066,8 +3082,43 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         "NOVEL_FORGE_AUTHORITY_WORKER_ID": "core-functional-loop-worker",
         "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
     }
+    causal_observation = {}
+    causal_fixture_calls = []
+    causal_obligation = {}
+    causal_payoff = {}
+
+    def causal_chapter_fixture(stage, inputs):
+        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+        result = default_chapter_fixture_response(stage, inputs)
+        source = inputs.get({"draft": "plan", "revision": "draft", "canon_extraction": "revision"}.get(stage, "")) or {}
+        causal_fixture_calls.append((stage, list(inputs), source.get("chapter"), bool(causal_observation)))
+        if causal_observation and int(source.get("chapter") or 0) == 2:
+            prose = "The council orders an inquiry."
+            if stage in {"draft", "revision"}:
+                result["text"] += " " + prose
+                if result.get("scene_artifacts"):
+                    result["scene_artifacts"][-1]["text"] += " " + prose
+            if stage == "canon_extraction":
+                start = source["text"].index(prose)
+                result["world_state_changes"] = [{
+                    "world_state_id": "council-alert", "status": "ALERT",
+                    "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose),
+                    "world_transition": {"payload_json": json.dumps(causal_observation)},
+                }]
+                result["obligation_changes"] = [{**causal_obligation, "status": "OPEN", "from_status": None, "payoff_evidence": None, "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose)}]
+        if causal_payoff and int(source.get("chapter") or 0) == 3:
+            prose = "The accepted inquiry permits a public hearing."
+            if stage in {"draft", "revision"}:
+                result["text"] += " " + prose
+                if result.get("scene_artifacts"):
+                    result["scene_artifacts"][-1]["text"] += " " + prose
+            if stage == "canon_extraction":
+                start = source["text"].index(prose)
+                result["obligation_changes"] = [{**causal_obligation, "status": "FULFILLED", "from_status": "OPEN", "payoff_evidence": causal_payoff, "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose)}]
+        return result
+
     production_execution = build_production_execution_composition(
-        settings, env=runtime_env
+        settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture
     )
     chapter_application = build_chapter_authority_application(
         settings, execution=production_execution, env=runtime_env
@@ -3076,7 +3127,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def build_worker_runtime():
         worker_execution = build_production_execution_composition(
-            settings, env=runtime_env
+            settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture
         )
         worker_chapter = build_chapter_authority_application(
             settings, execution=worker_execution, env=runtime_env
@@ -3429,6 +3480,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     )
 
     runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+    editorial_decisions = []
+    control_mode = {"READER_FAILURE_ISOLATION": "REVIEW_REALITY_COMMIT", "RECAP_FAILURE_ISOLATION": "REVIEW_PLAN", "EXPLICIT_REPLAN_APPROVAL": "MANUAL_DIRECTOR"}[runtime_path]
 
     def worker_tick(runtime):
         schedule_book_coordination_jobs(
@@ -3446,7 +3499,31 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             subject_id=book.book_run_id,
         )
         assert claim is not None
-        return execute_book_coordination_claim(runtime_jobs, runtime, claim)
+        result = execute_book_coordination_claim(runtime_jobs, runtime, claim)
+        if result["action"] == "WAIT_CONTROL_DECISION":
+            readiness = api_get(f"/product/production/book-authority/runs/{book.book_run_id}/control-readiness")
+            assert readiness.status_code == 200, readiness.text
+            gate = next(item for item in readiness.json()["gates"] if item["status"] == "WAITING_OPERATOR")
+            from novel_forge.modules.book_authority.control_policy import ControlPolicy
+            assert ControlPolicy(mode=control_mode).requires(gate["boundary"])
+            assert runtime.query.narrative_reality(book_run_id=book.book_run_id)["chapter_number"] == readiness.json()["accepted_through_chapter"]
+            arguments = dict(project_id=project_id, book_run_id=book.book_run_id, chapter_number=readiness.json()["chapter_number"], boundary=gate["boundary"], subject_version_id=gate["subject_version_id"], decision="APPROVE", reason="Fixture operator decision verifies the approval protocol only", idempotency_key=f"{project_id}:editorial:{readiness.json()['chapter_number']}:{gate['boundary']}:{gate['subject_version_id']}", trace_id=f"trace:{project_id}:editorial", correlation_id=f"correlation:{project_id}")
+            with pytest.raises(PermissionError):
+                runtime.controls.decide(principal=worker_principal, **arguments)
+            if not editorial_decisions:
+                with pytest.raises(ProcessLoss):
+                    runtime.controls.decide(principal=principal, fault_injector=lose_at("after_editorial_decision"), **arguments)
+            response = api_post(f"/product/production/book-authority/runs/{book.book_run_id}/control-decisions", {"actor_id": principal.principal_id, **{key: value for key, value in arguments.items() if key != "book_run_id"}})
+            assert response.status_code == 200, response.text
+            replay = runtime.controls.decide(principal=principal, **arguments)
+            assert replay["replayed"] is True
+            assert {key: value for key, value in replay.items() if key != "replayed"} == {key: value for key, value in response.json().items() if key != "replayed"}
+            editorial_decisions.append(response.json())
+        if result["action"] == "ACCEPT_CHAPTER" and causal_observation and book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2:
+            reality = runtime.query.narrative_reality(book_run_id=book.book_run_id)
+            world = next(item for item in reality["current_state"]["world_state"] if item["entity_key"] == "world_state_id=council-alert")
+            causal_payoff.update(asset_version_id=world["provenance"]["accepted_draft_asset_version_id"], event_id=world["source_event_id"])
+        return result
 
     followup_runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
     followup_coordinator = PostgresBookFollowupCoordinator(
@@ -3528,6 +3605,133 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         raise AssertionError("Canonical Worker did not accept Chapter 1")
     assert SupervisorAction.DISPATCH_CHAPTER.value in before_replan_actions
     assert SupervisorAction.ACCEPT_CHAPTER.value in before_replan_actions
+
+    reality_response = api_get(f"/product/production/book-authority/runs/{book.book_run_id}/reality")
+    assert reality_response.status_code == 200, reality_response.text
+    reality_one = reality_response.json()
+    assert reality_one["chapter_number"] == 1
+    assert reality_one["parent_revision_id"] == ""
+    from novel_forge.modules.book_authority.control_policy import ControlPolicy
+    composition.controls.configure(project_id=project_id, workspace_id=workspace_id, policy=ControlPolicy(policy_version="fixture-editorial-mode-v1", mode=control_mode), principal=principal, idempotency_key=f"{project_id}:control-policy", trace_id=f"trace:{project_id}:control-policy", correlation_id=f"correlation:{project_id}")
+    from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+    from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+    rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(project_id=project_id, book_id=book_id)
+    assert rebuilt.projection["current_state"] == reality_one["current_state"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        assert NarrativeRealityRepository(uow.cursor).verify_replay(book_run_id=book.book_run_id)["revision_id"] == reality_one["revision_id"]
+        uow.cursor.execute("SELECT s.asset_version_id FROM authority_story_design_version_state s JOIN authority_story_design_active_version a ON a.asset_version_id=s.asset_version_id AND a.project_id=s.project_id WHERE s.project_id=%s AND s.generator_operation_name='creative.candidates.generate'", [project_id])
+        intent_version_id = str(uow.cursor.fetchone()[0])
+    from novel_forge.modules.hierarchical_planning.causal_domain import DIRECTOR_DIMENSIONS
+    source_entry = reality_one["current_state"]["canon_fact"][0]
+    source_key = source_entry["entity_key"]
+    next_world_time = max(reality_one["world_clock"].values(), default=0) + 1
+    causal_payload = {
+        "project_id": project_id, "actor_id": principal.principal_id,
+        "reality_revision_id": reality_one["revision_id"], "intent_version_id": intent_version_id,
+        "chapter_number": 2, "idempotency_key": f"{project_id}:causal-direction",
+        "trace_id": f"trace:{project_id}:causal", "correlation_id": f"correlation:{project_id}",
+        "candidates": [{
+            "transition": {"transition_id": "undercurrent-response", "actor_id": "faction:council", "camera": "OFF_CAMERA", "story_time": {"timeline_id": "main", "start_ordinal": next_world_time, "end_ordinal": next_world_time, "precision": "EXACT"},
+                "action": "respond to the accepted chapter event", "state_kind": "world_state", "entity_key": "world_state_id=council-alert",
+                "changes": {"status": "ALERT"}, "cause_refs": [source_entry["source_event_id"]],
+                "requirements": [{"requirement_id": "prior-event", "state_kind": "canon_fact", "entity_key": source_key, "field": "object", "operator": "EXISTS"}]},
+            "dimensions": dict.fromkeys(DIRECTOR_DIMENSIONS, 0.7), "affected_entities": ["faction:council"],
+            "world_consequences": ["council prepares an inquiry"], "rationale": "Accepted evidence gives the inquiry a cause",
+        }],
+    }
+    awaiting = json.loads(json.dumps(causal_payload["candidates"][0]))
+    awaiting["transition"]["transition_id"] = "hearing-after-inquiry"
+    awaiting["transition"]["entity_key"] = "world_state_id=public-hearing"
+    awaiting["transition"]["requirements"] = [{"requirement_id": "inquiry-required", "state_kind": "world_state", "entity_key": "world_state_id=council-alert", "field": "status", "operator": "EQUALS", "value": "ALERT"}]
+    awaiting["rationale"] = "A hearing needs the inquiry established first"
+    causal_payload["candidates"].append(awaiting)
+    from novel_forge.modules.hierarchical_planning.causal_application import PostgresCausalPlanningApplication
+
+    class ProcessLoss(BaseException):
+        pass
+
+    def lose_at(expected):
+        def fail(checkpoint):
+            if checkpoint == expected:
+                raise ProcessLoss(checkpoint)
+        return fail
+
+    for field, bad_ref, code in (
+        ("arc_refs", "arc:outside-book", "CAUSAL_PLAN_ARC_SCOPE_INVALID"),
+        ("obligation_refs", "obligation:unaccepted", "CAUSAL_PLAN_OBLIGATION_SCOPE_INVALID"),
+    ):
+        invalid = deepcopy(causal_payload)
+        invalid["idempotency_key"] += ":invalid:" + field
+        invalid["candidates"][0][field] = [bad_ref]
+        denied = api_post(f"/product/production/book-authority/runs/{book.book_run_id}/causal-plans", invalid)
+        assert denied.status_code == 409, denied.text
+        assert code in denied.text
+    causal_arguments = {key: value for key, value in causal_payload.items() if key != "actor_id"}
+    for checkpoint in ("after_causal_validation", "after_causal_proposal_event", "before_operation_completion"):
+        application = PostgresCausalPlanningApplication(DATABASE_URL, application_build_id="core-functional-loop-fixture", commit_sha=RELEASE_SHA, fault_injector=lose_at(checkpoint))
+        with pytest.raises(ProcessLoss):
+            application.propose(principal=principal, book_run_id=book.book_run_id, **causal_arguments)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT COUNT(*) FROM authority_operation WHERE project_id=%s AND definition_name='planning.causal.propose'", [project_id])
+            assert uow.cursor.fetchone()[0] == 0
+            uow.cursor.execute("SELECT COUNT(*) FROM authority_asset WHERE project_id=%s AND asset_type='narrative_governance_action'", [project_id])
+            assert uow.cursor.fetchone()[0] == 0
+    application = PostgresCausalPlanningApplication(DATABASE_URL, application_build_id="core-functional-loop-fixture", commit_sha=RELEASE_SHA, fault_injector=lose_at("after_operation_completion_before_response"))
+    with pytest.raises(ProcessLoss):
+        application.propose(principal=principal, book_run_id=book.book_run_id, **causal_arguments)
+    causal_response = api_post(f"/product/production/book-authority/runs/{book.book_run_id}/causal-plans", causal_payload)
+    assert causal_response.status_code == 200, causal_response.text
+    causal_plan = causal_response.json()
+    assert causal_plan["selected_candidate_id"]
+    assert causal_plan["replayed"] is True
+    causal_replay = api_post(f"/product/production/book-authority/runs/{book.book_run_id}/causal-plans", causal_payload)
+    assert causal_replay.status_code == 200, causal_replay.text
+    assert causal_replay.json()["operation_id"] == causal_plan["operation_id"]
+    assert causal_replay.json()["replayed"] is True
+    causal_observation.update(causal_payload["candidates"][0]["transition"])
+    pending_debt = next(debt for debt in causal_plan["causal_debts"] if debt["requirement_id"] == "inquiry-required")
+    assert pending_debt["status"] == "PREPARATION_REQUIRED"
+    causal_obligation.update(obligation_id=pending_debt["debt_id"], obligation_type="CAUSAL_DEBT", priority="HIGH", target_window={"status": "SCHEDULED", "from_chapter": 3, "to_chapter": 4}, linked_arc_ids=[], causal_requirement={"payload_json": json.dumps(awaiting["transition"]["requirements"][0])}, causal_plan_asset_version_id=causal_plan["governance_action_version_id"])
+    assert api_get(f"/product/production/book-authority/runs/{book.book_run_id}/reality").json() == reality_one
+
+    def assert_accepted_causal_reality():
+        two = composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=2)
+        assert two["parent_revision_id"] == reality_one["revision_id"]
+        worlds = [item for item in two["current_state"]["world_state"] if item["entity_key"] == "world_state_id=council-alert"]
+        assert worlds, causal_fixture_calls
+        world = worlds[0]
+        assert world["state"]["status"] == "ALERT"
+        obligation = next(item for item in two["current_state"]["narrative_obligation"] if item["state"]["obligation_id"] == causal_obligation["obligation_id"])
+        assert obligation["state"]["status"] == "OPEN"
+        three = composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=3)
+        repaid = next(item for item in three["current_state"]["narrative_obligation"] if item["state"]["obligation_id"] == causal_obligation["obligation_id"])
+        assert repaid["state"]["status"] == "FULFILLED"
+        assert len(editorial_decisions) >= (1 if control_mode == "MANUAL_DIRECTOR" else 2)
+        assert repaid["state"]["payoff_evidence"] == causal_payoff
+        replay = api_post(f"/product/production/book-authority/runs/{book.book_run_id}/causal-plans", causal_payload)
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["governance_action_version_id"] == causal_plan["governance_action_version_id"]
+        why = composition.query.reality_view(book_run_id=book.book_run_id, view="why", chapter_number=3, event_id=world["source_event_id"])
+        assert world["source_event_id"] in {event["event_id"] for event in why["nodes"]}
+        assert source_entry["source_event_id"] in {event["event_id"] for event in why["nodes"]}
+        assert len(three["events"]) < sum(len(composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=number)["events"]) for number in (1, 2, 3))
+        with pytest.raises(psycopg.errors.CheckViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("UPDATE authority_reality_event_index SET event_id='tampered' WHERE revision_id=%s", [two["revision_id"]])
+        assert json.loads(world["state"]["world_transition"]["payload_json"])["camera"] == "OFF_CAMERA"
+        projected = NarrativeStateRebuildService(DATABASE_URL).rebuild(project_id=project_id, book_id=book_id, through_chapter=2)
+        assert projected.projection["current_state"] == two["current_state"]
+        assert composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=1) == reality_one
+        with pytest.raises(psycopg.errors.CheckViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("UPDATE authority_narrative_reality_revision SET source_digest=%s WHERE revision_id=%s", ["tampered", two["revision_id"]])
+        with pytest.raises(psycopg.errors.CheckViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("DELETE FROM authority_narrative_reality_revision WHERE revision_id=%s", [two["revision_id"]])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            assert NarrativeRealityRepository(uow.cursor).project_acceptance(two["acceptance_id"]) == two["revision_id"]
+            assert NarrativeRealityRepository(uow.cursor).verify_replay(book_run_id=book.book_run_id)["accepted_count"] >= 2
+            uow.commit()
 
     checkpoint_action = ""
     for _ in range(8):
@@ -3868,6 +4072,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         production_execution.close()
         for worker_execution in worker_production_executions:
             worker_execution.close()
+        assert_accepted_causal_reality()
         object_store.cleanup()
         return
 
@@ -4323,6 +4528,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     production_execution.close()
     for worker_execution in worker_production_executions:
         worker_execution.close()
+    assert_accepted_causal_reality()
     object_store.cleanup()
 
 

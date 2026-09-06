@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from collections import Counter
+from types import TracebackType
 
 import psycopg
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.book_authority.recovery import (
     BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION,
 )
@@ -17,6 +19,7 @@ from novel_forge.modules.story_planning_runtime.search_application import (
     DEFAULT_SEARCH_DIRECTIVES,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.workers import book_authority as book_authority_worker
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated
 from tests.integration.book_opening_workflow_postgres_support import (
     OneShotFaultInjector,
@@ -226,6 +229,52 @@ def test_opening_advances_five_durable_layers_before_book_run_admission() -> Non
             "DELETE FROM authority_book_opening_run WHERE opening_run_id=%s",
             [opening_run_id],
         )
+
+
+def test_committed_node_response_survives_a_terminal_heartbeat_race(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    late_heartbeat_errors: list[str] = []
+
+    class CompletionHeartbeatGuard(LeaseHeartbeatGuard):
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> bool:
+            if exc is None:
+                try:
+                    self._renew()
+                except KernelError as heartbeat_error:
+                    late_heartbeat_errors.append(heartbeat_error.code)
+                    self._failure = heartbeat_error
+            return super().__exit__(exc_type, exc, traceback)
+
+    monkeypatch.setattr(
+        book_authority_worker, "LeaseHeartbeatGuard", CompletionHeartbeatGuard
+    )
+    fixture = build_workflow_fixture()
+    admission = fixture.admit()
+    claim = fixture.claim("opening-terminal-heartbeat-worker")
+    assert claim is not None
+    result = as_mapping(fixture.execute(claim))
+    assert late_heartbeat_errors == ["RUNTIME_JOB_FENCE_STALE"]
+    assert result["status"] == "SUCCEEDED"
+    assert result["replayed"] is False
+    job = fixture.runtime_jobs.get(claim.runtime_job_id)
+    assert job["status"] == "SUCCEEDED"
+    assert job["attempt_count"] == 1
+    durable = fixture.opening.require_node_execution_result(
+        opening_run_id=str(admission.opening_run_id),
+        workflow_node_id=str(claim.input_snapshot["workflow_node_id"]),
+        opening_execution_id=str(claim.input_snapshot["opening_execution_id"]),
+        execution_generation=int(claim.input_snapshot["execution_generation"]),
+    )
+    assert durable == {**result, "replayed": True}
+    _assert_reviewable_checkpoint(
+        fixture.progress(admission.opening_run_id), node_kind="BOOK_PLAN"
+    )
 
 
 def test_parent_gate_exposes_only_one_claimable_layer_at_a_time() -> None:

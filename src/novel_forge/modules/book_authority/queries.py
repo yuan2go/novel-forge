@@ -19,6 +19,7 @@ from novel_forge.modules.longform_narrative import (
     reduce_accepted_obligations,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
 from novel_forge.storage.narrative_realization_repositories import (
     NarrativeRealizationRepository,
 )
@@ -87,6 +88,38 @@ class PostgresBookProductionQuery:
         if not database_url:
             raise ValueError("Book production query requires PostgreSQL")
         self.database_url = database_url
+
+    def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return NarrativeRealityRepository(uow.cursor).require(book_run_id=book_run_id, chapter_number=chapter_number)
+
+    def reality_context(self, *, book_run_id: str, role: str, token_budget: int, character_ids: tuple[str, ...] = ()) -> dict[str, Any]:
+        from novel_forge.modules.context_builder.reality_projection import project_role_context
+        return project_role_context(reality=self.narrative_reality(book_run_id=book_run_id), role=role, token_budget=token_budget, character_ids=character_ids)
+
+    def reality_view(self, *, book_run_id: str, view: str, chapter_number: int | None = None, offset: int = 0, limit: int = 100, event_id: str = "") -> dict[str, Any]:
+        from novel_forge.modules.narrative_state.read_models import project_reality_view, project_why_trace
+        reality = self.narrative_reality(book_run_id=book_run_id, chapter_number=chapter_number)
+        if view == "why":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                reality = NarrativeRealityRepository(uow.cursor).why_sources(reality=reality, event_id=event_id)
+            return project_why_trace(reality, event_id=event_id)
+        projection = project_reality_view(reality, view=view, offset=offset, limit=limit)
+        if view == "reader":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                projection["reader_response_evidence"] = NarrativeRealityRepository(uow.cursor).reader_evidence(reality=reality)
+        return projection
+
+    def causal_action_versions(self, *, book_run_id: str, chapter_number: int) -> tuple[str, ...]:
+        from novel_forge.storage.causal_planning_repositories import CausalPlanningRepository
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book_run_id])
+            row = uow.cursor.fetchone()
+            if row is None or not int(row[0]):
+                return ()
+            reality = NarrativeRealityRepository(uow.cursor).require(book_run_id=book_run_id, chapter_number=int(row[0]))
+            version = CausalPlanningRepository(uow.cursor).current_action(project_id=reality["project_id"], book_run_id=book_run_id, reality_revision_id=reality["revision_id"], chapter_number=chapter_number)
+            return (version,) if version else ()
 
     def coordination_candidates(
         self,
@@ -1701,8 +1734,15 @@ class PostgresBookProductionQuery:
                     "source_operation_id": str(row[8]),
                 }
             )
+        reality_id = ""
+        if accepted_through_chapter:
+            reality = self.narrative_reality(book_run_id=book_run_id, chapter_number=accepted_through_chapter)
+            if (reality["state_version_id"], reality["canon_version_id"]) != (active_story_state_version_id, active_canon_snapshot_version_id):
+                raise KernelError("NARRATIVE_REALITY_ADMISSION_STALE", "Chapter admission must bind the current accepted Reality")
+            reality_id = str(reality["revision_id"])
         admission = {
             "schema_version": "chapter-production-admission.v1",
+            "narrative_reality_revision_id": reality_id,
             "admission": "CHAPTER_PRODUCTION_ADMITTED",
             "snapshot_id": snapshot_id,
             "longform_design_qualification_hash": str(snapshot[5]),

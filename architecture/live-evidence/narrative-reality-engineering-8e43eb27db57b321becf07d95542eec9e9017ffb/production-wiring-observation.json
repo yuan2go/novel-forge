@@ -1,0 +1,94 @@
+{
+  "schema_version": "narrative-reality-production-wiring-observation.v1",
+  "tested_sha": "8e43eb27db57b321becf07d95542eec9e9017ffb",
+  "source_tree": "fcf250c61e82d5b9b50327c75e1ece5bf3baabef",
+  "implementation_tree_sha": "sha256:c6e29db48b78fe6a36a0a4d50e88f6e0120dc6e1fed43b38ed8496d1d50cb4de",
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "p0_report": {
+    "path": "architecture/evidence/p0-backend-qualification-8e43eb27db57b321becf07d95542eec9e9017ffb.json",
+    "sha256": "sha256:fb807c9ee5de79f83554b5aad091d3d9ce19af60e37918d03596683e60a16fc7"
+  },
+  "source_junit": {
+    "path": "architecture/live-evidence/narrative-reality-engineering-8e43eb27db57b321becf07d95542eec9e9017ffb/postgresql-pytest.xml",
+    "sha256": "sha256:e3d6920017318cc610b60a1546a6764aacededc5ad8a652abef96566371bb7bf",
+    "classname": "tests.integration.test_core_functional_loops_postgres",
+    "testcase": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres",
+    "property": "narrative_reality_vertical"
+  },
+  "observation": {
+    "accepted_reality_lineage": [
+      {
+        "acceptance_id": "chapter-acceptance:2187afc0aa935e6b618597e36b97e3657c98c24c8323e55896d079a2c4991309",
+        "canon_version_id": "authority-output:4d125fc9-f4e1-45e9-90dc-0b8d52d48d67:chapter.canon.current:v1",
+        "chapter_number": 1,
+        "outcome_version_id": "authority-output:4d125fc9-f4e1-45e9-90dc-0b8d52d48d67:chapter.outcome:v1",
+        "parent_revision_id": "",
+        "revision_id": "reality:sha256:e8dd5fd8110eea8b34948b9444c0928b5be7b6327c6b3c1efa865a7fff6bc5e4",
+        "source_digest": "sha256:7138acf17362e30de13257f9825d44b7888cbac398b8680c5094da86ac957ecd",
+        "state_version_id": "authority-output:4d125fc9-f4e1-45e9-90dc-0b8d52d48d67:chapter.story_state:v1"
+      },
+      {
+        "acceptance_id": "chapter-acceptance:9418bf80454ce71d3c0a89cff53e556ae0c421bbbfdea7bac8d6840825c982be",
+        "canon_version_id": "authority-output:2a2a6164-ece0-438c-bcf1-af4226221271:chapter.canon.current:v1",
+        "chapter_number": 2,
+        "outcome_version_id": "authority-output:2a2a6164-ece0-438c-bcf1-af4226221271:chapter.outcome:v1",
+        "parent_revision_id": "reality:sha256:e8dd5fd8110eea8b34948b9444c0928b5be7b6327c6b3c1efa865a7fff6bc5e4",
+        "revision_id": "reality:sha256:1fb38451d8d436ef05562700c34a7b080e658d98ff5d49b479754749f422c629",
+        "source_digest": "sha256:c62298f244be510417f45c85fbcc8844bb2ad31d004522281de7fe10709e9a81",
+        "state_version_id": "authority-output:2a2a6164-ece0-438c-bcf1-af4226221271:chapter.story_state:v1"
+      }
+    ],
+    "book_run_id": "book-run:4ba52961-69bf-4ba1-aa16-d04322251d5c",
+    "causal_operation_id": "24fab2b6-29cf-493d-9ecd-827c2b26388d",
+    "compiled_world_rejection": "WORLD_COMPILED_RULE_VIOLATION",
+    "directed_rejection": {
+      "accepted_history_mutation_allowed": false,
+      "contract_version": "planning-directed-rejection.v1",
+      "frozen_input_versions": {
+        "arc_plans": "authority-output:3e1c8d23-082c-4325-b26e-afb76d305192:story_planning.candidate:v1",
+        "book_plan": "authority-output:fa7ddbe1-00b9-4a4a-b964-667b0f16240c:story_planning.candidate:v1",
+        "canon_snapshot": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:canon_snapshot:v1",
+        "chapter_function_matrix_row": "authority-output:121dae77-9143-4cc7-88fa-8dfb99cf3a4a:story_planning.candidate:v1",
+        "chapter_group_plan": "authority-output:121dae77-9143-4cc7-88fa-8dfb99cf3a4a:story_planning.candidate:v1",
+        "previous_chapter_outcome": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:previous_chapter_outcome:v1",
+        "quality_trend": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:quality_trend:v1",
+        "reader_state": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:reader_state:v1",
+        "related_arc:1": "authority-output:f5438969-f45d-45b9-a896-40de1b102b29:story_planning.candidate:v1",
+        "story_state": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:story_state:v1",
+        "volume_plan": "authority-output:879fad98-ec6e-4ff4-8217-8ed1a4af7f0a:story_planning.candidate:v1"
+      },
+      "maximum_repairs": 2,
+      "repair_number": 0,
+      "restart_scope": "REJECTED_CANDIDATE_AND_DEPENDENT_UNEXECUTED_NODES",
+      "source_boundary": "SCENE_REALIZATION_CONTRACT",
+      "target_candidate_version_id": "authority-output:f0fed771-3b73-4f2c-993d-c60e7f061980:story_planning.candidate:v1",
+      "target_generator": "chapter_plan.generate"
+    },
+    "opening_snapshot_id": "sha256:b6a5908a78b1291b3e00bd131a10f2ef1766f6d30d9b18eacdba1a9e539270b6",
+    "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+    "reality_revision_id": "reality:sha256:1fb38451d8d436ef05562700c34a7b080e658d98ff5d49b479754749f422c629",
+    "role_context_digests": {
+      "ACTION_WRITER": "sha256:1eff9cd9ff3fb14d00d221df557753bc39ccaa37effaa9ba947e039c146bab45",
+      "CHARACTER_REASONER": "sha256:dc63d7ac0ce5d8615bae721fa8bcc0cb0701a61c132923dbe09f5bb9ea2e2484",
+      "CONTINUITY_JUDGE": "sha256:2a8240abd404acde86b035f0b85061ae64a639d5428ef530e9292708522a03b2",
+      "DIALOGUE_WRITER": "sha256:da67cee774e6aca9b16a7ab0b475a6ce42844584cbdcf7c10824966a2025bcd7",
+      "DIRECTOR": "sha256:30e1b191aba280ee251344a3e8ee5f25cb0fe96e6dea84c472a4af2b566732f9",
+      "OBSERVER": "sha256:67c2c7f97bcc002be2f22ad16c5587fd9d96e93726401973be2a4c4fbbf1aba6",
+      "QUALITY_JUDGE": "sha256:fb99f2b171c9d282452ee679367c64559e7bfa60f94d03cfd86d0c4806a394ca",
+      "SCENE_PLANNER": "sha256:7c2a1130ca4889e6247cefb46c2edb1e3346f8e1af2814b82d8f2341bd05f335",
+      "WORLD_REASONER": "sha256:9f458a1a683e5d057258f99717f192f957e773ad4063b9f805ee88170920a2df"
+    },
+    "world_foundation_sources": [
+      {
+        "asset_version_id": "fixture:project-3d5cd23f60f849aa8938a32b2900ea2e:foundation:world_bible:selected:v1",
+        "content_hash": "sha256:4702fd97fce269aeef50e0a517df0ddc94a82a1f96dd97318b5d734cbd1fbb84"
+      }
+    ]
+  },
+  "does_not_prove": [
+    "REAL_PROVIDER_QUALITY",
+    "HUMAN_EDITORIAL_ACCEPTANCE",
+    "LONGITUDINAL_NARRATIVE_STABILITY",
+    "PRODUCTION_OPERATION"
+  ]
+}

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from dataclasses import replace
 from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
 from novel_forge.modules.book_authority.opening import (
     PostgresBookOpeningApplication,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.runtime_job import (
     AUTHORITY_CONVERGENCE_REQUIRED,
     BOOK_OPENING_LEGACY_JOB_KIND,
@@ -179,6 +183,67 @@ def _claim(
             "observed_version": 1,
         },
     )
+
+
+@pytest.mark.parametrize(
+    ("failure_site", "same_receipt", "expected_replayed"),
+    [
+        ("heartbeat", True, False),
+        ("heartbeat", False, True),
+        ("response_loss", True, True),
+        ("other_exit_failure", True, True),
+    ],
+)
+def test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_site: str,
+    same_receipt: bool,
+    expected_replayed: bool,
+) -> None:
+    claim = _claim(
+        job_kind=BOOK_OPENING_WORKFLOW_JOB_KIND,
+        runtime_group=BOOK_OPENING_WORKFLOW_RUNTIME_GROUP,
+        workflow_contract_version="book-opening-workflow-v1",
+    )
+    claim = replace(
+        claim,
+        input_snapshot={
+            **claim.input_snapshot,
+            "workflow_node_id": "node:book-plan",
+            "opening_execution_id": "opening-execution:book-plan",
+            "execution_generation": 1,
+        },
+    )
+    response = {"status": "SUCCEEDED", "node_receipt_id": "receipt:1", "replayed": False}
+    durable = {
+        **response,
+        "node_receipt_id": "receipt:1" if same_receipt else "receipt:2",
+        "replayed": True,
+    }
+    opening = Mock()
+    opening.execute_run.return_value = response
+    opening.require.return_value = {"lifecycle": "RUNNING"}
+    opening.require_node_execution_result.return_value = durable
+    guard = MagicMock(spec=LeaseHeartbeatGuard)
+    guard.__enter__.return_value = guard
+    guard.__exit__.return_value = False
+    error = KernelError("AUTHORITY_LEASE_HEARTBEAT_FAILED", "lease released at completion")
+    if failure_site == "response_loss":
+        opening.execute_run.side_effect = RuntimeError("response lost after commit")
+    elif failure_site == "other_exit_failure":
+        guard.__exit__.side_effect = RuntimeError("unrelated exit error")
+    else:
+        guard.__exit__.side_effect = error
+    monkeypatch.setattr(book_authority_worker, "LeaseHeartbeatGuard", Mock(return_value=guard))
+    result = execute_book_opening_node_claim(Mock(), opening, Mock(), claim)
+    assert result == {**durable, "replayed": expected_replayed}
+    opening.require_node_execution_result.assert_called_once_with(
+        opening_run_id=claim.subject_id,
+        workflow_node_id="node:book-plan",
+        opening_execution_id="opening-execution:book-plan",
+        execution_generation=1,
+    )
+    opening.record_failure.assert_not_called()
 
 
 def test_production_claim_falls_through_to_exact_legacy_drain_after_v3_is_empty() -> (

@@ -562,6 +562,9 @@ class PostgresBookProjectionRepairAuthority:
                     "BOOK_PROJECTION_REPAIR_ACCEPTANCE_CAS_FAILED",
                     "accepted Chapter projection pointer changed during repair",
                 )
+            from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+
+            NarrativeRealityRepository(uow.cursor).project_acceptance(source["acceptance_id"])
             checkpoint_id = (
                 "book-projection-repair-checkpoint:"
                 + hashlib.sha256(

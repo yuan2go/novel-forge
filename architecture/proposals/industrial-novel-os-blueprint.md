@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `d683d0d80956885f2ab94949e6320ace106c5e72`
-Baseline implementation identity: `sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a`
+Current-reality baseline: `fd96f094e45ab456b98e306206c0dca5dee4dbc2`
+Baseline implementation identity: `sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-05",
-  "review_due": "2026-10-05",
+  "reviewed_on": "2026-09-06",
+  "review_due": "2026-10-06",
   "reality_baseline": {
-    "sha": "d683d0d80956885f2ab94949e6320ace106c5e72",
-    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a"
+    "sha": "fd96f094e45ab456b98e306206c0dca5dee4dbc2",
+    "implementation_tree_sha": "sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -31,29 +31,149 @@ Baseline implementation identity: `sha256:7bea3b354a8aaffff907fefa347c0aaef147bd
     "src/novel_forge/modules/reader_judge_authority",
     "src/novel_forge/modules/context_builder",
     "src/novel_forge/storage/migrations",
-    "src/novel_forge/storage/book_authority_repositories.py"
+    "src/novel_forge/storage/book_authority_repositories.py",
+    "src/novel_forge/modules/narrative_state",
+    "src/novel_forge/modules/worldbuilding"
   ],
   "implemented_refs": [
-    {"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "validate_planning_contract"},
-    {"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "_validate_scene_architecture"},
-    {"path": "src/novel_forge/modules/book_design_authority/foundation.py", "symbol": "FoundationBinding"},
-    {"path": "src/novel_forge/modules/story_design_authority/application.py", "symbol": "PostgresStoryDesignAssetAuthority"},
-    {"path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py", "symbol": "ChapterMission"},
-    {"path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py", "symbol": "SceneArchitecture"},
-    {"path": "src/novel_forge/modules/chapter_group_authority/policy.py", "symbol": "ChapterGroupExecutionPolicy"},
-    {"path": "src/novel_forge/modules/book_followup_authority/reader_policy.py", "symbol": "ReaderProxyPolicy"},
-    {"path": "src/novel_forge/modules/book_authority/completion.py", "symbol": "PostgresBookCompletionAuthority"},
-    {"path": "src/novel_forge/modules/context_builder/governance.py", "symbol": "compile_effective_context_policy"}
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+      "symbol": "validate_planning_contract"
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+      "symbol": "_validate_scene_architecture"
+    },
+    {
+      "path": "src/novel_forge/modules/book_design_authority/foundation.py",
+      "symbol": "FoundationBinding"
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/application.py",
+      "symbol": "PostgresStoryDesignAssetAuthority"
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+      "symbol": "ChapterMission"
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+      "symbol": "SceneArchitecture"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/policy.py",
+      "symbol": "ChapterGroupExecutionPolicy"
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/reader_policy.py",
+      "symbol": "ReaderProxyPolicy"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/completion.py",
+      "symbol": "PostgresBookCompletionAuthority"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/governance.py",
+      "symbol": "compile_effective_context_policy"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/reality_projection.py",
+      "symbol": "project_role_context"
+    },
+    {
+      "path": "src/novel_forge/modules/narrative_state/reality.py",
+      "symbol": "NarrativeRealityRevision"
+    },
+    {
+      "path": "src/novel_forge/modules/worldbuilding/foundation.py",
+      "symbol": "WorldFoundation"
+    },
+    {
+      "path": "src/novel_forge/modules/worldbuilding/dynamics.py",
+      "symbol": "WorldTransition"
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/causal_application.py",
+      "symbol": "PostgresCausalPlanningApplication"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "symbol": "compile_realization_contract"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/control_application.py",
+      "symbol": "PostgresBookControlApplication"
+    }
   ],
   "superseding_refs": [],
   "remaining_decisions": [
-    {"id": "optional-volume", "description": "DESIGN_REVIEW_REQUIRED: optional Volume versus an implicit persisted Volume and its constraints.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "PlanContractType"}]},
-    {"id": "segment-boundaries", "description": "DESIGN_REVIEW_REQUIRED: segment identity and boundary changes across accepted chapters.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "validate_planning_contract"}]},
-    {"id": "trajectory-storage", "description": "DESIGN_REVIEW_REQUIRED: typed common trajectory persistence versus separate physical schemas.", "evidence_refs": [{"path": "src/novel_forge/modules/hierarchical_planning/domain.py", "symbol": "_validate_arc_relations"}]},
-    {"id": "strategic-approval-risk", "description": "DESIGN_REVIEW_REQUIRED: delegated versus mandatory human approval for strategic changes.", "evidence_refs": [{"path": "src/novel_forge/modules/story_design_authority/domain.py", "symbol": "DesignApproval"}]},
-    {"id": "completion-human-quorum", "description": "DESIGN_REVIEW_REQUIRED: independent human/editorial completion evidence and quorum by publication class.", "evidence_refs": [{"path": "src/novel_forge/modules/chapter_quality_authority/qualification.py"}]},
-    {"id": "reader-data-policy", "description": "DESIGN_REVIEW_REQUIRED: real reader consent, cohort retention, privacy and causal attribution policy.", "evidence_refs": [{"path": "src/novel_forge/modules/reader_judge_authority/domain.py"}]},
-    {"id": "retrospective-correction", "description": "DESIGN_REVIEW_REQUIRED: erratum, compensating fact or edition boundaries for accepted factual errors.", "evidence_refs": [{"path": "src/novel_forge/storage/book_authority_repositories.py"}]}
+    {
+      "id": "optional-volume",
+      "description": "DESIGN_REVIEW_REQUIRED: optional Volume versus an implicit persisted Volume and its constraints.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "PlanContractType"
+        }
+      ]
+    },
+    {
+      "id": "segment-boundaries",
+      "description": "DESIGN_REVIEW_REQUIRED: segment identity and boundary changes across accepted chapters.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "validate_planning_contract"
+        }
+      ]
+    },
+    {
+      "id": "trajectory-storage",
+      "description": "DESIGN_REVIEW_REQUIRED: typed common trajectory persistence versus separate physical schemas.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "symbol": "_validate_arc_relations"
+        }
+      ]
+    },
+    {
+      "id": "strategic-approval-risk",
+      "description": "DESIGN_REVIEW_REQUIRED: strategic risk classification, delegated approval and mandatory human quorum beyond the implemented versioned operator ControlPolicy modes.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/story_design_authority/domain.py",
+          "symbol": "DesignApproval"
+        }
+      ]
+    },
+    {
+      "id": "completion-human-quorum",
+      "description": "DESIGN_REVIEW_REQUIRED: independent human/editorial completion evidence and quorum by publication class.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/qualification.py"
+        }
+      ]
+    },
+    {
+      "id": "reader-data-policy",
+      "description": "DESIGN_REVIEW_REQUIRED: real reader consent, cohort retention, privacy and causal attribution policy.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/reader_judge_authority/domain.py"
+        }
+      ]
+    },
+    {
+      "id": "retrospective-correction",
+      "description": "DESIGN_REVIEW_REQUIRED: erratum, compensating fact or edition boundaries for accepted factual errors.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/storage/book_authority_repositories.py"
+        }
+      ]
+    }
   ],
   "remaining_work": []
 }
@@ -62,6 +182,8 @@ Baseline implementation identity: `sha256:7bea3b354a8aaffff907fefa347c0aaef147bd
 The retained scope is the seven unresolved decisions below. Typed Chapter Mission and
 Scene Architecture, immutable Foundation bindings, versioned execution/reader policy,
 whole-book completion cases and governed Context compilation exist in executable code.
+Accepted-source Reality revisions, causal future selection, structured Scene realization
+and versioned operator ControlPolicy are also implemented by the references above.
 Their presence does not establish narrative, human, reader, longitudinal or production
 qualification. Every implementation change
 inside the declared scope invalidates this lifecycle review until the baseline is
@@ -113,7 +235,7 @@ semantics:
 
 - PostgreSQL-backed Authorities, command admission, attempt/lease/fence ownership,
   ExternalEffect reconciliation, migrations, workers, and recovery are executable and
-  locally qualified.
+  executable under exact-implementation qualification gates.
 - Candidate Story Design, typed hierarchical plans, Narrative Realization contracts,
   ChapterGroup coordination, chapter production, quality, Book acceptance, Canon,
   Narrative State, reader evidence, and future-only Plan Change exist.

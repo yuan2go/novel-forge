@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackRuntimeResolver,
 )
@@ -18,6 +20,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     submit_attempt_failure,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.modules.capability_pack_authority.domain import canonical_hash
 from tests.integration.authority_postgres_support import connect
 from tests.integration.authority_postgres_support import (
     identifier,
@@ -29,6 +32,83 @@ from tests.integration.capability_pack_postgres_support import (
     DATABASE_URL,
     CapabilityPackPostgresHarness,
 )
+
+
+@pytest.mark.parametrize("fact_count", [32, 33])
+def test_provider_context_fact_limit_blocks_before_durable_dispatch(fact_count):
+    harness = CapabilityPackPostgresHarness("context-fact-boundary")
+    version = harness.register_compile_approve("1.0.0", generation=1)
+    harness.activate(harness.deploy(version))
+    content = {
+        "safe_summary": "Governed causal preparation for this chapter.",
+        "structured_facts": [
+            {"kind": "causal_preparation", "value": f"required-condition-{index}"}
+            for index in range(fact_count)
+        ],
+    }
+    asset_id, version_id = identifier("context-material"), identifier("context-material-version")
+    digest = canonical_hash(content)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,'material_card')",
+            [asset_id, harness.project_id],
+        )
+        cursor.execute(
+            """INSERT INTO authority_asset_version(
+                asset_version_id, asset_id, version_number, lifecycle, eligibility,
+                governance, content, content_hash, schema_version
+            ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'material-card.v1')""",
+            [version_id, asset_id, Jsonb(content), digest],
+        )
+    candidate = {
+        "asset_version_id": version_id,
+        "asset_type": "material_card",
+        "project_id": harness.project_id,
+        "content_hash": digest,
+        "estimated_tokens": 1000,
+        "relevance_score": 1.0,
+        "allowed_use": "generation",
+        "source_use_mode": "generation",
+        "narrative_function": "causal_preparation",
+        **content,
+    }
+    if fact_count == 32:
+        runtime = harness.run_draft_attempt(extra_context_candidates=(candidate,))
+        assert runtime["external_effect_id"] and runtime["receipt_id"]
+    else:
+        with pytest.raises(KernelError, match="CONTEXT_PROJECTION_TOO_BROAD"):
+            harness.run_draft_attempt(extra_context_candidates=(candidate,))
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """SELECT count(*) FROM authority_external_effect effect
+                   JOIN authority_operation operation ON operation.operation_id=effect.operation_id
+                   WHERE operation.project_id=%s AND operation.definition_name='chapter.draft.generate'""",
+                [harness.project_id],
+            )
+            assert uow.cursor.fetchone() == (0,)
+            uow.cursor.execute(
+                """SELECT operation.status, attempt.status, attempt.result->>'error_code',
+                          operation.operation_id
+                   FROM authority_operation operation
+                   JOIN authority_attempt attempt ON attempt.operation_id=operation.operation_id
+                   WHERE operation.project_id=%s AND operation.definition_name='chapter.draft.generate'""",
+                [harness.project_id],
+            )
+            rows = uow.cursor.fetchall()
+            assert len(rows) == 1
+            assert rows[0][:3] == (
+                "FAILED_FINAL", "FAILED_FINAL", "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD"
+            )
+            operation_id = str(rows[0][3])
+        with pytest.raises(KernelError, match="OPERATION_STATUS_CONFLICT"):
+            create_attempt(
+                DATABASE_URL,
+                operation_id=operation_id,
+                project_id=harness.project_id,
+                max_attempts=2,
+                trace_id=identifier("restarted-context-worker"),
+                correlation_id=identifier("context-recovery"),
+            )
 
 
 def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect() -> (

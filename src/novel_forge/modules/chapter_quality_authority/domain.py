@@ -25,6 +25,7 @@ QUALITY_GROUPS: dict[str, tuple[str, ...]] = {
         "chapter_economy",
         "basic_prose_integrity",
         "scene_completeness",
+        "information_density",
         "dialogue_narration_balance",
         "paragraph_structure",
         "repetition",
@@ -51,6 +52,8 @@ QUALITY_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "longform": (
         "canon_consistency",
+        "causal_consistency",
+        "epistemic_consistency",
         "character_motivation_drift",
         "relationship_continuity",
         "timeline_consistency",

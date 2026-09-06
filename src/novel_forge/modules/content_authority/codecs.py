@@ -1098,6 +1098,18 @@ def author_story_design_candidate(
     candidate_payload = content.get("candidate_payload")
     if not isinstance(candidate_payload, dict):
         raise ValueError("operator-authored Story Design requires candidate_payload")
+    if "narrative_intent_source" in candidate_payload:
+        if generator != "creative.candidates.generate" or "narrative_intent" in candidate_payload:
+            raise ValueError("Intent source compilation belongs to Creative Foundation and cannot create a second interpretation")
+        from dataclasses import asdict
+        from novel_forge.modules.story_design_authority.intent import compile_narrative_intent
+        candidate_payload = dict(candidate_payload)
+        source = candidate_payload.pop("narrative_intent_source")
+        candidate_payload["narrative_intent"] = asdict(compile_narrative_intent(source))
+        candidate_payload["narrative_intent"]["must_have"] = list(candidate_payload["narrative_intent"]["must_have"])
+        candidate_payload["narrative_intent"]["must_not"] = list(candidate_payload["narrative_intent"]["must_not"])
+        candidate_payload["intent_compiler_version"] = "labeled-narrative-intent.v1"
+        content = {**content, "candidate_payload": candidate_payload}
     bindings = candidate_payload.get("foundation_parent_bindings") or {}
     if not isinstance(bindings, dict):
         raise ValueError("Foundation parent bindings must be an object")

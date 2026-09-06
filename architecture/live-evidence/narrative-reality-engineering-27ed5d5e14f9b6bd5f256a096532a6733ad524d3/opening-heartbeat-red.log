@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_committed_node_response_survives_a_terminal_heartbeat_race ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b5ebe90>
+
+    def test_committed_node_response_survives_a_terminal_heartbeat_race(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        late_heartbeat_errors: list[str] = []
+    
+        class CompletionHeartbeatGuard(LeaseHeartbeatGuard):
+            def __exit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc: BaseException | None,
+                traceback: TracebackType | None,
+            ) -> bool:
+                if exc is None:
+                    try:
+                        self._renew()
+                    except KernelError as heartbeat_error:
+                        late_heartbeat_errors.append(heartbeat_error.code)
+                        self._failure = heartbeat_error
+                return super().__exit__(exc_type, exc, traceback)
+    
+        monkeypatch.setattr(
+            book_authority_worker, "LeaseHeartbeatGuard", CompletionHeartbeatGuard
+        )
+        fixture = build_workflow_fixture()
+        admission = fixture.admit()
+        claim = fixture.claim("opening-terminal-heartbeat-worker")
+        assert claim is not None
+        result = as_mapping(fixture.execute(claim))
+        assert late_heartbeat_errors == ["RUNTIME_JOB_FENCE_STALE"]
+        assert result["status"] == "SUCCEEDED"
+>       assert result["replayed"] is False
+E       assert True is False
+
+tests/integration/test_book_opening_workflow_nodes_postgres.py:264: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_book_opening_workflow_nodes_postgres.py::test_committed_node_response_survives_a_terminal_heartbeat_race
+1 failed in 22.68s

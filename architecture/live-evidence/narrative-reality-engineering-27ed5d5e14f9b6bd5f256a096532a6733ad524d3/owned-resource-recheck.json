@@ -1,0 +1,22 @@
+{
+  "schema_version": "owned-resource-recheck.v1",
+  "tested_sha": "27ed5d5e14f9b6bd5f256a096532a6733ad524d3",
+  "observed_at": "2026-09-06T07:24:46.282953+00:00",
+  "source_receipts": [
+    "compose-resource-ownership-nf-p0-6040cd8570144f39b15494d3e6320861-runtime.json",
+    "compose-resource-ownership-nf-p0-6040cd8570144f39b15494d3e6320861.json",
+    "compose-resource-ownership-nf-p0-7c613c74206d4e21843a8f22f63b7499.json",
+    "compose-resource-ownership-nf-p0-4d7b57a395fa44cda3330577ed2404e4.json",
+    "compose-resource-ownership-nf-p0-866aaeb7e76b482db6b11e03cabb7eba-runtime.json",
+    "compose-resource-ownership-nf-p0-866aaeb7e76b482db6b11e03cabb7eba.json",
+    "compose-resource-ownership-nf-p0-b393754acf3f49af9ea7a7572863bf32.json",
+    "diagnostic-resource-cleanup.json",
+    "query-seed-diagnostic-resource-cleanup.json",
+    "opening-heartbeat-diagnostic-resource-cleanup.json",
+    "initial-narrative-diagnostic-resource-cleanup.json"
+  ],
+  "checked_resource_count": 54,
+  "remaining_resources": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}
