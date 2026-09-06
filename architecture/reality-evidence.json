@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260906_0116_book_control_policy",
+  "migration_head": "20260906_0117_world_causal_event_locators",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -3122,7 +3122,7 @@
     },
     {
       "id": "p0-backend-engineering-qualification-27ed5d5e14f9",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "make p0-backend-qualification P0_PROFILE=local",
       "observed_at_sha": "27ed5d5e14f9b6bd5f256a096532a6733ad524d3",
@@ -3616,10 +3616,8 @@
           "symbol": "PostgreSQLAuthorityCliBoundaryTests.test_non_postgresql_cli_never_silently_falls_back_to_legacy"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3706,10 +3704,8 @@
           "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3803,10 +3799,8 @@
           "symbol": "AuthorityAttemptLeaseSchemaPostgresTests.test_expired_lease_is_taken_over_with_next_fencing_token_and_history"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -3902,10 +3896,8 @@
           "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4017,10 +4009,8 @@
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -4154,10 +4144,8 @@
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4287,10 +4275,8 @@
           "symbol": "test_story_formation_is_durable_qualified_and_reference_only"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -4399,10 +4385,8 @@
           "symbol": "test_intent_compiler_preserves_source_and_routes_only_declared_constraints"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4431,6 +4415,10 @@
         {
           "path": "src/novel_forge/modules/hierarchical_planning/causal_application.py",
           "symbol": "PostgresCausalPlanningApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+          "symbol": "PlanningWorldPreparation.prepare"
         }
       ],
       "domain_symbols": [
@@ -4457,6 +4445,10 @@
         {
           "path": "src/novel_forge/modules/hierarchical_planning/epistemic_validation.py",
           "symbol": "validate_planned_character_knowledge"
+        },
+        {
+          "path": "src/novel_forge/modules/worldbuilding/production_planning.py",
+          "symbol": "compile_world_plan"
         }
       ],
       "commands_operations": [
@@ -4497,6 +4489,10 @@
         {
           "path": "src/novel_forge/storage/causal_planning_repositories.py",
           "symbol": "CausalPlanningRepository"
+        },
+        {
+          "path": "src/novel_forge/storage/world_preparation_repositories.py",
+          "symbol": "WorldPreparationRepository"
         }
       ],
       "migrations": [
@@ -4550,10 +4546,8 @@
           "symbol": "test_scene_planning_cannot_promote_reader_fact_belief_or_suspicion_to_knowledge"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4667,10 +4661,8 @@
           "symbol": "test_structured_realization_scopes_specialists_and_preserves_slot_revisions"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4766,10 +4758,8 @@
           "symbol": "PlanChangeAuthorityPostgresTests.test_plan_change_impact_approval_and_recoverable_activation"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -4890,10 +4880,8 @@
           "symbol": "test_committed_node_response_survives_a_terminal_heartbeat_race"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     },
     {
@@ -5034,10 +5022,8 @@
           "symbol": "test_book_input_resolver_freezes_active_authorities_and_planning_pack"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5136,10 +5122,8 @@
           "symbol": "ChapterGroupAuthorityPostgresTests.test_chapter_group_three_chapter_vertical_and_rolling_horizon"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5311,10 +5295,8 @@
           "symbol": "test_provider_context_fact_limit_blocks_before_durable_dispatch"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5429,10 +5411,8 @@
           "symbol": "ChapterAuthorityDependenciesTests.test_production_rejects_mock_model_routes"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -5551,10 +5531,8 @@
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5585,6 +5563,14 @@
         {
           "path": "src/novel_forge/modules/chapter_outcome/domain.py",
           "symbol": "build_chapter_outcome"
+        },
+        {
+          "path": "src/novel_forge/modules/canon_graph/background.py",
+          "symbol": "require_background_payload"
+        },
+        {
+          "path": "src/novel_forge/modules/canon_graph/world_reconciliation.py",
+          "symbol": "validate_actual_world_events"
         }
       ],
       "commands_operations": [
@@ -5670,10 +5656,8 @@
           "symbol": "test_book_input_resolver_freezes_active_authorities_and_planning_pack"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5762,10 +5746,8 @@
           "symbol": "test_acceptance_is_durably_blocked_without_native_whole_book_human_policy"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -5820,6 +5802,10 @@
         {
           "path": "src/novel_forge/modules/narrative_state/read_models.py",
           "symbol": "project_why_trace"
+        },
+        {
+          "path": "src/novel_forge/modules/narrative_state/causal_batch.py",
+          "symbol": "compile_causal_batch"
         }
       ],
       "commands_operations": [
@@ -5888,6 +5874,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260906_0115_reality_event_index.py",
           "locator": "MIGRATION_ID = \"20260906_0115_reality_event_index\"",
           "id": "20260906_0115_reality_event_index"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260906_0117_world_causal_event_locators.py",
+          "locator": "MIGRATION_ID = \"20260906_0117_world_causal_event_locators\"",
+          "id": "20260906_0117_world_causal_event_locators"
         }
       ],
       "external_effects": {
@@ -5926,10 +5917,8 @@
           "symbol": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -6049,10 +6038,8 @@
           "symbol": "ReaderCalibrationPostgresTests.test_versioned_two_reviewer_packs_persist_without_identity_leakage"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     },
     {
@@ -6170,10 +6157,8 @@
           "symbol": "test_prepared_execution_rejects_a_pep_or_external_effect_bypass"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -6279,6 +6264,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260906_0116_book_control_policy.py",
           "locator": "MIGRATION_ID = \"20260906_0116_book_control_policy\"",
           "id": "20260906_0116_book_control_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260906_0117_world_causal_event_locators.py",
+          "locator": "MIGRATION_ID = \"20260906_0117_world_causal_event_locators\"",
+          "id": "20260906_0117_world_causal_event_locators"
         }
       ],
       "external_effects": {
@@ -6322,10 +6312,8 @@
           "symbol": "AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_BACKEND_ENGINEERING"
     },
     {
@@ -6433,10 +6421,8 @@
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-27ed5d5e14f9"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     }
   ],
@@ -6576,7 +6562,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:e2654f0a173d548108fa6d112a6c05f0675a3a339e54661619ab17685554c903"
+    "implementation_tree_sha": "sha256:d069d07df10e5d1522cdee9c309e7dc938b24fa3eda44c569d11fb4ca089c59b"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -6998,7 +6984,8 @@
       "role": "AUTHORITY",
       "owns": [
         "typed planning contracts",
-        "active plan bindings"
+        "active plan bindings",
+        "frozen generated world portfolios, Director evaluations and selected causal preparation"
       ],
       "does_not_own": [
         "semantic design",
@@ -7009,6 +6996,10 @@
         {
           "path": "src/novel_forge/modules/hierarchical_planning/application.py",
           "symbol": "PostgresHierarchicalPlanningAuthority"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+          "symbol": "PlanningWorldPreparation.prepare"
         }
       ]
     },
@@ -7058,7 +7049,8 @@
       "owns": [
         "book production state",
         "accepted chapter cursor",
-        "chapter acceptance transaction"
+        "chapter acceptance transaction",
+        "atomic observed and governed background Actual acceptance with exact Reality lineage"
       ],
       "does_not_own": [
         "chapter attempt state",
@@ -7069,6 +7061,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/production.py",
           "symbol": "PostgresBookAuthority"
+        },
+        {
+          "path": "src/novel_forge/storage/world_preparation_repositories.py",
+          "symbol": "WorldPreparationRepository.validate_acceptance"
         }
       ]
     },
@@ -8094,12 +8090,31 @@
         }
       ],
       "downstream": [
+        "world-preparation"
+      ]
+    },
+    {
+      "id": "world-preparation",
+      "order": 10,
+      "path_role": "REQUIRED",
+      "owner": "planning-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+          "symbol": "PlanningWorldPreparation.prepare"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "symbol": "PostgresBookProductionSupervisor._generate_plan"
+        }
+      ],
+      "downstream": [
         "chapter-plan"
       ]
     },
     {
       "id": "chapter-plan",
-      "order": 10,
+      "order": 11,
       "path_role": "REQUIRED",
       "owner": "planning-authority",
       "evidence": [
@@ -8114,7 +8129,7 @@
     },
     {
       "id": "context-retrieval",
-      "order": 11,
+      "order": 12,
       "path_role": "REQUIRED",
       "owner": "chapter-authority",
       "evidence": [
@@ -8129,7 +8144,7 @@
     },
     {
       "id": "chapter-saga",
-      "order": 12,
+      "order": 13,
       "path_role": "REQUIRED",
       "owner": "chapter-authority",
       "evidence": [
@@ -8145,7 +8160,7 @@
     },
     {
       "id": "provider-effects",
-      "order": 13,
+      "order": 14,
       "path_role": "CONDITIONAL",
       "owner": "provider-effect-authority",
       "evidence": [
@@ -8160,7 +8175,7 @@
     },
     {
       "id": "review-quality",
-      "order": 14,
+      "order": 15,
       "path_role": "REQUIRED",
       "owner": "chapter-authority",
       "evidence": [
@@ -8175,7 +8190,7 @@
     },
     {
       "id": "book-acceptance",
-      "order": 15,
+      "order": 16,
       "path_role": "REQUIRED",
       "owner": "book-authority",
       "evidence": [
@@ -8192,7 +8207,7 @@
     },
     {
       "id": "accepted-projections",
-      "order": 16,
+      "order": 17,
       "path_role": "REQUIRED",
       "owner": "book-authority",
       "evidence": [
@@ -8208,7 +8223,7 @@
     },
     {
       "id": "reader-followup",
-      "order": 17,
+      "order": 18,
       "path_role": "ASYNCHRONOUS_FOLLOWUP",
       "owner": "reader-evidence-authority",
       "evidence": [
@@ -8223,7 +8238,7 @@
     },
     {
       "id": "future-plan-change",
-      "order": 18,
+      "order": 19,
       "path_role": "FUTURE_ONLY_CHANGE",
       "owner": "plan-change-authority",
       "evidence": [
@@ -8238,7 +8253,7 @@
     },
     {
       "id": "whole-book-completion",
-      "order": 19,
+      "order": 20,
       "path_role": "CONDITIONAL",
       "owner": "whole-book-completion-authority",
       "evidence": [

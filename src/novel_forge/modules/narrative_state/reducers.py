@@ -103,6 +103,18 @@ STATE_KIND_REDUCER_SEMANTICS: dict[NarrativeStateKind, str] = {
 }
 
 
+def preview_state_events(
+    *, previous: dict[str, Any], events: Sequence[NarrativeStateEvent]
+) -> dict[str, list[dict[str, Any]]]:
+    current = _indexed_current_state(previous)
+    for event in events:
+        old = current[event.state_kind].get(event.identity.entity_key)
+        if event.state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+            validate_causal_obligation_transition(payload=event.payload, old=(old or {}).get("state", {}), current=current)
+        current[event.state_kind][event.identity.entity_key] = _apply_event(old, event)
+    return _serialized_current_state(current)
+
+
 def reduce_story_state_v2(
     *,
     previous: dict[str, Any] | None,
@@ -172,6 +184,22 @@ def reduce_story_state_v2(
     else:
         accepted_through = 0
 
+    from .causal_batch import batch_binding, compile_causal_batch
+
+    if any(batch_binding(event.to_dict()) is not None for event in events):
+        accepted_ids = frozenset(
+            str(entry.get("source_event_id") or "")
+            for entries in ((prior or {}).get("current_state") or {}).values()
+            for entry in entries
+        )
+        historical_refs = frozenset(
+            ref for event in events
+            for ref in (batch_binding(event.to_dict()) or {}).get("depends_on", [])
+            if not ref.startswith("local:")
+        )
+        batch = compile_causal_batch([event.to_dict() for event in events], accepted_ids=accepted_ids | historical_refs)
+        by_id = {event.event_id: event for event in events}
+        events = tuple(event for event in events if batch_binding(event.to_dict()) is None) + tuple(by_id[str(event["event_id"])] for event in batch.ordered)
     current = _indexed_current_state(prior)
     _expire_effective_ranges(current, at_chapter=source_chapter)
     applications: list[dict[str, Any]] = []
@@ -459,7 +487,7 @@ def _apply_event(
         _validate_obligation_transition(old_state, payload, event)
         new_state = _merge_state(old_state, payload, event.state_kind)
 
-    return {
+    result = {
         "identity": event.identity.to_dict(),
         "entity_key": event.identity.entity_key,
         "entity_version": expected_entity_version,
@@ -480,6 +508,9 @@ def _apply_event(
         "evidence": deepcopy(event.evidence),
         "canon_status": event.canon_status,
     }
+    if event.payload.get("causal_batch") is not None and event.story_time is not None:
+        result["story_time"] = event.story_time.to_dict()
+    return result
 
 
 def _reduce_resource(old: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -555,12 +586,11 @@ def _validate_immutable_definition(
 def _validate_character_lifecycle(
     old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
 ) -> None:
-    """INVARIANT: Keep death/invalidation terminal unless Authority explicitly corrects it.
+    """INVARIANT: Revival preserves death history through an explicit world transition.
 
-    A superseding event means the prior accepted assertion itself was replaced.
-    An ordinary later upsert cannot silently turn a dead character alive again;
-    an in-story return must be modeled as an explicit, reviewable transition on
-    a new semantic identity rather than erasing accepted history.
+    Book acceptance validates the exact mechanism against approved world rules.
+    Projection and replay consume that immutable transition; a bare model flag
+    cannot reopen a terminal character or invalidate an accepted assertion.
     """
     if event.state_kind is not NarrativeStateKind.CHARACTER_STATE:
         return
@@ -568,6 +598,20 @@ def _validate_character_lifecycle(
     following = str(
         payload.get("life_status") or payload.get("status") or previous
     ).upper()
+    if previous == "DEAD" and following == "ALIVE" and payload.get("world_transition"):
+        from novel_forge.modules.worldbuilding.dynamics import WorldTransition
+        transition = WorldTransition.from_mapping(json.loads(payload["world_transition"]["payload_json"]))
+        reference = transition.changes.get("world_mechanism")
+        if (
+            transition.state_kind is event.state_kind
+            and transition.entity_key == event.identity.entity_key
+            and transition.changes.get("life_status") == "ALIVE"
+            and isinstance(reference, dict)
+            and set(reference) == {"rule_id", "asset_version_id", "content_hash"}
+            and all(reference.values())
+            and payload.get("world_mechanism") == reference
+        ):
+            return
     if previous in {"DEAD", "INVALIDATED"} and following != previous:
         if not event.supersedes_event_id:
             raise KernelError(

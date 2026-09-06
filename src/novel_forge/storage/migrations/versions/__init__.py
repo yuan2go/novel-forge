@@ -117,6 +117,7 @@ from . import (
     v20260906_0114_narrative_reality,
     v20260906_0115_reality_event_index,
     v20260906_0116_book_control_policy,
+    v20260906_0117_world_causal_event_locators,
 )
 
 VERSION_MODULES = [
@@ -236,6 +237,7 @@ VERSION_MODULES = [
     v20260906_0114_narrative_reality,
     v20260906_0115_reality_event_index,
     v20260906_0116_book_control_policy,
+    v20260906_0117_world_causal_event_locators,
 ]
 
 __all__ = ["VERSION_MODULES"]

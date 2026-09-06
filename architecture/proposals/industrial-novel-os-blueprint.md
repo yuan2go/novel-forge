@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `fd96f094e45ab456b98e306206c0dca5dee4dbc2`
-Baseline implementation identity: `sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f`
+Current-reality baseline: `6de3dce50586e4bf7a0984f79a413fea9bafffd1`
+Baseline implementation identity: `sha256:1d354e23391ad8c39dd18695efce2678e7ebba4bf42bca0908bc88d9e02eb4cb`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:c4168dea21da7a6111c13d3e07ffa21f35e941
   "reviewed_on": "2026-09-06",
   "review_due": "2026-10-06",
   "reality_baseline": {
-    "sha": "fd96f094e45ab456b98e306206c0dca5dee4dbc2",
-    "implementation_tree_sha": "sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f"
+    "sha": "6de3dce50586e4bf7a0984f79a413fea9bafffd1",
+    "implementation_tree_sha": "sha256:1d354e23391ad8c39dd18695efce2678e7ebba4bf42bca0908bc88d9e02eb4cb"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -103,6 +103,18 @@ Baseline implementation identity: `sha256:c4168dea21da7a6111c13d3e07ffa21f35e941
     {
       "path": "src/novel_forge/modules/book_authority/control_application.py",
       "symbol": "PostgresBookControlApplication"
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "symbol": "PlanningWorldPreparation"
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/background.py",
+      "symbol": "attach_background_proposals"
+    },
+    {
+      "path": "src/novel_forge/modules/narrative_state/causal_batch.py",
+      "symbol": "compile_causal_batch"
     }
   ],
   "superseding_refs": [],
@@ -184,6 +196,8 @@ Scene Architecture, immutable Foundation bindings, versioned execution/reader po
 whole-book completion cases and governed Context compilation exist in executable code.
 Accepted-source Reality revisions, causal future selection, structured Scene realization
 and versioned operator ControlPolicy are also implemented by the references above.
+Native world generation, causal preparation, governed background acceptance and
+same-chapter causal batches now share the existing Planning and Book acceptance chain.
 Their presence does not establish narrative, human, reader, longitudinal or production
 qualification. Every implementation change
 inside the declared scope invalidates this lifecycle review until the baseline is
@@ -419,7 +433,7 @@ parameter or evaluation sample size.
 | Scene Architecture | active Chapter Mission | ordered Scene and Beat plans | proposed → qualified → frozen | mission coverage, causal transitions, viewpoint/knowledge/time validity, prose feasibility | local revision or return to mission if failure is structural |
 | Prose Realization | frozen scene plan, accepted-only context, approved style/policy | immutable realization contract and Draft candidate | prepared → running → checkpointed → candidate/failed/unknown | contract identity, source isolation, context budget, Provider hard stop | retry by policy with new attempt; reconcile unknown effects before resend |
 | Review and Revision | Draft, rubric, continuity evidence | issues, evaluations, revised candidate | review → revise → re-review → gate decision | blocking issues resolved, fidelity and continuity demonstrated | bounded loop; escalate when budget/attempt limit or structural defect reached |
-| Accepted Actual | quality-passed candidate and evidence bundle | chapter acceptance event and actual outcomes | proposed → acceptance decision → accepted | owner authorization, exact lineage, no stale boundary, atomic projection inputs | rejection preserves candidate; accepted fact corrected only by explicit compensating decision |
+| Accepted Actual | quality-passed candidate, governed background decisions and exact source evidence | chapter acceptance event and actual outcomes | proposed → acceptance decision → accepted | owner authorization, exact lineage, no stale boundary, atomic projection inputs | rejection preserves candidate; accepted fact corrected only by explicit compensating decision |
 | Whole-book Completion | terminal cursor plus full accepted history | Completion Case and completion decision | opened → assessed → needs remediation/accepted/rejected | closure, consistency, defect, human/editorial, publication-readiness gates | remediation creates future/corrective work or a new edition case; never silently flips history |
 
 ## 7. Lifecycle and truth-state model
@@ -480,7 +494,7 @@ An obligation cannot disappear through context compression or plan replacement.
 | Planning Authority | `SPLIT` | Trajectory Authority owns typed trajectory plans; Chapter Planning Authority owns Chapter Mission and Scene Architecture activation. |
 | Narrative Realization Authority | `KEEP` | Independent logical owner of the frozen execution contract; Command Kernel owns attempts, leases and fences. It owns no narrative truth. |
 | Plan Change Authority | `KEEP` | Narrow it to Change Authority ownership of impact cases, approvals, and command requests; each affected domain owner commits its own replacement. |
-| Book Authority | `SPLIT` | Book Production Authority owns cursor/admission; Chapter Acceptance Authority owns atomic accepted chapter actuals. |
+| Book Authority | `SPLIT` | Book Production Authority owns cursor/admission; Book Acceptance Authority owns atomic accepted chapter actuals. |
 | ChapterGroup Authority | `RETIRE` | Retire it as a domain Authority. Rolling Window Coordinator schedules bounded work and owns only window execution state. |
 | Chapter Authority | `KEEP` | Clarify it as Chapter Production Authority, owning attempts, drafts, revisions, receipts, and release candidates. |
 | Quality Authority | `KEEP` | Rubric versions, evaluation evidence, issues, and gate decisions; never Accepted Actual. |
@@ -499,7 +513,7 @@ An obligation cannot disappear through context compression or plan replacement.
 ```text
 Agent/Provider → candidate/evidence
 Quality Authority → gate decision
-Chapter Acceptance Authority → Accepted Actual
+Book Acceptance Authority → Accepted Actual
 Canon Authority → canon decision/input
 Narrative State Projector → rebuildable state
 Trajectory Projector → actual progress
@@ -535,7 +549,7 @@ protocol.
 | Review/diagnosis | Quality Authority | Draft + plans + accepted state → Review Issues/evaluations | independent rubric gates | machine checks + independent LLM judges + optional human | evidence immutable; judge identity recorded |
 | Revision | Chapter Production Authority | candidate + accepted issue set → Revision Candidate | issue-resolution and regression gate | Editor Agent proposes patch; Provider bounded | new artifact/version/diff; bounded attempts and escalation |
 | Chapter quality gate | Quality Authority | candidate and evidence → pass/revise/block decision | no self-certification | independent judge; human for policy/risk cases | decision and evidence ids; replay returns same decision |
-| Chapter acceptance | Chapter Acceptance Authority | quality-passed candidate + exact boundary → Accepted Actual | atomic lineage/staleness gate | authorized command; Agent cannot accept | one transaction commits acceptance and projection inputs |
+| Chapter acceptance | Book Acceptance Authority | quality-passed candidate + exact boundary → Accepted Actual | atomic lineage/staleness gate | authorized command; Agent cannot accept | one transaction commits acceptance and projection inputs |
 | Canon/state projection | Canon Authority and projectors | Accepted Actual → Canon decisions, Narrative State, actual trajectories, obligation state | conflict and deterministic replay gates | extraction Agent proposes; owner decides conflicts | append-only inputs, rebuildable projections, repair evidence |
 
 ### Adaptation, completion, and operation

@@ -1128,6 +1128,12 @@ class _ContextHandler:
                     "CONTEXT_FROZEN_INPUT_TYPE_MISMATCH",
                     "Context candidate physical type differs from frozen AssetVersion",
                 )
+            if str(metadata.get("asset_type") or "") in {"narrative_retrieval_document", "story_state_snapshot", "canon_snapshot"}:
+                from .provider_views import build_task_narrative_projection, project_retrieved_state_context
+                metadata = project_retrieved_state_context({**metadata, "structured_facts": item.content.get("structured_facts") or metadata.get("structured_facts") or []}, projection=build_task_narrative_projection(plan.content), chapter=int(plan.content["chapter"]))
+                source_content = metadata
+            else:
+                source_content = item.content
             governed_candidates.append(
                 {
                     **metadata,
@@ -1135,12 +1141,12 @@ class _ContextHandler:
                     "physical_asset_type": item.asset_type,
                     "content_digest": item.content_hash,
                     "safe_summary": str(
-                        item.content.get("safe_summary")
+                        source_content.get("safe_summary")
                         or metadata.get("safe_summary")
                         or ""
                     ),
                     "structured_facts": list(
-                        item.content.get("structured_facts")
+                        source_content.get("structured_facts")
                         or metadata.get("structured_facts")
                         or []
                     ),
@@ -1733,6 +1739,11 @@ class _CanonExtractionHandler:
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
             provider_extraction=provider_extraction,
+        )
+        from novel_forge.modules.canon_graph.background import attach_background_proposals
+        content = attach_background_proposals(
+            extraction=content,
+            binding=dict((context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
         )
         if generated is None:
             return _output(ChapterNode.CANON_EXTRACTION, content)

@@ -355,6 +355,12 @@ class PostgresHierarchicalPlanningAuthority:
         )
         epistemic_state_sources: tuple[dict[str, str], ...] = ()
         if contract_type is PlanContractType.CHAPTER:
+            binding = (content.get("constraint_envelope") or {}).get("world_preparation")
+            if binding:
+                from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+                world_repository = WorldPreparationRepository(uow.cursor)
+                world_repository.validate_binding(project_id=project_id, book_id=book_id, binding=binding)
+                editorial_decisions += world_repository.require_decisions(project_id=project_id, binding=binding)
             from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
 
             epistemic_state_sources = NarrativeRealityRepository(uow.cursor).validate_chapter_knowledge(

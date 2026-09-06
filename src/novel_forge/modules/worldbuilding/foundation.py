@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from .dynamics import CausalRequirement, require_contract_fields, require_text_fields
+from .mechanisms import WorldMechanism
 
 
 CORE_WORLD_ONTOLOGY = frozenset(
@@ -33,6 +34,7 @@ class WorldRule:
     applicability: tuple[str, ...]
     consequences: tuple[str, ...]
     predicate: CausalRequirement | None
+    mechanism: WorldMechanism | None = None
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> WorldRule:
@@ -46,7 +48,7 @@ class WorldRule:
                 "applicability",
                 "consequences",
             },
-            optional={"predicate"},
+            optional={"predicate", "mechanism"},
         )
         require_text_fields(raw, ("rule_id", "category", "statement", "enforcement"))
         if any(
@@ -68,15 +70,17 @@ class WorldRule:
             CausalRequirement.from_mapping(raw["predicate"])
             if raw.get("predicate") is not None
             else None,
+            WorldMechanism.from_mapping(raw["mechanism"]) if raw.get("mechanism") is not None else None,
         )
         if (
             not rule.rule_id
             or not rule.statement
             or rule.enforcement
-            not in {"HARD", "QUANTITATIVE", "TEMPORAL", "SOFT_CAUSAL"}
+            not in {"HARD", "QUANTITATIVE", "TEMPORAL", "SOFT_CAUSAL", "MECHANISM"}
             or not rule.applicability
             or not rule.consequences
             or (rule.enforcement != "SOFT_CAUSAL" and rule.predicate is None)
+            or (rule.enforcement == "MECHANISM") != (rule.mechanism is not None)
         ):
             raise KernelError(
                 "WORLD_RULE_CONTRACT_INVALID",

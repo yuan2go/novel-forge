@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `fd96f094e45ab456b98e306206c0dca5dee4dbc2`
+Reality baseline: `6de3dce50586e4bf7a0984f79a413fea9bafffd1`
 Baseline implementation identity:
-`sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f`
+`sha256:1d354e23391ad8c39dd18695efce2678e7ebba4bf42bca0908bc88d9e02eb4cb`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-06",
   "review_due": "2026-10-06",
   "reality_baseline": {
-    "sha": "fd96f094e45ab456b98e306206c0dca5dee4dbc2",
-    "implementation_tree_sha": "sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f"
+    "sha": "6de3dce50586e4bf7a0984f79a413fea9bafffd1",
+    "implementation_tree_sha": "sha256:1d354e23391ad8c39dd18695efce2678e7ebba4bf42bca0908bc88d9e02eb4cb"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -51,6 +51,14 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/context_builder/reality_projection.py",
       "symbol": "project_role_context"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "symbol": "project_narrative_state_facts"
+    },
+    {
+      "path": "src/novel_forge/modules/narrative_state/information.py",
+      "symbol": "disclosed_fact_projection"
     }
   ],
   "superseding_refs": [],
@@ -133,6 +141,9 @@ Baseline implementation identity:
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen
 replay contract, eligibility decisions and Provider admission accounting. Revision-bound
 role projections now read accepted Reality through the same Context policy compiler.
+World preparation also binds approved Foundation initial conditions and active Planning
+inputs; Writer and Reader projections exclude undisclosed background state and private
+causal explanations. These boundaries do not implement structured Digest or GC lifecycle.
 Gates B–E
 remain design scope. The detailed prescriptions below describe their intended
 constraints; they cannot establish current capability or authorize implementation.

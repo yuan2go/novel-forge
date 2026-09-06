@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260906_0116_book_control_policy",
+  "head": "20260906_0117_world_causal_event_locators",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -118,6 +118,7 @@
     "20260905_0113_policy_completion_fk_indexes",
     "20260906_0114_narrative_reality",
     "20260906_0115_reality_event_index",
-    "20260906_0116_book_control_policy"
+    "20260906_0116_book_control_policy",
+    "20260906_0117_world_causal_event_locators"
   ]
 }

@@ -39,7 +39,7 @@ _READER = (
     "narrative_obligation",
 )
 ROLE_STATE_KINDS = {
-    "WORLD_REASONER": _WORLD + ("character_state",),
+    "WORLD_REASONER": _WORLD + _CHARACTER + ("narrative_obligation",),
     "DIRECTOR": _WORLD + _CHARACTER + _READER + ("arc_state", "canon_fact"),
     "CHARACTER_REASONER": _CHARACTER,
     "SCENE_PLANNER": _WORLD + _CHARACTER + _READER + ("canon_fact",),

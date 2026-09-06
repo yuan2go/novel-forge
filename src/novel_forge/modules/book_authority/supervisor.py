@@ -131,6 +131,14 @@ class PostgresBookProductionSupervisor:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
         semantics = book_production_state_semantics(before)
+        group_run = self._active_group_run(book)
+        if (
+            group_run is not None
+            and group_run.get("active_chapter_request_id")
+            and int(group_run["accepted_through_chapter"]) < int(book["accepted_through_chapter"])
+        ):
+            self.chapter_groups.reconcile_and_accept(str(group_run["group_run_id"]), principal=self.principal)
+            return self._result(book_run_id, before, SupervisorAction.ACCEPT_CHAPTER)
         if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
             raise KernelError(
                 "BOOK_SUPERVISOR_RESOLVED_INPUT_REQUIRED",
@@ -759,6 +767,14 @@ class PostgresBookProductionSupervisor:
             for version in causal_versions:
                 controls.require_causal_approval(project_id=str(book["project_id"]), book_run_id=str(book["book_run_id"]), chapter_number=chapter_number, actor_id=self.principal.principal_id, subject_version_id=version)
         generation = StoryPlanningGenerationCommand(
+            world_preparation_request={
+                "book_run_id": str(book["book_run_id"]),
+                "input_snapshot_id": str(book["input_snapshot_id"]),
+                "accepted_through_chapter": int(book["accepted_through_chapter"]),
+                "story_state_version_id": str(book.get("active_story_state_version_id") or ""),
+                "canon_version_id": str(book.get("active_canon_snapshot_version_id") or ""),
+                "planning_input_refs": [{"role": role, "asset_version_id": version} for role, version in inputs.items() if role in {"book_plan", "volume_plan", "arc_plans", "chapter_group_plan"}] + [{"role": "arc_plans", "asset_version_id": version} for version in arc_versions[1:]],
+            } if generator == "chapter_plan.generate" else None,
             project_id=str(book["project_id"]),
             workspace_id=str(book["workspace_id"]),
             book_id=str(book["book_id"]),
@@ -882,7 +898,8 @@ class PostgresBookProductionSupervisor:
                 activate_selected=True,
             )
             return search.selected_generation
-        result = self.planning.generate(generation, principal=self.principal)
+        frozen = self.planning.find_frozen_generation_command(project_id=generation.project_id, idempotency_key=generation.idempotency_key)
+        result = self.planning.generate(frozen or generation, principal=self.principal)
         if replacement_plan is None:
             return result
         if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:

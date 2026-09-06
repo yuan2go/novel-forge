@@ -1511,7 +1511,7 @@ def _context_correctness_receipt(
     }
     failed = [name for name, result in checks.items() if result["status"] == "FAIL"]
     if failed:
-        raise ValueError("CONTEXT_CORRECTNESS_BLOCKED: " + ", ".join(failed))
+        raise ValueError("CONTEXT_CORRECTNESS_BLOCKED: " + json.dumps({name: checks[name]["violations"] for name in failed}, sort_keys=True))
     body = {
         "type": "ContextCorrectnessReceipt",
         "contract_version": "context-correctness-receipt-v1",

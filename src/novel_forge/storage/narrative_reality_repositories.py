@@ -201,6 +201,14 @@ class NarrativeRealityRepository:
         projected["world_clock"] = {
             str(timeline): int(ordinal) for timeline, ordinal in self.cursor.fetchall()
         }
+        self.cursor.execute(
+            "SELECT state_kind, entity_key, timeline_id, max(end_ordinal) FROM authority_reality_event_index WHERE book_run_id=%s AND accepted_chapter<=%s AND world_tick AND timeline_id IS NOT NULL GROUP BY state_kind, entity_key, timeline_id",
+            [book_run_id, revision.chapter_number],
+        )
+        projected["entity_clocks"] = {
+            f"{kind}|{entity_key}|{timeline}": int(ordinal)
+            for kind, entity_key, timeline, ordinal in self.cursor.fetchall()
+        }
         return projected
 
     def event_sources(
@@ -253,7 +261,12 @@ class NarrativeRealityRepository:
             pending = []
             for event in found:
                 events[event["event_id"]] = event
-                pending.extend(event.get("causality", {}).get("cause_refs", []))
+                causes = event.get("causality", {}).get("cause_refs", [])
+                local_names = [ref[6:] for ref in causes if ref.startswith("local:")]
+                pending.extend(ref for ref in causes if not ref.startswith("local:"))
+                if local_names:
+                    self.cursor.execute("SELECT parent.event_id FROM authority_reality_event_index child JOIN authority_reality_event_index parent ON parent.revision_id=child.revision_id WHERE child.book_run_id=%s AND child.event_id=%s AND child.accepted_chapter<=%s AND parent.batch_local_id=ANY(%s)", [reality["book_run_id"], event["event_id"], reality["chapter_number"], local_names])
+                    pending.extend(str(row[0]) for row in self.cursor.fetchall())
         return {**reality, "events": list(events.values())}
 
     def reader_evidence(self, *, reality: dict[str, Any]) -> dict[str, Any]:
