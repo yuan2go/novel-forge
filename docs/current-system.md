@@ -286,7 +286,13 @@ Planning completion cannot discharge a
 commitment: repayment requires an exact accepted predicate event. Approved replacement
 Intent can retire unfulfilled preparation while preserving its original decision and
 accepted history. An expired unfulfilled window produces an accepted cancellation;
-renewal creates a new commitment linked to that retirement event.
+renewal creates a new commitment linked to that retirement event. Target retirement is
+separate from predicate repayment: an already fulfilled preparation retains its payoff
+receipt when the target expires or is cancelled, and its terminal target is no longer scheduled.
+Selected on-camera events are assigned to one Scene and carried in a frozen public execution
+contract. Observer must find the exact effects and local dependency identity in the final
+prose before Book acceptance records the original action/step mapping. Missing execution
+leaves the step pending; a successful chapter alone cannot complete it.
 
 Selected background events enter Canon reconciliation with a governed source origin
 that binds the source, generation, evaluation, selected transition and acceptance
@@ -306,6 +312,8 @@ entity's current state advances. Historical occurrence and current assertion are
 a superseded state cannot be presented as a current assertion. Versioned audience policy
 selects scalar fields and an explicit mode; mixed audiences use separate records.
 Character-only disclosure does not expose hidden content to Reader-facing production.
+Misdirection and withholding cannot grant new objective Character Knowledge, even when
+Observer proposes a KNOWN record alongside that presentation.
 Partial presentation cannot expand into the full fact through Context or retrieval.
 Scene epistemic projections retain explicit Scene and Character scopes. Hidden
 preparation commitments remain outside the Reader view.

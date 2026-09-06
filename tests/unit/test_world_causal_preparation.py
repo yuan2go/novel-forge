@@ -622,3 +622,173 @@ def test_continuation_reuses_an_exact_accepted_effect_without_reexecuting_a_step
         == "accepted:other-supplier"
     )
     assert original["preparation_schedule"][0]["status"] == "PLANNED_NOT_ACCEPTED"
+
+
+@pytest.mark.parametrize("fault", ["reordered", "cycle", "unordered_write"])
+def test_due_preparation_revalidates_the_same_batch_graph(fault):
+    from novel_forge.modules.worldbuilding.continuation import decide_preparation
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    generated = generated_paths()
+    candidate = generated["candidates"][0]
+    candidate["preparation_paths"] = candidate["preparation_paths"][:1]
+    path = candidate["preparation_paths"][0]
+    first = path["steps"][0]
+    first["transition"]["story_time"].update(start_ordinal=11, end_ordinal=11)
+    second = deepcopy(first)
+    second["transition"].update(
+        transition_id="pack", cause_refs=["local:gather"], changes={"balance": 4}
+    )
+    second["transition"]["story_time"].update(start_ordinal=12, end_ordinal=12)
+    path["steps"].append(second)
+    candidate["transition"]["cause_refs"] = ["local:pack"]
+    plan = compile_world_plan(
+        reality=reality_state(),
+        generated=generated,
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    assert plan["disposition"] == "PREPARATION_REQUIRED"
+    if fault == "reordered":
+        plan["preparation_schedule"].reverse()
+    elif fault == "cycle":
+        plan["preparation_schedule"][0]["transition"]["cause_refs"] = ["local:pack"]
+    else:
+        plan["preparation_schedule"][1]["transition"]["cause_refs"] = ["event:supply"]
+    result = decide_preparation(
+        reality=reality_state(),
+        origin={
+            "asset_version_id": "action:original",
+            "content_hash": "sha256:original",
+            "action": {"world_plan": plan},
+        },
+        accepted_steps={},
+        chapter_number=3,
+        intent_version_id="intent:1",
+    )
+    if fault == "reordered":
+        assert result["status"] == "EXECUTE", result
+        assert [row["transition_id"] for row in result["due_transitions"]] == [
+            "gather",
+            "pack",
+        ]
+    else:
+        assert result["status"] == "BLOCKED", result
+        assert (
+            result["reason"]
+            == {
+                "cycle": "WORLD_BATCH_CAUSAL_CYCLE",
+                "unordered_write": "WORLD_BATCH_CONCURRENT_WRITE",
+            }[fault]
+        )
+        assert result["due_transitions"] == []
+
+
+@pytest.mark.parametrize(
+    "fault,code",
+    [
+        ("future", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"),
+        ("book", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"),
+        ("unknown", "WORLD_DISCLOSURE_SOURCE_UNKNOWN"),
+        ("assertion", "WORLD_DISCLOSURE_ASSERTION_STALE"),
+        ("private", "WORLD_DISCLOSURE_FIELDS_INVALID"),
+        ("audience", "WORLD_DISCLOSURE_AUDIENCE_INVALID"),
+    ],
+)
+def test_historical_disclosure_rejects_inexact_or_overbroad_claims(fault, code):
+    from novel_forge.modules.narrative_state.information import project_disclosure
+
+    reality = reality_state()
+    event = {
+        "event_id": "event:E1",
+        "scope": {"project_id": "project", "book_id": "book"},
+        "coordinate": {"source_chapter": 1},
+        "state_kind": "world_state",
+        "identity": {"entity_key": "world_state_id=decree"},
+        "mutation": {
+            "payload": {"status": "ISSUED", "rationale": "private explanation"}
+        },
+    }
+    reality["events"].append(event)
+    row = {
+        "disclosure_id": "notice",
+        "event_id": "event:E1",
+        "audience": "READER",
+        "mode": "PARTIAL",
+        "fields": ["status"],
+        "presentation_channel": "LETTER",
+        "claim_kind": "HISTORICAL_OCCURRENCE",
+    }
+    if fault == "future":
+        event["coordinate"]["source_chapter"] = 2
+    elif fault == "book":
+        event["scope"]["book_id"] = "other-book"
+    elif fault == "unknown":
+        row["event_id"] = "event:invented"
+    elif fault == "assertion":
+        row["claim_kind"] = "CURRENT_ASSERTION"
+    elif fault == "private":
+        row["fields"] = ["rationale"]
+    else:
+        row["audience"] = "ALL"
+    before = deepcopy(reality)
+    with pytest.raises(KernelError) as caught:
+        project_disclosure(reality, row)
+    assert caught.value.code == code
+    assert reality == before
+
+
+@pytest.mark.parametrize("mode", ["MISDIRECT", "WITHHOLD"])
+def test_misleading_character_presentation_cannot_smuggle_known_truth(mode):
+    from novel_forge.modules.canon_graph.disclosure import bind_disclosure_policy
+
+    reality = reality_state()
+    reality["events"].append(
+        {
+            "event_id": "secret",
+            "mutation": {"payload": {"fact_origin": {"kind": "GOVERNED_BACKGROUND"}}},
+        }
+    )
+    policy = {
+        "disclosure_id": "message",
+        "fact_id": "secret",
+        "audience": "hero",
+        "mode": mode,
+        "presentation_channel": "LETTER",
+        "permitted_fields": [],
+        "claim_kind": "HISTORICAL_OCCURRENCE",
+        "source": {"state": {}},
+    }
+    extraction = {
+        "disclosure_events": [
+            {
+                "disclosure_id": "message",
+                "fact_id": "secret",
+                "audience": "hero",
+                "disclosure_mode": mode,
+                "presentation_channel": "LETTER",
+            }
+        ],
+        "character_knowledge_changes": [
+            {"character_id": "hero", "fact_id": "secret", "status": "KNOWN"}
+        ],
+    }
+    with pytest.raises(KernelError) as caught:
+        bind_disclosure_policy(
+            extraction,
+            {
+                "asset_version_id": "action",
+                "content_hash": "sha256:action",
+                "action": {
+                    "contract_version": "world-production-action.v2",
+                    "world_plan": {"disclosure_projection": [policy]},
+                },
+                "frozen_source": {"reality": reality},
+            },
+        )
+    assert caught.value.code == "WORLD_KNOWLEDGE_DISCLOSURE_DRIFT"

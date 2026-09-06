@@ -78,6 +78,15 @@ def bind_disclosure_policy(
     }
     for knowledge in result.get("character_knowledge_changes", []):
         key = (knowledge.get("fact_id"), knowledge.get("character_id"))
+        if (
+            key not in known
+            and key in observed
+            and observed[key]["disclosure_mode"] in {"MISDIRECT", "WITHHOLD"}
+        ):
+            raise KernelError(
+                "WORLD_KNOWLEDGE_DISCLOSURE_DRIFT",
+                "misdirection and withholding cannot grant objective character knowledge",
+            )
         if key[0] in hidden and key not in observed and key not in known:
             raise KernelError(
                 "WORLD_KNOWLEDGE_DISCLOSURE_REQUIRED",

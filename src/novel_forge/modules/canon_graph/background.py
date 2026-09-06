@@ -72,6 +72,44 @@ def public_world_direction(binding: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def bind_world_execution(
+    binding: Mapping[str, Any], scenes: list[dict[str, Any]]
+) -> dict[str, Any]:
+    public = public_world_direction(binding)
+    selected = {
+        raw["transition_id"]: raw
+        for raw in scheduled_world_events(binding)
+        if raw["camera"] == "ON_CAMERA"
+    }
+    assigned = {name: [] for name in selected}
+    for scene in scenes:
+        names = scene.get("world_event_ids", [])
+        if (
+            not isinstance(names, list)
+            or any(not isinstance(name, str) or name not in selected for name in names)
+            or len(names) != len(set(names))
+        ):
+            raise KernelError(
+                "WORLD_SCENE_EVENT_REFERENCE_INVALID",
+                "Scene assignments must reference distinct selected local event identities",
+            )
+        for name in names:
+            assigned[name].append(scene["scene_id"])
+    if any(len(ids) != 1 for ids in assigned.values()):
+        raise KernelError(
+            "WORLD_SCENE_EVENT_COVERAGE_INVALID",
+            "each scheduled on-camera event requires exactly one Scene owner",
+        )
+    for event in public["on_camera_events"]:
+        event["scene_id"] = assigned[event["transition_id"]][0]
+        event["cause_refs"] = list(selected[event["transition_id"]]["cause_refs"])
+    return {
+        **public,
+        "contract_version": "world-scene-execution.v1",
+        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage.",
+    }
+
+
 def without_private_world(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {

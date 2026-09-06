@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Drive native Book production from an approved input snapshot in a disposable database."""
 
 from __future__ import annotations

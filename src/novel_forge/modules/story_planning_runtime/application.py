@@ -196,25 +196,58 @@ class _PlanningGenerationHandler:
             )
         world_refs = ()
         envelope = build_planning_constraint_envelope(
-                    project_id=command.project_id,
-                    book_id=command.book_id,
-                    generation_operation_id=request.operation_id,
-                    generator_operation_name=command.generator_operation_name,
-                    frozen_inputs=tuple(inputs),
-                    input_contents={
-                        role: by_id[asset_version_id].content
-                        for role, asset_version_id in authority_roles.items()
-                    },
-                    candidate_payload=candidate.candidate_payload,
-                    arc_working_set=command.arc_working_set,
-                )
+            project_id=command.project_id,
+            book_id=command.book_id,
+            generation_operation_id=request.operation_id,
+            generator_operation_name=command.generator_operation_name,
+            frozen_inputs=tuple(inputs),
+            input_contents={
+                role: by_id[asset_version_id].content
+                for role, asset_version_id in authority_roles.items()
+            },
+            candidate_payload=candidate.candidate_payload,
+            arc_working_set=command.arc_working_set,
+        )
         if command.world_preparation_request:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
             from .world_preparation import require_world_action
-            action = require_world_action(AuthorityAssetQuery(self.database_url), command=command, operation_id=request.operation_id)
-            source = AuthorityAssetQuery(self.database_url).require(project_id=command.project_id, asset_version_id=action.content["contract"]["source"]["asset_version_id"])
-            envelope["world_preparation"] = {"asset_version_id": action.asset_version_id, "content_hash": action.content_hash, "action": action.content["contract"], "frozen_source": source.content["contract"]}
-            envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
+
+            action = require_world_action(
+                AuthorityAssetQuery(self.database_url),
+                command=command,
+                operation_id=request.operation_id,
+            )
+            source = AuthorityAssetQuery(self.database_url).require(
+                project_id=command.project_id,
+                asset_version_id=action.content["contract"]["source"][
+                    "asset_version_id"
+                ],
+            )
+            envelope["world_preparation"] = {
+                "asset_version_id": action.asset_version_id,
+                "content_hash": action.content_hash,
+                "action": action.content["contract"],
+                "frozen_source": source.content["contract"],
+            }
+            if (
+                action.content["contract"].get("contract_version")
+                == "world-production-action.v2"
+            ):
+                from novel_forge.modules.canon_graph.background import (
+                    bind_world_execution,
+                )
+
+                envelope["world_execution"] = bind_world_execution(
+                    envelope["world_preparation"],
+                    candidate.candidate_payload.get("scene_plan", []),
+                )
+            envelope["envelope_digest"] = canonical_hash(
+                {
+                    key: value
+                    for key, value in envelope.items()
+                    if key != "envelope_digest"
+                }
+            )
             world_refs = (action.asset_version_id,)
         return AuthorityHandlerOutput(
             # WHY: One generic worker Operation has one frozen output contract.
@@ -1060,10 +1093,40 @@ class StoryPlanningGenerationApplication:
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
             self._require_frozen_realization_slice(generation_command)
-            binding = (candidate["content"].get("constraint_envelope") or {}).get("world_preparation")
+            binding = (candidate["content"].get("constraint_envelope") or {}).get(
+                "world_preparation"
+            )
             if binding:
-                from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
-                WorldPreparationRepository(uow.cursor).validate_binding(project_id=generation["project_id"], book_id=generation["book_id"], binding=binding)
+                from novel_forge.storage.world_preparation_repositories import (
+                    WorldPreparationRepository,
+                )
+
+                WorldPreparationRepository(uow.cursor).validate_binding(
+                    project_id=generation["project_id"],
+                    book_id=generation["book_id"],
+                    binding=binding,
+                )
+                if (
+                    binding["action"].get("contract_version")
+                    == "world-production-action.v2"
+                ):
+                    from novel_forge.modules.canon_graph.background import (
+                        bind_world_execution,
+                    )
+
+                    expected = bind_world_execution(
+                        binding, candidate["content"].get("scene_plan", [])
+                    )
+                    if (
+                        candidate["content"]["constraint_envelope"].get(
+                            "world_execution"
+                        )
+                        != expected
+                    ):
+                        raise KernelError(
+                            "WORLD_SCENE_EXECUTION_DRIFT",
+                            "active Chapter plan must preserve the frozen public Scene assignments",
+                        )
             checkpoint("after_domain_validation")
             content = {
                 **_chapter_runtime_projection(dict(candidate["content"])),

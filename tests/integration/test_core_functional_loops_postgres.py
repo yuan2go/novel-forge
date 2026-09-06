@@ -742,6 +742,7 @@ def _seed_inputs(
     target_chapter_count: int = 3,
     governance_action: tuple[str, str] | None = None,
     world_foundation: dict[str, Any] | None = None,
+    world_production_policy: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -775,6 +776,8 @@ def _seed_inputs(
             content = {"book_id": book_id, "role": role, "facts": [role]}
             if role == "production_profile":
                 content["profile_id"] = "controlled-planning-fixture"
+                if world_production_policy is not None:
+                    content["world_production_policy"] = dict(world_production_policy)
                 content["target_chapter_count"] = target_chapter_count
                 if governance_action is not None:
                     content["narrative_load_policy"] = {
@@ -1501,6 +1504,9 @@ def _activate_plan_chain(
                 "historical_disclosure",
                 "process_recovery",
                 "smoke_command",
+                "on_camera_preparation",
+                "on_camera_missing",
+                "preparation_expiry",
                 "reader_partial",
                 "character_disclosure",
                 "reader_misdirect",
@@ -1525,13 +1531,23 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
     chapter_pack_id = ""
     if autonomous_world:
         from copy import copy
+
         chapter_pack = copy(harness)
         chapter_pack.pack_id = f"world-chapter-{uuid4().hex}"
         chapter_pack._base_manifest = deepcopy(harness._base_manifest)
         chapter_pack._base_catalog = deepcopy(harness._base_catalog)
-        approved = chapter_pack.register_compile_approve("1.0.0", generation=1, approval_scope=chapter_pack.approval_scope(environments=("test",), runtime_profiles=("test",)), target_runtime_profile="test")
+        approved = chapter_pack.register_compile_approve(
+            "1.0.0",
+            generation=1,
+            approval_scope=chapter_pack.approval_scope(
+                environments=("test",), runtime_profiles=("test",)
+            ),
+            target_runtime_profile="test",
+        )
         chapter_pack.register_agents(approved.compiled)
-        deployed = chapter_pack.deploy(approved, environment="test", runtime_profile="test")
+        deployed = chapter_pack.deploy(
+            approved, environment="test", runtime_profile="test"
+        )
         chapter_pack.activate(deployed, environment="test")
         chapter_pack_id = chapter_pack.pack_id
     _activate_planning_pack(harness)
@@ -1633,7 +1649,13 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             entity_key="world_state_id=harbor-pressure", value="RISING"
         )
     generic = _seed_inputs(
-        project_id, book_id, target_chapter_count=3, world_foundation=approved_world
+        project_id,
+        book_id,
+        target_chapter_count=3,
+        world_foundation=approved_world,
+        world_production_policy={"planning_window_chapters": 2}
+        if autonomous_world == "preparation_expiry"
+        else None,
     )
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
@@ -1719,7 +1741,8 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             "NOVEL_FORGE_PLANNING_MODEL": "scripted-planning-fixture",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
-            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id or "chapter_generation_pack",
+            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id
+            or "chapter_generation_pack",
         }
         from tests.integration.narrative_reality_vertical_support import (
             NativeRealityTransportFixture,

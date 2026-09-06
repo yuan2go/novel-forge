@@ -3231,8 +3231,14 @@ class PostgresPlanningExecutionPreparer:
         provider_stage: Any = None,
         world_action: AuthorityAssetDocument | None = None,
     ) -> PreparedPlanningExecution:
-        stage_name = provider_stage.name if provider_stage is not None else command.generator_operation_name
-        stage_identity = provider_stage.name if provider_stage is not None else "planning"
+        stage_name = (
+            provider_stage.name
+            if provider_stage is not None
+            else command.generator_operation_name
+        )
+        stage_identity = (
+            provider_stage.name if provider_stage is not None else "planning"
+        )
         if worker_id != self.worker_id:
             raise KernelError(
                 "PLANNING_WORKER_IDENTITY_DRIFT",
@@ -3257,7 +3263,10 @@ class PostgresPlanningExecutionPreparer:
         )
         if provider_stage is not None:
             context_document, source_document = self._world_context_bundle(
-                operation_id=operation_id, command=command, base=context_document, stage=provider_stage,
+                operation_id=operation_id,
+                command=command,
+                base=context_document,
+                stage=provider_stage,
             )
             input_documents = (*input_documents, source_document)
         chapter_schedule_row: dict[str, Any] | None = None
@@ -3313,6 +3322,31 @@ class PostgresPlanningExecutionPreparer:
             narrative_realization=command.narrative_realization,
             chapter_schedule_row=chapter_schedule_row,
         )
+        if (
+            world_action is not None
+            and world_action.content["contract"].get("contract_version")
+            == "world-production-action.v2"
+        ):
+            from novel_forge.modules.canon_graph.background import (
+                public_world_direction,
+            )
+
+            direction = public_world_direction(
+                {
+                    "asset_version_id": world_action.asset_version_id,
+                    "content_hash": world_action.content_hash,
+                    "action": world_action.content["contract"],
+                }
+            )
+            names = [event["transition_id"] for event in direction["on_camera_events"]]
+            if names:
+                scene = output_schema["properties"]["scene_plan"]["items"]
+                scene["properties"]["world_event_ids"] = {
+                    "type": "array",
+                    "items": {"type": "string", "enum": names},
+                    "description": "Assign each selected on-camera world event to exactly one Scene. Plans do not prove occurrence.",
+                }
+                scene["required"].append("world_event_ids")
         output_schema_ref = (
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
@@ -3406,7 +3440,9 @@ class PostgresPlanningExecutionPreparer:
         materialization["materialization_hash"] = canonical_hash(materialization)
         materialization_ref = (
             "production_execution/capability_materializations/"
-            + _token(f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}")
+            + _token(
+                f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
+            )
         )
         effect_context = EffectCommandContext(
             operation_id=operation_id,
@@ -3541,14 +3577,23 @@ class PostgresPlanningExecutionPreparer:
             "operation_id": operation_id,
         }
         if provider_stage is not None:
-            stable_request_payload["input"] = {"world_preparation": dict(provider_stage.task)}
+            stable_request_payload["input"] = {
+                "world_preparation": dict(provider_stage.task)
+            }
         elif world_action is not None:
-            from novel_forge.modules.canon_graph.background import public_world_direction
-            stable_request_payload["input"]["world_preparation"] = public_world_direction({
-                "asset_version_id": world_action.asset_version_id,
-                "content_hash": world_action.content_hash,
-                "action": world_action.content["contract"],
-            })
+            from novel_forge.modules.canon_graph.background import (
+                public_world_direction,
+            )
+
+            stable_request_payload["input"]["world_preparation"] = (
+                public_world_direction(
+                    {
+                        "asset_version_id": world_action.asset_version_id,
+                        "content_hash": world_action.content_hash,
+                        "action": world_action.content["contract"],
+                    }
+                )
+            )
         existing_intent = read_external_effect_intent(
             self.database_url,
             effect_context,

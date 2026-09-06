@@ -250,6 +250,8 @@ class WorldPreparationRepository:
                     "target_window",
                     "preparation_schedule",
                     "retirement_evidence",
+                    "preparation_target_status",
+                    "target_retirement_evidence",
                     "intent_version_id",
                 )
             ):
@@ -599,6 +601,7 @@ class WorldPreparationRepository:
                 if (entry["state"].get("fact_origin") or {}).get("kind")
                 == "GOVERNED_PREPARATION"
                 and entry["state"].get("status") != "CANCELLED"
+                and entry["state"].get("preparation_target_status") != "CANCELLED"
             }
         )
         if not origins:

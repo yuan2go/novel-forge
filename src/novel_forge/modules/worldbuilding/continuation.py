@@ -1,16 +1,10 @@
 from copy import deepcopy
-import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.reality import narrative_hash
-from .dynamics import (
-    WorldTransition,
-    candidate_transition,
-    state_index,
-    validate_world_state_rules,
-)
-from .working_state import preview_preparation_transition
+from .dynamics import state_index
+from .working_state import validate_preparation_batch
 
 
 def decide_preparation(
@@ -96,47 +90,30 @@ def decide_preparation(
         due = [{"transition": target, "chapter_number": chapter_number}]
     if not due:
         return {**decision, "status": "DEFER", "reason": "WAIT_SCHEDULED_CHAPTER"}
-    working = deepcopy(reality)
-    checked = []
+    pending = []
     for step in due:
         raw = deepcopy(step["transition"])
         raw["cause_refs"] = [
             support.get(ref[6:], ref) if ref.startswith("local:") else ref
             for ref in raw["cause_refs"]
         ]
-        try:
-            transition = WorldTransition.from_mapping(json.loads(json.dumps(raw)))
-            result = candidate_transition(transition, working)
-            if not result["eligible"]:
-                return {
-                    **decision,
-                    "status": "WAIT_PRECONDITION",
-                    "reason": "ACCEPTED_CONDITIONS_UNSATISFIED",
-                    "requirements": result["requirements"],
-                }
-            working["current_state"], simulated = preview_preparation_transition(
-                reality=working,
-                transition=transition,
-                chapter_number=chapter_number,
-                path_id=original["selected_path_id"],
-            )
-            working.setdefault("events", []).append(simulated)
-            checked.append(raw)
-        except KernelError as exc:
-            return {
-                **decision,
-                "status": "BLOCKED",
-                "reason": exc.code,
-                "error": str(exc),
-            }
+        pending.append(raw)
     try:
-        validate_world_state_rules(
+        checked, _ = validate_preparation_batch(
             reality=reality,
-            state=state_index(working),
-            affected_kinds={raw["state_kind"] for raw in checked},
+            transitions=pending,
+            chapter_number=chapter_number,
+            path_id=original["selected_path_id"],
         )
     except KernelError as exc:
-        return {**decision, "status": "BLOCKED", "reason": exc.code, "error": str(exc)}
+        return {
+            **decision,
+            "status": "WAIT_PRECONDITION"
+            if exc.code == "WORLD_PREPARATION_UNSUPPORTED"
+            else "BLOCKED",
+            "reason": exc.code,
+            "error": str(exc),
+        }
     return {
         **decision,
         "status": "EXECUTE",

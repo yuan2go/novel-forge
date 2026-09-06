@@ -24,6 +24,7 @@ def disclosed_fact_projection(entry: Mapping[str, Any]) -> dict[str, Any]:
                 "expected_payoff",
                 "causal_requirement",
                 "retirement_evidence",
+                "target_retirement_evidence",
                 "preparation_lineage",
             }
         }
@@ -99,6 +100,7 @@ _DISCLOSURE_PRIVATE_FIELDS = frozenset(
         "expected_payoff",
         "causal_requirement",
         "retirement_evidence",
+        "target_retirement_evidence",
         "approval_resolution",
         "extraction_evidence",
         "provenance",

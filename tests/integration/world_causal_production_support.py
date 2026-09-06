@@ -210,7 +210,13 @@ class AutonomousWorldTransport:
                 result["candidates"][0]["transition"] = {
                     "payload_json": json.dumps(proposed)
                 }
-            if self.scenario in {"multi_preparation", "smoke_command"}:
+            if self.scenario in {
+                "multi_preparation",
+                "smoke_command",
+                "on_camera_preparation",
+                "on_camera_missing",
+                "preparation_expiry",
+            }:
                 from copy import deepcopy
 
                 if task["accepted_through_chapter"]:
@@ -222,6 +228,8 @@ class AutonomousWorldTransport:
                         "candidates": [],
                     }
                 else:
+                    if self.scenario.startswith("on_camera"):
+                        proposed["camera"] = "ON_CAMERA"
                     first = deepcopy(proposed)
                     first.update(
                         transition_id="gather-records",
@@ -422,6 +430,13 @@ class AutonomousWorldTransport:
         else:
             result = planning_fixture_response(stage, inputs)
             if stage == "chapter_plan.generate":
+                if inputs.get("world_preparation", {}).get("on_camera_events"):
+                    for scene in result["scene_plan"]:
+                        scene["world_event_ids"] = []
+                    result["scene_plan"][0]["world_event_ids"] = [
+                        event["transition_id"]
+                        for event in inputs["world_preparation"]["on_camera_events"]
+                    ]
                 for disclosure in inputs.get("world_preparation", {}).get(
                     "disclosures", []
                 ):
@@ -464,6 +479,59 @@ class AutonomousWorldTransport:
     def __call__(self, stage, inputs):
         self.calls.append({"stage": stage, "input": json.loads(json.dumps(inputs))})
         result = default_chapter_fixture_response(stage, inputs)
+        if self.scenario.startswith("on_camera") and stage in {
+            "draft",
+            "canon_extraction",
+        }:
+            envelope = (inputs.get("plan") or {}).get("constraint_envelope") or {}
+            expectations = inputs.get("execution_expectations") or {}
+            public = envelope.get("world_execution") or expectations.get(
+                "world_execution"
+            )
+            assert public is not None, (
+                "scheduled on-camera events require a public frozen execution contract"
+            )
+            for event in public["on_camera_events"]:
+                statement = (
+                    "Preparation "
+                    + event["transition_id"]
+                    + ": "
+                    + json.dumps(event["changes"], sort_keys=True)
+                    + "."
+                )
+                omitted = (
+                    self.scenario == "on_camera_missing"
+                    and event["transition_id"] == "verify-records"
+                )
+                if stage == "draft" and not omitted:
+                    result["scene_artifacts"][0]["text"] += " " + statement
+                    result["text"] = "\n\n".join(
+                        item["text"] for item in result["scene_artifacts"]
+                    )
+                if (
+                    stage == "canon_extraction"
+                    and statement in inputs["revision"]["text"]
+                ):
+                    start = inputs["revision"]["text"].index(statement)
+                    identity = dict(
+                        part.split("=", 1) for part in event["entity_key"].split("|")
+                    )
+                    result["world_state_changes"].append(
+                        {
+                            **identity,
+                            **event["changes"],
+                            "summary": statement,
+                            "evidence_start": start,
+                            "evidence_end": start + len(statement),
+                            "confidence": 1.0,
+                            "story_time": event["story_time"],
+                            "causal_batch": {
+                                "contract_version": "causal-batch-event.v1",
+                                "local_id": event["transition_id"],
+                                "depends_on": event["cause_refs"],
+                            },
+                        }
+                    )
         prose = {
             "character_disclosure": "Mara reads the sealed notice and understands it; its contents remain unquoted.",
             "reader_partial": "The notice hints at an earlier inquiry but withholds its concealed participants.",
@@ -633,17 +701,127 @@ def execute_autonomous_world_vertical(
     admitted = admit_native_production(
         composition=composition, snapshot=snapshot, generic=generic
     )
-    if transport.scenario == "smoke_command":
+    if transport.scenario in {
+        "smoke_command",
+        "on_camera_preparation",
+        "on_camera_missing",
+        "preparation_expiry",
+    }:
         import time
         from scripts.run_world_production_smoke import drive
+
         records = []
-        worker = Principal(principal_id="smoke-command-worker", principal_type=PrincipalType.WORKER, permissions=composition.principal.permissions - {"book.authority.approve_replan"}, project_scope=composition.principal.project_scope, authentication_source="owned-native-smoke-command-test")
-        reason = drive(composition=composition, chapter=chapter_application, book_run_id=admitted.book_run_id, worker=worker, events=records.append, maximum_ticks=60, deadline=time.monotonic()+240)
+        worker = Principal(
+            principal_id="smoke-command-worker",
+            principal_type=PrincipalType.WORKER,
+            permissions=composition.principal.permissions
+            - {"book.authority.approve_replan"},
+            project_scope=composition.principal.project_scope,
+            authentication_source="owned-native-smoke-command-test",
+        )
+        reason = drive(
+            composition=composition,
+            chapter=chapter_application,
+            book_run_id=admitted.book_run_id,
+            worker=worker,
+            events=records.append,
+            maximum_ticks=60,
+            deadline=time.monotonic() + 240,
+        )
         assert reason == "ACCEPTED_TARGET_REACHED", records
         reality = composition.query.narrative_reality(book_run_id=admitted.book_run_id)
-        assert any(row["state"].get("goal_reached") for row in reality["current_state"]["world_state"])
-        assert len([call for call in transport.calls if call["stage"] == "world_candidates.generate"]) == 3
-        return {"proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY", "scenario": "smoke_command", "book_run_id": admitted.book_run_id, "calls": transport.calls, "native_smoke_ticks": records, "reality_revision_id": reality["revision_id"]}
+        expected_goal = transport.scenario not in {
+            "on_camera_missing",
+            "preparation_expiry",
+        }
+        assert (
+            any(
+                row["state"].get("goal_reached")
+                for row in reality["current_state"]["world_state"]
+            )
+            is expected_goal
+        )
+        if transport.scenario == "preparation_expiry":
+            debt = next(
+                row["state"]
+                for row in reality["current_state"]["narrative_obligation"]
+                if row["state"].get("obligation_type") == "CAUSAL_DEBT"
+            )
+            assert debt["status"] == "FULFILLED" and debt["payoff_evidence"]["event_id"]
+            assert debt["preparation_target_status"] == "CANCELLED"
+            assert (
+                debt["target_retirement_evidence"]["reason"]
+                == "PREPARATION_WINDOW_EXPIRED"
+            )
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            from novel_forge.storage.world_preparation_repositories import (
+                WorldPreparationRepository,
+            )
+
+            with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                assert (
+                    WorldPreparationRepository(uow.cursor).preparation_sources(
+                        reality=reality, limit=4
+                    )
+                    == []
+                )
+        if transport.scenario.startswith("on_camera"):
+            events = [
+                event
+                for n in range(1, 4)
+                for event in composition.query.narrative_reality(
+                    book_run_id=admitted.book_run_id, chapter_number=n
+                )["events"]
+                if event["mutation"]["payload"].get("preparation_lineage")
+            ]
+            assert len(events) == (3 if expected_goal else 1)
+            assert (
+                len(
+                    {
+                        event["mutation"]["payload"]["preparation_lineage"][
+                            "origin_action_version_id"
+                        ]
+                        for event in events
+                    }
+                )
+                == 1
+            )
+            assert all(
+                not event["mutation"]["payload"].get("fact_origin") for event in events
+            )
+            if not expected_goal:
+                debts = [
+                    row["state"]
+                    for row in reality["current_state"]["narrative_obligation"]
+                    if row["state"].get("obligation_type") == "CAUSAL_DEBT"
+                ]
+                assert (
+                    len(debts) == 1
+                    and debts[0]["status"] == "OPEN"
+                    and not debts[0]["payoff_evidence"]
+                )
+        assert (
+            len(
+                [
+                    call
+                    for call in transport.calls
+                    if call["stage"] == "world_candidates.generate"
+                ]
+            )
+            == 3
+        )
+        from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+        rebuilt = NarrativeStateRebuildService(composition.authority.database_url).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
+        assert rebuilt.projection["current_state"] == reality["current_state"]
+        return {
+            "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+            "scenario": transport.scenario,
+            "book_run_id": admitted.book_run_id,
+            "calls": transport.calls,
+            "native_smoke_ticks": records,
+            "final_provider_requests": capture_final_provider_requests(composition=composition, project_id=snapshot.project_id),
+            "reality_revision_id": reality["revision_id"],
+        }
     if transport.scenario == "process_recovery":
         from tests.integration.world_process_recovery_support import (
             run_process_recovery,

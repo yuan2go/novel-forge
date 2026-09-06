@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 
 import pytest
@@ -512,3 +513,25 @@ def test_scene_epistemic_projection_preserves_each_scene_without_global_union():
     assert (
         len(project_narrative_state_facts(facts, projection=projection, chapter=3)) == 1
     )
+
+
+@pytest.mark.parametrize(
+    "assignment", [[], ["unknown"], ["council-moves", "council-moves"]]
+)
+def test_world_scene_owner_rejects_missing_unknown_or_duplicate_assignment(assignment):
+    from novel_forge.modules.canon_graph.background import bind_world_execution
+
+    frozen = binding()
+    frozen["action"]["world_plan"]["candidate_futures"][0]["transition"]["camera"] = (
+        "ON_CAMERA"
+    )
+    with pytest.raises(KernelError, match="WORLD_SCENE_EVENT"):
+        bind_world_execution(
+            frozen, [{"scene_id": "scene:1", "world_event_ids": assignment}]
+        )
+    result = bind_world_execution(
+        frozen, [{"scene_id": "scene:1", "world_event_ids": ["council-moves"]}]
+    )
+    assert result["on_camera_events"][0]["scene_id"] == "scene:1"
+    assert result["on_camera_events"][0]["cause_refs"] == ["foundation:world"]
+    assert "private causal" not in json.dumps(result)
