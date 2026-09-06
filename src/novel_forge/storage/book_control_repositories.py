@@ -180,30 +180,54 @@ class BookControlRepository:
         )
 
     def causal_subjects(
-        self, *, project_id: str, book_run_id: str, chapter_number: int, subject_version_id: str = ""
+        self,
+        *,
+        project_id: str,
+        book_run_id: str,
+        chapter_number: int,
+        subject_version_id: str = "",
     ) -> dict[str, str]:
         from novel_forge.storage.causal_planning_repositories import (
             CausalPlanningRepository,
         )
         from novel_forge.modules.canon_graph.background import world_action_boundaries
-        self.cursor.execute("""
+
+        self.cursor.execute(
+            """
             SELECT v.asset_version_id, v.content_hash, v.content->'contract', source.content->'contract'
             FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
             JOIN authority_asset_version source ON source.asset_version_id=v.content->'contract'->'source'->>'asset_version_id'
             JOIN authority_book_production book ON book.book_run_id=%s AND book.project_id=a.project_id
             WHERE a.project_id=%s AND a.asset_type='narrative_governance_action'
-              AND v.content->'contract'->>'contract_version'='world-production-action.v1'
+              AND v.content->'contract'->>'contract_version' IN ('world-production-action.v1','world-production-action.v2')
               AND v.content->'contract'->>'book_run_id'=book.book_run_id
               AND (v.content->'contract'->'world_plan'->>'chapter_number')::integer=%s
               AND source.content->'contract'->'request'->>'input_snapshot_id'=book.input_snapshot_id
               AND (source.content->'contract'->'request'->>'accepted_through_chapter')::integer=book.accepted_through_chapter
               AND (%s='' OR v.asset_version_id=%s)
             ORDER BY v.created_at DESC, v.asset_version_id DESC LIMIT 1
-        """, [book_run_id, project_id, chapter_number, subject_version_id, subject_version_id])
+        """,
+            [
+                book_run_id,
+                project_id,
+                chapter_number,
+                subject_version_id,
+                subject_version_id,
+            ],
+        )
         automatic = self.cursor.fetchone()
         if automatic:
-            binding = dict(zip(("asset_version_id", "content_hash", "action", "frozen_source"), automatic, strict=True))
-            return {boundary: str(automatic[0]) for boundary in world_action_boundaries(binding)}
+            binding = dict(
+                zip(
+                    ("asset_version_id", "content_hash", "action", "frozen_source"),
+                    automatic,
+                    strict=True,
+                )
+            )
+            return {
+                boundary: str(automatic[0])
+                for boundary in world_action_boundaries(binding)
+            }
 
         self.cursor.execute(
             "SELECT revision_id FROM authority_narrative_reality_revision WHERE book_run_id=%s AND project_id=%s AND chapter_number=%s",

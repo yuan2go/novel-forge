@@ -211,6 +211,32 @@ class NarrativeRealityRepository:
         }
         return projected
 
+    def recent_world_events(
+        self, *, book_run_id: str, through_chapter: int, limit: int
+    ) -> list[dict[str, Any]]:
+        if (
+            type(limit) is not int
+            or not 1 <= limit <= 128
+            or type(through_chapter) is not int
+            or through_chapter < 1
+        ):
+            raise KernelError(
+                "NARRATIVE_EVENT_SCOPE_UNBOUNDED",
+                "historical world discovery requires an exact frontier and bounded page",
+            )
+        self.cursor.execute(
+            """
+            SELECT v.content->'state_events'->i.event_ordinal
+            FROM authority_reality_event_index i
+            JOIN authority_narrative_reality_revision r ON r.revision_id=i.revision_id
+            JOIN authority_asset_version v ON v.asset_version_id=r.outcome_version_id
+            WHERE i.book_run_id=%s AND i.accepted_chapter<=%s AND i.world_tick
+            ORDER BY i.accepted_chapter DESC, i.event_ordinal DESC LIMIT %s
+            """,
+            [book_run_id, through_chapter, limit],
+        )
+        return [dict(row[0]) for row in self.cursor.fetchall()]
+
     def event_sources(
         self,
         *,

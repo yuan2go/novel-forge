@@ -2105,12 +2105,22 @@ def _command(generator: str) -> StoryPlanningGenerationCommand:
 
 
 def test_world_runtime_contract_preserves_historical_frozen_commands():
-    from novel_forge.modules.story_planning_runtime.application import _command_payload, _command_from_payload
+    from novel_forge.modules.story_planning_runtime.application import (
+        _command_payload,
+        _command_from_payload,
+    )
+
     command = _command("chapter_plan.generate")
     current = _command_payload(command)
-    assert current["execution_contract_version"] == "1.12.0"
+    assert current["execution_contract_version"] == "1.13.0"
+    published = {**current, "execution_contract_version": "1.12.0"}
+    assert _command_payload(_command_from_payload(published)) == published
     assert _command_from_payload(current) == command
-    historical = {key: value for key, value in current.items() if key != "execution_contract_version"}
+    historical = {
+        key: value
+        for key, value in current.items()
+        if key != "execution_contract_version"
+    }
     replay = _command_from_payload(historical)
     assert replay.execution_contract_version == "1.11.0"
     assert not replay.world_preparation_request
@@ -2638,3 +2648,21 @@ def test_planning_role_aliases_share_one_exact_kernel_admission_reference():
     assert len(refs) == 3
     with pytest.raises(KernelError, match="must agree on its exact content identity"):
         _canonical_admission_assets([source, {**source, "content_hash": "sha256:other"}])
+
+
+@pytest.mark.parametrize('snapshot_fence, binding_fence, allowed', [(4, 7, True), (8, 7, False), (4, 6, False)])
+def test_planning_takeover_preserves_snapshot_provenance_but_requires_current_binding(snapshot_fence, binding_fence, allowed):
+    class Resolver(_Resolver):
+        def resolve(self, **kwargs):
+            bundle = super().resolve(**kwargs)
+            bundle.attempt_snapshot.execution_fencing_token = snapshot_fence
+            bundle.capability_binding.fencing_token = binding_fence
+            return bundle
+    command = _command('book_plan.generate')
+    def execute():
+        return CapabilityPackBackedPlanningExecutionBinder(Resolver()).execute(operation_id='operation-1', attempt_id='attempt-1', fencing_token=7, worker_id='planning-worker', command=command, inputs=_inputs(command), definition=GENERATOR_CATALOG[command.generator_operation_name])
+    if allowed:
+        assert execute().evidence.fencing_token == 7
+    else:
+        with pytest.raises(KernelError, match='PLANNING_EXECUTION_ATTEMPT_DRIFT'):
+            execute()

@@ -26,7 +26,9 @@ def _strings() -> dict[str, Any]:
     }
 
 
-def world_generation_schema(policy: WorldProductionPolicy) -> dict[str, Any]:
+def world_generation_schema(
+    policy: WorldProductionPolicy, *, audience_scoped: bool = False
+) -> dict[str, Any]:
     transition = _object(
         {"payload_json": {"type": "string", "minLength": 2, "maxLength": 16384}}
     )
@@ -87,6 +89,47 @@ def world_generation_schema(policy: WorldProductionPolicy) -> dict[str, Any]:
             ),
         }
     )
+    if audience_scoped:
+        candidate["properties"]["information_scope"] = _object(
+            {
+                "disclosures": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": _object(
+                        {
+                            "disclosure_id": {"type": "string", "minLength": 1},
+                            "event_id": {"type": "string", "minLength": 1},
+                            "audience": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "READER or one exact character_id. Mixed audiences use distinct disclosure records; no implicit ALL.",
+                            },
+                            "mode": {
+                                "type": "string",
+                                "enum": [
+                                    "HINT",
+                                    "PARTIAL",
+                                    "MISDIRECT",
+                                    "CONFIRM",
+                                    "WITHHOLD",
+                                ],
+                            },
+                            "fields": {
+                                "type": "array",
+                                "maxItems": 16,
+                                "items": {"type": "string", "minLength": 1},
+                                "description": "Only explicit scalar event fields may be presented. WITHHOLD requires no fields. Private causes, decisions and summaries are never presentation fields.",
+                            },
+                            "presentation_channel": {"type": "string", "minLength": 1},
+                            "claim_kind": {
+                                "type": "string",
+                                "enum": ["CURRENT_ASSERTION", "HISTORICAL_OCCURRENCE"],
+                            },
+                        }
+                    ),
+                }
+            }
+        )
     return _object(
         {
             "disposition": {"type": "string", "enum": ["CANDIDATES", "NO_OP", "DEFER"]},

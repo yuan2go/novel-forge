@@ -1487,10 +1487,52 @@ def _activate_plan_chain(
     return activated
 
 
-@pytest.mark.parametrize("autonomous_world", [False, True, pytest.param("causal_preparation", id="causal-preparation"), pytest.param("intra_chapter", id="intra-chapter"), *[pytest.param(value, id=value) for value in ("intra_chapter_missing", "intra_chapter_cycle", "manual_director", "acceptance_recovery", "provider_recovery", "concurrent_workers", "perturbed_foundation")]])
-def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request: pytest.FixtureRequest, autonomous_world: bool | str) -> None:
+@pytest.mark.parametrize(
+    "autonomous_world",
+    [
+        False,
+        True,
+        pytest.param("causal_preparation", id="causal-preparation"),
+        pytest.param("intra_chapter", id="intra-chapter"),
+        *[
+            pytest.param(value, id=value)
+            for value in (
+                "multi_preparation",
+                "historical_disclosure",
+                "process_recovery",
+                "reader_partial",
+                "character_disclosure",
+                "reader_misdirect",
+                "mixed_disclosure",
+                "withhold_disclosure",
+                "intra_chapter_missing",
+                "intra_chapter_cycle",
+                "manual_director",
+                "acceptance_recovery",
+                "provider_recovery",
+                "concurrent_workers",
+                "perturbed_foundation",
+            )
+        ],
+    ],
+)
+def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
+    request: pytest.FixtureRequest, autonomous_world: bool | str
+) -> None:
     test_case = request.node
     harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
+    chapter_pack_id = ""
+    if autonomous_world:
+        from copy import copy
+        chapter_pack = copy(harness)
+        chapter_pack.pack_id = f"world-chapter-{uuid4().hex}"
+        chapter_pack._base_manifest = deepcopy(harness._base_manifest)
+        chapter_pack._base_catalog = deepcopy(harness._base_catalog)
+        approved = chapter_pack.register_compile_approve("1.0.0", generation=1, approval_scope=chapter_pack.approval_scope(environments=("test",), runtime_profiles=("test",)), target_runtime_profile="test")
+        chapter_pack.register_agents(approved.compiled)
+        deployed = chapter_pack.deploy(approved, environment="test", runtime_profile="test")
+        chapter_pack.activate(deployed, environment="test")
+        chapter_pack_id = chapter_pack.pack_id
     _activate_planning_pack(harness)
     project_id = harness.project_id
     workspace_id = harness.workspace_id
@@ -1576,19 +1618,44 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
         "reader_promise",
     }
 
-    from tests.integration.narrative_reality_vertical_support import compiled_world_fixture
+    from tests.integration.narrative_reality_vertical_support import (
+        compiled_world_fixture,
+    )
+
     approved_world = compiled_world_fixture()
     if autonomous_world == "perturbed_foundation":
-        approved_world["entities"] = [{"entity_id": "faction:harbor", "kind": "FACTION"}]
+        approved_world["entities"] = [
+            {"entity_id": "faction:harbor", "kind": "FACTION"}
+        ]
         approved_world["rules"][0]["rule_id"] = "harbor-pressure"
-        approved_world["rules"][0]["predicate"].update(entity_key="world_state_id=harbor-pressure", value="RISING")
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=approved_world)
-    from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+        approved_world["rules"][0]["predicate"].update(
+            entity_key="world_state_id=harbor-pressure", value="RISING"
+        )
+    generic = _seed_inputs(
+        project_id, book_id, target_chapter_count=3, world_foundation=approved_world
+    )
+    from tests.integration.test_postgresql_only_chapter_slice import (
+        PostgreSQLOnlyChapterSliceTests,
+    )
+
     PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
     with transaction() as connection, connection.cursor() as cursor:
-        cursor.execute("UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s", [f"{project_id}:platform-profile-v1"])
-        cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'approval_decision')", [f"fixture:{project_id}:native-approval", project_id])
-        cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) SELECT %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',content,content_hash,'integration-fixture.v1' FROM authority_asset_version WHERE asset_version_id=%s", [f"fixture:{project_id}:native-approval:v1", f"fixture:{project_id}:native-approval", f"{project_id}:approval-v1"])
+        cursor.execute(
+            "UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s",
+            [f"{project_id}:platform-profile-v1"],
+        )
+        cursor.execute(
+            "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'approval_decision')",
+            [f"fixture:{project_id}:native-approval", project_id],
+        )
+        cursor.execute(
+            "INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) SELECT %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',content,content_hash,'integration-fixture.v1' FROM authority_asset_version WHERE asset_version_id=%s",
+            [
+                f"fixture:{project_id}:native-approval:v1",
+                f"fixture:{project_id}:native-approval",
+                f"{project_id}:approval-v1",
+            ],
+        )
     with transaction() as connection, connection.cursor() as cursor:
         for asset_type in ("reader_segment_profile", "reader_contract"):
             asset_id = f"fixture:{project_id}:opening:{asset_type}"
@@ -1651,14 +1718,31 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             "NOVEL_FORGE_PLANNING_MODEL": "scripted-planning-fixture",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id or "chapter_generation_pack",
         }
-        from tests.integration.narrative_reality_vertical_support import NativeRealityTransportFixture, execute_native_reality_vertical
+        from tests.integration.narrative_reality_vertical_support import (
+            NativeRealityTransportFixture,
+            execute_native_reality_vertical,
+        )
+
         if autonomous_world:
-            from tests.integration.world_causal_production_support import AutonomousWorldTransport
-            native_transport = AutonomousWorldTransport(scenario=autonomous_world if isinstance(autonomous_world, str) else "delayed_disclosure")
+            from tests.integration.world_causal_production_support import (
+                AutonomousWorldTransport,
+            )
+
+            native_transport = AutonomousWorldTransport(
+                scenario=autonomous_world
+                if isinstance(autonomous_world, str)
+                else "delayed_disclosure"
+            )
         else:
             native_transport = NativeRealityTransportFixture()
-        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=native_transport, planning_fixture_factory=native_transport.planning)
+        execution = build_production_execution_composition(
+            settings,
+            env=env,
+            chapter_fixture_factory=native_transport,
+            planning_fixture_factory=native_transport.planning,
+        )
         chapter_application = build_chapter_authority_application(
             settings, execution=execution, env=env
         )
@@ -1668,7 +1752,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             execution=execution,
             env=env,
             chapter_application=chapter_application,
-            planning_post_provider_fault_injector=native_transport.post_provider_checkpoint if autonomous_world else None,
+            planning_post_provider_fault_injector=native_transport.post_provider_checkpoint
+            if autonomous_world
+            else None,
         )
         request = OpenBookProductionRequest(
             project_id=project_id,
@@ -1826,7 +1912,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
         assert opened["book_design_version"] == generic["book_design"]
         assert snapshot.book_plan_version == opened["book_plan_version"]
         assert snapshot.current_volume_plan_version == opened["volume_plan_version"]
-        assert set(snapshot.arc_portfolio_plan_versions) == set(opened["arc_plan_versions"])
+        assert set(snapshot.arc_portfolio_plan_versions) == set(
+            opened["arc_plan_versions"]
+        )
         assert snapshot.initial_story_state_version == (generic["initial_story_state"])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -1899,13 +1987,39 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             assert budget_binding[2] == 1
 
         if autonomous_world:
-            from tests.integration.world_causal_production_support import execute_autonomous_world_vertical, capture_world_execution_evidence
-            native_evidence = execute_autonomous_world_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
-            native_evidence["authority_evidence"] = capture_world_execution_evidence(composition=composition, project_id=project_id, book_run_id=native_evidence["book_run_id"])
+            from tests.integration.world_causal_production_support import (
+                execute_autonomous_world_vertical,
+                capture_world_execution_evidence,
+            )
+
+            native_evidence = execute_autonomous_world_vertical(
+                composition=composition,
+                chapter_application=chapter_application,
+                snapshot=snapshot,
+                generic=generic,
+                transport=native_transport,
+                runtime_config={"root": root, "env": env},
+            )
+            native_evidence["authority_evidence"] = capture_world_execution_evidence(
+                composition=composition,
+                project_id=project_id,
+                book_run_id=native_evidence["book_run_id"],
+            )
         else:
-            native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
-        assert native_evidence["proof_ceiling"] == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
-        test_case.user_properties.append(("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True)))
+            native_evidence = execute_native_reality_vertical(
+                composition=composition,
+                chapter_application=chapter_application,
+                snapshot=snapshot,
+                generic=generic,
+                transport=native_transport,
+            )
+        assert (
+            native_evidence["proof_ceiling"]
+            == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
+        )
+        test_case.user_properties.append(
+            ("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True))
+        )
         execution.close()
 
 

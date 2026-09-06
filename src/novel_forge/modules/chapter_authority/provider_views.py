@@ -487,6 +487,9 @@ def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
     def clean(values: set[str]) -> list[str]:
         return sorted(value for value in values if value)
 
+    scoped_world = (plan.get("constraint_envelope") or {}).get(
+        "world_preparation", {}
+    ).get("action", {}).get("contract_version") == "world-production-action.v2"
     return {
         "contract_version": "chapter-task-narrative-projection-v1",
         "chapter": int(plan["chapter"]),
@@ -495,18 +498,58 @@ def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
             for key in ("volume_plan_version_id", "segment_id")
             if segment_ref.get(key)
         },
-        "authorized_epistemic_fact_refs": sorted(provider_accessible_fact_ids(plan)),
+        "authorized_epistemic_fact_refs": []
+        if scoped_world
+        else sorted(provider_accessible_fact_ids(plan)),
+        **(
+            {"scene_epistemic_scopes": _scene_epistemic_scopes(plan)}
+            if scoped_world
+            else {}
+        ),
         "character_ids": clean(characters),
         "arc_refs": clean(arcs),
         "fact_refs": clean(facts),
         "belief_refs": clean(beliefs),
         "disclosure_refs": clean(disclosures),
-        "authorized_disclosure_fact_refs": sorted({str(item["fact_id"]) for item in plan.get("disclosures") or () if isinstance(item, Mapping) and item.get("fact_id") and str(item.get("audience") or "").upper() in {"READER", "ALL"} and str(item.get("mode") or "").upper() in {"HINT", "PARTIAL", "MISDIRECT", "CONFIRM"}}),
+        **(
+            {"disclosure_field_projections": _world_disclosure_field_projections(plan)}
+            if (plan.get("constraint_envelope") or {})
+            .get("world_preparation", {})
+            .get("action", {})
+            .get("contract_version")
+            == "world-production-action.v2"
+            else {}
+        ),
+        "authorized_disclosure_fact_refs": sorted(
+            {
+                str(item["fact_id"])
+                for item in plan.get("disclosures") or ()
+                if isinstance(item, Mapping)
+                and item.get("fact_id")
+                and str(item.get("audience") or "").upper() in {"READER", "ALL"}
+                and str(item.get("mode") or "").upper()
+                in {"HINT", "PARTIAL", "MISDIRECT", "CONFIRM"}
+            }
+        ),
         "state_entity_refs": clean(state_entities),
         "obligation_refs": clean(obligations),
         "world_rule_refs": clean(world_rules),
         "character_development": character_development,
     }
+
+
+def _world_disclosure_field_projections(plan: Mapping[str, Any]) -> dict[str, Any]:
+    binding = (plan.get("constraint_envelope") or {}).get("world_preparation") or {}
+    action = binding.get("action") or {}
+    if action.get("contract_version") != "world-production-action.v2":
+        return {}
+    result = {}
+    for disclosure in action["world_plan"].get("disclosure_projection", []):
+        if disclosure["audience"] != "READER" or disclosure["mode"] == "WITHHOLD":
+            continue
+        entry = result.setdefault(disclosure["fact_id"], {"state": {}})
+        entry["state"].update(disclosure["source"]["state"])
+    return result
 
 
 def provider_accessible_fact_ids(plan: Mapping[str, Any]) -> set[str]:
@@ -523,15 +566,66 @@ def project_narrative_state_facts(
     chapter: int,
 ) -> list[dict[str, Any]]:
 
-    authorized_disclosures = set(projection.get("authorized_disclosure_fact_refs") or ())
-    from novel_forge.modules.narrative_state.information import disclosed_fact_projection
-    materialized = [disclosed_fact_projection(item) for item in facts if not (
-        ((item.get("state") or {}).get("fact_origin") or {}).get("kind") in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}
-        and str(item.get("source_event_id") or "") not in authorized_disclosures
-    )]
+    authorized_disclosures = set(
+        projection.get("authorized_disclosure_fact_refs") or ()
+    )
+    from novel_forge.modules.narrative_state.information import (
+        disclosed_fact_projection,
+    )
+
+    materialized = [
+        disclosed_fact_projection(item)
+        for item in facts
+        if not (
+            ((item.get("state") or {}).get("fact_origin") or {}).get("kind")
+            in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}
+            and str(item.get("source_event_id") or "") not in authorized_disclosures
+        )
+    ]
+    field_projections = projection.get("disclosure_field_projections") or {}
+    materialized = [
+        {**item, "state": deepcopy(field_projections[item["source_event_id"]]["state"])}
+        if item.get("source_event_id") in field_projections
+        else item
+        for item in materialized
+    ]
     if projection.get("contract_version") == "chapter-task-narrative-projection-v1":
         accessible = set(projection.get("authorized_epistemic_fact_refs") or ())
-        materialized = [item for item in materialized if item.get("state_kind") not in {"character_knowledge", "character_belief"} or str((item.get("state") or {}).get("fact_id") or (item.get("state") or {}).get("proposition_id") or "") in accessible]
+        scoped = projection.get("scene_epistemic_scopes")
+        projected = []
+        for item in materialized:
+            if item.get("state_kind") not in {
+                "character_knowledge",
+                "character_belief",
+            }:
+                projected.append(item)
+                continue
+            fact = str(
+                (item.get("state") or {}).get("fact_id")
+                or (item.get("state") or {}).get("proposition_id")
+                or ""
+            )
+            actor = str((item.get("state") or {}).get("character_id") or "")
+            if scoped is None:
+                if fact in accessible:
+                    projected.append(item)
+                continue
+            scenes = sorted(
+                row["scene_id"]
+                for row in scoped
+                if fact in row["character_fact_refs"].get(actor, [])
+            )
+            if scenes:
+                projected.append(
+                    {
+                        **item,
+                        "presentation_scope": {
+                            "scene_ids": scenes,
+                            "character_id": actor,
+                        },
+                    }
+                )
+        materialized = projected
     selectors = _selectors(projection, {})
     if not selectors:
         if len(materialized) <= _MAX_FACTS_PER_SEGMENT:
@@ -602,11 +696,33 @@ def build_provider_context_view(
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = task_view.get("world_preparation") or {}
         if context_bundle.get("world_preparation") != task:
-            raise KernelError("WORLD_CONTEXT_IDENTITY_MISMATCH", "world task differs from its frozen role Context")
-        return {"contract_version": "provider-context-view-v2", "stage": stage,
-                "source_isolation": "FROZEN_WORLD_ROLE_PROJECTION_ONLY", "protected": True,
-                "accepted_state_boundary": {"project_id": context_bundle["project_id"], "book_id": context_bundle["book_id"], "accepted_through_chapter": task["accepted_through_chapter"], "baseline_id": task["baseline_id"], "baseline_kind": task["baseline_kind"]},
-                "segments": [{"asset_version_id": task["source_ref"]["asset_version_id"], "role": task["role"], "content": {"source_ref": task["source_ref"], "context_projection_hash": task["projection_identity"]}}]}
+            raise KernelError(
+                "WORLD_CONTEXT_IDENTITY_MISMATCH",
+                "world task differs from its frozen role Context",
+            )
+        return {
+            "contract_version": "provider-context-view-v2",
+            "stage": stage,
+            "source_isolation": "FROZEN_WORLD_ROLE_PROJECTION_ONLY",
+            "protected": True,
+            "accepted_state_boundary": {
+                "project_id": context_bundle["project_id"],
+                "book_id": context_bundle["book_id"],
+                "accepted_through_chapter": task["accepted_through_chapter"],
+                "baseline_id": task["baseline_id"],
+                "baseline_kind": task["baseline_kind"],
+            },
+            "segments": [
+                {
+                    "asset_version_id": task["source_ref"]["asset_version_id"],
+                    "role": task["role"],
+                    "content": {
+                        "source_ref": task["source_ref"],
+                        "context_projection_hash": task["projection_identity"],
+                    },
+                }
+            ],
+        }
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
@@ -735,9 +851,23 @@ def build_provider_context_view(
         ]
         selected_facts = facts
         if asset_type in _STATE_ASSET_TYPES:
+            bounded_facts = (
+                project_narrative_state_facts(
+                    facts,
+                    projection=projection,
+                    chapter=int(
+                        (context_bundle.get("context_manifest") or {})
+                        .get("narrative_position", {})
+                        .get("chapter")
+                        or 0
+                    ),
+                )
+                if "disclosure_field_projections" in projection
+                else facts
+            )
             selected_facts = [
                 item
-                for item in facts
+                for item in bounded_facts
                 if item.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
                 if _state_fact_relevant(
                     item,
@@ -758,6 +888,15 @@ def build_provider_context_view(
             )
         omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
+        if (
+            asset_type in _STATE_ASSET_TYPES
+            and "disclosure_field_projections" in projection
+        ):
+            summary = (
+                json.dumps(selected_facts, ensure_ascii=False, sort_keys=True)
+                if selected_facts
+                else ""
+            )
         if not summary and not selected_facts:
             omitted_segments += 1
             continue
@@ -1752,3 +1891,29 @@ __all__ = [
     "build_task_narrative_projection",
     "project_narrative_state_facts",
 ]
+
+
+def _scene_epistemic_scopes(plan: Mapping[str, Any]) -> list[dict[str, Any]]:
+    known = {
+        item["character_id"]: set(item.get("known_fact_ids", []))
+        for item in plan.get("character_participation", [])
+    }
+    result = []
+    for scene in plan.get("scene_plan", []):
+        if not scene.get("scene_id"):
+            continue
+        actors = set(scene.get("participants", [])) | {
+            scene.get("pov_character_id", "")
+        }
+        facts = set(scene.get("accessible_knowledge", []))
+        result.append(
+            {
+                "scene_id": scene["scene_id"],
+                "character_fact_refs": {
+                    actor: sorted(facts & known.get(actor, set()))
+                    for actor in sorted(actors)
+                    if actor
+                },
+            }
+        )
+    return result

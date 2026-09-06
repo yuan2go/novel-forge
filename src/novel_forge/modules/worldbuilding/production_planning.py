@@ -94,7 +94,7 @@ def validate_generated_candidates(
             optional={"information_scope"},
         )
         information = candidate.get("information_scope")
-        if information is not None:
+        if information is not None and "disclosures" not in information:
             require_contract_fields(
                 information, required={"reader_exposure", "reveal_event_ids"}
             )
@@ -111,6 +111,22 @@ def validate_generated_candidates(
                 raise KernelError(
                     "WORLD_INFORMATION_SCOPE_INVALID",
                     "information scope must explicitly select or conceal accepted events",
+                )
+        if information is not None and "disclosures" in information:
+            require_contract_fields(information, required={"disclosures"})
+            rows = information["disclosures"]
+            if not isinstance(rows, list) or len(rows) > 8:
+                raise KernelError(
+                    "WORLD_INFORMATION_SCOPE_INVALID",
+                    "disclosure portfolio exceeds its frozen bound",
+                )
+            if any(
+                not isinstance(row, Mapping) or not row.get("disclosure_id")
+                for row in rows
+            ) or len({row["disclosure_id"] for row in rows}) != len(rows):
+                raise KernelError(
+                    "WORLD_INFORMATION_SCOPE_INVALID",
+                    "each audience presentation requires a distinct stable disclosure identity",
                 )
         transition = WorldTransition.from_mapping(candidate["transition"])
         if transition.transition_id in identities:
@@ -503,31 +519,24 @@ def compile_world_plan(
         if item.get("candidate_id") == selected["candidate"]["candidate_id"]
     )
     disclosure_projection = []
-    for event_id in selected_source["information_scope"]["reveal_event_ids"]:
-        entry = next(
-            (
-                entry
-                for entries in reality["current_state"].values()
-                for entry in entries
-                if entry.get("source_event_id") == event_id
-            ),
-            None,
-        )
-        if entry is None:
-            raise KernelError(
-                "WORLD_DISCLOSURE_SOURCE_UNKNOWN",
-                "planned disclosure must reference an exact accepted fact in the frozen scope",
-            )
+    from novel_forge.modules.narrative_state.information import project_disclosure
+
+    disclosure_projection.extend(
+        project_disclosure(reality, row)
+        for row in selected_source["information_scope"].get("disclosures", [])
+    )
+    for event_id in selected_source["information_scope"].get("reveal_event_ids", []):
         from novel_forge.modules.narrative_state.information import (
-            disclosed_fact_projection,
+            accepted_event_projection,
         )
 
+        entry = accepted_event_projection(reality, event_id)
         disclosure_projection.append(
             {
                 "fact_id": event_id,
                 "audience": "READER",
                 "mode": "CONFIRM",
-                "source": disclosed_fact_projection(entry),
+                "source": entry,
             }
         )
     return _seal(

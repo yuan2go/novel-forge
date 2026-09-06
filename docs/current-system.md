@@ -276,6 +276,12 @@ future Chapter windows and expected effects. Private preparation uses the Narrat
 State reducers but has no accepted authority. A target may cite its own declared preparation
 events: the complete path graph is validated before target eligibility, with exact historical
 references and path-local scope. Provider array order does not determine dependency order.
+Native planning resolves accepted preparation commitments before generating a fresh
+portfolio. Due steps retain their original action/path identity; accepted event mappings
+prevent duplicate execution, and fresh `NO_OP`/`DEFER` cannot discard them. Continuation
+records execution, waiting, deferral, blocking and cancellation decisions against the new
+frontier. An exact accepted effect from another event can support an unexecuted step,
+with a separate reuse receipt rather than a fabricated execution record.
 Planning completion cannot discharge a
 commitment: repayment requires an exact accepted predicate event. Approved replacement
 Intent can retire unfulfilled preparation while preserving its original decision and
@@ -295,7 +301,13 @@ Chapter Context exclude private world bindings and undisclosed background facts,
 including previous-outcome and retrieval summaries. A planned disclosure references
 an existing accepted event; only its accepted presentation changes the selected
 character or reader audience. It does not create the objective event again. Disclosure
-projects the selected fact without its private decision or causal explanation; hidden
+resolves exact historical occurrences through the accepted event index, even after the
+entity's current state advances. Historical occurrence and current assertion are distinct:
+a superseded state cannot be presented as a current assertion. Versioned audience policy
+selects scalar fields and an explicit mode; mixed audiences use separate records.
+Character-only disclosure does not expose hidden content to Reader-facing production.
+Partial presentation cannot expand into the full fact through Context or retrieval.
+Scene epistemic projections retain explicit Scene and Character scopes. Hidden
 preparation commitments remain outside the Reader view.
 
 Explicit batch-local event names and dependencies order same-chapter acceptance.

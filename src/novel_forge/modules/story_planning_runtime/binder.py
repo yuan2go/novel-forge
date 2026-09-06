@@ -160,7 +160,6 @@ class PlanningExecutionBundleResolver(Protocol):
 
 
 class PostgresPlanningExecutionBundleResolver:
-
     def __init__(
         self,
         database_url: str,
@@ -205,12 +204,26 @@ class PostgresPlanningExecutionBundleResolver:
         inputs: tuple[FrozenPlanningInput, ...],
         definition: GeneratorDefinition,
     ) -> PlanningExecutionBundle:
+        from novel_forge.modules.production_execution.postgres import (
+            PostgresAttemptFenceVerifier,
+        )
+
+        PostgresAttemptFenceVerifier(self.database_url).assert_recovery_current(
+            operation_id, attempt_id, fencing_token, worker_id
+        )
         attempt_snapshot = self.pack_resolver.freeze_attempt_snapshot(
             CapabilityPackResolutionRequest(
                 project_id=command.project_id,
                 workspace_id=command.workspace_id,
                 book_id=command.book_id,
-                workflow_definition_ref=("story_planning_generators@1.10.0" if command.execution_contract_version == "1.11.0" and self.workflow_definition_ref.startswith("story_planning_generators@") else self.workflow_definition_ref),
+                workflow_definition_ref=(
+                    "story_planning_generators@1.10.0"
+                    if command.execution_contract_version == "1.11.0"
+                    and self.workflow_definition_ref.startswith(
+                        "story_planning_generators@"
+                    )
+                    else self.workflow_definition_ref
+                ),
                 workflow_node_id=command.generator_operation_name,
                 environment=self.environment,
                 runtime_profile=self.runtime_profile,
@@ -365,7 +378,6 @@ class PlanningExecutionBinder(Protocol):
 
 
 class CapabilityPackBackedPlanningExecutionBinder:
-
     production_execution_gateway_backed = True
 
     def __init__(self, resolver: PlanningExecutionBundleResolver) -> None:
@@ -490,17 +502,14 @@ class CapabilityPackBackedPlanningExecutionBinder:
             )
         identity = (operation_id, attempt_id, fencing_token)
         if (
-            snapshot.operation_id,
-            snapshot.attempt_id,
-            snapshot.execution_fencing_token,
-        ) != identity or (
-            binding.operation_id,
-            binding.attempt_id,
-            binding.fencing_token,
-        ) != identity:
+            (snapshot.operation_id, snapshot.attempt_id) != (operation_id, attempt_id)
+            or not 0 < snapshot.execution_fencing_token <= fencing_token
+            or (binding.operation_id, binding.attempt_id, binding.fencing_token)
+            != identity
+        ):
             raise KernelError(
                 "PLANNING_EXECUTION_ATTEMPT_DRIFT",
-                "Pack Snapshot and Capability binding must use one Attempt fence",
+                "Frozen Pack provenance must belong to this Attempt and the Capability binding must use its verified current fence",
             )
         execution_snapshot = snapshot.execution_snapshot
         if (

@@ -3925,7 +3925,11 @@ class PostgresPlanningExecutionPreparer:
         stage_identity: str,
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
-        suffix = command.planning_scope.value.lower() if stage_identity == "planning" else stage_identity.replace(".", "_")
+        suffix = (
+            command.planning_scope.value.lower()
+            if stage_identity == "planning"
+            else stage_identity.replace(".", "_")
+        )
         profile_id = f"planning.{suffix}.default"
         profile = ModelProfile(
             profile_id=profile_id,
@@ -3964,12 +3968,13 @@ class PostgresPlanningExecutionPreparer:
             book_id=command.book_id,
         )
         context_ref = f"asset-version:{context_document.asset_version_id}"
-        route_ref = "production_execution/routes/" + _token(
+        execution_identity = (
             f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
         )
-        input_ref = "production_execution/inputs/" + _token(
-            f"{command.project_id}:{operation_id}:{attempt_id}:{stage_identity}"
-        )
+        if fencing_token > 1:
+            execution_identity += f":fence:{fencing_token}"
+        route_ref = "production_execution/routes/" + _token(execution_identity)
+        input_ref = "production_execution/inputs/" + _token(execution_identity)
         pointers = (
             ArtifactPointer(
                 artifact_ref=context_ref,
@@ -4115,7 +4120,10 @@ class PostgresPlanningExecutionPreparer:
             # each Operation Attempt owns one gateway execution record.  Reusing
             # the execution_id would conflict with the new Attempt fence and
             # budget reservation even though the Effect itself is unchanged.
-            execution_id=f"planning-execution:{effect_id}:{attempt_id}",
+            execution_id=(
+                f"planning-execution:{effect_id}:{attempt_id}"
+                + (f":fence:{fencing_token}" if fencing_token > 1 else "")
+            ),
             operation_id=operation_id,
             root_operation_id=graph["root_operation_id"],
             saga_id=graph["saga_id"],

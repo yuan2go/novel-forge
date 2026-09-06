@@ -382,3 +382,243 @@ def test_preparation_topology_is_independent_of_provider_array_order():
     assert before["candidates"][0]["preparation_paths"][0]["steps"] == list(
         reversed(path["steps"])
     )
+
+
+def test_continuation_never_treats_plan_success_as_accepted_completion():
+    from novel_forge.modules.worldbuilding.continuation import decide_preparation
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    original = compile_world_plan(
+        reality=reality_state(),
+        generated=generated_paths(),
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    origin = {
+        "asset_version_id": "action:original",
+        "content_hash": "sha256:origin",
+        "action": {"world_plan": original},
+    }
+    reality = reality_state()
+    due = decide_preparation(
+        reality=reality,
+        origin=origin,
+        accepted_steps={},
+        chapter_number=3,
+        intent_version_id="intent:1",
+    )
+    assert due["status"] == "EXECUTE" and not due["execute_target"]
+    assert due["due_transitions"][0]["transition_id"] == "gather"
+    unsupported = decide_preparation(
+        reality=reality,
+        origin=origin,
+        accepted_steps={"gather": "accepted:gather"},
+        chapter_number=3,
+        intent_version_id="intent:1",
+    )
+    assert unsupported["status"] == "WAIT_PRECONDITION"
+    assert not unsupported["due_transitions"]
+    retired = decide_preparation(
+        reality=reality,
+        origin=origin,
+        accepted_steps={},
+        chapter_number=3,
+        intent_version_id="intent:replacement",
+    )
+    assert (
+        retired["status"] == "CANCEL"
+        and retired["reason"] == "APPROVED_INTENT_REPLACED"
+    )
+    assert not retired["accepted_step_mapping"]
+    expired = decide_preparation(
+        reality=reality,
+        origin=origin,
+        accepted_steps={},
+        chapter_number=6,
+        intent_version_id="intent:1",
+    )
+    assert (
+        expired["status"] == "CANCEL"
+        and expired["reason"] == "PREPARATION_WINDOW_EXPIRED"
+    )
+    completed = decide_preparation(
+        reality=reality,
+        origin=origin,
+        accepted_steps={"departure": "accepted:goal"},
+        chapter_number=3,
+        intent_version_id="intent:replacement",
+    )
+    assert completed["status"] == "COMPLETE"
+    assert completed["accepted_step_mapping"] == {"departure": "accepted:goal"}
+    assert original["chapter_number"] == 2
+
+
+def test_disclosure_resolves_an_accepted_occurrence_after_current_state_moves_on():
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    reality = reality_state()
+    reality["chapter_number"] = 3
+    reality["current_state"]["world_state"] = [
+        {
+            "entity_key": "world_state_id=decree",
+            "source_event_id": "event:E2",
+            "state": {"world_state_id": "decree", "status": "SUPERSEDED"},
+        }
+    ]
+    reality["events"].append(
+        {
+            "event_id": "event:E1",
+            "scope": {"project_id": "project", "book_id": "book"},
+            "state_kind": "world_state",
+            "identity": {"entity_key": "world_state_id=decree"},
+            "mutation": {
+                "payload": {
+                    "world_state_id": "decree",
+                    "status": "ISSUED",
+                    "fact_origin": {
+                        "kind": "GOVERNED_BACKGROUND",
+                        "private_rationale": "secret motive",
+                    },
+                }
+            },
+            "coordinate": {"source_chapter": 1},
+            "provenance": {"chapter_outcome_id": "accepted:1"},
+        }
+    )
+    generated = generated_paths()
+    item = generated["candidates"][0]
+    item["preparation_paths"] = []
+    item["transition"].update(
+        state_kind="disclosure_event",
+        entity_key="disclosure_id=old-decree",
+        requirements=[],
+        cause_refs=["event:E1"],
+        changes={
+            "disclosure_id": "old-decree",
+            "fact_id": "event:E1",
+            "audience": "READER",
+            "disclosure_mode": "CONFIRM",
+        },
+    )
+    item["information_scope"] = {
+        "reader_exposure": "REVEAL",
+        "reveal_event_ids": ["event:E1"],
+    }
+    judged = evaluation()
+    judged["evaluations"][0]["preferred_path_id"] = ""
+    result = compile_world_plan(
+        reality=reality,
+        generated=generated,
+        evaluation=judged,
+        policy=WorldProductionPolicy(),
+        chapter_number=4,
+        intent_version_id="intent:1",
+    )
+    disclosure = result["disclosure_projection"][0]
+    assert disclosure["fact_id"] == "event:E1"
+    assert disclosure["source"]["state"]["status"] == "ISSUED"
+    assert "secret motive" not in json.dumps(disclosure)
+    assert reality["current_state"]["world_state"][0]["source_event_id"] == "event:E2"
+
+
+@pytest.mark.parametrize(
+    "audience,mode",
+    [
+        ("READER", "PARTIAL"),
+        ("hero", "CONFIRM"),
+        ("READER", "MISDIRECT"),
+        ("READER", "WITHHOLD"),
+    ],
+)
+def test_disclosure_projection_exposes_only_the_requested_audience_fields(
+    audience, mode
+):
+    from novel_forge.modules.narrative_state.information import project_disclosure
+
+    reality = reality_state()
+    reality["approved_character_ids"] = ["hero"]
+    reality["current_state"]["world_state"] = [
+        {
+            "entity_key": "world_state_id=decree",
+            "source_event_id": "event:E1",
+            "state": {
+                "status": "ISSUED",
+                "secret": "The council hid the heir.",
+                "fact_origin": {
+                    "kind": "GOVERNED_BACKGROUND",
+                    "cause": "hidden motive",
+                },
+            },
+        }
+    ]
+    result = project_disclosure(
+        reality,
+        {
+            "disclosure_id": "notice",
+            "event_id": "event:E1",
+            "audience": audience,
+            "mode": mode,
+            "fields": [] if mode == "WITHHOLD" else ["status"],
+            "presentation_channel": "LETTER",
+            "claim_kind": "CURRENT_ASSERTION",
+        },
+    )
+    assert result["audience"] == audience and result["mode"] == mode
+    assert "secret" not in json.dumps(result) and "hidden motive" not in json.dumps(
+        result
+    )
+    if audience != "READER" or mode == "WITHHOLD":
+        assert not result["source"].get("state")
+    else:
+        assert result["source"]["state"] == {"status": "ISSUED"}
+    assert not reality["current_state"].get("reader_knowledge")
+
+
+def test_continuation_reuses_an_exact_accepted_effect_without_reexecuting_a_step():
+    from novel_forge.modules.worldbuilding.continuation import decide_preparation
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+
+    generated = generated_paths()
+    generated["candidates"][0]["transition"]["cause_refs"] = ["local:gather"]
+    original = compile_world_plan(
+        reality=reality_state(),
+        generated=generated,
+        evaluation=evaluation(),
+        policy=WorldProductionPolicy(),
+        chapter_number=2,
+        intent_version_id="intent:1",
+    )
+    reality = reality_state()
+    resource = reality["current_state"]["resource_state"][0]
+    resource["state"]["balance"] = 3
+    resource["source_event_id"] = "accepted:other-supplier"
+    decision = decide_preparation(
+        reality=reality,
+        origin={
+            "asset_version_id": "action:original",
+            "content_hash": "sha256:original",
+            "action": {"world_plan": original},
+        },
+        accepted_steps={},
+        chapter_number=3,
+        intent_version_id="intent:1",
+    )
+    assert decision["status"] == "EXECUTE" and decision["execute_target"]
+    assert decision["due_transitions"][0]["cause_refs"] == ["accepted:other-supplier"]
+    assert decision["accepted_step_mapping"] == {}
+    assert (
+        decision["reused_effect_evidence"]["gather"]["event_id"]
+        == "accepted:other-supplier"
+    )
+    assert original["preparation_schedule"][0]["status"] == "PLANNED_NOT_ACCEPTED"

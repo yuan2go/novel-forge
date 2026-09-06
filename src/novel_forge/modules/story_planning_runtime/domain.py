@@ -15,7 +15,7 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.12.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.13.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.11.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -273,18 +273,47 @@ class StoryPlanningGenerationCommand:
     narrative_realization: Mapping[str, Any] | None = None
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.12.0"
+    execution_contract_version: str = "1.13.0"
 
     def __post_init__(self) -> None:
-        if self.execution_contract_version not in {"1.11.0", "1.12.0"} or (self.execution_contract_version == "1.11.0" and self.world_preparation_request):
-            raise ValueError("historical Planning commands cannot acquire new world stages")
+        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0"} or (
+            self.execution_contract_version == "1.11.0"
+            and self.world_preparation_request
+        ):
+            raise ValueError(
+                "historical Planning commands cannot acquire new world stages"
+            )
         if self.world_preparation_request:
-            from novel_forge.modules.worldbuilding.dynamics import require_contract_fields
+            from novel_forge.modules.worldbuilding.dynamics import (
+                require_contract_fields,
+            )
 
-            require_contract_fields(self.world_preparation_request, required={"book_run_id", "input_snapshot_id", "accepted_through_chapter", "story_state_version_id", "canon_version_id"}, optional={"planning_input_refs"})
-            if self.generator_operation_name != "chapter_plan.generate" or not self.world_preparation_request["book_run_id"] or not self.world_preparation_request["input_snapshot_id"]:
-                raise ValueError("world preparation belongs to native Book Chapter planning")
-            object.__setattr__(self, "world_preparation_request", _json_object_snapshot(self.world_preparation_request, "world_preparation_request"))
+            require_contract_fields(
+                self.world_preparation_request,
+                required={
+                    "book_run_id",
+                    "input_snapshot_id",
+                    "accepted_through_chapter",
+                    "story_state_version_id",
+                    "canon_version_id",
+                },
+                optional={"planning_input_refs"},
+            )
+            if (
+                self.generator_operation_name != "chapter_plan.generate"
+                or not self.world_preparation_request["book_run_id"]
+                or not self.world_preparation_request["input_snapshot_id"]
+            ):
+                raise ValueError(
+                    "world preparation belongs to native Book Chapter planning"
+                )
+            object.__setattr__(
+                self,
+                "world_preparation_request",
+                _json_object_snapshot(
+                    self.world_preparation_request, "world_preparation_request"
+                ),
+            )
         required = (
             self.project_id,
             self.workspace_id,

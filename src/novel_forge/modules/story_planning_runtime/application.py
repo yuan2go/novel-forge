@@ -273,7 +273,11 @@ class StoryPlanningGenerationHandlerRegistry:
         self, definition_name: str, definition_version: str
     ) -> AuthorityHandlerRegistration:
         item = self.items.get(definition_name)
-        if item is None or definition_version not in {STORY_PLANNING_GENERATION_VERSION, "1.11.0"}:
+        if item is None or definition_version not in {
+            STORY_PLANNING_GENERATION_VERSION,
+            "1.11.0",
+            "1.12.0",
+        }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
 
@@ -1202,36 +1206,88 @@ class StoryPlanningGenerationApplication:
         self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
         return projection
 
-    def _terminal_generation_replay(self, command: StoryPlanningGenerationCommand, *, principal: Principal) -> PlanningGenerationResult | None:
+    def _terminal_generation_replay(
+        self, command: StoryPlanningGenerationCommand, *, principal: Principal
+    ) -> PlanningGenerationResult | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute("SELECT op.operation_id, op.command_payload->'payload', op.status, g.status, g.candidate_asset_version_id FROM authority_operation op LEFT JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND op.definition_name=%s AND op.idempotency_scope='book:story-planning-generation' AND op.idempotency_key=%s", [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key])
+            uow.cursor.execute(
+                "SELECT op.operation_id, op.command_payload->'payload', op.status, g.status, g.candidate_asset_version_id FROM authority_operation op LEFT JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND op.definition_name=%s AND op.idempotency_scope='book:story-planning-generation' AND op.idempotency_key=%s",
+                [
+                    command.project_id,
+                    STORY_PLANNING_GENERATION_DEFINITION,
+                    command.idempotency_key,
+                ],
+            )
             row = uow.cursor.fetchone()
         if row is None:
-            if command.execution_contract_version != "1.12.0":
-                raise KernelError("PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY", "historical Planning definitions may only resume their already admitted commands")
+            if command.execution_contract_version != "1.13.0":
+                raise KernelError(
+                    "PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY",
+                    "historical Planning definitions may only resume their already admitted commands",
+                )
             return None
         if dict(row[1]) != _command_payload(command):
-            raise KernelError("PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT", "replay must use the exact immutable admitted Planning command")
+            raise KernelError(
+                "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
+                "replay must use the exact immutable admitted Planning command",
+            )
         if row[2] != "SUCCEEDED" or not row[4]:
             return None
-        state = self.story_design.require(project_id=command.project_id, asset_version_id=str(row[4]))
+        state = self.story_design.require(
+            project_id=command.project_id, asset_version_id=str(row[4])
+        )
         if row[3] == "REPAIR_REQUIRED":
             with AuthorityUnitOfWork(self.database_url) as uow:
-                uow.cursor.execute("SELECT report, report_hash FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL' ORDER BY created_at DESC, validation_report_id DESC LIMIT 1", [row[4]])
+                uow.cursor.execute(
+                    "SELECT report, report_hash FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL' ORDER BY created_at DESC, validation_report_id DESC LIMIT 1",
+                    [row[4]],
+                )
                 failed = uow.cursor.fetchone()
             if failed:
-                if command.execution_contract_version == "1.12.0":
+                if command.execution_contract_version in {"1.12.0", "1.13.0"}:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
-                    maximum = definition.maximum_semantic_repairs if failed[0]["validation_kind"] == "SEMANTIC" else definition.maximum_structural_regenerations
+                    maximum = (
+                        definition.maximum_semantic_repairs
+                        if failed[0]["validation_kind"] == "SEMANTIC"
+                        else definition.maximum_structural_regenerations
+                    )
                     if command.repair_number >= maximum:
-                        raise KernelError("PLANNING_REPAIR_BOUND_EXCEEDED", "a retained repair cannot expand its frozen attempt bound")
-                    repaired = replace(command, repair_of_candidate_id=str(row[4]), repair_reason=f"{failed[0]['error_code']}:{failed[1]}", repair_number=command.repair_number + 1, idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}")
+                        raise KernelError(
+                            "PLANNING_REPAIR_BOUND_EXCEEDED",
+                            "a retained repair cannot expand its frozen attempt bound",
+                        )
+                    repaired = replace(
+                        command,
+                        repair_of_candidate_id=str(row[4]),
+                        repair_reason=f"{failed[0]['error_code']}:{failed[1]}",
+                        repair_number=command.repair_number + 1,
+                        idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}",
+                    )
                     return self.generate(repaired, principal=principal)
-                return PlanningGenerationResult(str(row[0]), str(row[4]), PlanningGenerationStatus.REPAIR_REQUIRED, state, replayed=True)
+                return PlanningGenerationResult(
+                    str(row[0]),
+                    str(row[4]),
+                    PlanningGenerationStatus.REPAIR_REQUIRED,
+                    state,
+                    replayed=True,
+                )
         if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
             return None
-        binding = self.planning.require_binding(project_id=command.project_id, asset_version_id=str(row[4])) if state["lifecycle"] == "ACTIVE" else None
-        return PlanningGenerationResult(str(row[0]), str(row[4]), PlanningGenerationStatus(state["lifecycle"]), state, binding, True)
+        binding = (
+            self.planning.require_binding(
+                project_id=command.project_id, asset_version_id=str(row[4])
+            )
+            if state["lifecycle"] == "ACTIVE"
+            else None
+        )
+        return PlanningGenerationResult(
+            str(row[0]),
+            str(row[4]),
+            PlanningGenerationStatus(state["lifecycle"]),
+            state,
+            binding,
+            True,
+        )
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

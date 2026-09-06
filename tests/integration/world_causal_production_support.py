@@ -197,7 +197,83 @@ class AutonomousWorldTransport:
                     }
                 ],
             }
-            if self.scenario == "causal_preparation":
+            if self.scenario in {
+                "reader_partial",
+                "character_disclosure",
+                "reader_misdirect",
+                "mixed_disclosure",
+                "withhold_disclosure",
+            }:
+                proposed["changes"]["private_marker"] = (
+                    "UNREVEALED_SUCCESSOR_AND_PRIVATE_CAUSE"
+                )
+                result["candidates"][0]["transition"] = {
+                    "payload_json": json.dumps(proposed)
+                }
+            if self.scenario == "multi_preparation":
+                from copy import deepcopy
+
+                if task["accepted_through_chapter"]:
+                    result = {
+                        "disposition": "NO_OP"
+                        if task["accepted_through_chapter"] == 1
+                        else "DEFER",
+                        "reason": "Continue existing accepted preparation before inventing another future.",
+                        "candidates": [],
+                    }
+                else:
+                    first = deepcopy(proposed)
+                    first.update(
+                        transition_id="gather-records",
+                        changes={**proposed["changes"], "phase": 1},
+                    )
+                    second = deepcopy(first)
+                    second.update(
+                        transition_id="verify-records",
+                        cause_refs=["local:gather-records"],
+                        changes={**proposed["changes"], "phase": 2},
+                    )
+                    second["story_time"].update(
+                        start_ordinal=tick + 1, end_ordinal=tick + 1
+                    )
+                    proposed.update(
+                        transition_id="resolve-inquiry",
+                        cause_refs=["local:verify-records"],
+                        changes={**proposed["changes"], "goal_reached": True},
+                        requirements=[
+                            {
+                                "requirement_id": "records-verified",
+                                "state_kind": predicate["state_kind"],
+                                "entity_key": predicate["entity_key"],
+                                "field": "phase",
+                                "operator": "EQUALS",
+                                "value": 2,
+                            }
+                        ],
+                    )
+                    proposed["story_time"].update(
+                        start_ordinal=tick + 2, end_ordinal=tick + 2
+                    )
+                    result["candidates"][0]["transition"] = {
+                        "payload_json": json.dumps(proposed)
+                    }
+                    result["candidates"][0]["preparation_paths"] = [
+                        {
+                            "path_id": "records-path",
+                            "rationale": "Records must be gathered before verification before resolution.",
+                            "steps": [
+                                {
+                                    "chapter_offset": 0,
+                                    "transition": {"payload_json": json.dumps(first)},
+                                },
+                                {
+                                    "chapter_offset": 1,
+                                    "transition": {"payload_json": json.dumps(second)},
+                                },
+                            ],
+                        }
+                    ]
+            elif self.scenario == "causal_preparation":
                 from copy import deepcopy
 
                 step = deepcopy(proposed)
@@ -236,6 +312,15 @@ class AutonomousWorldTransport:
                         ],
                     }
                 ]
+            elif (
+                self.scenario == "historical_disclosure"
+                and task["accepted_through_chapter"] == 1
+            ):
+                proposed["transition_id"] = "subsequent-faction-event"
+                proposed["changes"]["phase"] = 2
+                result["candidates"][0]["transition"] = {
+                    "payload_json": json.dumps(proposed)
+                }
             elif task["accepted_through_chapter"]:
                 hidden = next(
                     entry
@@ -243,6 +328,17 @@ class AutonomousWorldTransport:
                     if (entry["state"].get("fact_origin") or {}).get("kind")
                     == "GOVERNED_BACKGROUND"
                 )
+                if self.scenario == "historical_disclosure":
+                    prior_event = min(
+                        (
+                            item
+                            for item in task["accepted_history"]
+                            if item["state_kind"] == "world_state"
+                        ),
+                        key=lambda item: item["accepted_chapter"],
+                    )
+                    assert prior_event["accepted_chapter"] == 1
+                    hidden = {"source_event_id": prior_event["event_id"]}
                 proposed.update(
                     {
                         "transition_id": "reveal-accepted-notice",
@@ -265,6 +361,46 @@ class AutonomousWorldTransport:
                     "reader_exposure": "REVEAL",
                     "reveal_event_ids": [hidden["source_event_id"]],
                 }
+            if task.get("disclosure_contract") == "world-information-scope.v2":
+                for candidate in result["candidates"]:
+                    information = candidate["information_scope"]
+                    audience = (
+                        task["character_definitions"][0]["character_id"]
+                        if self.scenario == "character_disclosure"
+                        else "READER"
+                    )
+                    mode = {
+                        "reader_partial": "PARTIAL",
+                        "reader_misdirect": "MISDIRECT",
+                        "withhold_disclosure": "WITHHOLD",
+                    }.get(self.scenario, "CONFIRM")
+                    rows = [
+                        {
+                            "disclosure_id": "accepted-notice",
+                            "event_id": event_id,
+                            "audience": audience,
+                            "mode": mode,
+                            "fields": [] if mode == "WITHHOLD" else ["status"],
+                            "presentation_channel": "LETTER",
+                            "claim_kind": "HISTORICAL_OCCURRENCE",
+                        }
+                        for event_id in information["reveal_event_ids"]
+                    ]
+                    if rows and self.scenario == "mixed_disclosure":
+                        rows.append(
+                            {
+                                **rows[0],
+                                "disclosure_id": "character-notice",
+                                "audience": task["character_definitions"][0][
+                                    "character_id"
+                                ],
+                            }
+                        )
+                    candidate["information_scope"] = {"disclosures": rows}
+                    if rows:
+                        raw = json.loads(candidate["transition"]["payload_json"])
+                        raw["changes"].update(audience=audience, disclosure_mode=mode)
+                        candidate["transition"]["payload_json"] = json.dumps(raw)
         elif stage == "world_candidates.evaluate":
             from novel_forge.modules.hierarchical_planning.causal_domain import (
                 DIRECTOR_DIMENSIONS,
@@ -291,20 +427,34 @@ class AutonomousWorldTransport:
                 ):
                     result["disclosures"].append(
                         {
-                            "disclosure_id": "accepted-notice",
+                            "disclosure_id": disclosure.get(
+                                "disclosure_id", "accepted-notice"
+                            ),
                             "fact_id": disclosure["fact_id"],
-                            "audience": "READER",
-                            "mode": "CONFIRM",
-                            "presentation_channel": "DOCUMENT",
+                            "audience": disclosure["audience"],
+                            "mode": disclosure["mode"],
+                            "presentation_channel": disclosure.get(
+                                "presentation_channel", "DOCUMENT"
+                            ),
                             "earliest_chapter": result["chapter_number"],
                         }
                     )
                     result["knowledge_boundaries"].append(
                         {
-                            "layer": "READER_KNOWLEDGE",
-                            "subject_id": "reader",
+                            "layer": "READER_KNOWLEDGE"
+                            if disclosure["audience"] == "READER"
+                            else "CHARACTER_KNOWLEDGE",
+                            "subject_id": "reader"
+                            if disclosure["audience"] == "READER"
+                            else disclosure["audience"],
                             "fact_id": disclosure["fact_id"],
-                            "status": "KNOWN",
+                            "status": {
+                                "CONFIRM": "KNOWN",
+                                "PARTIAL": "SUSPECTED",
+                                "HINT": "HINTED",
+                                "MISDIRECT": "MISDIRECTED",
+                                "WITHHOLD": "WITHHELD",
+                            }[disclosure["mode"]],
                             "available_from_chapter": result["chapter_number"],
                         }
                     )
@@ -314,7 +464,15 @@ class AutonomousWorldTransport:
     def __call__(self, stage, inputs):
         self.calls.append({"stage": stage, "input": json.loads(json.dumps(inputs))})
         result = default_chapter_fixture_response(stage, inputs)
-        prose = "The dated notice confirms that the council inquiry was already open."
+        prose = {
+            "character_disclosure": "Mara reads the sealed notice and understands it; its contents remain unquoted.",
+            "reader_partial": "The notice hints at an earlier inquiry but withholds its concealed participants.",
+            "reader_misdirect": "The notice presents a misleading impression of the earlier inquiry.",
+            "withhold_disclosure": "The sealed notice remains unread and its contents remain hidden.",
+        }.get(
+            self.scenario,
+            "The dated notice confirms that the council inquiry was already open.",
+        )
         if stage == "draft" and any(
             item["disclosure_id"] == "accepted-notice"
             for item in inputs["plan"].get("disclosures", [])
@@ -412,7 +570,10 @@ class AutonomousWorldTransport:
             for disclosure in inputs.get("execution_expectations", {}).get(
                 "disclosures", []
             ):
-                if disclosure["disclosure_id"] != "accepted-notice":
+                if disclosure["disclosure_id"] not in {
+                    "accepted-notice",
+                    "character-notice",
+                }:
                     continue
                 text = inputs["revision"]["text"]
                 start = text.index(prose)
@@ -425,9 +586,9 @@ class AutonomousWorldTransport:
                     {
                         "disclosure_id": disclosure["disclosure_id"],
                         "fact_id": disclosure["fact_id"],
-                        "audience": "READER",
-                        "disclosure_mode": "CONFIRM",
-                        "presentation_channel": "DOCUMENT",
+                        "audience": disclosure["audience"],
+                        "disclosure_mode": disclosure["mode"],
+                        "presentation_channel": disclosure["presentation_channel"],
                         "summary": prose,
                         "evidence_start": start,
                         "evidence_end": start + len(prose),
@@ -445,7 +606,13 @@ class AutonomousWorldTransport:
 
 
 def execute_autonomous_world_vertical(
-    *, composition, chapter_application, snapshot, generic, transport
+    *,
+    composition,
+    chapter_application,
+    snapshot,
+    generic,
+    transport,
+    runtime_config=None,
 ):
     from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -466,6 +633,17 @@ def execute_autonomous_world_vertical(
     admitted = admit_native_production(
         composition=composition, snapshot=snapshot, generic=generic
     )
+    if transport.scenario == "process_recovery":
+        from tests.integration.world_process_recovery_support import (
+            run_process_recovery,
+        )
+
+        return run_process_recovery(
+            composition=composition,
+            runtime_config=runtime_config,
+            book_run_id=admitted.book_run_id,
+            project_id=snapshot.project_id,
+        )
     jobs = RuntimeJobAuthority(composition.authority.database_url)
     coordination = []
     first_reality = None
@@ -759,7 +937,7 @@ def execute_autonomous_world_vertical(
                     for edge in why["edges"]
                 )
                 assert "local:receive-message" not in why["external_evidence_refs"]
-            if transport.scenario == "causal_preparation":
+            if transport.scenario in {"causal_preparation", "multi_preparation"}:
                 debts = [
                     entry["state"]
                     for entry in reality["current_state"]["narrative_obligation"]
@@ -811,6 +989,69 @@ def execute_autonomous_world_vertical(
                     "reality_revision_id": reality["revision_id"],
                     "background_event_ids": [event["event_id"] for event in background],
                 }
+        if (
+            transport.scenario == "multi_preparation"
+            and int(book["accepted_through_chapter"]) >= 2
+        ):
+            current = composition.query.narrative_reality(
+                book_run_id=admitted.book_run_id
+            )
+            state = next(
+                entry["state"]
+                for entry in current["current_state"]["world_state"]
+                if entry["entity_key"] == "world_state_id=council-inquiry"
+            )
+            assert state["phase"] == 2, (
+                "native scheduling must execute the due second step even when new generation says NO_OP"
+            )
+            if int(book["accepted_through_chapter"]) == 2:
+                assert not state.get("goal_reached")
+                continue
+            assert state["goal_reached"] is True
+            assert first_reality is not None
+            debts = [
+                entry["state"]
+                for entry in current["current_state"]["narrative_obligation"]
+                if entry["state"].get("obligation_type") == "CAUSAL_DEBT"
+            ]
+            assert len(debts) == 1 and debts[0]["status"] == "FULFILLED"
+            from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+
+            rebuilt = NarrativeStateRebuildService(
+                composition.authority.database_url
+            ).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
+            assert rebuilt.projection["current_state"] == current["current_state"]
+            return {
+                "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+                "scenario": transport.scenario,
+                "book_run_id": admitted.book_run_id,
+                "calls": transport.calls,
+                "reality_revision_id": current["revision_id"],
+                "first_reality_id": first_reality["revision_id"],
+            }
+        if (
+            transport.scenario == "historical_disclosure"
+            and int(book["accepted_through_chapter"]) == 2
+        ):
+            current = composition.query.narrative_reality(
+                book_run_id=admitted.book_run_id
+            )
+            first_event = next(
+                event
+                for event in first_reality["events"]
+                if event["mutation"]["payload"].get("fact_origin", {}).get("kind")
+                == "GOVERNED_BACKGROUND"
+            )
+            assert all(
+                entry["source_event_id"] != first_event["event_id"]
+                for entry in current["current_state"]["world_state"]
+            )
+            assert not any(
+                entry["state"].get("fact_id") == first_event["event_id"]
+                for kind in ("character_knowledge", "reader_knowledge")
+                for entry in current["current_state"][kind]
+            )
+            continue
         if int(book["accepted_through_chapter"]) >= 2:
             reality = composition.query.narrative_reality(
                 book_run_id=admitted.book_run_id
@@ -824,11 +1065,28 @@ def execute_autonomous_world_vertical(
             ]
             fact_id = background[0]["event_id"]
             if transport.scenario != "causal_preparation":
-                assert any(
-                    entry["state"].get("fact_id") == fact_id
-                    and entry["state"].get("status") == "KNOWN"
+                expected_reader = {
+                    "reader_partial": "SUSPECTED",
+                    "reader_misdirect": "MISDIRECTED",
+                    "character_disclosure": None,
+                    "withhold_disclosure": None,
+                }.get(transport.scenario, "KNOWN")
+                actual_reader = [
+                    entry["state"]
                     for entry in reality["current_state"]["reader_knowledge"]
-                )
+                    if entry["state"].get("fact_id") == fact_id
+                ]
+                assert (
+                    actual_reader[0]["status"] if actual_reader else None
+                ) == expected_reader
+                if transport.scenario in {
+                    "reader_partial",
+                    "reader_misdirect",
+                    "mixed_disclosure",
+                }:
+                    assert actual_reader[0]["disclosure_policy"][
+                        "presentation_projection"
+                    ] == {"status": "OPEN"}
                 assert not any(
                     (event["mutation"]["payload"].get("fact_origin") or {}).get("kind")
                     == "GOVERNED_BACKGROUND"
@@ -849,10 +1107,30 @@ def execute_autonomous_world_vertical(
                     entry["state"].get("goal_reached") is True
                     for entry in reality["current_state"]["world_state"]
                 )
-            assert not any(
-                entry["state"].get("fact_id") == fact_id
+            character_information = [
+                entry["state"]
                 for entry in reality["current_state"]["character_knowledge"]
+                if entry["state"].get("fact_id") == fact_id
+            ]
+            if transport.scenario in {"character_disclosure", "mixed_disclosure"}:
+                assert (
+                    len(character_information) == 1
+                    and character_information[0]["status"] == "KNOWN"
+                )
+            else:
+                assert not character_information
+            provider_requests = capture_final_provider_requests(
+                composition=composition, project_id=snapshot.project_id
             )
+            for request in provider_requests:
+                if request["stage"] not in {
+                    "world_candidates.generate",
+                    "world_candidates.evaluate",
+                }:
+                    assert (
+                        "UNREVEALED_SUCCESSOR_AND_PRIVATE_CAUSE"
+                        not in request["input_text"]
+                    ), {"stage": request["stage"], "leak_paths": _secret_paths(request)}
             assert (
                 composition.query.narrative_reality(
                     book_run_id=admitted.book_run_id, chapter_number=1
@@ -879,9 +1157,84 @@ def execute_autonomous_world_vertical(
                 "book_run_id": admitted.book_run_id,
                 "scenario": transport.scenario,
                 "calls": transport.calls,
+                "final_provider_requests": provider_requests,
                 "reality_revision_id": reality["revision_id"],
                 "background_event_ids": [event["event_id"] for event in background],
             }
     raise AssertionError(
         "autonomous production failed to reach one accepted Reality within its bounded schedule"
     )
+
+
+def _secret_paths(value, prefix=""):
+    if isinstance(value, dict):
+        return [
+            p
+            for key, item in value.items()
+            for p in _secret_paths(item, prefix + "." + str(key))
+        ]
+    if isinstance(value, list):
+        return [
+            p
+            for index, item in enumerate(value)
+            for p in _secret_paths(item, prefix + f"[{index}]")
+        ]
+    return [prefix] if "UNREVEALED_SUCCESSOR_AND_PRIVATE_CAUSE" in str(value) else []
+
+
+def capture_final_provider_requests(*, composition, project_id):
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.modules.chapter_authority.execution_gateway import (
+        PostgresProductionExecutionPayloadResolver,
+    )
+    from novel_forge.modules.production_execution.contracts import ExecutionRequest
+    from types import SimpleNamespace
+    from novel_forge.modules.production_execution.postgres import (
+        PostgresExecutionContractSource,
+    )
+
+    query = AuthorityAssetQuery(composition.authority.database_url)
+    contracts = PostgresExecutionContractSource(
+        composition.authority.database_url, project_id=project_id
+    )
+    resolver = PostgresProductionExecutionPayloadResolver(
+        composition.authority.database_url
+    )
+    result = []
+    for document in query.list(
+        project_id=project_id, asset_type="execution_recovery_session", limit=200
+    ):
+        request = ExecutionRequest.from_dict(document.content["record"]["request"])
+        if request.stage not in {
+            "world_candidates.generate",
+            "world_candidates.evaluate",
+            "chapter_plan.generate",
+            "draft",
+            "review",
+            "revision",
+            "canon_extraction",
+        } and not request.stage.startswith("quality_"):
+            continue
+        route = contracts.route_snapshot(request.route_snapshot_id)
+        admission = SimpleNamespace(route_snapshot=route)
+        try:
+            payload = resolver.resolve(request, admission)
+        except Exception as exc:
+            exc.add_note(f"Final payload replay stage={request.stage}, execution={request.execution_id}")
+            raise
+        result.append(
+            {
+                "execution_id": request.execution_id,
+                "stage": request.stage,
+                "external_effect_id": request.external_effect_id,
+                "input_text": payload.input_text,
+                "prompt_evidence": payload.capability_evidence,
+            }
+        )
+    assert {
+        "world_candidates.generate",
+        "world_candidates.evaluate",
+        "draft",
+        "canon_extraction",
+    }.issubset({row["stage"] for row in result})
+    return result

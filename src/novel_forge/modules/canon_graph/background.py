@@ -9,7 +9,10 @@ from novel_forge.modules.worldbuilding.dynamics import WorldTransition
 
 def scheduled_world_events(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
     action = binding["action"]
-    if action.get("contract_version") != "world-production-action.v1":
+    if action.get("contract_version") not in {
+        "world-production-action.v1",
+        "world-production-action.v2",
+    }:
         raise KernelError(
             "WORLD_ACTION_CONTRACT_INVALID", "unsupported frozen world action"
         )
@@ -102,9 +105,14 @@ def attach_background_proposals(
 ) -> dict[str, Any]:
     from .domain import HIGH_IMPACT_CHANGE_TYPES, SEMANTIC_CHANGE_FIELDS
 
-    result = deepcopy(extraction)
+    from .disclosure import bind_disclosure_policy
+
+    result = bind_disclosure_policy(extraction, binding)
     for field in SEMANTIC_CHANGE_FIELDS:
-        if any("fact_origin" in item for item in result.get(field, [])):
+        if any(
+            "fact_origin" in item or "preparation_lineage" in item
+            for item in result.get(field, [])
+        ):
             raise KernelError(
                 "WORLD_FACT_ORIGIN_FORGED",
                 "Observer cannot manufacture a governed background origin",
@@ -121,6 +129,39 @@ def attach_background_proposals(
     for raw in scheduled_world_events(binding):
         transition = WorldTransition.from_mapping(raw)
         if transition.camera == "ON_CAMERA":
+            if action["contract_version"] == "world-production-action.v2":
+                expected_lineage = preparation_lineage(
+                    binding, transition.transition_id
+                )
+                for item in result.get(fields.get(transition.state_kind.value, ""), []):
+                    if (item.get("causal_batch") or {}).get(
+                        "local_id"
+                    ) != transition.transition_id:
+                        continue
+                    identity = dict(
+                        part.split("=", 1) for part in transition.entity_key.split("|")
+                    )
+                    if any(
+                        item.get(key) != value
+                        for key, value in {**identity, **transition.changes}.items()
+                    ):
+                        raise KernelError(
+                            "WORLD_PREPARATION_OBSERVED_EFFECT_MISMATCH",
+                            "an observed preparation must match its exact scheduled identity and effects",
+                        )
+                    if item["causal_batch"].get("depends_on") != list(
+                        transition.cause_refs
+                    ):
+                        raise KernelError(
+                            "WORLD_PREPARATION_OBSERVED_CAUSE_MISMATCH",
+                            "the observed local event must preserve the scheduled prerequisites",
+                        )
+                    item["preparation_lineage"] = expected_lineage
+                    item["world_transition"] = {
+                        "payload_json": json.dumps(
+                            raw, sort_keys=True, separators=(",", ":")
+                        )
+                    }
             continue
         kind = transition.state_kind.value
         if kind in {
@@ -203,6 +244,10 @@ def attach_background_proposals(
                 "depends_on": list(transition.cause_refs),
             },
         }
+        if action["contract_version"] == "world-production-action.v2":
+            item["preparation_lineage"] = preparation_lineage(
+                binding, transition.transition_id
+            )
         result.setdefault(fields[kind], []).append(item)
         if major:
             result.setdefault("approval_required_changes", []).append(
@@ -235,3 +280,17 @@ def world_action_boundaries(binding: Mapping[str, Any]) -> tuple[str, ...]:
         if proposed.get("approval_required_changes") or selected.get("risks")
         else ("DIRECTOR",)
     )
+
+
+def preparation_lineage(
+    binding: Mapping[str, Any], transition_id: str
+) -> dict[str, str]:
+    plan = binding["action"]["world_plan"]
+    return {
+        "contract_version": "world-preparation-lineage.v1",
+        "origin_action_version_id": (plan.get("continuation_origin") or {}).get(
+            "asset_version_id", binding["asset_version_id"]
+        ),
+        "path_id": plan["selected_path_id"],
+        "transition_id": transition_id,
+    }

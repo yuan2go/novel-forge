@@ -364,3 +364,151 @@ def test_targeted_disclosure_exposes_the_fact_without_other_private_causes():
     assert "private-cause-marker" not in str(projected)
     assert "another-secret-event" not in str(projected)
     assert "secret-decision" not in str(projected)
+
+
+def test_partial_disclosure_cannot_expand_to_full_hidden_state_in_provider_context():
+    from novel_forge.modules.chapter_authority.provider_views import (
+        project_narrative_state_facts,
+    )
+
+    facts = [
+        {
+            "state_kind": "world_state",
+            "entity_key": "world_state_id=decree",
+            "source_event_id": "accepted:decree",
+            "state": {
+                "status": "ISSUED",
+                "secret": "hidden successor",
+                "fact_origin": {"kind": "GOVERNED_BACKGROUND"},
+            },
+        }
+    ]
+    projected = project_narrative_state_facts(
+        facts,
+        projection={
+            "authorized_disclosure_fact_refs": ["accepted:decree"],
+            "disclosure_field_projections": {
+                "accepted:decree": {"state": {"status": "ISSUED"}}
+            },
+        },
+        chapter=3,
+    )
+    assert projected[0]["state"] == {"status": "ISSUED"}
+    assert facts[0]["state"]["secret"] == "hidden successor"
+
+
+def test_observed_on_camera_preparation_gets_exact_scope_only_after_matching():
+    from novel_forge.modules.canon_graph.background import attach_background_proposals
+
+    frozen = binding()
+    frozen["action"]["contract_version"] = "world-production-action.v2"
+    frozen["action"]["world_plan"].update(
+        selected_path_id="path:selected", causal_debts=[]
+    )
+    frozen["frozen_source"] = {"reality": {"current_state": {}}}
+    transition = frozen["action"]["world_plan"]["candidate_futures"][0]["transition"]
+    transition["camera"] = "ON_CAMERA"
+    source = extraction()
+    source["faction_state_changes"] = [
+        {
+            "faction_id": "council",
+            "status": "MOBILISED",
+            "causal_batch": {
+                "contract_version": "causal-batch-event.v1",
+                "local_id": "council-moves",
+                "depends_on": ["foundation:world"],
+            },
+            "extraction_evidence": {"start": 4, "end": 18},
+        }
+    ]
+    result = attach_background_proposals(extraction=source, binding=frozen)
+    observed = result["faction_state_changes"][0]
+    assert observed["preparation_lineage"] == {
+        "contract_version": "world-preparation-lineage.v1",
+        "origin_action_version_id": "action",
+        "path_id": "path:selected",
+        "transition_id": "council-moves",
+    }
+    assert "fact_origin" not in observed
+    assert (
+        observed["extraction_evidence"]
+        == source["faction_state_changes"][0]["extraction_evidence"]
+    )
+    assert (
+        attach_background_proposals(extraction=extraction(), binding=frozen)[
+            "faction_state_changes"
+        ]
+        == []
+    )
+    source["faction_state_changes"][0]["status"] = "DISBANDED"
+    with pytest.raises(KernelError, match="WORLD_PREPARATION_OBSERVED_EFFECT_MISMATCH"):
+        attach_background_proposals(extraction=source, binding=frozen)
+
+
+def test_scene_epistemic_projection_preserves_each_scene_without_global_union():
+    from novel_forge.modules.chapter_authority.provider_views import (
+        build_task_narrative_projection,
+        project_narrative_state_facts,
+    )
+
+    plan = {
+        "chapter": 3,
+        "scene_plan": [
+            {
+                "scene_id": "A",
+                "pov_character_id": "alice",
+                "participants": ["alice"],
+                "focalization": "LIMITED",
+                "accessible_knowledge": ["fact:a"],
+            },
+            {
+                "scene_id": "B",
+                "pov_character_id": "bob",
+                "participants": ["bob"],
+                "focalization": "LIMITED",
+                "accessible_knowledge": ["fact:b"],
+            },
+        ],
+        "character_participation": [
+            {"character_id": "alice", "known_fact_ids": ["fact:a"]},
+            {"character_id": "bob", "known_fact_ids": ["fact:b"]},
+        ],
+        "constraint_envelope": {
+            "world_preparation": {
+                "action": {
+                    "contract_version": "world-production-action.v2",
+                    "world_plan": {},
+                }
+            }
+        },
+    }
+    facts = [
+        {
+            "state_kind": "character_knowledge",
+            "entity_key": f"character_id={actor}|fact_id=fact:{suffix}",
+            "source_event_id": f"accepted:{suffix}",
+            "state": {
+                "character_id": actor,
+                "fact_id": f"fact:{suffix}",
+                "status": "KNOWN",
+                "summary": f"Only {actor} knows this.",
+            },
+        }
+        for actor, suffix in [("alice", "a"), ("bob", "b")]
+    ]
+    projection = build_task_narrative_projection(plan)
+    result = project_narrative_state_facts(facts, projection=projection, chapter=3)
+    assert len(result) == 2
+    assert result[0]["presentation_scope"] == {
+        "scene_ids": ["A"],
+        "character_id": "alice",
+    }
+    assert result[1]["presentation_scope"] == {
+        "scene_ids": ["B"],
+        "character_id": "bob",
+    }
+    assert projection["authorized_epistemic_fact_refs"] == []
+    facts[1]["state"]["character_id"] = "alice"
+    assert (
+        len(project_narrative_state_facts(facts, projection=projection, chapter=3)) == 1
+    )
