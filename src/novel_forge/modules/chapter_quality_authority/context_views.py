@@ -284,9 +284,25 @@ def build_quality_context_view(
     elif group == "longform":
         previous_states = _group_state_segments(segments)
         candidates = dict(canon.get("state_changes") or {})
-        if (chapter_plan.get("constraint_envelope") or {}).get("world_preparation", {}).get("action", {}).get("contract_version") == "world-production-action.v2":
-            candidates = {kind: [item for item in changes if (item.get("fact_origin") or {}).get("kind") not in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}] for kind, changes in candidates.items()}
-            candidates = {kind: changes for kind, changes in candidates.items() if changes}
+        if (chapter_plan.get("constraint_envelope") or {}).get(
+            "world_preparation", {}
+        ).get("action", {}).get("contract_version") == "world-production-action.v2":
+            from novel_forge.modules.narrative_state.information import (
+                disclosed_fact_projection,
+            )
+
+            candidates = {
+                kind: [
+                    disclosed_fact_projection({"state": item})["state"]
+                    for item in changes
+                    if (item.get("fact_origin") or {}).get("kind")
+                    not in {"GOVERNED_BACKGROUND", "GOVERNED_PREPARATION"}
+                ]
+                for kind, changes in candidates.items()
+            }
+            candidates = {
+                kind: changes for kind, changes in candidates.items() if changes
+            }
         current_states = _group_current_state_candidates(candidates)
         body = {
             "type": "LongformQualityContextView",

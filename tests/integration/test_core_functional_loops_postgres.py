@@ -1506,6 +1506,7 @@ def _activate_plan_chain(
                 "smoke_command",
                 "on_camera_preparation",
                 "on_camera_missing",
+                "on_camera_observer_drift",
                 "preparation_expiry",
                 "reader_partial",
                 "character_disclosure",

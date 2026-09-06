@@ -33,6 +33,8 @@ from novel_forge.modules.chapter_authority.execution_artifacts import (
     validate_chapter_memo,
 )
 
+from novel_forge.modules.canon_graph.background import world_observation_constraints
+
 
 def build_chapter_plan(
     *,
@@ -393,6 +395,15 @@ def build_context_bundle(
         "forbidden_source_count": 0,
         "task_narrative_projection": task_narrative_projection,
         "chapter_execution_expectations": {
+            **(
+                {
+                    "world_observation_constraints": world_observation_constraints(
+                        plan["constraint_envelope"]["world_preparation"]
+                    )
+                }
+                if (plan.get("constraint_envelope") or {}).get("world_execution")
+                else {}
+            ),
             **(
                 {
                     "world_execution": dict(

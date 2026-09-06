@@ -420,6 +420,14 @@ def test_observed_on_camera_preparation_gets_exact_scope_only_after_matching():
                 "depends_on": ["foundation:world"],
             },
             "extraction_evidence": {"start": 4, "end": 18},
+            "world_transition": {
+                "payload_json": json.dumps(
+                    {
+                        **transition,
+                        "action": "The council actually mustered in the observed scene.",
+                    }
+                )
+            },
         }
     ]
     result = attach_background_proposals(extraction=source, binding=frozen)
@@ -431,6 +439,10 @@ def test_observed_on_camera_preparation_gets_exact_scope_only_after_matching():
         "transition_id": "council-moves",
     }
     assert "fact_origin" not in observed
+    assert (
+        json.loads(observed["world_transition"]["payload_json"])["action"]
+        == "The council actually mustered in the observed scene."
+    )
     assert (
         observed["extraction_evidence"]
         == source["faction_state_changes"][0]["extraction_evidence"]
@@ -535,3 +547,70 @@ def test_world_scene_owner_rejects_missing_unknown_or_duplicate_assignment(assig
     assert result["on_camera_events"][0]["scene_id"] == "scene:1"
     assert result["on_camera_events"][0]["cause_refs"] == ["foundation:world"]
     assert "private causal" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("fault", ["actor", "absent"])
+def test_on_camera_reconciliation_cannot_replace_missing_or_different_observed_cause(
+    fault,
+):
+    from novel_forge.modules.canon_graph.background import attach_background_proposals
+
+    frozen = binding()
+    frozen["action"]["contract_version"] = "world-production-action.v2"
+    frozen["action"]["world_plan"].update(selected_path_id="selected", causal_debts=[])
+    frozen["frozen_source"] = {"reality": {"current_state": {}}}
+    raw = frozen["action"]["world_plan"]["candidate_futures"][0]["transition"]
+    raw["camera"] = "ON_CAMERA"
+    actual = {
+        "faction_id": "council",
+        "status": "MOBILISED",
+        "causal_batch": {
+            "contract_version": "causal-batch-event.v1",
+            "local_id": "council-moves",
+            "depends_on": ["foundation:world"],
+        },
+    }
+    if fault == "actor":
+        actual["world_transition"] = {
+            "payload_json": json.dumps(
+                {
+                    **raw,
+                    "actor_id": "different-actor",
+                    "action": "A different actor caused the observed effect.",
+                }
+            )
+        }
+    result = extraction()
+    result["faction_state_changes"] = [actual]
+    with pytest.raises(KernelError, match="WORLD_PREPARATION_OBSERVATION"):
+        attach_background_proposals(extraction=result, binding=frozen)
+
+
+def test_observed_preparation_hides_validation_metadata_from_writer_projection():
+    from novel_forge.modules.narrative_state.information import (
+        disclosed_fact_projection,
+    )
+
+    projected = disclosed_fact_projection(
+        {
+            "source_event_id": "accepted:visible",
+            "state": {
+                "status": "OBSERVED",
+                "preparation_lineage": {"origin_action_version_id": "a"},
+                "world_transition": {"payload_json": "PRIVATE_VALIDATION_PREDICATE"},
+            },
+        }
+    )
+    assert projected["state"] == {"status": "OBSERVED"}
+
+
+def test_observed_transition_resolves_optional_epistemic_default_without_key_error():
+    from novel_forge.modules.canon_graph.background import require_observed_transition
+
+    raw = binding()["action"]["world_plan"]["candidate_futures"][0]["transition"]
+    raw["epistemic_basis"] = []
+    observed = {key: value for key, value in raw.items() if key != "epistemic_basis"}
+    result = require_observed_transition(
+        expected=raw, actual={"payload_json": json.dumps(observed)}
+    )
+    assert json.loads(result["payload_json"]) == observed

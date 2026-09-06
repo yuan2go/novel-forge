@@ -291,7 +291,11 @@ separate from predicate repayment: an already fulfilled preparation retains its 
 receipt when the target expires or is cancelled, and its terminal target is no longer scheduled.
 Selected on-camera events are assigned to one Scene and carried in a frozen public execution
 contract. Observer must find the exact effects and local dependency identity in the final
-prose before Book acceptance records the original action/step mapping. Missing execution
+prose before Book acceptance records the original action/step mapping. Its observed causal
+transition must match the scheduled actor, time, effects and modeled prerequisites; the
+observed action description is preserved. Missing or different observation cannot be
+filled from the plan. Observer-only validation constraints remain outside Writer and
+Quality text views, including the metadata of already accepted visible events. Missing execution
 leaves the step pending; a successful chapter alone cannot complete it.
 
 Selected background events enter Canon reconciliation with a governed source origin

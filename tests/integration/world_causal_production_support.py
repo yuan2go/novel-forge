@@ -215,6 +215,7 @@ class AutonomousWorldTransport:
                 "smoke_command",
                 "on_camera_preparation",
                 "on_camera_missing",
+                "on_camera_observer_drift",
                 "preparation_expiry",
             }:
                 from copy import deepcopy
@@ -259,6 +260,11 @@ class AutonomousWorldTransport:
                             }
                         ],
                     )
+                    if self.scenario.startswith("on_camera"):
+                        proposed["requirements"][0]["requirement_id"] = (
+                            "PRIVATE_OBSERVER_RULE_ID"
+                        )
+                        proposed["action"] = "PRIVATE_PLANNED_CAUSAL_HYPOTHESIS"
                     proposed["story_time"].update(
                         start_ordinal=tick + 2, end_ordinal=tick + 2
                     )
@@ -493,7 +499,8 @@ class AutonomousWorldTransport:
             )
             for event in public["on_camera_events"]:
                 statement = (
-                    "Preparation "
+                    event["actor_id"]
+                    + " performs preparation "
                     + event["transition_id"]
                     + ": "
                     + json.dumps(event["changes"], sort_keys=True)
@@ -516,8 +523,31 @@ class AutonomousWorldTransport:
                     identity = dict(
                         part.split("=", 1) for part in event["entity_key"].split("|")
                     )
+                    constraint = next(
+                        row
+                        for row in expectations["world_observation_constraints"][
+                            "transitions"
+                        ]
+                        if row["transition_id"] == event["transition_id"]
+                    )
+                    observed_transition = {
+                        key: value for key, value in event.items() if key != "scene_id"
+                    }
+                    observed_transition.update(
+                        action=statement,
+                        requirements=constraint["requirements"],
+                        epistemic_basis=constraint["epistemic_basis"],
+                    )
+                    if (
+                        self.scenario == "on_camera_observer_drift"
+                        and event["transition_id"] == "verify-records"
+                    ):
+                        observed_transition["actor_id"] = "forged-observed-actor"
                     result["world_state_changes"].append(
                         {
+                            "world_transition": {
+                                "payload_json": json.dumps(observed_transition)
+                            },
                             **identity,
                             **event["changes"],
                             "summary": statement,
@@ -705,6 +735,7 @@ def execute_autonomous_world_vertical(
         "smoke_command",
         "on_camera_preparation",
         "on_camera_missing",
+        "on_camera_observer_drift",
         "preparation_expiry",
     }:
         import time
@@ -719,15 +750,46 @@ def execute_autonomous_world_vertical(
             project_scope=composition.principal.project_scope,
             authentication_source="owned-native-smoke-command-test",
         )
-        reason = drive(
-            composition=composition,
-            chapter=chapter_application,
-            book_run_id=admitted.book_run_id,
-            worker=worker,
-            events=records.append,
-            maximum_ticks=60,
-            deadline=time.monotonic() + 240,
-        )
+        try:
+            reason = drive(
+                composition=composition,
+                chapter=chapter_application,
+                book_run_id=admitted.book_run_id,
+                worker=worker,
+                events=records.append,
+                maximum_ticks=60,
+                deadline=time.monotonic() + 240,
+            )
+        except KernelError as exc:
+            if (
+                transport.scenario != "on_camera_observer_drift"
+                or exc.code != "WORLD_PREPARATION_OBSERVATION_DRIFT"
+            ):
+                raise
+            book = composition.authority.require(admitted.book_run_id)
+            assert book["accepted_through_chapter"] == 1
+            reality = composition.query.narrative_reality(
+                book_run_id=admitted.book_run_id
+            )
+            assert all(
+                row["state"].get("phase", 0) < 2
+                for row in reality["current_state"]["world_state"]
+            )
+            debt = next(
+                row["state"]
+                for row in reality["current_state"]["narrative_obligation"]
+                if row["state"].get("obligation_type") == "CAUSAL_DEBT"
+            )
+            assert debt["status"] == "OPEN" and not debt["payoff_evidence"]
+            return {
+                "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+                "scenario": transport.scenario,
+                "book_run_id": admitted.book_run_id,
+                "calls": transport.calls,
+                "rejected_observation": exc.code,
+                "accepted_frontier": 1,
+                "partial_new_reality_commits": 0,
+            }
         assert reason == "ACCEPTED_TARGET_REACHED", records
         reality = composition.query.narrative_reality(book_run_id=admitted.book_run_id)
         expected_goal = transport.scenario not in {
@@ -810,8 +872,33 @@ def execute_autonomous_world_vertical(
             )
             == 3
         )
+        final_requests = capture_final_provider_requests(
+            composition=composition, project_id=snapshot.project_id
+        )
+        if transport.scenario == "on_camera_preparation":
+            assert any(
+                "PRIVATE_OBSERVER_RULE_ID" in row["input_text"]
+                for row in final_requests
+                if row["stage"] == "canon_extraction"
+            )
+            for row in final_requests:
+                if row["stage"] in {
+                    "draft",
+                    "review",
+                    "revision",
+                    "chapter_plan.generate",
+                } or row["stage"].startswith("quality_"):
+                    assert "PRIVATE_OBSERVER_RULE_ID" not in row["input_text"], row[
+                        "stage"
+                    ]
+                    assert (
+                        "PRIVATE_PLANNED_CAUSAL_HYPOTHESIS" not in row["input_text"]
+                    ), row["stage"]
         from novel_forge.modules.narrative_state import NarrativeStateRebuildService
-        rebuilt = NarrativeStateRebuildService(composition.authority.database_url).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
+
+        rebuilt = NarrativeStateRebuildService(
+            composition.authority.database_url
+        ).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
         assert rebuilt.projection["current_state"] == reality["current_state"]
         return {
             "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
@@ -819,7 +906,7 @@ def execute_autonomous_world_vertical(
             "book_run_id": admitted.book_run_id,
             "calls": transport.calls,
             "native_smoke_ticks": records,
-            "final_provider_requests": capture_final_provider_requests(composition=composition, project_id=snapshot.project_id),
+            "final_provider_requests": final_requests,
             "reality_revision_id": reality["revision_id"],
         }
     if transport.scenario == "process_recovery":

@@ -144,7 +144,9 @@ class WorldPreparationRepository:
                 narrative_event_payload,
             )
             from novel_forge.modules.worldbuilding.dynamics import WorldTransition
-            import json
+            from novel_forge.modules.canon_graph.background import (
+                require_observed_transition,
+            )
 
             scheduled = {
                 raw["transition_id"]: raw
@@ -179,11 +181,9 @@ class WorldPreparationRepository:
                         ).items()
                     )
                     or payload.get("world_transition")
-                    != {
-                        "payload_json": json.dumps(
-                            raw, sort_keys=True, separators=(",", ":")
-                        )
-                    }
+                    != require_observed_transition(
+                        expected=raw, actual=payload.get("world_transition")
+                    )
                 ):
                     raise KernelError(
                         "WORLD_PREPARATION_ACCEPTANCE_EFFECT_INVALID",

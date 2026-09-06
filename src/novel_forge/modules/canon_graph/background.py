@@ -106,7 +106,7 @@ def bind_world_execution(
     return {
         **public,
         "contract_version": "world-scene-execution.v1",
-        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage.",
+        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Emit the observed world_transition with its actual actor and action from prose, using the Observer-only modeled constraints for validation. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage.",
     }
 
 
@@ -194,12 +194,11 @@ def attach_background_proposals(
                             "WORLD_PREPARATION_OBSERVED_CAUSE_MISMATCH",
                             "the observed local event must preserve the scheduled prerequisites",
                         )
+                    observed = require_observed_transition(
+                        expected=raw, actual=item.get("world_transition")
+                    )
                     item["preparation_lineage"] = expected_lineage
-                    item["world_transition"] = {
-                        "payload_json": json.dumps(
-                            raw, sort_keys=True, separators=(",", ":")
-                        )
-                    }
+                    item["world_transition"] = observed
             continue
         kind = transition.state_kind.value
         if kind in {
@@ -318,6 +317,47 @@ def world_action_boundaries(binding: Mapping[str, Any]) -> tuple[str, ...]:
         if proposed.get("approval_required_changes") or selected.get("risks")
         else ("DIRECTOR",)
     )
+
+
+def require_observed_transition(
+    *, expected: Mapping[str, Any], actual: Any
+) -> dict[str, str]:
+    try:
+        raw = json.loads(actual["payload_json"])
+        WorldTransition.from_mapping(raw)
+    except (KeyError, TypeError, ValueError, KernelError) as exc:
+        raise KernelError(
+            "WORLD_PREPARATION_OBSERVATION_REQUIRED",
+            "on-camera lineage requires a typed observed transition, never a substituted plan",
+        ) from exc
+    frozen = json.loads(json.dumps(expected))
+    if any(
+        raw.get(key, [] if key == "epistemic_basis" else None) != value
+        for key, value in frozen.items()
+        if key != "action"
+    ):
+        raise KernelError(
+            "WORLD_PREPARATION_OBSERVATION_DRIFT",
+            "observed actor, effects, time and modeled causal constraints must match the selected preparation",
+        )
+    return {"payload_json": json.dumps(raw, sort_keys=True, separators=(",", ":"))}
+
+
+def world_observation_constraints(binding: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "contract_version": "world-observer-constraints.v1",
+        "role": "ACTUAL_OBSERVER",
+        "semantic_role": "VALIDATION_CONSTRAINTS_NOT_OBSERVED_FACTS",
+        "source_action_version_id": binding["asset_version_id"],
+        "transitions": [
+            {
+                key: deepcopy(event[key])
+                for key in ("transition_id", "requirements", "epistemic_basis")
+            }
+            for event in scheduled_world_events(binding)
+            if event["camera"] == "ON_CAMERA"
+        ],
+    }
 
 
 def preparation_lineage(

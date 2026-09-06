@@ -5,7 +5,9 @@ from typing import Any, Mapping
 def disclosed_fact_projection(entry: Mapping[str, Any]) -> dict[str, Any]:
     projected = deepcopy(dict(entry))
     state = projected.get("state") or {}
-    if (state.get("fact_origin") or {}).get("kind") in {
+    if state.get("preparation_lineage") or (state.get("fact_origin") or {}).get(
+        "kind"
+    ) in {
         "GOVERNED_BACKGROUND",
         "GOVERNED_PREPARATION",
     }:
