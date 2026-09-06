@@ -15,6 +15,112 @@ from novel_forge.workers.book_authority import (
 from tests.integration.narrative_reality_vertical_support import admit_native_production
 
 
+def capture_world_execution_evidence(*, composition, project_id, book_run_id):
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    query = AuthorityAssetQuery(composition.authority.database_url)
+    documents = {}
+    for kind in (
+        "world_preparation_source",
+        "world_preparation_generation",
+        "world_preparation_evaluation",
+        "narrative_governance_action",
+        "context_bundle",
+    ):
+        for document in query.list(project_id=project_id, asset_type=kind, limit=100):
+            if document.logical_ref.startswith("world_preparation/"):
+                documents[document.asset_version_id] = document
+    effect_ids, action_ids = set(), set()
+    for document in tuple(documents.values()):
+        if document.asset_type == "narrative_governance_action":
+            action_ids.add(document.asset_version_id)
+        if document.asset_type not in {
+            "world_preparation_generation",
+            "world_preparation_evaluation",
+        }:
+            continue
+        evidence = document.content["contract"]["evidence"]
+        assert evidence["fixture_protocol_only"] and not evidence["real_model_call"]
+        effect_ids.add(evidence["external_receipt_ref"])
+        for key in (
+            "cost_receipt_ref",
+            "usage_receipt_ref",
+            "input_manifest_ref",
+            "output_manifest_ref",
+            "validation_manifest_ref",
+        ):
+            ref = evidence[key]
+            selector = (
+                {"asset_version_id": ref.split(":", 1)[1]}
+                if ref.startswith("authority-asset-version:")
+                else {"logical_ref": ref}
+            )
+            receipt = query.require(project_id=project_id, **selector)
+            documents[receipt.asset_version_id] = receipt
+    with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+        uow.cursor.execute(
+            "SELECT to_jsonb(effect) FROM authority_external_effect effect WHERE external_effect_id=ANY(%s) ORDER BY external_effect_id",
+            [sorted(effect_ids)],
+        )
+        effects = [row[0] for row in uow.cursor.fetchall()]
+        assert len(effects) == len(effect_ids) and all(
+            effect["status"] == "SUCCEEDED" for effect in effects
+        )
+        uow.cursor.execute(
+            "SELECT to_jsonb(dispatch), to_jsonb(receipt) FROM authority_external_effect_dispatch dispatch LEFT JOIN authority_external_receipt receipt USING(dispatch_id) WHERE dispatch.external_effect_id=ANY(%s) ORDER BY dispatch.external_effect_id, dispatch.generation",
+            [sorted(effect_ids)],
+        )
+        receipts = [
+            {"dispatch": row[0], "receipt": row[1]} for row in uow.cursor.fetchall()
+        ]
+        uow.cursor.execute(
+            "SELECT v.asset_version_id, v.content_hash, a.asset_type, v.content#>>'{constraint_envelope,world_preparation,asset_version_id}' FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND v.content#>>'{constraint_envelope,world_preparation,asset_version_id}'=ANY(%s) ORDER BY v.asset_version_id",
+            [project_id, sorted(action_ids)],
+        )
+        consumers = [
+            dict(
+                zip(
+                    (
+                        "asset_version_id",
+                        "content_hash",
+                        "asset_type",
+                        "world_action_version_id",
+                    ),
+                    row,
+                    strict=True,
+                )
+            )
+            for row in uow.cursor.fetchall()
+        ]
+    book = composition.authority.require(book_run_id)
+    realities = [
+        composition.query.narrative_reality(
+            book_run_id=book_run_id, chapter_number=chapter
+        )
+        for chapter in range(1, int(book["accepted_through_chapter"]) + 1)
+    ]
+    return {
+        "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+        "artifacts": [
+            {
+                "asset_version_id": doc.asset_version_id,
+                "asset_type": doc.asset_type,
+                "logical_ref": doc.logical_ref,
+                "content_hash": doc.content_hash,
+                "content": doc.content,
+            }
+            for doc in sorted(
+                documents.values(), key=lambda item: item.asset_version_id
+            )
+        ],
+        "effects": effects,
+        "receipts": receipts,
+        "planning_consumers": consumers,
+        "accepted_realities": realities,
+    }
+
+
 class AutonomousWorldTransport:
     def __init__(self, scenario="delayed_disclosure"):
         self.calls = []

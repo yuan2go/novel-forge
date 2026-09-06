@@ -1899,8 +1899,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(requ
             assert budget_binding[2] == 1
 
         if autonomous_world:
-            from tests.integration.world_causal_production_support import execute_autonomous_world_vertical
+            from tests.integration.world_causal_production_support import execute_autonomous_world_vertical, capture_world_execution_evidence
             native_evidence = execute_autonomous_world_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
+            native_evidence["authority_evidence"] = capture_world_execution_evidence(composition=composition, project_id=project_id, book_run_id=native_evidence["book_run_id"])
         else:
             native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
         assert native_evidence["proof_ceiling"] == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
