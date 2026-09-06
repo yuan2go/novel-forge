@@ -14,6 +14,7 @@ from .contracts import (
     ReducerSemantics,
     events_from_chapter_outcome,
 )
+from .causal_obligations import validate_causal_obligation_transition
 
 
 APPEND_ONLY_KINDS = frozenset(
@@ -184,6 +185,8 @@ def reduce_story_state_v2(
         seen_event_ids.add(event.event_id)
         kind_state = current[event.state_kind]
         old = kind_state.get(event.identity.entity_key)
+        if event.state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+            validate_causal_obligation_transition(payload=event.payload, old=(old or {}).get("state", {}), current=current)
         new = _apply_event(old, event)
         kind_state[event.identity.entity_key] = new
         if event.state_kind in {

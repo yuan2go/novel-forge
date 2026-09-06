@@ -2615,3 +2615,13 @@ def test_planning_constraint_envelope_propagates_parent_invariants_and_scope() -
     )
     assert envelope["change_governance"]["preserve_executed_history"] is True
     assert envelope["envelope_digest"].startswith("sha256:")
+
+
+def test_planning_role_aliases_share_one_exact_kernel_admission_reference():
+    from novel_forge.modules.story_planning_runtime.application import _canonical_admission_assets
+    source = {"asset_version_id": "group-plan:v1", "content_hash": "sha256:group"}
+    refs = [source, {"asset_version_id": "state:v2", "content_hash": "sha256:state"}, dict(source)]
+    assert _canonical_admission_assets(refs) == refs[:2]
+    assert len(refs) == 3
+    with pytest.raises(KernelError, match="must agree on its exact content identity"):
+        _canonical_admission_assets([source, {**source, "content_hash": "sha256:other"}])

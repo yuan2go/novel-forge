@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
 
 from .contracts import events_from_chapter_outcome
 from .reducers import reduce_story_state_v2
@@ -50,18 +51,9 @@ class NarrativeStateRebuildService:
         ):
             raise ValueError("Project, Book and a positive optional boundary are required")
         with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT accepted_chapter, chapter_outcome_asset_version_id,
-                       story_state_asset_version_id, chapter_outcome
-                FROM authority_narrative_state_rebuild_source
-                WHERE project_id=%s AND book_id=%s
-                  AND (%s::integer IS NULL OR accepted_chapter<=%s)
-                ORDER BY accepted_chapter, chapter_outcome_asset_version_id
-                """,
-                [project_id, book_id, through_chapter, through_chapter],
+            rows, initial, initial_version = NarrativeRealityRepository(uow.cursor).rebuild_sources(
+                project_id=project_id, book_id=book_id, through_chapter=through_chapter,
             )
-            rows = uow.cursor.fetchall()
         if not rows:
             raise KernelError(
                 "NARRATIVE_REBUILD_SOURCE_MISSING",
@@ -74,8 +66,10 @@ class NarrativeStateRebuildService:
                 "more than one committed ChapterOutcome exists for a chapter",
             )
         outcomes = [(str(row[1]), str(row[2]), dict(row[3])) for row in rows]
-        projection: dict[str, Any] | None = None
-        previous_story_state_asset_version_id = ""
+        if chapters != list(range(1, chapters[-1] + 1)):
+            raise KernelError("NARRATIVE_REBUILD_SOURCE_GAP", "rebuild requires a contiguous accepted frontier")
+        projection: dict[str, Any] | None = initial
+        previous_story_state_asset_version_id = initial_version
         for outcome_asset_version_id, story_asset_version_id, outcome in outcomes:
             projection = reduce_story_state_v2(
                 previous=projection,

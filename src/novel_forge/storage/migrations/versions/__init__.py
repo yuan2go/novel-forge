@@ -114,6 +114,9 @@ from . import (
     v20260905_0111_whole_book_completion,
     v20260905_0112_realization_execution_policy,
     v20260905_0113_policy_completion_fk_indexes,
+    v20260906_0114_narrative_reality,
+    v20260906_0115_reality_event_index,
+    v20260906_0116_book_control_policy,
 )
 
 VERSION_MODULES = [
@@ -230,6 +233,9 @@ VERSION_MODULES = [
     v20260905_0111_whole_book_completion,
     v20260905_0112_realization_execution_policy,
     v20260905_0113_policy_completion_fk_indexes,
+    v20260906_0114_narrative_reality,
+    v20260906_0115_reality_event_index,
+    v20260906_0116_book_control_policy,
 ]
 
 __all__ = ["VERSION_MODULES"]

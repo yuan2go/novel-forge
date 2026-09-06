@@ -1757,6 +1757,7 @@ def _is_domain_validation_failure(error_code: str) -> bool:
             "CANON_",
             "REVISION_",
             "REVIEW_",
+            "REALIZATION_",
         )
     )
 

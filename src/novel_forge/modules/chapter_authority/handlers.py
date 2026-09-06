@@ -1299,12 +1299,14 @@ class _DraftHandler:
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
         context = request.require_input("context_bundle")
+        from .realization_composition import compile_realization_contract
         generated = self.provider.invoke(
             request,
             stage="draft",
             payload={
                 "plan": build_draft_plan_view(plan.content),
                 "style": build_draft_style_view(context.content),
+                "realization_contract": compile_realization_contract(plan.content, build_draft_style_view(context.content)),
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
             },

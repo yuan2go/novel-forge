@@ -1168,6 +1168,13 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                 FROM authority_arc_progress_v2 ORDER BY chapter_number
                 """
             ).fetchall()
+            realities = connection.execute(
+                "SELECT chapter_number, revision_id, parent_revision_id FROM authority_narrative_reality_revision WHERE book_run_id=%s ORDER BY chapter_number",
+                [scope["book_run_id"]],
+            ).fetchall()
+            self.assertEqual([row[0] for row in realities], [1, 2])
+            self.assertIsNone(realities[0][2])
+            self.assertEqual(realities[1][2], realities[0][1])
             counts_before_rerun = connection.execute(
                 """
                 SELECT
@@ -1201,6 +1208,10 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         )
         self.assertTrue(replay.complete)
         with psycopg.connect(self.database_url) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT chapter_number, revision_id, parent_revision_id FROM authority_narrative_reality_revision WHERE book_run_id=%s ORDER BY chapter_number",
+                [scope["book_run_id"]],
+            ).fetchall(), realities)
             counts_after_rerun = connection.execute(
                 """
                 SELECT

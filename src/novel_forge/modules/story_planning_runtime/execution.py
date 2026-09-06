@@ -1104,6 +1104,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 {
                     "scene_id": f"chapter:{chapter_number}:scene:1",
                     "scene_version": 1,
+                    "realization_capabilities": ["SKELETON", "ACTION", "INTERIOR", "INTEGRATION"],
                     "scene_group_id": f"chapter:{chapter_number}:group:1",
                     "goal": "make the choice unavoidable",
                     "conflict": "resistance turns private risk into public cost",
@@ -1763,6 +1764,7 @@ def _canonical_narrative_provider_properties(
                 {
                     "scene_id": string,
                     "scene_version": {"type": "integer", "minimum": 1},
+                    "realization_capabilities": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": ["SKELETON", "DIALOGUE", "ACTION", "INTERIOR", "DESCRIPTION", "TRANSITION", "INTEGRATION"]}},
                     "scene_group_id": string,
                     "goal": string,
                     "conflict": string,

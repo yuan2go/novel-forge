@@ -5,6 +5,7 @@ import re
 from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from .world_reconciliation import bind_world_event_lineage, validate_observed_world_changes
 from novel_forge.modules.narrative_state.contracts import (
     atomize_character_knowledge_changes,
     normalize_character_belief_changes,
@@ -12,6 +13,12 @@ from novel_forge.modules.narrative_state.contracts import (
 
 
 SEMANTIC_CHANGE_FIELDS = {
+    "world_state_changes": "world_state",
+    "faction_state_changes": "faction_state",
+    "location_state_changes": "location_state",
+    "consequence_changes": "consequence_state",
+    "conflict_state_changes": "conflict_state",
+
     "canon_assertion_candidates": "canon_fact",
     "character_state_changes": "character_state",
     "relationship_changes": "relationship_state",
@@ -38,6 +45,12 @@ SEMANTIC_CHANGE_FIELDS = {
 # Keep this translation explicit so the Canon proposal can use the shared v2
 # state-kind vocabulary without silently changing the provider boundary.
 PROVIDER_SEMANTIC_CHANGE_FIELDS = {
+    "world_state_changes": "world_state_changes",
+    "faction_state_changes": "faction_state_changes",
+    "location_state_changes": "location_state_changes",
+    "consequence_changes": "consequence_changes",
+    "conflict_state_changes": "conflict_state_changes",
+
     "canon_assertion_candidates": "canon_facts",
     "character_state_changes": "character_state_changes",
     "relationship_changes": "relationship_changes",
@@ -61,6 +74,8 @@ PROVIDER_SEMANTIC_CHANGE_FIELDS = {
 }
 
 HIGH_IMPACT_CHANGE_TYPES = {
+    "identity_revelation", "major_relationship_change", "unique_item_destruction",
+    "major_faction_ownership_change", "major_secret_disclosure",
     "character_death",
     "entity_merge",
     "world_rule_change",
@@ -145,6 +160,12 @@ def extract_canon_candidates(
                 "canon assertion requires subject/predicate/object",
             )
     changes: dict[str, list[dict[str, Any]]] = {
+        "world_state_changes": list(revision.get("world_state_changes", [])),
+        "faction_state_changes": list(revision.get("faction_state_changes", [])),
+        "location_state_changes": list(revision.get("location_state_changes", [])),
+        "consequence_changes": list(revision.get("consequence_changes", [])),
+        "conflict_state_changes": list(revision.get("conflict_state_changes", [])),
+
         "canon_assertion_candidates": assertions,
         "character_state_changes": list(revision.get("character_state_changes", [])),
         "relationship_changes": list(revision.get("relationship_changes", [])),
@@ -325,6 +346,8 @@ def build_canon_update(
             )
         )
     state_changes = _narrative_state_changes(extraction, facts)
+    if not any(item["severity"] == "blocking" for item in conflicts):
+        bind_world_event_lineage(state_changes)
     _bind_narrative_entity_versions(state_changes, state)
     return {
         "project_id": project_id,
@@ -508,7 +531,13 @@ def _with_extraction_evidence(
     end = int(item.get("evidence_end", -1))
     excerpt = text[start:end] if 0 <= start < end <= len(text) else ""
     impact_type = str(item.get("impact_type") or "")
-    approval_required = impact_type in HIGH_IMPACT_CHANGE_TYPES or confidence < 0.65
+    inferred_major = (
+        str(item.get("life_status") or "").upper() == "DEAD"
+        or (item.get("character_id") and str(item.get("status") or "").upper() == "DEAD")
+        or item.get("identity_revelation") is True
+        or (item.get("unique") is True and str(item.get("status") or "").upper() == "DESTROYED")
+    )
+    approval_required = impact_type in HIGH_IMPACT_CHANGE_TYPES or confidence < 0.65 or bool(inferred_major)
     return {
         **item,
         "confidence": confidence,
@@ -586,7 +615,7 @@ def validate_deterministic_continuity(
     if chapter <= 0:
         raise ValueError("chapter must be positive")
     state = {kind: _state_items(values) for kind, values in historical_state.items()}
-    conflicts: list[dict[str, Any]] = []
+    conflicts: list[dict[str, Any]] = validate_observed_world_changes(extraction=extraction, historical_state=historical_state)
     profiles = tuple(dict(item) for item in identity_profiles)
     conflicts.extend(
         _deterministic_identity_pronoun_conflicts(
@@ -1451,6 +1480,11 @@ def _narrative_state_changes(
 ) -> dict[str, list[dict[str, Any]]]:
 
     changes = {
+        "world_state": extraction.get("world_state_changes", []),
+        "faction_state": extraction.get("faction_state_changes", []),
+        "location_state": extraction.get("location_state_changes", []),
+        "consequence_state": extraction.get("consequence_changes", []),
+        "conflict_state": extraction.get("conflict_state_changes", []),
         "canon_fact": facts,
         "character_state": extraction.get("character_state_changes", []),
         "relationship_state": extraction.get("relationship_changes", []),

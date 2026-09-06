@@ -525,7 +525,14 @@ def normalize_draft_result(
             "retrieval_result_asset_version_id": retrieval_result_asset_version_id,
             "retrieval_result_fingerprint": retrieval_result_fingerprint,
         }
+    from .realization_composition import compile_realization_contract, integrate_realization
+    from .chapter_plan_views import build_draft_style_view
+    composition = integrate_realization(
+        contract=compile_realization_contract(plan, build_draft_style_view(context_content or {})),
+        artifacts=result.get("scene_artifacts", []), text=text,
+    )
     return {
+        **composition,
         "chapter": plan["chapter"],
         "title": plan["title"],
         "text": text,
@@ -666,6 +673,7 @@ def build_canon_patch(
                     {
                         "asset_version_id": segment.get("asset_version_id", ""),
                         "source_event_id": fact.get("source_event_id", ""),
+                        "entity_key": fact.get("entity_key", ""),
                         "entity_version": int(fact.get("entity_version") or 0),
                         **identity,
                         **state,
@@ -677,6 +685,7 @@ def build_canon_patch(
                 {
                     "asset_version_id": segment.get("asset_version_id", ""),
                     "source_event_id": fact.get("source_event_id", ""),
+                        "entity_key": fact.get("entity_key", ""),
                     "entity_version": int(fact.get("entity_version") or 0),
                     **dict(fact.get("state") or {}),
                 }

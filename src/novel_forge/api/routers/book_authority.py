@@ -33,6 +33,7 @@ from novel_forge.modules.chapter_group_authority.policy import (
     ChapterGroupExecutionPolicy,
 )
 from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
+from novel_forge.modules.book_authority.control_policy import ControlPolicy
 
 
 @dataclass
@@ -52,6 +53,44 @@ class ReaderProxyPolicyRequest:
     actor_id: str
     policy: ReaderProxyPolicy
     workspace_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+
+@dataclass
+class CausalPlanningRequest:
+    project_id: str
+    actor_id: str
+    reality_revision_id: str
+    intent_version_id: str
+    chapter_number: int
+    candidates: list[dict[str, Any]]
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+
+@dataclass
+class BookControlPolicyRequest:
+    project_id: str
+    actor_id: str
+    policy: ControlPolicy
+    workspace_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+
+@dataclass
+class BookControlDecisionRequest:
+    project_id: str
+    actor_id: str
+    chapter_number: int
+    boundary: str
+    subject_version_id: str
+    decision: str
+    reason: str
     idempotency_key: str
     trace_id: str
     correlation_id: str
@@ -85,6 +124,28 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
     )
+
+    @router.put("/policies/book-control")
+    def configure_book_control(request: BookControlPolicyRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            arguments = {key: value for key, value in asdict(request).items() if key not in {"actor_id", "policy"}}
+            return _composition(ctx).controls.configure(policy=request.policy, principal=principal, **arguments)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/control-decisions")
+    def decide_book_control(book_run_id: str, request: BookControlDecisionRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            arguments = {key: value for key, value in asdict(request).items() if key != "actor_id"}
+            return _composition(ctx).controls.decide(book_run_id=book_run_id, principal=principal, **arguments)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
 
     @router.put("/policies/chapter-group-execution")
     def configure_execution_policy(
@@ -882,6 +943,64 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.query", result["project_id"])
             return result
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/causal-plans")
+    def propose_causal_plan(book_run_id: str, request: CausalPlanningRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            return _composition(ctx).causal_planning.propose(principal=principal, book_run_id=book_run_id, **{k: v for k, v in asdict(request).items() if k != "actor_id"})
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/runs/{book_run_id}/control-readiness")
+    def book_control_readiness(book_run_id: str) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).controls.readiness(project_id=book["project_id"], book_run_id=book_run_id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/runs/{book_run_id}/reality/context")
+    def reality_context(book_run_id: str, role: str, token_budget: int, character_id: str = "") -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).query.reality_context(book_run_id=book_run_id, role=role, token_budget=token_budget, character_ids=(character_id,) if character_id else ())
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/runs/{book_run_id}/reality/views/{view}")
+    def narrative_reality_view(book_run_id: str, view: str, chapter_number: int | None = None, offset: int = 0, limit: int = 100, event_id: str = "") -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).query.reality_view(book_run_id=book_run_id, view=view, chapter_number=chapter_number, offset=offset, limit=limit, event_id=event_id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/runs/{book_run_id}/reality")
+    def narrative_reality(book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).query.narrative_reality(book_run_id=book_run_id, chapter_number=chapter_number)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

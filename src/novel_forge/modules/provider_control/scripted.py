@@ -152,6 +152,7 @@ class ScriptedProviderAdapterV2:
                 request.request_payload.get("capability_pack_fixture_marker") or ""
             )
             return {
+                "scene_artifacts": [],
                 "text": (
                     f"Scripted chapter fixture [{marker}]."
                     if marker
@@ -185,6 +186,12 @@ class ScriptedProviderAdapterV2:
                 "promise_changes": [],
                 "reward_changes": [],
                 "world_rule_usages": [],
+                "world_state_changes": [],
+                "faction_state_changes": [],
+                "location_state_changes": [],
+                "consequence_changes": [],
+                "conflict_state_changes": [],
+
                 "power_state_changes": [],
                 "plot_thread_changes": [],
                 "resource_state_changes": [],

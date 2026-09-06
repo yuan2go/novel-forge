@@ -2404,12 +2404,13 @@ def default_chapter_fixture_response(
         }
     if stage == "draft":
         plan = inputs.get("plan") if isinstance(inputs.get("plan"), Mapping) else {}
-        return {
-            "text": (
-                f"{plan.get('premise') or 'The chapter objective advances.'} "
-                "The choice is public, and the irreversible cost is witnessed."
-            )
-        }
+        text = f"{plan.get('premise') or 'The chapter objective advances.'} The choice is public, and the irreversible cost is witnessed."
+        contract = inputs.get("realization_contract") or {}
+        artifacts = [
+            {"slot_id": slot["slot_id"], "text": text if index == 0 else f"The scene carries its {slot['capability'].lower()} contribution forward.", "used_fact_ids": []}
+            for index, slot in enumerate(contract.get("slots", []))
+        ]
+        return {"text": "\n\n".join(item["text"] for item in artifacts) if artifacts else text, "scene_artifacts": artifacts}
     if stage == "review":
         return {
             "score": 72,
@@ -2423,13 +2424,12 @@ def default_chapter_fixture_response(
         }
     if stage == "revision":
         draft = inputs.get("draft") if isinstance(inputs.get("draft"), Mapping) else {}
-        return {
-            "text": (
-                f"{draft.get('text') or 'The choice is made.'} "
-                "The protagonist gives up the only safe route home before the witnesses leave."
-            ),
-            "resolved_issue_codes": ["COST_NOT_CONCRETE"],
-        }
+        suffix = "The protagonist gives up the only safe route home before the witnesses leave."
+        artifacts = json.loads(json.dumps(draft.get("scene_artifacts", [])))
+        if artifacts:
+            artifacts[-1]["text"] += " " + suffix
+        text = "\n\n".join(item["text"] for item in artifacts) if artifacts else f"{draft.get('text') or 'The choice is made.'} {suffix}"
+        return {"text": text, "scene_artifacts": artifacts, "resolved_issue_codes": ["COST_NOT_CONCRETE"]}
     if stage == "rereview":
         return {"score": 90, "issues": []}
     if stage == "canon_extraction":
@@ -2498,6 +2498,12 @@ def default_chapter_fixture_response(
             "obligation_changes": [],
             "reward_changes": [],
             "world_rule_usages": [],
+            "world_state_changes": [],
+            "faction_state_changes": [],
+            "location_state_changes": [],
+            "consequence_changes": [],
+            "conflict_state_changes": [],
+
             "power_state_changes": [],
             "plot_thread_changes": [],
             "resource_state_changes": [],
@@ -3181,6 +3187,17 @@ def _stage_semantic_contract(
             "Chapter acceptance. Authority Commands submit proposals only; the owning "
             "Authority decides them."
         )
+    realization_instruction = (
+            "Produce candidate prose within the frozen Scene realization contract. "
+            "Each selected specialist slot must appear exactly once in contract order. "
+            "Use only its accessible fact references; report used_fact_ids explicitly. "
+            "Do not give a character reader-only knowledge. Keep every factual commitment "
+            "inside the approved Scene scope and declared voice contracts. The text field "
+            "must equal slot texts joined with two newlines. For Revision, preserve unaffected "
+            "slots and amend only slots needed by the frozen review issues; Quality and Actual "
+            "reconciliation will run again. If no Scene slots exist, return scene_artifacts=[]. "
+            "Candidate generation never changes Canon or accepted Narrative Reality."
+    ) if stage in {"draft", "revision"} else ""
     if stage == "narrative_semantic_evaluation":
         return (
             "Independently evaluate the immutable candidate against every frozen "
@@ -3287,7 +3304,7 @@ def _stage_semantic_contract(
             )
         )
         return _bind_language_contract(
-            "Return text as final reader-facing revised chapter prose only. "
+            realization_instruction + "Return text as final reader-facing revised chapter prose only. "
             "Resolve every supplied review issue in the prose, prioritizing blocking and "
             "major issues; list a code in resolved_issue_codes only after the edit is "
             "actually present. For a governed Quality revision task, make the smallest "
@@ -3355,6 +3372,18 @@ def _stage_semantic_contract(
             "typed payoff_evidence object naming the accepted draft AssetVersion and "
             "the supported payoff event; Arc evidence alone never silently closes an "
             "obligation. "
+            "For CAUSAL_DEBT, preserve causal_plan_asset_version_id and the exact "
+            "causal_requirement.payload_json predicate from its planning origin. "
+            "A plan cannot repay debt: FULFILLED requires a satisfied condition and "
+            "its accepted source event as payoff_evidence.event_id. Other obligation "
+            "types use null for these two causal fields. "
+            "World, faction, location, consequence and conflict state changes require "
+            "world_transition.payload_json: transition_id, actor_id, camera (ON_CAMERA, "
+            "OFF_CAMERA or UNDERCURRENT), native StoryTime, action, state_kind, exact "
+            "entity_key, changes, requirements, cause_refs and epistemic_basis. "
+            "Causes must resolve to accepted source events. Observe only events "
+            "supported by the final prose, including explicitly narrated off-camera "
+            "events; a proposed future is not an occurrence. "
             "Every typed change must copy its exact stable Authority identity: "
             "character_id for character and power state, event_id for timeline, "
             "thread_id for foreshadow and plot thread, promise_id, reward_id, rule_id, "
@@ -3465,7 +3494,7 @@ def _stage_semantic_contract(
             )
         return _bind_language_contract(contract, required_language)
     return _bind_language_contract(
-        "Return only the stage result defined by the frozen output schema.",
+        realization_instruction + "Return only the stage result defined by the frozen output schema.",
         required_language,
     )
 

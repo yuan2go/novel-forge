@@ -234,6 +234,16 @@ def validate_story_design_candidate(
         },
     )
 
+    if "world_foundation" in candidate_payload:
+        if generator_operation_name != "world.design.generate":
+            raise KernelError("WORLD_FOUNDATION_OWNER_INVALID", "only World semantic design owns its Foundation")
+        from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+        WorldFoundation.from_mapping(candidate_payload["world_foundation"])
+    if "narrative_intent" in candidate_payload:
+        if generator_operation_name != "creative.candidates.generate":
+            raise KernelError("NARRATIVE_INTENT_OWNER_INVALID", "Story Intent belongs to Creative Foundation")
+        from novel_forge.modules.story_design_authority.intent import NarrativeIntent
+        NarrativeIntent.from_mapping(candidate_payload["narrative_intent"])
     objective = candidate_payload.get("objective")
     if not isinstance(objective, str) or not objective.strip():
         raise KernelError(

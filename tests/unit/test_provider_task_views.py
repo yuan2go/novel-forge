@@ -1457,3 +1457,18 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         snapshot_worker_id="worker:recovery",
     )
     assert captured["materialization"] == first_contract
+
+
+def test_structured_revision_projects_slot_prose_once_with_exact_contract():
+    source = {
+        "chapter": 2, "title": "The choice", "text": "One immutable prose fragment.",
+        "realization_contract": {"contract_digest": "sha256:frozen-scene"},
+        "scene_artifacts": [{"slot_id": "scene:skeleton", "text": "One immutable prose fragment.", "used_fact_ids": []}],
+        "composition_digest": "sha256:frozen-composition",
+    }
+    view = build_provider_task_view("revision", {"draft": source, "review": {"issues": []}})
+    assert "text" not in view["chapter"]
+    assert view["scene_artifacts"] == source["scene_artifacts"]
+    assert view["realization_contract"] == source["realization_contract"]
+    assert json.dumps(view).count("One immutable prose fragment.") == 1
+    assert source["text"] == "One immutable prose fragment."

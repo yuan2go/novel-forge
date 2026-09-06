@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.realization_composition import reconcile_revision_composition
 
 
 def apply_revision_result(
@@ -49,6 +50,7 @@ def apply_revision_result(
     if not isinstance(assertions, list) or any(not isinstance(item, dict) for item in assertions):
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "canon_assertions must be objects")
     return {
+        **reconcile_revision_composition(draft, result),
         "project_id": project_id,
         "chapter": draft["chapter"],
         "title": draft["title"],
@@ -139,6 +141,7 @@ def apply_quality_revision_result(
         )
     return {
         **revision,
+        **reconcile_revision_composition(revision, result),
         "text": text,
         "source_revision_asset_version_id": revision_asset_version_id,
         "source_quality_asset_version_id": quality_asset_version_id,

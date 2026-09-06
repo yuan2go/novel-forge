@@ -32,6 +32,7 @@ def owned_policy_definition(
     name = {
         "CHAPTER_GROUP_EXECUTION": "chapter_group.execution_policy.configure",
         "READER_PROXY": "reader_proxy.policy.configure",
+        "BOOK_CONTROL": "book.control_policy.configure",
     }[owner]
     handler_key = f"novel_forge.owned_policy.{name}"
     policy_schema = {
@@ -41,7 +42,7 @@ def owned_policy_definition(
         "properties": {
             key: (
                 {"type": "string", "minLength": 1}
-                if key == "policy_version"
+                if key == "policy_version" or (owner == "BOOK_CONTROL" and key == "mode")
                 else {"type": "integer", "minimum": 1}
                 if key.endswith("_count")
                 or key in {"maximum_chapters", "preferred_chapters"}
@@ -127,6 +128,12 @@ def configure_owned_policy(
     fault_injector: TransactionCheckpoint | None = None,
 ) -> dict[str, Any]:
     principal.require("book.authority.execute", project_id)
+    if owner == "BOOK_CONTROL":
+        from novel_forge.modules.authority_security import PrincipalType
+        from novel_forge.modules.book_authority.control_policy import ControlPolicy
+        ControlPolicy(**content)
+        if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise PermissionError("only an authenticated operator can change editorial ControlPolicy")
     definition = owned_policy_definition(
         owner=owner,
         content=content,

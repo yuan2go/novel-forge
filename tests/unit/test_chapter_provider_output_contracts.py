@@ -21,6 +21,12 @@ from novel_forge.modules.chapter_authority.model_effects import normalize_model_
 
 
 CANON_FIELDS = (
+    "world_state_changes",
+    "faction_state_changes",
+    "location_state_changes",
+    "consequence_changes",
+    "conflict_state_changes",
+
     "canon_facts",
     "character_state_changes",
     "relationship_changes",
@@ -276,11 +282,11 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("draft")
-        == "schema:chapter-provider-output:draft:v1"
+        == "schema:chapter-provider-output:draft:v2"
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v13"
+        == "schema:chapter-provider-output:canon_extraction:v14"
     )
 
 
@@ -451,6 +457,8 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
         {
             "obligation_id": "promise:late",
             "obligation_type": "PROMISE",
+            "causal_requirement": None,
+            "causal_plan_asset_version_id": None,
             "from_status": "OPEN",
             "status": "FULFILLED",
             "priority": "HIGH",
@@ -769,7 +777,7 @@ def test_canon_semantics_rejects_generic_entity_as_world_rule_identity() -> None
 
 def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
-        return {"text": "The choice closes the only safe road home."}
+        return {"text": "The choice closes the only safe road home.", "scene_artifacts": []}
     if stage in {"review", "rereview"}:
         return {
             "score": 72,
@@ -784,6 +792,7 @@ def _valid(stage: str) -> dict[str, object]:
     if stage == "revision":
         return {
             "text": "She burns the map while the witnesses watch.",
+            "scene_artifacts": [],
             "resolved_issue_codes": ["COST_NOT_CONCRETE"],
         }
     if stage == "canon_extraction":

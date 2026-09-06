@@ -222,6 +222,34 @@ a Book cursor or repair Canon. A new case/version is required after changed sour
 evidence. Whole-book acceptance remains blocked until its native editorial authorization
 contract is defined; generic Chapter/Arc preferences and AI review do not substitute.
 
+## Narrative Reality and editorial control
+
+The Book Authority API prefix is `/product/production/book-authority`.
+Read `/runs/{book_run_id}/reality` for an exact accepted frontier, optionally with
+`chapter_number`. `/reality/views/{view}` supports world, characters, epistemic,
+reader, obligations and why views. Pages are bounded to 200 entries; Why queries
+require an accepted `event_id` and expose unresolved references instead of inventing
+causes. Reader response evidence remains advisory and separate from narrated Reader
+Knowledge. `/reality/context` requires a declared role and token budget; character
+roles also require an explicit character scope.
+
+Submit candidate futures through `/runs/{book_run_id}/causal-plans` with the current
+Reality revision and active Creative Foundation version. The result is planning
+input. A stale revision is rejected; it cannot be used to mutate accepted state.
+
+Configure the versioned Book Control policy through `/policies/book-control`, then
+inspect `/runs/{book_run_id}/control-readiness`. A pending decision identifies the
+exact boundary, subject and frozen policy. Operator decisions enter through
+`/runs/{book_run_id}/control-decisions`; scheduler workers cannot approve themselves.
+Resume the existing production job after approval. Decisions do not waive quality,
+Canon reconciliation or acceptance invariants.
+
+Chapter workflow contract 3.3.0 and Capability Pack 2.2.0 require structured
+realization slots and the current quality dimensions. An older frozen operation
+retains its original definition and receipts; a worker with another contract version
+rejects it with `AUTHORITY_HANDLER_CONTRACT_STALE`. Resume such an in-flight operation
+with its matching release rather than rewriting its frozen input or resending effects.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect

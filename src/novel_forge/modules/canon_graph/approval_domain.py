@@ -19,6 +19,12 @@ CANON_DECISIONS = frozenset(
 
 
 _SEMANTIC_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "world_state_changes": (("world_state_id",),),
+    "faction_state_changes": (("faction_id",),),
+    "location_state_changes": (("location_id",),),
+    "consequence_changes": (("consequence_id",),),
+    "conflict_state_changes": (("conflict_id",),),
+
     "canon_assertion_candidates": (("subject", "predicate"),),
     "character_state_changes": (("character_id",),),
     "relationship_changes": (

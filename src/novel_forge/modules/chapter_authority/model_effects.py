@@ -1861,7 +1861,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         text = str(raw.get("text") or "").strip()
         if not text:
             raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
-        return {"text": text}
+        return {"text": text, "scene_artifacts": raw.get("scene_artifacts", [])}
     if stage == "agent_session":
         message = str(raw.get("message") or "").strip()
         action = str(raw.get("action") or "").strip().upper()
@@ -1967,30 +1967,11 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
         return {"decision": decision, "score": score, "issues": normalized}
     if stage == "canon_extraction":
-        fields = (
-            "canon_facts",
-            "character_state_changes",
-            "relationship_changes",
-            "timeline_events",
-            "foreshadow_changes",
-            "promise_changes",
-            "obligation_changes",
-            "reward_changes",
-            "world_rule_usages",
-            "power_state_changes",
-            "plot_thread_changes",
-            "resource_state_changes",
-            "narrative_pattern_fingerprints",
-            "theme_movements",
-            "antagonist_pressure_changes",
-            "character_knowledge_changes",
-            "character_belief_changes",
-            "character_arc_changes",
-            "arc_state_changes",
-            "disclosure_events",
-            "arc_evidence",
-            "realization_evidence",
+        from .provider_output_contracts import (
+            canon_provider_array_fields, validate_chapter_provider_output_semantics,
         )
+        raw = validate_chapter_provider_output_semantics(stage, raw)
+        fields = canon_provider_array_fields()
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:
             values = raw.get(field)
@@ -2134,7 +2115,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         raise KernelError(
             "MODEL_RESPONSE_INVALID", "revision response has no revised text"
         )
-    return {"text": text, "resolved_issue_codes": resolved}
+    return {"text": text, "resolved_issue_codes": resolved, "scene_artifacts": raw.get("scene_artifacts", [])}
 
 
 def normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:

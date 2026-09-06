@@ -23,6 +23,14 @@
     "evidence-finalization"
   ],
   "semantic_slices": {
+    "narrative_reality_causal_chain": [
+      "tests/unit/test_narrative_reality_causality.py",
+      "tests/integration/test_core_functional_loops_postgres.py",
+      "tests/integration/test_book_to_chapter_authority_vertical_postgres.py"
+    ],
+    "narrative_reality_projection_upgrade": [
+      "tests/integration/test_book_projection_repair_upgrade_postgres.py"
+    ],
     "versioned_execution_and_reader_policy": [
       "tests/unit/test_runtime_policy_contracts.py",
       "tests/integration/test_runtime_policies_postgres.py",

@@ -97,6 +97,10 @@ accepted-fact projection.
 | Accepted Actual | accepted fact | created only by Book chapter acceptance |
 | Canon | approved projection | extraction is merely a proposal |
 | Narrative State | projection | deterministic as-of view over accepted evidence |
+| Narrative Reality revision | immutable accepted-source binding | exact Outcome, state, Canon, acceptance and parent revision; no independent fact writer |
+| World transition / Candidate Future | causal proposal | deterministic rules constrain candidate evolution; only observed and accepted effects advance reality |
+| Causal requirement / debt | predicate / preparation commitment | eligibility requires accepted support; actual payoff evidence discharges accepted debt |
+| Scene realization slot | prose candidate component | dynamically selected capability and actor knowledge scope; deterministic ordered integration |
 | Planned / accepted Obligation | planning commitment / accepted projection | planned actions never rewrite accepted setup/payoff history |
 | Reader Evidence | observation | may motivate a proposal but cannot directly rewrite truth or plans |
 | Whole-book Completion | case and decision evidence | distinct from terminal cursor; missing native whole-book human policy blocks acceptance |
@@ -200,16 +204,19 @@ Project scope
   -> qualified Foundation + BookDesign candidate/decision
   -> Story Design candidate/decision
   -> five-layer Book Opening workflow
-  -> active typed plans
+  -> active typed plans + Reality-bound causal preparation
   -> approved Narrative Realization
   -> Book production + ChapterGroup coordination
   -> Chapter Mission + Scene Architecture
   -> frozen retrieval union + ContextBundle
   -> durable Chapter saga
-  -> conditional Provider/object-store ExternalEffects
+  -> selected Scene realization slots through governed Provider ExternalEffects
+  -> exact slot integration and candidate revision
+  -> conditional object-store ExternalEffects
   -> review, bounded revision, quality and release gates
   -> Book chapter acceptance
   -> Accepted Actual + Canon + Narrative State + long-form projections
+  -> immutable Narrative Reality revision and accepted-event index
   -> asynchronous reader/recap evidence
   -> optional future-only plan-change proposal and reactivation
   -> next ChapterGroup/Chapter cycle
@@ -226,6 +233,68 @@ The synchronous
 `ChapterAuthorityApplication.run` seam is fixture-guarded; the production path is durable
 admission plus scheduler ticks. These absences are explicit machine boundaries, not
 implicit capabilities.
+
+## Narrative Reality and causal production
+
+`NarrativeRealityRevision` references the exact Book acceptance, ChapterOutcome,
+Narrative State, Canon and long-form projection set. Its immutable identity includes
+its parent revision and source digest. PostgreSQL requires one revision for each
+contiguous accepted frontier. Book acceptance inserts the revision and its derived
+event index in the same transaction as cursor advancement. Neither an unaccepted
+Draft nor a successful but unaccepted ChapterOutcome can advance this chain. Rebuild
+starts from the original frozen Book input and replays accepted outcomes.
+
+World Foundation extends the existing Story Design World asset with core ontology,
+genre and Book-owned sections. Sections declare compilation scope and depth; they
+need not describe every category before production begins. World rules distinguish
+deterministic hard, quantitative and temporal predicates from soft causal suggestions.
+Candidate transitions declare on-camera, off-camera or undercurrent effects, exact
+story time, actor, changes and accepted causes. Known Character actions require their
+own accepted knowledge or belief predicates. The world
+clock advances from accepted world transitions, independently of narrative flashforwards.
+
+`planning.causal.propose` binds the current Reality and qualified Creative Foundation.
+It rejects invalid world transitions and evaluates causal requirements before ranking
+eligible futures across the declared Director dimensions. Missing predicates become
+causal preparation debts. The result is an existing Narrative Governance Action consumed
+by subsequent planning. It cannot change World, Character, Reader, Obligation or Canon
+facts. Canon observation preserves typed world transitions; Book acceptance rechecks
+causes, world invariants and the exact origin of causal debt. Only accepted payoff
+source evidence can fulfill that debt.
+
+Creative Foundation authoring can compile explicitly labeled natural-language Intent
+clauses into goal, required/forbidden constraints, tone, pacing, relationship, Arc,
+theme, ending and allowed-deviation fields. Labels may be Chinese or contract field
+names. Unlabeled or ambiguous instructions require an explicit interpretation; this
+compiler does not infer unstated requirements. The source survives in the revisioned
+Intent, while each downstream target receives only its applicable constraint fields.
+The existing Story Design validation, approval and activation lifecycle still applies.
+
+Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
+Description, Transition and Integration slots as needed. Dialogue and Interior slots
+carry actor-local knowledge. The Draft and Revision contracts require complete slot
+coverage and exact deterministic prose integration. A revision retains the frozen
+contract, identifies changed slots and reruns the existing Review, Quality and Actual
+reconciliation chain. Voice contracts distinguish Book, Narrator, POV, Character,
+Dialogue and Genre layers; current drift checks prove explicit textual constraints,
+not literary voice quality. These are capabilities within governed generation, not a
+fixed population of autonomous specialist Agents.
+
+Book ControlPolicy has AUTO, REVIEW_MAJOR_DECISION, REVIEW_PLAN, REVIEW_CHAPTER,
+REVIEW_REALITY_COMMIT and MANUAL_DIRECTOR modes. Immutable per-frontier policy bindings
+and versioned operator decisions govern the same production path. Decisions bind an
+exact candidate and policy, are audited through the Command Kernel, and never act as
+quality waivers. Workers cannot approve themselves. The supervisor reports the pending
+boundary and resumes the existing operation after approval. Rejected Scene contracts
+use the planning runtime's bounded candidate repair ledger; unrelated upstream plans
+and accepted history are preserved.
+
+Book read APIs expose revision-bound Reality, world/character/relationship views,
+epistemic and reader knowledge, obligations, role Context and bounded accepted-event
+Why traces. World Reasoner, Director, Character Reasoner, Scene Planner, Dialogue/Action
+Writer, Continuity/Quality Judge and Observer projections share Context policy
+intersection, actor/entity scope, deduplication and budget enforcement. A projection
+and a candidate score are not evidence of real reader response or external-model quality.
 
 ## Persistence, effects and recovery
 
@@ -244,7 +313,7 @@ does not rewrite terminal history.
 
 Book acceptance is the decisive narrative mutation: one transaction advances the cursor
 and binds ChapterOutcome, accepted Canon/Narrative State inputs, long-form projections,
-audit and outbox evidence. Reader and recap work follows asynchronously and remains
+the Narrative Reality revision, audit and outbox evidence. Reader and recap work follows asynchronously and remains
 advisory.
 
 ## Semantic constraint classes

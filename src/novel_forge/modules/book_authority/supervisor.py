@@ -119,6 +119,15 @@ class PostgresBookProductionSupervisor:
         )
 
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
+        try:
+            return self._tick(book_run_id)
+        except KernelError as exc:
+            if exc.code != "BOOK_CONTROL_APPROVAL_REQUIRED":
+                raise
+            book = self.authority.require(book_run_id)
+            return self._result(book_run_id, str(book["state"]), SupervisorAction.WAIT_CONTROL_DECISION)
+
+    def _tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
         semantics = book_production_state_semantics(before)
@@ -743,6 +752,12 @@ class PostgresBookProductionSupervisor:
                 ]
             )
         )
+        causal_versions = self.query.causal_action_versions(book_run_id=str(book["book_run_id"]), chapter_number=chapter_number)
+        if causal_versions:
+            from .control_application import PostgresBookControlApplication
+            controls = PostgresBookControlApplication(self.authority.database_url, application_build_id=self.authority.application_build_id, commit_sha=self.authority.commit_sha)
+            for version in causal_versions:
+                controls.require_causal_approval(project_id=str(book["project_id"]), book_run_id=str(book["book_run_id"]), chapter_number=chapter_number, actor_id=self.principal.principal_id, subject_version_id=version)
         generation = StoryPlanningGenerationCommand(
             project_id=str(book["project_id"]),
             workspace_id=str(book["workspace_id"]),
@@ -763,10 +778,10 @@ class PostgresBookProductionSupervisor:
                 if generator in {"chapter_group_plan.generate", "chapter_plan.generate"}
                 else ()
             ),
-            governance_action_version_ids=self._governance_action_versions(
-                project_id=str(book["project_id"]),
-                input_version_ids=tuple(inputs.values()),
-            ),
+            governance_action_version_ids=tuple(dict.fromkeys((
+                *self._governance_action_versions(project_id=str(book["project_id"]), input_version_ids=tuple(inputs.values())),
+                *causal_versions,
+            ))),
             idempotency_key=(
                 f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
                 f"snapshot:{book['input_snapshot_id']}:"

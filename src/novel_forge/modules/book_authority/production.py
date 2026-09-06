@@ -761,6 +761,11 @@ class PostgresBookAuthority:
                 "BOOK_CHAPTER_OUT_OF_RANGE", "chapter exceeds Book target count"
             )
         self._require_chapter_production_admission(book, command)
+        from .control_application import PostgresBookControlApplication
+        PostgresBookControlApplication(self.database_url, application_build_id=self.application_build_id, commit_sha=self.commit_sha).require_approvals(
+            project_id=book["project_id"], book_run_id=command.book_run_id, chapter_number=command.chapter_number, actor_id=principal.principal_id,
+            subjects={"CHAPTER": command.chapter_plan_asset_version_id, "SCENE": command.chapter_plan_asset_version_id},
+        )
         request_id = f"chapter-request:{stable_key.removeprefix('book-chapter:')}"
 
         def commit_reservation(
@@ -1135,6 +1140,11 @@ class PostgresBookAuthority:
             evidence=evidence,
         )
         selected_acceptance_outputs = select_chapter_acceptance_outputs(evidence)
+        from .control_application import PostgresBookControlApplication
+        controls = PostgresBookControlApplication(self.database_url, application_build_id=self.application_build_id, commit_sha=self.commit_sha)
+        editorial_inputs = controls.require_approvals(project_id=request["project_id"], book_run_id=request["book_run_id"], chapter_number=int(request["chapter_number"]), actor_id=principal.principal_id,
+            subjects={"FINAL_CANDIDATE": str(selected_acceptance_outputs["best_draft_candidate"]["asset_version_id"])})
+        acceptance_inputs = (*acceptance_inputs, *editorial_inputs)
         execution_chapter_plan_asset_version_id = str(
             selected_acceptance_outputs["chapter_plan"]["asset_version_id"]
         )
@@ -1216,6 +1226,7 @@ class PostgresBookAuthority:
         outcome = outputs["chapter_outcome"]
         story_state = outputs["story_state_snapshot"]
         canon_snapshot = outputs["canon_snapshot"]
+        reality_approval_inputs = controls.require_approvals(project_id=request["project_id"], book_run_id=request["book_run_id"], chapter_number=int(request["chapter_number"]), actor_id=principal.principal_id, subjects={"REALITY_COMMIT": outcome.asset_version_id})
         followup_snapshot = self._accepted_followup_snapshot(
             book=book,
             request=request,
@@ -1235,6 +1246,9 @@ class PostgresBookAuthority:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            from novel_forge.storage.book_control_repositories import BookControlRepository
+            for boundary, subject in (("FINAL_CANDIDATE", str(selected_acceptance_outputs["best_draft_candidate"]["asset_version_id"])), ("REALITY_COMMIT", outcome.asset_version_id)):
+                BookControlRepository(uow.cursor).require_approval(project_id=request["project_id"], book_run_id=request["book_run_id"], chapter_number=int(request["chapter_number"]), actor_id=principal.principal_id, boundary=boundary, subject_version_id=subject)
             uow.cursor.execute(
                 """
                 SELECT delegation_id
@@ -1354,6 +1368,23 @@ class PostgresBookAuthority:
                             "cumulative_progress_units": 0,
                         },
                     )
+            from novel_forge.modules.canon_graph.world_reconciliation import validate_actual_world_events
+            from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+            if int(request["chapter_number"]) > 1:
+                previous_reality = NarrativeRealityRepository(uow.cursor).require(book_run_id=request["book_run_id"], chapter_number=int(request["chapter_number"])-1, event_ids=tuple(sorted({ref for event in outcome_content.get("state_events", []) for ref in event.get("causality", {}).get("cause_refs", [])})))
+            else:
+                previous_reality = {"current_state": {}, "events": []}
+                initial_version_id = str(story_state_content.get("previous_story_state_asset_version_id") or "")
+                initial_state = NarrativeRealityRepository(uow.cursor).initial_state(
+                    version_id=initial_version_id,
+                    frozen_versions={ref["asset_version_id"] for ref in acceptance_inputs},
+                )
+                if initial_state is not None:
+                    previous_reality["current_state"] = dict(initial_state.get("current_state") or {})
+            previous_reality["world_rule_constraints"], _ = NarrativeRealityRepository(uow.cursor).frozen_world_rules(book_run_id=request["book_run_id"])
+            validate_actual_world_events(previous_reality=previous_reality, chapter_outcome=outcome_content)
+            from novel_forge.storage.causal_planning_repositories import CausalPlanningRepository
+            CausalPlanningRepository(uow.cursor).validate_obligation_origins(book_run_id=request["book_run_id"], previous_reality=previous_reality, chapter_outcome=outcome_content)
             longform_projection_set = project_accepted_longform(
                 AcceptedLongformEvidence(
                     project_id=request["project_id"],
@@ -1506,6 +1537,7 @@ class PostgresBookAuthority:
                 "acceptance_operation_id": admission.operation_id,
             },
             handler=commit_acceptance,
+            input_assets=(*editorial_inputs, *reality_approval_inputs),
         )
         self._probe("after_acceptance_commit")
         result = self.require(request["book_run_id"])
@@ -3205,6 +3237,7 @@ class PostgresBookAuthority:
         handler: Callable[
             [AuthorityUnitOfWork, str, TransactionCheckpoint], dict[str, Any]
         ],
+        input_assets: tuple[dict[str, str], ...] = (),
     ) -> dict[str, Any]:
 
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -3266,14 +3299,14 @@ class PostgresBookAuthority:
                 "causation_operation_id": causation_id,
                 "input": {
                     "project_id": str(book["project_id"]),
-                    "input_asset_version_ids": [],
+                    "input_asset_version_ids": [ref["asset_version_id"] for ref in input_assets],
                     "payload": {
                         "action": action,
                         "book_run_id": str(book["book_run_id"]),
                         **payload,
                     },
                 },
-                "input_assets": [],
+                "input_assets": list(input_assets),
             },
             context=AdmissionContext(
                 actor_id=actor_id,
