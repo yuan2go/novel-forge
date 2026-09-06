@@ -760,3 +760,45 @@ def test_published_text_beats_have_explicit_replay_adapter_but_v2_is_strict():
     plan["chapter_contract_schema_version"] = "chapter-mission-scene.v2"
     with pytest.raises(KernelError, match="REALIZATION_BEAT_CONTRACT_INVALID"):
         compile_realization_contract(plan, {})
+
+
+def test_progressive_world_foundation_compiles_extensions_and_rejects_unowned_dimensions():
+    from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+
+    foundation = {
+        "contract_version": "world-foundation.v1",
+        "genre_profile": "mystery.v1",
+        "compiled_scope": "ARC",
+        "sections": {
+            "core_laws": {"depth": "WORKING", "content": "Evidence has consequences."},
+            "genre:mystery": {
+                "depth": "SEED",
+                "content": "Only this inquiry is compiled.",
+            },
+        },
+        "entities": [{"entity_id": "council"}],
+        "rules": [
+            {
+                "rule_id": "response",
+                "category": "genre:mystery",
+                "statement": "The council may respond.",
+                "enforcement": "SOFT_CAUSAL",
+                "applicability": ["faction_state"],
+                "consequences": ["candidate response"],
+            }
+        ],
+    }
+    compiled = WorldFoundation.from_mapping(foundation)
+    assert compiled.compiled_scope == "ARC"
+    assert compiled.sections == ("core_laws", "genre:mystery")
+    assert compiled.rules[0].predicate is None
+    foundation["sections"]["unowned"] = {
+        "depth": "SEED",
+        "content": "Unscoped extension",
+    }
+    with pytest.raises(KernelError, match="WORLD_FOUNDATION_EXTENSION_SCOPE_INVALID"):
+        WorldFoundation.from_mapping(foundation)
+    del foundation["sections"]["unowned"]
+    foundation["entities"] = ["unstructured"]
+    with pytest.raises(KernelError, match="WORLD_FOUNDATION_COLLECTION_INVALID"):
+        WorldFoundation.from_mapping(foundation)

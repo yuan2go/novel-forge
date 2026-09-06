@@ -18,6 +18,43 @@ from novel_forge.workers.book_authority import (
 )
 
 
+def compiled_world_fixture():
+    return {
+        "contract_version": "world-foundation.v1",
+        "genre_profile": "institutional-mystery.v1",
+        "compiled_scope": "ARC",
+        "sections": {
+            "core_laws": {
+                "depth": "WORKING",
+                "content": "A witnessed inquiry cannot be sealed by decree.",
+            },
+            "book:council": {
+                "depth": "SEED",
+                "content": "Only the current council inquiry is compiled.",
+            },
+        },
+        "entities": [{"entity_id": "faction:council", "kind": "FACTION"}],
+        "rules": [
+            {
+                "rule_id": "witnessed-inquiry-open",
+                "category": "core_laws",
+                "statement": "The witnessed inquiry remains open.",
+                "enforcement": "HARD",
+                "applicability": ["world_state"],
+                "consequences": ["Sealing the inquiry is rejected."],
+                "predicate": {
+                    "requirement_id": "inquiry-open",
+                    "state_kind": "world_state",
+                    "entity_key": "world_state_id=council-inquiry",
+                    "field": "status",
+                    "operator": "EQUALS",
+                    "value": "OPEN",
+                },
+            }
+        ],
+    }
+
+
 class NativeRealityTransportFixture:
     def __init__(self) -> None:
         self.transition: dict[str, Any] = {}
@@ -189,6 +226,43 @@ def execute_native_reality_vertical(
                     [project_id],
                 )
                 intent_version = str(uow.cursor.fetchone()[0])
+            from copy import deepcopy
+
+            impossible = deepcopy(transport.transition)
+            impossible["changes"]["status"] = "SEALED"
+            blocked = composition.causal_planning.propose(
+                principal=principal,
+                project_id=project_id,
+                book_run_id=admitted.book_run_id,
+                reality_revision_id=previous["revision_id"],
+                intent_version_id=intent_version,
+                chapter_number=2,
+                candidates=[
+                    {
+                        "transition": impossible,
+                        "dimensions": dict.fromkeys(DIRECTOR_DIMENSIONS, 1.0),
+                        "affected_entities": ["faction:council"],
+                        "world_consequences": ["sealed inquiry"],
+                        "rationale": "A maximal Director preference cannot bypass a compiled World law",
+                    }
+                ],
+                idempotency_key=f"{project_id}:native-impossible",
+                trace_id=f"trace:{project_id}:native-impossible",
+                correlation_id=f"correlation:{project_id}",
+            )
+            assert not blocked["selected_candidate_id"]
+            assert (
+                blocked["candidate_futures"][0]["rejection"]["code"]
+                == "WORLD_COMPILED_RULE_VIOLATION"
+            )
+            assert (
+                blocked["world_design_constraints"][0]["rule"]["rule_id"]
+                == "witnessed-inquiry-open"
+            )
+            assert (
+                composition.query.narrative_reality(book_run_id=admitted.book_run_id)
+                == previous
+            )
             causal = composition.causal_planning.propose(
                 principal=principal,
                 project_id=project_id,
@@ -229,6 +303,28 @@ def execute_native_reality_vertical(
                 )
                 == previous
             )
+            from novel_forge.modules.context_builder.reality_projection import (
+                ROLE_STATE_KINDS,
+            )
+
+            role_context_digests = {}
+            for role in ROLE_STATE_KINDS:
+                contract = composition.query.reality_context(
+                    book_run_id=admitted.book_run_id,
+                    role=role,
+                    token_budget=32768,
+                    character_ids=("mara",),
+                )
+                assert contract["reality_revision_id"] == current["revision_id"]
+                role_context_digests[role] = contract["context_digest"]
+                assert contract["estimated_tokens"] <= 32768
+                assert contract["fact_mutation_allowed"] is False
+                assert contract == composition.query.reality_context(
+                    book_run_id=admitted.book_run_id,
+                    role=role,
+                    token_budget=32768,
+                    character_ids=("mara",),
+                )
             with AuthorityUnitOfWork(database_url) as uow:
                 uow.cursor.execute(
                     """
@@ -281,6 +377,35 @@ def execute_native_reality_vertical(
                 assert uow.cursor.fetchone()[0] == 0
             return {
                 "book_run_id": admitted.book_run_id,
+                "opening_snapshot_id": snapshot.snapshot_id,
+                "accepted_reality_lineage": [
+                    {
+                        key: reality[key]
+                        for key in (
+                            "revision_id",
+                            "parent_revision_id",
+                            "chapter_number",
+                            "acceptance_id",
+                            "outcome_version_id",
+                            "state_version_id",
+                            "canon_version_id",
+                            "source_digest",
+                        )
+                    }
+                    for reality in (previous, current)
+                ],
+                "role_context_digests": role_context_digests,
+                "world_foundation_sources": [
+                    {
+                        "asset_version_id": item["asset_version_id"],
+                        "content_hash": item["content_hash"],
+                    }
+                    for item in causal["world_design_constraints"]
+                ],
+                "compiled_world_rejection": blocked["candidate_futures"][0][
+                    "rejection"
+                ]["code"],
+                "directed_rejection": rejection,
                 "reality_revision_id": current["revision_id"],
                 "causal_operation_id": causal["operation_id"],
                 "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",

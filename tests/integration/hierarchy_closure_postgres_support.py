@@ -71,6 +71,7 @@ def _payload(
     *,
     parent_candidates: dict[FoundationRole, dict[str, str]],
     alternate: bool = False,
+    world_foundation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     suffix = " through contested testimony" if alternate else ""
     common = {
@@ -121,6 +122,7 @@ def _payload(
     if role is FoundationRole.WORLD_BIBLE:
         return {
             **common,
+            **({"world_foundation": world_foundation} if world_foundation else {}),
             "rules": [
                 {
                     "rule": "A witnessed place resists erasure for seven days",
@@ -182,6 +184,7 @@ def _seed_candidate_and_evaluation(
     label: str,
     alternate: bool,
     parent_candidates: dict[FoundationRole, dict[str, str]],
+    world_foundation: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     generator = _GENERATOR_BY_ROLE[role]
     logical_key = f"foundation:{role.value.lower()}:{label}"
@@ -193,6 +196,7 @@ def _seed_candidate_and_evaluation(
             role,
             parent_candidates=parent_candidates,
             alternate=alternate,
+            world_foundation=world_foundation,
         ),
     )
     content_hash = _hash(content)
@@ -515,6 +519,7 @@ def seed_ready_story_foundation(
     release_sha: str,
     full_story_design_lifecycle: bool = False,
     exercise_formation_recovery: bool = False,
+    world_foundation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the exact Foundation set and BookDesign v5 through real runtime gates."""
 
@@ -527,6 +532,7 @@ def seed_ready_story_foundation(
             label="selected",
             alternate=False,
             parent_candidates=selected,
+            world_foundation=world_foundation,
         )
         candidate["activation_operation_id"] = _activate_story_design(
             database_url=database_url,

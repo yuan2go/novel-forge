@@ -162,6 +162,7 @@ class DeterministicFixtureChapterProvider:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}"
             )
+        output = self.structured_fixture_output(stage, payload, output)
         return ModelProviderResult(
             output=output,
             provider_id=self.provider_id,
@@ -174,6 +175,28 @@ class DeterministicFixtureChapterProvider:
             currency="USD",
             real_model_call=False,
         )
+
+
+    @staticmethod
+    def structured_fixture_output(
+        stage: str, payload: dict[str, Any], output: dict[str, Any]
+    ) -> dict[str, Any]:
+        if stage not in {"draft", "revision"}:
+            return output
+        text = str(output["text"])
+        if stage == "draft":
+            artifacts = [
+                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": []}
+                for index, slot in enumerate((payload.get("realization_contract") or {}).get("slots", []))
+            ]
+        else:
+            draft = payload["draft"]
+            artifacts = json.loads(json.dumps(draft.get("scene_artifacts", [])))
+            if artifacts:
+                if not text.startswith(draft["text"]):
+                    raise ValueError("fixture revision only supports append-only prose")
+                artifacts[-1]["text"] += text[len(draft["text"]):]
+        return {**output, "scene_artifacts": artifacts, "text": "\n\n".join(item["text"] for item in artifacts) if artifacts else text}
 
 
 @dataclass(frozen=True, slots=True)

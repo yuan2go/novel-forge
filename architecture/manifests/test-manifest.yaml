@@ -147,6 +147,7 @@
       "production_targets": [
         "src/novel_forge/modules/narrative_state/reality.py",
         "src/novel_forge/modules/worldbuilding/dynamics.py",
+        "src/novel_forge/modules/worldbuilding/foundation.py",
         "src/novel_forge/modules/hierarchical_planning/causal_domain.py"
       ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"

@@ -741,6 +741,7 @@ def _seed_inputs(
     *,
     target_chapter_count: int = 3,
     governance_action: tuple[str, str] | None = None,
+    world_foundation: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -924,6 +925,7 @@ def _seed_inputs(
         principal=formation_principal,
         target_chapters=target_chapter_count,
         release_sha=RELEASE_SHA,
+        world_foundation=world_foundation,
     )
     result.update(hierarchy["asset_versions"])
     result["foundation_set_digest"] = hierarchy["foundation_set_digest"]
@@ -1485,7 +1487,8 @@ def _activate_plan_chain(
     return activated
 
 
-def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() -> None:
+def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request: pytest.FixtureRequest) -> None:
+    test_case = request.node
     harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
     _activate_planning_pack(harness)
     project_id = harness.project_id
@@ -1572,7 +1575,8 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
         "reader_promise",
     }
 
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=3)
+    from tests.integration.narrative_reality_vertical_support import compiled_world_fixture
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=compiled_world_fixture())
     from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
     PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
     with transaction() as connection, connection.cursor() as cursor:
@@ -1885,6 +1889,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres() ->
 
         native_evidence = execute_native_reality_vertical(composition=composition, chapter_application=chapter_application, snapshot=snapshot, generic=generic, transport=native_transport)
         assert native_evidence["proof_ceiling"] == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
+        test_case.user_properties.append(("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True)))
         execution.close()
 
 

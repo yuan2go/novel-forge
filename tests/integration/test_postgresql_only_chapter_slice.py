@@ -331,19 +331,9 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
-        # The primary node outputs are accompanied by 41 dimension evidence
-        # assets, deterministic continuity/Hook/Pacing/preparation/Plan/Context
-        # evidence, one frozen-context coverage report per Quality group, and
-        # one mandatory Narrative Runtime measurement and one accepted-only
-        # multi-scale longitudinal Quality projection at Quality fan-in.
-        # Canon no longer emits eleven delta arrays mislabeled as snapshots;
-        # accepted current state is materialized with ChapterOutcome at Book
-        # acceptance. Keep the count tied to the remaining protocol families.
-        # RetrievalResult adds one immutable production artifact between Memo
-        # and Context; the remaining ten non-dimension protocol outputs are
-        # deterministic preparation, continuity, Hook/Pacing, Context and
-        # longitudinal measurement evidence.
-        expected_output_count = len(ChapterNode) + 41 + 10 + len(QUALITY_GROUP_NODES)
+        # Evidence contains every current dimension, bounded Quality group coverage,
+        # and ten non-dimension preparation, continuity and projection artifacts.
+        expected_output_count = len(ChapterNode) + len(QUALITY_DIMENSIONS) + 10 + len(QUALITY_GROUP_NODES)
         self.assertEqual(len(manifest["outputs"]), expected_output_count)
         self.assertEqual(
             sum(
@@ -353,14 +343,8 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
             1,
         )
         self.assertEqual(
-            len(
-                [
-                    item
-                    for item in manifest["outputs"]
-                    if item["asset_type"] == "chapter_quality_evidence"
-                ]
-            ),
-            41,
+            {item["output_key"] for item in manifest["outputs"] if item["asset_type"] == "chapter_quality_evidence"},
+            {f"chapter.quality.evidence.{dimension}" for dimension in QUALITY_DIMENSIONS},
         )
         self.assertEqual(
             len(
