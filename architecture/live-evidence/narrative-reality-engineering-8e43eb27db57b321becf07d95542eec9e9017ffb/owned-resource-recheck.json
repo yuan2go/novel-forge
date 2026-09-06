@@ -1,0 +1,14 @@
+{
+  "schema_version": "owned-resource-recheck.v1",
+  "observed_at": "2026-09-06T05:02:58.561171+00:00",
+  "tested_sha": "8e43eb27db57b321becf07d95542eec9e9017ffb",
+  "canonical_p0_receipts": [
+    "compose-resource-ownership-nf-p0-866aaeb7e76b482db6b11e03cabb7eba-runtime.json",
+    "compose-resource-ownership-nf-p0-866aaeb7e76b482db6b11e03cabb7eba.json"
+  ],
+  "checked_p0_and_aborted_run_resources": 22,
+  "remaining_p0_resources": [],
+  "remaining_diagnostic_resources": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}
