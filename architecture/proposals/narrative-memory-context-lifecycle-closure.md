@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `d683d0d80956885f2ab94949e6320ace106c5e72`
+Reality baseline: `fd96f094e45ab456b98e306206c0dca5dee4dbc2`
 Baseline implementation identity:
-`sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a`
+`sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-05",
-  "review_due": "2026-10-05",
+  "reviewed_on": "2026-09-06",
+  "review_due": "2026-10-06",
   "reality_baseline": {
-    "sha": "d683d0d80956885f2ab94949e6320ace106c5e72",
-    "implementation_tree_sha": "sha256:7bea3b354a8aaffff907fefa347c0aaef147bd67bc8d6baadea37e68f0abbd7a"
+    "sha": "fd96f094e45ab456b98e306206c0dca5dee4dbc2",
+    "implementation_tree_sha": "sha256:c4168dea21da7a6111c13d3e07ffa21f35e941d708c99cff2ea293f904500c2f"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -31,28 +31,109 @@ Baseline implementation identity:
     "src/novel_forge/workers/runtime_groups.py"
   ],
   "implemented_refs": [
-    {"path": "src/novel_forge/modules/context_builder/governance.py", "symbol": "compile_effective_context_policy"},
-    {"path": "src/novel_forge/modules/context_builder/domain.py", "symbol": "build_authority_context_bundle", "contains": "authority-context-bundle-v8"},
-    {"path": "src/novel_forge/modules/context_builder/domain.py", "symbol": "replay_context_bundle"},
-    {"path": "src/novel_forge/modules/chapter_authority/execution_gateway.py", "symbol": "_provider_effective_context_policy"}
+    {
+      "path": "src/novel_forge/modules/context_builder/governance.py",
+      "symbol": "compile_effective_context_policy"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py",
+      "symbol": "build_authority_context_bundle",
+      "contains": "authority-context-bundle-v8"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py",
+      "symbol": "replay_context_bundle"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "symbol": "_provider_effective_context_policy"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/reality_projection.py",
+      "symbol": "project_role_context"
+    }
   ],
   "superseding_refs": [],
   "remaining_decisions": [
-    {"id": "digest-consumer-contract", "description": "DESIGN_REVIEW_REQUIRED: consumer-specific structured Digest coverage, deterministic generation and accepted-head timing.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/memory.py", "symbol": "NarrativeMemoryLayer"}]},
-    {"id": "diagnostic-retention-policy", "description": "DESIGN_REVIEW_REQUIRED: indexed per-source scan watermarks, replay/lookback bounds and observation receipt horizon.", "evidence_refs": [{"path": "src/novel_forge/workers/runtime_groups.py"}]},
-    {"id": "representation-cutover-policy", "description": "DESIGN_REVIEW_REQUIRED: frozen coverage corpus, safe payload/header migration and fenced cutover/rollback behavior.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/production_retrieval.py"}]}
+    {
+      "id": "digest-consumer-contract",
+      "description": "DESIGN_REVIEW_REQUIRED: consumer-specific structured Digest coverage, deterministic generation and accepted-head timing.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/memory.py",
+          "symbol": "NarrativeMemoryLayer"
+        }
+      ]
+    },
+    {
+      "id": "diagnostic-retention-policy",
+      "description": "DESIGN_REVIEW_REQUIRED: indexed per-source scan watermarks, replay/lookback bounds and observation receipt horizon.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/workers/runtime_groups.py"
+        }
+      ]
+    },
+    {
+      "id": "representation-cutover-policy",
+      "description": "DESIGN_REVIEW_REQUIRED: frozen coverage corpus, safe payload/header migration and fenced cutover/rollback behavior.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/production_retrieval.py"
+        }
+      ]
+    }
   ],
   "remaining_work": [
-    {"id": "gate-b-digest", "description": "Revision-bound structured Narrative Digest and freshness/head selection.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/memory.py"}], "absent_refs": [{"path": "src/novel_forge/modules/context_builder/digest.py"}]},
-    {"id": "gate-c-retention", "description": "Governed diagnostic projection, bounded retention and resumable GC.", "evidence_refs": [{"path": "src/novel_forge/workers/runtime_groups.py"}]},
-    {"id": "gate-d-generations", "description": "Typed multi-source retrieval and active representation generations with prebuilt embeddings.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/production_retrieval.py"}]},
-    {"id": "gate-e-derived-lifecycle", "description": "Coverage-gated cutover, tombstone, grace and derived payload purge without protected-evidence deletion.", "evidence_refs": [{"path": "src/novel_forge/modules/context_builder/embedding_projection.py"}]}
+    {
+      "id": "gate-b-digest",
+      "description": "Revision-bound structured Narrative Digest and freshness/head selection.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/memory.py"
+        }
+      ],
+      "absent_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/digest.py"
+        }
+      ]
+    },
+    {
+      "id": "gate-c-retention",
+      "description": "Governed diagnostic projection, bounded retention and resumable GC.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/workers/runtime_groups.py"
+        }
+      ]
+    },
+    {
+      "id": "gate-d-generations",
+      "description": "Typed multi-source retrieval and active representation generations with prebuilt embeddings.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/production_retrieval.py"
+        }
+      ]
+    },
+    {
+      "id": "gate-e-derived-lifecycle",
+      "description": "Coverage-gated cutover, tombstone, grace and derived payload purge without protected-evidence deletion.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/embedding_projection.py"
+        }
+      ]
+    }
   ]
 }
 -->
 
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen
-replay contract, eligibility decisions and Provider admission accounting. Gates B–E
+replay contract, eligibility decisions and Provider admission accounting. Revision-bound
+role projections now read accepted Reality through the same Context policy compiler.
+Gates B–E
 remain design scope. The detailed prescriptions below describe their intended
 constraints; they cannot establish current capability or authorize implementation.
 
