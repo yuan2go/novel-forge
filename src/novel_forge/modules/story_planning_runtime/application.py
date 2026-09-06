@@ -336,7 +336,7 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation actor must be the trusted Principal"
             )
         self._probe(execution_probe)
-        replay = self._terminal_generation_replay(command)
+        replay = self._terminal_generation_replay(command, principal=principal)
         if replay is not None:
             return replay
         definition = GENERATOR_CATALOG[command.generator_operation_name]
@@ -1202,7 +1202,7 @@ class StoryPlanningGenerationApplication:
         self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
         return projection
 
-    def _terminal_generation_replay(self, command: StoryPlanningGenerationCommand) -> PlanningGenerationResult | None:
+    def _terminal_generation_replay(self, command: StoryPlanningGenerationCommand, *, principal: Principal) -> PlanningGenerationResult | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute("SELECT op.operation_id, op.command_payload->'payload', op.status, g.status, g.candidate_asset_version_id FROM authority_operation op LEFT JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND op.definition_name=%s AND op.idempotency_scope='book:story-planning-generation' AND op.idempotency_key=%s", [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key])
             row = uow.cursor.fetchone()
@@ -1217,9 +1217,16 @@ class StoryPlanningGenerationApplication:
         state = self.story_design.require(project_id=command.project_id, asset_version_id=str(row[4]))
         if row[3] == "REPAIR_REQUIRED":
             with AuthorityUnitOfWork(self.database_url) as uow:
-                uow.cursor.execute("SELECT 1 FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL' LIMIT 1", [row[4]])
-                failed = uow.cursor.fetchone() is not None
+                uow.cursor.execute("SELECT report, report_hash FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL' ORDER BY created_at DESC, validation_report_id DESC LIMIT 1", [row[4]])
+                failed = uow.cursor.fetchone()
             if failed:
+                if command.execution_contract_version == "1.12.0":
+                    definition = GENERATOR_CATALOG[command.generator_operation_name]
+                    maximum = definition.maximum_semantic_repairs if failed[0]["validation_kind"] == "SEMANTIC" else definition.maximum_structural_regenerations
+                    if command.repair_number >= maximum:
+                        raise KernelError("PLANNING_REPAIR_BOUND_EXCEEDED", "a retained repair cannot expand its frozen attempt bound")
+                    repaired = replace(command, repair_of_candidate_id=str(row[4]), repair_reason=f"{failed[0]['error_code']}:{failed[1]}", repair_number=command.repair_number + 1, idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}")
+                    return self.generate(repaired, principal=principal)
                 return PlanningGenerationResult(str(row[0]), str(row[4]), PlanningGenerationStatus.REPAIR_REQUIRED, state, replayed=True)
         if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
             return None
@@ -1866,54 +1873,12 @@ class StoryPlanningGenerationApplication:
                 state,
             )
         self._update_generation_status(operation_id, "REPAIR_REQUIRED")
-        repaired = StoryPlanningGenerationCommand(
-            world_preparation_request=command.world_preparation_request,
-            project_id=command.project_id,
-            workspace_id=command.workspace_id,
-            book_id=command.book_id,
-            actor_id=command.actor_id,
-            generator_operation_name=command.generator_operation_name,
-            logical_key=command.logical_key,
-            input_versions=dict(command.input_versions),
-            idempotency_key=(
-                f"{command.idempotency_key}:repair:{command.repair_number + 1}"
-            ),
-            trace_id=command.trace_id,
-            correlation_id=command.correlation_id,
-            parent_version_id=command.parent_version_id,
-            arc_scope_volume_plan_version_ids=(
-                command.arc_scope_volume_plan_version_ids
-            ),
-            related_arc_plan_version_ids=command.related_arc_plan_version_ids,
-            dependent_arc_plan_version_ids=command.dependent_arc_plan_version_ids,
-            change_evidence_version_ids=command.change_evidence_version_ids,
-            governance_action_version_ids=command.governance_action_version_ids,
+        repaired = replace(
+            command,
             repair_of_candidate_id=candidate_asset_version_id,
             repair_reason=f"{error.code}:{report_hash}",
             repair_number=command.repair_number + 1,
-            auto_approve_low_risk=command.auto_approve_low_risk,
-            arc_working_set=command.arc_working_set,
-            narrative_search_id=command.narrative_search_id,
-            narrative_search_branch_key=command.narrative_search_branch_key,
-            narrative_search_parent_state_asset_version_id=(
-                command.narrative_search_parent_state_asset_version_id
-            ),
-            narrative_search_accepted_through_chapter=(
-                command.narrative_search_accepted_through_chapter
-            ),
-            narrative_search_strategy_directive=(
-                command.narrative_search_strategy_directive
-            ),
-            narrative_search_planning_horizon=(
-                command.narrative_search_planning_horizon
-            ),
-            narrative_search_desired_transformation=(
-                command.narrative_search_desired_transformation
-            ),
-            narrative_search_hard_constraints=(
-                command.narrative_search_hard_constraints
-            ),
-            narrative_realization=command.narrative_realization,
+            idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}",
         )
         return self.generate(repaired, principal=principal)
 

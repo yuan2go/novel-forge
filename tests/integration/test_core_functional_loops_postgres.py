@@ -3518,7 +3518,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             subject_kind="BOOK_RUN",
             subject_id=book.book_run_id,
         )
-        assert claim is not None
+        if claim is None:
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT report FROM authority_story_planning_validation_report WHERE project_id=%s AND status='FAIL'", [project_id])
+                failures = [row[0] for row in uow.cursor.fetchall()]
+            raise AssertionError({"state": runtime.authority.require(book.book_run_id)["state"], "planning_failures": failures})
         result = execute_book_coordination_claim(runtime_jobs, runtime, claim)
         if result["action"] == "WAIT_CONTROL_DECISION":
             readiness = api_get(f"/product/production/book-authority/runs/{book.book_run_id}/control-readiness")

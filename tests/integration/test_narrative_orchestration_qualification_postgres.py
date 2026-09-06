@@ -178,6 +178,10 @@ def _activate(
 def _qualification_planning_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
+    if stage == "world_candidates.generate":
+        return {"disposition": "NO_OP", "reason": "This transport tests existing accepted orchestration without a new world intervention.", "candidates": []}
+    if stage == "world_candidates.evaluate":
+        return {"evaluations": []}
     payload = planning_fixture_response(stage, inputs)
     command = dict(inputs.get("planning_command") or {})
     logical_key = str(command.get("logical_key") or "")
@@ -733,7 +737,7 @@ def test_planning_retry_freezes_narrative_intelligence_and_honors_revocation(
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env, planning_fixture_factory=_qualification_planning_response)
         planning = build_story_planning_generation_application(
             settings,
             execution=execution,
@@ -849,7 +853,11 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
     project_id = harness.project_id
     workspace_id = harness.workspace_id
     book_id = harness.book_ids[0]
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=3)
+    from tests.integration.narrative_reality_vertical_support import compiled_world_fixture
+    approved_world = compiled_world_fixture()
+    for rule in approved_world["rules"]:
+        rule.update(enforcement="SOFT_CAUSAL", predicate=None)
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=3, world_foundation=approved_world)
     generic["production_profile"] = _replace_production_profile(
         project_id=project_id,
         version_id=generic["production_profile"],
@@ -905,7 +913,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "narrative-qualification-worker",
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env, planning_fixture_factory=_qualification_planning_response)
         chapter = build_chapter_authority_application(
             settings, execution=execution, env=env
         )

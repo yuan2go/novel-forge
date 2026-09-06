@@ -303,7 +303,9 @@ accepted event identities in Why traces. Independent simultaneous events remain 
 travel uses the affected entity's clock. Retry reuses frozen Context and confirmed
 Provider outputs, and ChapterGroup recovery consumes a committed Book acceptance
 whose response was lost. New generation contracts are versioned separately from
-historical frozen commands, which retain their original stage set.
+historical frozen commands, which retain their original stage set. An unfinished
+directed repair resumes its exact child command from the retained failure report;
+the parent generation receipt does not substitute for Planning acceptance.
 
 Creative Foundation authoring can compile explicitly labeled natural-language Intent
 clauses into goal, required/forbidden constraints, tone, pacing, relationship, Arc,
