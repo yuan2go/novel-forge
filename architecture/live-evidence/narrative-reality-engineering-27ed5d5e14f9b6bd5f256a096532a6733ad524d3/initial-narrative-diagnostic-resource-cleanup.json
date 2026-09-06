@@ -1,0 +1,14 @@
+{
+  "schema_version": "owned-diagnostic-resource-cleanup.v1",
+  "observed_at": "2026-09-06T04:47:35.557322+00:00",
+  "container_id": "183ecf8537677fadaeb0ffde38149a024048b4144c1448205a6500969e449265",
+  "container_name": "nf-narrative-causal-20260906-pg",
+  "ownership_label": "novel-forge.task=narrative-causal-20260906",
+  "owned_volumes": [
+    "64899f40dc02a16cbe57eea340c5c2dfade610d44b0dce471b1fa1f64b2fae65"
+  ],
+  "remaining_containers": [],
+  "remaining_volumes": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}

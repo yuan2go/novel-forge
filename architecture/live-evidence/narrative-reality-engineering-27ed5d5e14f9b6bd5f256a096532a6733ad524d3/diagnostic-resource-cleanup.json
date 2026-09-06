@@ -1,0 +1,14 @@
+{
+  "schema_version": "owned-diagnostic-resource-cleanup.v1",
+  "observed_at": "2026-09-06T05:39:05.461526+00:00",
+  "container_id": "2dcd73d0b4f9910f2647d415b9728d2a2ff47eac70b8912937174bc38dd7c659",
+  "container_name": "nf-context-admission-20260906-pg",
+  "ownership_label": "novel-forge.task=context-admission-20260906",
+  "owned_volumes": [
+    "a8baf8821b301710f9016dba3eb5a6f0d522c14bca82af6215285889058c80db"
+  ],
+  "remaining_containers": [],
+  "remaining_volumes": [],
+  "remaining_resource_count": 0,
+  "status": "PASS"
+}
