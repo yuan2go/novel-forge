@@ -184,17 +184,18 @@ def export_artifacts(*, database_url: str, project_id: str, destination: Path, e
         raise RuntimeError("Partial artifact export; inspect asset-export-status.json")
 
 
-def export(*, composition, book_run_id: str, destination: Path):
+def export(*, composition, book_run_id: str, destination: Path, include_artifacts: bool = True):
     from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
     from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
 
     book = composition.authority.require(book_run_id)
     (destination / "book.json").write_text(json.dumps(book, default=str, indent=2) + "\n")
     errors = []
-    try:
-        export_artifacts(database_url=composition.authority.database_url, project_id=book["project_id"], destination=destination)
-    except Exception as error:
-        errors.append({"stage": "artifacts", "error": redact_secret_text(str(error))})
+    if include_artifacts:
+        try:
+            export_artifacts(database_url=composition.authority.database_url, project_id=book["project_id"], destination=destination)
+        except Exception as error:
+            errors.append({"stage": "artifacts", "error": redact_secret_text(str(error))})
     chapters = ChapterAuthorityQuery(composition.authority.database_url)
     runs = chapters.list_runs(project_id=book["project_id"], book_run_id=book_run_id, limit=500)
     if len(runs) == 500:

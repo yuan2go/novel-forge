@@ -316,9 +316,9 @@ PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
 For a credentialed run, first load an explicitly authorized route, credentials,
 Principals and spending caps. Credential availability alone does not authorize spending.
 `config/provider/creation-synthesis.env.example` asserts required settings and supplies
-neither credentials nor budget amounts. The production profile's chapter count is a
-bounded sample, and its small text-length limits are an internal smoke configuration,
-not a literary acceptance rubric. Edit and freeze the policies before execution if a
+neither credentials nor budget amounts. The chapter count is a bounded sample. Only the retained English `short-arc-*`
+configuration has small engineering smoke limits; the Chinese pilot retains its
+2000–3500 Han-character requirement. Edit and freeze the policies before execution if a
 different bounded sample is authorized.
 
 ```bash

@@ -408,6 +408,7 @@ def main(argv=None):
                     composition=composition,
                     book_run_id=book_run_id,
                     destination=args.evidence_dir,
+                    include_artifacts=False,
                 )
             if report.get("artifact_export_error"):
                 raise RuntimeError("Partial artifact export; inspect retained status")
