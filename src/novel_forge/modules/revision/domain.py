@@ -19,6 +19,8 @@ def apply_revision_result(
 ) -> dict[str, Any]:
     if not all((project_id, draft_asset_version_id, review_asset_version_id, context_bundle_version_id)):
         raise KernelError("REVISION_INPUT_INVALID", "versioned revision lineage is required")
+    from novel_forge.modules.review.diagnostics import open_diagnoses
+    diagnoses = open_diagnoses(review)
     if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1":
         from novel_forge.modules.review.diagnostics import prose_hash
         if (review.get("target_asset_version_id") != draft_asset_version_id
@@ -29,7 +31,7 @@ def apply_revision_result(
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
     open_blocking = {
         str(item.get("code") or "")
-        for item in review.get("issues", [])
+        for item in diagnoses
         if item.get("severity") == "blocking"
         and item.get("status", "OPEN") == "OPEN"
         and item.get("qualification", "ELIGIBLE") == "ELIGIBLE"
@@ -50,7 +52,7 @@ def apply_revision_result(
                 else item.get("status", "OPEN")
             ),
         }
-        for item in review.get("issues", [])
+        for item in diagnoses
     ]
     assertions = result.get("canon_assertions", [])
     if not isinstance(assertions, list) or any(not isinstance(item, dict) for item in assertions):

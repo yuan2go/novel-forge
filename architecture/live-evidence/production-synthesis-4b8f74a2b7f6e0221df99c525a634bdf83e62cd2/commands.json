@@ -1,0 +1,40 @@
+{
+  "executed": [
+    {
+      "command": "PYTHONPATH=src .venv/bin/pytest -q tests/unit/test_best_candidate_selection.py tests/unit/test_actionable_diagnostics.py tests/unit/test_grounded_canon.py tests/unit/test_foundation_hierarchy.py tests/unit/test_book_design_authority_domain.py tests/unit/test_narrative_evolution_book_design.py",
+      "exit_code": 0,
+      "source_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+      "report": "final-export-focused.xml",
+      "pytest_tests": 61,
+      "pytest_subtests": 9,
+      "junit_cases": 70,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$ISOLATED_POSTGRES_URL\" PYTHONPATH=src .venv/bin/pytest -q tests/integration/test_synthesis_formation_postgres.py",
+      "exit_code": 0,
+      "source_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+      "report": "final-export-native.xml",
+      "tests": 1,
+      "failures": 0,
+      "skips": 0,
+      "seconds": 96.557
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis --brief config/production/short-arc-brief.json --policy config/production/short-arc-creation.json --formation-policy config/production/short-arc-formation.json --project-id example-project --book-id example-book --root /tmp/novel-creation-runtime --run-key creation-control --evidence-dir \"$NEW_EXPORT_DIRECTORY\"",
+      "exit_code": 0,
+      "source_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+      "report": "offline-config-check.json",
+      "provider_calls": 0
+    }
+  ],
+  "full_pytest": "NOT_RUN_USER_SCOPE",
+  "canonical_P0": "NOT_RUN_USER_SCOPE",
+  "make_validate": "NOT_RUN_USER_SCOPE",
+  "historical_migration_matrix": "NOT_RUN_USER_SCOPE",
+  "migration_reproduction_commands": [
+    "PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate",
+    "Use the retained actual-baseline archive and migration-originals/migration_upgrade.py with isolated existing-generation fixture metadata; migration-originals retains the exact local command input, not a business production driver."
+  ]
+}

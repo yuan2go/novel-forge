@@ -313,7 +313,10 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
 
 
 def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_CAPABILITIES
+
     capabilities = (
+        *FOUNDATION_CAPABILITIES,
         ("book_plan.generate", "planning.book.generate"),
         ("volume_plan.generate", "planning.volume.generate"),
         ("arc_plan.generate", "planning.arc.generate"),

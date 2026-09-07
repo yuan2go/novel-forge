@@ -1,0 +1,1 @@
+{"status":"FAIL","image":"postgres:16-alpine","reason":"extension vector not available","action":"replace owned disposable container with pgvector/pgvector:pg16"}

@@ -20,6 +20,8 @@ _MAX_SUMMARY_CHARACTERS = 1200
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
+
+
 _PLANNING_STAGES = frozenset(
     {
         "book_plan.generate",
@@ -230,6 +232,15 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         if task.get("role") != expected_role:
             raise KernelError("WORLD_PROVIDER_ROLE_INVALID", "world stage cannot consume another role's context")
         return _task(stage, world_preparation=_compact(task))
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_task
+
+    if stage in FOUNDATION_GENERATORS:
+        command = inputs.get("planning_command")
+        frozen = inputs.get("frozen_inputs")
+        task = inputs.get("foundation_task")
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage):
+            raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
+        return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
         command = inputs.get("planning_command")
         if not isinstance(command, Mapping):
@@ -382,15 +393,21 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
         else:
-            payload["review_issues"] = _compact(
-                dict(inputs.get("review") or {}).get("issues") or []
-            )
+            from novel_forge.modules.review.diagnostics import open_diagnoses
+            payload["review_issues"] = _compact(open_diagnoses(dict(inputs.get("review") or {})))
+            if (source.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v2":
+                payload["targeted_editing"] = {
+                    "mode": "DIAGNOSIS_DIRECTED_ONLY",
+                    "tasks": [{key: issue[key] for key in ("code", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria") if key in issue} for issue in open_diagnoses(dict(inputs.get("review") or {}))],
+                    "instructions": "Repair each evidenced problem using its stated criterion. Keep unaffected choices, information boundaries, and voice. An aesthetic suggestion is optional; unknown or unresolved blockers remain open. Read adjacent passages for continuity after a local edit.",
+                }
         return _task(stage, **payload)
     if stage == "rereview":
+        from novel_forge.modules.review.diagnostics import open_diagnoses
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
             _compact(item)
-            for item in dict(inputs.get("review") or {}).get("issues") or []
+            for item in open_diagnoses(dict(inputs.get("review") or {}))
         ]
         return _task(
             stage,
@@ -751,7 +768,9 @@ def build_provider_context_view(
                 }
             ],
         }
-    if stage in _PLANNING_STAGES:
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+
+    if stage in _PLANNING_STAGES or stage in FOUNDATION_GENERATORS:
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
         return _build_narrative_evaluation_context_view(context_bundle)
@@ -1580,7 +1599,13 @@ def _project_planning_content(
 ) -> tuple[dict[str, Any], int, int]:
     if role == "previous_chapter_outcome":
         return _compact(_pick(content, "chapter_number", "scene_outcomes", "arc_evidence", "realization_evidence", "reader_state_observations")), 0, 0
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+
     payload = content.get("candidate_payload", content)
+    if stage in FOUNDATION_GENERATORS:
+        if not isinstance(payload, Mapping):
+            raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Foundation context must be structured")
+        return _compact({key: value for key, value in payload.items() if key not in {"constraint_envelope", "foundation_parent_bindings", "execution_evidence"}}), 0, 0
     if role == "creative_foundation" and isinstance(payload, Mapping) and "narrative_intent" in payload:
         from novel_forge.modules.story_design_authority.intent import NarrativeIntent
         target = {"book_plan.generate": "BOOK", "volume_plan.generate": "VOLUME", "arc_plan.generate": "ARC", "chapter_group_plan.generate": "NEAR_TERM", "chapter_plan.generate": "CHAPTER"}[stage]

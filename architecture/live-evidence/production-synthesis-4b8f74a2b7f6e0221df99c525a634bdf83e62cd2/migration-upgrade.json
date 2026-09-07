@@ -1,0 +1,12 @@
+{
+  "previous_source_sha": "8b2c48372b20301d88d6d00cceae9e070ce63549",
+  "previous_head": "20260907_0119_grounded_chapter_acceptance",
+  "after_head": "20260907_0120_foundation_generation",
+  "applied_count": 120,
+  "existing_generations": 5,
+  "before_data_hash": "46423260589124b9d4168fc503cddd97b561ea410201bd1931e172a342f9cb01",
+  "after_data_hash": "46423260589124b9d4168fc503cddd97b561ea410201bd1931e172a342f9cb01",
+  "unchanged": true,
+  "ok": true,
+  "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+}

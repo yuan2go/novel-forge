@@ -581,6 +581,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 ),
                 book_design_asset_version_id=request.book_design_asset_version_id,
                 book_design_content_hash=request.book_design_content_hash,
+                creative_brief_asset_version_id=request.creative_brief_asset_version_id,
+                creative_brief_content_hash=request.creative_brief_content_hash,
+                generation_policy=request.generation_policy,
             )
             admission = composition.formation.admit(
                 StartStoryFormationCommand(

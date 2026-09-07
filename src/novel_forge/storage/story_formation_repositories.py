@@ -154,6 +154,8 @@ class StoryFormationRepository:
         *,
         expected_stage: str,
         expected_version: int,
+        generated_layer: FormationLayerInput | None = None,
+        generated_book_design: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -189,8 +191,14 @@ class StoryFormationRepository:
                 "persisted Formation input no longer matches its digest",
             )
         stage = StoryFormationStage(str(row[3]))
+        if generated_layer is not None:
+            expected_role = FoundationRole.CREATIVE_FOUNDATION if stage is StoryFormationStage.CREATIVE_SEARCH else _STAGE_ROLE.get(stage)
+            if not frozen.creative_brief_asset_version_id or generated_layer.role is not expected_role:
+                raise KernelError("STORY_FORMATION_GENERATED_LAYER_SCOPE", "Generated layer does not belong to this frozen stage")
+            self._record_generated_layer(formation_run_id, generated_layer)
         if stage is StoryFormationStage.CREATIVE_SEARCH:
-            self._record_creative_search(formation_run_id, frozen)
+            selected = self.stage_input(formation_run_id, FoundationRole.CREATIVE_FOUNDATION) if frozen.creative_brief_asset_version_id else frozen.by_role[FoundationRole.CREATIVE_FOUNDATION]
+            self._record_creative_search(formation_run_id, selected)
             next_stage = StoryFormationStage.CREATIVE_FOUNDATION
         elif stage in _STAGE_ROLE:
             role = _STAGE_ROLE[stage]
@@ -198,7 +206,7 @@ class StoryFormationRepository:
                 formation_run_id=formation_run_id,
                 project_id=str(row[0]),
                 book_id=str(row[1]),
-                layer=frozen.by_role[role],
+                layer=self.stage_input(formation_run_id, role) if frozen.creative_brief_asset_version_id else frozen.by_role[role],
             )
             next_stage = StoryFormationStage(
                 {
@@ -211,6 +219,11 @@ class StoryFormationRepository:
                 }[role]
             )
         elif stage is StoryFormationStage.BOOK_DESIGN:
+            if generated_book_design is not None:
+                if not frozen.creative_brief_asset_version_id or set(generated_book_design) != {"asset_version_id", "content_hash"}:
+                    raise KernelError("STORY_FORMATION_DESIGN_INPUT_INVALID", "Generated design must bind the exact brief Formation")
+                row = list(row)
+                row[6], row[7] = generated_book_design["asset_version_id"], generated_book_design["content_hash"]
             if not str(row[6] or "") or not str(row[7] or ""):
                 self.cursor.execute(
                     """
@@ -237,10 +250,10 @@ class StoryFormationRepository:
                 """
                 UPDATE authority_story_formation_run
                 SET lifecycle='READY', current_stage='COMPLETE',
-                    foundation_set_digest=%s, version=version+1, updated_at=NOW()
+                    foundation_set_digest=%s, book_design_asset_version_id=%s, book_design_content_hash=%s, version=version+1, updated_at=NOW()
                 WHERE formation_run_id=%s AND version=%s
                 """,
-                [foundation.set_digest, formation_run_id, int(row[8])],
+                [foundation.set_digest, row[6], row[7], formation_run_id, int(row[8])],
             )
             return self.require(formation_run_id)
         else:
@@ -460,7 +473,7 @@ class StoryFormationRepository:
                    formation_policy_version, frozen_input_digest,
                    COALESCE(foundation_set_digest, ''), version,
                    failure, recovery_instruction, book_design_asset_version_id,
-                   book_design_content_hash
+                   book_design_content_hash, expected_book_version, frozen_stage_inputs
             FROM authority_story_formation_run
             WHERE formation_run_id=%s
             """,
@@ -485,13 +498,77 @@ class StoryFormationRepository:
             "recovery_instruction",
             "book_design_asset_version_id",
             "book_design_content_hash",
+            "expected_book_version",
+            "frozen_input",
         )
         return dict(zip(names, row, strict=True))
 
+    def stage_input(self, formation_run_id: str, role: FoundationRole) -> FormationLayerInput:
+        self.cursor.execute(
+            "SELECT checkpoint->'generated_layer' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage=%s AND attempt_ordinal=1",
+            [formation_run_id, role.value],
+        )
+        row = self.cursor.fetchone()
+        if row is None or not row[0]:
+            raise KernelError("STORY_FORMATION_STAGE_INPUT_MISSING", "Generated stage has no committed input")
+        return FormationLayerInput.from_mapping(dict(row[0]))
+
+    def _record_generated_layer(self, formation_run_id: str, layer: FormationLayerInput) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_story_formation_stage(
+                formation_stage_id, formation_run_id, stage, attempt_ordinal, status,
+                generation_operation_id, candidate_asset_version_id, candidate_content_hash,
+                qualification_evidence_asset_version_id, qualification_hash,
+                activation_operation_id, binding, checkpoint
+            ) VALUES (%s,%s,%s,1,'PENDING',%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO NOTHING
+            """,
+            [str(uuid4()), formation_run_id, layer.role.value, layer.generation_operation_id,
+             layer.asset_version_id, layer.content_hash, layer.qualification_evidence_asset_version_id,
+             layer.qualification_hash, layer.activation_operation_id, Jsonb({}),
+             Jsonb({"generated_layer": layer.to_dict()})],
+        )
+        if self.stage_input(formation_run_id, layer.role) != layer:
+            raise KernelError("STORY_FORMATION_STAGE_INPUT_DRIFT", "A retry cannot replace the committed generated layer")
+
+    def generated_layer(self, *, project_id: str, book_id: str, candidate_id: str, candidates: tuple[str, ...], reasons: tuple[str, ...]) -> FormationLayerInput:
+        self.cursor.execute(
+            """
+            SELECT generation.generator_operation_name, version.content_hash, version.schema_version,
+                   generation.operation_id, qualification.evaluation_asset_version_id,
+                   evidence.content_hash, active.activated_by_operation_id
+            FROM authority_story_planning_generation AS generation
+            JOIN authority_asset_version AS version ON version.asset_version_id=generation.candidate_asset_version_id
+            JOIN authority_narrative_design_qualification AS qualification
+              ON qualification.generation_operation_id=generation.operation_id
+             AND qualification.asset_version_id=version.asset_version_id
+            JOIN authority_asset_version AS evidence ON evidence.asset_version_id=qualification.evaluation_asset_version_id
+            JOIN authority_story_design_active_version AS active
+              ON active.project_id=generation.project_id AND active.asset_version_id=version.asset_version_id
+            WHERE generation.project_id=%s AND generation.book_id=%s
+              AND generation.candidate_asset_version_id=%s AND qualification.qualification_status='PASS'
+            ORDER BY qualification.design_layer LIMIT 16
+            """,
+            [project_id, book_id, candidate_id],
+        )
+        rows = self.cursor.fetchall()
+        unique = set(tuple(str(value) for value in row) for row in rows)
+        if len(unique) != 1:
+            raise KernelError("FOUNDATION_GENERATION_EVIDENCE_REQUIRED", "Generated Foundation needs one exact independent evaluation and activation")
+        row = unique.pop()
+        layer = FormationLayerInput(
+            role=FoundationRole(GENERATOR_DESIGN_SCOPE[row[0]].value), asset_version_id=candidate_id,
+            content_hash=row[1], schema_version=row[2], generation_operation_id=row[3],
+            qualification_evidence_asset_version_id=row[4], qualification_hash=row[5],
+            activation_operation_id=row[6], candidate_asset_version_ids=candidates, selection_reason=reasons,
+        )
+        self._require_qualification(project_id, layer)
+        return layer
+
     def _record_creative_search(
-        self, formation_run_id: str, frozen: StoryFormationInput
+        self, formation_run_id: str, selected: FormationLayerInput
     ) -> None:
-        selected = frozen.by_role[FoundationRole.CREATIVE_FOUNDATION]
         requested = tuple(selected.candidate_asset_version_ids)
         self.cursor.execute(
             """
@@ -511,15 +588,10 @@ class StoryFormationRepository:
         )
         rows = {str(row[0]): row for row in self.cursor.fetchall()}
         if set(rows) != set(requested) or any(
-            tuple(str(item) for item in row[1:7])
-            != (
-                FoundationRole.CREATIVE_FOUNDATION.value,
-                "QUALIFIED",
-                "CURRENT",
-                "ACTIVE",
-                "ELIGIBLE",
-                "CLEAR",
-            )
+            tuple(str(item) for item in row[1:4])
+            != (FoundationRole.CREATIVE_FOUNDATION.value, "QUALIFIED", "CURRENT")
+            or str(row[4]) not in {"CANDIDATE", "ACTIVE"}
+            or tuple(str(item) for item in row[5:7]) != ("ELIGIBLE", "CLEAR")
             for row in rows.values()
         ):
             raise KernelError(
@@ -701,7 +773,7 @@ class StoryFormationRepository:
             """
             UPDATE authority_story_formation_stage
             SET status='ACTIVE', upstream_digest=NULLIF(%s,''),
-                binding=%s, checkpoint=%s, updated_at=NOW()
+                binding=%s, checkpoint=checkpoint || %s, updated_at=NOW()
             WHERE formation_run_id=%s AND stage=%s AND attempt_ordinal=1
               AND status='PENDING'
             """,

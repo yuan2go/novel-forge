@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "native-creation-scripted-wiring",
+      "patterns": [
+        "tests/integration/test_synthesis_formation_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-design-authority",
+      "capability": "native-creation-wiring",
+      "production_target": "src/novel_forge/modules/book_design_authority/formation.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
       "id": "actionable-diagnostics",
       "patterns": [
         "tests/unit/test_actionable_diagnostics.py"

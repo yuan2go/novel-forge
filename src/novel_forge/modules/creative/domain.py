@@ -23,6 +23,14 @@ EVALUATION_FIELDS = (
 
 
 def validate_creative_brief(brief: dict[str, Any]) -> dict[str, Any]:
+    if brief.get("creative_brief_contract_version") == "creative-brief-v2":
+        if set(brief) != {"creative_brief_contract_version", "idea", "genre", "audience", "constraints", "source_boundaries"}:
+            raise ValueError("Natural-language CreativeBrief fields must match exactly")
+        if any(not isinstance(brief[field], str) or not brief[field].strip() or len(brief[field]) > 12000 for field in ("idea", "genre", "audience")):
+            raise ValueError("CreativeBrief needs a bounded idea, genre and audience")
+        if any(not isinstance(brief[field], list) or not brief[field] or len(brief[field]) > 32 or any(not isinstance(item, str) or not item.strip() or len(item) > 2000 for item in brief[field]) for field in ("constraints", "source_boundaries")):
+            raise ValueError("CreativeBrief needs bounded author constraints and source boundaries")
+        return dict(brief)
     missing = [field for field in BRIEF_FIELDS if brief.get(field) in (None, "", [])]
     if missing:
         raise ValueError("CreativeBrief missing: " + ", ".join(missing))

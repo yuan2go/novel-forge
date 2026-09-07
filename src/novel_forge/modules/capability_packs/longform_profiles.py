@@ -34,7 +34,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v6"
+STORY_PLANNING_PROMPT_VERSION = "v7"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
@@ -54,7 +54,10 @@ def build_story_planning_pack_profile(
     pack_id: str = "story_planning_pack",
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_CAPABILITIES
+
     capabilities = (
+        *FOUNDATION_CAPABILITIES,
         ("book_plan.generate", "planning.book.generate"),
         ("volume_plan.generate", "planning.volume.generate"),
         ("arc_plan.generate", "planning.arc.generate"),
@@ -95,7 +98,7 @@ def build_story_planning_pack_profile(
     manifest["identity"].update(
         name="Story Planning Generator Pack",
         domain="story_planning",
-        description="Five governed Story Planning candidate generators.",
+        description="Governed Foundation formation and hierarchical Planning candidate generation.",
     )
     manifest["compatibility"]["required_capabilities"] = [
         *(item[1] for item in capabilities),
@@ -513,6 +516,9 @@ def _bind_planning_qualification_skills(
     artifacts: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     skill_paths = {
+        "topic-development": "skills/topic-development/SKILL.md",
+        "worldbuilding": "skills/worldbuilding/SKILL.md",
+        "hot-novel-business-deconstruction": "skills/hot-novel-business-deconstruction/SKILL.md",
         "long-outline": "skills/long-outline/SKILL.md",
         "character-design": "skills/character-design/SKILL.md",
         "canon-continuity-graph": "skills/canon-continuity-graph/SKILL.md",
@@ -525,6 +531,9 @@ def _bind_planning_qualification_skills(
     required = {
         profile.skill_ref
         for stage in (
+            "creative.candidates.generate", "theme.candidates.generate",
+            "ending.intent.generate", "reader.promise.generate",
+            "world.design.generate", "character.cast.generate",
             "book_plan.generate",
             "volume_plan.generate",
             "arc_plan.generate",

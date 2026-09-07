@@ -166,6 +166,13 @@ def compile_realization_contract(
         "integration_policy": "ordered-slot-concatenation.v1",
         "authority": "CANDIDATE_REALIZATION_ONLY",
     }
+    policies = [fact["value"] for policy in style.get("policies", []) for fact in policy.get("structured_facts", []) if isinstance(fact, dict) and fact.get("key") == "realization_policy"]
+    if policies:
+        if len(policies) != 1 or policies[0] != {"contract_version": "scene-craft-tasks.v1", "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS"}:
+            raise KernelError("REALIZATION_CRAFT_POLICY_INVALID", "Creative realization requires one supported frozen policy")
+        body["contract_version"] = "scene-realization-composition.v2"
+        body["craft_tasks"] = _scene_craft_tasks(scenes, slots, voices)
+        body["composition_method"] = "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration."
     return {**body, "contract_digest": narrative_hash(body)}
 
 
@@ -312,3 +319,33 @@ def reconcile_revision_composition(
         "REQUIRED_FOR_NEW_CANDIDATE_VERSION"
     )
     return integrated
+
+
+_CRAFT_OBJECTIVES = {
+    "SKELETON": ("Render the scene's consequential choice", ["motive before choice", "specific cost and changed options", "cause before consequence"]),
+    "DIALOGUE": ("Dramatize one actor's attempt to influence another", ["what the actor wants from the exchange", "what the actor avoids saying", "only this actor's available knowledge and established voice"]),
+    "ACTION": ("Make action and resistance spatially legible", ["starting positions and available resources", "action, opposing response, resulting cost", "no unexplained movement or capability"]),
+    "INTERIOR": ("Show the viewpoint's competing interpretations", ["perception versus belief", "choice between values under pressure", "thought changes an action rather than repeating narration"]),
+    "DESCRIPTION": ("Select details that affect this scene's choices", ["viewpoint-directed sensory detail", "relevant obstacle or affordance", "avoid unneeded exposition"]),
+    "TRANSITION": ("Carry the previous consequence into the next scene", ["consistent elapsed time and location", "preserve emotional residue", "do not restage completed events"]),
+    "INTEGRATION": ("Edit scene junctions as a continuous chapter", ["remove duplicated explanation", "preserve voice and information boundaries", "track the emotional and causal progression"]),
+}
+
+
+def _scene_craft_tasks(scenes, slots, voices):
+    by_scene = {scene["scene_id"]: scene for scene in scenes}
+    tasks = []
+    for slot in slots:
+        goal, checks = _CRAFT_OBJECTIVES[slot["capability"]]
+        scene = by_scene[slot["scene_id"]]
+        tasks.append({
+            "slot_id": slot["slot_id"], "specialism": slot["capability"],
+            "objective": goal, "scene_goal": scene.get("goal", ""),
+            "beat_ids": slot["beat_ids"], "actor_ids": slot["character_ids"],
+            "available_fact_ids": slot["accessible_knowledge"], "craft_checks": checks,
+            "voice_sources": [{key: voice[key] for key in ("asset_version_id", "voice_id", "layer", "character_id", "guidance") if key in voice} for voice in voices if not voice.get("character_id") or voice["character_id"] in slot["character_ids"]],
+            "output_use": "A passage within the continuous final chapter, subject to grounded review; no state mutation",
+        })
+    return {"contract_version": "scene-craft-tasks.v1", "tasks": tasks,
+            "chapter_edit": ["Assess scene junctions together", "Retain causal and epistemic sequence", "Remove redundant recaps", "Preserve unresolved uncertainty"],
+            "semantic_proof": "NOT_CLAIMED_BY_SLOT_COVERAGE_OR_DECLARED_FACT_IDS"}

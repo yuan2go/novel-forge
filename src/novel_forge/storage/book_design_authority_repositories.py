@@ -318,29 +318,24 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_EVALUATION_NOT_REQUIRED",
                 "legacy BookDesign candidates do not enter the independent evaluation path",
             )
-        if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
-            self._require_v5_foundation(book, asset_version_id)
         target_status = "VALIDATED" if passed else "REJECTED"
         target_eligibility = "ELIGIBLE" if passed else "INELIGIBLE"
-        if (
-            candidate["status"] == target_status
-            and candidate["last_operation_id"] == evaluation_operation_id
-        ):
-            return {
-                "asset_version_id": asset_version_id,
-                "status": target_status,
-                "eligibility": target_eligibility,
-            }
-        if candidate["status"] != "EVALUATION_PENDING":
-            raise KernelError(
-                "BOOK_DESIGN_EVALUATION_CONFLICT",
-                "BookDesign candidate evaluation is already terminal",
-            )
         if candidate["created_by_operation_id"] != generation_operation_id:
-            raise KernelError(
-                "BOOK_DESIGN_EVALUATION_LINEAGE_INVALID",
-                "BookDesign evaluation differs from candidate generation lineage",
+            raise KernelError("BOOK_DESIGN_EVALUATION_LINEAGE_INVALID", "BookDesign evaluation differs from candidate generation lineage")
+        if candidate["status"] != "EVALUATION_PENDING":
+            self.cursor.execute(
+                """SELECT decision, evidence FROM authority_asset_qualification
+                   WHERE qualification_id=%s AND asset_version_id=%s
+                     AND policy_version='independent-narrative-evaluation-v1'""",
+                [evidence_hash({"asset_version_id": asset_version_id, "evaluation_operation_id": evaluation_operation_id}), asset_version_id],
             )
+            recorded = self.cursor.fetchone()
+            expected = {"schema_version": "book-design-semantic-evaluation.v1", "generation_operation_id": generation_operation_id, "evaluation_operation_id": evaluation_operation_id, "status": "PASS" if passed else "FAIL", "trust_boundary": "INDEPENDENT"}
+            if recorded is not None and recorded[0] == target_eligibility and dict(recorded[1]) == expected:
+                return {"asset_version_id": asset_version_id, "status": target_status, "eligibility": target_eligibility}
+            raise KernelError("BOOK_DESIGN_EVALUATION_CONFLICT", "BookDesign candidate evaluation is already terminal with different evidence")
+        if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            self._require_v5_foundation(book, asset_version_id)
         self.cursor.execute(
             """
             UPDATE authority_book_design_candidate

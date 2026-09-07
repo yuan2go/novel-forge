@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_envelope, normalize_foundation_payload
+
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 import hashlib
@@ -15,8 +17,8 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.13.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.11.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.14.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.12.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
@@ -134,8 +136,11 @@ class PlanningGenerationStatus(StrEnum):
     REJECTED = "REJECTED"
 
 
+
+
 GENERATOR_SCOPE: Mapping[str, PlanningScope] = MappingProxyType(
     {
+        **{name: PlanningScope.NOT_APPLICABLE for name in FOUNDATION_GENERATORS},
         "book_plan.generate": PlanningScope.BOOK,
         "volume_plan.generate": PlanningScope.VOLUME,
         "arc_plan.generate": PlanningScope.ARC,
@@ -147,6 +152,7 @@ GENERATOR_SCOPE: Mapping[str, PlanningScope] = MappingProxyType(
 
 GENERATOR_INPUT_ROLES: Mapping[str, tuple[str, ...]] = MappingProxyType(
     {
+        **FOUNDATION_INPUT_ROLES,
         "book_plan.generate": (
             "creative_foundation",
             "book_design",
@@ -273,16 +279,18 @@ class StoryPlanningGenerationCommand:
     narrative_realization: Mapping[str, Any] | None = None
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.13.0"
+    execution_contract_version: str = "1.14.0"
 
     def __post_init__(self) -> None:
-        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0"} or (
+        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0"} or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
         ):
             raise ValueError(
                 "historical Planning commands cannot acquire new world stages"
             )
+        if self.generator_operation_name in FOUNDATION_GENERATORS and self.execution_contract_version != "1.14.0":
+            raise ValueError("Foundation generation requires its current frozen execution contract")
         if self.world_preparation_request:
             from novel_forge.modules.worldbuilding.dynamics import (
                 require_contract_fields,
@@ -895,7 +903,7 @@ class PlanningGenerationCandidate:
         object.__setattr__(
             self,
             "candidate_payload",
-            MappingProxyType(dict(self.candidate_payload)),
+            MappingProxyType(normalize_foundation_payload(self.generator_operation_name, self.candidate_payload) if self.generator_operation_name in FOUNDATION_GENERATORS else dict(self.candidate_payload)),
         )
 
     def authority_content(
@@ -909,6 +917,8 @@ class PlanningGenerationCandidate:
         envelope = dict(constraint_envelope or {})
         if envelope:
             payload["constraint_envelope"] = envelope
+        if self.generator_operation_name in FOUNDATION_GENERATORS:
+            payload["foundation_parent_bindings"] = dict(envelope["foundation_parent_bindings"])
         return {
             **payload,
             "schema_version": "story_design.authority.v1",
@@ -938,6 +948,8 @@ def build_planning_constraint_envelope(
 ) -> dict[str, Any]:
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
+    if generator_operation_name in FOUNDATION_GENERATORS:
+        return foundation_envelope(generator=generator_operation_name, inputs=frozen_inputs)
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
     actual_roles = set(input_contents)
     extra_roles = actual_roles - expected_roles

@@ -1039,7 +1039,10 @@ class StoryFormationStartRequest(BaseModel):
     workspace_id: str = Field(min_length=1)
     expected_book_version: int = Field(ge=0)
     idempotency_key: str = Field(min_length=1)
-    layers: list[StoryFormationLayerRequest] = Field(min_length=6, max_length=6)
+    layers: list[StoryFormationLayerRequest] = Field(default_factory=list, max_length=6)
+    creative_brief_asset_version_id: str = ""
+    creative_brief_content_hash: str = ""
+    generation_policy: dict[str, Any] | None = None
     book_design_asset_version_id: str = ""
     book_design_content_hash: str = Field(
         default="", pattern=r"^(?:|sha256:[0-9a-f]{64})$"

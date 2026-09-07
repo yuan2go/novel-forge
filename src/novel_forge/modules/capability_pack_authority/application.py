@@ -423,8 +423,18 @@ def _select_capability_skill(
     ]
     if len(output_matches) == 1:
         return output_matches[0]
+    foundation_skills = {
+        "creative.proposal.generate": "topic-development",
+        "theme.question.generate": "narrative-beat-design",
+        "ending.intent.generate": "long-outline",
+        "reader.promise.generate": "hot-novel-business-deconstruction",
+        "world.design.generate": "worldbuilding",
+        "character.cast.generate": "character-design",
+    }
     preferred_skill = (
-        "chapter-outline"
+        foundation_skills[capability_id]
+        if capability_id in foundation_skills
+        else "chapter-outline"
         if capability_id.startswith("planning.")
         else "context-builder-source-isolation"
         if capability_id.startswith("retrieval.")

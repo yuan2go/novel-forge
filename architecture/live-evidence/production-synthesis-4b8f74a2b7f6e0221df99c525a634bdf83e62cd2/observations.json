@@ -1,0 +1,350 @@
+{
+  "kind": "SCOPED_PRODUCTION_OBSERVATIONS",
+  "authority": "EVIDENCE_ONLY_NOT_RUNTIME_AUTHORITY",
+  "observed_at_utc": "2026-09-07T15:25:28.238356+00:00",
+  "tested_implementation_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+  "implementation_tree_identity": "sha256:7b73a9e17f23295e18fae94cfdd5cc95ad5e8ae1fb31fc93fcfd4077d62b6334",
+  "functional_implementation": "NATIVE_CHAIN_EXECUTABLE",
+  "scripted_production_wiring": "PASS_WITH_FIXTURE_PROOF_CEILING",
+  "local_backend_engineering": "FOCUSED_CHECKS_PASS_FULL_QUALIFICATION_NOT_RUN",
+  "real_provider_smoke": "BLOCKED_NO_EXPLICIT_AUTHORIZED_SPENDING_BUDGET",
+  "real_creative_comparison": "NOT_RUN",
+  "human_editorial": "WAITING_EVIDENCE",
+  "longitudinal": "NOT_PROVEN",
+  "production_quality": "NOT_PROVEN",
+  "native_entry": "StoryFormationApplication.admit -> Formation RuntimeJob -> governed Planning generation and independent semantic evaluation -> Story Design activation -> Book Design activation -> Content creation-input policy/empty genesis -> Book Opening RuntimeJob -> Book Supervisor/Planning/Chapter Scheduler -> Memo/Draft/Review/Revision/Re-review/Selection -> final-prose extraction/support/Quality -> Book acceptance -> accepted Reality and next chapter Context",
+  "chapters": [
+    {
+      "chapter": 3,
+      "acceptance": {
+        "acceptance_id": "chapter-acceptance:dc4e387e8d23b713f78efff0ab4567d995b2934ab0af17990a7c3dc2cfde718e",
+        "status": "COMMITTED",
+        "accepted_through_chapter": 3,
+        "outcome_asset_version_id": "authority-output:e05cf269-827a-4ab0-a13f-67e446524560:chapter.outcome:v1",
+        "story_state_asset_version_id": "authority-output:e05cf269-827a-4ab0-a13f-67e446524560:chapter.story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:e05cf269-827a-4ab0-a13f-67e446524560:chapter.canon.current:v1",
+        "longform_projection_set_id": "longform-projection:89f0e6d1b650abbf2edf6839ae883fa8536165e7023569a00822345cd4d00ff8",
+        "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS"
+      },
+      "creation_sources": {
+        "status": "EXACT_FROZEN_INPUT",
+        "input_snapshot_id": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "snapshot_hash": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "book_design_asset_version_id": "8255cbf8-8200-4398-a579-38517e6edcb1",
+        "foundation_set": {
+          "bindings": [
+            {
+              "role": "CREATIVE_FOUNDATION",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:51bb666f175d6676a8210109f27b8855be55365669658bbd5f5a25ec1b84fb1a",
+              "activation_id": "63335cf0-cf06-488a-ba02-9cd9fed492c7",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "",
+              "asset_version_id": "authority-output:d4cda16d-3eb3-4266-aa1b-c091b8cc21ab:story_planning.candidate:v1",
+              "qualification_hash": "sha256:d04169c0f76d43ce5b13b276bb4cc72bf0594f8db7e8456044c0d3c9a540ed55",
+              "qualification_evidence_asset_version_id": "authority-output:4e040d93-f61b-4429-8c6e-c950eaa24984:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "THEME_CONTRACT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:6b68847c27d2d9c1db96314050eaee29d5cdf5ecfc6f08a6c60a005393591c48",
+              "activation_id": "25ae00b9-36a9-4be6-b9a4-d6a4c948cdd1",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:68e21370-4892-47c9-ba6d-a42d0c01d720:story_planning.candidate:v1",
+              "qualification_hash": "sha256:998d32658ff8ffc0ee80bc496c59695f66ece387548d2c9f73204803f385ec90",
+              "qualification_evidence_asset_version_id": "authority-output:3173da03-4cec-43f3-8c77-cda26faa7443:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "ENDING_INTENT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:4b2b3f66245ae785792233bd75b9a853da2d9f35fcad8b0653a59837549a82c1",
+              "activation_id": "ad2e5f9d-d3db-48ba-b265-9962d3f5af63",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:d17eea14-fd66-4ce9-b354-b0ce4f11685f:story_planning.candidate:v1",
+              "qualification_hash": "sha256:34066916540ba3d7d3ba5606504f9e8f057d841d2fc5eff203d23bc272244451",
+              "qualification_evidence_asset_version_id": "authority-output:6c0ff99d-eff1-400d-80d3-077e63d407be:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "READER_PROMISE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:412cf4dd83ce9c5fdb52622d80ea21cd9a7341e0e56d3f481434b444385d9f62",
+              "activation_id": "827b412b-fd72-40df-b256-e0dac5d7c8d0",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:3bf4ecc9-c23a-4393-ad70-7517652b5f26:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f515cd63f5b35d24d0ca1591e05979ab3c70563741ac6b49f130d80804d4bf66",
+              "qualification_evidence_asset_version_id": "authority-output:d580c97c-4e4d-4cda-b5e4-be3f1950c735:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "WORLD_BIBLE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:f324234598f1e80407a1ecf88fea5db8863fd93ff88ff3e80a36d585ea988e44",
+              "activation_id": "ebec300f-428c-4aae-beae-7537349fb990",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:b25b4680f11a668f850e495da780d045922baeb726c2ac8eeb136fb135a43ee1",
+              "asset_version_id": "authority-output:788d4a6e-e092-4b7c-940d-cabd3bfcc51c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f8f0567ed6b51f20ff2ad6c32487e1525781a89dc41ce097760e445d399dff2e",
+              "qualification_evidence_asset_version_id": "authority-output:d031aec9-0aaa-469d-986a-aaafc77f227e:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "CHARACTER_CAST",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:2cd01db00a0710e3329b6efcad968a3c27032a33862b1777afbd3808b9ae18e6",
+              "activation_id": "104ddb1c-1977-467c-9108-ced5d776cf4c",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:c4904064d07b74833a0349b20bd1ae8673143d69c77d5abba644246fe865bc00",
+              "asset_version_id": "authority-output:065dd689-fba5-4a7f-aaca-90fe1433527c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:2478f97496d2ccc033e625705b6efd572a69c4ca1620cc0d6cd3f0c8c608be5b",
+              "qualification_evidence_asset_version_id": "authority-output:520ad7f4-0d84-45dc-bfcb-b97cbd717bd9:story_design.semantic_evaluation:v1"
+            }
+          ],
+          "set_digest": "sha256:ee90fb1c0b7f25a4fa08bac73b2de3a2a1ae281653afe755a626b7f3492a5933",
+          "schema_version": "qualified-foundation-set.v1"
+        },
+        "policy_versions": {
+          "platform_profile_version": "authority-output:6d16c041-fbf2-4094-88b5-fd95b979fa5f:chapter.platform_profile:v1"
+        }
+      },
+      "root_operation_id": "4887efb4-42b7-402e-aa7f-da205ca6987e"
+    },
+    {
+      "chapter": 2,
+      "acceptance": {
+        "acceptance_id": "chapter-acceptance:09043c4deb21c81b3ee5cd29ad7bb5d6206f1d9712094fc5edffb940a9bd885e",
+        "status": "COMMITTED",
+        "accepted_through_chapter": 2,
+        "outcome_asset_version_id": "authority-output:4767107f-351b-45c9-8a6e-d4169d1541c9:chapter.outcome:v1",
+        "story_state_asset_version_id": "authority-output:4767107f-351b-45c9-8a6e-d4169d1541c9:chapter.story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:4767107f-351b-45c9-8a6e-d4169d1541c9:chapter.canon.current:v1",
+        "longform_projection_set_id": "longform-projection:9e5426864b00f9f8ce2e93b66e1a342f5d31ff269cadfb30f79eb2a30a8ce321",
+        "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS"
+      },
+      "creation_sources": {
+        "status": "EXACT_FROZEN_INPUT",
+        "input_snapshot_id": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "snapshot_hash": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "book_design_asset_version_id": "8255cbf8-8200-4398-a579-38517e6edcb1",
+        "foundation_set": {
+          "bindings": [
+            {
+              "role": "CREATIVE_FOUNDATION",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:51bb666f175d6676a8210109f27b8855be55365669658bbd5f5a25ec1b84fb1a",
+              "activation_id": "63335cf0-cf06-488a-ba02-9cd9fed492c7",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "",
+              "asset_version_id": "authority-output:d4cda16d-3eb3-4266-aa1b-c091b8cc21ab:story_planning.candidate:v1",
+              "qualification_hash": "sha256:d04169c0f76d43ce5b13b276bb4cc72bf0594f8db7e8456044c0d3c9a540ed55",
+              "qualification_evidence_asset_version_id": "authority-output:4e040d93-f61b-4429-8c6e-c950eaa24984:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "THEME_CONTRACT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:6b68847c27d2d9c1db96314050eaee29d5cdf5ecfc6f08a6c60a005393591c48",
+              "activation_id": "25ae00b9-36a9-4be6-b9a4-d6a4c948cdd1",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:68e21370-4892-47c9-ba6d-a42d0c01d720:story_planning.candidate:v1",
+              "qualification_hash": "sha256:998d32658ff8ffc0ee80bc496c59695f66ece387548d2c9f73204803f385ec90",
+              "qualification_evidence_asset_version_id": "authority-output:3173da03-4cec-43f3-8c77-cda26faa7443:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "ENDING_INTENT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:4b2b3f66245ae785792233bd75b9a853da2d9f35fcad8b0653a59837549a82c1",
+              "activation_id": "ad2e5f9d-d3db-48ba-b265-9962d3f5af63",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:d17eea14-fd66-4ce9-b354-b0ce4f11685f:story_planning.candidate:v1",
+              "qualification_hash": "sha256:34066916540ba3d7d3ba5606504f9e8f057d841d2fc5eff203d23bc272244451",
+              "qualification_evidence_asset_version_id": "authority-output:6c0ff99d-eff1-400d-80d3-077e63d407be:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "READER_PROMISE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:412cf4dd83ce9c5fdb52622d80ea21cd9a7341e0e56d3f481434b444385d9f62",
+              "activation_id": "827b412b-fd72-40df-b256-e0dac5d7c8d0",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:3bf4ecc9-c23a-4393-ad70-7517652b5f26:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f515cd63f5b35d24d0ca1591e05979ab3c70563741ac6b49f130d80804d4bf66",
+              "qualification_evidence_asset_version_id": "authority-output:d580c97c-4e4d-4cda-b5e4-be3f1950c735:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "WORLD_BIBLE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:f324234598f1e80407a1ecf88fea5db8863fd93ff88ff3e80a36d585ea988e44",
+              "activation_id": "ebec300f-428c-4aae-beae-7537349fb990",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:b25b4680f11a668f850e495da780d045922baeb726c2ac8eeb136fb135a43ee1",
+              "asset_version_id": "authority-output:788d4a6e-e092-4b7c-940d-cabd3bfcc51c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f8f0567ed6b51f20ff2ad6c32487e1525781a89dc41ce097760e445d399dff2e",
+              "qualification_evidence_asset_version_id": "authority-output:d031aec9-0aaa-469d-986a-aaafc77f227e:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "CHARACTER_CAST",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:2cd01db00a0710e3329b6efcad968a3c27032a33862b1777afbd3808b9ae18e6",
+              "activation_id": "104ddb1c-1977-467c-9108-ced5d776cf4c",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:c4904064d07b74833a0349b20bd1ae8673143d69c77d5abba644246fe865bc00",
+              "asset_version_id": "authority-output:065dd689-fba5-4a7f-aaca-90fe1433527c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:2478f97496d2ccc033e625705b6efd572a69c4ca1620cc0d6cd3f0c8c608be5b",
+              "qualification_evidence_asset_version_id": "authority-output:520ad7f4-0d84-45dc-bfcb-b97cbd717bd9:story_design.semantic_evaluation:v1"
+            }
+          ],
+          "set_digest": "sha256:ee90fb1c0b7f25a4fa08bac73b2de3a2a1ae281653afe755a626b7f3492a5933",
+          "schema_version": "qualified-foundation-set.v1"
+        },
+        "policy_versions": {
+          "platform_profile_version": "authority-output:6d16c041-fbf2-4094-88b5-fd95b979fa5f:chapter.platform_profile:v1"
+        }
+      },
+      "root_operation_id": "bcf8a41f-0eb5-4815-9872-291a81cb5b36"
+    },
+    {
+      "chapter": 1,
+      "acceptance": {
+        "acceptance_id": "chapter-acceptance:35a81e82e6b40702672adc2edec8538513758940db4a20082161101ab666caa2",
+        "status": "COMMITTED",
+        "accepted_through_chapter": 1,
+        "outcome_asset_version_id": "authority-output:981fcdc5-78d4-40b5-a5b6-b838954f594f:chapter.outcome:v1",
+        "story_state_asset_version_id": "authority-output:981fcdc5-78d4-40b5-a5b6-b838954f594f:chapter.story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:981fcdc5-78d4-40b5-a5b6-b838954f594f:chapter.canon.current:v1",
+        "longform_projection_set_id": "longform-projection:59d6e886ac1e6889122857e5fa9a13de9051eb9cc5a9ccdb5b78c258b874f03f",
+        "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS"
+      },
+      "creation_sources": {
+        "status": "EXACT_FROZEN_INPUT",
+        "input_snapshot_id": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "snapshot_hash": "sha256:0073f6d7823b6c3e4f08d93cc1c9463cce85fceaaa8726d4e7227b47eecf0dd7",
+        "book_design_asset_version_id": "8255cbf8-8200-4398-a579-38517e6edcb1",
+        "foundation_set": {
+          "bindings": [
+            {
+              "role": "CREATIVE_FOUNDATION",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:51bb666f175d6676a8210109f27b8855be55365669658bbd5f5a25ec1b84fb1a",
+              "activation_id": "63335cf0-cf06-488a-ba02-9cd9fed492c7",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "",
+              "asset_version_id": "authority-output:d4cda16d-3eb3-4266-aa1b-c091b8cc21ab:story_planning.candidate:v1",
+              "qualification_hash": "sha256:d04169c0f76d43ce5b13b276bb4cc72bf0594f8db7e8456044c0d3c9a540ed55",
+              "qualification_evidence_asset_version_id": "authority-output:4e040d93-f61b-4429-8c6e-c950eaa24984:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "THEME_CONTRACT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:6b68847c27d2d9c1db96314050eaee29d5cdf5ecfc6f08a6c60a005393591c48",
+              "activation_id": "25ae00b9-36a9-4be6-b9a4-d6a4c948cdd1",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:68e21370-4892-47c9-ba6d-a42d0c01d720:story_planning.candidate:v1",
+              "qualification_hash": "sha256:998d32658ff8ffc0ee80bc496c59695f66ece387548d2c9f73204803f385ec90",
+              "qualification_evidence_asset_version_id": "authority-output:3173da03-4cec-43f3-8c77-cda26faa7443:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "ENDING_INTENT",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:4b2b3f66245ae785792233bd75b9a853da2d9f35fcad8b0653a59837549a82c1",
+              "activation_id": "ad2e5f9d-d3db-48ba-b265-9962d3f5af63",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:d17eea14-fd66-4ce9-b354-b0ce4f11685f:story_planning.candidate:v1",
+              "qualification_hash": "sha256:34066916540ba3d7d3ba5606504f9e8f057d841d2fc5eff203d23bc272244451",
+              "qualification_evidence_asset_version_id": "authority-output:6c0ff99d-eff1-400d-80d3-077e63d407be:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "READER_PROMISE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:412cf4dd83ce9c5fdb52622d80ea21cd9a7341e0e56d3f481434b444385d9f62",
+              "activation_id": "827b412b-fd72-40df-b256-e0dac5d7c8d0",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:3084d15f5a012abc5157aed42f7cb3ceaed75128bed8fb8bc9d4f5f07fdeb1cf",
+              "asset_version_id": "authority-output:3bf4ecc9-c23a-4393-ad70-7517652b5f26:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f515cd63f5b35d24d0ca1591e05979ab3c70563741ac6b49f130d80804d4bf66",
+              "qualification_evidence_asset_version_id": "authority-output:d580c97c-4e4d-4cda-b5e4-be3f1950c735:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "WORLD_BIBLE",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:f324234598f1e80407a1ecf88fea5db8863fd93ff88ff3e80a36d585ea988e44",
+              "activation_id": "ebec300f-428c-4aae-beae-7537349fb990",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:b25b4680f11a668f850e495da780d045922baeb726c2ac8eeb136fb135a43ee1",
+              "asset_version_id": "authority-output:788d4a6e-e092-4b7c-940d-cabd3bfcc51c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:f8f0567ed6b51f20ff2ad6c32487e1525781a89dc41ce097760e445d399dff2e",
+              "qualification_evidence_asset_version_id": "authority-output:d031aec9-0aaa-469d-986a-aaafc77f227e:story_design.semantic_evaluation:v1"
+            },
+            {
+              "role": "CHARACTER_CAST",
+              "authority": "STORY_DESIGN_AUTHORITY",
+              "content_hash": "sha256:2cd01db00a0710e3329b6efcad968a3c27032a33862b1777afbd3808b9ae18e6",
+              "activation_id": "104ddb1c-1977-467c-9108-ced5d776cf4c",
+              "schema_version": "planning-generation-candidate.v1",
+              "upstream_digest": "sha256:c4904064d07b74833a0349b20bd1ae8673143d69c77d5abba644246fe865bc00",
+              "asset_version_id": "authority-output:065dd689-fba5-4a7f-aaca-90fe1433527c:story_planning.candidate:v1",
+              "qualification_hash": "sha256:2478f97496d2ccc033e625705b6efd572a69c4ca1620cc0d6cd3f0c8c608be5b",
+              "qualification_evidence_asset_version_id": "authority-output:520ad7f4-0d84-45dc-bfcb-b97cbd717bd9:story_design.semantic_evaluation:v1"
+            }
+          ],
+          "set_digest": "sha256:ee90fb1c0b7f25a4fa08bac73b2de3a2a1ae281653afe755a626b7f3492a5933",
+          "schema_version": "qualified-foundation-set.v1"
+        },
+        "policy_versions": {
+          "platform_profile_version": "authority-output:6d16c041-fbf2-4094-88b5-fd95b979fa5f:chapter.platform_profile:v1"
+        }
+      },
+      "root_operation_id": "e8a2f819-74b4-443a-84e9-84e97259176c"
+    }
+  ],
+  "foundation_generation_calls": 7,
+  "foundation_stages": [
+    "character.cast.generate",
+    "creative.candidates.generate",
+    "ending.intent.generate",
+    "reader.promise.generate",
+    "theme.candidates.generate",
+    "world.design.generate"
+  ],
+  "scripted_model_call_log_assets": 67,
+  "cost_ledger_assets": 67,
+  "transport_story_is_fixture": true,
+  "manual_candidate_or_prose_injection_between_production_steps": false,
+  "recovery": {
+    "injection": "Book Design activation after business projection write, before transaction commit",
+    "result": "ROLLBACK_THEN_RESUME_WITH_CONFIRMED_GENERATION_EVALUATION_REUSE",
+    "composition_rebuilt": true,
+    "separate_os_process": "NOT_RUN",
+    "confirmed_Foundation_generation_calls_before_and_after_recovery": 7,
+    "accepted_history_rewritten": false
+  },
+  "export_roundtrip": {
+    "comparison": "IDENTICAL_SCRIPTED_EXPORT_CONTROL_ONLY",
+    "chapters": 3,
+    "exit_code": 0,
+    "creative_improvement_claimed": false,
+    "paid_cost": "NOT_RUN",
+    "identified_scripted_effect_receipt_count": 36,
+    "legacy_operation_only_cost_rows": 31,
+    "cost_total_claimed": false
+  },
+  "migration_component": {
+    "observed_implementation_revision": "834b0e980e6dbf93185f7baf198a66c0d2cde69f",
+    "final_migration_code_and_manifest_identical": true,
+    "fresh_head": "20260907_0120_foundation_generation",
+    "upgrade_from_actual_main_head": "20260907_0119_grounded_chapter_acceptance",
+    "applied_count": 120,
+    "existing_generation_types_preserved": 5,
+    "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY_NOT_ACCEPTED_NOVEL_HISTORY_PROOF"
+  },
+  "bounded_limitations": [
+    "First qualified creative branch is a transparent selection baseline, not a proven literary director ranking.",
+    "Craft specialisms are scoped tasks within a whole-chapter call, not independently qualified specialist writers.",
+    "No semantic-support accuracy, natural voice, real reader or million-word quality claim.",
+    "Static checks and migrations have distinct retained execution records; they are not one complete P0 run."
+  ],
+  "failure_inventory_policy": "Development logs and failed transcripts are originals from successive working states. Unrecorded development identities are not retroactively bound to final SHA."
+}

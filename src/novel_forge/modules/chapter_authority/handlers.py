@@ -1445,32 +1445,25 @@ class _BestCandidateHandler:
             ),
             None,
         )
+        from .candidate_selection import bind_selected_review, retained_candidate_evidence
+        from novel_forge.modules.review.diagnostics import require_review_score
         if existing_best is None:
             previous_asset = request.require_input("draft_chapter")
             previous_review = request.require_input("review_report")
-            previous_score = float(previous_review.content.get("score") or 0)
+            previous_source_id = previous_asset.asset_version_id
+            previous_score = require_review_score(previous_review.content)
             previous_blockers = _blocking_issue_codes(previous_review.content)
             previous_review_id = previous_review.asset_version_id
+            bind_selected_review(candidate=previous_asset.content, candidate_id=previous_source_id,
+                                 review=previous_review.content, review_id=previous_review_id)
         else:
             previous_asset = existing_best
-            selection = dict(existing_best.content.get("candidate_comparison") or {})
-            selected_id = str(
-                existing_best.content.get("selected_source_asset_version_id") or ""
-            )
-            selected_evidence = next(
-                (
-                    dict(selection.get(key) or {})
-                    for key in ("previous", "challenger")
-                    if str((selection.get(key) or {}).get("asset_version_id") or "")
-                    == selected_id
-                ),
-                {},
-            )
-            previous_score = float(selected_evidence.get("score") or 0)
-            previous_blockers = tuple(selected_evidence.get("blocker_codes") or ())
-            previous_review_id = str(
-                selected_evidence.get("review_asset_version_id") or ""
-            )
+            incumbent = retained_candidate_evidence(existing_best.asset_version_id, existing_best.content)
+            previous_source_id = incumbent.asset_version_id
+            previous_score, previous_blockers = incumbent.score, incumbent.blocker_codes
+            previous_review_id = incumbent.review_asset_version_id
+        bind_selected_review(candidate=revision.content, candidate_id=revision.asset_version_id,
+                             review=rereview.content, review_id=rereview.asset_version_id)
         prior_quality = next(
             (
                 item
@@ -1510,7 +1503,8 @@ class _BestCandidateHandler:
                 or request.correlation_id
             ),
             previous=CandidateEvidence(
-                asset_version_id=previous_asset.asset_version_id,
+                asset_version_id=previous_source_id,
+                workspace_asset_version_id=previous_asset.asset_version_id,
                 content=previous_asset.content,
                 score=previous_score,
                 blocker_codes=tuple(previous_blockers),
@@ -1519,7 +1513,7 @@ class _BestCandidateHandler:
             challenger=CandidateEvidence(
                 asset_version_id=revision.asset_version_id,
                 content=revision.content,
-                score=float(rereview.content.get("score") or 0),
+                score=require_review_score(rereview.content),
                 blocker_codes=_blocking_issue_codes(rereview.content),
                 review_asset_version_id=rereview.asset_version_id,
                 diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
@@ -1536,11 +1530,10 @@ class _BestCandidateHandler:
         best, snapshot = build_best_candidate(
             comparison=comparison,
             candidates={
-                previous_asset.asset_version_id: previous_asset.content,
+                previous_source_id: previous_asset.content,
                 revision.asset_version_id: revision.content,
             },
         )
-        from .candidate_selection import bind_selected_review
         if comparison["selected_asset_version_id"] == revision.asset_version_id:
             selected_review_content, selected_review_id = rereview.content, rereview.asset_version_id
         elif existing_best is None:
@@ -1549,9 +1542,6 @@ class _BestCandidateHandler:
             selected_review_content = dict(existing_best.content["selected_review"])
             selected_review_id = str(selected_review_content["selection_review_source_asset_version_id"])
         selected_source_id = str(best.get("selected_source_asset_version_id") or "")
-        if existing_best is not None and comparison["selected_asset_version_id"] == existing_best.asset_version_id:
-            selected_source_id = str(existing_best.content["selected_source_asset_version_id"])
-            best["selected_source_asset_version_id"] = selected_source_id
         selected_review = bind_selected_review(candidate=best, candidate_id=selected_source_id,
                                               review=selected_review_content, review_id=selected_review_id)
         best["selected_review"] = selected_review
@@ -2554,18 +2544,8 @@ def _output(node: ChapterNode, content: dict[str, Any]) -> ChapterHandlerOutput:
 
 
 def _blocking_issue_codes(review: dict[str, Any]) -> tuple[str, ...]:
-    return tuple(
-        sorted(
-            {
-                str(item.get("code") or "")
-                for item in review.get("issues") or ()
-                if isinstance(item, dict)
-                and str(item.get("severity") or "").lower()
-                in {"blocking", "blocker", "critical", "high"}
-                and str(item.get("code") or "")
-            }
-        )
-    )
+    from novel_forge.modules.review.diagnostics import blocking_diagnosis_codes
+    return blocking_diagnosis_codes(review)
 
 
 def _model_output(

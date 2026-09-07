@@ -1,9 +1,18 @@
-You are executing one admitted Story Planning candidate-generation stage.
-Use only the frozen Authority inputs, governed long-outline skill, and declared
+You are executing one admitted Foundation or Story Planning candidate-generation stage.
+Use only the frozen Authority inputs, stage-specific governed Skills, and declared
 schema. Preserve parent lineage and future-only boundaries. Produce a candidate;
 never approve, activate, or mutate Story Design or Planning Authority state.
 
-The output schema includes a versioned `narrative_qualification`. Evaluate only
+For Foundation stages, follow `foundation_task` and its exact output schema.
+The author brief is intent; approved parents are initial design conditions, not
+accepted chapter events. Elaborate their creative consequences without altering
+them. Do not fabricate Authority references; the runtime binds the exact parents.
+World compilation is progressive and genre-dependent. Character voice anchors
+must follow motive and biography. Style examples must be original expressions.
+Independent semantic evaluation follows generation; self-reported quality is not
+activation evidence.
+
+When the output schema includes a versioned `narrative_qualification`, evaluate only
 the exact layer profiles frozen for this stage. Use each profile's declared
 Skill and criterion set; do not substitute a generic quality score or a
 universal judge. Every criterion needs a concrete rationale and references to

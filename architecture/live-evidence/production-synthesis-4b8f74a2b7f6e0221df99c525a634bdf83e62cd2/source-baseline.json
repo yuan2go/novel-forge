@@ -1,0 +1,21 @@
+{
+  "starting_origin_main": "8b2c48372b20301d88d6d00cceae9e070ce63549",
+  "starting_source_tree": "b4dc62de938d077229f0387ff549980e2644b94a",
+  "tested_implementation_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+  "source_tree": "ac57e210ea070d81be322c8e820ab07e033f2274",
+  "implementation_tree_identity": "sha256:7b73a9e17f23295e18fae94cfdd5cc95ad5e8ae1fb31fc93fcfd4077d62b6334",
+  "branch": "codex/novel-production-synthesis-20260907",
+  "worktree": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/novel-production-synthesis-20260907",
+  "source_clean_at_test_start": true,
+  "external_design_inputs": {
+    "InkOS": "091048383f411eb99948a8764f42b6fd13006f9b",
+    "DeterminFlow-Plugins/bishu-novel": "5f074b5a887a7e74a61d00206abb99c107b786c2",
+    "DeterminFlow_assembly_only": "49a5c9273cc152446a32474c9ac577316074f8e8"
+  },
+  "external_code_prompts_resources_incorporated": false,
+  "original_worktree_unchanged": {
+    "path": "/Users/yuan/projects/novel-forge",
+    "sha": "1493d392e70665b4b77184fb14dde1ff1d678202",
+    "clean": true
+  }
+}
