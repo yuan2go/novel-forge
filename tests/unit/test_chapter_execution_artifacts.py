@@ -304,3 +304,34 @@ def test_memo_provider_cannot_read_unscoped_accepted_obligation_details():
     view = build_provider_task_view("memo", {"execution_intent": intent})
     assert "HIDDEN_" not in json.dumps(view)
     assert view["frozen_intent"]["intent_fingerprint"] == "frozen"
+
+
+@pytest.mark.parametrize("actor", ["witness", "unknown-character", ""])
+def test_creative_memo_choices_are_bound_to_frozen_scene_participants(actor):
+    from novel_forge.modules.chapter_authority.creative_memo import qualify_creative_memo
+    intent = build_chapter_execution_intent(
+        project_id="project", operation_id="intent-op", chapter_plan_asset_version_id="plan-v5",
+        chapter_plan_content_hash="sha256:" + "a" * 64, chapter_plan=_plan(),
+        accepted_inputs=(_accepted("story_state_snapshot", "story-state-v4"), _accepted("canon_snapshot", "canon-v4")),
+    )
+    original = deepcopy(intent)
+    result = {
+        "execution_strategy": "Make testimony a visible choice with a cost",
+        "tension_strategy": "Let hesitation precede disclosure", "composition_strategy": "Connect refusal and choice in one scene",
+        "creative_guidance": {"chapter_goal": "Make trust conditional", "pov": "witness", "voice": "guarded",
+            "emotional_turn": "fear to resolve", "reader_promise": "Show the cost of testimony", "ending_change": "anonymity is lost",
+            "character_choices": [{"character_id": actor, "choice": "testify", "motivation": "protect the accused", "cost": "lose anonymity"}] if actor else [],
+            "constraints": ["Do not reveal the observer's unknown identity"]},
+        "scene_directives": [{"scene_id": "chapter-5:scene-1", "directive": "Stage hesitation before testimony",
+            "conflict_progression": "Refusal gives way to costly speech", "information_release": "One clue", "emotional_change": "Resolve", "transition": "End on the exposed cost"}],
+        "retrieval_queries": ["accepted witness relationships"], "obligation_actions": [],
+        "arc_actions": [{"arc_plan_version_id": "arc-v2", "action": "ADVANCE"}], "stop_conditions": ["Missing accepted boundary"],
+    }
+    if actor == "witness":
+        memo = qualify_creative_memo(intent=intent, intent_asset_version_id="intent-v5", result=result, execution_evidence={"receipt_ref": "receipt:memo"})
+        assert memo["creative_guidance"]["character_choices"][0]["cost"] == "lose anonymity"
+        assert memo["source_chapter_execution_intent_asset_version_id"] == "intent-v5"
+    else:
+        with pytest.raises(KernelError, match="CHAPTER_MEMO_CHARACTER_DRIFT" if actor else "CHAPTER_MEMO_CHOICE_REQUIRED"):
+            qualify_creative_memo(intent=intent, intent_asset_version_id="intent-v5", result=result, execution_evidence={})
+    assert intent == original

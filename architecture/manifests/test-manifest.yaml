@@ -230,6 +230,16 @@
     }
   ],
   "semantic_slice_policy": {
+    "creative_grounded_chapter": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_authority/creative_memo.py",
+        "src/novel_forge/modules/review/diagnostics.py",
+        "src/novel_forge/modules/canon_graph/grounding.py",
+        "src/novel_forge/modules/chapter_outcome/acceptance_contract.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
     "narrative_reality_causal_chain": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
       "production_targets": [
