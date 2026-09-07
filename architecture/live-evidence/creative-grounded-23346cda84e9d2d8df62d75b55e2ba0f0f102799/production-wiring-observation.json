@@ -1,0 +1,285 @@
+{
+  "schema_version": "creative-grounded-production-wiring-observation.v1",
+  "tested_sha": "23346cda84e9d2d8df62d75b55e2ba0f0f102799",
+  "source_tree": "fd144c7365dd0bdc4cffbc616f8244cfc9d30201",
+  "implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7",
+  "dependency_snapshot_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "p0_report": "architecture/evidence/p0-backend-qualification-23346cda84e9d2d8df62d75b55e2ba0f0f102799.json",
+  "source_junit": "postgresql-pytest.xml",
+  "observations": [
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_grounding]",
+      "scenario": "delayed_disclosure",
+      "book_run_id": "book-run:085f5805-152b-4041-8f55-f59a7342112e",
+      "blocked_reason": null,
+      "accepted_workspaces": 2,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 2,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 2,
+        "world_candidates.evaluate": 2,
+        "chapter_plan.generate": 2,
+        "memo": 2,
+        "draft": 2,
+        "review": 2,
+        "revision": 2,
+        "rereview": 2,
+        "canon_extraction": 2,
+        "canon_support": 2,
+        "quality_structural": 2,
+        "quality_commercial": 2,
+        "quality_source_originality": 2,
+        "quality_longform": 2,
+        "quality_platform": 2
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_retained_original]",
+      "scenario": "delayed_disclosure",
+      "book_run_id": "book-run:ad887377-ed26-4929-ac86-f074ae4332de",
+      "blocked_reason": null,
+      "accepted_workspaces": 2,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 2,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 2,
+        "world_candidates.evaluate": 2,
+        "chapter_plan.generate": 2,
+        "memo": 2,
+        "draft": 2,
+        "review": 2,
+        "revision": 2,
+        "rereview": 2,
+        "canon_extraction": 2,
+        "canon_support": 2,
+        "quality_structural": 2,
+        "quality_commercial": 2,
+        "quality_source_originality": 2,
+        "quality_longform": 2,
+        "quality_platform": 2
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_memo]",
+      "scenario": "creative_process_memo",
+      "book_run_id": "book-run:3f403d8f-09aa-4f69-b801-404b74e4197f",
+      "blocked_reason": null,
+      "accepted_workspaces": 0,
+      "process_exit_codes": [
+        86,
+        0
+      ],
+      "observed_pids": [
+        19929,
+        20027
+      ],
+      "accepted_reality_count": 3,
+      "provider_stage_call_counts": {
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 3,
+        "world_candidates.evaluate": 3,
+        "chapter_plan.generate": 3,
+        "memo": 3,
+        "draft": 3,
+        "review": 3,
+        "revision": 3,
+        "rereview": 3,
+        "canon_extraction": 3,
+        "canon_support": 3,
+        "quality_structural": 3,
+        "quality_commercial": 3,
+        "quality_source_originality": 3,
+        "quality_longform": 3,
+        "quality_platform": 3
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_support]",
+      "scenario": "creative_process_support",
+      "book_run_id": "book-run:b5acc049-58f1-4e37-9a54-79fda34a1a61",
+      "blocked_reason": null,
+      "accepted_workspaces": 0,
+      "process_exit_codes": [
+        86,
+        0
+      ],
+      "observed_pids": [
+        20212,
+        20314
+      ],
+      "accepted_reality_count": 3,
+      "provider_stage_call_counts": {
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 3,
+        "world_candidates.evaluate": 3,
+        "chapter_plan.generate": 3,
+        "memo": 3,
+        "draft": 3,
+        "review": 3,
+        "revision": 3,
+        "rereview": 3,
+        "canon_extraction": 3,
+        "canon_support": 3,
+        "quality_structural": 3,
+        "quality_commercial": 3,
+        "quality_source_originality": 3,
+        "quality_longform": 3,
+        "quality_platform": 3
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_artifact]",
+      "scenario": "creative_process_artifact",
+      "book_run_id": "book-run:72366856-a102-4feb-8e77-9d54e04c244c",
+      "blocked_reason": null,
+      "accepted_workspaces": 0,
+      "process_exit_codes": [
+        86,
+        0
+      ],
+      "observed_pids": [
+        20451,
+        20553
+      ],
+      "accepted_reality_count": 3,
+      "provider_stage_call_counts": {
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 3,
+        "world_candidates.evaluate": 3,
+        "chapter_plan.generate": 3,
+        "memo": 3,
+        "draft": 3,
+        "review": 3,
+        "revision": 3,
+        "rereview": 3,
+        "canon_extraction": 3,
+        "canon_support": 3,
+        "quality_structural": 3,
+        "quality_commercial": 3,
+        "quality_source_originality": 3,
+        "quality_longform": 3,
+        "quality_platform": 3
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_plan]",
+      "scenario": null,
+      "book_run_id": "book-run:2d91320c-31fa-401a-9913-2d383e2a3430",
+      "blocked_reason": "CANON_GROUNDING_REEXTRACTION_REQUIRED",
+      "accepted_workspaces": 0,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 0,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 1,
+        "world_candidates.evaluate": 1,
+        "chapter_plan.generate": 1,
+        "memo": 1,
+        "draft": 1,
+        "review": 1,
+        "revision": 1,
+        "rereview": 1,
+        "canon_extraction": 1,
+        "canon_support": 1
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_dialogue]",
+      "scenario": null,
+      "book_run_id": "book-run:021bd409-5012-4b14-a8a2-cc794a4701d2",
+      "blocked_reason": "CANON_GROUNDING_REEXTRACTION_REQUIRED",
+      "accepted_workspaces": 0,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 0,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 1,
+        "world_candidates.evaluate": 1,
+        "chapter_plan.generate": 1,
+        "memo": 1,
+        "draft": 1,
+        "review": 1,
+        "revision": 1,
+        "rereview": 1,
+        "canon_extraction": 1,
+        "canon_support": 1
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_deleted]",
+      "scenario": null,
+      "book_run_id": "book-run:adcbd77b-8873-4b78-920c-eda17932c3d1",
+      "blocked_reason": "CANON_GROUNDING_INVALID",
+      "accepted_workspaces": 0,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 0,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 1,
+        "world_candidates.evaluate": 1,
+        "chapter_plan.generate": 1,
+        "memo": 1,
+        "draft": 1,
+        "review": 1,
+        "revision": 1,
+        "rereview": 1,
+        "canon_extraction": 1
+      }
+    },
+    {
+      "test_case": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_memo]",
+      "scenario": null,
+      "book_run_id": "book-run:77ea6267-d147-48c0-8ea0-7b680c11a279",
+      "blocked_reason": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
+      "accepted_workspaces": 0,
+      "process_exit_codes": [],
+      "observed_pids": [],
+      "accepted_reality_count": 0,
+      "provider_stage_call_counts": {
+        "book_plan.generate": 3,
+        "volume_plan.generate": 3,
+        "arc_plan.generate": 6,
+        "chapter_group_plan.generate": 3,
+        "world_candidates.generate": 1,
+        "world_candidates.evaluate": 1,
+        "chapter_plan.generate": 1,
+        "memo": 1
+      }
+    }
+  ],
+  "full_observations": {
+    "path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/production-wiring-observations.json.gz",
+    "sha256": "sha256:a4e1c138c90c2bcf2505bf7de9bbf88ef247d3f4441a1179568671b9c50a21ed",
+    "encoding": "gzip"
+  },
+  "does_not_prove": [
+    "REAL_MODEL_EXECUTION",
+    "LITERARY_IMPROVEMENT",
+    "HUMAN_EDITORIAL",
+    "LONGITUDINAL_STABILITY",
+    "PRODUCTION_OPERATION"
+  ]
+}
