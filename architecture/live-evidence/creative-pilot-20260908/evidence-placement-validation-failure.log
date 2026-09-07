@@ -1,0 +1,295 @@
+PYTHONPATH=src .venv/bin/python -m compileall -q src tests
+ruff check src/novel_forge/modules/agent_runtime src/novel_forge/modules/agent_collaboration src/novel_forge/modules/command_kernel src/novel_forge/modules/production_execution src/novel_forge/modules/chapter_authority
+All checks passed!
+PYTHONPATH=src .venv/bin/python scripts/check_ruff_ratchet.py --ruff ruff
+ruff-ratchet: PASS current=97 baseline=515 legacy_files=73
+PYTHONPATH=src .venv/bin/python scripts/check_module_manifest.py
+{
+  "checked": 39,
+  "items": [
+    "novel_forge",
+    "novel_forge.cli.authority",
+    "novel_forge.cli.migration",
+    "novel_forge.api.authority_app",
+    "novel_forge.infrastructure.production_execution_composition",
+    "novel_forge.storage.migrations.versions",
+    "novel_forge.modules.command_kernel",
+    "novel_forge.modules.agent_runtime",
+    "novel_forge.modules.agent_collaboration",
+    "novel_forge.modules.project_authority",
+    "novel_forge.modules.task_authority",
+    "novel_forge.modules.source_authority",
+    "novel_forge.modules.source_import",
+    "novel_forge.modules.mkaos_authority",
+    "novel_forge.modules.narrative_state",
+    "novel_forge.modules.chapter_authority",
+    "novel_forge.modules.authoring",
+    "novel_forge.modules.corrective_action",
+    "novel_forge.modules.book_authority",
+    "novel_forge.modules.book_design_authority",
+    "novel_forge.modules.production_execution",
+    "novel_forge.modules.story_design_authority",
+    "novel_forge.modules.story_planning_runtime",
+    "novel_forge.modules.hierarchical_planning",
+    "novel_forge.modules.chapter_group_authority",
+    "novel_forge.modules.plan_change_authority",
+    "novel_forge.modules.book_production",
+    "novel_forge.modules.book_replan",
+    "novel_forge.modules.reader_calibration",
+    "novel_forge.modules.reader_judge_authority",
+    "novel_forge.modules.book_followup_authority",
+    "novel_forge.modules.provider_control",
+    "novel_forge.modules.provider_qualification",
+    "novel_forge.modules.legacy_migration",
+    "novel_forge.modules.runtime_job",
+    "novel_forge.modules.capability_packs",
+    "novel_forge.modules.capability_pack_authority",
+    "novel_forge.modules.worldbuilding.dynamics",
+    "novel_forge.storage.database_runtime"
+  ],
+  "kind": "modules",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_migration_manifest.py
+{
+  "checked": 120,
+  "head": "20260907_0120_foundation_generation",
+  "kind": "migrations",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_worker_manifest.py
+{
+  "checked": 10,
+  "items": [
+    "agent-authority",
+    "chapter-authority",
+    "content-authority",
+    "source-authority",
+    "source-import",
+    "mkaos-authority",
+    "book-authority",
+    "book-followup-authority",
+    "outbox-authority",
+    "maintenance-runtime-group"
+  ],
+  "kind": "workers",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_required_test_manifest.py
+{
+  "checked": 4,
+  "collections": [
+    {
+      "collected_file_count": 25,
+      "complete_collection": true,
+      "count": 109,
+      "name": "architecture",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 25
+    },
+    {
+      "collected_file_count": 204,
+      "complete_collection": true,
+      "count": 1846,
+      "name": "unit",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 204
+    },
+    {
+      "collected_file_count": 1,
+      "complete_collection": true,
+      "count": 2,
+      "name": "acceptance",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 1
+    },
+    {
+      "collected_file_count": 98,
+      "complete_collection": true,
+      "count": 564,
+      "name": "integration",
+      "qualification_class": "POSTGRESQL_REQUIRED",
+      "source_file_count": 98
+    }
+  ],
+  "kind": "tests",
+  "reality": {
+    "classification_file_counts": {
+      "CURRENT_AUTHORITY_BOUNDARY": 19,
+      "CURRENT_DOMAIN_INVARIANT": 117,
+      "CURRENT_RUNTIME_CONTRACT": 88,
+      "FIXTURE_PROTOCOL": 61,
+      "HISTORICAL_REDUNDANT": 0,
+      "MIGRATION_COMPATIBILITY": 18,
+      "QUALIFICATION_INFRASTRUCTURE": 24,
+      "RETIREMENT_GUARD": 1
+    },
+    "classification_test_counts": {
+      "CURRENT_AUTHORITY_BOUNDARY": 83,
+      "CURRENT_DOMAIN_INVARIANT": 864,
+      "CURRENT_RUNTIME_CONTRACT": 424,
+      "FIXTURE_PROTOCOL": 494,
+      "HISTORICAL_REDUNDANT": 0,
+      "MIGRATION_COMPATIBILITY": 100,
+      "QUALIFICATION_INFRASTRUCTURE": 169,
+      "RETIREMENT_GUARD": 4
+    },
+    "test_definition_count": 2138,
+    "test_file_count": 328
+  },
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_console_script_manifest.py
+{
+  "checked": 11,
+  "items": [
+    "novel-forge",
+    "novel-forge-agent-authority-worker",
+    "novel-forge-book-authority-worker",
+    "novel-forge-book-followup-worker",
+    "novel-forge-d0-provider-worker",
+    "novel-forge-maintenance-worker",
+    "novel-forge-migrate",
+    "novel-forge-mkaos-authority-worker",
+    "novel-forge-outbox-worker",
+    "novel-forge-source-authority-worker",
+    "novel-forge-source-import-worker"
+  ],
+  "kind": "console_scripts",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_architecture_fitness.py
+{
+  "checked_domain_files": 44,
+  "checked_domain_packages": 53,
+  "checked_production_files": 234,
+  "checked_provider_files": 614,
+  "classified_production_entries": 29,
+  "schema_version": "architecture-fitness-report.v1",
+  "status": "PASS",
+  "subordinate_manifests": {
+    "console-scripts": {
+      "checked": 11,
+      "items": [
+        "novel-forge",
+        "novel-forge-agent-authority-worker",
+        "novel-forge-book-authority-worker",
+        "novel-forge-book-followup-worker",
+        "novel-forge-d0-provider-worker",
+        "novel-forge-maintenance-worker",
+        "novel-forge-migrate",
+        "novel-forge-mkaos-authority-worker",
+        "novel-forge-outbox-worker",
+        "novel-forge-source-authority-worker",
+        "novel-forge-source-import-worker"
+      ],
+      "kind": "console_scripts",
+      "status": "PASS"
+    },
+    "migrations": {
+      "checked": 120,
+      "head": "20260907_0120_foundation_generation",
+      "kind": "migrations",
+      "status": "PASS"
+    },
+    "reachability": {
+      "checked": 29,
+      "kind": "reachability",
+      "proof_sha": "cb9a0ddb4a6d70bae33e844ef0aab82ee3518506",
+      "runtime_reachable": 29,
+      "status": "PASS"
+    },
+    "tests": {
+      "checked": 4,
+      "collections": [
+        {
+          "collected_file_count": 25,
+          "complete_collection": true,
+          "count": 109,
+          "name": "architecture",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 25
+        },
+        {
+          "collected_file_count": 204,
+          "complete_collection": true,
+          "count": 1846,
+          "name": "unit",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 204
+        },
+        {
+          "collected_file_count": 1,
+          "complete_collection": true,
+          "count": 2,
+          "name": "acceptance",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 1
+        },
+        {
+          "collected_file_count": 98,
+          "complete_collection": true,
+          "count": 564,
+          "name": "integration",
+          "qualification_class": "POSTGRESQL_REQUIRED",
+          "source_file_count": 98
+        }
+      ],
+      "kind": "tests",
+      "reality": {
+        "classification_file_counts": {
+          "CURRENT_AUTHORITY_BOUNDARY": 19,
+          "CURRENT_DOMAIN_INVARIANT": 117,
+          "CURRENT_RUNTIME_CONTRACT": 88,
+          "FIXTURE_PROTOCOL": 61,
+          "HISTORICAL_REDUNDANT": 0,
+          "MIGRATION_COMPATIBILITY": 18,
+          "QUALIFICATION_INFRASTRUCTURE": 24,
+          "RETIREMENT_GUARD": 1
+        },
+        "classification_test_counts": {
+          "CURRENT_AUTHORITY_BOUNDARY": 83,
+          "CURRENT_DOMAIN_INVARIANT": 864,
+          "CURRENT_RUNTIME_CONTRACT": 424,
+          "FIXTURE_PROTOCOL": 494,
+          "HISTORICAL_REDUNDANT": 0,
+          "MIGRATION_COMPATIBILITY": 100,
+          "QUALIFICATION_INFRASTRUCTURE": 169,
+          "RETIREMENT_GUARD": 4
+        },
+        "test_definition_count": 2138,
+        "test_file_count": 328
+      },
+      "status": "PASS"
+    }
+  },
+  "violations": []
+}
+docker compose -f compose.yml config --quiet
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .
+{
+  "canonical_document_count": 5,
+  "capability_count": 24,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "c82b54b756dda3a477bf131ad44ada9801762a23",
+    "base_source_comment_count": 505,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [
+    "unreferenced retained qualification artifact: architecture/evidence/p0-backend-qualification-cb9a0ddb4a6d70bae33e844ef0aab82ee3518506.json"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:3d03b3a8152b22d70f3a6b904c040d53cf8dabb04a8f795ec93762d1775a7235",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 505,
+  "source_docstring_count": 122,
+  "status": "FAIL",
+  "tested_sha": "cb9a0ddb4a6d70bae33e844ef0aab82ee3518506",
+  "web_comment_count": 5
+}
+make: *** [documentation-reality-check] Error 1
