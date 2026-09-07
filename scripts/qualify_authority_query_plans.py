@@ -52,7 +52,8 @@ def _qualify_plan(
     relation_nodes = [node for node in nodes if node.get("Relation Name") == relation]
     index_nodes = [
         node
-        for node in relation_nodes
+        for scan in relation_nodes
+        for node in _plan_nodes(scan)
         if node.get("Node Type")
         in {"Index Scan", "Index Only Scan", "Bitmap Index Scan"}
         or node.get("Index Name")
@@ -89,6 +90,62 @@ def _qualify_plan(
             int(node.get("Shared Read Blocks") or 0) for node in nodes
         ),
         "plan": plan,
+    }
+
+
+def _qualify_reality_access_paths(
+    connection: psycopg.Connection[Any],
+) -> dict[str, Any]:
+    index_definitions = connection.execute(
+        "SELECT indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='authority_reality_event_index' ORDER BY indexname"
+    ).fetchall()
+    connection.execute(
+        "CREATE TEMP TABLE nf_reality_locator_scale (LIKE public.authority_reality_event_index INCLUDING ALL) ON COMMIT DROP"
+    )
+    connection.execute("""
+        INSERT INTO nf_reality_locator_scale(
+            book_run_id,event_id,revision_id,event_ordinal,accepted_chapter,
+            world_tick,timeline_id,end_ordinal,state_kind,entity_key,batch_local_id,
+            fact_origin_kind,preparation_action_version_id,preparation_transition_id
+        ) SELECT 'scale-book:' || (n % 1000), 'scale-event:' || n,
+          'scale-revision:' || n, 0, 1 + n / 1000,
+          n % 3 <> 0, 'main', n, 'world_state', 'world_state_id=' || (n % 37),
+          'step-' || n, 'GOVERNED_BACKGROUND', 'action:' || (n / 10000), 'step-' || n
+        FROM generate_series(1,100000) n
+    """)
+    connection.execute("ANALYZE nf_reality_locator_scale")
+    predicates = {
+        "historical_world_discovery": "book_run_id='scale-book:7' AND accepted_chapter<=80 AND world_tick ORDER BY accepted_chapter DESC,event_ordinal DESC LIMIT 16",
+        "accepted_preparation_mapping": "book_run_id='scale-book:7' AND preparation_action_version_id='action:3' AND preparation_transition_id IS NOT NULL AND accepted_chapter<=80 ORDER BY preparation_transition_id LIMIT 129",
+        "exact_historical_event": "book_run_id='scale-book:7' AND event_id=ANY(ARRAY['scale-event:10007','scale-event:20007']) AND accepted_chapter<=80 LIMIT 2",
+    }
+    plans = [
+        _qualify_plan(
+            connection,
+            name=name,
+            relation="nf_reality_locator_scale",
+            query="SELECT event_id,revision_id,event_ordinal FROM nf_reality_locator_scale WHERE "
+            + predicate,
+        )
+        for name, predicate in predicates.items()
+    ]
+    if any(plan["actual_rows"] == 0 for plan in plans):
+        raise RuntimeError(
+            "Reality access-path evidence requires nonempty representative results"
+        )
+    return {
+        "proof_ceiling": "PLANNER_ACCESS_PATH_ONLY",
+        "source_relation": "public.authority_reality_event_index",
+        "scale_rows": 100000,
+        "scope": "Temporary exact column/index copy; persistence constraints and acceptance are proved by PostgreSQL integration",
+        "source_indexes": [
+            dict(zip(("name", "definition"), row, strict=True))
+            for row in index_definitions
+        ],
+        "planner_settings": {
+            "enable_seqscan": connection.execute("SHOW enable_seqscan").fetchone()[0]
+        },
+        "plans": plans,
     }
 
 
@@ -381,6 +438,8 @@ def qualify(database_url: str) -> dict[str, Any]:
             _qualify_plan(connection, name=name, relation=relation, query=query)
             for name, relation, query in probes
         ]
+        reality_plans = _qualify_reality_access_paths(connection)
+        plans.extend(reality_plans["plans"])
         connection.rollback()
 
     return {
@@ -388,6 +447,7 @@ def qualify(database_url: str) -> dict[str, Any]:
         "status": "PASS",
         "migration_head": migration["current"],
         "row_counts": ROW_COUNTS,
+        "reality_access_paths": reality_plans,
         "enable_seqscan_disabled": False,
         "explain": "ANALYZE, BUFFERS, FORMAT JSON",
         "plans": plans,

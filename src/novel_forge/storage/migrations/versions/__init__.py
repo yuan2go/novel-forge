@@ -118,6 +118,7 @@ from . import (
     v20260906_0115_reality_event_index,
     v20260906_0116_book_control_policy,
     v20260906_0117_world_causal_event_locators,
+    v20260907_0118_preparation_event_lineage,
 )
 
 VERSION_MODULES = [
@@ -238,6 +239,7 @@ VERSION_MODULES = [
     v20260906_0115_reality_event_index,
     v20260906_0116_book_control_policy,
     v20260906_0117_world_causal_event_locators,
+    v20260907_0118_preparation_event_lineage,
 ]
 
 __all__ = ["VERSION_MODULES"]

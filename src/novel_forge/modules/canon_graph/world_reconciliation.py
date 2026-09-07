@@ -218,7 +218,20 @@ def validate_actual_world_events(
                 known_causes | {f"local:{parent}" for parent in ancestors},
             )
             validated[name] = event
-        events = [event for event in events if batch_binding(event) is None]
+        remaining = [event for event in events if batch_binding(event) is None]
+        for event in remaining:
+            _validate_world_actual(event, previous_reality, known_causes)
+        from novel_forge.modules.worldbuilding.dynamics import state_index, validate_world_state_rules
+
+        current = preview_state_events(
+            previous=dict(previous_reality),
+            events=[NarrativeStateEvent.from_dict(dict(event)) for event in [*remaining, *batch.ordered]],
+        )
+        validate_world_state_rules(
+            reality=previous_reality, state=state_index({"current_state": current}),
+            affected_kinds={event["state_kind"] for event in events},
+        )
+        return
     for event in events:
         _validate_world_actual(event, previous_reality, known_causes)
 

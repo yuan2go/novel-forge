@@ -434,3 +434,82 @@ def test_approved_revival_projects_a_new_event_without_superseding_death():
         validate_actual_world_events(
             previous_reality=forged, chapter_outcome={"state_events": events}
         )
+
+
+def test_combined_batch_checks_rules_against_the_final_projection():
+    reality = reality_state()
+    reality["current_state"]["resource_state"][0]["entity_key"] = (
+        "entity_id=caravan|resource_id=supply"
+    )
+    reality["current_state"]["resource_state"][0]["state"]["balance"] = 3
+    reality["world_rule_constraints"] = [
+        {
+            "asset_version_id": "approved:rules",
+            "content_hash": "sha256:" + "c" * 64,
+            "rule": {
+                "rule_id": "operational-reserve",
+                "category": "economy",
+                "statement": "Operations require a maintained reserve.",
+                "enforcement": "HARD",
+                "applicability": ["world_state"],
+                "consequences": ["Operations must stop without reserve."],
+                "predicate": {
+                    "requirement_id": "reserve",
+                    "state_kind": "resource_state",
+                    "entity_key": "entity_id=caravan|resource_id=supply",
+                    "field": "balance",
+                    "operator": "AT_LEAST",
+                    "value": 3,
+                },
+            },
+        }
+    ]
+    operations = replace(
+        transition(),
+        actor_id="faction:caravan",
+        epistemic_basis=(),
+        state_kind=NarrativeStateKind.WORLD_STATE,
+        entity_key="world_state_id=operations",
+        requirements=(),
+        changes={"status": "ACTIVE"},
+    )
+    raw = batch_event(
+        "operate",
+        kind="world_state",
+        key="world_state_id=operations",
+        time=12,
+        dependencies=("event:supply",),
+        payload={
+            "world_state_id": "operations",
+            "status": "ACTIVE",
+            "world_transition": {"payload_json": json.dumps(asdict(operations))},
+        },
+    )
+    withdrawal = replace(
+        operations,
+        transition_id="withdraw",
+        state_kind=NarrativeStateKind.RESOURCE_STATE,
+        entity_key="entity_id=caravan|resource_id=supply",
+        changes={"balance": 1},
+    )
+    other = batch_event(
+        "withdraw",
+        kind="resource_state",
+        key="entity_id=caravan|resource_id=supply",
+        time=12,
+        dependencies=("event:supply",),
+        payload={
+            "entity_id": "caravan",
+            "resource_id": "supply",
+            "balance": 1,
+            "world_transition": {"payload_json": json.dumps(asdict(withdrawal))},
+        },
+    )
+    before = deepcopy(reality)
+    for ordered in ([raw, other], [other, raw]):
+        with pytest.raises(KernelError, match="WORLD_COMPILED_RULE_VIOLATION"):
+            validate_actual_world_events(
+                previous_reality=reality,
+                chapter_outcome={"state_events": typed_events(ordered)},
+            )
+    assert reality == before

@@ -1,0 +1,7 @@
+{
+  "status": "INTENTIONALLY_INTERRUPTED_NOT_QUALIFIED",
+  "tested_sha": "35c21e26039a5d90c2384e28d51042d3506e2f66",
+  "reason": "Read-only acceptance review found ON_CAMERA reconciliation overwrites the observed causal transition with a planned transition after checking only identity/effects/dependencies. A focused regression must reject actor/provenance drift rather than promote the plan. Full P0 will rerun after correction.",
+  "signal": "SIGINT",
+  "pytest_pid": 91998
+}

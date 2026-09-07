@@ -1,0 +1,13 @@
+{
+  "status": "BLOCKED",
+  "proof_ceiling": "REAL_PROVIDER_SMOKE_ONLY",
+  "source_sha": "15f6d5e385c57c282e16e8c10932c646eec99db7",
+  "implementation_tree_sha": "sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a",
+  "snapshot_id": "BLOCKED-no-approved-real-smoke-snapshot",
+  "run_key": "world-causal-resume-preflight",
+  "human_editorial": "NOT_PROVEN",
+  "longitudinal": "NOT_PROVEN",
+  "production_operation": "NOT_PROVEN",
+  "error_type": "ValueError",
+  "error": "explicit positive authorized budget required: NOVEL_FORGE_DAILY_PROVIDER_CAP"
+}

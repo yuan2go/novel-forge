@@ -273,11 +273,30 @@ The explicit `planning.causal.propose` API remains a manual proposal input.
 
 Only the selected preparation path creates commitments. Its steps bind dependencies,
 future Chapter windows and expected effects. Private preparation uses the Narrative
-State reducers but has no accepted authority. Planning completion cannot discharge a
+State reducers but has no accepted authority. A target may cite its own declared preparation
+events: the complete path graph is validated before target eligibility, with exact historical
+references and path-local scope. Provider array order does not determine dependency order.
+Native planning resolves accepted preparation commitments before generating a fresh
+portfolio. Due steps retain their original action/path identity; accepted event mappings
+prevent duplicate execution, and fresh `NO_OP`/`DEFER` cannot discard them. Continuation
+records execution, waiting, deferral, blocking and cancellation decisions against the new
+frontier. An exact accepted effect from another event can support an unexecuted step,
+with a separate reuse receipt rather than a fabricated execution record.
+Planning completion cannot discharge a
 commitment: repayment requires an exact accepted predicate event. Approved replacement
 Intent can retire unfulfilled preparation while preserving its original decision and
 accepted history. An expired unfulfilled window produces an accepted cancellation;
-renewal creates a new commitment linked to that retirement event.
+renewal creates a new commitment linked to that retirement event. Target retirement is
+separate from predicate repayment: an already fulfilled preparation retains its payoff
+receipt when the target expires or is cancelled, and its terminal target is no longer scheduled.
+Selected on-camera events are assigned to one Scene and carried in a frozen public execution
+contract. Observer must find the exact effects and local dependency identity in the final
+prose before Book acceptance records the original action/step mapping. Its observed causal
+transition must match the scheduled actor, time, effects and modeled prerequisites; the
+observed action description is preserved. Missing or different observation cannot be
+filled from the plan. Observer-only validation constraints remain outside Writer and
+Quality text views, including the metadata of already accepted visible events. Missing execution
+leaves the step pending; a successful chapter alone cannot complete it.
 
 Selected background events enter Canon reconciliation with a governed source origin
 that binds the source, generation, evaluation, selected transition and acceptance
@@ -292,13 +311,23 @@ Chapter Context exclude private world bindings and undisclosed background facts,
 including previous-outcome and retrieval summaries. A planned disclosure references
 an existing accepted event; only its accepted presentation changes the selected
 character or reader audience. It does not create the objective event again. Disclosure
-projects the selected fact without its private decision or causal explanation; hidden
+resolves exact historical occurrences through the accepted event index, even after the
+entity's current state advances. Historical occurrence and current assertion are distinct:
+a superseded state cannot be presented as a current assertion. Versioned audience policy
+selects scalar fields and an explicit mode; mixed audiences use separate records.
+Character-only disclosure does not expose hidden content to Reader-facing production.
+Misdirection and withholding cannot grant new objective Character Knowledge, even when
+Observer proposes a KNOWN record alongside that presentation.
+Partial presentation cannot expand into the full fact through Context or retrieval.
+Scene epistemic projections retain explicit Scene and Character scopes. Hidden
 preparation commitments remain outside the Reader view.
 
 Explicit batch-local event names and dependencies order same-chapter acceptance.
 Each event validates against the frozen baseline plus its verified ancestors through
 the same reducers. Cycles, unknown references, future causes, unordered writes and
-cross-character knowledge fail before the atomic commit. Local names resolve to exact
+cross-character knowledge fail before the atomic commit. Compiled rules are also checked
+against the combined final projection, including effects outside each event's ancestor set.
+Local names resolve to exact
 accepted event identities in Why traces. Independent simultaneous events remain legal;
 travel uses the affected entity's clock. Retry reuses frozen Context and confirmed
 Provider outputs, and ChapterGroup recovery consumes a committed Book acceptance

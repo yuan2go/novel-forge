@@ -138,6 +138,9 @@ class PlanningWorldPreparation:
                     project_id=command.project_id,
                     book_id=command.book_id,
                     request=command.world_preparation_request,
+                    contract_version="world-preparation-source.v1"
+                    if command.execution_contract_version == "1.12.0"
+                    else "world-preparation-source.v2",
                 )
             source_document = self._store(
                 command,
@@ -161,12 +164,33 @@ class PlanningWorldPreparation:
             "content_hash": source_document.content_hash,
         }
         policy = WorldProductionPolicy(**source["policy"])
+        from novel_forge.modules.worldbuilding.continuation import (
+            decide_preparation,
+            apply_preparation_decisions,
+        )
+
+        decisions = [
+            decide_preparation(
+                reality=source["reality"],
+                origin=item["origin"],
+                accepted_steps=item["accepted_steps"],
+                chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+                intent_version_id=source["intent_version_id"],
+            )
+            for item in source.get("preparation_sources", [])
+        ]
         generation_document = self._read(command.project_id, f"{prefix}/generation")
         if generation_document is None:
             task = self._task(source, source_ref, "WORLD_REASONER")
             generated = execute_stage(
                 PlanningProviderStage(
-                    "world_candidates.generate", task, world_generation_schema(policy)
+                    "world_candidates.generate",
+                    task,
+                    world_generation_schema(
+                        policy,
+                        audience_scoped=source["contract_version"]
+                        == "world-preparation-source.v2",
+                    ),
                 )
             )
             generation_document = self._store(
@@ -238,8 +262,12 @@ class PlanningWorldPreparation:
             WorldPreparationRepository(uow.cursor).assert_source_current(
                 project_id=command.project_id, book_id=command.book_id, frozen=source
             )
+        if source["contract_version"] == "world-preparation-source.v2":
+            plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
         action = {
-            "contract_version": "world-production-action.v1",
+            "contract_version": "world-production-action.v1"
+            if source["contract_version"] == "world-preparation-source.v1"
+            else "world-production-action.v2",
             "authority": "PLANNING_PROPOSAL",
             "project_id": command.project_id,
             "book_id": command.book_id,
@@ -287,6 +315,38 @@ class PlanningWorldPreparation:
             "accepted_through_chapter": source["reality"]["chapter_number"],
             "context_projection": projection,
             "projection_identity": projection["context_digest"],
+            **(
+                {
+                    "accepted_history": [
+                        {
+                            "event_id": event["event_id"],
+                            "state_kind": event["state_kind"],
+                            "entity_key": event["identity"]["entity_key"],
+                            "accepted_chapter": event["coordinate"]["source_chapter"],
+                            "story_time": event.get("story_time"),
+                            "fields": {
+                                key: value
+                                for key, value in event["mutation"]["payload"].items()
+                                if isinstance(value, (str, int, float, bool))
+                                and key
+                                not in {
+                                    "coverage",
+                                    "approval_requirement",
+                                    "entity_id",
+                                    "confidence",
+                                    "visibility",
+                                }
+                            },
+                        }
+                        for event in source["reality"].get("events", [])
+                        if event.get("mutation", {})
+                        .get("payload", {})
+                        .get("world_transition")
+                    ]
+                }
+                if source["contract_version"] == "world-preparation-source.v2"
+                else {}
+            ),
             "intent": source["intent"],
             "world_foundation": source["world_foundation"],
             "character_definitions": source["character_definitions"],
@@ -295,6 +355,11 @@ class PlanningWorldPreparation:
             "world_clock": source["reality"].get("world_clock", {}),
             "approved_entity_ids": source["entity_ids"],
             "foundation_cause_refs": source["reality"]["foundation_cause_refs"],
+            **(
+                {"disclosure_contract": "world-information-scope.v2"}
+                if source["contract_version"] == "world-preparation-source.v2"
+                else {}
+            ),
             "transition_contract": {
                 "fields": list(WorldTransition.__dataclass_fields__),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],

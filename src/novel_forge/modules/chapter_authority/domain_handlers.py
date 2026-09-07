@@ -33,6 +33,8 @@ from novel_forge.modules.chapter_authority.execution_artifacts import (
     validate_chapter_memo,
 )
 
+from novel_forge.modules.canon_graph.background import world_observation_constraints
+
 
 def build_chapter_plan(
     *,
@@ -170,9 +172,10 @@ def build_context_bundle(
         if declared_boundaries
         else ref_boundary
     )
-    if assembly_boundary.get("accepted_through_chapter") != ref_boundary[
-        "accepted_through_chapter"
-    ]:
+    if (
+        assembly_boundary.get("accepted_through_chapter")
+        != ref_boundary["accepted_through_chapter"]
+    ):
         raise KernelError(
             "CHAPTER_CONTEXT_BOUNDARY_INVALID",
             "frozen Context boundary differs from the Chapter execution cursor",
@@ -247,9 +250,7 @@ def build_context_bundle(
             required=bool(item.get("required", False)),
             representation_status=str(item.get("representation_status") or "ACTIVE"),
             read_generation_id=str(item.get("read_generation_id") or ""),
-            active_read_generation_id=str(
-                item.get("active_read_generation_id") or ""
-            ),
+            active_read_generation_id=str(item.get("active_read_generation_id") or ""),
             truncation_strategy=str(item.get("truncation_strategy") or ""),
             truncation_version=str(item.get("truncation_version") or ""),
         )
@@ -394,7 +395,33 @@ def build_context_bundle(
         "forbidden_source_count": 0,
         "task_narrative_projection": task_narrative_projection,
         "chapter_execution_expectations": {
-            **({"world_preparation": dict(plan["constraint_envelope"]["world_preparation"])} if (plan.get("constraint_envelope") or {}).get("world_preparation") else {}),
+            **(
+                {
+                    "world_observation_constraints": world_observation_constraints(
+                        plan["constraint_envelope"]["world_preparation"]
+                    )
+                }
+                if (plan.get("constraint_envelope") or {}).get("world_execution")
+                else {}
+            ),
+            **(
+                {
+                    "world_execution": dict(
+                        plan["constraint_envelope"]["world_execution"]
+                    )
+                }
+                if (plan.get("constraint_envelope") or {}).get("world_execution")
+                else {}
+            ),
+            **(
+                {
+                    "world_preparation": dict(
+                        plan["constraint_envelope"]["world_preparation"]
+                    )
+                }
+                if (plan.get("constraint_envelope") or {}).get("world_preparation")
+                else {}
+            ),
             "contract_version": "chapter-execution-expectations-v3",
             "chapter_plan_asset_version_id": plan_asset_version_id,
             "chapter_execution_intent_asset_version_id": (
@@ -407,7 +434,8 @@ def build_context_bundle(
             "entry_state": dict(mission.get("entry_state") or {}),
             "required_beats": list(
                 (execution_intent or {}).get("required_beats")
-                or mission.get("required_beats") or ()
+                or mission.get("required_beats")
+                or ()
             ),
             "required_state_transitions": list(
                 mission_outcomes.get("state_transitions", [])
@@ -442,9 +470,7 @@ def build_context_bundle(
             ),
             "narrative_composition": dict(mission.get("narrative_composition") or {}),
             "arc_working_set": dict(mission.get("arc_working_set") or {}),
-            "narrative_realization": dict(
-                mission.get("narrative_realization") or {}
-            ),
+            "narrative_realization": dict(mission.get("narrative_realization") or {}),
             "frozen_arc_plans": [
                 normalize_frozen_arc_plan(
                     arc_plan_version_id=arc_id,

@@ -9,7 +9,10 @@ from novel_forge.modules.worldbuilding.dynamics import WorldTransition
 
 def scheduled_world_events(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
     action = binding["action"]
-    if action.get("contract_version") != "world-production-action.v1":
+    if action.get("contract_version") not in {
+        "world-production-action.v1",
+        "world-production-action.v2",
+    }:
         raise KernelError(
             "WORLD_ACTION_CONTRACT_INVALID", "unsupported frozen world action"
         )
@@ -69,6 +72,44 @@ def public_world_direction(binding: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def bind_world_execution(
+    binding: Mapping[str, Any], scenes: list[dict[str, Any]]
+) -> dict[str, Any]:
+    public = public_world_direction(binding)
+    selected = {
+        raw["transition_id"]: raw
+        for raw in scheduled_world_events(binding)
+        if raw["camera"] == "ON_CAMERA"
+    }
+    assigned = {name: [] for name in selected}
+    for scene in scenes:
+        names = scene.get("world_event_ids", [])
+        if (
+            not isinstance(names, list)
+            or any(not isinstance(name, str) or name not in selected for name in names)
+            or len(names) != len(set(names))
+        ):
+            raise KernelError(
+                "WORLD_SCENE_EVENT_REFERENCE_INVALID",
+                "Scene assignments must reference distinct selected local event identities",
+            )
+        for name in names:
+            assigned[name].append(scene["scene_id"])
+    if any(len(ids) != 1 for ids in assigned.values()):
+        raise KernelError(
+            "WORLD_SCENE_EVENT_COVERAGE_INVALID",
+            "each scheduled on-camera event requires exactly one Scene owner",
+        )
+    for event in public["on_camera_events"]:
+        event["scene_id"] = assigned[event["transition_id"]][0]
+        event["cause_refs"] = list(selected[event["transition_id"]]["cause_refs"])
+    return {
+        **public,
+        "contract_version": "world-scene-execution.v1",
+        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Emit the observed world_transition with its actual actor and action from prose, using the Observer-only modeled constraints for validation. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage.",
+    }
+
+
 def without_private_world(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {
@@ -102,9 +143,14 @@ def attach_background_proposals(
 ) -> dict[str, Any]:
     from .domain import HIGH_IMPACT_CHANGE_TYPES, SEMANTIC_CHANGE_FIELDS
 
-    result = deepcopy(extraction)
+    from .disclosure import bind_disclosure_policy
+
+    result = bind_disclosure_policy(extraction, binding)
     for field in SEMANTIC_CHANGE_FIELDS:
-        if any("fact_origin" in item for item in result.get(field, [])):
+        if any(
+            "fact_origin" in item or "preparation_lineage" in item
+            for item in result.get(field, [])
+        ):
             raise KernelError(
                 "WORLD_FACT_ORIGIN_FORGED",
                 "Observer cannot manufacture a governed background origin",
@@ -121,6 +167,38 @@ def attach_background_proposals(
     for raw in scheduled_world_events(binding):
         transition = WorldTransition.from_mapping(raw)
         if transition.camera == "ON_CAMERA":
+            if action["contract_version"] == "world-production-action.v2":
+                expected_lineage = preparation_lineage(
+                    binding, transition.transition_id
+                )
+                for item in result.get(fields.get(transition.state_kind.value, ""), []):
+                    if (item.get("causal_batch") or {}).get(
+                        "local_id"
+                    ) != transition.transition_id:
+                        continue
+                    identity = dict(
+                        part.split("=", 1) for part in transition.entity_key.split("|")
+                    )
+                    if any(
+                        item.get(key) != value
+                        for key, value in {**identity, **transition.changes}.items()
+                    ):
+                        raise KernelError(
+                            "WORLD_PREPARATION_OBSERVED_EFFECT_MISMATCH",
+                            "an observed preparation must match its exact scheduled identity and effects",
+                        )
+                    if item["causal_batch"].get("depends_on") != list(
+                        transition.cause_refs
+                    ):
+                        raise KernelError(
+                            "WORLD_PREPARATION_OBSERVED_CAUSE_MISMATCH",
+                            "the observed local event must preserve the scheduled prerequisites",
+                        )
+                    observed = require_observed_transition(
+                        expected=raw, actual=item.get("world_transition")
+                    )
+                    item["preparation_lineage"] = expected_lineage
+                    item["world_transition"] = observed
             continue
         kind = transition.state_kind.value
         if kind in {
@@ -203,6 +281,10 @@ def attach_background_proposals(
                 "depends_on": list(transition.cause_refs),
             },
         }
+        if action["contract_version"] == "world-production-action.v2":
+            item["preparation_lineage"] = preparation_lineage(
+                binding, transition.transition_id
+            )
         result.setdefault(fields[kind], []).append(item)
         if major:
             result.setdefault("approval_required_changes", []).append(
@@ -235,3 +317,58 @@ def world_action_boundaries(binding: Mapping[str, Any]) -> tuple[str, ...]:
         if proposed.get("approval_required_changes") or selected.get("risks")
         else ("DIRECTOR",)
     )
+
+
+def require_observed_transition(
+    *, expected: Mapping[str, Any], actual: Any
+) -> dict[str, str]:
+    try:
+        raw = json.loads(actual["payload_json"])
+        WorldTransition.from_mapping(raw)
+    except (KeyError, TypeError, ValueError, KernelError) as exc:
+        raise KernelError(
+            "WORLD_PREPARATION_OBSERVATION_REQUIRED",
+            "on-camera lineage requires a typed observed transition, never a substituted plan",
+        ) from exc
+    frozen = json.loads(json.dumps(expected))
+    if any(
+        raw.get(key, [] if key == "epistemic_basis" else None) != value
+        for key, value in frozen.items()
+        if key != "action"
+    ):
+        raise KernelError(
+            "WORLD_PREPARATION_OBSERVATION_DRIFT",
+            "observed actor, effects, time and modeled causal constraints must match the selected preparation",
+        )
+    return {"payload_json": json.dumps(raw, sort_keys=True, separators=(",", ":"))}
+
+
+def world_observation_constraints(binding: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "contract_version": "world-observer-constraints.v1",
+        "role": "ACTUAL_OBSERVER",
+        "semantic_role": "VALIDATION_CONSTRAINTS_NOT_OBSERVED_FACTS",
+        "source_action_version_id": binding["asset_version_id"],
+        "transitions": [
+            {
+                key: deepcopy(event[key])
+                for key in ("transition_id", "requirements", "epistemic_basis")
+            }
+            for event in scheduled_world_events(binding)
+            if event["camera"] == "ON_CAMERA"
+        ],
+    }
+
+
+def preparation_lineage(
+    binding: Mapping[str, Any], transition_id: str
+) -> dict[str, str]:
+    plan = binding["action"]["world_plan"]
+    return {
+        "contract_version": "world-preparation-lineage.v1",
+        "origin_action_version_id": (plan.get("continuation_origin") or {}).get(
+            "asset_version_id", binding["asset_version_id"]
+        ),
+        "path_id": plan["selected_path_id"],
+        "transition_id": transition_id,
+    }

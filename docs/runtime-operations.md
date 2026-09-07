@@ -240,23 +240,37 @@ plans. The first Chapter uses those initial conditions without a synthetic accep
 current Reality revision and active Creative Foundation version. Its result is planning
 input; a stale revision cannot mutate accepted state.
 
-For an authorized real-Provider smoke, use the same `/commands` entry and Book/Chapter
-workers with the approved real routes, Capability Pack and frozen budget scope. The
-operator-reviewed command JSON identifies the isolated Book, resolved input snapshot,
-target and idempotency key; it contains no candidates, requirements or Director scores:
+An authorized production smoke uses the native Book/Chapter workers through
+`scripts/run_world_production_smoke.py`. It consumes an approved input snapshot produced
+by Book opening/input resolution, whose Foundation, intent, policies and initial plans
+must already exist in the isolated PostgreSQL database. The command has no candidate,
+requirement, score or prose override. A new evidence directory is required on each
+invocation; keep the same run key and input snapshot when recovering.
 
 ```bash
-curl --fail-with-body -H 'Content-Type: application/json' \
-  --data-binary @approved-book-command.json \
-  "$NOVEL_FORGE_API_BASE/product/production/book-authority/commands"
+source config/provider/world-production-smoke.env.example
+PYTHONPATH=src .venv/bin/python scripts/run_world_production_smoke.py \
+  --expected-sha "$(git rev-parse HEAD)" \
+  --input-snapshot-id "$NOVEL_FORGE_SMOKE_INPUT_SNAPSHOT_ID" \
+  --run-key "$NOVEL_FORGE_SMOKE_RUN_KEY" \
+  --root "$NOVEL_FORGE_SMOKE_RUNTIME_ROOT" \
+  --evidence-dir "$NOVEL_FORGE_SMOKE_EVIDENCE_DIR" --chapters 3 --execute
 ```
 
-The Book worker schedules `world_candidates.generate`, `world_candidates.evaluate`
-and ordinary Planning automatically. Inspect the generated `world_preparation` source,
-output and action assets, their ExternalEffect receipts, the active Chapter plan and
-the accepted Reality's fact origins. Keep rejected outputs and unknown-effect recovery
-records. No real-Provider claim is available without credentials, an explicit budget
-and the actual run; scripted transport receipts have a separate proof ceiling.
+The example requires existing reviewed route, credential, budget, Principal and input
+configuration; it supplies no spending authorization or credential. Missing configuration
+fails before execution. The runner requires a disposable database name and controlled
+runtime, rejects scripted routes, respects pending approvals and bounded tick/time limits,
+and does not approve its own changes. Chapter count is only the experiment bound.
+
+`events.jsonl` retains tick and failure results; the export includes exact world source,
+generation/evaluation artifacts, execution recovery sessions, request admission,
+model/usage/cost evidence and accepted Realities. Inspect that original preparation
+steps continued across chapters and a historical background event was later disclosed to
+only its authorized audiences. A model may produce NO_OP or a blocked plan: reaching a
+sample size alone does not prove these behaviors or confer Provider, editorial,
+longitudinal or production qualification. Keep the database and failed export when
+reconciliation or a further evidence page is required.
 
 Configure the versioned Book Control policy through `/policies/book-control`, then
 inspect `/runs/{book_run_id}/control-readiness`. A pending decision identifies the

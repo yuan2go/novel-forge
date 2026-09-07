@@ -135,6 +135,65 @@ class WorldPreparationRepository:
             project_id=project_id, book_id=book_id, binding=binding
         )
         self.require_decisions(project_id=project_id, binding=binding)
+        if binding["action"]["contract_version"] == "world-production-action.v2":
+            from novel_forge.modules.canon_graph.background import (
+                scheduled_world_events,
+                preparation_lineage,
+            )
+            from novel_forge.modules.narrative_state.contracts import (
+                narrative_event_payload,
+            )
+            from novel_forge.modules.worldbuilding.dynamics import WorldTransition
+            from novel_forge.modules.canon_graph.background import (
+                require_observed_transition,
+            )
+
+            scheduled = {
+                raw["transition_id"]: raw
+                for raw in scheduled_world_events(binding)
+                if raw["camera"] == "ON_CAMERA"
+            }
+            for event in outcome.get("state_events", []):
+                payload = event["mutation"]["payload"]
+                lineage = payload.get("preparation_lineage")
+                if (
+                    not lineage
+                    or (payload.get("fact_origin") or {}).get("kind")
+                    == "GOVERNED_BACKGROUND"
+                ):
+                    continue
+                raw = scheduled.get(lineage.get("transition_id"))
+                if raw is None or lineage != preparation_lineage(
+                    binding, raw["transition_id"]
+                ):
+                    raise KernelError(
+                        "WORLD_PREPARATION_ACCEPTANCE_LINEAGE_INVALID",
+                        "on-camera preparation must belong to this frozen selected scope",
+                    )
+                transition = WorldTransition.from_mapping(raw)
+                if (
+                    event["state_kind"] != transition.state_kind.value
+                    or event["identity"]["entity_key"] != transition.entity_key
+                    or any(
+                        payload.get(key) != value
+                        for key, value in narrative_event_payload(
+                            transition.changes
+                        ).items()
+                    )
+                    or payload.get("world_transition")
+                    != require_observed_transition(
+                        expected=raw, actual=payload.get("world_transition")
+                    )
+                ):
+                    raise KernelError(
+                        "WORLD_PREPARATION_ACCEPTANCE_EFFECT_INVALID",
+                        "accepted on-camera preparation must preserve the observed and scheduled effects",
+                    )
+        from novel_forge.modules.canon_graph.disclosure import (
+            validate_disclosure_acceptance,
+        )
+
+        validate_disclosure_acceptance(outcome, binding)
         expected = attach_background_proposals(
             extraction={"chapter": binding["action"]["world_plan"]["chapter_number"]},
             binding=binding,
@@ -191,6 +250,8 @@ class WorldPreparationRepository:
                     "target_window",
                     "preparation_schedule",
                     "retirement_evidence",
+                    "preparation_target_status",
+                    "target_retirement_evidence",
                     "intent_version_id",
                 )
             ):
@@ -278,7 +339,12 @@ class WorldPreparationRepository:
             )
 
     def require_source(
-        self, *, project_id: str, book_id: str, request: Mapping[str, Any]
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        request: Mapping[str, Any],
+        contract_version: str = "world-preparation-source.v2",
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -489,8 +555,28 @@ class WorldPreparationRepository:
         planning_window = project_world_planning_window(
             planning_inputs, chapter=chapter + 1, window=policy.planning_window_chapters
         )
+        if contract_version == "world-preparation-source.v2" and chapter:
+            history = repository.recent_world_events(
+                book_run_id=request["book_run_id"],
+                through_chapter=chapter,
+                limit=min(128, policy.max_candidates * policy.max_preparation_steps),
+            )
+            combined = {
+                event["event_id"]: event for event in [*reality["events"], *history]
+            }
+            reality["events"] = [combined[key] for key in sorted(combined)]
+        continuations = (
+            self.preparation_sources(reality=reality, limit=policy.max_candidates)
+            if contract_version == "world-preparation-source.v2" and chapter
+            else []
+        )
         return {
-            "contract_version": "world-preparation-source.v1",
+            "contract_version": contract_version,
+            **(
+                {"preparation_sources": continuations}
+                if contract_version == "world-preparation-source.v2"
+                else {}
+            ),
             "request": dict(request),
             "reality": reality,
             "foundation_refs": refs,
@@ -505,11 +591,107 @@ class WorldPreparationRepository:
             "fact_mutation_allowed": False,
         }
 
+    def preparation_sources(
+        self, *, reality: dict[str, Any], limit: int
+    ) -> list[dict[str, Any]]:
+        origins = sorted(
+            {
+                entry["state"]["causal_plan_asset_version_id"]
+                for entry in reality["current_state"].get("narrative_obligation", [])
+                if (entry["state"].get("fact_origin") or {}).get("kind")
+                == "GOVERNED_PREPARATION"
+                and entry["state"].get("status") != "CANCELLED"
+                and entry["state"].get("preparation_target_status") != "CANCELLED"
+            }
+        )
+        if not origins:
+            return []
+        self.cursor.execute(
+            """
+            SELECT v.asset_version_id, v.content_hash, v.content->'contract'
+            FROM authority_asset_version v
+            CROSS JOIN LATERAL jsonb_array_elements(v.content->'contract'->'world_plan'->'candidate_futures') candidate
+            WHERE v.asset_version_id=ANY(%s)
+              AND v.content->'contract'->>'book_run_id'=%s
+              AND candidate->>'candidate_id'=v.content->'contract'->'world_plan'->>'selected_candidate_id'
+              AND NOT EXISTS (
+                SELECT 1 FROM authority_reality_event_index i
+                WHERE i.book_run_id=%s AND i.preparation_action_version_id=v.asset_version_id
+                  AND i.preparation_transition_id=candidate->'transition'->>'transition_id'
+                  AND i.accepted_chapter<=%s)
+            ORDER BY v.asset_version_id LIMIT %s
+            """,
+            [
+                origins,
+                reality["book_run_id"],
+                reality["book_run_id"],
+                reality["chapter_number"],
+                limit + 1,
+            ],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > limit:
+            raise KernelError(
+                "WORLD_PREPARATION_PORTFOLIO_BLOCKED",
+                "existing preparation exceeds the frozen portfolio; an explicit future decision is required",
+            )
+        result = []
+        history_ids = set()
+        for version, digest, action in rows:
+            self.cursor.execute(
+                "SELECT preparation_transition_id, event_id FROM authority_reality_event_index WHERE book_run_id=%s AND preparation_action_version_id=%s AND preparation_transition_id IS NOT NULL AND accepted_chapter<=%s ORDER BY preparation_transition_id LIMIT 129",
+                [reality["book_run_id"], version, reality["chapter_number"]],
+            )
+            mappings = self.cursor.fetchall()
+            if len(mappings) > 128:
+                raise KernelError(
+                    "WORLD_PREPARATION_MAPPING_UNBOUNDED",
+                    "one preparation origin exceeded its accepted event bound",
+                )
+            history_ids.update(event_id for _, event_id in mappings)
+            plan = action["world_plan"]
+            for raw in [
+                *(step["transition"] for step in plan["preparation_schedule"]),
+                *(
+                    candidate["transition"]
+                    for candidate in plan["candidate_futures"]
+                    if candidate.get("candidate_id") == plan["selected_candidate_id"]
+                ),
+            ]:
+                history_ids.update(
+                    ref
+                    for ref in raw["cause_refs"]
+                    if not ref.startswith(("local:", "foundation:"))
+                )
+            result.append(
+                {
+                    "origin": {
+                        "asset_version_id": version,
+                        "content_hash": digest,
+                        "action": action,
+                    },
+                    "accepted_steps": dict(mappings),
+                }
+            )
+        found = NarrativeRealityRepository(self.cursor).event_sources(
+            book_run_id=reality["book_run_id"],
+            through_chapter=reality["chapter_number"],
+            event_ids=tuple(sorted(history_ids)),
+        )
+        events = {
+            event["event_id"]: event for event in [*reality.get("events", []), *found]
+        }
+        reality["events"] = [events[key] for key in sorted(events)]
+        return result
+
     def assert_source_current(
         self, *, project_id: str, book_id: str, frozen: Mapping[str, Any]
     ) -> None:
         current = self.require_source(
-            project_id=project_id, book_id=book_id, request=frozen["request"]
+            project_id=project_id,
+            book_id=book_id,
+            request=frozen["request"],
+            contract_version=frozen["contract_version"],
         )
         if narrative_hash(current) != narrative_hash(frozen):
             raise KernelError(

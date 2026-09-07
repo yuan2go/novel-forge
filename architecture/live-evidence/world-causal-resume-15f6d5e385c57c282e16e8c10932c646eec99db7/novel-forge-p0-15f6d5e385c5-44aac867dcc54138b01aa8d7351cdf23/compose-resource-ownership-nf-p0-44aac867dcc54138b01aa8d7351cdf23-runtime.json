@@ -1,0 +1,115 @@
+{
+  "compose_project": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+  "resources": [
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "293238c7b0239b3f5687c1d98d215f78608631f6fdac3a5cd2e1a32a833d3e57",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "3c52a6ab3f5bff69c4ba3e2d5c0756c324a48fa60599bc010f8c0b144087127b",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "4fde7be1b48e27dd960029b9cdf6241bb3c14c3786eaecd8f4d12f395e67049e",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "5b598908da3a833ceb540bfceff43ef6523114780dcc59d8909e27ee2f361b65",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "70f7b91d1f9969802b4514c65c02dd577e291f6b3a0d3dbd7d69ad605513f190",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "8263f269cde5067561d58fe089f5b41764057db3aadc000518c651b52a70e438",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "8d4f4f216c7e366cb2316dbb35fe555d3134e564d17fa0d8d6cbeca7ea63a86d",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "bf56a1dc95000b0f29c90531c51016492583b1150fa0f16b9876b4a1236d146c",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "c5cae1931456671ba4bc18caee8ce6ffaa0215031dc4d18d670e687321f38de2",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "c7d64f6d30b004af976358793c5a3935c2249f0f789224401c2477996ea703b8",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "d488fb89036997d4b9ca39f1cb4b9018e88380f9eca9654def0e2d46229764a1",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "d79ef33b6feac8838042668887c211b8ac34ee428a361c18f91ff03edf30590c",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "e1e47cef3ac4e1e72cabf781542134b7f73ca84913b17073834b8764bba74632",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "container",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "eee1da10ed032abd3dfc0f45a2a2391de400f17466b8ff6bfbda6620d4728754",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "network",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "f45c7b108c1769e9f945363e86a4b7fdf4a15fd2eb8309715b15fc89578c4310",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "volume",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime_authority-object-data",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "volume",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime_authority-postgresql-data",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    },
+    {
+      "kind": "volume",
+      "project_name": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime",
+      "resource_id": "nf-p0-44aac867dcc54138b01aa8d7351cdf23-runtime_authority-runtime",
+      "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23"
+    }
+  ],
+  "run_id": "p0-44aac867dcc54138b01aa8d7351cdf23",
+  "schema_version": "novel-forge.compose-resource-ownership.v1"
+}

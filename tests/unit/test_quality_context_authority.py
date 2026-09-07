@@ -460,3 +460,48 @@ class QualityContextAuthorityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_quality_provider_view_excludes_unrevealed_background_candidates():
+    import json
+    plan = {'chapter': 1, 'constraint_envelope': {'world_preparation': {'action': {'contract_version': 'world-production-action.v2'}}}}
+    hidden = {'world_state_id': 'council', 'private_marker': 'UNDISCLOSED_SUCCESSION_SECRET', 'fact_origin': {'kind': 'GOVERNED_BACKGROUND'}, 'world_transition': {'payload_json': 'UNDISCLOSED_SUCCESSION_SECRET'}}
+    canon = {'state_changes': {'world_state': [hidden, {'world_state_id': 'market', 'status': 'OPEN'}]}}
+    view = build_quality_context_view(group='longform', revision={'text': 'Only the market opens.'}, revision_asset_version_id='draft:1', chapter_plan=plan, chapter_plan_asset_version_id='plan:1', context_bundle=_bundle(), context_bundle_asset_version_id='context:1', canon=canon, canon_asset_version_id='canon:1')
+    assert 'UNDISCLOSED_SUCCESSION_SECRET' not in json.dumps(view)
+    assert 'market' in json.dumps(view['current_state_candidates'])
+    assert canon['state_changes']['world_state'][0] == hidden
+
+
+def test_quality_sees_observed_effect_without_private_validation_metadata():
+    import json
+
+    plan = {
+        "chapter": 1,
+        "constraint_envelope": {
+            "world_preparation": {
+                "action": {"contract_version": "world-production-action.v2"}
+            }
+        },
+    }
+    actual = {
+        "world_state_id": "council",
+        "status": "PUBLICLY_MOBILISED",
+        "preparation_lineage": {"origin_action_version_id": "a"},
+        "world_transition": {"payload_json": "PRIVATE_OBSERVER_RULE_ID"},
+    }
+    canon = {"state_changes": {"world_state": [actual]}}
+    view = build_quality_context_view(
+        group="longform",
+        revision={"text": "The council musters in public."},
+        revision_asset_version_id="draft:1",
+        chapter_plan=plan,
+        chapter_plan_asset_version_id="plan:1",
+        context_bundle=_bundle(),
+        context_bundle_asset_version_id="context:1",
+        canon=canon,
+        canon_asset_version_id="canon:1",
+    )
+    assert "PRIVATE_OBSERVER_RULE_ID" not in json.dumps(view)
+    assert "PUBLICLY_MOBILISED" in json.dumps(view["current_state_candidates"])
+    assert canon["state_changes"]["world_state"][0] == actual

@@ -122,3 +122,43 @@ def test_new_preparation_after_expiry_has_a_new_commitment_identity():
     assert len(renewed) == 1 and renewed[0]["status"] == "OPEN"
     assert renewed[0]["obligation_id"] != original["obligation_id"]
     assert original["status"] == "CANCELLED"
+
+
+def test_cancelled_target_does_not_reopen_or_erase_fulfilled_preparation():
+    from novel_forge.modules.canon_graph.causal_preparation import (
+        preparation_observations,
+    )
+
+    reality = reality_state()
+    old = preparation_observations(binding(reality))[0]
+    old.update(
+        status="FULFILLED",
+        payoff_evidence={
+            "event_id": "accepted:provisions",
+            "asset_version_id": "draft:2",
+        },
+    )
+    reality["current_state"]["narrative_obligation"] = [{"state": old}]
+    current = binding(reality)
+    current["action"].update(contract_version="world-production-action.v2")
+    current["action"]["world_plan"].update(
+        causal_debts=[],
+        continuation_decisions=[
+            {
+                "status": "CANCEL",
+                "reason": "APPROVED_INTENT_REPLACED",
+                "origin": {"asset_version_id": "action"},
+            }
+        ],
+    )
+    updates = preparation_observations(current)
+    assert len(updates) == 1
+    assert updates[0]["status"] == "FULFILLED"
+    assert updates[0]["payoff_evidence"] == old["payoff_evidence"]
+    assert updates[0]["preparation_target_status"] == "CANCELLED"
+    assert (
+        updates[0]["target_retirement_evidence"]["reason"] == "APPROVED_INTENT_REPLACED"
+    )
+    assert "preparation_target_status" not in old
+    reality["current_state"]["narrative_obligation"][0]["state"] = updates[0]
+    assert preparation_observations(current) == []

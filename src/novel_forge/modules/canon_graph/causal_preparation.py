@@ -91,7 +91,36 @@ def preparation_observations(binding: Mapping[str, Any]) -> list[dict[str, Any]]
                 "confidence": 1.0,
             }
         )
+    cancellations = (
+        {
+            row["origin"]["asset_version_id"]: row
+            for row in plan.get("continuation_decisions", [])
+            if row["status"] == "CANCEL"
+        }
+        if binding["action"].get("contract_version") == "world-production-action.v2"
+        else {}
+    )
     for old in prior.values():
+        cancelled = cancellations.get(old.get("causal_plan_asset_version_id"))
+        if (
+            cancelled
+            and old.get("status") == "FULFILLED"
+            and old.get("preparation_target_status") != "CANCELLED"
+            and (old.get("fact_origin") or {}).get("kind") == "GOVERNED_PREPARATION"
+        ):
+            result.append(
+                {
+                    **deepcopy(old),
+                    "from_status": old["status"],
+                    "preparation_target_status": "CANCELLED",
+                    "target_retirement_evidence": {
+                        "reason": cancelled["reason"],
+                        "action_asset_version_id": binding["asset_version_id"],
+                        "intent_version_id": plan["intent_version_id"],
+                    },
+                }
+            )
+            continue
         if old.get("obligation_type") != "CAUSAL_DEBT" or old.get("status") in {
             "FULFILLED",
             "CANCELLED",
@@ -124,6 +153,9 @@ def preparation_observations(binding: Mapping[str, Any]) -> list[dict[str, Any]]
                     **deepcopy(old),
                     "from_status": old["status"],
                     "status": "FULFILLED",
+                    **({"preparation_target_status": "CANCELLED", "target_retirement_evidence": {
+                        "reason": cancelled["reason"], "action_asset_version_id": binding["asset_version_id"], "intent_version_id": plan["intent_version_id"],
+                    }} if cancelled else {}),
                     "current_development": "The frozen accepted Reality supplies the exact prerequisite evidence.",
                     "payoff_evidence": {
                         "event_id": receipt["source_event_id"],

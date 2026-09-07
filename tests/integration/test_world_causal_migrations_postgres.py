@@ -1,7 +1,7 @@
 import psycopg
 import pytest
 
-from novel_forge.storage.migrations import run_migrations
+from novel_forge.storage.migrations import MIGRATIONS, run_migrations
 from tests.integration.authority_postgres_support import DATABASE_URL
 from tests.integration.migration_window_postgres_support import (
     disposable_database_at_migration,
@@ -10,7 +10,11 @@ from tests.integration.migration_window_postgres_support import (
 
 @pytest.mark.parametrize(
     "baseline",
-    ["20260625_0001_initial_industrial_schema", "20260906_0116_book_control_policy"],
+    [
+        "20260625_0001_initial_industrial_schema",
+        "20260906_0116_book_control_policy",
+        "20260906_0117_world_causal_event_locators",
+    ],
 )
 def test_world_event_identity_clock_migration_fresh_and_supported_upgrade(baseline):
     with disposable_database_at_migration(
@@ -27,6 +31,8 @@ def test_world_event_identity_clock_migration_fresh_and_supported_upgrade(baseli
                 "entity_key",
                 "batch_local_id",
                 "fact_origin_kind",
+                "preparation_action_version_id",
+                "preparation_transition_id",
             }.issubset({row[0] for row in columns})
             definition = connection.execute(
                 "SELECT pg_get_functiondef('authority_index_reality_events(text)'::regprocedure)"
@@ -36,11 +42,27 @@ def test_world_event_identity_clock_migration_fresh_and_supported_upgrade(baseli
                 "SELECT indexname FROM pg_indexes WHERE tablename='authority_reality_event_index'"
             ).fetchall()
             assert ("authority_reality_entity_clock_idx",) in indexes
+            assert ("authority_reality_preparation_step_idx",) in indexes
         assert run_migrations(url) == status
 
 
+@pytest.mark.parametrize(
+    "baseline, baseline_head, native_node",
+    [
+        (
+            "ed494c62ec9d9065dc560f9c7bafceb1e26df6f1",
+            "20260906_0116_book_control_policy",
+            "",
+        ),
+        (
+            "88100f821ae3f0bdcf00577dada8610ebece72a7",
+            "20260906_0117_world_causal_event_locators",
+            "[True]",
+        ),
+    ],
+)
 def test_published_accepted_history_upgrades_and_frozen_planning_replays(
-    tmp_path, request
+    tmp_path, request, baseline, baseline_head, native_node
 ):
     import io
     import json
@@ -57,7 +79,6 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
         StoryPlanningGenerationApplication,
     )
 
-    baseline = "ed494c62ec9d9065dc560f9c7bafceb1e26df6f1"
     root = Path(__file__).resolve().parents[2]
     archived = subprocess.run(
         ["git", "archive", baseline], cwd=root, check=True, capture_output=True
@@ -69,7 +90,7 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
     with disposable_database_at_migration(
         DATABASE_URL,
         prefix="world_history",
-        target_migration_id="20260906_0116_book_control_policy",
+        target_migration_id=baseline_head,
     ) as url:
         env = {
             **os.environ,
@@ -82,7 +103,8 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
                 "-m",
                 "pytest",
                 "-q",
-                "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres",
+                "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres"
+                + native_node,
             ],
             cwd=checkout,
             env=env,
@@ -102,12 +124,9 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
                 "SELECT revision_id, book_run_id, project_id, book_id, chapter_number FROM authority_narrative_reality_revision ORDER BY chapter_number"
             ).fetchall()
             assert len(revisions_before) == 2
-            assert (
-                connection.execute(
-                    "SELECT count(*) FROM nf_schema_migrations"
-                ).fetchone()[0]
-                == 116
-            )
+            assert connection.execute(
+                "SELECT count(*) FROM nf_schema_migrations"
+            ).fetchone()[0] == int(baseline_head.split("_")[1])
             frozen = connection.execute(
                 "SELECT g.project_id, op.idempotency_key, op.command_payload->'payload'->>'actor_id' FROM authority_story_planning_generation g JOIN authority_operation op USING(operation_id) ORDER BY g.created_at"
             ).fetchall()
@@ -139,10 +158,11 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
             command = application.find_frozen_generation_command(
                 project_id=project_id, idempotency_key=key
             )
-            assert (
-                command is not None and command.execution_contract_version == "1.11.0"
+            assert command is not None and command.execution_contract_version == (
+                "1.12.0" if native_node else "1.11.0"
             )
-            assert command.world_preparation_request is None
+            if not native_node:
+                assert command.world_preparation_request is None
             principal = Principal(
                 principal_id=actor,
                 principal_type=PrincipalType.LOCAL_OPERATOR,
@@ -195,12 +215,9 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
                 ).fetchall()
                 == versions_before
             )
-            assert (
-                connection.execute(
-                    "SELECT count(*) FROM nf_schema_migrations"
-                ).fetchone()[0]
-                == 117
-            )
+            assert connection.execute(
+                "SELECT count(*) FROM nf_schema_migrations"
+            ).fetchone()[0] == len(MIGRATIONS)
             assert (
                 connection.execute(
                     "SELECT count(*) FROM authority_reality_event_index WHERE state_kind IS NULL OR entity_key IS NULL"
