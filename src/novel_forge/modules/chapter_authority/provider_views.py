@@ -382,15 +382,15 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
         else:
-            payload["review_issues"] = _compact(
-                dict(inputs.get("review") or {}).get("issues") or []
-            )
+            from novel_forge.modules.review.diagnostics import open_diagnoses
+            payload["review_issues"] = _compact(open_diagnoses(dict(inputs.get("review") or {})))
         return _task(stage, **payload)
     if stage == "rereview":
+        from novel_forge.modules.review.diagnostics import open_diagnoses
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
             _compact(item)
-            for item in dict(inputs.get("review") or {}).get("issues") or []
+            for item in open_diagnoses(dict(inputs.get("review") or {}))
         ]
         return _task(
             stage,

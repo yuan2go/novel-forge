@@ -102,3 +102,22 @@ def test_retained_review_is_usable_only_for_unchanged_selected_prose():
     assert review_covers_candidate(bound, text="她作出了选择。", source_id="draft:v1")
     assert not review_covers_candidate(bound, text="她改变了选择。", source_id="draft:v1")
     assert not review_covers_candidate(bound, text="她作出了选择。", source_id="draft:v2")
+
+
+def test_omitted_blocker_survives_three_rereviews_and_reaches_revision_input():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    initial = review(diagnosis())
+    issue_id = initial["issues"][0]["review_issue_id"]
+    for generation in range(3):
+        result = normalize_rereview_result(
+            draft_asset_version_id="draft:v1", review=initial, review_asset_version_id=f"review:{generation}",
+            revision={"chapter": 1, "text": "她作出了选择。", "resolution_claimed_issue_codes": ["COST"]},
+            revision_asset_version_id=f"revision:{generation}", context_bundle_version_id="context:v1",
+            result={"diagnostic_contract_version": "actionable-diagnostics.v1", "decision": "PASSED", "score": 99,
+                    "issues": [], "resolution_checks": []}, provider_evidence={}, project_id="p")
+        assert result["blocking_issue_count"] == 1
+        assert result["remaining_issue_codes"] == ["COST"]
+        assert result["unresolved_issues"][0]["review_issue_id"] == issue_id
+        task = build_provider_task_view("revision", {"draft": {"text": "她作出了选择。"}, "review": result})
+        assert task["review_issues"][0]["code"] == "COST"
+        initial = result

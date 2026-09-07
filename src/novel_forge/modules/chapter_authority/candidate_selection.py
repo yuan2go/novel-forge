@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -30,6 +31,34 @@ class CandidateEvidence:
     review_asset_version_id: str
     diagnostic_contract_version: str = ""
     resolution_checks: tuple[dict[str, Any], ...] = ()
+    workspace_asset_version_id: str = ""
+
+
+def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
+    from novel_forge.modules.review.diagnostics import blocking_diagnosis_codes, require_review_score
+    comparison = content.get("candidate_comparison")
+    selected_id = content.get("selected_source_asset_version_id")
+    review = content.get("selected_review")
+    if (not isinstance(comparison, dict) or not selected_id or not isinstance(review, dict)
+        or any(not isinstance(comparison.get(key), dict) for key in ("previous", "challenger"))
+        or comparison.get("selected_asset_version_id") != selected_id):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "retained workspace requires exact prose, review and comparison identities")
+    matches = [comparison[key] for key in ("previous", "challenger") if comparison[key].get("asset_version_id") == selected_id]
+    if len(matches) != 1:
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "selected prose must identify one comparison subject")
+    selected = matches[0]
+    blockers = selected.get("blocker_codes")
+    review_id = selected.get("review_asset_version_id")
+    if (not isinstance(blockers, list) or any(not isinstance(code, str) or not code for code in blockers)
+        or not review_id or review.get("selection_review_source_asset_version_id") != review_id
+        or not set(blocking_diagnosis_codes(review)).issubset(blockers)):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "retained blockers and selected review must remain traceable")
+    score = require_review_score(selected)
+    if score != require_review_score(review):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "comparison score must match its immutable selected review")
+    bind_selected_review(candidate=content, candidate_id=str(selected_id), review=review, review_id=str(review_id))
+    return CandidateEvidence(str(selected_id), content, score, tuple(blockers), str(review_id),
+                             workspace_asset_version_id=workspace_id)
 
 
 def compare_candidates(
@@ -42,7 +71,11 @@ def compare_candidates(
     correction_generation: int = 0,
     maximum_correction_generations: int = 1,
 ) -> dict[str, Any]:
-    if minimum_net_improvement < 0 or not previous.asset_version_id or not challenger.asset_version_id:
+    if (not math.isfinite(minimum_net_improvement) or minimum_net_improvement < 0
+        or not previous.asset_version_id or not challenger.asset_version_id
+        or previous.asset_version_id == challenger.asset_version_id
+        or any(type(item.score) not in {float, int} or not math.isfinite(item.score)
+               or not 0 <= item.score <= 100 or not item.review_asset_version_id for item in (previous, challenger))):
         raise KernelError(
             "BEST_CANDIDATE_INPUT_INVALID",
             "candidate selection requires immutable candidate and policy identities",
@@ -158,14 +191,16 @@ def build_best_candidate(
         ).hexdigest(),
         "selected_asset_version_id": selected_id,
         "previous_best_asset_version_id": str(
-            (comparison.get("previous") or {}).get("asset_version_id") or ""
+            (comparison.get("previous") or {}).get("workspace_asset_version_id")
+            or (comparison.get("previous") or {}).get("asset_version_id") or ""
         ),
         "comparison_id": str(comparison["comparison_id"]),
         "comparison_hash": str(comparison["comparison_hash"]),
         "minimum_net_improvement": float(comparison["minimum_net_improvement"]),
         "stop_reason": str(comparison["stop_reason"]),
         "rollback_asset_version_id": str(
-            (comparison.get("previous") or {}).get("asset_version_id") or ""
+            (comparison.get("previous") or {}).get("workspace_asset_version_id")
+            or (comparison.get("previous") or {}).get("asset_version_id") or ""
         ),
         "selection_policy_ref": "minimum-net-improvement-v1",
     }
@@ -181,6 +216,7 @@ def build_best_candidate(
 def _evidence(value: CandidateEvidence) -> dict[str, Any]:
     return {
         "asset_version_id": value.asset_version_id,
+        "workspace_asset_version_id": value.workspace_asset_version_id or value.asset_version_id,
         "score": value.score,
         "blocker_codes": list(value.blocker_codes),
         "review_asset_version_id": value.review_asset_version_id,

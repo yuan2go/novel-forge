@@ -26,6 +26,15 @@ rereview. Canon also reviews observed Arc/Realization claims against the final t
 An arbitrary supersession identifier cannot authorize a contradiction: it must resolve
 the exact accepted event of the same entity in the frozen Book boundary.
 
+Candidate comparisons identify the immutable prose source separately from the workspace
+version that carries it. Repeated retention preserves the same source, review, score and
+blocking diagnoses; missing comparison evidence fails explicitly. Unresolved diagnoses
+remain in a carried ledger across re-reviews, retaining their prior-candidate locations.
+Revision and re-review consume that ledger as well as newly located issues. Omission
+from a later issue list neither resolves a blocker nor turns its old quote into evidence
+about the new prose. Candidate ranking does not grant acceptance; Quality and Book
+acceptance retain their independent gates.
+
 Book acceptance rechecks and locks selected asset versions inside its existing UoW.
 Migration 0119 adds an insert guard binding current model-backed acceptance to the
 same final prose hash, grounded Canon and Quality. Already accepted rows are unchanged;

@@ -101,9 +101,8 @@ def evaluate_rereview_result(
         prose_text=str(revision.get("text") or ""),
     )
     claimed = set(revision.get("resolution_claimed_issue_codes", []))
-    initial_by_code = {
-        str(item.get("code")): item for item in initial_review.get("issues", [])
-    }
+    from .diagnostics import open_diagnoses, require_review_score
+    initial_by_code = {str(item["code"]): item for item in open_diagnoses(initial_review)}
     current_codes = {str(item.get("code")) for item in reviewed["issues"]}
     verified = {str(item) for item in result.get("resolved_issue_codes", [])}
     if initial_review.get("diagnostic_contract_version") == "actionable-diagnostics.v1":
@@ -147,7 +146,7 @@ def evaluate_rereview_result(
     decision = reviewed["decision"]
     if blocking_remaining and decision == "PASSED":
         decision = "NEEDS_REVISION"
-    before_score = float(initial_review.get("score", 0.0))
+    before_score = require_review_score(initial_review)
     after_score = float(reviewed["score"])
     return {
         **reviewed,
@@ -160,6 +159,11 @@ def evaluate_rereview_result(
         "resolution_checks": list(result.get("resolution_checks") or []),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
+        "unresolved_issues": [
+            {**initial_by_code[code], "status": "OPEN", "evidence_scope": "PRIOR_CANDIDATE",
+             "origin_review_issue_id": initial_by_code[code].get("origin_review_issue_id", initial_by_code[code].get("review_issue_id"))}
+            for code in sorted(remaining)
+        ],
         "new_issues": new_issues,
         "regression_issue_codes": sorted(regressions),
         "blocking_issue_count": blocking_remaining,

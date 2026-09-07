@@ -1,12 +1,50 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
 DIAGNOSTIC_CONTRACT = "actionable-diagnostics.v1"
+
+
+def require_review_score(review: dict[str, Any]) -> float:
+    value = review.get("score")
+    if (type(value) not in {int, float} or not math.isfinite(value)
+        or not 0 <= value <= 100):
+        raise KernelError("REVIEW_EVIDENCE_REQUIRED", "candidate review requires an explicit finite score")
+    return float(value)
+
+
+def open_diagnoses(review: dict[str, Any]) -> list[dict[str, Any]]:
+    current, carried = review.get("issues"), review.get("unresolved_issues", [])
+    if not isinstance(current, list) or not isinstance(carried, list):
+        raise KernelError("REVIEW_EVIDENCE_REQUIRED", "review requires an explicit diagnosis ledger")
+    result: dict[str, dict[str, Any]] = {}
+    for item in [*carried, *current]:
+        if not isinstance(item, dict) or not item.get("code") or not item.get("severity"):
+            raise KernelError("REVIEW_EVIDENCE_REQUIRED", "diagnosis identity and severity are required")
+        code = str(item["code"])
+        previous = result.get(code)
+        merged = dict(item)
+        if previous is not None:
+            merged["origin_review_issue_id"] = previous.get("origin_review_issue_id", previous.get("review_issue_id"))
+            if previous["severity"] == "blocking":
+                merged["severity"] = "blocking"
+        result[code] = merged
+    if set(review.get("remaining_issue_codes", [])) - set(result):
+        raise KernelError("REVIEW_EVIDENCE_REQUIRED", "unresolved issue codes require their immutable diagnoses")
+    return list(result.values())
+
+
+def blocking_diagnosis_codes(review: dict[str, Any]) -> tuple[str, ...]:
+    codes = tuple(sorted({str(item["code"]) for item in open_diagnoses(review)
+                          if item["severity"] in {"blocking", "blocker", "critical", "high"}}))
+    if (review.get("blocking_issue_count", 0) and not codes) or (review.get("decision") == "BLOCKED" and not codes):
+        raise KernelError("REVIEW_EVIDENCE_REQUIRED", "blocking review requires retained blocking diagnoses")
+    return codes
 
 
 def prose_hash(text: str) -> str:
@@ -42,7 +80,7 @@ def verified_resolutions(result: dict[str, Any], initial: dict[str, Any], text: 
     checks = result.get("resolution_checks")
     if not isinstance(checks, list):
         raise KernelError("REVIEW_RESOLUTION_CHECKS_REQUIRED", "rereview requires explicit per-diagnosis checks")
-    issues = {item["code"]: item for item in initial.get("issues", [])}
+    issues = {item["code"]: item for item in open_diagnoses(initial)}
     seen: set[str] = set()
     verified: set[str] = set()
     for check in checks:
