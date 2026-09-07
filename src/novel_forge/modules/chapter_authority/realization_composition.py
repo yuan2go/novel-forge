@@ -321,7 +321,6 @@ def reconcile_revision_composition(
     return integrated
 
 
-# CONSTRAINT: these are craft instructions, not assertions that model output meets them.
 _CRAFT_OBJECTIVES = {
     "SKELETON": ("Render the scene's consequential choice", ["motive before choice", "specific cost and changed options", "cause before consequence"]),
     "DIALOGUE": ("Dramatize one actor's attempt to influence another", ["what the actor wants from the exchange", "what the actor avoids saying", "only this actor's available knowledge and established voice"]),

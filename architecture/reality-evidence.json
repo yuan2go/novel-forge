@@ -5062,6 +5062,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
           "locator": "MIGRATION_ID = \"20260825_0100_hierarchy_closure\"",
           "id": "20260825_0100_hierarchy_closure"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260907_0120_foundation_generation.py",
+          "locator": "MIGRATION_ID = \"20260907_0120_foundation_generation\"",
+          "id": "20260907_0120_foundation_generation"
         }
       ],
       "external_effects": {
@@ -7424,7 +7429,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4e71373973abfe83a59c70669bf0e2df14a7bf0433d01a86991ab47e82cf013a"
+    "implementation_tree_sha": "sha256:7b73a9e17f23295e18fae94cfdd5cc95ad5e8ae1fb31fc93fcfd4077d62b6334"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

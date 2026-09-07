@@ -288,7 +288,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         assert result["lifecycle"] == "READY", result
         creative_candidates = [
             item
-            for item in AuthorityAssetQuery(DATABASE_URL).list(
+            for item in AuthorityAssetQuery(DATABASE_URL).list_versions(
                 project_id=harness.project_id,
                 asset_type="planning_generation_candidate",
             )

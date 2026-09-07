@@ -242,6 +242,24 @@ class AuthorityAssetDocumentRepository:
         )
         return [_document(row) for row in self.cursor.fetchall()]
 
+    def list_versions(self, *, project_id: str, asset_type: str, limit: int = 100) -> list[AuthorityAssetDocument]:
+        if not project_id or not asset_type or not 1 <= limit <= 500:
+            raise ValueError("version export requires a project, asset type and limit in 1..500")
+        self.cursor.execute(
+            """SELECT asset.project_id, 'asset-version:' || version.asset_version_id,
+                      asset.asset_type, asset.asset_id, asset.asset_type,
+                      version.asset_version_id, version.version_number, version.lifecycle,
+                      version.eligibility, version.governance, version.content_hash,
+                      version.content, version.created_at
+               FROM authority_asset asset
+               JOIN authority_asset_version version USING(asset_id)
+               WHERE asset.project_id=%s AND asset.asset_type=%s
+               ORDER BY version.created_at DESC, version.asset_version_id
+               LIMIT %s""",
+            [project_id, asset_type, limit],
+        )
+        return [_document(row) for row in self.cursor.fetchall()]
+
     def count(self, *, project_id: str, category: str | None = None) -> int:
         if category is None:
             self.cursor.execute(
@@ -422,6 +440,11 @@ class AuthorityAssetQuery:
         if not rows:
             raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "authority asset category is empty")
         return rows[0]
+
+    def list_versions(self, *, project_id: str, asset_type: str, limit: int = 100) -> list[AuthorityAssetDocument]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return uow.repositories.asset_documents.list_versions(
+                project_id=project_id, asset_type=asset_type, limit=limit)
 
     def count(self, *, project_id: str, category: str | None = None) -> int:
         with AuthorityUnitOfWork(self.database_url) as uow:

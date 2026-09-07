@@ -97,8 +97,6 @@ class FormationGeneration:
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
                 )
             candidates.append(candidate_id)
-        # CONSTRAINT: Selection is the first independently qualified branch, not literary ranking.
-        # INVARIANT: Unselected alternatives remain qualified candidates, never active Foundations.
         selected = candidates[0]
         key = f"{run['formation_run_id']}:{role.value}:0"
         state = self.planning.story_design.require(

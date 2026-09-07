@@ -154,7 +154,7 @@ def export_artifacts(*, database_url: str, project_id: str, destination: Path, e
         "provider_request_admission_manifest",
     )
     for kind in (*kinds, *extra_kinds):
-        rows = query.list(project_id=project_id, asset_type=kind, limit=500)
+        rows = query.list_versions(project_id=project_id, asset_type=kind, limit=500)
         if len(rows) == 500:
             raise RuntimeError(
                 f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"

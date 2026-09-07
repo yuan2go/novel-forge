@@ -337,6 +337,9 @@ admission and recovery artifacts even if Formation fails before Book production.
 The project-scoped export is bounded; use a dedicated isolated project, and retain
 PostgreSQL for paged export if a bound is reached. Completed chapters include their
 actual text, Memo, edits, grounding and exact next-input sources.
+Export reads immutable versions, including candidates with no current locator and
+superseded outputs. A failed export returns a nonzero exit code and retains the partial
+files and error; it does not report a complete evidence package.
 
 Preserve a baseline export from an isolated frozen old implementation. After both runs
 exist, compare actual accepted manuscripts without adding another product pipeline:

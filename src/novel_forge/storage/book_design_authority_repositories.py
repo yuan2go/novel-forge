@@ -323,7 +323,6 @@ class BookDesignAuthorityRepository:
         if candidate["created_by_operation_id"] != generation_operation_id:
             raise KernelError("BOOK_DESIGN_EVALUATION_LINEAGE_INVALID", "BookDesign evaluation differs from candidate generation lineage")
         if candidate["status"] != "EVALUATION_PENDING":
-            # INVARIANT: approval/activation may advance the candidate; replay returns the exact completed evaluation without reverting it.
             self.cursor.execute(
                 """SELECT decision, evidence FROM authority_asset_qualification
                    WHERE qualification_id=%s AND asset_version_id=%s

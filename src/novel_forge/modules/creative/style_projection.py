@@ -1,5 +1,3 @@
-"""INVARIANT: style is a source-bound creative policy projection, never narrative truth."""
-
 from __future__ import annotations
 
 from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRequest
@@ -49,7 +47,6 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
         ("POV", "pov"),
         ("GENRE", "genre_conventions"),
     ):
-        # CONSTRAINT: POV orientation is book guidance; actor-specific voices require an actor identity.
         if layer != "POV":
             voices.append(
                 {

@@ -1,5 +1,3 @@
-"""CONSTRAINT: creation setup invokes existing Content and Book commands; it owns no state."""
-
 from __future__ import annotations
 
 from novel_forge.modules.book_design_authority.query import BookDesignAuthorityQuery
@@ -10,7 +8,6 @@ from novel_forge.modules.narrative_state.reality import narrative_hash
 
 
 def prepare_creation_inputs(*, composition, content, formation_run_id, policy):
-    """CONSTRAINT: approved configuration and empty genesis are separate from generated fiction."""
     if policy.get("contract_version") != "creation-input-policy.v1":
         raise KernelError(
             "CREATION_POLICY_INVALID",
@@ -76,7 +73,6 @@ def prepare_creation_inputs(*, composition, content, formation_run_id, policy):
             principal=composition.principal,
         )
 
-    # SECURITY: configuration can author policies/empty bootstrap assets, never arbitrary domain commands.
     from novel_forge.modules.content_authority.codecs import _BOOK_BOOTSTRAP_INPUT_SPECS
 
     allowed = set(_BOOK_BOOTSTRAP_INPUT_SPECS) | {

@@ -358,7 +358,7 @@ def main(argv=None):
                         "planning_generation_candidate",
                         "narrative_design_evaluation",
                         "book_design",
-                        "chapter_style_policy",
+                        "style_policy",
                         "character_arc_portfolio",
                     ),
                 )
@@ -370,6 +370,8 @@ def main(argv=None):
                 )
         except Exception as exc:
             report["export_error"] = redact_secret_text(str(exc))
+            report["status"] = "EVIDENCE_EXPORT_BLOCKED"
+            return 2
         finally:
             if execution is not None:
                 execution.close()
