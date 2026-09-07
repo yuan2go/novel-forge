@@ -17,6 +17,28 @@ Capability states are ordered `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`,
 implementation-tree identity, and Documentation Reality fails when code or instruction
 identity changes without a corresponding projection update.
 
+## Creative execution and prose evidence
+
+The existing Chapter Memo node invokes the governed Provider path from a frozen
+ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
+voice, scene conflict and information release, emotional movement and the ending change.
+Draft receives this guidance and the Memo fingerprint as suggestions, not Canon.
+
+Current Provider reviews return located diagnoses, constraints, repair goals, preservation
+requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records
+explicit checks; omission of an issue or a higher score does not establish resolution.
+Candidate selection preserves the earlier candidate when no checked improvement exists or
+required content regresses. Aesthetic suggestions cannot alone become objective blockers.
+
+Current Provider Canon extraction consumes final prose without inheriting Writer assertion
+or old revision state fields. Claims bind literal Unicode code-point spans, quotes and the
+candidate text hash. Canon proposal uses a separate Provider support review; unsupported,
+uncertain or incomplete extraction blocks reduction. Matching text is necessary evidence,
+not a deterministic proof of semantic entailment. Successful no-change extraction requires
+an explicit coverage explanation and support review. Governed background events retain
+rule and decision provenance instead of fabricated prose evidence. Edited claims require
+re-extraction. These checks establish contracts; scripted runs do not prove literary quality.
+
 ## Production topology
 
 ```text

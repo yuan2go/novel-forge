@@ -3274,7 +3274,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             if stage == "canon_extraction":
                 start = source["text"].index(prose)
                 result["obligation_changes"] = [{**causal_obligation, "status": "FULFILLED", "from_status": "OPEN", "payoff_evidence": causal_payoff, "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose)}]
-        return result
+        from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
+        return scripted_claim_evidence(stage, inputs, result)
 
     production_execution = build_production_execution_composition(
         settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=NativeRealityTransportFixture().planning

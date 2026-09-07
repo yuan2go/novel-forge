@@ -14,6 +14,7 @@ def evaluate_review_result(
     chapter: int,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    prose_text: str | None = None,
 ) -> dict[str, Any]:
     if not project_id or not target_asset_version_id or not context_bundle_version_id:
         raise KernelError("REVIEW_INPUT_INVALID", "project, target and context versions are required")
@@ -26,6 +27,10 @@ def evaluate_review_result(
     issues = result.get("issues")
     if not isinstance(issues, list) or any(not isinstance(item, dict) for item in issues):
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issues must be objects")
+    from .diagnostics import DIAGNOSTIC_CONTRACT, prose_hash, validate_diagnosis
+    actionable = result.get("diagnostic_contract_version") == DIAGNOSTIC_CONTRACT
+    if actionable and prose_text is None:
+        raise KernelError("REVIEW_SOURCE_REQUIRED", "actionable review requires exact candidate prose")
     normalized: list[dict[str, Any]] = []
     for ordinal, item in enumerate(issues, start=1):
         code = str(item.get("code") or "").strip()
@@ -52,6 +57,7 @@ def evaluate_review_result(
                     "excerpt_digest": str(evidence.get("excerpt_digest") or ""),
                 },
                 "revision_strategy": str(item.get("revision_strategy") or message),
+                **(validate_diagnosis(item, str(prose_text)) if actionable else {}),
             }
         )
     blocking_count = sum(item["severity"] == "blocking" for item in normalized)
@@ -68,6 +74,7 @@ def evaluate_review_result(
         "blocking_issue_count": blocking_count,
         "provider_evidence": dict(provider_evidence),
         "review_contract_version": "review-domain-v2",
+        **({"diagnostic_contract_version": DIAGNOSTIC_CONTRACT, "target_text_hash": prose_hash(str(prose_text))} if actionable else {}),
     }
 
 
@@ -90,6 +97,7 @@ def evaluate_rereview_result(
         chapter=int(revision["chapter"]),
         result=result,
         provider_evidence=provider_evidence,
+        prose_text=str(revision.get("text") or ""),
     )
     claimed = set(revision.get("resolution_claimed_issue_codes", []))
     initial_by_code = {
@@ -97,7 +105,10 @@ def evaluate_rereview_result(
     }
     current_codes = {str(item.get("code")) for item in reviewed["issues"]}
     verified = {str(item) for item in result.get("resolved_issue_codes", [])}
-    if reviewed["decision"] == "PASSED":
+    if initial_review.get("diagnostic_contract_version") == "actionable-diagnostics.v1":
+        from .diagnostics import verified_resolutions
+        verified = verified_resolutions(result, initial_review, str(revision.get("text") or ""))
+    elif reviewed["decision"] == "PASSED":
         verified.update(claimed - current_codes)
     issue_lineage: list[dict[str, Any]] = []
     remaining: list[str] = []
@@ -145,6 +156,7 @@ def evaluate_rereview_result(
         "initial_review_version_id": initial_review_version_id,
         "revision_version_id": revision_version_id,
         "issue_lineage": issue_lineage,
+        "resolution_checks": list(result.get("resolution_checks") or []),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "new_issues": new_issues,

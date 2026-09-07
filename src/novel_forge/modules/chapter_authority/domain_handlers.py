@@ -570,6 +570,7 @@ def normalize_review_result(
         chapter=int(draft["chapter"]),
         result=result,
         provider_evidence=provider_evidence,
+        prose_text=str(draft.get("text") or ""),
     )
 
 

@@ -98,11 +98,13 @@ from novel_forge.modules.chapter_authority.definitions import (
 
 _STAGES = frozenset(
     {
+        "memo",
         "draft",
         "review",
         "revision",
         "rereview",
         "canon_extraction",
+        "canon_support",
         "quality_structural",
         "quality_commercial",
         "quality_source_originality",
@@ -129,11 +131,13 @@ _PLANNING_STAGES = frozenset(
 )
 
 _STAGE_CAPABILITIES = {
+    "memo": CapabilityId.PLANNING_CHAPTER_GENERATE,
     "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
     "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
     "revision": CapabilityId.REVISION_CHAPTER_REVISE,
     "rereview": CapabilityId.REVIEW_CHAPTER_EVALUATE,
     "canon_extraction": CapabilityId.CANON_EXTRACT,
+    "canon_support": CapabilityId.CANON_EXTRACT,
     "quality_structural": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "quality_commercial": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "quality_source_originality": CapabilityId.QUALITY_ORIGINALITY_JUDGE,
@@ -189,6 +193,8 @@ def _provider_context_selection(
 ) -> list[dict[str, Any]]:
     if retrieval_projection:
         context = selected_inputs
+    elif stage == "memo":
+        context = [item for item in selected_inputs if item["artifact_type"] == "chapter_execution_intent"]
     elif stage in {"retrieval", "retrieval_query_expansion"}:
         context = [
             item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
@@ -212,6 +218,8 @@ def _provider_route_context_types(
 ) -> tuple[str, ...]:
     if retrieval_projection:
         return ("best_draft_candidate",)
+    if stage == "memo":
+        return ("chapter_execution_intent",)
     if stage in {"retrieval", "retrieval_query_expansion"}:
         return ("chapter_memo",)
     return ("context_bundle",)
@@ -290,6 +298,21 @@ def _provider_effective_context_policy(
             "CONTEXT_POLICY_UNRESOLVED",
             "frozen Context selection has no contract content",
         )
+    if selected_physical == ("chapter_execution_intent",):
+        from .execution_artifacts import validate_chapter_execution_intent
+        validate_chapter_execution_intent(content)
+        snapshot = ContextPolicySnapshot(
+            identity=PolicyIdentity(policy_id=context_policy_ref, version="creative-memo-context.v1",
+                                    content_hash=context_policy_hash, snapshot_ref=context_policy_ref),
+            allowed_physical_types=("chapter_execution_intent",), denied_physical_types=physical_denied,
+            limits=ContextBudgetLimits(total=int(context_policy_payload.get("max_tokens") or 0)),
+            maximum_raw_source_ratio=0.0,
+        )
+        compilation = compile_effective_context_policy((snapshot,))
+        return {"compiler_version": "creative-memo-context.v1", "policy_compilation": dict(compilation.receipt),
+                "effective_policy": compilation.effective_policy.to_dict(),
+                "selected_physical_types": list(selected_physical),
+                "intent_fingerprint": content["intent_fingerprint"]}
     bundle_version = str(content.get("context_contract_version") or "")
     if bundle_version == "authority-context-bundle-v7":
         replay = replay_context_bundle(dict(content))
@@ -2305,6 +2328,38 @@ def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
 
+    if stage == "memo":
+        intent = inputs["execution_intent"]
+        scenes = intent.get("scene_plans") or []
+        mission = intent.get("chapter_mission") or {}
+        participants = sorted({str(value) for scene in scenes for value in scene.get("participants", [])})
+        return {
+            "execution_strategy": "Make the locked goal demand an observable costly choice: " + str(intent.get("chapter_objective")),
+            "tension_strategy": "Let resistance make the safe option progressively unavailable.",
+            "composition_strategy": "Carry each scene consequence into the next scene's obstacle.",
+            "creative_guidance": {
+                "chapter_goal": str(intent.get("chapter_objective") or "Advance the frozen mission"),
+                "pov": "Follow the focal participant's available perception; do not disclose hidden causes.",
+                "voice": "Concrete language shaped by the frozen character and narrator voice constraints.",
+                "emotional_turn": "Move from guarded certainty to the cost of committing in public.",
+                "reader_promise": "Show what the choice costs, while preserving unresolved questions.",
+                "ending_change": "The choice removes a safe option and changes the next scene's pressure.",
+                "character_choices": [{"character_id": who, "choice": "Act despite the loss of a safe exit",
+                                      "motivation": "Pursue the locked scene goal under pressure",
+                                      "cost": "Lose the option to retreat unnoticed"} for who in participants],
+                "constraints": ["No new Canon; no knowledge beyond the frozen Scene boundaries."],
+            },
+            "scene_directives": [{"scene_id": scene["scene_id"],
+                "directive": "Dramatize the goal through resistance: " + str(scene.get("goal") or "advance the mission"),
+                "conflict_progression": "An attempted solution creates a visible cost.",
+                "information_release": "Reveal only the information assigned to this Scene's audience.",
+                "emotional_change": "Confidence narrows into a committed choice.",
+                "transition": "Carry the consequence into the following Scene, without recap."} for scene in scenes],
+            "retrieval_queries": ["accepted consequences relevant to the locked goal"],
+            "obligation_actions": [],
+            "arc_actions": [{"arc_plan_version_id": arc["arc_plan_version_id"], "action": "ADVANCE"} for arc in mission.get("arc_contributions", [])],
+            "stop_conditions": ["Stop on a frozen constraint conflict; do not invent a fact to resolve it."],
+        }
     if stage == "retrieval_query_expansion":
         coverage = dict(inputs.get("coverage") or {})
         contract = dict(inputs.get("coverage_contract") or {})
@@ -2415,15 +2470,17 @@ def default_chapter_fixture_response(
         ]
         return {"text": "\n\n".join(item["text"] for item in artifacts) if artifacts else text, "scene_artifacts": artifacts}
     if stage == "review":
+        text = str((inputs.get("draft") or {}).get("text") or "The choice has no visible cost.")
         return {
-            "score": 72,
-            "issues": [
-                {
-                    "code": "COST_NOT_CONCRETE",
-                    "severity": "blocking",
-                    "message": "Make the irreversible cost concrete in the scene.",
-                }
-            ],
+            "score": 72, "resolution_checks": [],
+            "issues": [{"code": "COST_NOT_CONCRETE", "severity": "blocking",
+                "message": "Make the irreversible cost concrete in the scene.", "category": "CAUSALITY",
+                "judgment_kind": "SEMANTIC_CONFLICT",
+                "evidence": {"start": 0, "end": len(text), "quote": text},
+                "violated_constraint": "A decisive choice must have a visible cost.",
+                "revision_goal": "Show the protagonist giving up a concrete safe option.",
+                "preserve": ["The frozen choice and all unrelated Scene actions."],
+                "acceptance_criteria": ["The text identifies the lost option and the consequence."]}],
         }
     if stage == "revision":
         draft = inputs.get("draft") if isinstance(inputs.get("draft"), Mapping) else {}
@@ -2434,7 +2491,20 @@ def default_chapter_fixture_response(
         text = "\n\n".join(item["text"] for item in artifacts) if artifacts else f"{draft.get('text') or 'The choice is made.'} {suffix}"
         return {"text": text, "scene_artifacts": artifacts, "resolved_issue_codes": ["COST_NOT_CONCRETE"]}
     if stage == "rereview":
-        return {"score": 90, "issues": []}
+        text = str((inputs.get("revision") or {}).get("text") or "The choice costs a safe route home.")
+        return {"score": 90, "issues": [], "resolution_checks": [
+            {"code": issue["code"], "status": "SATISFIED", "preservation": "PRESERVED",
+             "evidence": {"start": 0, "end": len(text), "quote": text},
+             "reason": "Scripted transport verifies the explicit cost sentence; not model quality evidence."}
+            for issue in (inputs.get("review") or {}).get("issues", [])]}
+    if stage == "canon_support":
+        return {
+            "coverage": "COMPLETE", "no_change_supported": not inputs.get("claims"),
+            "claims": [{"claim_id": item["claim"]["grounded_claim_id"],
+                        "assessment": "SUPPORTED", "observed_kind": item["claim"]["claim_kind"],
+                        "reason": "Scripted transport evidence only; no model entailment proof."}
+                       for item in inputs.get("claims", [])],
+        }
     if stage == "canon_extraction":
         revision = (
             inputs.get("revision")
@@ -2559,7 +2629,7 @@ def default_chapter_fixture_response(
                 if isinstance(event, Mapping)
             ],
         }
-        return {
+        result = {
             "canon_facts": [
                 {
                     "subject": "protagonist",
@@ -2572,6 +2642,16 @@ def default_chapter_fixture_response(
             ],
             **empty_fields,
         }
+        result.update({"extraction_status": "EXTRACTED", "no_change_reason": ""})
+        for field, values in result.items():
+            if not isinstance(values, list) or field in {"arc_evidence", "realization_evidence"}:
+                continue
+            for claim in values:
+                claim["evidence_quote"] = text[int(claim["evidence_start"]):int(claim["evidence_end"])]
+                claim["claim_kind"] = {"disclosure_events": "READER_DISCLOSURE",
+                                       "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
+                                       "character_belief_changes": "BELIEF"}.get(field, "OBJECTIVE_EVENT")
+        return result
     if stage.startswith("quality_"):
         dimensions = inputs.get("dimensions")
         if not isinstance(dimensions, list) or not dimensions:
@@ -3338,6 +3418,17 @@ def _stage_semantic_contract(
             "revision evidence, or operator-facing appendices in text.",
             required_language,
         )
+    if stage == "review":
+        return _bind_language_contract(
+            "Diagnose the actual candidate against frozen constraints and creative guidance. "
+            "Every issue requires category, judgment_kind, literal evidence with Unicode code-point "
+            "start/end offsets, violated_constraint, revision_goal, preserve and acceptance_criteria. "
+            "Separate semantic conflicts, uncertain judgments and aesthetic suggestions. Provider opinions "
+            "are not deterministic proof; taste preferences alone are minor. Do not invent defects from "
+            "a plan target that prose deliberately leaves unfulfilled. Return resolution_checks=[] on "
+            "initial review. Evidence must identify a concrete defect and an observable repair condition.",
+            required_language,
+        )
     if stage == "rereview":
         return _bind_language_contract(
             "Independently verify the revised chapter against the supplied review. "
@@ -3345,8 +3436,30 @@ def _stage_semantic_contract(
             "blocking or major issue, or a material regression that prevents acceptance. "
             "Do not report optional minor polish or taste preferences in issues. If no "
             "acceptance-blocking defect remains, return issues=[] and an evidence-based "
-            "score. Never suppress an actual blocking or major defect.",
+            "score. Never suppress an actual blocking or major defect. "
+            "For EVERY prior diagnosis return a resolution_check tied to its acceptance criteria, with "
+            "a literal revised-prose evidence location and preservation assessment. SATISFIED requires "
+            "the repair to be present and required content preserved. A claimed fix, issue omission, "
+            "or a higher score never establishes resolution; report UNRESOLVED/UNCERTAIN when needed.",
             required_language,
+        )
+    if stage == "memo":
+        return (
+            "Turn the frozen Chapter mission into specific creative guidance rather than paraphrasing it. "
+            "Explain each character choice through motivation and cost, scene conflict, emotional movement, "
+            "information release and continuity, reader promise and ending change. Respect POV and voice. "
+            "Use exact Scene/Arc/character identities. Accepted boundary is fact provenance; scene targets "
+            "are author plans; your choices are suggestions. Never introduce Canon or undisclosed secrets. "
+            "Keep the plan and accepted boundary unchanged; propose craft decisions within their constraints."
+        )
+    if stage == "canon_support":
+        return (
+            "Independently check each candidate claim against final prose and exact accepted references. "
+            "A matching quote is necessary, never sufficient. Distinguish objective events from dialogue, "
+            "belief, hearsay, plans and intentions. Knowledge belongs only to the evidenced recipient. "
+            "Return UNSUPPORTED or UNCERTAIN when entailment is missing. Do not repair claims or supply "
+            "events from plans. Check extraction coverage; approve NO_CHANGE only when prose supports no "
+            "new canonical change. You provide evidence only; Book acceptance remains Authority."
         )
     if stage == "canon_extraction":
         return _bind_language_contract(

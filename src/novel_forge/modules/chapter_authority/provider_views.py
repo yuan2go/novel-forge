@@ -341,12 +341,22 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             observations=_compact(inputs.get("observations")),
             turn_number=int(inputs.get("turn_number") or 0),
         )
+    if stage == "memo":
+        from novel_forge.modules.canon_graph.background import without_private_world
+        intent = dict(inputs.get("execution_intent") or {})
+        return _task(stage, frozen_intent=without_private_world(intent), authority="CREATIVE_SUGGESTION_ONLY")
     if stage == "draft":
         from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
             stage,
             chapter_plan=_compact(without_private_world(inputs.get("plan"))),
             style=_compact(inputs.get("style")),
+            creative_memo={
+                "guidance": deepcopy((inputs.get("chapter_memo") or {}).get("creative_guidance") or {}),
+                "scene_directives": deepcopy((inputs.get("chapter_memo") or {}).get("scene_directives") or []),
+                "source_memo_fingerprint": str((inputs.get("chapter_memo") or {}).get("memo_fingerprint") or ""),
+                "authority": "CREATIVE_SUGGESTION_ONLY",
+            },
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
@@ -372,19 +382,20 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         issues = [
             _compact(item)
             for item in dict(inputs.get("review") or {}).get("issues") or []
-            if str(item.get("severity") or "").lower()
-            in {"critical", "blocker", "blocking", "high", "major"}
         ]
         return _task(
             stage,
             revised_chapter=_prose(revision),
-            prior_blocking_issues=issues,
+            prior_diagnoses=issues,
         )
+    if stage == "canon_support":
+        return _task(stage, final_candidate=_prose(inputs.get("revision")),
+                     grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
     if stage == "canon_extraction":
         from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
             stage,
-            accepted_revision=_prose(inputs.get("revision")),
+            final_candidate=_prose(inputs.get("revision")),
             execution_expectations=_compact(without_private_world(inputs.get("execution_expectations"))),
         )
     if stage.startswith("quality_"):
@@ -661,6 +672,13 @@ def build_provider_context_view(
     task_view: Mapping[str, Any],
 ) -> dict[str, Any]:
 
+    if stage == "memo":
+        intent = task_view.get("frozen_intent") or {}
+        if intent.get("intent_fingerprint") != context_bundle.get("intent_fingerprint"):
+            raise KernelError("CHAPTER_MEMO_INTENT_DRIFT", "Memo Context differs from frozen Intent")
+        return {"contract_version": "provider-context-view-v2", "stage": stage,
+                "accepted_boundary": deepcopy(context_bundle.get("accepted_boundary")),
+                "source_isolation": "FROZEN_INTENT_ONLY", "protected": True}
     if stage == "retrieval_query_expansion":
         boundary = context_bundle.get("accepted_boundary")
         if (

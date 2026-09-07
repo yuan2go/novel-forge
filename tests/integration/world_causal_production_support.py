@@ -700,7 +700,8 @@ class AutonomousWorldTransport:
                 "local:act-on-message"
             ]
         self.calls[-1]["output"] = result
-        return result
+        from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
+        return scripted_claim_evidence(stage, inputs, result)
 
 
 def execute_autonomous_world_vertical(

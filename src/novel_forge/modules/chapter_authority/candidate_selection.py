@@ -28,6 +28,8 @@ class CandidateEvidence:
     score: float
     blocker_codes: tuple[str, ...]
     review_asset_version_id: str
+    diagnostic_contract_version: str = ""
+    resolution_checks: tuple[dict[str, Any], ...] = ()
 
 
 def compare_candidates(
@@ -50,7 +52,14 @@ def compare_candidates(
         set(previous.blocker_codes) - set(challenger.blocker_codes)
     )
     net_improvement = challenger.score - previous.score
-    if new_blockers:
+    diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
+    supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
+    preservation_regressed = any(check.get("preservation") != "PRESERVED" for check in challenger.resolution_checks)
+    if diagnostic_selection and (not supported_improvement or preservation_regressed):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED if preservation_regressed else CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    elif new_blockers:
         selected = previous
         reason = CandidateStopReason.DETERMINISTIC_BLOCKER
         improved = False
@@ -93,6 +102,8 @@ def compare_candidates(
         "chapter_root_operation_id": chapter_root_operation_id,
         "previous": _evidence(previous),
         "challenger": _evidence(challenger),
+        "diagnostic_contract_version": challenger.diagnostic_contract_version,
+        "resolution_checks": list(challenger.resolution_checks),
         "minimum_net_improvement": minimum_net_improvement,
         "net_improvement": net_improvement,
         "new_blocker_codes": new_blockers,

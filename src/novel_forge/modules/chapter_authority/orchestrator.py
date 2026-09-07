@@ -747,7 +747,7 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.REREVIEW,
             ChapterNode.CONTEXT,
         ),
-        ChapterNode.CANON_PROPOSAL: (ChapterNode.CANON_EXTRACTION,),
+        ChapterNode.CANON_PROPOSAL: (ChapterNode.CANON_EXTRACTION, ChapterNode.BEST_CANDIDATE, ChapterNode.CONTEXT),
         ChapterNode.CANON: (
             ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,

@@ -185,6 +185,8 @@ _PACK_SKILL_FOR_STAGE = {
     "draft": "prose-generation",
     "revision": "prose-generation",
     "canon_extraction": "canon-continuity-graph",
+    "canon_support": "canon-continuity-graph",
+    "memo": "chapter-outline",
     "review": "quality-review",
     "rereview": "quality-review",
     "quality_structural": "quality-review",
@@ -363,6 +365,8 @@ def build_production_execution_composition(
         default_chapter_artifact_resolver(settings.root) if controlled else None
     )
     stage_routes = [
+        ("memo", "NOVEL_FORGE_MEMO_PROVIDER", "NOVEL_FORGE_MEMO_MODEL"),
+        ("canon_support", "NOVEL_FORGE_CANON_SUPPORT_PROVIDER", "NOVEL_FORGE_CANON_SUPPORT_MODEL"),
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
@@ -496,7 +500,7 @@ def build_production_execution_composition(
             values.get(provider_key)
             or (
                 values.get("NOVEL_FORGE_REVIEW_PROVIDER")
-                if stage == "rereview"
+                if stage in {"rereview", "canon_support", "memo"}
                 else values.get("NOVEL_FORGE_REVISION_PROVIDER")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
@@ -516,7 +520,7 @@ def build_production_execution_composition(
             values.get(model_key)
             or (
                 values.get("NOVEL_FORGE_REVIEW_MODEL")
-                if stage == "rereview"
+                if stage in {"rereview", "canon_support", "memo"}
                 else values.get("NOVEL_FORGE_REVISION_MODEL")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")

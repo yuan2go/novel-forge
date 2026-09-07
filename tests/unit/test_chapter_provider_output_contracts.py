@@ -286,7 +286,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v14"
+        == "schema:chapter-provider-output:canon_extraction:v16"
     )
 
 
@@ -436,6 +436,8 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
             "disclosure_mode": None,
             "presentation_channel": None,
             "belief_confidence": None,
+            "evidence_quote": "The observed claim.",
+            "claim_kind": "OBJECTIVE_EVENT",
             "evidence_start": 0,
             "evidence_end": 12,
             "confidence": 0.9,
@@ -473,6 +475,8 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
             },
             "linked_arc_ids": ["arc:v1"],
             "summary": "The accepted choice visibly fulfills the promise.",
+            "evidence_quote": "The observed claim.",
+            "claim_kind": "OBJECTIVE_EVENT",
             "evidence_start": 0,
             "evidence_end": 24,
             "confidence": 0.96,
@@ -510,6 +514,10 @@ def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
             if key == "impact_type"
             else "KNOWN"
             if key == "status"
+            else "The observed claim."
+            if key == "evidence_quote"
+            else "OBJECTIVE_EVENT"
+            if key == "claim_kind"
             else 0
             if key == "evidence_start"
             else 42
@@ -588,6 +596,10 @@ def test_canon_schema_requires_typed_character_belief_stance() -> None:
             if key == "stance"
             else 0.68
             if key == "belief_confidence"
+            else "The observed claim."
+            if key == "evidence_quote"
+            else "OBJECTIVE_EVENT"
+            if key == "claim_kind"
             else 0
             if key == "evidence_start"
             else 42
@@ -630,6 +642,10 @@ def test_canon_schema_rejects_character_belief_status_alias() -> None:
             if key == "status"
             else 0.68
             if key == "belief_confidence"
+            else "The observed claim."
+            if key == "evidence_quote"
+            else "OBJECTIVE_EVENT"
+            if key == "claim_kind"
             else 0
             if key == "evidence_start"
             else 42
@@ -673,6 +689,10 @@ def test_canon_schema_requires_typed_relationship_endpoints() -> None:
             if key == "character_id"
             else "mei-an"
             if key == "target_id"
+            else "The observed claim."
+            if key == "evidence_quote"
+            else "OBJECTIVE_EVENT"
+            if key == "claim_kind"
             else 0
             if key == "evidence_start"
             else 42
@@ -761,6 +781,8 @@ def test_canon_semantics_rejects_generic_entity_as_world_rule_identity() -> None
             "summary": "A rule is exercised against the archive.",
             "entity_id": "archive:ledger",
             "state": "EXERCISED",
+            "evidence_quote": "The observed claim.",
+            "claim_kind": "OBJECTIVE_EVENT",
             "evidence_start": 0,
             "evidence_end": 12,
             "confidence": 0.9,
@@ -779,16 +801,11 @@ def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
         return {"text": "The choice closes the only safe road home.", "scene_artifacts": []}
     if stage in {"review", "rereview"}:
-        return {
-            "score": 72,
-            "issues": [
-                {
-                    "code": "COST_NOT_CONCRETE",
-                    "severity": "blocking",
-                    "message": "Make the irreversible cost visible.",
-                }
-            ],
-        }
+        return default_chapter_fixture_response(stage, {"draft": {"text": "The choice closes the safe road home."}, "revision": {"text": "The choice closes the safe road home."}})
+    if stage == "memo":
+        return default_chapter_fixture_response(stage, {"execution_intent": {"scene_plans": [], "chapter_mission": {}, "chapter_objective": "A costly choice"}})
+    if stage == "canon_support":
+        return {"coverage": "COMPLETE", "no_change_supported": True, "claims": []}
     if stage == "revision":
         return {
             "text": "She burns the map while the witnesses watch.",
@@ -796,7 +813,7 @@ def _valid(stage: str) -> dict[str, object]:
             "resolved_issue_codes": ["COST_NOT_CONCRETE"],
         }
     if stage == "canon_extraction":
-        return {
+        return {"extraction_status": "EXTRACTED", "no_change_reason": "", **{
             field: (
                 [
                     {
@@ -805,7 +822,9 @@ def _valid(stage: str) -> dict[str, object]:
                         "object": "exposed_record",
                         "effective_from_chapter": 1,
                         "supersedes_event_id": None,
-                        "evidence_start": 0,
+                        "evidence_quote": "The observed claim.",
+            "claim_kind": "OBJECTIVE_EVENT",
+            "evidence_start": 0,
                         "evidence_end": 24,
                         "confidence": 0.91,
                         "impact_type": "chapter_event",
@@ -815,7 +834,7 @@ def _valid(stage: str) -> dict[str, object]:
                 else []
             )
             for field in CANON_FIELDS
-        }
+        }}
     if stage.startswith("quality_"):
         return {
             "dimensions": [
@@ -962,7 +981,11 @@ def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
     value["character_state_changes"] = [
         {
             key: (
-                False
+                "The observed claim."
+                if key == "evidence_quote"
+                else "OBJECTIVE_EVENT"
+                if key == "claim_kind"
+                else False
                 if key == "resurrection_authorized"
                 else None
                 if "null" in schema.get("type", [])

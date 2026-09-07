@@ -274,3 +274,21 @@ def test_intent_and_memo_fingerprints_fail_closed_after_semantic_tamper() -> Non
             expected_plan_content_hash="sha256:" + "a" * 64,
         )
     assert plan_error.value.code == "CHAPTER_EXECUTION_INTENT_PLAN_DRIFT"
+
+
+def test_creative_memo_guidance_survives_into_actual_draft_task_view() -> None:
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    guidance = {
+        "chapter_goal": "Force a costly choice", "pov": "close third person: witness",
+        "voice": "Guarded and concrete", "emotional_turn": "certainty to uneasy trust",
+        "reader_promise": "Answer who risks the evidence", "ending_change": "trust costs a safe exit",
+        "character_choices": [{"character_id": "witness", "choice": "speak publicly", "motivation": "protect the accused", "cost": "lose anonymity"}],
+        "constraints": ["The witness does not know who ordered the search"],
+    }
+    task = build_provider_task_view("draft", {"plan": {}, "chapter_memo": {
+        "creative_guidance": guidance, "memo_fingerprint": "memo:frozen",
+        "source_chapter_execution_intent_asset_version_id": "intent:v1",
+    }})
+    assert task["creative_memo"]["guidance"] == guidance
+    assert task["creative_memo"]["authority"] == "CREATIVE_SUGGESTION_ONLY"
+    assert task["creative_memo"]["source_memo_fingerprint"] == "memo:frozen"

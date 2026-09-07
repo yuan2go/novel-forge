@@ -43,11 +43,13 @@ from novel_forge.modules.production_execution.contracts import ExecutionRecovery
 
 MODEL_CAPABILITY_STAGES = frozenset(
     {
+        "memo",
         "draft",
         "review",
         "revision",
         "rereview",
         "canon_extraction",
+        "canon_support",
         "quality_structural",
         "quality_commercial",
         "quality_source_originality",
@@ -1963,9 +1965,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 raise KernelError(
                     "MODEL_RESPONSE_INVALID", "review issue identity is incomplete"
                 )
-            normalized.append({"code": code, "severity": severity, "message": message})
+            normalized.append({**item, "code": code, "severity": severity, "message": message})
         decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
-        return {"decision": decision, "score": score, "issues": normalized}
+        return {"decision": decision, "score": score, "issues": normalized,
+                **({"diagnostic_contract_version": "actionable-diagnostics.v1", "resolution_checks": raw["resolution_checks"]} if "resolution_checks" in raw else {})}
+    if stage in {"memo", "canon_support"}:
+        return dict(raw)
     if stage == "canon_extraction":
         from .provider_output_contracts import (
             canon_provider_array_fields, validate_chapter_provider_output_semantics,
@@ -1983,12 +1988,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                     f"Canon semantic extraction field {field} must be an array of objects",
                 )
             normalized_extraction[field] = [dict(item) for item in values]
-        if not any(normalized_extraction.values()):
+        if not any(normalized_extraction.values()) and raw.get("extraction_status") != "NO_CHANGE":
             raise KernelError(
                 "MODEL_RESPONSE_INVALID",
                 "Canon semantic extraction cannot be empty on the Provider path",
             )
-        return normalized_extraction
+        return {**normalized_extraction, **{key: raw[key] for key in ("extraction_status", "no_change_reason") if key in raw}}
     if stage.startswith("quality_"):
         dimensions = raw.get("dimensions")
         if not isinstance(dimensions, list) or not dimensions:

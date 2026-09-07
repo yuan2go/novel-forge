@@ -6,7 +6,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.3.1"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.4.0"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -32,6 +32,7 @@ CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS 
 )
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
+        ChapterNode.MEMO,
         ChapterNode.DRAFT,
         ChapterNode.REVIEW,
         ChapterNode.REVISION,
@@ -172,12 +173,14 @@ def _definition(
     }
     external_capabilities: list[str] = []
     model_capability = {
+        ChapterNode.MEMO: "model.memo",
         ChapterNode.RETRIEVAL: "model.retrieval",
         ChapterNode.DRAFT: "model.draft",
         ChapterNode.REVIEW: "model.review",
         ChapterNode.REVISION: "model.revision",
         ChapterNode.REREVIEW: "model.rereview",
         ChapterNode.CANON_EXTRACTION: "model.canon_extraction",
+        ChapterNode.CANON_PROPOSAL: "model.canon_support",
         ChapterNode.QUALITY_STRUCTURAL: "model.quality_structural",
         ChapterNode.QUALITY_COMMERCIAL: "model.quality_commercial",
         ChapterNode.QUALITY_SOURCE_ORIGINALITY: "model.quality_source_originality",

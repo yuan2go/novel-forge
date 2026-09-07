@@ -295,6 +295,14 @@ def build_canon_update(
         raise KernelError(
             "CROSS_PROJECT_REFERENCE", "Canon extraction belongs to another project"
         )
+    if extraction.get("grounding"):
+        from .grounding import text_hash
+        binding = extraction["grounding"]
+        if (binding.get("semantic_status") != "SUPPORTED_CANDIDATE"
+            or binding.get("candidate_asset_version_id") != revision_asset_version_id
+            or binding.get("text_hash") != text_hash(str((revision or {}).get("text") or ""))
+            or binding.get("context_asset_version_id") != context_bundle_version_id):
+            raise KernelError("CANON_GROUNDING_IDENTITY_MISMATCH", "Canon reduction requires support bound to the final candidate and Context")
     chapter = int(extraction["chapter"])
     state = {key: list(values) for key, values in (historical_state or {}).items()}
     previous = [*existing_facts, *state.get("canon_snapshot", [])]
@@ -353,6 +361,7 @@ def build_canon_update(
         "project_id": project_id,
         "chapter": chapter,
         "source_asset_version_id": revision_asset_version_id,
+        **({"grounding": dict(extraction["grounding"])} if extraction.get("grounding") else {}),
         "context_bundle_version_id": context_bundle_version_id,
         "facts": facts,
         "conflicts": conflicts,
