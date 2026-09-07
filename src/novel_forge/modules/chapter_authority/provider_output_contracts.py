@@ -225,7 +225,7 @@ def _revision_schema() -> dict[str, Any]:
             "scene_artifacts": _scene_artifacts_schema(),
             "resolved_issue_codes": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": {"type": "string", "minLength": 1},
             },
         },
@@ -361,7 +361,7 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
             "items": (
                 fact if field == "canon_facts" else json.loads(json.dumps(change))
             ),
-            **({"minItems": 1} if field == "canon_facts" else {}),
+
         }
         for field in _CANON_FIELDS
     }
@@ -393,7 +393,7 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "For OBSERVED only: accepted_revision character-span references "
+                        "For OBSERVED only: final_candidate Unicode code-point-span references "
                         "encoded as chars:<start>-<end>:<summary>; empty otherwise."
                     ),
                 },
@@ -557,6 +557,14 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
             ),
         ),
     }
+    for field in ("arc_evidence", "realization_evidence"):
+        properties[field]["items"]["properties"].update({
+            "claim_kind": _nullable({"type": "string", "enum": ["NARRATIVE_OBSERVATION", None]}),
+            "evidence_start": _nullable({"type": "integer", "minimum": 0}),
+            "evidence_end": _nullable({"type": "integer", "minimum": 1}),
+            "evidence_quote": _nullable({"type": "string", "minLength": 1}),
+        })
+        properties[field]["items"]["required"].extend(("claim_kind", "evidence_start", "evidence_end", "evidence_quote"))
     properties.update({"extraction_status": {"enum": ["EXTRACTED", "NO_CHANGE"]}, "no_change_reason": {"type": "string"}})
     schema = _object_schema(
         properties,
@@ -870,8 +878,7 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
 def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch)
     version = (
-        "v16" if stage == "canon_extraction" else
-        "v14"
+        ("v17" if causal_batch else "v16")
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
@@ -1096,7 +1103,6 @@ def validate_chapter_provider_output_semantics(
     issue_codes = normalized.get("resolved_issue_codes")
     if (
         not isinstance(issue_codes, list)
-        or not issue_codes
         or len(issue_codes) != len(set(issue_codes))
     ):
         raise KernelError(

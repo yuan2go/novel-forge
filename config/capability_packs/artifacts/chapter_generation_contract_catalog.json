@@ -1,6 +1,8 @@
 {
   "schema_version": "novelos.capability_pack.artifact_catalog.v1",
   "artifacts": [
+    {"kind": "SCHEMA", "ref": "schema:execution-input:planning-chapter-generate:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-input/planning-chapter-generate/v1", "type": "object", "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"], "properties": {"input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "context_bundle_asset_version_id": {"type": "string", "minLength": 1}, "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}, "additionalProperties": false}},
+    {"kind": "SCHEMA", "ref": "schema:execution-output:planning-chapter-generate:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-output/planning-chapter-generate/v1", "type": "object", "required": ["output_asset_version_id", "output_content_hash", "receipt_id"], "properties": {"output_asset_version_id": {"type": "string", "minLength": 1}, "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "receipt_id": {"type": "string", "minLength": 1}}, "additionalProperties": false}},
     {
       "kind": "KNOWLEDGE",
       "ref": "knowledge:chapter-causal-cost:v1",
@@ -617,7 +619,7 @@
         "source_isolation": "ABSTRACT_ASSETS_ONLY",
         "reject_cross_project": true,
         "required_version_refs": ["canon_snapshot_version_id", "chapter_plan_asset_version_id"],
-        "allowed_asset_types": ["book_design", "canon_snapshot", "chapter_plan", "chapter_plan_version", "context_bundle", "knowledge_pack", "story_state"],
+        "allowed_asset_types": ["book_design", "canon_snapshot", "chapter_execution_intent", "chapter_plan", "chapter_plan_version", "context_bundle", "knowledge_pack", "story_state"],
         "forbidden_asset_types": ["raw_source_chunk", "raw_source_document"]
       }
     },

@@ -302,14 +302,14 @@ def _provider_effective_context_policy(
         from .execution_artifacts import validate_chapter_execution_intent
         validate_chapter_execution_intent(content)
         snapshot = ContextPolicySnapshot(
-            identity=PolicyIdentity(policy_id=context_policy_ref, version="creative-memo-context.v1",
+            identity=PolicyIdentity(policy_id=context_policy_ref, version="capability-pack-context-policy-v1",
                                     content_hash=context_policy_hash, snapshot_ref=context_policy_ref),
             allowed_physical_types=("chapter_execution_intent",), denied_physical_types=physical_denied,
             limits=ContextBudgetLimits(total=int(context_policy_payload.get("max_tokens") or 0)),
             maximum_raw_source_ratio=0.0,
         )
         compilation = compile_effective_context_policy((snapshot,))
-        return {"compiler_version": "creative-memo-context.v1", "policy_compilation": dict(compilation.receipt),
+        return {"compiler_version": "effective-context-policy-compiler-v1", "policy_compilation": dict(compilation.receipt),
                 "effective_policy": compilation.effective_policy.to_dict(),
                 "selected_physical_types": list(selected_physical),
                 "intent_fingerprint": content["intent_fingerprint"]}
@@ -503,7 +503,7 @@ def _stage_tool_permissions(
         if (
             tool_ref
             and str(item.get("permission") or "").upper() in {"EXECUTE", "QUERY"}
-            and stage in operations
+            and ("canon_proposal" if stage == "canon_support" else stage) in operations
         ):
             allowed.add(tool_ref)
         elif tool_ref:
@@ -1787,6 +1787,11 @@ class PostgresChapterExecutionContractBinder:
             raise ExternalEffectAdapterError(
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
+        from .definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+        if (str(row[0]).startswith("chapter.") and str(row[1]).startswith("3.")
+            and str(row[1]) != CHAPTER_MODEL_EFFECT_DEFINITION_VERSION):
+            raise KernelError("CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
+                              "unfinished legacy Chapter execution requires current prepared input; accepted history and confirmed receipts remain unchanged")
         return {
             "definition_name": str(row[0]),
             "definition_version": str(row[1]),
@@ -1819,7 +1824,7 @@ class PostgresChapterExecutionContractBinder:
                     workspace_id=workspace_id,
                     book_id=book_id,
                     workflow_definition_ref=self.workflow_definition_ref,
-                    workflow_node_id=stage,
+                    workflow_node_id="canon_proposal" if stage == "canon_support" else stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
                     release_channel=self.pack_release_channel,
@@ -2644,11 +2649,15 @@ def default_chapter_fixture_response(
         }
         result.update({"extraction_status": "EXTRACTED", "no_change_reason": ""})
         for field, values in result.items():
-            if not isinstance(values, list) or field in {"arc_evidence", "realization_evidence"}:
+            if not isinstance(values, list):
                 continue
             for claim in values:
+                if field in {"arc_evidence", "realization_evidence"}:
+                    if claim.get("observation_status") != "OBSERVED":
+                        continue
+                    claim.update({"evidence_start": 0, "evidence_end": evidence_end})
                 claim["evidence_quote"] = text[int(claim["evidence_start"]):int(claim["evidence_end"])]
-                claim["claim_kind"] = {"disclosure_events": "READER_DISCLOSURE",
+                claim["claim_kind"] = {"arc_evidence": "NARRATIVE_OBSERVATION", "realization_evidence": "NARRATIVE_OBSERVATION", "disclosure_events": "READER_DISCLOSURE",
                                        "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
                                        "character_belief_changes": "BELIEF"}.get(field, "OBJECTIVE_EVENT")
         return result
@@ -3458,7 +3467,7 @@ def _stage_semantic_contract(
             "A matching quote is necessary, never sufficient. Distinguish objective events from dialogue, "
             "belief, hearsay, plans and intentions. Knowledge belongs only to the evidenced recipient. "
             "Return UNSUPPORTED or UNCERTAIN when entailment is missing. Do not repair claims or supply "
-            "events from plans. Check extraction coverage; approve NO_CHANGE only when prose supports no "
+            "events from plans. Review NARRATIVE_OBSERVATION claims against prose as well; a plan is only the comparison target. Check extraction coverage; approve NO_CHANGE only when prose supports no "
             "new canonical change. You provide evidence only; Book acceptance remains Authority."
         )
     if stage == "canon_extraction":
@@ -3546,11 +3555,11 @@ def _stage_semantic_contract(
             "only when the accepted revision visibly executes that contribution. An "
             "OBSERVED Arc item must include at least one resolution_evidence string "
             "encoded as chars:<start>-<end>:<summary>, where start and end are valid "
-            "character offsets into accepted_revision; otherwise return zero "
+            "Unicode code-point offsets into final_candidate; otherwise return zero "
             "progress_units and an empty resolution_evidence list. Return one "
             "realization_evidence item for every frozen Narrative Realization event. "
             "OBSERVED realization evidence requires a non-empty "
-            "accepted_prose_evidence list with valid accepted_revision character "
+            "accepted_prose_evidence list with valid final_candidate Unicode code-point "
             "offsets plus the observed event identity, action, decision, consequence, "
             "and state deltas. Planning context alone never proves observation. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "

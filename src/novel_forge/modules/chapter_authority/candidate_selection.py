@@ -120,6 +120,25 @@ def compare_candidates(
     return comparison
 
 
+
+def bind_selected_review(*, candidate: Mapping[str, Any], candidate_id: str,
+                         review: Mapping[str, Any], review_id: str) -> dict[str, Any]:
+    from novel_forge.modules.review.diagnostics import prose_hash
+    expected = prose_hash(str(candidate.get("text") or ""))
+    if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1" and (
+        review.get("target_text_hash") != expected
+        or (review.get("revision_version_id") or review.get("target_asset_version_id")) != candidate_id
+    ):
+        raise KernelError("SELECTED_REVIEW_STALE", "selected candidate must retain its exact reviewed prose")
+    return {
+        **dict(review), "revision_version_id": candidate_id,
+        "target_text_hash": expected,
+        "selection_review_source_asset_version_id": review_id,
+        "selection_review_contract": "immutable-review-projection.v1",
+        "resolved_issue_codes": list(review.get("resolved_issue_codes") or []),
+    }
+
+
 def build_best_candidate(
     *, comparison: Mapping[str, Any], candidates: Mapping[str, Mapping[str, Any]]
 ) -> tuple[dict[str, Any], dict[str, Any]]:

@@ -269,10 +269,12 @@ def run_single_chapter_slice(
     export_evidence: ExportDeliveryEvidence | None = None
     for ordinal, node in enumerate(ChapterNode, start=1):
         input_assets = [
-            {
+            (_operation_output_by_key(database_url, operation_ids[ChapterNode.BEST_CANDIDATE],
+                                      request.project_id, "chapter.best_candidate.selected_review")
+             if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE else {
                 "asset_version_id": outputs[source].asset_version_id,
                 "content_hash": outputs[source].content_hash,
-            }
+            })
             for source in _input_nodes(node)
         ]
         if node is ChapterNode.PLAN:

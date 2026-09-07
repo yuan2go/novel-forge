@@ -5,6 +5,7 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
+from novel_forge.modules.review.diagnostics import review_covers_candidate
 
 
 def prepare_internal_release(
@@ -84,7 +85,7 @@ def prepare_internal_release(
             and quality.get("target_asset_version_id") == revision_asset_version_id
             and required_dimensions.issubset(by_dimension)
         ),
-        "latest_rereview_passed": review.get("report_type") == "ReReviewReport"
+        "latest_rereview_passed": review_covers_candidate(review, text=str(revision.get("text") or ""), source_id=str(revision.get("selected_source_asset_version_id") or ""))
         and review.get("decision") == "PASSED"
         and int(review.get("blocking_issue_count", 0)) == 0,
         "canon_consistent": canon.get("gate") == "PASSED"
@@ -145,9 +146,7 @@ def prepare_internal_release(
             "failed_checks": failed,
             "release_manifest": {},
             "rollback_metadata": {
-                "rollback_to_asset_version_id": revision.get(
-                    "source_draft_version_id", ""
-                ),
+                "rollback_to_asset_version_id": ((revision.get("best_candidate_snapshot") or {}).get("rollback_asset_version_id") or revision.get("source_draft_version_id", "")),
                 "release_not_externally_published": True,
             },
             "publish_gate_contract_version": "internal-publish-gate-v3",
@@ -176,7 +175,7 @@ def prepare_internal_release(
             "blob_verification_status": "PENDING_EXPORT",
         },
         "rollback_metadata": {
-            "rollback_to_asset_version_id": revision.get("source_draft_version_id", ""),
+            "rollback_to_asset_version_id": ((revision.get("best_candidate_snapshot") or {}).get("rollback_asset_version_id") or revision.get("source_draft_version_id", "")),
             "release_not_externally_published": True,
         },
         "publish_gate_contract_version": "internal-publish-gate-v3",
@@ -241,6 +240,7 @@ def build_export_blob_manifest(
         "chapter": revision["chapter"],
         "title": revision["title"],
         "rendered_text": revision["text"],
+        "selected_source_asset_version_id": str(revision.get("selected_source_asset_version_id") or ""),
         "source_asset_version_id": revision_asset_version_id,
         "publish_gate_asset_version_id": publish_gate_asset_version_id,
         "release_status": "READY_FOR_BLOB_VERIFICATION",
@@ -280,7 +280,7 @@ def finalize_blob_verified_release(
             "PASSED_WITH_UNCALIBRATED",
         },
         "latest_rereview_passed": (
-            review.get("report_type") == "ReReviewReport"
+            review_covers_candidate(review, text=str(export_package.get("rendered_text") or ""), source_id=str(export_package.get("selected_source_asset_version_id") or ""))
             and review.get("decision") == "PASSED"
             and int(review.get("blocking_issue_count", 0)) == 0
         ),

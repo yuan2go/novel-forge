@@ -298,7 +298,7 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
             WorkflowBinding(
                 node_id=node.value,
                 operation_name=node.definition_name,
-                stage=node.value,
+                stage="canon_support" if node is ChapterNode.CANON_PROPOSAL else node.value,
                 handler_key=node.handler_key,
                 capability_id=capability,
                 depends_on=tuple(item.value for item in _admission_dependencies(node)),

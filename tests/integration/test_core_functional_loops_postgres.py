@@ -1520,6 +1520,8 @@ def _activate_plan_chain(
                 "provider_recovery",
                 "concurrent_workers",
                 "perturbed_foundation",
+                "creative_grounding",
+                "creative_retained_original",
             )
         ],
     ],
@@ -1762,6 +1764,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             )
         else:
             native_transport = NativeRealityTransportFixture()
+        if autonomous_world in {"creative_grounding", "creative_retained_original"}:
+            from tests.integration.creative_grounding_support import CreativeGroundingTransport
+            native_transport = CreativeGroundingTransport(retain_original=autonomous_world == "creative_retained_original")
         execution = build_production_execution_composition(
             settings,
             env=env,
@@ -2042,6 +2047,12 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             native_evidence["proof_ceiling"]
             == "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"
         )
+        if autonomous_world in {"creative_grounding", "creative_retained_original"}:
+            from tests.integration.creative_grounding_support import verify_creative_workspace
+            native_evidence["creative_workspace"] = verify_creative_workspace(
+                composition=composition, chapter_application=chapter_application,
+                book_run_id=native_evidence["book_run_id"], transport=native_transport,
+            )
         test_case.user_properties.append(
             ("narrative_reality_vertical", json.dumps(native_evidence, sort_keys=True))
         )

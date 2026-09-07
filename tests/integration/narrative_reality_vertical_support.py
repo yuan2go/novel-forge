@@ -431,10 +431,15 @@ def scripted_claim_evidence(stage, inputs, result):
         return result
     from novel_forge.modules.canon_graph.domain import PROVIDER_SEMANTIC_CHANGE_FIELDS
     text = inputs["revision"]["text"]
-    for field in PROVIDER_SEMANTIC_CHANGE_FIELDS.values():
+    for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS.values(), "arc_evidence", "realization_evidence"):
         for claim in result.get(field, []):
+            if field in {"arc_evidence", "realization_evidence"}:
+                if claim.get("observation_status") != "OBSERVED":
+                    continue
+                claim.setdefault("evidence_start", 0)
+                claim.setdefault("evidence_end", min(40, len(text)))
             claim["evidence_quote"] = text[int(claim["evidence_start"]):int(claim["evidence_end"])]
-            claim["claim_kind"] = {"character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
+            claim["claim_kind"] = {"arc_evidence": "NARRATIVE_OBSERVATION", "realization_evidence": "NARRATIVE_OBSERVATION", "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
                                    "character_belief_changes": "BELIEF",
                                    "disclosure_events": "READER_DISCLOSURE"}.get(field, "OBJECTIVE_EVENT")
     return result

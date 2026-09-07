@@ -239,15 +239,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def authoritative_chapter_detail(
         project_id: str = Query(..., min_length=1),
         root_operation_id: str = Query(..., min_length=1),
+        include_workspace: bool = Query(False),
     ) -> dict[str, Any]:
         try:
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("chapter.authority.query", project_id)
             query = _query(ctx)
-            return query.require_run(
-                project_id=project_id,
-                root_operation_id=root_operation_id,
-            )
+            reader = query.require_workspace if include_workspace else query.require_run
+            return reader(project_id=project_id, root_operation_id=root_operation_id)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:

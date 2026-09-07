@@ -8,6 +8,8 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 from .domain import PROVIDER_SEMANTIC_CHANGE_FIELDS, extract_canon_candidates
 
+OBSERVATION_FIELDS = ("arc_evidence", "realization_evidence")
+
 
 def text_hash(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -38,15 +40,13 @@ def _validate_claim(
         "character_knowledge_changes": {"KNOWLEDGE_ACQUISITION"},
         "character_belief_changes": {"BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION"},
         "disclosure_events": {"READER_DISCLOSURE"},
-    }.get(field, {"OBJECTIVE_EVENT", "OBJECTIVE_STATE", "RULE_DERIVATION"})
+        "arc_evidence": {"NARRATIVE_OBSERVATION"},
+        "realization_evidence": {"NARRATIVE_OBSERVATION"},
+    }.get(field, {"OBJECTIVE_EVENT", "OBJECTIVE_STATE"})
     if kind not in allowed:
         _fail(f"claim kind {kind!r} cannot authorize {field}")
     if kind == "KNOWLEDGE_ACQUISITION" and not item.get("character_id"):
         _fail("knowledge acquisition requires its specific character")
-    if kind == "RULE_DERIVATION" and not (
-        item.get("derivation_rule_ref") and item.get("premise_event_refs")
-    ):
-        _fail("derived claims require explicit approved rule and premise references")
 
 
 def extract_grounded_candidates(
@@ -72,6 +72,14 @@ def extract_grounded_candidates(
         count += len(values)
         for item in values:
             _validate_claim(item, field=field, text=text, project_id=project_id, revision_id=revision_asset_version_id)
+    for field in OBSERVATION_FIELDS:
+        values = source.get(field, [])
+        if not isinstance(values, list) or any(not isinstance(item, dict) for item in values):
+            _fail(f"{field} must contain structured observations")
+        for item in values:
+            if item.get("observation_status") == "OBSERVED":
+                _validate_claim(item, field=field, text=text, project_id=project_id, revision_id=revision_asset_version_id)
+                count += 1
     if (status == "EXTRACTED") != bool(count):
         _fail("extraction status disagrees with observed changes")
     if status == "NO_CHANGE" and not str(source.get("no_change_reason") or "").strip():
@@ -82,13 +90,15 @@ def extract_grounded_candidates(
         context_bundle_version_id=context_bundle_version_id,
         provider_extraction=source,
     )
-    for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS, "reader_knowledge_changes"):
+    for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS, "reader_knowledge_changes", *OBSERVATION_FIELDS):
         for item in result.get(field, []):
+            if field in OBSERVATION_FIELDS and item.get("observation_status") != "OBSERVED":
+                continue
             if item.get("predicate") == "accepted_revision_digest":
                 item["object"] = text_hash(text)
                 continue
             start, end = item["evidence_start"], item["evidence_end"]
-            item["extraction_evidence"].update({
+            item.setdefault("extraction_evidence", {}).update({
                 "quote": text[start:end], "excerpt_digest": text_hash(text[start:end]),
                 "text_hash": text_hash(text), "offset_unit": "UNICODE_CODE_POINT",
                 "span": {"start": start, "end": end},
@@ -111,7 +121,7 @@ def extract_grounded_candidates(
 def grounded_claims(extraction: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {"field": field, "claim": item}
-        for field in PROVIDER_SEMANTIC_CHANGE_FIELDS
+        for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS, *OBSERVATION_FIELDS)
         for item in extraction.get(field, []) if item.get("grounded_claim_id")
     ]
 

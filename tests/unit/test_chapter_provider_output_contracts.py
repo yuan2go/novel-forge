@@ -326,7 +326,7 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     resolution = schema["properties"]["arc_evidence"]["items"]["properties"][
         "resolution_evidence"
     ]
-    assert "accepted_revision character-span" in resolution["description"]
+    assert "final_candidate Unicode code-point-span" in resolution["description"]
     assert "copy disclosure_id" in contract
     assert "do not expand the audience" in contract
 

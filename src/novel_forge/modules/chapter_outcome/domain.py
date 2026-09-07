@@ -125,6 +125,7 @@ def build_chapter_outcome(
         "final_release_gate_asset_version_id": final_release_gate_version_id,
         "quality_aggregate_asset_version_id": quality_aggregate_version_id,
         "canon_patch_asset_version_id": canon_patch_asset_version_id,
+        **({"grounding": dict(canon_patch["grounding"])} if canon_patch.get("grounding") else {}),
         "canon_decision_asset_version_ids": list(
             canon_patch.get("decision_asset_version_ids") or []
         ),

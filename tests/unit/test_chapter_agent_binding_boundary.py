@@ -59,6 +59,8 @@ def test_development_compatibility_is_explicitly_recorded() -> None:
 
 def test_legacy_binding_surface_tracks_model_capability_stages() -> None:
     assert AGENT_BOUND_CHAPTER_STAGES == {
+        "memo",
+        "canon_support",
         "retrieval",
         "retrieval_query_expansion",
         "draft",

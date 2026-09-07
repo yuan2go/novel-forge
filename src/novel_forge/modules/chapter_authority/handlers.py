@@ -1280,19 +1280,24 @@ class _DraftHandler:
                 "chapter_memo": memo.content,
             },
         )
-        return _model_output(
-            ChapterNode.DRAFT,
-            normalize_draft_result(
+        content = normalize_draft_result(
                 plan=plan.content,
                 context_asset_version_id=context.asset_version_id,
                 context_content_hash=context.content_hash,
                 context_content=context.content,
                 result=generated.output,
                 provider_evidence=_provider_evidence(generated),
-            ),
-            request=request,
-            generated=generated,
-        )
+            )
+        content["creative_execution"] = {
+            "memo_asset_version_id": memo.asset_version_id,
+            "memo_content_hash": memo.content_hash,
+            "memo_fingerprint": memo.content.get("memo_fingerprint"),
+            "intent_asset_version_id": intent.asset_version_id,
+            "guidance": dict(memo.content.get("creative_guidance") or {}),
+            "scene_directives": list(memo.content.get("scene_directives") or []),
+            "authority": "CREATIVE_SUGGESTION_ONLY",
+        }
+        return _model_output(ChapterNode.DRAFT, content, request=request, generated=generated)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1535,12 +1540,32 @@ class _BestCandidateHandler:
                 revision.asset_version_id: revision.content,
             },
         )
+        from .candidate_selection import bind_selected_review
+        if comparison["selected_asset_version_id"] == revision.asset_version_id:
+            selected_review_content, selected_review_id = rereview.content, rereview.asset_version_id
+        elif existing_best is None:
+            selected_review_content, selected_review_id = previous_review.content, previous_review.asset_version_id
+        else:
+            selected_review_content = dict(existing_best.content["selected_review"])
+            selected_review_id = str(selected_review_content["selection_review_source_asset_version_id"])
+        selected_source_id = str(best.get("selected_source_asset_version_id") or "")
+        if existing_best is not None and comparison["selected_asset_version_id"] == existing_best.asset_version_id:
+            selected_source_id = str(existing_best.content["selected_source_asset_version_id"])
+            best["selected_source_asset_version_id"] = selected_source_id
+        selected_review = bind_selected_review(candidate=best, candidate_id=selected_source_id,
+                                              review=selected_review_content, review_id=selected_review_id)
+        best["selected_review"] = selected_review
         return ChapterHandlerOutput(
             asset_type=ChapterNode.BEST_CANDIDATE.asset_type,
             output_key=ChapterNode.BEST_CANDIDATE.output_key,
             role="primary",
             content=best,
             auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="re_review_report", output_key="chapter.best_candidate.selected_review",
+                    role="selection_evidence", content=selected_review,
+                    reference_asset_version_ids=(selected_review_id, selected_source_id),
+                ),
                 ChapterAuxiliaryOutput(
                     asset_type="candidate_comparison",
                     output_key="chapter.best_candidate.comparison",

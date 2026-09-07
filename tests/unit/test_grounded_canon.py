@@ -97,3 +97,64 @@ def test_support_review_cannot_reuse_old_prose_or_omit_a_claim():
         with pytest.raises(KernelError):
             validate_support_review(extraction=extraction, revision={"text": prose}, revision_asset_version_id=candidate,
                                     result={"coverage": "COMPLETE", "no_change_supported": False, "claims": []})
+
+
+def acceptance_assets():
+    digest = "sha256:" + hashlib.sha256("她关上了门。".encode()).hexdigest()
+    binding = {"contract_version": "grounded-canon.v1", "project_id": "p", "candidate_asset_version_id": "best:v1", "context_asset_version_id": "context:v1", "text_hash": digest, "semantic_status": "SUPPORTED_CANDIDATE"}
+    contents = {
+        "best_draft_candidate": {"text": "她关上了门。", "selected_source_asset_version_id": "revision:v1"},
+        "canon_patch": {"grounding": binding, "source_asset_version_id": "best:v1"},
+        "quality_score_report": {"target_asset_version_id": "best:v1", "canon_patch_version_id": "canon:v1", "review_asset_version_id": "review:v1", "context_bundle_version_id": "context:v1"},
+        "re_review_report": {"diagnostic_contract_version": "actionable-diagnostics.v1", "target_text_hash": digest, "revision_version_id": "revision:v1", "context_bundle_version_id": "context:v1"},
+    }
+    ids = {"best_draft_candidate": "best:v1", "canon_patch": "canon:v1", "quality_score_report": "quality:v1", "re_review_report": "review:v1"}
+    return {kind: {"asset_version_id": ids[kind], "content": content} for kind, content in contents.items()}
+
+
+def test_book_acceptance_requires_same_final_prose_review_quality_and_canon():
+    from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
+    selected = acceptance_assets()
+    assert require_grounded_acceptance(project_id="p", selected=selected)["candidate_asset_version_id"] == "best:v1"
+    for kind, key in [("re_review_report", "target_text_hash"), ("re_review_report", "revision_version_id"), ("quality_score_report", "target_asset_version_id"), ("canon_patch", "source_asset_version_id")]:
+        changed = acceptance_assets()
+        changed[kind]["content"][key] = "stale"
+        with pytest.raises(KernelError):
+            require_grounded_acceptance(project_id="p", selected=changed)
+
+
+def test_no_change_is_representable_by_current_provider_schema():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+    schema = chapter_provider_output_schema("canon_extraction", causal_batch=True)
+    assert schema["properties"]["canon_facts"].get("minItems", 0) == 0
+
+
+def test_plan_observation_cannot_bypass_final_prose_support():
+    text = "她决定寻找密室。"
+    with pytest.raises(KernelError):
+        extract(text, {"extraction_status": "NO_CHANGE", "no_change_reason": "No objective changes",
+                       "realization_evidence": [{"planned_event_id": "find-room", "observation_status": "OBSERVED",
+                                                 "observed_action": "发现密室"}]})
+
+
+def test_unexecuted_rule_reference_is_not_a_deterministic_derivation():
+    text = "她看着那扇门。"
+    with pytest.raises(KernelError):
+        extract(text, {"extraction_status": "EXTRACTED", "facts": [fact(text, claim_kind="RULE_DERIVATION",
+                        derivation_rule_ref="made-up-rule", premise_event_refs=["made-up-event"])]})
+
+
+def test_supersession_requires_exact_current_entity_event_in_the_frozen_book():
+    from novel_forge.modules.canon_graph.domain import build_canon_update
+    from novel_forge.modules.canon_graph.grounding import grounded_claims
+    text = "门打开了。"
+    for source, expected in [("event:other-book", "BLOCKED"), ("event:door", "CLEAR")]:
+        extraction = extract(text, {"extraction_status": "EXTRACTED", "facts": [fact(text, object="open", supersedes_event_id=source)]})
+        extraction["grounding"] = validate_support_review(extraction=extraction, revision={"text": text}, revision_asset_version_id="final-candidate", result={
+            "coverage": "COMPLETE", "no_change_supported": False,
+            "claims": [{"claim_id": item["claim"]["grounded_claim_id"], "assessment": "SUPPORTED", "observed_kind": "OBJECTIVE_EVENT", "reason": "开门动作在文本中直接发生。"} for item in grounded_claims(extraction)]})
+        patch = build_canon_update(project_id="book-project", revision={"text": text}, revision_asset_version_id="final-candidate",
+            context_bundle_version_id="frozen-context", extraction=extraction,
+            existing_facts=[{"subject": "door", "predicate": "status", "object": "closed", "source_event_id": "event:door"}])
+        codes = {item["conflict_code"] for item in patch["conflicts"]}
+        assert ("CANON_SUPERSESSION_SOURCE_INVALID" in codes) == (expected == "BLOCKED")

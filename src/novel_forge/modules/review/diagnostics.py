@@ -56,3 +56,15 @@ def verified_resolutions(result: dict[str, Any], initial: dict[str, Any], text: 
                 raise KernelError("REVIEW_RESOLUTION_INVALID", "resolution needs an explanation tied to the repair criteria")
             verified.add(code)
     return verified
+
+
+def review_covers_candidate(review: dict[str, Any], *, text: str, source_id: str) -> bool:
+    if review.get("selection_review_contract") == "immutable-review-projection.v1":
+        return (
+            review.get("report_type") in {"ReviewReport", "ReReviewReport"}
+            and bool(review.get("selection_review_source_asset_version_id"))
+            and bool(source_id)
+            and review.get("revision_version_id") == source_id
+            and review.get("target_text_hash") == prose_hash(text)
+        )
+    return review.get("report_type") == "ReReviewReport"

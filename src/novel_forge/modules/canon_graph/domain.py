@@ -411,6 +411,7 @@ def _normalize_fact(item: dict[str, Any], chapter: int, source: str) -> dict[str
         "source_asset_version_id": source,
         "supersedes_event_id": str(item.get("supersedes_event_id") or ""),
         "extraction_evidence": dict(item.get("extraction_evidence") or {}),
+        **{key: item[key] for key in ("claim_kind", "grounded_claim_id") if key in item},
         "confidence": float(item.get("confidence", 0.0)),
         "coverage": str(item.get("coverage") or "EXPLICIT"),
     }
@@ -593,6 +594,18 @@ def _fact_conflicts(
 ) -> list[dict[str, Any]]:
     conflicts = []
     for fact in facts:
+        superseded = str(fact.get("supersedes_event_id") or "")
+        if superseded and not any(
+            (old.get("source_event_id") or old.get("event_id")) == superseded
+            and old.get("subject") == fact["subject"]
+            and old.get("predicate") == fact["predicate"]
+            for old in previous
+        ):
+            conflicts.append(_conflict(
+                "CANON_SUPERSESSION_SOURCE_INVALID", previous, fact,
+                "resolve the exact same-entity accepted source in the frozen Book boundary",
+                approval=False,
+            ))
         for old in previous:
             if (
                 old.get("subject") == fact["subject"]

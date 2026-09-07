@@ -32,7 +32,6 @@ CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS 
 )
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
-        ChapterNode.MEMO,
         ChapterNode.DRAFT,
         ChapterNode.REVIEW,
         ChapterNode.REVISION,
@@ -273,6 +272,14 @@ def _definition(
     if node is ChapterNode.BEST_CANDIDATE:
         completion["required_asset_selectors"].extend(
             (
+                {
+                    "selector": "re_review_report",
+                    "output_key": "chapter.best_candidate.selected_review",
+                    "role": "selection_evidence",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
                 {
                     "selector": "candidate_comparison",
                     "output_key": "chapter.best_candidate.comparison",

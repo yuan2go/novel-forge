@@ -1037,7 +1037,7 @@ def test_rereview_task_does_not_repeat_revision_or_authority_context() -> None:
         "contract_version": "provider-task-view-v1",
         "stage": "rereview",
         "revised_chapter": {"chapter": 2, "text": "Revised prose"},
-        "prior_blocking_issues": [
+        "prior_diagnoses": [
             {"code": "C1", "severity": "blocking", "message": "fix"}
         ],
     }

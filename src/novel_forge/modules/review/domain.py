@@ -64,6 +64,7 @@ def evaluate_review_result(
     if decision == "PASSED" and blocking_count:
         raise KernelError("REVIEW_DECISION_CONFLICT", "PASSED review cannot contain blocking issues")
     return {
+        "report_type": "ReviewReport",
         "project_id": project_id,
         "chapter": chapter,
         "target_asset_version_id": target_asset_version_id,

@@ -531,11 +531,13 @@ class ChapterAuthorityScheduler:
                     "CHAPTER_INPUT_NOT_COMPLETE",
                     f"{node.value} input {source.value} has not completed",
                 )
-            inputs.append(
-                self._primary_output(
-                    str(source_operation["operation_id"]), root["project_id"]
-                )
-            )
+            if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE:
+                inputs.append(self._output_by_key(
+                    str(children[ChapterNode.BEST_CANDIDATE]["operation_id"]),
+                    root["project_id"], "chapter.best_candidate.selected_review",
+                ))
+            else:
+                inputs.append(self._primary_output(str(source_operation["operation_id"]), root["project_id"]))
             if node is ChapterNode.CONTEXT and source is ChapterNode.PLAN:
                 inputs.append(
                     self._output_by_key(

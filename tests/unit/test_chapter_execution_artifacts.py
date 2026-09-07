@@ -292,3 +292,15 @@ def test_creative_memo_guidance_survives_into_actual_draft_task_view() -> None:
     assert task["creative_memo"]["guidance"] == guidance
     assert task["creative_memo"]["authority"] == "CREATIVE_SUGGESTION_ONLY"
     assert task["creative_memo"]["source_memo_fingerprint"] == "memo:frozen"
+
+
+def test_memo_provider_cannot_read_unscoped_accepted_obligation_details():
+    import json
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    intent = {"intent_fingerprint": "frozen", "scene_plans": [], "chapter_mission": {},
+              "active_obligations": [{"obligation_id": "hidden-debt", "state": {"summary": "HIDDEN_CAUSE"}}],
+              "retrieval_graph": {"entities": [{"summary": "HIDDEN_IDENTITY"}]},
+              "unmodeled_private_extension": "HIDDEN_EXTENSION"}
+    view = build_provider_task_view("memo", {"execution_intent": intent})
+    assert "HIDDEN_" not in json.dumps(view)
+    assert view["frozen_intent"]["intent_fingerprint"] == "frozen"

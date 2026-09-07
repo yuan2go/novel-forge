@@ -343,8 +343,17 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         )
     if stage == "memo":
         from novel_forge.modules.canon_graph.background import without_private_world
-        intent = dict(inputs.get("execution_intent") or {})
-        return _task(stage, frozen_intent=without_private_world(intent), authority="CREATIVE_SUGGESTION_ONLY")
+        source = dict(inputs.get("execution_intent") or {})
+        intent = {key: source[key] for key in (
+            "project_id", "chapter", "contract_version", "intent_fingerprint", "source_chapter_plan",
+            "accepted_boundary", "chapter_objective", "required_arc_contributions",
+            "previous_ending", "scene_plans", "chapter_mission", "required_beats",
+        ) if key in source}
+        return _task(stage, frozen_intent=without_private_world(intent), authority="CREATIVE_SUGGESTION_ONLY",
+                     source_layers={"accepted_facts": "REFERENCED_BY_ACCEPTED_BOUNDARY",
+                                    "character_knowledge": "SCENE_KNOWLEDGE_BOUNDARIES",
+                                    "planned_outcomes": "INTENT_ONLY_NOT_OBSERVED",
+                                    "creative_guidance": "CANDIDATE_SUGGESTIONS"})
     if stage == "draft":
         from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
@@ -360,10 +369,10 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
-        return _task(stage, chapter=_prose(inputs.get("draft")))
+        return _task(stage, chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}))
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
-        payload: dict[str, Any] = {"chapter": _prose(source)}
+        payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {})}
         if source.get("realization_contract"):
             payload["chapter"].pop("text", None)
             payload["realization_contract"] = deepcopy(source["realization_contract"])
@@ -386,6 +395,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         return _task(
             stage,
             revised_chapter=_prose(revision),
+            creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),
             prior_diagnoses=issues,
         )
     if stage == "canon_support":

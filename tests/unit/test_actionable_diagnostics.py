@@ -65,3 +65,40 @@ def test_score_only_revision_cannot_replace_candidate_under_actionable_contract(
     result = compare_candidates(project_id="p", chapter_root_operation_id="root", previous=original,
                                 challenger=revised, minimum_net_improvement=3)
     assert result["selected_asset_version_id"] == "draft:v1"
+
+
+def test_selected_original_reuses_its_review_without_claiming_revision_resolutions():
+    from novel_forge.modules.chapter_authority.candidate_selection import bind_selected_review
+    initial = review(diagnosis())
+    bound = bind_selected_review(candidate={"text": "她作出了选择。"}, candidate_id="draft:v1",
+                                 review=initial, review_id="review:v1")
+    assert bound["revision_version_id"] == "draft:v1"
+    assert bound["decision"] == "NEEDS_REVISION"
+    assert bound["issues"][0]["status"] == "OPEN"
+    assert bound["resolved_issue_codes"] == []
+    assert bound["selection_review_source_asset_version_id"] == "review:v1"
+    with pytest.raises(KernelError):
+        bind_selected_review(candidate={"text": "她拒绝了选择。"}, candidate_id="draft:v1",
+                             review=initial, review_id="review:v1")
+
+
+def test_creative_guidance_is_retained_for_review_and_directed_revision():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    from novel_forge.modules.revision.domain import apply_revision_result
+    guide = {"memo_asset_version_id": "memo:v1", "guidance": {"chapter_goal": "让选择付出代价"}}
+    draft = {"chapter": 1, "title": "选择", "text": "她作出了选择。", "creative_execution": guide}
+    revised = apply_revision_result(project_id="p", draft=draft, review=review(diagnosis()),
+        draft_asset_version_id="draft:v1", review_asset_version_id="review:v1", context_bundle_version_id="context:v1",
+        result={"text": "她作出了选择，失去了回家的机会。", "resolved_issue_codes": ["COST"]}, provider_evidence={})
+    assert revised["creative_execution"] == guide
+    for stage, payload in (("review", {"draft": draft}), ("revision", {"draft": draft, "review": review(diagnosis())}), ("rereview", {"revision": revised, "review": review(diagnosis())})):
+        assert build_provider_task_view(stage, payload)["creative_execution"] == guide
+
+
+def test_retained_review_is_usable_only_for_unchanged_selected_prose():
+    from novel_forge.modules.chapter_authority.candidate_selection import bind_selected_review
+    from novel_forge.modules.review.diagnostics import review_covers_candidate
+    bound = bind_selected_review(candidate={"text": "她作出了选择。"}, candidate_id="draft:v1", review=review(diagnosis()), review_id="review:v1")
+    assert review_covers_candidate(bound, text="她作出了选择。", source_id="draft:v1")
+    assert not review_covers_candidate(bound, text="她改变了选择。", source_id="draft:v1")
+    assert not review_covers_candidate(bound, text="她作出了选择。", source_id="draft:v2")

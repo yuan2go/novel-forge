@@ -263,6 +263,21 @@ fails before execution. The runner requires a disposable database name and contr
 runtime, rejects scripted routes, respects pending approvals and bounded tick/time limits,
 and does not approve its own changes. Chapter count is only the experiment bound.
 
+The same command exercises Creative Memo, directed revision and grounded Canon on the
+current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
+`NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
+routes; if omitted they inherit the explicitly configured Review route. They use the
+existing Provider admission, token and cost limits. Memo has the Planning capability's
+60-second operation bound; Canon support uses the Canon capability's frozen bound.
+
+The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
+claim support, accepted state references, attempt errors and receipt/cost references.
+The live read is `GET /product/production/chapter-authority/run` with `project_id`,
+`root_operation_id` and `include_workspace=true` under existing query permission.
+For a short comparison, retain a baseline export from a separately frozen implementation
+and use the same approved input and model settings in an isolated new run. Preserve
+failed runs; these exports do not establish independent literary or human qualification.
+
 `events.jsonl` retains tick and failure results; the export includes exact world source,
 generation/evaluation artifacts, execution recovery sessions, request admission,
 model/usage/cost evidence and accepted Realities. Inspect that original preparation
@@ -279,7 +294,7 @@ exact boundary, subject and frozen policy. Operator decisions enter through
 Resume the existing production job after approval. Decisions do not waive quality,
 Canon reconciliation or acceptance invariants.
 
-Chapter workflow contract 3.3.1 and Capability Pack 2.2.1 require structured
+Chapter workflow contract 3.4.0 and Capability Pack 2.3.0 require structured
 realization slots and the current quality dimensions. Published text-only Scene beats
 use an explicitly marked frozen representation adapter; their source digest and
 ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs. An older frozen operation

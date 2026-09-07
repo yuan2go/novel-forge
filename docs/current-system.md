@@ -19,6 +19,24 @@ identity changes without a corresponding projection update.
 
 ## Creative execution and prose evidence
 
+The selection node projects the immutable review of its selected prose. If a proposed
+revision does not establish improvement or preservation, downstream gates retain the
+original review and its unresolved issues; they do not reuse the rejected prose's
+rereview. Canon also reviews observed Arc/Realization claims against the final text.
+An arbitrary supersession identifier cannot authorize a contradiction: it must resolve
+the exact accepted event of the same entity in the frozen Book boundary.
+
+Book acceptance rechecks and locks selected asset versions inside its existing UoW.
+Migration 0119 adds an insert guard binding current model-backed acceptance to the
+same final prose hash, grounded Canon and Quality. Already accepted rows are unchanged;
+unaccepted legacy model output needs new grounded evidence. Governed background facts
+retain their approved decision/rule provenance separately from prose evidence.
+
+The existing Chapter run query supports `include_workspace=true`. It exposes immutable
+inputs/Memo, candidates, diagnoses, revision comparison, extraction/support/approval,
+gates, attempts, acceptance and the exact accepted versions available to the next
+chapter. This is a read projection; it grants no mutation permission.
+
 The existing Chapter Memo node invokes the governed Provider path from a frozen
 ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
 voice, scene conflict and information release, emotional movement and the ending change.
