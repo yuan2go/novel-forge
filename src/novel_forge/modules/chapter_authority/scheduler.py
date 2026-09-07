@@ -770,6 +770,10 @@ class ChapterAuthorityScheduler:
         best_ref = self._primary_output(
             str(best_operation["operation_id"]), request.project_id
         )
+        rereview_ref = self._output_by_key(
+            str(best_operation["operation_id"]), request.project_id,
+            "chapter.best_candidate.selected_review",
+        )
         if node is ChapterNode.CANON_EXTRACTION:
             return (
                 [
@@ -785,7 +789,7 @@ class ChapterAuthorityScheduler:
         )
         if node is ChapterNode.CANON_PROPOSAL:
             return (
-                [extraction_ref],
+                [extraction_ref, best_ref, common[ChapterNode.CONTEXT]],
                 [str(extraction_operation["operation_id"])],
             )
         proposal_operation = correction[ChapterNode.CANON_PROPOSAL]
@@ -1064,6 +1068,21 @@ class ChapterAuthorityScheduler:
             _, _, refreshed = self._graph_state(
                 request.project_id, str(root["operation_id"])
             )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT input.value->>'asset_version_id', input.value->>'content_hash'
+                    FROM authority_operation operation
+                    CROSS JOIN LATERAL jsonb_array_elements(operation.input_asset_snapshot) input(value)
+                    JOIN authority_asset_version version ON version.asset_version_id=input.value->>'asset_version_id'
+                    JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                    WHERE operation.operation_id=%s AND operation.project_id=%s
+                      AND asset.project_id=operation.project_id
+                      AND asset.asset_type IN ('best_draft_candidate','context_bundle')
+                    ORDER BY asset.asset_type
+                    """, [generation["extraction_operation_id"], request.project_id],
+                )
+                frozen_prose_inputs = [{"asset_version_id": row[0], "content_hash": row[1]} for row in uow.cursor.fetchall()]
             operation = self._admit_node(
                 request=request,
                 root=root,
@@ -1080,7 +1099,8 @@ class ChapterAuthorityScheduler:
                 explicit_inputs=[
                     self._primary_output(
                         str(generation["extraction_operation_id"]), request.project_id
-                    )
+                    ),
+                    *frozen_prose_inputs,
                 ],
                 dependency_operation_ids=[str(generation["extraction_operation_id"])],
                 timeline_step_key=f"canon_proposal:g{number}",

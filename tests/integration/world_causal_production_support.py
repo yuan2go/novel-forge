@@ -910,14 +910,14 @@ def execute_autonomous_world_vertical(
             "final_provider_requests": final_requests,
             "reality_revision_id": reality["revision_id"],
         }
-    if transport.scenario == "process_recovery":
+    if transport.scenario == "process_recovery" or transport.scenario.startswith("creative_process_"):
         from tests.integration.world_process_recovery_support import (
             run_process_recovery,
         )
 
         return run_process_recovery(
             composition=composition,
-            runtime_config=runtime_config,
+            runtime_config={**runtime_config, "crash_target": transport.scenario},
             book_run_id=admitted.book_run_id,
             project_id=snapshot.project_id,
         )

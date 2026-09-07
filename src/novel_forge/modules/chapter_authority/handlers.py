@@ -105,7 +105,7 @@ class DeterministicFixtureChapterProvider:
         reservation_tokens: int | None = None,
         pre_send_assertion: Any | None = None,
     ) -> ModelProviderResult:
-        if stage == "memo":
+        if stage in {"memo", "canon_support"}:
             from .execution_gateway import default_chapter_fixture_response
             output = default_chapter_fixture_response(stage, payload)
         elif stage == "draft":
@@ -2074,6 +2074,7 @@ class _QualityHandler:
                 str(record.get("external_effect_id") or "")
                 for record in provider_usage or []
                 if str(record.get("external_effect_id") or "")
+                and record.get("context_bundle_asset_version_id") == context.asset_version_id
             }
         )
         if provider_usage is None:
@@ -2275,6 +2276,7 @@ def _provider_usage_records(
                 "operation_id": key[0],
                 "attempt_id": key[1],
                 "stage": key[2],
+                "context_bundle_asset_version_id": str(content.get("context_bundle_asset_version_id") or ""),
                 "external_effect_id": str(
                     content.get("external_effect_id")
                     or ledger.get("external_effect_id")

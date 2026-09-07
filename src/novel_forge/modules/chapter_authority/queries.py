@@ -323,9 +323,9 @@ class ChapterAuthorityQuery:
                 SELECT acceptance.acceptance_id, acceptance.status, acceptance.chapter_number,
                        acceptance.chapter_outcome_asset_version_id,
                        acceptance.story_state_asset_version_id, acceptance.canon_snapshot_asset_version_id,
-                       acceptance.longform_projection_set_id
+                       acceptance.longform_projection_set_id, request.book_run_id
                 FROM authority_book_chapter_request request
-                JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
+                LEFT JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
                 WHERE request.chapter_root_operation_id=%s AND request.project_id=%s
                 """, [root_operation_id, project_id],
             )
@@ -344,12 +344,13 @@ class ChapterAuthorityQuery:
                         for item in uow.cursor.fetchall()]
         return {
             "contract_version": "chapter-workspace.v1",
-            "attempts": attempts, "authority": "READ_ONLY_PROJECTION",
+            "attempts": attempts,
+            "book_run_id": row[7] if row else "", "authority": "READ_ONLY_PROJECTION",
             "project_id": project_id, "root_operation_id": root_operation_id,
             "run": {key: value for key, value in evidence.items() if key != "outputs"},
             "artifacts": {stage: [item for item in evidence["outputs"] if item["asset_type"] in types]
                           for stage, types in stages.items()},
-            "acceptance": None if row is None else {
+            "acceptance": None if row is None or row[0] is None else {
                 "acceptance_id": row[0], "status": row[1], "accepted_through_chapter": int(row[2]),
                 "outcome_asset_version_id": row[3], "story_state_asset_version_id": row[4],
                 "canon_snapshot_asset_version_id": row[5], "longform_projection_set_id": row[6],

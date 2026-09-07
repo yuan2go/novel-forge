@@ -713,7 +713,7 @@ class ExternalEffectChapterModelPort:
                     "model retry differs from the first frozen Provider intent",
                 )
             frozen_runtime = frozen_metadata.get("capability_runtime")
-            if isinstance(frozen_runtime, Mapping):
+            if provider_admission_required and isinstance(frozen_runtime, Mapping):
                 frozen_admission = frozen_runtime.get("provider_admission")
                 if isinstance(frozen_admission, Mapping):
                     frozen_total = int(frozen_admission.get("total_reserved") or 0)
@@ -1400,6 +1400,7 @@ class ExternalEffectChapterModelPort:
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
                     "target_lineage": self._target_lineage(request),
+                    "context_bundle_asset_version_id": next((item.asset_version_id for item in request.inputs if item.asset_type == "context_bundle"), ""),
                     "provider_evidence": result.to_evidence(),
                 },
                 qualification_policy="model-call-evidence-v1",

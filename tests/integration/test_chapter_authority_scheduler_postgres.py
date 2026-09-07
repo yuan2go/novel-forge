@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import hashlib
 import json
 import unittest
@@ -136,10 +137,37 @@ class DownstreamRetryExhaustedFixture(QualityCorrectionFixture):
         return super().invoke(request, stage=stage, payload=payload)
 
 
+class GroundedHighImpactFixture(DeterministicFixtureChapterProvider):
+    supports_semantic_extraction = True
+    death = "The protagonist dies from the wound."
+
+    def invoke(self, request, *, stage, payload):
+        if stage == "canon_extraction":
+            text = payload["revision"]["text"]
+            start = text.index(self.death)
+            return ModelProviderResult(
+                output={"extraction_status": "EXTRACTED", "no_change_reason": "",
+                        "character_state_changes": [{"character_id": "protagonist", "status": "dead",
+                            "impact_type": "character_death", "confidence": 0.9,
+                            "claim_kind": "OBJECTIVE_EVENT", "evidence_quote": self.death,
+                            "evidence_start": start, "evidence_end": start + len(self.death)}]},
+                provider_id="deterministic_semantic_fixture", model_id="fixture", prompt_version="fixture-v1",
+                skill_version="fixture-v1", input_tokens=0, output_tokens=0, cost_amount="0", currency="USD", real_model_call=False,
+            )
+        result = super().invoke(request, stage=stage, payload=payload)
+        if stage == "draft":
+            return replace(result, output=self.structured_fixture_output(stage, payload, {"text": result.output["text"] + " " + self.death}))
+        return result
+
+
 class CanonConflictQualityCorrectionFixture(DeterministicFixtureChapterProvider):
     supports_semantic_extraction = True
 
     def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+        if stage == "draft":
+            result = super().invoke(request, stage=stage, payload=payload)
+            return replace(result, output=self.structured_fixture_output(stage, payload,
+                {"text": result.output["text"] + " The protagonist invoked the governed exception."}))
         if stage == "revision" and "quality" in payload:
             draft = payload["draft"]
             return self._result(
@@ -191,6 +219,8 @@ class CanonConflictQualityCorrectionFixture(DeterministicFixtureChapterProvider)
                     "impact_type": "world_rule_use",
                 }
             ]
+            output.update({"extraction_status": "EXTRACTED", "no_change_reason": ""})
+            output["world_rule_usages"][0].update({"claim_kind": "OBJECTIVE_EVENT", "evidence_quote": text})
             return self._result(stage, output)
         return super().invoke(request, stage=stage, payload=payload)
 
@@ -1547,39 +1577,10 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertTrue(prepared.report.repair_actions)
 
     def test_high_impact_canon_waits_for_approved_decision_asset(self) -> None:
-        class HighImpactFixture(DeterministicFixtureChapterProvider):
-            supports_semantic_extraction = True
-
-            def invoke(self, request, *, stage, payload):
-                if stage != "canon_extraction":
-                    return super().invoke(request, stage=stage, payload=payload)
-                return ModelProviderResult(
-                    output={
-                        "character_state_changes": [
-                            {
-                                "character_id": "protagonist",
-                                "status": "dead",
-                                "impact_type": "character_death",
-                                "confidence": 0.9,
-                                "evidence_start": 0,
-                                "evidence_end": 12,
-                            }
-                        ]
-                    },
-                    provider_id="deterministic_semantic_fixture",
-                    model_id="fixture",
-                    prompt_version="fixture-v1",
-                    skill_version="fixture-v1",
-                    input_tokens=0,
-                    output_tokens=0,
-                    cost_amount="0",
-                    currency="USD",
-                    real_model_call=False,
-                )
 
         project_id = identifier("canon-gate-project")
         candidates = self._release_evidence(project_id)
-        registry = build_chapter_handler_registry(HighImpactFixture())
+        registry = build_chapter_handler_registry(GroundedHighImpactFixture())
         request = SingleChapterRequest(
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
@@ -1883,38 +1884,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone()[0], "RESOLVED")
 
     def _high_impact_waiting_fixture(self, prefix: str):
-        class HighImpactFixture(DeterministicFixtureChapterProvider):
-            supports_semantic_extraction = True
-
-            def invoke(self, request, *, stage, payload):
-                if stage != "canon_extraction":
-                    return super().invoke(request, stage=stage, payload=payload)
-                return ModelProviderResult(
-                    output={
-                        "character_state_changes": [
-                            {
-                                "character_id": "protagonist",
-                                "status": "dead",
-                                "impact_type": "character_death",
-                                "confidence": 0.9,
-                                "evidence_start": 0,
-                                "evidence_end": 12,
-                            }
-                        ]
-                    },
-                    provider_id="deterministic_semantic_fixture",
-                    model_id="fixture",
-                    prompt_version="fixture-v1",
-                    skill_version="fixture-v1",
-                    input_tokens=0,
-                    output_tokens=0,
-                    cost_amount="0",
-                    currency="USD",
-                    real_model_call=False,
-                )
 
         project_id = identifier(f"{prefix}-project")
-        registry = build_chapter_handler_registry(HighImpactFixture())
+        registry = build_chapter_handler_registry(GroundedHighImpactFixture())
         request = SingleChapterRequest(
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",

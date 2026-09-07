@@ -41,6 +41,9 @@ The existing Chapter Memo node invokes the governed Provider path from a frozen
 ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
 voice, scene conflict and information release, emotional movement and the ending change.
 Draft receives this guidance and the Memo fingerprint as suggestions, not Canon.
+Provider execution receipts remain on the immutable Memo for audit. Its governed
+writing projection excludes those receipts; they are not narrative material and do
+not consume the chapter's writing Context budget.
 
 Current Provider reviews return located diagnoses, constraints, repair goals, preservation
 requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records

@@ -319,7 +319,7 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "at most once" in contract
     assert "authorizes_testimony" in contract
     assert "authorizes_public_identification" in contract
-    assert "Actual accepted prose" in contract
+    assert "final candidate prose" in contract
     assert "chars:<start>-<end>:<summary>" in contract
     assert "Planning context alone never proves observation" in contract
     schema = chapter_provider_output_schema("canon_extraction")

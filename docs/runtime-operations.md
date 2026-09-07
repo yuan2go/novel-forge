@@ -297,10 +297,17 @@ Canon reconciliation or acceptance invariants.
 Chapter workflow contract 3.4.0 and Capability Pack 2.3.0 require structured
 realization slots and the current quality dimensions. Published text-only Scene beats
 use an explicitly marked frozen representation adapter; their source digest and
-ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs. An older frozen operation
-retains its original definition and receipts; a worker with another contract version
-rejects it with `AUTHORITY_HANDLER_CONTRACT_STALE`. Resume such an in-flight operation
-with its matching release rather than rewriting its frozen input or resending effects.
+ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs.
+Unaccepted older model-backed Chapter contracts fail with
+`CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED`; they need a new Chapter command on the current contract with grounded evidence. Preserve their frozen inputs and confirmed effects for audit.
+Already accepted history is replayed as history, without fabricated grounding evidence.
+Other frozen Authority operations keep their existing `AUTHORITY_HANDLER_CONTRACT_STALE`
+guard and require their matching release for recovery.
+
+Chapter workers discover pending roots on every poll, including after process takeover.
+ChapterGroup records changing child status while waiting and freezes its reconciliation
+step only when the child succeeds. Recovery consumes confirmed Memo and Canon support
+receipts under the original reservation policy, then completes the missing domain commit.
 
 Provider Context projection rejects an eligible segment count or relevant fact count
 that exceeds its declared budget. A passing Context correctness receipt does not permit

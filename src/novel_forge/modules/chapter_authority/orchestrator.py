@@ -877,14 +877,19 @@ def _measurement_evidence_inputs(
               AND operation.root_operation_id=%s
               AND operation.status='SUCCEEDED'
               AND asset.asset_type IN ('model_call_log','cost_ledger')
-              AND EXISTS (
+              AND (EXISTS (
                 SELECT 1
                 FROM jsonb_array_elements(operation.input_asset_snapshot) AS input(value)
                 WHERE input.value->>'asset_version_id'=%s
-              )
+              ) OR EXISTS (
+                SELECT 1 FROM authority_operation_output_asset AS source
+                JOIN authority_asset_version AS context ON context.asset_version_id=%s
+                WHERE source.operation_id=operation.operation_id
+                  AND context.content->'selected_asset_version_ids' ? source.asset_version_id
+              ))
             ORDER BY operation.created_at, asset.asset_type, binding.output_key
             """,
-            [project_id, root_operation_id, context_bundle_asset_version_id],
+            [project_id, root_operation_id, context_bundle_asset_version_id, context_bundle_asset_version_id],
         )
         return [
             {"asset_version_id": str(row[0]), "content_hash": str(row[1])}

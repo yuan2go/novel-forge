@@ -1522,6 +1522,13 @@ def _activate_plan_chain(
                 "perturbed_foundation",
                 "creative_grounding",
                 "creative_retained_original",
+                "creative_process_memo",
+                "creative_process_support",
+                "creative_process_artifact",
+                "creative_reject_plan",
+                "creative_reject_dialogue",
+                "creative_reject_deleted",
+                "creative_reject_memo",
             )
         ],
     ],
@@ -1767,6 +1774,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         if autonomous_world in {"creative_grounding", "creative_retained_original"}:
             from tests.integration.creative_grounding_support import CreativeGroundingTransport
             native_transport = CreativeGroundingTransport(retain_original=autonomous_world == "creative_retained_original")
+        if str(autonomous_world).startswith("creative_reject_"):
+            from tests.integration.creative_grounding_support import CreativeGroundingTransport
+            native_transport = CreativeGroundingTransport(negative=str(autonomous_world).removeprefix("creative_reject_"))
         execution = build_production_execution_composition(
             settings,
             env=env,
@@ -2022,14 +2032,23 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                 capture_world_execution_evidence,
             )
 
-            native_evidence = execute_autonomous_world_vertical(
-                composition=composition,
-                chapter_application=chapter_application,
-                snapshot=snapshot,
-                generic=generic,
-                transport=native_transport,
-                runtime_config={"root": root, "env": env},
-            )
+            try:
+                native_evidence = execute_autonomous_world_vertical(
+                    composition=composition,
+                    chapter_application=chapter_application,
+                    snapshot=snapshot,
+                    generic=generic,
+                    transport=native_transport,
+                    runtime_config={"root": root, "env": env},
+                )
+            except KernelError as error:
+                if not str(autonomous_world).startswith("creative_reject_"):
+                    raise
+                from tests.integration.creative_grounding_support import verify_rejected_creative
+                native_evidence = verify_rejected_creative(composition=composition, chapter_application=chapter_application,
+                    project_id=project_id, error=error, transport=native_transport)
+            else:
+                assert not str(autonomous_world).startswith("creative_reject_"), "unsupported facts must not be accepted"
             native_evidence["authority_evidence"] = capture_world_execution_evidence(
                 composition=composition,
                 project_id=project_id,

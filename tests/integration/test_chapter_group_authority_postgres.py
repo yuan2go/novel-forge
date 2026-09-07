@@ -457,6 +457,11 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             request = fixture["book_authority"].require_chapter_request(
                 str(running["active_chapter_request_id"])
             )
+            for _ in range(2):
+                waiting = group_authority.reconcile_and_accept(
+                    group["group_run_id"], principal=principal
+                )
+                self.assertEqual(int(waiting["accepted_through_chapter"]), chapter_number - 1)
             self._run_child(
                 fixture,
                 str(request["chapter_root_operation_id"]),

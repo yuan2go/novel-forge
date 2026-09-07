@@ -3549,7 +3549,7 @@ def _stage_semantic_contract(
             "no accepted baseline. For every planned disclosure, copy disclosure_id, "
             "fact_id, audience, and mode exactly; do not expand the audience. Reader "
             "Knowledge will be derived after the Disclosure is accepted. "
-            "Arc and Narrative Realization evidence describes Actual accepted prose, "
+            "Arc and Narrative Realization evidence describes final candidate prose, "
             "never Plan or Future Intent. Return exactly one arc_evidence item for "
             "each frozen expected Arc contribution. Use observation_status OBSERVED "
             "only when the accepted revision visibly executes that contribution. An "

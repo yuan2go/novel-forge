@@ -311,7 +311,7 @@ def build_context_bundle(
         rendered_content = (
             _retrieval_result_context_reference(content)
             if asset_type == "retrieval_result"
-            else content
+            else {key: value for key, value in content.items() if key != "execution_evidence"}
         )
         rendered = json.dumps(
             rendered_content,
