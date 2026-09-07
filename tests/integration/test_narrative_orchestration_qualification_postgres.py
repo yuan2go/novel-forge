@@ -234,6 +234,14 @@ def _qualification_chapter_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
     payload = default_chapter_fixture_response(stage, inputs)
+    if stage == "revision" and int(dict(inputs.get("draft") or {}).get("chapter") or 0) == 2:
+        payoff_text = "By refusing the safe escape before the witnesses, the protagonist kept yesterday's public promise."
+        scenes = payload.get("scene_artifacts") or []
+        if scenes:
+            scenes[-1]["text"] += " " + payoff_text
+            payload["text"] = "\n\n".join(scene["text"] for scene in scenes)
+        else:
+            payload["text"] += " " + payoff_text
     if stage != "canon_extraction":
         return payload
     expectations = dict(inputs.get("execution_expectations") or {})
@@ -269,7 +277,7 @@ def _qualification_chapter_response(
             "effect_dimensions": ["PLOT", "CHARACTER", "RELATIONSHIP"],
             "milestone_ids": [f"truth:chapter:{chapter_number}"],
             "actual_consequences": [
-                f"accepted truth consequence at chapter {chapter_number}"
+                f"observed costly choice at chapter {chapter_number}"
             ],
             "obligation_ids": [],
             "resolution_evidence": [f"chapter:{chapter_number}:scene:1"],
@@ -312,8 +320,8 @@ def _qualification_chapter_response(
                     "to_chapter": 1,
                 },
                 "payoff_evidence": {
-                    "asset_version_id": "qualification:chapter:2:accepted-draft",
-                    "event_id": "qualification:chapter:2:promise-payoff",
+                    "asset_version_id": "$FINAL_CANDIDATE",
+                    "event_id": "$CURRENT_CLAIM",
                 },
                 "linked_arc_ids": [str(obligation["arc_plan_version_id"])],
                 "summary": "The promise is visibly fulfilled by the witnessed choice.",
@@ -323,7 +331,11 @@ def _qualification_chapter_response(
                 "impact_type": "narrative_obligation_payoff",
             }
         ]
-    return payload
+    for observation in payload["arc_evidence"]:
+        observation["evidence_start"] = 0
+        observation["evidence_end"] = len(str(revision["text"]))
+    from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
+    return scripted_claim_evidence(stage, inputs, payload)
 
 
 def _replace_production_profile(*, project_id: str, version_id: str) -> str:
@@ -1395,7 +1407,8 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                   AND output.role='primary'
                   AND output.output_key IN (
                       'chapter.plan', 'chapter.execution_intent',
-                      'chapter.memo', 'chapter.retrieval', 'chapter.context'
+                      'chapter.memo', 'chapter.retrieval', 'chapter.context',
+                      'chapter.best_candidate', 'chapter.canon'
                   )
                 ORDER BY operation.created_at, output.created_at
                 """,
@@ -1472,6 +1485,16 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 dict(content),
             )
         assert set(artifacts_by_chapter) == {1, 2, 3}
+        chapter_two_payoff = next(
+            item["state"]["payoff_evidence"] for item in projections[1][2]
+            if item["state"]["obligation_id"] == "promise:late"
+        )
+        assert chapter_two_payoff["asset_version_id"] == artifacts_by_chapter[2]["chapter.best_candidate"][0]
+        assert chapter_two_payoff["event_id"] == (
+            f"{artifacts_by_chapter[2]['chapter.canon'][0]}#{NarrativeStateKind.NARRATIVE_OBLIGATION.value}:0"
+        )
+        assert chapter_two_payoff["evidence_mode"] == "ACCEPTED_DRAFT_CANON_LINEAGE"
+        assert chapter_two_payoff["grounded_claim_id"].startswith("sha256:")
         assert execution_artifact_plan_binding_count == 0
         for (
             chapter_number,

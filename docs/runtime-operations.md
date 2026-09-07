@@ -294,12 +294,14 @@ exact boundary, subject and frozen policy. Operator decisions enter through
 Resume the existing production job after approval. Decisions do not waive quality,
 Canon reconciliation or acceptance invariants.
 
-Chapter workflow contract 3.4.0 and Capability Pack 2.3.0 require structured
+Chapter workflow contract 3.4.1 and Capability Pack 2.3.1 require structured
 realization slots and the current quality dimensions. Published text-only Scene beats
 use an explicitly marked frozen representation adapter; their source digest and
 ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs.
 Unaccepted older model-backed Chapter contracts fail with
 `CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED`; they need a new Chapter command on the current contract with grounded evidence. Preserve their frozen inputs and confirmed effects for audit.
+This includes 3.4.0 payoff payloads: 3.4.1 binds prose payoff references in Authority,
+so prior Provider-authored IDs are not silently reinterpreted as verified citations.
 Already accepted history is replayed as history, without fabricated grounding evidence.
 Other frozen Authority operations keep their existing `AUTHORITY_HANDLER_CONTRACT_STALE`
 guard and require their matching release for recovery.

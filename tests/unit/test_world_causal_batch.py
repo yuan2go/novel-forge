@@ -224,8 +224,8 @@ def test_observer_batch_contract_has_a_distinct_identity_from_unbatched_extracti
     ]
     assert chapter_provider_output_schema_ref(
         "canon_extraction", causal_batch=True
-    ).endswith(":v17")
-    assert chapter_provider_output_schema_ref("canon_extraction").endswith(":v16")
+    ).endswith(":v19")
+    assert chapter_provider_output_schema_ref("canon_extraction").endswith(":v18")
 
 
 def test_ordered_changes_to_one_entity_get_consecutive_versions():

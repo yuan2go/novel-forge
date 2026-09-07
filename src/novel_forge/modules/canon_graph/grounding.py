@@ -9,6 +9,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import PROVIDER_SEMANTIC_CHANGE_FIELDS, extract_canon_candidates
 
 OBSERVATION_FIELDS = ("arc_evidence", "realization_evidence")
+FINAL_CANDIDATE_PAYOFF = {"asset_version_id": "$FINAL_CANDIDATE", "event_id": "$CURRENT_CLAIM"}
 
 
 def text_hash(text: str) -> str:
@@ -17,6 +18,16 @@ def text_hash(text: str) -> str:
 
 def _fail(message: str) -> None:
     raise KernelError("CANON_GROUNDING_INVALID", message)
+
+
+def validate_payoff_reference(item: dict[str, Any]) -> None:
+    payoff = item.get("payoff_evidence")
+    if not payoff and item.get("status") != "FULFILLED":
+        return
+    if not isinstance(payoff, dict) or not payoff.get("asset_version_id") or not payoff.get("event_id"):
+        _fail("fulfilled Narrative Obligation requires typed payoff evidence")
+    if item.get("obligation_type") != "CAUSAL_DEBT" and payoff != FINAL_CANDIDATE_PAYOFF:
+        _fail("prose payoff requires final-candidate/current-claim references, never Provider-authored Authority IDs")
 
 
 def _validate_claim(
@@ -47,6 +58,8 @@ def _validate_claim(
         _fail(f"claim kind {kind!r} cannot authorize {field}")
     if kind == "KNOWLEDGE_ACQUISITION" and not item.get("character_id"):
         _fail("knowledge acquisition requires its specific character")
+    if field == "obligation_changes":
+        validate_payoff_reference(item)
 
 
 def extract_grounded_candidates(
@@ -106,6 +119,12 @@ def extract_grounded_candidates(
             })
             identity = json.dumps({"field": field, "claim": item, "revision": revision_asset_version_id}, ensure_ascii=False, sort_keys=True)
             item["grounded_claim_id"] = text_hash(identity)
+            if field == "obligation_changes" and item.get("payoff_evidence") == FINAL_CANDIDATE_PAYOFF:
+                item["payoff_evidence"] = {
+                    "asset_version_id": revision_asset_version_id,
+                    "event_id": item["grounded_claim_id"],
+                    "evidence_mode": "GROUNDED_FINAL_CANDIDATE_CLAIM",
+                }
     result["grounding"] = {
         "contract_version": "grounded-canon.v1", "project_id": project_id,
         "candidate_asset_version_id": revision_asset_version_id,

@@ -528,8 +528,10 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                 "payoff_evidence": _nullable(
                     _object_schema(
                         {
-                            "asset_version_id": {"type": "string", "minLength": 1},
-                            "event_id": {"type": "string", "minLength": 1},
+                            "asset_version_id": {"type": "string", "minLength": 1,
+                                "description": "Use $FINAL_CANDIDATE for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite draft."},
+                            "event_id": {"type": "string", "minLength": 1,
+                                "description": "Use $CURRENT_CLAIM for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite event."},
                         },
                         required=("asset_version_id", "event_id"),
                     )
@@ -878,7 +880,7 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
 def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch)
     version = (
-        ("v17" if causal_batch else "v16")
+        ("v19" if causal_batch else "v18")
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
@@ -957,15 +959,14 @@ def validate_chapter_provider_output_semantics(
             if obligation.get("obligation_type") == "CAUSAL_DEBT":
                 from novel_forge.modules.narrative_state.causal_obligations import causal_obligation_requirement
                 causal_obligation_requirement(obligation)
-            if str(obligation.get("status") or "").upper() == "FULFILLED" and not (
-                isinstance(obligation.get("payoff_evidence"), Mapping)
-                and str(obligation["payoff_evidence"].get("asset_version_id") or "")
-                and str(obligation["payoff_evidence"].get("event_id") or "")
-            ):
+            from novel_forge.modules.canon_graph.grounding import validate_payoff_reference
+            try:
+                validate_payoff_reference(obligation)
+            except KernelError as error:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
-                    "fulfilled Narrative Obligation requires typed payoff evidence",
-                )
+                    str(error),
+                ) from error
         seen_arc_ids: set[str] = set()
         for evidence in normalized.get("arc_evidence", []):
             arc_id = str(evidence.get("arc_plan_version_id") or "")

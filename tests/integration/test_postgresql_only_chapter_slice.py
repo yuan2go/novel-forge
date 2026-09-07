@@ -332,9 +332,13 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # Evidence contains every current dimension, bounded Quality group coverage,
-        # and ten non-dimension preparation, continuity and projection artifacts.
-        expected_output_count = len(ChapterNode) + len(QUALITY_DIMENSIONS) + 10 + len(QUALITY_GROUP_NODES)
+        # and eleven non-dimension artifacts including the selected review projection.
+        expected_output_count = len(ChapterNode) + len(QUALITY_DIMENSIONS) + 11 + len(QUALITY_GROUP_NODES)
         self.assertEqual(len(manifest["outputs"]), expected_output_count)
+        self.assertEqual(
+            sum(item["output_key"] == "chapter.best_candidate.selected_review" for item in manifest["outputs"]),
+            1,
+        )
         self.assertEqual(
             sum(
                 item["asset_type"] == "multiscale_narrative_quality_report"

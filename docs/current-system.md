@@ -60,6 +60,14 @@ an explicit coverage explanation and support review. Governed background events 
 rule and decision provenance instead of fabricated prose evidence. Edited claims require
 re-extraction. These checks establish contracts; scripted runs do not prove literary quality.
 
+For a prose-grounded obligation payoff, the Provider supplies the literal references
+`$FINAL_CANDIDATE` and `$CURRENT_CLAIM`. Grounding binds the actual frozen candidate
+and claim; it rejects invented or cross-book Authority IDs. Acceptance derives a typed
+Canon source locator from the Canon AssetVersion, state kind and ordinal, retaining the
+grounded claim for replay. This locator identifies the source claim, not a separate
+accepted event. Causal Debt keeps its stricter prerequisite and exact accepted-event
+validation. Already accepted historical payloads are not rewritten.
+
 ## Production topology
 
 ```text

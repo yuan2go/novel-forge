@@ -286,7 +286,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v16"
+        == "schema:chapter-provider-output:canon_extraction:v18"
     )
 
 
@@ -470,11 +470,11 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
                 "to_chapter": 2,
             },
             "payoff_evidence": {
-                "asset_version_id": "draft:v2",
-                "event_id": "payoff:event:2",
+                "asset_version_id": "$FINAL_CANDIDATE",
+                "event_id": "$CURRENT_CLAIM",
             },
             "linked_arc_ids": ["arc:v1"],
-            "summary": "The accepted choice visibly fulfills the promise.",
+            "summary": "The observed choice visibly fulfills the promise.",
             "evidence_quote": "The observed claim.",
             "claim_kind": "OBJECTIVE_EVENT",
             "evidence_start": 0,
@@ -490,6 +490,13 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
     )
 
     assert normalized["obligation_changes"][0]["status"] == "FULFILLED"
+
+    value["obligation_changes"][0]["payoff_evidence"] = {
+        "asset_version_id": "another-book:draft", "event_id": "invented:accepted-event",
+    }
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    with pytest.raises(KernelError, match="payoff"):
+        validate_chapter_provider_output_semantics("canon_extraction", structural)
 
     value["obligation_changes"][0]["payoff_evidence"] = None
     structural = validate_chapter_provider_output_schema("canon_extraction", value)

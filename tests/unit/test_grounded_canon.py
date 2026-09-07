@@ -158,3 +158,75 @@ def test_supersession_requires_exact_current_entity_event_in_the_frozen_book():
             existing_facts=[{"subject": "door", "predicate": "status", "object": "closed", "source_event_id": "event:door"}])
         codes = {item["conflict_code"] for item in patch["conflicts"]}
         assert ("CANON_SUPERSESSION_SOURCE_INVALID" in codes) == (expected == "BLOCKED")
+
+
+def payoff(text, evidence):
+    return {
+        'obligation_id': 'promise:return', 'obligation_type': 'PROMISE',
+        'from_status': 'OPEN', 'status': 'FULFILLED', 'priority': 'HIGH',
+        'target_window': {'status': 'SCHEDULED', 'from_chapter': 1, 'to_chapter': 1},
+        'payoff_evidence': evidence, 'linked_arc_ids': [],
+        'summary': 'The borrowed coin is returned.', 'evidence_start': 0,
+        'evidence_end': len(text), 'evidence_quote': text,
+        'claim_kind': 'OBJECTIVE_EVENT', 'confidence': 0.99,
+        'impact_type': 'narrative_obligation_payoff',
+    }
+
+
+@pytest.mark.parametrize('evidence', [
+    {'asset_version_id': 'other-book:unaccepted-draft', 'event_id': 'invented:accepted-event'},
+    {'asset_version_id': 'final-candidate', 'event_id': 'invented:accepted-event'},
+    {'asset_version_id': '$FINAL_CANDIDATE', 'event_id': 'invented:accepted-event'},
+])
+def test_grounding_rejects_provider_authored_payoff_authority_references(evidence):
+    text = '她把借来的银币交还原主，兑现了昨日的承诺。'
+    with pytest.raises(KernelError, match='payoff'):
+        extract(text, {'extraction_status': 'EXTRACTED', 'obligation_changes': [payoff(text, evidence)]})
+
+
+def grounded_payoff():
+    text = '她把借来的银币交还原主，兑现了昨日的承诺。'
+    output = {'extraction_status': 'EXTRACTED', 'obligation_changes': [payoff(text, {
+        'asset_version_id': '$FINAL_CANDIDATE', 'event_id': '$CURRENT_CLAIM',
+    })]}
+    return extract(text, output)['obligation_changes'][0]
+
+
+def payoff_events(change):
+    from novel_forge.modules.narrative_state.contracts import events_from_canon_patch
+    return events_from_canon_patch(
+        project_id='book-project', book_id='book', source_chapter=1,
+        chapter_outcome_id='outcome', canon_patch_asset_version_id='canon-patch',
+        accepted_draft_asset_version_id='final-candidate', source_operation_id='operation',
+        trace_id='trace', canon_patch={'obligation_changes': [change]},
+    )
+
+
+def test_payoff_citation_binds_final_candidate_then_exact_canon_source_and_replays():
+    from copy import deepcopy
+    change = grounded_payoff()
+    citation = change['payoff_evidence']
+    assert citation['asset_version_id'] == 'final-candidate'
+    assert citation['event_id'] == change['grounded_claim_id']
+    assert citation['evidence_mode'] == 'GROUNDED_FINAL_CANDIDATE_CLAIM'
+    frozen = deepcopy(change)
+    first = payoff_events(change)[0]
+    actual = first.payload['payoff_evidence']
+    assert actual['asset_version_id'] == 'final-candidate'
+    assert actual['event_id'] == f'canon-patch#{first.state_kind.value}:0'
+    assert actual['grounded_claim_id'] == change['grounded_claim_id']
+    assert actual['evidence_mode'] == 'ACCEPTED_DRAFT_CANON_LINEAGE'
+    assert first.payload['actual_payoff'] == actual
+    assert change == frozen
+    assert payoff_events(change)[0].to_dict() == first.to_dict()
+
+
+@pytest.mark.parametrize('field, value', [
+    ('asset_version_id', 'other-book:final-candidate'),
+    ('event_id', 'another-candidate:claim'),
+])
+def test_accepted_payoff_rejects_candidate_or_claim_scope_tampering(field, value):
+    change = grounded_payoff()
+    change['payoff_evidence'][field] = value
+    with pytest.raises(KernelError, match='payoff'):
+        payoff_events(change)
