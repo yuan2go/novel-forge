@@ -12,7 +12,7 @@ class ChapterAuthorityQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
-    def list_runs(self, *, project_id: str, limit: int = 100) -> list[dict[str, Any]]:
+    def list_runs(self, *, project_id: str, limit: int = 100, book_run_id: str = "") -> list[dict[str, Any]]:
         if not project_id:
             raise ValueError("project_id is required for chapter run queries")
         if limit < 1 or limit > 500:
@@ -38,11 +38,15 @@ class ChapterAuthorityQuery:
                 WHERE root.project_id = %s
                   AND root.definition_name = 'chapter.slice.run'
                   AND root.operation_id = root.root_operation_id
+                  AND (%s = '' OR EXISTS (
+                      SELECT 1 FROM authority_book_chapter_request request
+                      WHERE request.chapter_root_operation_id=root.operation_id AND request.book_run_id=%s
+                  ))
                 GROUP BY root.operation_id, saga.saga_id, saga.status
                 ORDER BY root.created_at DESC, root.operation_id
                 LIMIT %s
                 """,
-                [project_id, limit],
+                [project_id, book_run_id, book_run_id, limit],
             )
             rows = uow.cursor.fetchall()
         return [
@@ -301,6 +305,57 @@ class ChapterAuthorityQuery:
             "outputs": outputs,
             "budgets": budgets,
             "cost_receipt_refs": cost_receipt_refs,
+        }
+
+    def require_workspace(self, *, project_id: str, root_operation_id: str) -> dict[str, Any]:
+        evidence = self.require_acceptance_evidence(project_id=project_id, root_operation_id=root_operation_id)
+        stages = {
+            "inputs": {"chapter_plan", "chapter_execution_intent", "context_bundle"},
+            "memo": {"chapter_memo"},
+            "candidates": {"draft_chapter", "draft_version", "best_draft_candidate"},
+            "diagnoses": {"review_report", "re_review_report", "revision_task", "candidate_comparison"},
+            "facts": {"canon_extraction", "canon_change_proposal", "canon_approval_decision", "canon_patch"},
+            "gates": {"quality_score_report", "publish_gate_report", "final_release_gate_report"},
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT acceptance.acceptance_id, acceptance.status, acceptance.chapter_number,
+                       acceptance.chapter_outcome_asset_version_id,
+                       acceptance.story_state_asset_version_id, acceptance.canon_snapshot_asset_version_id,
+                       acceptance.longform_projection_set_id, request.book_run_id
+                FROM authority_book_chapter_request request
+                LEFT JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
+                WHERE request.chapter_root_operation_id=%s AND request.project_id=%s
+                """, [root_operation_id, project_id],
+            )
+            row = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT attempt.attempt_id, attempt.operation_id, attempt.attempt_number,
+                       attempt.status, attempt.worker_id, attempt.error
+                FROM authority_attempt attempt JOIN authority_operation operation USING(operation_id)
+                WHERE operation.root_operation_id=%s AND operation.project_id=%s
+                ORDER BY operation.created_at, attempt.attempt_number
+                """, [root_operation_id, project_id],
+            )
+            attempts = [{"attempt_id": item[0], "operation_id": item[1], "attempt_number": item[2],
+                         "status": item[3], "worker_id": item[4], "error": item[5]}
+                        for item in uow.cursor.fetchall()]
+        return {
+            "contract_version": "chapter-workspace.v1",
+            "attempts": attempts,
+            "book_run_id": row[7] if row else "", "authority": "READ_ONLY_PROJECTION",
+            "project_id": project_id, "root_operation_id": root_operation_id,
+            "run": {key: value for key, value in evidence.items() if key != "outputs"},
+            "artifacts": {stage: [item for item in evidence["outputs"] if item["asset_type"] in types]
+                          for stage, types in stages.items()},
+            "acceptance": None if row is None or row[0] is None else {
+                "acceptance_id": row[0], "status": row[1], "accepted_through_chapter": int(row[2]),
+                "outcome_asset_version_id": row[3], "story_state_asset_version_id": row[4],
+                "canon_snapshot_asset_version_id": row[5], "longform_projection_set_id": row[6],
+                "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS",
+            },
         }
 
     def require_operation_control_state(

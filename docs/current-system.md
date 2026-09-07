@@ -17,6 +17,57 @@ Capability states are ordered `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`,
 implementation-tree identity, and Documentation Reality fails when code or instruction
 identity changes without a corresponding projection update.
 
+## Creative execution and prose evidence
+
+The selection node projects the immutable review of its selected prose. If a proposed
+revision does not establish improvement or preservation, downstream gates retain the
+original review and its unresolved issues; they do not reuse the rejected prose's
+rereview. Canon also reviews observed Arc/Realization claims against the final text.
+An arbitrary supersession identifier cannot authorize a contradiction: it must resolve
+the exact accepted event of the same entity in the frozen Book boundary.
+
+Book acceptance rechecks and locks selected asset versions inside its existing UoW.
+Migration 0119 adds an insert guard binding current model-backed acceptance to the
+same final prose hash, grounded Canon and Quality. Already accepted rows are unchanged;
+unaccepted legacy model output needs new grounded evidence. Governed background facts
+retain their approved decision/rule provenance separately from prose evidence.
+
+The existing Chapter run query supports `include_workspace=true`. It exposes immutable
+inputs/Memo, candidates, diagnoses, revision comparison, extraction/support/approval,
+gates, attempts, acceptance and the exact accepted versions available to the next
+chapter. This is a read projection; it grants no mutation permission.
+
+The existing Chapter Memo node invokes the governed Provider path from a frozen
+ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
+voice, scene conflict and information release, emotional movement and the ending change.
+Draft receives this guidance and the Memo fingerprint as suggestions, not Canon.
+Provider execution receipts remain on the immutable Memo for audit. Its governed
+writing projection excludes those receipts; they are not narrative material and do
+not consume the chapter's writing Context budget.
+
+Current Provider reviews return located diagnoses, constraints, repair goals, preservation
+requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records
+explicit checks; omission of an issue or a higher score does not establish resolution.
+Candidate selection preserves the earlier candidate when no checked improvement exists or
+required content regresses. Aesthetic suggestions cannot alone become objective blockers.
+
+Current Provider Canon extraction consumes final prose without inheriting Writer assertion
+or old revision state fields. Claims bind literal Unicode code-point spans, quotes and the
+candidate text hash. Canon proposal uses a separate Provider support review; unsupported,
+uncertain or incomplete extraction blocks reduction. Matching text is necessary evidence,
+not a deterministic proof of semantic entailment. Successful no-change extraction requires
+an explicit coverage explanation and support review. Governed background events retain
+rule and decision provenance instead of fabricated prose evidence. Edited claims require
+re-extraction. These checks establish contracts; scripted runs do not prove literary quality.
+
+For a prose-grounded obligation payoff, the Provider supplies the literal references
+`$FINAL_CANDIDATE` and `$CURRENT_CLAIM`. Grounding binds the actual frozen candidate
+and claim; it rejects invented or cross-book Authority IDs. Acceptance derives a typed
+Canon source locator from the Canon AssetVersion, state kind and ordinal, retaining the
+grounded claim for replay. This locator identifies the source claim, not a separate
+accepted event. Causal Debt keeps its stricter prerequisite and exact accepted-event
+validation. Already accepted historical payloads are not rewritten.
+
 ## Production topology
 
 ```text

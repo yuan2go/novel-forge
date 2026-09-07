@@ -1144,6 +1144,27 @@ def _build_event(
         )
     legacy_obligation_adapter = bool(raw.get("_legacy_obligation_adapter"))
     payload = narrative_event_payload(raw)
+    payoff = payload.get("payoff_evidence")
+    if isinstance(payoff, dict) and payoff.get("evidence_mode") == "GROUNDED_FINAL_CANDIDATE_CLAIM":
+        claim_id = str(raw.get("grounded_claim_id") or "")
+        if (
+            state_kind is not NarrativeStateKind.NARRATIVE_OBLIGATION
+            or payload.get("obligation_type") == "CAUSAL_DEBT"
+            or not claim_id
+            or payoff.get("asset_version_id") != accepted_draft_asset_version_id
+            or payoff.get("event_id") != claim_id
+            or dict(raw.get("extraction_evidence") or {}).get("project_id") != scope.project_id
+        ):
+            raise KernelError("NARRATIVE_PAYOFF_SOURCE_INVALID", "grounded payoff must bind this accepted candidate and claim scope")
+        accepted_payoff = {
+            "asset_version_id": accepted_draft_asset_version_id,
+            "event_id": f"{source_asset_version_id}#{state_kind.value}:{ordinal}",
+            "evidence_mode": "ACCEPTED_DRAFT_CANON_LINEAGE",
+            "grounded_claim_id": claim_id,
+        }
+        if payload.get("actual_payoff") == payoff:
+            payload["actual_payoff"] = dict(accepted_payoff)
+        payload["payoff_evidence"] = accepted_payoff
     if (
         state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION
         and str(payload.get("status") or "").upper() == "FULFILLED"

@@ -410,6 +410,17 @@ def qualify(database_url: str) -> dict[str, Any]:
                    ORDER BY updated_at,book_run_id LIMIT 10""",
             ),
             (
+                "grounded_acceptance_asset_lock",
+                "authority_asset_version",
+                f"""SELECT version.asset_version_id,version.content_hash,version.content,
+                           asset.asset_type,version.lifecycle,version.eligibility,version.governance
+                    FROM authority_asset_version version
+                    JOIN authority_asset asset USING(asset_id)
+                    WHERE asset.project_id='{token}:project:1'
+                      AND version.asset_version_id=ANY(ARRAY['{token}:version:1001','{token}:version:2001'])
+                    ORDER BY version.asset_version_id FOR SHARE OF version""",
+            ),
+            (
                 "migration_resume",
                 "authority_legacy_migration_item",
                 f"""SELECT migration_item_id FROM authority_legacy_migration_item

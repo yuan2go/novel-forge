@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 import unittest
 
 from novel_forge.modules.chapter_authority.domain_handlers import (
@@ -96,7 +97,7 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 "obligation_actions": [],
                 "arc_actions": [{"arc_plan_version_id": "arc-v1", "action": "ADVANCE"}],
             },
-            execution_evidence={"qualified": True},
+            execution_evidence={"qualified": True, "provider_receipt": "RECEIPT_MUST_NOT_BECOME_WRITING_CONTEXT"},
         )
         drifted_plan = deepcopy(plan)
         drifted_plan["required_state_transitions"].append(
@@ -123,6 +124,8 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             chapter_memo_asset_version_id="memo-v1",
         )
 
+        self.assertNotIn("RECEIPT_MUST_NOT_BECOME_WRITING_CONTEXT", json.dumps(bundle))
+        self.assertIn("RECEIPT_MUST_NOT_BECOME_WRITING_CONTEXT", json.dumps(memo))
         expectations = bundle["chapter_execution_expectations"]
         self.assertEqual(
             expectations["required_state_transitions"],

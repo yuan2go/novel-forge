@@ -186,33 +186,28 @@ def _agent_session_schema() -> dict[str, Any]:
 
 
 def _review_schema() -> dict[str, Any]:
-    issue = _object_schema(
-        {
-            "code": {"type": "string", "minLength": 1},
-            "severity": {
-                "type": "string",
-                "enum": [
-                    "critical",
-                    "blocker",
-                    "blocking",
-                    "high",
-                    "major",
-                    "medium",
-                    "minor",
-                    "low",
-                ],
-            },
-            "message": {"type": "string", "minLength": 1},
-        },
-        required=("code", "severity", "message"),
-    )
-    return _object_schema(
-        {
-            "score": {"type": "number", "minimum": 0, "maximum": 100},
-            "issues": {"type": "array", "items": issue},
-        },
-        required=("score", "issues"),
-    )
+    text = {"type": "string", "minLength": 1, "maxLength": 2000}
+    location = _object_schema({"start": {"type": "integer", "minimum": 0},
+                               "end": {"type": "integer", "minimum": 1}, "quote": text},
+                              required=("start", "end", "quote"))
+    issue_fields = {
+        "code": text, "severity": {"enum": ["critical", "blocker", "blocking", "high", "major", "medium", "minor", "low"]},
+        "message": text, "category": text,
+        "judgment_kind": {"enum": ["SEMANTIC_CONFLICT", "AESTHETIC_SUGGESTION", "UNCERTAIN"]},
+        "evidence": location, "violated_constraint": text, "revision_goal": text,
+        "preserve": {"type": "array", "minItems": 1, "maxItems": 16, "items": text},
+        "acceptance_criteria": {"type": "array", "minItems": 1, "maxItems": 16, "items": text},
+    }
+    check_fields = {
+        "code": text, "status": {"enum": ["SATISFIED", "UNRESOLVED", "UNCERTAIN"]},
+        "preservation": {"enum": ["PRESERVED", "REGRESSED", "UNCERTAIN"]},
+        "evidence": location, "reason": text,
+    }
+    return _object_schema({
+        "score": {"type": "number", "minimum": 0, "maximum": 100},
+        "issues": {"type": "array", "maxItems": 32, "items": _object_schema(issue_fields, required=tuple(issue_fields))},
+        "resolution_checks": {"type": "array", "maxItems": 32, "items": _object_schema(check_fields, required=tuple(check_fields))},
+    }, required=("score", "issues", "resolution_checks"))
 
 
 def _revision_schema() -> dict[str, Any]:
@@ -230,7 +225,7 @@ def _revision_schema() -> dict[str, Any]:
             "scene_artifacts": _scene_artifacts_schema(),
             "resolved_issue_codes": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": {"type": "string", "minLength": 1},
             },
         },
@@ -240,8 +235,10 @@ def _revision_schema() -> dict[str, Any]:
 
 def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
     evidence_fields = {
-        "evidence_start": {"type": "number", "minimum": 0},
-        "evidence_end": {"type": "number", "minimum": 1},
+        "evidence_quote": {"type": "string", "minLength": 1},
+        "claim_kind": {"enum": ["OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE"]},
+        "evidence_start": {"type": "integer", "minimum": 0},
+        "evidence_end": {"type": "integer", "minimum": 1},
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         "impact_type": {"type": "string", "minLength": 1},
     }
@@ -364,7 +361,7 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
             "items": (
                 fact if field == "canon_facts" else json.loads(json.dumps(change))
             ),
-            **({"minItems": 1} if field == "canon_facts" else {}),
+
         }
         for field in _CANON_FIELDS
     }
@@ -396,7 +393,7 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "For OBSERVED only: accepted_revision character-span references "
+                        "For OBSERVED only: final_candidate Unicode code-point-span references "
                         "encoded as chars:<start>-<end>:<summary>; empty otherwise."
                     ),
                 },
@@ -531,8 +528,10 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                 "payoff_evidence": _nullable(
                     _object_schema(
                         {
-                            "asset_version_id": {"type": "string", "minLength": 1},
-                            "event_id": {"type": "string", "minLength": 1},
+                            "asset_version_id": {"type": "string", "minLength": 1,
+                                "description": "Use $FINAL_CANDIDATE for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite draft."},
+                            "event_id": {"type": "string", "minLength": 1,
+                                "description": "Use $CURRENT_CLAIM for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite event."},
                         },
                         required=("asset_version_id", "event_id"),
                     )
@@ -560,9 +559,18 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
             ),
         ),
     }
+    for field in ("arc_evidence", "realization_evidence"):
+        properties[field]["items"]["properties"].update({
+            "claim_kind": _nullable({"type": "string", "enum": ["NARRATIVE_OBSERVATION", None]}),
+            "evidence_start": _nullable({"type": "integer", "minimum": 0}),
+            "evidence_end": _nullable({"type": "integer", "minimum": 1}),
+            "evidence_quote": _nullable({"type": "string", "minLength": 1}),
+        })
+        properties[field]["items"]["required"].extend(("claim_kind", "evidence_start", "evidence_end", "evidence_quote"))
+    properties.update({"extraction_status": {"enum": ["EXTRACTED", "NO_CHANGE"]}, "no_change_reason": {"type": "string"}})
     schema = _object_schema(
         properties,
-        required=(*_CANON_FIELDS, "arc_evidence", "realization_evidence"),
+        required=(*_CANON_FIELDS, "arc_evidence", "realization_evidence", "extraction_status", "no_change_reason"),
     )
     for field, identities in _CANON_SCHEMA_REQUIRED_IDENTITIES.items():
         change_schema = schema["properties"][field]["items"]
@@ -829,7 +837,10 @@ def _retrieval_query_expansion_schema() -> dict[str, Any]:
 
 def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) -> dict[str, Any]:
 
-    if stage == "draft":
+    if stage == "memo":
+        from .creative_memo import creative_memo_schema
+        schema = creative_memo_schema()
+    elif stage == "draft":
         schema = _draft_schema()
     elif stage == "agent_session":
         schema = _agent_session_schema()
@@ -839,6 +850,17 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
         schema = _revision_schema()
     elif stage == "canon_extraction":
         schema = _canon_schema(causal_batch=causal_batch)
+    elif stage == "canon_support":
+        schema = _object_schema({
+            "coverage": {"enum": ["COMPLETE", "INCOMPLETE"]},
+            "no_change_supported": {"type": "boolean"},
+            "claims": {"type": "array", "maxItems": 256, "items": _object_schema({
+                "claim_id": {"type": "string", "minLength": 1},
+                "assessment": {"enum": ["SUPPORTED", "UNSUPPORTED", "UNCERTAIN"]},
+                "observed_kind": {"type": "string", "minLength": 1},
+                "reason": {"type": "string", "minLength": 1},
+            }, required=("claim_id", "assessment", "observed_kind", "reason"))},
+        }, required=("coverage", "no_change_supported", "claims"))
     elif stage in _QUALITY_STAGES:
         schema = _quality_schema()
     elif stage == "reader_outcome":
@@ -858,11 +880,10 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
 def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch)
     version = (
-        "v15" if causal_batch and stage == "canon_extraction" else
-        "v14"
+        ("v19" if causal_batch else "v18")
         if stage == "canon_extraction"
         else "v2"
-        if stage in _QUALITY_STAGES | {"draft", "revision"}
+        if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
         else "v1"
     )
     return f"schema:chapter-provider-output:{stage}:{version}"
@@ -938,15 +959,14 @@ def validate_chapter_provider_output_semantics(
             if obligation.get("obligation_type") == "CAUSAL_DEBT":
                 from novel_forge.modules.narrative_state.causal_obligations import causal_obligation_requirement
                 causal_obligation_requirement(obligation)
-            if str(obligation.get("status") or "").upper() == "FULFILLED" and not (
-                isinstance(obligation.get("payoff_evidence"), Mapping)
-                and str(obligation["payoff_evidence"].get("asset_version_id") or "")
-                and str(obligation["payoff_evidence"].get("event_id") or "")
-            ):
+            from novel_forge.modules.canon_graph.grounding import validate_payoff_reference
+            try:
+                validate_payoff_reference(obligation)
+            except KernelError as error:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
-                    "fulfilled Narrative Obligation requires typed payoff evidence",
-                )
+                    str(error),
+                ) from error
         seen_arc_ids: set[str] = set()
         for evidence in normalized.get("arc_evidence", []):
             arc_id = str(evidence.get("arc_plan_version_id") or "")
@@ -1084,7 +1104,6 @@ def validate_chapter_provider_output_semantics(
     issue_codes = normalized.get("resolved_issue_codes")
     if (
         not isinstance(issue_codes, list)
-        or not issue_codes
         or len(issue_codes) != len(set(issue_codes))
     ):
         raise KernelError(

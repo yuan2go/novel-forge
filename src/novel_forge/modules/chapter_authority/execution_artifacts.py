@@ -687,6 +687,9 @@ def qualify_chapter_memo(
         "execution_evidence": dict(execution_evidence),
         "qualification": "QUALIFIED",
     }
+    if "creative_guidance" in result:
+        memo["creative_guidance"] = dict(result["creative_guidance"])
+        memo["creative_contract_version"] = "creative-memo.v1"
     memo["memo_fingerprint"] = _hash(memo)
     return validate_chapter_memo(
         memo,

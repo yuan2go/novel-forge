@@ -508,6 +508,15 @@ class PostgresChapterGroupAuthority:
             project_id=group["project_id"],
             asset_version_ids=(str(request["chapter_plan_version"]),),
         )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.chapter_group.record_child_status(
+                group_run_id=group_run_id,
+                chapter_number=chapter,
+                status=str(request["status_reference"]),
+            )
+            uow.commit()
+        if request["status_reference"] != "SUCCEEDED":
+            return self.require(group_run_id)
         self._run_step(
             group,
             definition="chapter_group.chapter.reconcile",
@@ -520,15 +529,6 @@ class PostgresChapterGroupAuthority:
             input_assets=plan_input,
             principal=principal,
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.repositories.chapter_group.record_child_status(
-                group_run_id=group_run_id,
-                chapter_number=chapter,
-                status=str(request["status_reference"]),
-            )
-            uow.commit()
-        if request["status_reference"] != "SUCCEEDED":
-            return self.require(group_run_id)
         accepted = self.book.accept_chapter(request_id, principal=principal)
         acceptance_operation_id = str(accepted["acceptance_operation_id"])
         outcome_version = str(accepted["last_chapter_outcome_version_id"])

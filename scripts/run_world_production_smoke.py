@@ -176,6 +176,15 @@ def export(*, composition, book_run_id: str, destination: Path):
             )
             + "\n"
         )
+    from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+    chapters = ChapterAuthorityQuery(composition.authority.database_url)
+    runs = chapters.list_runs(project_id=book["project_id"], book_run_id=book_run_id, limit=500)
+    if len(runs) == 500:
+        raise RuntimeError("chapter workspace export bound reached; retain PostgreSQL for paged export")
+    (destination / "chapter-workspaces.json").write_text(json.dumps(
+        [chapters.require_workspace(project_id=book["project_id"], root_operation_id=run["root_operation_id"]) for run in runs],
+        default=str, ensure_ascii=False, indent=2,
+    ) + "\n")
     realities = [
         composition.query.narrative_reality(book_run_id=book_run_id, chapter_number=n)
         for n in range(1, book["accepted_through_chapter"] + 1)

@@ -49,6 +49,12 @@ class ChapterOutcomeCommitHandler:
                 "CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED",
                 "Chapter release, review, or quality evidence is incomplete",
             )
+        if canon.get("grounding"):
+            from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
+            require_grounded_acceptance(project_id=request.project_id, selected={
+                key: {"asset_version_id": item.asset_version_id, "content": item.content}
+                for key, item in inputs.items()
+            })
         source_refs = tuple(item.asset_version_id for item in request.inputs)
         outcome = build_chapter_outcome(
             project_id=request.project_id,

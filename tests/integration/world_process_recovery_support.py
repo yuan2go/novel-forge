@@ -38,7 +38,8 @@ def run_process_recovery(*, composition, runtime_config, book_run_id, project_id
     config_path = root / "world-process-input.json"
     config_path.write_text(json.dumps(config))
     phases = []
-    for phase in ("crash", "contender", "resume"):
+    creative = str(config.get("crash_target") or "").startswith("creative_process_")
+    for phase in (("crash", "resume") if creative else ("crash", "contender", "resume")):
         result = subprocess.run(
             [sys.executable, "-m", __name__, str(config_path), phase],
             capture_output=True,
@@ -53,9 +54,13 @@ def run_process_recovery(*, composition, runtime_config, book_run_id, project_id
                 "stderr": result.stderr,
             }
         )
-        assert result.returncode == (
-            86 if phase == "crash" else 1 if phase == "contender" else 0
-        ), phases[-1]
+        expected = 86 if phase == "crash" else 1 if phase == "contender" else 0
+        if result.returncode != expected:
+            calls_path = root / "world-process-calls.jsonl"
+            phases[-1]["confirmed_transport_calls"] = (
+                calls_path.read_text() if calls_path.exists() else ""
+            )
+        assert result.returncode == expected, phases[-1]
         if phase == "contender":
             assert "CONTENT_RECOVERY_LEASE_ACTIVE" in result.stderr
             time.sleep(31)
@@ -64,12 +69,16 @@ def run_process_recovery(*, composition, runtime_config, book_run_id, project_id
                 composition.authority.require(book_run_id)["accepted_through_chapter"]
                 == 0
             )
-            time.sleep(1.2)
+            time.sleep(31 if creative else 1.2)
     calls = [
         json.loads(line)
         for line in (root / "world-process-calls.jsonl").read_text().splitlines()
     ]
     assert len({call["pid"] for call in calls}) == 2
+    if creative:
+        for stage in ("memo", "canon_support", "draft", "revision", "canon_extraction"):
+            stage_calls = [call for call in calls if call["stage"] == stage]
+            assert len(stage_calls) == 3, (stage, len(stage_calls))
     generated = [call for call in calls if call["stage"] == "world_candidates.generate"]
     assert len(generated) == 3
     assert [
@@ -96,7 +105,7 @@ def run_process_recovery(*, composition, runtime_config, book_run_id, project_id
     assert rebuilt.projection["current_state"] == reality["current_state"]
     return {
         "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
-        "scenario": "process_recovery",
+        "scenario": config.get("crash_target", "process_recovery"),
         "book_run_id": book_run_id,
         "calls": calls,
         "processes": phases,
@@ -132,9 +141,17 @@ def main():
             os.fsync(stream.fileno())
         return output
 
+    def chapter_fault(point):
+        target = config.get("crash_target")
+        stage = "canon_support" if target == "creative_process_support" else "memo"
+        boundary = "after_domain_asset_materialized" if target == "creative_process_artifact" else "after_provider_success"
+        if phase == "crash" and str(target).startswith("creative_process_") and point == boundary and transport.calls[-1]["stage"] == stage:
+            os._exit(86)
+
     def fault(point):
         if (
             phase == "crash"
+            and not str(config.get("crash_target") or "").startswith("creative_process_")
             and point == "after_provider_receipt_before_budget_settlement"
             and transport.calls[-1]["stage"] == "world_candidates.generate"
         ):
@@ -163,7 +180,7 @@ def main():
         authentication_source=raw["authentication_source"],
     )
     chapter = build_chapter_authority_application(
-        settings, execution=execution, env=config["env"]
+        settings, execution=execution, env=config["env"], runtime_fault_injector=chapter_fault,
     )
     composition = build_book_production_composition(
         settings,
@@ -196,18 +213,16 @@ def main():
             subject_id=config["book_run_id"],
         )
         assert claim is not None
-        result = execute_book_coordination_claim(
+        execute_book_coordination_claim(
             jobs, composition, claim, lease_seconds=1
         )
-        if result["action"] == "DISPATCH_CHAPTER":
-            scheduler = chapter.scheduler(principal=Principal(principal_id="world-recovery-chapter-worker", principal_type=PrincipalType.WORKER, permissions=principal.permissions - {"book.authority.approve_replan"}, project_scope=principal.project_scope, authentication_source="owned-process-recovery-fixture"))
-            for _ in range(80):
-                tick = scheduler.tick(
-                    project_id=config["project_id"],
-                    root_operation_id=result["operation_id"],
-                )
-                if tick.saga_status == "SUCCEEDED":
-                    break
+        scheduler = chapter.scheduler(principal=Principal(principal_id="world-recovery-chapter-worker", principal_type=PrincipalType.WORKER, permissions=principal.permissions - {"book.authority.approve_replan"}, project_scope=principal.project_scope, authentication_source="owned-process-recovery-fixture"))
+        for _ in range(80):
+            roots = [item for item in scheduler.pending_roots(limit=100) if item[0] == config["project_id"]]
+            if not roots:
+                break
+            for project_id, root_id in roots:
+                scheduler.tick(project_id=project_id, root_operation_id=root_id)
     raise AssertionError(
         "bounded process recovery failed to complete the accepted preparation"
     )

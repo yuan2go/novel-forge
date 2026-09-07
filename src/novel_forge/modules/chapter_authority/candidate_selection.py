@@ -28,6 +28,8 @@ class CandidateEvidence:
     score: float
     blocker_codes: tuple[str, ...]
     review_asset_version_id: str
+    diagnostic_contract_version: str = ""
+    resolution_checks: tuple[dict[str, Any], ...] = ()
 
 
 def compare_candidates(
@@ -50,7 +52,14 @@ def compare_candidates(
         set(previous.blocker_codes) - set(challenger.blocker_codes)
     )
     net_improvement = challenger.score - previous.score
-    if new_blockers:
+    diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
+    supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
+    preservation_regressed = any(check.get("preservation") != "PRESERVED" for check in challenger.resolution_checks)
+    if diagnostic_selection and (not supported_improvement or preservation_regressed):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED if preservation_regressed else CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    elif new_blockers:
         selected = previous
         reason = CandidateStopReason.DETERMINISTIC_BLOCKER
         improved = False
@@ -93,6 +102,8 @@ def compare_candidates(
         "chapter_root_operation_id": chapter_root_operation_id,
         "previous": _evidence(previous),
         "challenger": _evidence(challenger),
+        "diagnostic_contract_version": challenger.diagnostic_contract_version,
+        "resolution_checks": list(challenger.resolution_checks),
         "minimum_net_improvement": minimum_net_improvement,
         "net_improvement": net_improvement,
         "new_blocker_codes": new_blockers,
@@ -107,6 +118,25 @@ def compare_candidates(
         json.dumps(comparison, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
     return comparison
+
+
+
+def bind_selected_review(*, candidate: Mapping[str, Any], candidate_id: str,
+                         review: Mapping[str, Any], review_id: str) -> dict[str, Any]:
+    from novel_forge.modules.review.diagnostics import prose_hash
+    expected = prose_hash(str(candidate.get("text") or ""))
+    if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1" and (
+        review.get("target_text_hash") != expected
+        or (review.get("revision_version_id") or review.get("target_asset_version_id")) != candidate_id
+    ):
+        raise KernelError("SELECTED_REVIEW_STALE", "selected candidate must retain its exact reviewed prose")
+    return {
+        **dict(review), "revision_version_id": candidate_id,
+        "target_text_hash": expected,
+        "selection_review_source_asset_version_id": review_id,
+        "selection_review_contract": "immutable-review-projection.v1",
+        "resolved_issue_codes": list(review.get("resolved_issue_codes") or []),
+    }
 
 
 def build_best_candidate(

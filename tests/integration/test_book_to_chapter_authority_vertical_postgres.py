@@ -147,6 +147,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         frozen = _validate_chapter_acceptance_evidence(
             request={
                 "chapter_number": 1,
+                "project_id": "grounded-contract-fixture",
                 "chapter_plan_version": logical_plan,
                 "chapter_plan_content_hash": "sha256:logical-plan",
                 "command_payload": {
@@ -196,6 +197,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         corrected = _validate_chapter_acceptance_evidence(
             request={
                 "chapter_number": 1,
+                "project_id": "grounded-contract-fixture",
                 "chapter_plan_version": logical_plan,
                 "chapter_plan_content_hash": "sha256:logical-plan",
                 "command_payload": {
@@ -237,9 +239,23 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "quality_score_report:v1",
         )
 
+        from novel_forge.modules.canon_graph.grounding import text_hash
+        contents["best_draft_candidate"].update({"text": "她关上了门。", "selected_source_asset_version_id": "revision:v1"})
+        binding = {"contract_version": "grounded-canon.v1", "project_id": "grounded-contract-fixture",
+                   "semantic_status": "SUPPORTED_CANDIDATE", "candidate_asset_version_id": "best_draft_candidate:v1",
+                   "context_asset_version_id": "context_bundle:v1", "text_hash": text_hash("她关上了门。")}
+        contents["canon_patch"].update({"grounding": binding, "source_asset_version_id": "best_draft_candidate:v1"})
+        contents["re_review_report"].update({"diagnostic_contract_version": "actionable-diagnostics.v1",
+                                          "target_text_hash": binding["text_hash"], "revision_version_id": "revision:v1",
+                                          "context_bundle_version_id": "context_bundle:v1"})
+        contents["quality_score_report"].update({"target_asset_version_id": "best_draft_candidate:v1",
+                                               "canon_patch_version_id": "canon_patch:v1", "review_asset_version_id": "re_review_report:v1",
+                                               "context_bundle_version_id": "context_bundle:v1"})
+
         recovered = _validate_chapter_acceptance_evidence(
             request={
                 "chapter_number": 1,
+                "project_id": "grounded-contract-fixture",
                 "chapter_plan_version": logical_plan,
                 "chapter_plan_content_hash": "sha256:logical-plan",
                 "command_payload": {
@@ -276,6 +292,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             _validate_chapter_acceptance_evidence(
                 request={
                     "chapter_number": 1,
+                "project_id": "grounded-contract-fixture",
                     "chapter_plan_version": logical_plan,
                     "chapter_plan_content_hash": "sha256:logical-plan",
                     "command_payload": {
@@ -820,6 +837,13 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [project_id],
                 )
                 retrieval_results = [dict(row[0]) for row in uow.cursor.fetchall()]
+                uow.cursor.execute("""
+                    SELECT version.content FROM authority_asset_version version
+                    JOIN authority_asset asset USING(asset_id)
+                    WHERE asset.project_id=%s AND asset.asset_type='chapter_memo'
+                    ORDER BY version.created_at
+                """, [project_id])
+                chapter_memos = [dict(row[0]) for row in uow.cursor.fetchall()]
                 uow.cursor.execute(
                     """
                     SELECT COUNT(*), COUNT(DISTINCT memory_layer)
@@ -919,11 +943,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self.assertTrue(chapter_two_retrieval["result_fingerprint"])
             self.assertEqual(
                 chapter_two_retrieval["query_plan"]["queries"],
-                [
-                    "previous accepted ending",
-                    "active narrative obligations",
-                    "relevant accepted arc history",
-                ],
+                chapter_memos[1]["retrieval_queries"],
             )
             self.assertTrue(chapter_two_retrieval["selected_documents"])
             self.assertEqual(

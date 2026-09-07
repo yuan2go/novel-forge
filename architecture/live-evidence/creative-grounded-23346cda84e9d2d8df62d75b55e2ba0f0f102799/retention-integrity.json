@@ -1,0 +1,15 @@
+{
+  "tested_sha": "23346cda84e9d2d8df62d75b55e2ba0f0f102799",
+  "implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7",
+  "retained_hashes_checked": 34,
+  "retained_hashes": "PASS",
+  "credential_patterns": [
+    "private_key",
+    "provider_key",
+    "github_token",
+    "credentialed_postgres_url"
+  ],
+  "evidence_records_scanned": 184,
+  "credential_pattern_hits": [],
+  "scope": "Artifact integrity and limited credential pattern checks only; not a qualification Authority."
+}

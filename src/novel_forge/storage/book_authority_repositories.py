@@ -6,6 +6,8 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
+from novel_forge.modules.command_kernel.errors import KernelError
+
 from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
 
 from novel_forge.modules.authoring.projections import (
@@ -21,6 +23,35 @@ from novel_forge.modules.narrative_state.reducers import (
 class BookAuthorityRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
+
+    def lock_acceptance_assets(
+        self, *, project_id: str, selected: dict[str, dict[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        expected = {item["asset_version_id"]: (kind, item) for kind, item in selected.items()}
+        if not expected or len(expected) != len(selected) or len(expected) > 16:
+            raise KernelError("BOOK_ACCEPTANCE_ASSET_SCOPE_INVALID", "acceptance requires a bounded set of distinct frozen evidence versions")
+        self.cursor.execute(
+            """
+            SELECT version.asset_version_id, asset.asset_type, version.content_hash,
+                   version.content, version.lifecycle, version.eligibility, version.governance
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE asset.project_id=%s AND version.asset_version_id=ANY(%s)
+            ORDER BY version.asset_version_id
+            FOR SHARE OF version
+            """,
+            [project_id, sorted(expected)],
+        )
+        result: dict[str, dict[str, Any]] = {}
+        for version_id, kind, digest, content, lifecycle, eligibility, governance in self.cursor.fetchall():
+            expected_kind, original = expected[version_id]
+            if (kind != expected_kind or digest != original["content_hash"]
+                or lifecycle != "ACTIVE" or eligibility != "ELIGIBLE" or governance != "CLEAR"):
+                raise KernelError("BOOK_ACCEPTANCE_EVIDENCE_STALE", "frozen acceptance evidence changed eligibility or identity before commit")
+            result[kind] = {**original, "content": dict(content)}
+        if set(result) != set(selected):
+            raise KernelError("BOOK_ACCEPTANCE_EVIDENCE_MISSING", "acceptance evidence is missing or belongs to another project")
+        return result
 
     def create_run(self, row: dict[str, Any]) -> None:
         self.cursor.execute(

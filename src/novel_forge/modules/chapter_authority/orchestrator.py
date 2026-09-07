@@ -269,10 +269,12 @@ def run_single_chapter_slice(
     export_evidence: ExportDeliveryEvidence | None = None
     for ordinal, node in enumerate(ChapterNode, start=1):
         input_assets = [
-            {
+            (_operation_output_by_key(database_url, operation_ids[ChapterNode.BEST_CANDIDATE],
+                                      request.project_id, "chapter.best_candidate.selected_review")
+             if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE else {
                 "asset_version_id": outputs[source].asset_version_id,
                 "content_hash": outputs[source].content_hash,
-            }
+            })
             for source in _input_nodes(node)
         ]
         if node is ChapterNode.PLAN:
@@ -747,7 +749,7 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.REREVIEW,
             ChapterNode.CONTEXT,
         ),
-        ChapterNode.CANON_PROPOSAL: (ChapterNode.CANON_EXTRACTION,),
+        ChapterNode.CANON_PROPOSAL: (ChapterNode.CANON_EXTRACTION, ChapterNode.BEST_CANDIDATE, ChapterNode.CONTEXT),
         ChapterNode.CANON: (
             ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
@@ -875,14 +877,19 @@ def _measurement_evidence_inputs(
               AND operation.root_operation_id=%s
               AND operation.status='SUCCEEDED'
               AND asset.asset_type IN ('model_call_log','cost_ledger')
-              AND EXISTS (
+              AND (EXISTS (
                 SELECT 1
                 FROM jsonb_array_elements(operation.input_asset_snapshot) AS input(value)
                 WHERE input.value->>'asset_version_id'=%s
-              )
+              ) OR EXISTS (
+                SELECT 1 FROM authority_operation_output_asset AS source
+                JOIN authority_asset_version AS context ON context.asset_version_id=%s
+                WHERE source.operation_id=operation.operation_id
+                  AND context.content->'selected_asset_version_ids' ? source.asset_version_id
+              ))
             ORDER BY operation.created_at, asset.asset_type, binding.output_key
             """,
-            [project_id, root_operation_id, context_bundle_asset_version_id],
+            [project_id, root_operation_id, context_bundle_asset_version_id, context_bundle_asset_version_id],
         )
         return [
             {"asset_version_id": str(row[0]), "content_hash": str(row[1])}

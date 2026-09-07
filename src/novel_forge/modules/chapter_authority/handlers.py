@@ -63,7 +63,6 @@ from novel_forge.modules.chapter_authority.model_effects import (
 )
 from novel_forge.modules.chapter_authority.execution_artifacts import (
     build_chapter_execution_intent,
-    qualify_chapter_memo,
 )
 from novel_forge.modules.chapter_authority.candidate_selection import (
     CandidateEvidence,
@@ -106,7 +105,10 @@ class DeterministicFixtureChapterProvider:
         reservation_tokens: int | None = None,
         pre_send_assertion: Any | None = None,
     ) -> ModelProviderResult:
-        if stage == "draft":
+        if stage in {"memo", "canon_support"}:
+            from .execution_gateway import default_chapter_fixture_response
+            output = default_chapter_fixture_response(stage, payload)
+        elif stage == "draft":
             plan = payload["plan"]
             output = {
                 "text": (
@@ -359,79 +361,17 @@ class _ExecutionIntentHandler:
 
 @dataclass(frozen=True, slots=True)
 class _MemoHandler:
+    provider: ChapterModelPort
+
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         intent = request.require_input("chapter_execution_intent")
-        mission = dict(intent.content.get("chapter_mission") or {})
-        result = {
-            "execution_strategy": "materialize the locked objective through irreversible choice",
-            "tension_strategy": "carry accepted tension into escalating scene consequences",
-            "composition_strategy": (
-                "realize each locked causal event once while combining its Arc, state, "
-                "information, relationship, and reader functions"
-            ),
-            "scene_directives": [
-                {
-                    "scene_id": str(item["scene_id"]),
-                    "directive": str(
-                        item.get("goal") or "advance the chapter objective"
-                    ),
-                }
-                for item in intent.content.get("scene_plans") or ()
-            ],
-            "retrieval_queries": [
-                "previous accepted ending",
-                "active narrative obligations",
-                "relevant accepted arc history",
-            ],
-            "obligation_actions": [
-                {
-                    "obligation_id": str(
-                        (item.get("state") or {}).get("obligation_id")
-                        or item.get("entity_key")
-                        or ""
-                    ),
-                    "action": "DEVELOP",
-                }
-                for item in intent.content.get("active_obligations") or ()
-                if isinstance(item, dict)
-                and str(
-                    (item.get("state") or {}).get("obligation_id")
-                    or item.get("entity_key")
-                    or ""
-                )
-            ],
-            "arc_actions": [
-                {
-                    "arc_plan_version_id": str(
-                        item.get("arc_plan_version_id") or item.get("arc_id") or ""
-                    ),
-                    "action": str(
-                        item.get("action")
-                        or item.get("contribution")
-                        or item.get("kind")
-                        or "ADVANCE"
-                    ),
-                }
-                for item in mission.get("arc_contributions") or ()
-                if isinstance(item, dict)
-            ],
-            "stop_conditions": [
-                "do not contradict the locked ChapterPlan or Chapter Mission",
-                "do not split one composed event into disconnected exposition-only scenes",
-            ],
-        }
-        return _output(
-            ChapterNode.MEMO,
-            qualify_chapter_memo(
-                intent=intent.content,
-                intent_asset_version_id=intent.asset_version_id,
-                result=result,
-                execution_evidence={
-                    "runtime": "deterministic-domain-service",
-                    "operation_id": request.operation_id,
-                },
-            ),
+        generated = self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content})
+        from .creative_memo import qualify_creative_memo
+        content = qualify_creative_memo(
+            intent=intent.content, intent_asset_version_id=intent.asset_version_id,
+            result=generated.output, execution_evidence=_provider_evidence(generated),
         )
+        return _model_output(ChapterNode.MEMO, content, request=request, generated=generated)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1340,19 +1280,24 @@ class _DraftHandler:
                 "chapter_memo": memo.content,
             },
         )
-        return _model_output(
-            ChapterNode.DRAFT,
-            normalize_draft_result(
+        content = normalize_draft_result(
                 plan=plan.content,
                 context_asset_version_id=context.asset_version_id,
                 context_content_hash=context.content_hash,
                 context_content=context.content,
                 result=generated.output,
                 provider_evidence=_provider_evidence(generated),
-            ),
-            request=request,
-            generated=generated,
-        )
+            )
+        content["creative_execution"] = {
+            "memo_asset_version_id": memo.asset_version_id,
+            "memo_content_hash": memo.content_hash,
+            "memo_fingerprint": memo.content.get("memo_fingerprint"),
+            "intent_asset_version_id": intent.asset_version_id,
+            "guidance": dict(memo.content.get("creative_guidance") or {}),
+            "scene_directives": list(memo.content.get("scene_directives") or []),
+            "authority": "CREATIVE_SUGGESTION_ONLY",
+        }
+        return _model_output(ChapterNode.DRAFT, content, request=request, generated=generated)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1577,6 +1522,8 @@ class _BestCandidateHandler:
                 score=float(rereview.content.get("score") or 0),
                 blocker_codes=_blocking_issue_codes(rereview.content),
                 review_asset_version_id=rereview.asset_version_id,
+                diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
+                resolution_checks=tuple(rereview.content.get("resolution_checks") or []),
             ),
             minimum_net_improvement=threshold,
             correction_generation=generation,
@@ -1593,12 +1540,32 @@ class _BestCandidateHandler:
                 revision.asset_version_id: revision.content,
             },
         )
+        from .candidate_selection import bind_selected_review
+        if comparison["selected_asset_version_id"] == revision.asset_version_id:
+            selected_review_content, selected_review_id = rereview.content, rereview.asset_version_id
+        elif existing_best is None:
+            selected_review_content, selected_review_id = previous_review.content, previous_review.asset_version_id
+        else:
+            selected_review_content = dict(existing_best.content["selected_review"])
+            selected_review_id = str(selected_review_content["selection_review_source_asset_version_id"])
+        selected_source_id = str(best.get("selected_source_asset_version_id") or "")
+        if existing_best is not None and comparison["selected_asset_version_id"] == existing_best.asset_version_id:
+            selected_source_id = str(existing_best.content["selected_source_asset_version_id"])
+            best["selected_source_asset_version_id"] = selected_source_id
+        selected_review = bind_selected_review(candidate=best, candidate_id=selected_source_id,
+                                              review=selected_review_content, review_id=selected_review_id)
+        best["selected_review"] = selected_review
         return ChapterHandlerOutput(
             asset_type=ChapterNode.BEST_CANDIDATE.asset_type,
             output_key=ChapterNode.BEST_CANDIDATE.output_key,
             role="primary",
             content=best,
             auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="re_review_report", output_key="chapter.best_candidate.selected_review",
+                    role="selection_evidence", content=selected_review,
+                    reference_asset_version_ids=(selected_review_id, selected_source_id),
+                ),
                 ChapterAuxiliaryOutput(
                     asset_type="candidate_comparison",
                     output_key="chapter.best_candidate.comparison",
@@ -1733,7 +1700,9 @@ class _CanonExtractionHandler:
                 },
             )
             provider_extraction = _canon_provider_extraction(generated)
-        content = build_canon_extraction(
+        from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
+        extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
+        content = extractor(
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
             project_id=request.project_id,
@@ -1757,6 +1726,8 @@ class _CanonExtractionHandler:
 
 @dataclass(frozen=True, slots=True)
 class _CanonProposalHandler:
+    provider: ChapterModelPort
+
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         extraction = request.require_input("canon_extraction")
         proposal = build_canon_change_proposal(
@@ -1764,11 +1735,25 @@ class _CanonProposalHandler:
             extraction=extraction.content,
             extraction_asset_version_id=extraction.asset_version_id,
         )
+        generated = None
+        if extraction.content.get("grounding"):
+            from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
+            revision = request.require_input("best_draft_candidate")
+            generated = self.provider.invoke(request, stage="canon_support", payload={
+                "revision": revision.content, "grounding": extraction.content["grounding"],
+                "claims": grounded_claims(extraction.content),
+            })
+            proposal["grounding"] = validate_support_review(
+                extraction=extraction.content, revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id, result=generated.output,
+            )
         generation = int(request.command.get("canon_reextraction_generation") or 1)
         proposal["generation"] = generation
         proposal["supersedes_asset_version_id"] = str(
             request.command.get("supersedes_proposal_asset_version_id") or ""
         )
+        if generated is not None:
+            return _model_output(ChapterNode.CANON_PROPOSAL, proposal, request=request, generated=generated)
         return _output(
             ChapterNode.CANON_PROPOSAL,
             proposal,
@@ -2089,6 +2074,7 @@ class _QualityHandler:
                 str(record.get("external_effect_id") or "")
                 for record in provider_usage or []
                 if str(record.get("external_effect_id") or "")
+                and record.get("context_bundle_asset_version_id") == context.asset_version_id
             }
         )
         if provider_usage is None:
@@ -2290,6 +2276,7 @@ def _provider_usage_records(
                 "operation_id": key[0],
                 "attempt_id": key[1],
                 "stage": key[2],
+                "context_bundle_asset_version_id": str(content.get("context_bundle_asset_version_id") or ""),
                 "external_effect_id": str(
                     content.get("external_effect_id")
                     or ledger.get("external_effect_id")
@@ -2516,7 +2503,7 @@ def build_chapter_handler_registry(
     )
     registry.register(ChapterNode.PLAN, _PlanHandler())
     registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
-    registry.register(ChapterNode.MEMO, _MemoHandler())
+    registry.register(ChapterNode.MEMO, _MemoHandler(provider))
     registry.register(
         ChapterNode.RETRIEVAL,
         _RetrievalHandler(
@@ -2532,7 +2519,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
     registry.register(ChapterNode.BEST_CANDIDATE, _BestCandidateHandler())
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
-    registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler())
+    registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler(provider))
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(
         ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural", provider)
@@ -2663,7 +2650,8 @@ def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
         "prompt_version": result.prompt_version,
     }
     return {
-        field: [{**dict(item), **identity} for item in values]
+        **{key: value for key, value in result.output.items() if not isinstance(value, list)},
+        **{field: [{**dict(item), **identity} for item in values]
         for field, values in result.output.items()
-        if isinstance(values, list)
+        if isinstance(values, list)},
     }

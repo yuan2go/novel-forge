@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `09fee68759151f7acfd97ed245d51c0044535d4e`
+Reality baseline: `d191e26621f438ba6a46b628de00e93704755d07`
 Baseline implementation identity:
-`sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a`
+`sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-07",
   "review_due": "2026-10-06",
   "reality_baseline": {
-    "sha": "09fee68759151f7acfd97ed245d51c0044535d4e",
-    "implementation_tree_sha": "sha256:c38e0b2473acfb4e862e3ec645e114c6e9da496ab314a8355d718498b8b34e5a"
+    "sha": "d191e26621f438ba6a46b628de00e93704755d07",
+    "implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -201,6 +201,10 @@ This work package does not:
 ## 3. Current-reality delta
 
 ### 3.1 Evidence anchors
+
+The current Chapter Memo uses the frozen ExecutionIntent and Provider admission, and
+Canon support review uses final-prose evidence. These role contracts do not implement
+the remaining structured Digest or retention/GC decisions below.
 
 The design extends these current executable seams rather than creating replacements:
 

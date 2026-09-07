@@ -91,7 +91,7 @@ class NativeRealityTransportFixture:
             or {}
         )
         if not self.transition or int(source.get("chapter") or 0) != 2:
-            return result
+            return scripted_claim_evidence(stage, inputs, result)
         prose = "The council orders a public inquiry."
         if stage in {"draft", "revision"}:
             result["text"] += " " + prose
@@ -109,7 +109,7 @@ class NativeRealityTransportFixture:
                     "world_transition": {"payload_json": json.dumps(self.transition)},
                 }
             ]
-        return result
+        return scripted_claim_evidence(stage, inputs, result)
 
 
 def admit_native_production(*, composition, snapshot, generic):
@@ -424,3 +424,22 @@ def execute_native_reality_vertical(
     raise AssertionError(
         "Native Opening did not reach Reality N+1 within its operation budget"
     )
+
+
+def scripted_claim_evidence(stage, inputs, result):
+    if stage != "canon_extraction":
+        return result
+    from novel_forge.modules.canon_graph.domain import PROVIDER_SEMANTIC_CHANGE_FIELDS
+    text = inputs["revision"]["text"]
+    for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS.values(), "arc_evidence", "realization_evidence"):
+        for claim in result.get(field, []):
+            if field in {"arc_evidence", "realization_evidence"}:
+                if claim.get("observation_status") != "OBSERVED":
+                    continue
+                claim.setdefault("evidence_start", 0)
+                claim.setdefault("evidence_end", min(40, len(text)))
+            claim["evidence_quote"] = text[int(claim["evidence_start"]):int(claim["evidence_end"])]
+            claim["claim_kind"] = {"arc_evidence": "NARRATIVE_OBSERVATION", "realization_evidence": "NARRATIVE_OBSERVATION", "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
+                                   "character_belief_changes": "BELIEF",
+                                   "disclosure_events": "READER_DISCLOSURE"}.get(field, "OBJECTIVE_EVENT")
+    return result

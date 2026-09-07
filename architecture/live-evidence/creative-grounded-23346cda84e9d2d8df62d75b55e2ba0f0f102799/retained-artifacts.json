@@ -1,0 +1,330 @@
+{
+  "schema_version": "retained-engineering-artifacts.v1",
+  "tested_sha": "23346cda84e9d2d8df62d75b55e2ba0f0f102799",
+  "implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7",
+  "p0_run_id": "p0-6fcc7471bd934635954aa1dd44744dc7",
+  "qualification_report": {
+    "path": "architecture/evidence/p0-backend-qualification-23346cda84e9d2d8df62d75b55e2ba0f0f102799.json",
+    "sha256": "sha256:0533c78a17a0d46572fa744656dce50297fb9db38ba5767a814bdbabe111f113"
+  },
+  "current_run_artifacts": [
+    {
+      "original_path": "backend-pytest-collection.json",
+      "original_size_bytes": 267388,
+      "original_sha256": "sha256:df6c1ebb5f0446e5f56cf23eaf4ceb41a2d26c4b66cae9929846aebfa62144b0",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/backend-pytest-collection.json",
+      "retained_sha256": "sha256:df6c1ebb5f0446e5f56cf23eaf4ceb41a2d26c4b66cae9929846aebfa62144b0",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "backend-pytest-process.json",
+      "original_size_bytes": 5622,
+      "original_sha256": "sha256:5ca9281671f3fcd7595df08064b175bce40b7c215c298db1eed05adaf3397197",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/backend-pytest-process.json",
+      "retained_sha256": "sha256:5ca9281671f3fcd7595df08064b175bce40b7c215c298db1eed05adaf3397197",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "backend-pytest.xml",
+      "original_size_bytes": 318222,
+      "original_sha256": "sha256:21eb0a4c06ac7815298bdebb41ba31cf1ec2e70e086c23e199c6ae71842a0fd5",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/backend-pytest.xml",
+      "retained_sha256": "sha256:21eb0a4c06ac7815298bdebb41ba31cf1ec2e70e086c23e199c6ae71842a0fd5",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "compose-resource-ownership-nf-p0-6fcc7471bd934635954aa1dd44744dc7-runtime.json",
+      "original_size_bytes": 4802,
+      "original_sha256": "sha256:0d11265d3c3d460f474f85f86b10232f3ff6c15a1af2f8b0cda96fe5fad2220f",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/compose-resource-ownership-nf-p0-6fcc7471bd934635954aa1dd44744dc7-runtime.json",
+      "retained_sha256": "sha256:0d11265d3c3d460f474f85f86b10232f3ff6c15a1af2f8b0cda96fe5fad2220f",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "compose-resource-ownership-nf-p0-6fcc7471bd934635954aa1dd44744dc7.json",
+      "original_size_bytes": 695,
+      "original_sha256": "sha256:2bdd43789f9196ed1fa5a113589ebd07494619d94c95eff4d7e479549feb1ac4",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/compose-resource-ownership-nf-p0-6fcc7471bd934635954aa1dd44744dc7.json",
+      "retained_sha256": "sha256:2bdd43789f9196ed1fa5a113589ebd07494619d94c95eff4d7e479549feb1ac4",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "compose-runtime-process.json",
+      "original_size_bytes": 26167,
+      "original_sha256": "sha256:c6bd07849edb7783f7eb1a7eebf8b105830474d5f1c078b32bfbee0e2fa43532",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/compose-runtime-process.json",
+      "retained_sha256": "sha256:c6bd07849edb7783f7eb1a7eebf8b105830474d5f1c078b32bfbee0e2fa43532",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "compose-runtime.json",
+      "original_size_bytes": 30005,
+      "original_sha256": "sha256:a8e5dcc2cf34be356881d9472d6521e177da56f114a97a8525e3e4171dfa342a",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/compose-runtime.json",
+      "retained_sha256": "sha256:a8e5dcc2cf34be356881d9472d6521e177da56f114a97a8525e3e4171dfa342a",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "documentation-reality-process.json",
+      "original_size_bytes": 883,
+      "original_sha256": "sha256:cc3c251d277d1721cc4e7e9be69cf2f88c1eb22c9f28254b5f306f8df45c1526",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/documentation-reality-process.json",
+      "retained_sha256": "sha256:cc3c251d277d1721cc4e7e9be69cf2f88c1eb22c9f28254b5f306f8df45c1526",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "documentation-reality.json",
+      "original_size_bytes": 771,
+      "original_sha256": "sha256:0b492ca486a01a0a41119deef357cb407d85ef611f4feafd8d9031fa40096d06",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/documentation-reality.json",
+      "retained_sha256": "sha256:0b492ca486a01a0a41119deef357cb407d85ef611f4feafd8d9031fa40096d06",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "migration-compatibility-collection.json",
+      "original_size_bytes": 13398,
+      "original_sha256": "sha256:a518e2a864e1057f64054ca2518d6af6be3db6053b6bceeab9c0011fb5675b58",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/migration-compatibility-collection.json",
+      "retained_sha256": "sha256:a518e2a864e1057f64054ca2518d6af6be3db6053b6bceeab9c0011fb5675b58",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "migration-compatibility-process.json",
+      "original_size_bytes": 227,
+      "original_sha256": "sha256:5c68f68cb84764e6ae4790f19ba71e97dc98fe2ee59d37f59911f92c560ae512",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/migration-compatibility-process.json",
+      "retained_sha256": "sha256:5c68f68cb84764e6ae4790f19ba71e97dc98fe2ee59d37f59911f92c560ae512",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "migration-compatibility-pytest.xml",
+      "original_size_bytes": 19001,
+      "original_sha256": "sha256:e92a9615feaa02ed17dcf28d46f33cffcee00c8942acccec56455d40a6c335ba",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/migration-compatibility-pytest.xml",
+      "retained_sha256": "sha256:e92a9615feaa02ed17dcf28d46f33cffcee00c8942acccec56455d40a6c335ba",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "migration-fresh-process.json",
+      "original_size_bytes": 23759,
+      "original_sha256": "sha256:a9f722b7ab88100fcb953f52ada19600cda247d931282a1188a5a20dadfcdb3a",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/migration-fresh-process.json",
+      "retained_sha256": "sha256:a9f722b7ab88100fcb953f52ada19600cda247d931282a1188a5a20dadfcdb3a",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "postgresql-pytest-collection.json",
+      "original_size_bytes": 97412,
+      "original_sha256": "sha256:669b16cd06e927aa2d1e07ec4c1bcfb59f6f37877bc5e48dbe42beacafc2d64f",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/postgresql-pytest-collection.json",
+      "retained_sha256": "sha256:669b16cd06e927aa2d1e07ec4c1bcfb59f6f37877bc5e48dbe42beacafc2d64f",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "postgresql-pytest-process.json",
+      "original_size_bytes": 14265,
+      "original_sha256": "sha256:e0afc4692242b36d06bb38037fb6e32a70f9fb32d4ec39ae991e248374890932",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/postgresql-pytest-process.json",
+      "retained_sha256": "sha256:e0afc4692242b36d06bb38037fb6e32a70f9fb32d4ec39ae991e248374890932",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "postgresql-pytest.xml",
+      "original_size_bytes": 157643402,
+      "original_sha256": "sha256:d7bd7884a74e79ac82eaf6380c30d87cde7b66aae4b5d74d588fabe2c9625679",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/postgresql-pytest.xml.gz",
+      "retained_sha256": "sha256:20c65792c369b8e2f16cf53bad23c30258c405f161200e49bb179ff905f57c9a",
+      "encoding": "gzip",
+      "lossless": true
+    },
+    {
+      "original_path": "query-plan-process.json",
+      "original_size_bytes": 62811,
+      "original_sha256": "sha256:8cda3db9c38bce796d46e963b483909d694d391cd5f11b439409d5b22050df8c",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/query-plan-process.json",
+      "retained_sha256": "sha256:8cda3db9c38bce796d46e963b483909d694d391cd5f11b439409d5b22050df8c",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "query-plan.json",
+      "original_size_bytes": 57945,
+      "original_sha256": "sha256:696f3479be254fef15e550eb0d1c33e5a435612502d37f566a1918787d641884",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/query-plan.json",
+      "retained_sha256": "sha256:696f3479be254fef15e550eb0d1c33e5a435612502d37f566a1918787d641884",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "static-and-manifests.json",
+      "original_size_bytes": 638078,
+      "original_sha256": "sha256:8c5eb65df809e152e950531ba95652372f7a16587f7a906a476512e1cc881b06",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/novel-forge-p0-23346cda84e9-6fcc7471bd934635954aa1dd44744dc7/static-and-manifests.json",
+      "retained_sha256": "sha256:8c5eb65df809e152e950531ba95652372f7a16587f7a906a476512e1cc881b06",
+      "encoding": "identity",
+      "lossless": true
+    }
+  ],
+  "prior_attempts": [
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest-collection.json",
+      "original_size_bytes": 266610,
+      "original_sha256": "sha256:8a0f9dc01b798cb0518fdd55fb4c98b2614f8c11a1afa3080bbfd18ff4a73860",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest-collection.json",
+      "retained_sha256": "sha256:8a0f9dc01b798cb0518fdd55fb4c98b2614f8c11a1afa3080bbfd18ff4a73860",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest-process.json",
+      "original_size_bytes": 5622,
+      "original_sha256": "sha256:5f8f85f5eb5f7f371405737e2c7f6d09c4776020ba365b5c0105c7251f0424af",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest-process.json",
+      "retained_sha256": "sha256:5f8f85f5eb5f7f371405737e2c7f6d09c4776020ba365b5c0105c7251f0424af",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest.xml",
+      "original_size_bytes": 317247,
+      "original_sha256": "sha256:826dc4dc95e096921a331c4f9ba707615f0adc5c207e69af00f56830ecb741d4",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/backend-pytest.xml",
+      "retained_sha256": "sha256:826dc4dc95e096921a331c4f9ba707615f0adc5c207e69af00f56830ecb741d4",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/compose-resource-ownership-nf-p0-cd44133080b747d3898baed9737e01d3.json",
+      "original_size_bytes": 695,
+      "original_sha256": "sha256:d29171ec9f985d255f3077b3a40efd437a53aae2416908be3871a28b31e1b767",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/compose-resource-ownership-nf-p0-cd44133080b747d3898baed9737e01d3.json",
+      "retained_sha256": "sha256:d29171ec9f985d255f3077b3a40efd437a53aae2416908be3871a28b31e1b767",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/documentation-reality-process.json",
+      "original_size_bytes": 883,
+      "original_sha256": "sha256:3b957a61bd7fd0c3e7ab95dc4335f101ba4e4c548454f32bae40c0f3196d5b3c",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/documentation-reality-process.json",
+      "retained_sha256": "sha256:3b957a61bd7fd0c3e7ab95dc4335f101ba4e4c548454f32bae40c0f3196d5b3c",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/documentation-reality.json",
+      "original_size_bytes": 771,
+      "original_sha256": "sha256:51bf8dc8debe6080211a1987bdc418d423760b0a694061a081264629d4e419f5",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/documentation-reality.json",
+      "retained_sha256": "sha256:51bf8dc8debe6080211a1987bdc418d423760b0a694061a081264629d4e419f5",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-collection.json",
+      "original_size_bytes": 13398,
+      "original_sha256": "sha256:e015a7032ad2d2ab86a0721c636f69d313e92b84e213bc7b94324c15a50e8f6c",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-collection.json",
+      "retained_sha256": "sha256:e015a7032ad2d2ab86a0721c636f69d313e92b84e213bc7b94324c15a50e8f6c",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-process.json",
+      "original_size_bytes": 227,
+      "original_sha256": "sha256:7f77e58cbb8b52f17daead70e1a72322d33c0da18adddddd3c270dfc9dbd4f8e",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-process.json",
+      "retained_sha256": "sha256:7f77e58cbb8b52f17daead70e1a72322d33c0da18adddddd3c270dfc9dbd4f8e",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-pytest.xml",
+      "original_size_bytes": 19001,
+      "original_sha256": "sha256:a7f5218fdc291fd6d2e62bcaf33b74aaf975fb371c7fe5999334ab9d59456449",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-compatibility-pytest.xml",
+      "retained_sha256": "sha256:a7f5218fdc291fd6d2e62bcaf33b74aaf975fb371c7fe5999334ab9d59456449",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-fresh-process.json",
+      "original_size_bytes": 23759,
+      "original_sha256": "sha256:e9572a5280549cdb57ce8ad850a5ca0079ece7663a2817cf64cfd04d9096f23a",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/migration-fresh-process.json",
+      "retained_sha256": "sha256:e9572a5280549cdb57ce8ad850a5ca0079ece7663a2817cf64cfd04d9096f23a",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest-collection.json",
+      "original_size_bytes": 97412,
+      "original_sha256": "sha256:7b4682a08a6a120553f60b3d9e6b164383c6173e4970350b2bd6a1c1a26aa587",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest-collection.json",
+      "retained_sha256": "sha256:7b4682a08a6a120553f60b3d9e6b164383c6173e4970350b2bd6a1c1a26aa587",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest-process.json",
+      "original_size_bytes": 25494,
+      "original_sha256": "sha256:d6e5128c87eab8232b371433996ace71ff44c1a5caf715e3582592e6f64248bb",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest-process.json",
+      "retained_sha256": "sha256:d6e5128c87eab8232b371433996ace71ff44c1a5caf715e3582592e6f64248bb",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest.xml",
+      "original_size_bytes": 157650067,
+      "original_sha256": "sha256:86b957c677b09e6b791ae17fd9f189afcc1f4f3bb0f48cdc7543c3ed312cab66",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/postgresql-pytest.xml.gz",
+      "retained_sha256": "sha256:6fded7cac4c111bb666b5e07ca6893478997af1285cc4b5b9310b095787739b0",
+      "encoding": "gzip",
+      "lossless": true
+    },
+    {
+      "original_path": "novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/static-and-manifests.json",
+      "original_size_bytes": 638859,
+      "original_sha256": "sha256:eccc48bf7b560be6adc848b4093e92b4e7680145f6a7e8b4e1c6f200417f0742",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/novel-forge-p0-473fdd219742-cd44133080b747d3898baed9737e01d3/static-and-manifests.json",
+      "retained_sha256": "sha256:eccc48bf7b560be6adc848b4093e92b4e7680145f6a7e8b4e1c6f200417f0742",
+      "encoding": "identity",
+      "lossless": true
+    },
+    {
+      "original_path": "p0-backend-qualification-473fdd2197429ce1d2ec2fca5243371acad2c27f.json",
+      "original_size_bytes": 30121,
+      "original_sha256": "sha256:ea996da580bd8f1f32bdce763572d81d1f942e207924183ddd17c4fc2bf60465",
+      "retained_path": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/prior-attempts/p0-current-1/p0-backend-qualification-473fdd2197429ce1d2ec2fca5243371acad2c27f.json",
+      "retained_sha256": "sha256:ea996da580bd8f1f32bdce763572d81d1f942e207924183ddd17c4fc2bf60465",
+      "encoding": "identity",
+      "lossless": true
+    }
+  ],
+  "production_observation": "architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/production-wiring-observation.json",
+  "independent_evidence_status": {
+    "LOCAL_BACKEND_ENGINEERING": "PASS",
+    "SCRIPTED_PRODUCTION_WIRING": "PASS",
+    "REAL_PROVIDER_SMOKE": "BLOCKED_NO_NEW_EXPLICIT_PAID_BUDGET",
+    "SHORT_CREATIVE_EFFECT": "NOT_PROVEN",
+    "HUMAN_EDITORIAL": "WAITING_EVIDENCE",
+    "LONGITUDINAL": "NOT_PROVEN",
+    "PRODUCTION_OPERATION": "NOT_PROVEN"
+  }
+}

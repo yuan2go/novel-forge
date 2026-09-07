@@ -23,6 +23,16 @@
     "evidence-finalization"
   ],
   "semantic_slices": {
+    "creative_grounded_chapter": [
+      "tests/unit/test_chapter_execution_artifacts.py",
+      "tests/unit/test_actionable_diagnostics.py",
+      "tests/unit/test_grounded_canon.py",
+      "tests/unit/test_narrative_state_contract_v2.py",
+      "tests/integration/test_core_functional_loops_postgres.py",
+      "tests/integration/test_chapter_model_effects_postgres.py",
+      "tests/integration/test_narrative_orchestration_qualification_postgres.py",
+      "tests/integration/test_world_causal_migrations_postgres.py"
+    ],
     "narrative_reality_causal_chain": [
       "tests/unit/test_narrative_reality_causality.py",
       "tests/integration/test_core_functional_loops_postgres.py",

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "proof": "focused-volume-ownership-proof.json",
+  "removed_volumes": [
+    "0f1e7cd012304df2f67b128d960d1809f7c617dffe09256eab5ea16543de5d47",
+    "32314ae75a02f4fe6aa3a6497c983a0a2f40fe3eb9e2bed6dc448feb08c8965e"
+  ],
+  "remaining_owned_volumes": [],
+  "remaining_inspector_containers": [],
+  "remaining_resource_count": 0,
+  "prior_receipt_scope_correction": "Earlier focused cleanup receipts counted containers only. This receipt closes their identified anonymous PostgreSQL data volumes."
+}

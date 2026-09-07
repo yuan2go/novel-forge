@@ -1246,6 +1246,12 @@ class PostgresBookAuthority:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            locked_outputs = uow.repositories.book_authority.lock_acceptance_assets(
+                project_id=request["project_id"], selected=selected_acceptance_outputs,
+            )
+            if evidence.get("model_effects") or locked_outputs["canon_patch"]["content"].get("grounding"):
+                from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
+                require_grounded_acceptance(project_id=request["project_id"], selected=locked_outputs)
             from novel_forge.storage.book_control_repositories import BookControlRepository
             for boundary, subject in (("FINAL_CANDIDATE", str(selected_acceptance_outputs["best_draft_candidate"]["asset_version_id"])), ("REALITY_COMMIT", outcome.asset_version_id)):
                 BookControlRepository(uow.cursor).require_approval(project_id=request["project_id"], book_run_id=request["book_run_id"], chapter_number=int(request["chapter_number"]), actor_id=principal.principal_id, boundary=boundary, subject_version_id=subject)
@@ -3600,6 +3606,9 @@ def _validate_chapter_acceptance_evidence(
         or request["chapter_plan_content_hash"]
     )
     model_effects = list(evidence.get("model_effects") or ())
+    if model_effects or canon.get("grounding"):
+        from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
+        require_grounded_acceptance(project_id=str(request["project_id"]), selected=selected)
     effect_operation_ids = {
         str(item.get("operation_id") or "") for item in model_effects
     }

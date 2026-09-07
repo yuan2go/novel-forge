@@ -28,8 +28,9 @@ def evaluate_quality_evidence(
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, review_asset_version_id, canon_asset_version_id, context_bundle_version_id)):
         raise KernelError("QUALITY_INPUT_INVALID", "versioned quality lineage is required")
-    if review.get("report_type") != "ReReviewReport":
-        raise KernelError("QUALITY_REREVIEW_REQUIRED", "latest eligible Re-review is required")
+    from novel_forge.modules.review.diagnostics import review_covers_candidate
+    if not review_covers_candidate(review, text=str(revision.get("text") or ""), source_id=str(revision.get("selected_source_asset_version_id") or "")):
+        raise KernelError("QUALITY_REREVIEW_REQUIRED", "review evidence must cover the exact selected candidate")
     if not str(revision.get("text") or "").strip():
         raise KernelError("QUALITY_REVISION_CONTENT_MISSING", "Revision has no content")
 

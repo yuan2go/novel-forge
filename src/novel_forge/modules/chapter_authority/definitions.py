@@ -6,7 +6,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.3.1"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.4.1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -172,12 +172,14 @@ def _definition(
     }
     external_capabilities: list[str] = []
     model_capability = {
+        ChapterNode.MEMO: "model.memo",
         ChapterNode.RETRIEVAL: "model.retrieval",
         ChapterNode.DRAFT: "model.draft",
         ChapterNode.REVIEW: "model.review",
         ChapterNode.REVISION: "model.revision",
         ChapterNode.REREVIEW: "model.rereview",
         ChapterNode.CANON_EXTRACTION: "model.canon_extraction",
+        ChapterNode.CANON_PROPOSAL: "model.canon_support",
         ChapterNode.QUALITY_STRUCTURAL: "model.quality_structural",
         ChapterNode.QUALITY_COMMERCIAL: "model.quality_commercial",
         ChapterNode.QUALITY_SOURCE_ORIGINALITY: "model.quality_source_originality",
@@ -270,6 +272,14 @@ def _definition(
     if node is ChapterNode.BEST_CANDIDATE:
         completion["required_asset_selectors"].extend(
             (
+                {
+                    "selector": "re_review_report",
+                    "output_key": "chapter.best_candidate.selected_review",
+                    "role": "selection_evidence",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
                 {
                     "selector": "candidate_comparison",
                     "output_key": "chapter.best_candidate.comparison",

@@ -342,6 +342,8 @@ def resolve_canon_extraction(
     proposal: dict[str, Any],
     decisions: Iterable[dict[str, Any]],
 ) -> dict[str, Any]:
+    if extraction.get("grounding") and (proposal.get("grounding") or {}).get("semantic_status") != "SUPPORTED_CANDIDATE":
+        raise KernelError("CANON_GROUNDING_SUPPORT_REQUIRED", "final prose claims require independent support review")
     by_id = {str(item["change_id"]): dict(item) for item in decisions}
     resolved = {key: list(extraction.get(key, [])) for key in SEMANTIC_CHANGE_FIELDS}
     proposed_by_field: dict[str, list[dict[str, Any]]] = {
@@ -367,6 +369,8 @@ def resolve_canon_extraction(
         if action in {"REJECT", "DEFER"}:
             continue
         payload = dict(change["proposed_state"])
+        if action == "EDIT_AND_APPROVE" and extraction.get("grounding"):
+            raise KernelError("CANON_REEXTRACTION_REQUIRED", "edited claims require new final-prose extraction and support review")
         if action == "EDIT_AND_APPROVE":
             resolution = decision.get("change_resolution")
             if not isinstance(resolution, dict) or not resolution.get(
@@ -396,6 +400,7 @@ def resolve_canon_extraction(
             ] + values
     return {
         **extraction,
+        **({"grounding": dict(proposal["grounding"])} if extraction.get("grounding") else {}),
         **resolved,
         "approval_required_changes": [],
         "canon_change_proposal_asset_version_id": proposal.get("asset_version_id", ""),

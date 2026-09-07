@@ -295,6 +295,14 @@ def build_canon_update(
         raise KernelError(
             "CROSS_PROJECT_REFERENCE", "Canon extraction belongs to another project"
         )
+    if extraction.get("grounding"):
+        from .grounding import text_hash
+        binding = extraction["grounding"]
+        if (binding.get("semantic_status") != "SUPPORTED_CANDIDATE"
+            or binding.get("candidate_asset_version_id") != revision_asset_version_id
+            or binding.get("text_hash") != text_hash(str((revision or {}).get("text") or ""))
+            or binding.get("context_asset_version_id") != context_bundle_version_id):
+            raise KernelError("CANON_GROUNDING_IDENTITY_MISMATCH", "Canon reduction requires support bound to the final candidate and Context")
     chapter = int(extraction["chapter"])
     state = {key: list(values) for key, values in (historical_state or {}).items()}
     previous = [*existing_facts, *state.get("canon_snapshot", [])]
@@ -353,6 +361,7 @@ def build_canon_update(
         "project_id": project_id,
         "chapter": chapter,
         "source_asset_version_id": revision_asset_version_id,
+        **({"grounding": dict(extraction["grounding"])} if extraction.get("grounding") else {}),
         "context_bundle_version_id": context_bundle_version_id,
         "facts": facts,
         "conflicts": conflicts,
@@ -402,6 +411,7 @@ def _normalize_fact(item: dict[str, Any], chapter: int, source: str) -> dict[str
         "source_asset_version_id": source,
         "supersedes_event_id": str(item.get("supersedes_event_id") or ""),
         "extraction_evidence": dict(item.get("extraction_evidence") or {}),
+        **{key: item[key] for key in ("claim_kind", "grounded_claim_id") if key in item},
         "confidence": float(item.get("confidence", 0.0)),
         "coverage": str(item.get("coverage") or "EXPLICIT"),
     }
@@ -584,6 +594,18 @@ def _fact_conflicts(
 ) -> list[dict[str, Any]]:
     conflicts = []
     for fact in facts:
+        superseded = str(fact.get("supersedes_event_id") or "")
+        if superseded and not any(
+            (old.get("source_event_id") or old.get("event_id")) == superseded
+            and old.get("subject") == fact["subject"]
+            and old.get("predicate") == fact["predicate"]
+            for old in previous
+        ):
+            conflicts.append(_conflict(
+                "CANON_SUPERSESSION_SOURCE_INVALID", previous, fact,
+                "resolve the exact same-entity accepted source in the frozen Book boundary",
+                approval=False,
+            ))
         for old in previous:
             if (
                 old.get("subject") == fact["subject"]

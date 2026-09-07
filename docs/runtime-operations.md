@@ -263,6 +263,21 @@ fails before execution. The runner requires a disposable database name and contr
 runtime, rejects scripted routes, respects pending approvals and bounded tick/time limits,
 and does not approve its own changes. Chapter count is only the experiment bound.
 
+The same command exercises Creative Memo, directed revision and grounded Canon on the
+current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
+`NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
+routes; if omitted they inherit the explicitly configured Review route. They use the
+existing Provider admission, token and cost limits. Memo has the Planning capability's
+60-second operation bound; Canon support uses the Canon capability's frozen bound.
+
+The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
+claim support, accepted state references, attempt errors and receipt/cost references.
+The live read is `GET /product/production/chapter-authority/run` with `project_id`,
+`root_operation_id` and `include_workspace=true` under existing query permission.
+For a short comparison, retain a baseline export from a separately frozen implementation
+and use the same approved input and model settings in an isolated new run. Preserve
+failed runs; these exports do not establish independent literary or human qualification.
+
 `events.jsonl` retains tick and failure results; the export includes exact world source,
 generation/evaluation artifacts, execution recovery sessions, request admission,
 model/usage/cost evidence and accepted Realities. Inspect that original preparation
@@ -279,13 +294,22 @@ exact boundary, subject and frozen policy. Operator decisions enter through
 Resume the existing production job after approval. Decisions do not waive quality,
 Canon reconciliation or acceptance invariants.
 
-Chapter workflow contract 3.3.1 and Capability Pack 2.2.1 require structured
+Chapter workflow contract 3.4.1 and Capability Pack 2.3.1 require structured
 realization slots and the current quality dimensions. Published text-only Scene beats
 use an explicitly marked frozen representation adapter; their source digest and
-ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs. An older frozen operation
-retains its original definition and receipts; a worker with another contract version
-rejects it with `AUTHORITY_HANDLER_CONTRACT_STALE`. Resume such an in-flight operation
-with its matching release rather than rewriting its frozen input or resending effects.
+ordinal identities remain replayable. Scene v2 continues to require typed Beat IDs.
+Unaccepted older model-backed Chapter contracts fail with
+`CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED`; they need a new Chapter command on the current contract with grounded evidence. Preserve their frozen inputs and confirmed effects for audit.
+This includes 3.4.0 payoff payloads: 3.4.1 binds prose payoff references in Authority,
+so prior Provider-authored IDs are not silently reinterpreted as verified citations.
+Already accepted history is replayed as history, without fabricated grounding evidence.
+Other frozen Authority operations keep their existing `AUTHORITY_HANDLER_CONTRACT_STALE`
+guard and require their matching release for recovery.
+
+Chapter workers discover pending roots on every poll, including after process takeover.
+ChapterGroup records changing child status while waiting and freezes its reconciliation
+step only when the child succeeds. Recovery consumes confirmed Memo and Canon support
+receipts under the original reservation policy, then completes the missing domain commit.
 
 Provider Context projection rejects an eligible segment count or relevant fact count
 that exceeds its declared budget. A passing Context correctness receipt does not permit

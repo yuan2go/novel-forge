@@ -8,6 +8,30 @@
   ],
   "classification_rules": [
     {
+      "id": "actionable-diagnostics",
+      "patterns": [
+        "tests/unit/test_actionable_diagnostics.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "chapter-review-quality",
+      "capability": "actionable-diagnostic-contract",
+      "production_target": "src/novel_forge/modules/review/domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "grounded-canon",
+      "patterns": [
+        "tests/unit/test_grounded_canon.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "grounded-canon-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/grounding.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "world-causal-batch",
       "patterns": [
         "tests/unit/test_world_causal_batch.py"
@@ -206,6 +230,17 @@
     }
   ],
   "semantic_slice_policy": {
+    "creative_grounded_chapter": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_authority/creative_memo.py",
+        "src/novel_forge/modules/review/diagnostics.py",
+        "src/novel_forge/modules/canon_graph/grounding.py",
+        "src/novel_forge/modules/narrative_state/contracts.py",
+        "src/novel_forge/modules/chapter_outcome/acceptance_contract.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
     "narrative_reality_causal_chain": {
       "role": "CURRENT_BUSINESS_CAPABILITY",
       "production_targets": [

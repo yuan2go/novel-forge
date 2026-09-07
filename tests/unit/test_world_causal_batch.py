@@ -207,7 +207,7 @@ def typed_events(events):
     return result
 
 
-def test_observer_batch_contract_is_frozen_separately_from_historical_extraction():
+def test_observer_batch_contract_has_a_distinct_identity_from_unbatched_extraction():
     from novel_forge.modules.chapter_authority.provider_output_contracts import (
         chapter_provider_output_schema,
         chapter_provider_output_schema_ref,
@@ -224,8 +224,8 @@ def test_observer_batch_contract_is_frozen_separately_from_historical_extraction
     ]
     assert chapter_provider_output_schema_ref(
         "canon_extraction", causal_batch=True
-    ).endswith(":v15")
-    assert chapter_provider_output_schema_ref("canon_extraction").endswith(":v14")
+    ).endswith(":v19")
+    assert chapter_provider_output_schema_ref("canon_extraction").endswith(":v18")
 
 
 def test_ordered_changes_to_one_entity_get_consecutive_versions():

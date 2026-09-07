@@ -1111,9 +1111,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 [project_id],
             )
             rows = cursor.fetchall()
-            self.assertEqual(sum(int(row[2]) for row in rows), 10)
+            self.assertEqual(sum(int(row[2]) for row in rows), 12)
             self.assertTrue(all(row[1] == "SUCCEEDED" for row in rows))
             self.assertIn(("model.rereview", "SUCCEEDED", 1), rows)
+            self.assertIn(("model.memo", "SUCCEEDED", 1), rows)
+            self.assertIn(("model.canon_support", "SUCCEEDED", 1), rows)
             cursor.execute(
                 """
                 SELECT asset.asset_type, COUNT(DISTINCT version.asset_version_id)
@@ -1132,17 +1134,17 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 [project_id],
             )
             counts = dict(cursor.fetchall())
-            self.assertEqual(counts["route_snapshot"], 10)
-            self.assertEqual(counts["input_manifest"], 10)
-            self.assertEqual(counts["execution_commit_manifest"], 10)
-            self.assertEqual(counts["prompt_bundle"], 10)
-            self.assertEqual(counts["skill_bundle"], 10)
-            self.assertEqual(counts["execution_context_policy"], 10)
-            self.assertEqual(counts["execution_source_policy"], 7)
-            self.assertEqual(counts["execution_validation_policy"], 10)
-            # Ten stage-local immutable snapshots coexist with the governing
+            self.assertEqual(counts["route_snapshot"], 12)
+            self.assertEqual(counts["input_manifest"], 12)
+            self.assertEqual(counts["execution_commit_manifest"], 12)
+            self.assertEqual(counts["prompt_bundle"], 12)
+            self.assertEqual(counts["skill_bundle"], 12)
+            self.assertEqual(counts["execution_context_policy"], 12)
+            self.assertEqual(counts["execution_source_policy"], 8)
+            self.assertEqual(counts["execution_validation_policy"], 12)
+            # Twelve stage-local immutable snapshots coexist with the governing
             # policy already frozen by planning semantic evaluation.
-            self.assertEqual(counts["execution_commit_policy"], 11)
+            self.assertEqual(counts["execution_commit_policy"], 13)
             cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -1152,7 +1154,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [project_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 10)
+            self.assertEqual(cursor.fetchone()[0], 12)
             cursor.execute(
                 """
                 SELECT version.content -> 'contract' ->> 'candidate_asset_type'
@@ -1209,7 +1211,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [project_id],
             )
-            self.assertEqual(cursor.fetchone(), (10, 10, 10, 10, 10))
+            self.assertEqual(cursor.fetchone(), (12, 12, 12, 12, 12))
             cursor.execute(
                 """
                 SELECT asset.asset_type, COUNT(DISTINCT version.asset_version_id)
@@ -1227,7 +1229,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             self.assertEqual(
                 dict(cursor.fetchall()),
-                {"cost_ledger": 10, "model_call_log": 10},
+                {"cost_ledger": 12, "model_call_log": 12},
             )
             cursor.execute(
                 """
@@ -1268,7 +1270,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 measurement["observations"]["provider_cost"]["status"],
                 "MEASURED",
             )
-            self.assertEqual(measurement["metrics"]["provider_call_count"], 10)
+            self.assertEqual(measurement["metrics"]["provider_call_count"], 12)
             self.assertEqual(measurement["metrics"]["provider_token_count"], 0)
             self.assertEqual(measurement["metrics"]["provider_cost"], 0.0)
             self.assertEqual(measurement["metrics"]["provider_trace_missing_count"], 0)
@@ -1299,7 +1301,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [project_id],
             )
-            self.assertEqual(cursor.fetchone(), (10, True))
+            self.assertEqual(cursor.fetchone(), (12, True))
             cursor.execute(
                 """
                 SELECT version.content ->> 'execution_id'
@@ -1323,7 +1325,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             project_id=project_id
         )
         self.assertEqual(len(selections), 1)
-        self.assertEqual(len(usage), 10)
+        self.assertEqual(len(usage), 11)
+        self.assertTrue(all(item["capability_id"] != "model.memo" for item in usage))
         self.assertTrue(all(item["attempt_id"] for item in usage))
         self.assertTrue(all(item["external_effect_id"] for item in usage))
         self.assertTrue(

@@ -47,22 +47,23 @@ def test_world_event_identity_clock_migration_fresh_and_supported_upgrade(baseli
 
 
 @pytest.mark.parametrize(
-    "baseline, baseline_head, native_node",
+    "baseline, baseline_head, native_node, planning_contract",
     [
         (
             "ed494c62ec9d9065dc560f9c7bafceb1e26df6f1",
             "20260906_0116_book_control_policy",
-            "",
+            "", "1.11.0",
         ),
         (
             "88100f821ae3f0bdcf00577dada8610ebece72a7",
             "20260906_0117_world_causal_event_locators",
-            "[True]",
+            "[True]", "1.12.0",
         ),
+        ("e600ab7d94cfab841dc618c49e8d47552342c324", "20260907_0118_preparation_event_lineage", "[True]", "1.13.0"),
     ],
 )
 def test_published_accepted_history_upgrades_and_frozen_planning_replays(
-    tmp_path, request, baseline, baseline_head, native_node
+    tmp_path, request, baseline, baseline_head, native_node, planning_contract
 ):
     import io
     import json
@@ -158,9 +159,7 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
             command = application.find_frozen_generation_command(
                 project_id=project_id, idempotency_key=key
             )
-            assert command is not None and command.execution_contract_version == (
-                "1.12.0" if native_node else "1.11.0"
-            )
+            assert command is not None and command.execution_contract_version == planning_contract
             if not native_node:
                 assert command.world_preparation_request is None
             principal = Principal(
@@ -191,7 +190,7 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
         from novel_forge.modules.command_kernel.errors import KernelError
 
         with pytest.raises(
-            KernelError, match="PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY"
+            KernelError, match=("NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE" if planning_contract == "1.13.0" else "PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY")
         ):
             application.generate(
                 replace(
@@ -239,3 +238,17 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
                 ),
             )
         )
+
+
+@pytest.mark.parametrize("baseline", ["20260625_0001_initial_industrial_schema", "20260907_0118_preparation_event_lineage"])
+def test_grounded_acceptance_guard_is_installed_fresh_and_on_upgrade(baseline):
+    with disposable_database_at_migration(DATABASE_URL, prefix="grounded_acceptance", target_migration_id=baseline) as url:
+        before = run_migrations(url)
+        assert before["ok"]
+        with psycopg.connect(url) as connection:
+            guard = connection.execute("SELECT pg_get_triggerdef(oid) FROM pg_trigger WHERE tgname='authority_grounded_chapter_acceptance_exact'").fetchone()
+            assert guard and "BEFORE INSERT" in guard[0]
+            definition = connection.execute("SELECT pg_get_functiondef('authority_grounded_chapter_acceptance_guard()'::regprocedure)").fetchone()[0]
+            assert "SUPPORTED_CANDIDATE" in definition and "expected_hash" in definition
+            assert "quality" in definition and "canon" in definition
+        assert run_migrations(url) == before

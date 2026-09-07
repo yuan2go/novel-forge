@@ -19,6 +19,12 @@ def apply_revision_result(
 ) -> dict[str, Any]:
     if not all((project_id, draft_asset_version_id, review_asset_version_id, context_bundle_version_id)):
         raise KernelError("REVISION_INPUT_INVALID", "versioned revision lineage is required")
+    if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1":
+        from novel_forge.modules.review.diagnostics import prose_hash
+        if (review.get("target_asset_version_id") != draft_asset_version_id
+            or review.get("context_bundle_version_id") != context_bundle_version_id
+            or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
+            raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     text = str(result.get("text") or "").strip()
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
     open_blocking = {
@@ -56,6 +62,7 @@ def apply_revision_result(
         "title": draft["title"],
         "text": text,
         "source_draft_version_id": draft_asset_version_id,
+        "creative_execution": dict(draft.get("creative_execution") or {}),
         "review_version_id": review_asset_version_id,
         "context_bundle_version_id": context_bundle_version_id,
         "resolved_issue_codes": resolved,

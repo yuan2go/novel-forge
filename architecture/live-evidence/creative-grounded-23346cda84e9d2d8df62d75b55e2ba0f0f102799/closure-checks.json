@@ -1,0 +1,43 @@
+{
+  "checked_at_utc": "2026-09-07T06:15:11.922330+00:00",
+  "starting_origin_main": "e600ab7d94cfab841dc618c49e8d47552342c324",
+  "rechecked_origin_main": "e600ab7d94cfab841dc618c49e8d47552342c324",
+  "main_drift_commits": [],
+  "tested_sha": "23346cda84e9d2d8df62d75b55e2ba0f0f102799",
+  "source_tree": "fd144c7365dd0bdc4cffbc616f8244cfc9d30201",
+  "implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7",
+  "reality_implementation_tree_sha": "sha256:79b68e6ba503429fbcde0c669aa44c89880e0f3858f92d32264d8aedf6750ff7",
+  "dependency_snapshot_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "branch": "codex/creative-grounded-canon-20260907",
+  "implementation_head_before_evidence_commit": "23346cda84e9d2d8df62d75b55e2ba0f0f102799",
+  "original_worktree": {
+    "head": "1493d392e70665b4b77184fb14dde1ff1d678202",
+    "clean": true,
+    "modification_performed": false
+  },
+  "post_evidence_validation": {
+    "command": "PATH=\"$PWD/.venv/bin:$PATH\" make validate",
+    "exit_code": 0,
+    "log": "post-evidence-validate.log"
+  },
+  "p0_gate_statuses": {
+    "source-preflight": "PASS",
+    "documentation-reality": "PASS",
+    "static-and-manifests": "PASS",
+    "pytest-backend": "PASS",
+    "postgresql-start": "PASS",
+    "migration-fresh": "PASS",
+    "migration-compatibility": "PASS",
+    "pytest-postgresql-integration": "PASS",
+    "migration-head": "PASS",
+    "query-plan-release": "PASS",
+    "compose-runtime": "PASS",
+    "resource-cleanup": "PASS",
+    "evidence-finalization": "PASS"
+  },
+  "p0_resource_residue": 0,
+  "focused_resource_cleanup": "focused-volume-cleanup.json",
+  "real_provider": "BLOCKED_NO_NEW_EXPLICIT_PAID_BUDGET",
+  "short_creative_effect": "NOT_PROVEN",
+  "push_pr_merge": "NOT_PERFORMED"
+}
