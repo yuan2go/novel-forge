@@ -4992,6 +4992,10 @@
         {
           "path": "src/novel_forge/modules/book_design_authority/formation.py",
           "symbol": "StoryFormationApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "symbol": "FormationGeneration"
         }
       ],
       "domain_symbols": [
@@ -5002,6 +5006,10 @@
         {
           "path": "src/novel_forge/modules/book_design_authority/foundation.py",
           "symbol": "QualifiedFoundationSet"
+        },
+        {
+          "path": "src/novel_forge/modules/creative/style_projection.py",
+          "symbol": "compile_foundation_style"
         }
       ],
       "commands_operations": [
@@ -5071,11 +5079,15 @@
       ],
       "external_effects": {
         "mode": "DIRECT",
-        "rule": "Formation may generate semantic candidates through governed provider effects; Book Design Authority alone activates a design.",
+        "rule": "Formation coordinates governed Planning Provider Effects for semantic candidates and independent diagnosis. Story Design activates Foundation semantics; Book Design Authority activates the reference-bound design.",
         "evidence": [
           {
             "path": "src/novel_forge/modules/book_design_authority/formation.py",
             "symbol": "StoryFormationApplication"
+          },
+          {
+            "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+            "symbol": "FormationGeneration.prepare_layer"
           }
         ]
       },

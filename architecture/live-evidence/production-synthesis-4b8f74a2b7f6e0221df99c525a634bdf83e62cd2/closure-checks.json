@@ -1,0 +1,17 @@
+{
+  "checked_at_utc": "2026-09-07T15:27:20.086333+00:00",
+  "starting_origin_main": "8b2c48372b20301d88d6d00cceae9e070ce63549",
+  "rechecked_origin_main": "8b2c48372b20301d88d6d00cceae9e070ce63549",
+  "remote_drift": [],
+  "tested_implementation_sha": "4b8f74a2b7f6e0221df99c525a634bdf83e62cd2",
+  "final_implementation_tree_identity": "sha256:7b73a9e17f23295e18fae94cfdd5cc95ad5e8ae1fb31fc93fcfd4077d62b6334",
+  "reality_implementation_tree_identity": "sha256:7b73a9e17f23295e18fae94cfdd5cc95ad5e8ae1fb31fc93fcfd4077d62b6334",
+  "full_P0": "NOT_RUN_USER_SCOPE",
+  "complete_make_validate": "NOT_RUN_USER_SCOPE",
+  "documentation_reality": "PASS",
+  "owned_container_removed": "nf-synthesis-20260907-pg",
+  "owned_resource_residue": 0,
+  "external_provider_calls": "NOT_RUN_NO_AUTHORIZED_BUDGET",
+  "push_pr_merge": "NOT_PERFORMED",
+  "post_test_changes": "ONLY_IDENTITY_EXCLUDED_DOCUMENTATION_REALITY_AND_EVIDENCE"
+}

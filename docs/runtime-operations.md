@@ -352,8 +352,9 @@ PYTHONPATH=src .venv/bin/python -m scripts.compare_creation_exports \
 
 The tool selects the final Quality-bound candidate, exports prose and unified diffs,
 Memo/diagnoses/support evidence, and distinguishes identical frozen plan hashes from a
-full-chain comparison with different plans. Costs remain per-currency receipt estimates,
-not invoices. Independent editorial judgments are left awaiting evidence; model scores
+full-chain comparison with different plans. Costs remain per-currency estimates from uniquely identified effect receipts,
+not invoices. The explicit unavailable list includes legacy operation-only receipts;
+when nonempty, reported sums are partial and must not be treated as the run total. Independent editorial judgments are left awaiting evidence; model scores
 are not converted into accuracy or human opinions. Missing authorized budget leaves
 the real experiment NOT_RUN while configuration and scripted wiring remain runnable.
 
