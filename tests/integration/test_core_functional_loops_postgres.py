@@ -2581,6 +2581,7 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
             generation=2,
             approval_scope=replacement_scope,
             target_runtime_profile="test",
+            proof_skill_ref="long-outline",
         )
         replacement_deployment = harness.deploy(
             replacement_pack, environment="test", runtime_profile="test"
