@@ -141,9 +141,8 @@ def drive(
     return "BOUNDED_TICKS_EXHAUSTED"
 
 
-def export(*, composition, book_run_id: str, destination: Path):
-    book = composition.authority.require(book_run_id)
-    query = AuthorityAssetQuery(composition.authority.database_url)
+def export_artifacts(*, database_url: str, project_id: str, destination: Path, extra_kinds: tuple[str, ...] = ()):
+    query = AuthorityAssetQuery(database_url)
     kinds = (
         "world_preparation_source",
         "world_preparation_generation",
@@ -154,8 +153,8 @@ def export(*, composition, book_run_id: str, destination: Path):
         "execution_recovery_session",
         "provider_request_admission_manifest",
     )
-    for kind in kinds:
-        rows = query.list(project_id=book["project_id"], asset_type=kind, limit=500)
+    for kind in (*kinds, *extra_kinds):
+        rows = query.list(project_id=project_id, asset_type=kind, limit=500)
         if len(rows) == 500:
             raise RuntimeError(
                 f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"
@@ -176,6 +175,12 @@ def export(*, composition, book_run_id: str, destination: Path):
             )
             + "\n"
         )
+
+
+def export(*, composition, book_run_id: str, destination: Path):
+    book = composition.authority.require(book_run_id)
+    export_artifacts(database_url=composition.authority.database_url,
+                     project_id=book["project_id"], destination=destination)
     from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
     chapters = ChapterAuthorityQuery(composition.authority.database_url)
     runs = chapters.list_runs(project_id=book["project_id"], book_run_id=book_run_id, limit=500)

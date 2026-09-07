@@ -203,8 +203,22 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             ),
             principal=principal,
         )
-        for _ in range(10):
-            formation.schedule_candidates(limit=1)
+        projection_checkpoints = []
+        recovered_activation = False
+
+        def fail_activation(checkpoint):
+            if checkpoint == "after_business_projection_update":
+                projection_checkpoints.append(checkpoint)
+                if len(projection_checkpoints) == 3:
+                    raise RuntimeError("simulated activation projection crash")
+
+        formation.generation.book_design.fault_injector = fail_activation
+        for _ in range(11):
+            formation.schedule_candidates(
+                limit=1,
+                project_id=harness.project_id,
+                formation_run_id=admitted.formation_run_id,
+            )
             claim = formation.runtime_jobs.claim(
                 runtime_group="story_formation",
                 worker_id="synthesis-worker",
@@ -214,14 +228,80 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             )
             if claim is None:
                 break
-            execute_story_formation_claim(
-                formation.runtime_jobs, formation, principal, claim, lease_seconds=60
-            )
+            try:
+                execute_story_formation_claim(
+                    formation.runtime_jobs,
+                    formation,
+                    principal,
+                    claim,
+                    lease_seconds=60,
+                )
+            except RuntimeError as exc:
+                assert (
+                    str(exc) == "simulated activation projection crash"
+                    and not recovered_activation
+                )
+                from novel_forge.modules.book_design_authority.query import (
+                    BookDesignAuthorityQuery,
+                )
+                from novel_forge.storage.authority_asset_store import (
+                    AuthorityAssetQuery,
+                )
+
+                assert not BookDesignAuthorityQuery(DATABASE_URL).require_book(
+                    project_id=harness.project_id, book_id=harness.book_ids[0]
+                )["active_book_design_version_id"]
+                assert not AuthorityAssetQuery(DATABASE_URL).list(
+                    project_id=harness.project_id, asset_type="character_arc_portfolio"
+                )
+                calls_before_recovery = len(transport.calls)
+                execution.close()
+                execution = build_production_execution_composition(
+                    settings,
+                    env=env,
+                    provider_registry=registry,
+                    planning_fixture_factory=transport.planning,
+                    chapter_fixture_factory=transport.chapter,
+                )
+                chapter = build_chapter_authority_application(
+                    settings, execution=execution, env=env
+                )
+                composition = build_book_production_composition(
+                    settings,
+                    principal=principal,
+                    execution=execution,
+                    chapter_application=chapter,
+                    env=env,
+                )
+                formation = composition.formation
+                failed = formation.require(admitted.formation_run_id)
+                formation.resume(
+                    admitted.formation_run_id,
+                    expected_version=failed["version"],
+                    principal=principal,
+                )
+                recovered_activation = True
+
             if formation.require(admitted.formation_run_id)["lifecycle"] == "READY":
                 break
         result = formation.require(admitted.formation_run_id)
         assert result["lifecycle"] == "READY", result
-        assert len(transport.calls) == 7
+        creative_candidates = [
+            item
+            for item in AuthorityAssetQuery(DATABASE_URL).list(
+                project_id=harness.project_id,
+                asset_type="planning_generation_candidate",
+            )
+            if item.content.get("generator_operation_name")
+            == "creative.candidates.generate"
+        ]
+        assert sorted(item.lifecycle for item in creative_candidates) == [
+            "ACTIVE",
+            "CANDIDATE",
+        ]
+        assert (
+            recovered_activation and len(transport.calls) == calls_before_recovery == 7
+        )
         assert {call["stage"] for call in transport.calls} == {
             "creative.candidates.generate",
             "theme.candidates.generate",
@@ -325,6 +405,18 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             book_run_id=book_run.book_run_id,
             transport=transport.chapter,
         )
+        for workspace in workspaces["workspaces"]:
+            assert workspace["creation_sources"]["status"] == "EXACT_FROZEN_INPUT"
+            best = next(
+                item["content"]
+                for item in workspace["artifacts"]["candidates"]
+                if item["asset_type"] == "best_draft_candidate"
+            )
+            assert (
+                best["realization_contract"]["contract_version"]
+                == "scene-realization-composition.v2"
+            )
+            assert best["realization_contract"]["craft_tasks"]["tasks"]
         artifact = {
             "prepared": prepared,
             "opening": opened,
@@ -336,6 +428,22 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         }
         (tmp_path / "formation-production.json").write_text(
             json.dumps(artifact, ensure_ascii=False, indent=2, default=str)
+        )
+        from scripts.run_world_production_smoke import export, export_artifacts
+
+        export_artifacts(
+            database_url=DATABASE_URL,
+            project_id=harness.project_id,
+            destination=tmp_path,
+            extra_kinds=(
+                "planning_generation_candidate",
+                "narrative_design_evaluation",
+            ),
+        )
+        export(
+            composition=composition,
+            book_run_id=book_run.book_run_id,
+            destination=tmp_path,
         )
     finally:
         (tmp_path / "provider-transcript.json").write_text(

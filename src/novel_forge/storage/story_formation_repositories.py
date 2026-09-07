@@ -473,7 +473,7 @@ class StoryFormationRepository:
                    formation_policy_version, frozen_input_digest,
                    COALESCE(foundation_set_digest, ''), version,
                    failure, recovery_instruction, book_design_asset_version_id,
-                   book_design_content_hash, expected_book_version
+                   book_design_content_hash, expected_book_version, frozen_stage_inputs
             FROM authority_story_formation_run
             WHERE formation_run_id=%s
             """,
@@ -499,6 +499,7 @@ class StoryFormationRepository:
             "book_design_asset_version_id",
             "book_design_content_hash",
             "expected_book_version",
+            "frozen_input",
         )
         return dict(zip(names, row, strict=True))
 
@@ -587,15 +588,10 @@ class StoryFormationRepository:
         )
         rows = {str(row[0]): row for row in self.cursor.fetchall()}
         if set(rows) != set(requested) or any(
-            tuple(str(item) for item in row[1:7])
-            != (
-                FoundationRole.CREATIVE_FOUNDATION.value,
-                "QUALIFIED",
-                "CURRENT",
-                "ACTIVE",
-                "ELIGIBLE",
-                "CLEAR",
-            )
+            tuple(str(item) for item in row[1:4])
+            != (FoundationRole.CREATIVE_FOUNDATION.value, "QUALIFIED", "CURRENT")
+            or str(row[4]) not in {"CANDIDATE", "ACTIVE"}
+            or tuple(str(item) for item in row[5:7]) != ("ELIGIBLE", "CLEAR")
             for row in rows.values()
         ):
             raise KernelError(

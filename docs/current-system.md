@@ -29,7 +29,9 @@ Design approval/activation; Book Design then validates the exact six-layer linea
 approval commands. Generated assets remain proposals until their owning Authority
 activates them. Foundation activation is never chapter acceptance or narrative history.
 The bounded creative-search baseline selects the first independently qualified branch
-and retains the alternatives; it does not claim a literary ranking. World depth follows
+and retains the alternatives; it does not claim a literary ranking. Only the selected
+branch is approved/activated; alternatives retain qualification evidence without becoming
+active Foundations. World depth follows
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
 
@@ -43,6 +45,38 @@ whole-chapter generation call receives distinct scene craft tasks and actor-scop
 voice inputs; targeted revision consumes evidenced diagnoses. Slot concatenation is
 serialization only, not evidence of narrative integration or voice quality. Frozen
 styles without the new policy retain the v1 contract.
+
+## Production mechanism choices
+
+The comparison reads executable workflows, enabled prompt sections and postprocessors
+at [InkOS 0910483](https://github.com/Narcooo/inkos/tree/091048383f411eb99948a8764f42b6fd13006f9b)
+and [bishu-novel 5f074b5](https://github.com/alikon-art/DeterminFlow-Plugins/tree/5f074b5a887a7e74a61d00206abb99c107b786c2/plugins/bishu-novel).
+[DeterminFlow 49a5c92](https://github.com/alikon-art/DeterminFlow/tree/49a5c9273cc152446a32474c9ac577316074f8e8)
+is used only to resolve extension provisioning, workflow loading and enabled/scoped
+prompt assembly in `web_server.py` and `prompts/sub_agent_prompts.py`.
+These are design inputs, not runtime dependencies or Authority. No external source,
+prompt, resource or fiction expression is incorporated.
+
+| External executable mechanism | Problem it addresses | Decision and native production consumer |
+|---|---|---|
+| Bishu `build/definition.json`, world prompt sections and world rendering | An idea needs rules, resources, power and information constraints | ADAPT: Formation RuntimeJobs call `foundation_generation.py`; progressive World candidates declare needed/deferred dimensions and compiled rules. Story Design qualifies/activates them; Book Opening and World Preparation consume exact bindings. Fixed six-stage world expansion is REJECTED. |
+| Bishu character skeleton/deep/voice nodes and enabled character prompts | Decorative cast and arbitrary voice labels | ADAPT: generated cast includes narrative function, desire, belief, fear, contradiction, relationships, behavior and voice anchors. Book Design projects its bound cast into the existing trajectory artifact; `chapter.style_policy.compile` passes source-bound voices to scene craft tasks. |
+| Bishu story-plan and style-profiler | Conflict cannot sustain escalation or an ending; style is only adjectives | ADAPT: Creative Foundation, Theme, Ending and Reader Promise receive independent semantic diagnosis/repair before activation. Operational narrator/POV/genre constraints and original examples become the frozen style policy. Reference materials remain abstract approved inputs; raw reference prose cannot enter Draft. |
+| Bishu MVP world → director → settler; `we_post.py` | Separate possible world consequences from narrative selection | KEEP native `story_planning_runtime/world_preparation.py`, World Dynamics, Director evaluation and working projection. Provider produces bounded candidates, deterministic rules reject invalid paths, Planning activates only selected future work. Temporary external world cache is not adopted as Canon. |
+| Bishu outline volume/near-term workflows | Distant planning is too detailed; actual events diverge from outline | KEEP typed Book/Arc/Volume/ChapterGroup/Chapter/Scene planning, accepted checkpoints and `book_replan`. Supervisor regenerates affected future dependencies; completion cases inspect ending, promise, theme and trajectories separately from execution's chapter bound. |
+| InkOS writer Chapter Memo and author controls | Plans list events without explaining how or why to write them | KEEP the governed Memo node: motivated choice, cost, reader expectation, emotion, information and ending change feed Draft. Author changes remain versioned Intent/Planning commands, with no tool write access to Canon. |
+| InkOS `utils/memory-retrieval.ts`; Bishu world trimmer and `trimmer_post.py` | Too much allowed but irrelevant material, or missing necessary facts | KEEP native protected/task-relevant Context ordering, bounded PostgreSQL lexical/structured discovery and optional governed semantic reranking. Accepted sources, entity/relationship/obligation links and incremental projections supply continuity. REJECT per-query whole-index replacement, silent retrieval failure and blanket character deletion. |
+| Bishu MVP skeleton/dialogue/action/interior/description/transition/integration prompts | Different scenes need different craft, while stitched fragments lose continuity | ADAPT as `scene-craft-tasks.v1` in `scene-realization-composition.v2`: distinct objectives and scoped inputs within one whole-chapter call; integration addresses junctions, causal carryover and repetition. Simple scenes omit irrelevant tasks. Separate fixed writer Agents/calls are REJECTED. |
+| Bishu polish workflow and professional-polisher dimensions | Generic polishing changes facts or rewrites everything | ADAPT into diagnosis-driven editing targets for dialogue, pacing, spatial clarity, explanation, voice and junctions. Existing bounded Revision consumes locations, preservation constraints and verification criteria; no fixed three-pass rewrite or genre-independent punctuation bans. |
+| InkOS `pipeline/chapter-review-cycle.ts` review/revise/snapshot loop | A revision regresses; earlier candidates and blockers disappear | ADAPT bounded retention with immutable prose and review lineage. Selection separates workspace wrapper from actual prose, carries unresolved diagnoses, and requires checked improvement/preservation. REJECT absent-score-to-zero fallback and score-only acceptance. |
+| Bishu Observer/Arbiter and `local_archive.py`; InkOS post-write settlement | Intended events or character assertions are mistaken for facts | KEEP final-prose extraction, independent support review, deterministic reconciliation and atomic Book acceptance. Background events use approved rule/decision provenance. REJECT model-authorized direct file/state merges; disclosure, belief and objective history remain separate. |
+| Hooks/debt tracking and post-write feedback in both systems | Promises stagnate and the next chapter ignores actual outcomes | KEEP accepted Obligation/trajectory events, Reader proxy's explicit evidence ceiling, accepted Arc/ending checkpoints and scheduled longform recap → future PlanChange. Operator semantic helpers alone are not evidence of autonomous feedback. |
+| InkOS production Skill bindings; Bishu workflow-scoped prompts | A declared skill is not actually loaded, or every node receives everything | KEEP versioned Capability Packs, governed Provider admission, role-specific projections and existing read queries. Formation assets, frozen creation sources, Memo, candidates, diagnostics and acceptance are exported by the native creation runner; missing bindings fail instead of silently disappearing. |
+
+The runnable sample is an engineering control-flow experiment. Transport scripts do
+not establish autonomous creative judgment, natural voices, calibrated semantic support,
+real reader preference or long-term quality. Whole-book acceptance, human editorial
+review and production qualification retain their separate evidence requirements.
 
 ## Creative execution and prose evidence
 
@@ -72,6 +106,8 @@ The existing Chapter run query supports `include_workspace=true`. It exposes imm
 inputs/Memo, candidates, diagnoses, revision comparison, extraction/support/approval,
 gates, attempts, acceptance and the exact accepted versions available to the next
 chapter. This is a read projection; it grants no mutation permission.
+The workspace's `creation_sources` resolves the command's frozen Book input snapshot,
+including exact Foundation and policy versions, rather than the Book's latest pointer.
 
 The existing Chapter Memo node invokes the governed Provider path from a frozen
 ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and

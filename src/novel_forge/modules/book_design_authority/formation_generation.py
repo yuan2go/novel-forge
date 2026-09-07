@@ -96,30 +96,34 @@ class FormationGeneration:
                     "STORY_FORMATION_GENERATION_BLOCKED",
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
                 )
-            if state["approval"] != "APPROVED":
-                if policy["approval_mode"] != "AUTO":
-                    raise KernelError(
-                        "STORY_FORMATION_APPROVAL_REQUIRED",
-                        f"Review and approve candidate {candidate_id}, then resume the same frozen Formation",
-                    )
-                self.planning.approve_candidate(
-                    candidate_id,
-                    principal=principal,
-                    idempotency_key=f"{key}:approve",
-                    trace_id=f"trace:{run['formation_run_id']}",
-                    correlation_id=run["root_operation_id"],
+            candidates.append(candidate_id)
+        # CONSTRAINT: Selection is the first independently qualified branch, not literary ranking.
+        # INVARIANT: Unselected alternatives remain qualified candidates, never active Foundations.
+        selected = candidates[0]
+        key = f"{run['formation_run_id']}:{role.value}:0"
+        state = self.planning.story_design.require(
+            project_id=run["project_id"], asset_version_id=selected
+        )
+        if state["approval"] != "APPROVED":
+            if policy["approval_mode"] != "AUTO":
+                raise KernelError(
+                    "STORY_FORMATION_APPROVAL_REQUIRED",
+                    f"Review and approve selected candidate {selected}, then resume the same frozen Formation",
                 )
-            self.planning.activate_candidate(
-                candidate_id,
+            self.planning.approve_candidate(
+                selected,
                 principal=principal,
-                idempotency_key=f"{key}:activate",
+                idempotency_key=f"{key}:approve",
                 trace_id=f"trace:{run['formation_run_id']}",
                 correlation_id=run["root_operation_id"],
             )
-            candidates.append(candidate_id)
-        # CONSTRAINT: This bounded baseline selects the first independently qualified branch;
-        # CONSTRAINT: It does not claim a literary ranking from model totals or operator scores.
-        selected = candidates[0]
+        self.planning.activate_candidate(
+            selected,
+            principal=principal,
+            idempotency_key=f"{key}:activate",
+            trace_id=f"trace:{run['formation_run_id']}",
+            correlation_id=run["root_operation_id"],
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             return StoryFormationRepository(uow.cursor).generated_layer(
                 project_id=run["project_id"],

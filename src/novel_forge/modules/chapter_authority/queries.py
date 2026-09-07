@@ -339,12 +339,23 @@ class ChapterAuthorityQuery:
                 ORDER BY operation.created_at, attempt.attempt_number
                 """, [root_operation_id, project_id],
             )
+            attempt_rows = uow.cursor.fetchall()
+            source_refs = dict(evidence["command"].get("context_version_refs") or {})
+            snapshot_id = str(source_refs.get("book_production_input_snapshot_id") or "")
+            creation = {"status": "NOT_BOOK_SCOPED", "input_snapshot_id": snapshot_id}
+            if snapshot_id:
+                uow.cursor.execute("SELECT book_design_version, foundation_set, snapshot_hash FROM authority_book_production_input_snapshot WHERE project_id=%s AND snapshot_id=%s", [project_id, snapshot_id])
+                snapshot = uow.cursor.fetchone()
+                if snapshot is None:
+                    raise KernelError("CHAPTER_WORKSPACE_SOURCE_MISSING", "Frozen Book input snapshot is missing")
+                creation = {"status": "EXACT_FROZEN_INPUT", "input_snapshot_id": snapshot_id, "snapshot_hash": snapshot[2], "book_design_asset_version_id": snapshot[0], "foundation_set": snapshot[1], "policy_versions": {key: value for key, value in source_refs.items() if key in {"style_policy_versions", "quality_rubric_versions", "platform_profile_version"}}}
             attempts = [{"attempt_id": item[0], "operation_id": item[1], "attempt_number": item[2],
                          "status": item[3], "worker_id": item[4], "error": item[5]}
-                        for item in uow.cursor.fetchall()]
+                        for item in attempt_rows]
         return {
             "contract_version": "chapter-workspace.v1",
             "attempts": attempts,
+            "creation_sources": creation,
             "book_run_id": row[7] if row else "", "authority": "READ_ONLY_PROJECTION",
             "project_id": project_id, "root_operation_id": root_operation_id,
             "run": {key: value for key, value in evidence.items() if key != "outputs"},

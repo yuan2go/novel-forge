@@ -356,7 +356,7 @@ class StoryFormationApplication:
             )
             uow.commit()
 
-    def schedule_candidates(self, *, limit: int) -> tuple[dict[str, Any], ...]:
+    def schedule_candidates(self, *, limit: int, project_id: str = "", formation_run_id: str = "") -> tuple[dict[str, Any], ...]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -364,6 +364,8 @@ class StoryFormationApplication:
                        version, frozen_input_digest
                 FROM authority_story_formation_run AS run
                 WHERE lifecycle IN ('ADMITTED','RUNNING')
+                  AND (%s='' OR project_id=%s)
+                  AND (%s='' OR formation_run_id=%s)
                   AND NOT EXISTS (
                     SELECT 1 FROM authority_runtime_job AS job
                     WHERE job.runtime_group='story_formation'
@@ -374,7 +376,7 @@ class StoryFormationApplication:
                 ORDER BY updated_at, formation_run_id
                 LIMIT %s
                 """,
-                [limit],
+                [project_id, project_id, formation_run_id, formation_run_id, limit],
             )
             rows = uow.cursor.fetchall()
         return tuple(

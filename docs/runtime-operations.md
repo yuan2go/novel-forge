@@ -278,6 +278,82 @@ For a short comparison, retain a baseline export from a separately frozen implem
 and use the same approved input and model settings in an isolated new run. Preserve
 failed runs; these exports do not establish independent literary or human qualification.
 
+### Creating the inputs through native Formation
+
+`scripts.run_creation_synthesis` coordinates existing Content, Story Formation,
+Book Opening and Book Supervisor commands. It needs an isolated registered Project
+and new Book (`POST /authority/books`), migrated through `0120`, and the normal
+configured operator/worker permissions. The approved current Planning Capability Pack
+must include the six Foundation generation capabilities and their qualification Skills;
+the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed
+qualified story assets or call a Provider SDK directly.
+
+The three checked-in files are complete inputs. Validate them without PostgreSQL or
+paid model access:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
+  --brief config/production/short-arc-brief.json \
+  --policy config/production/short-arc-creation.json \
+  --formation-policy config/production/short-arc-formation.json \
+  --project-id example-project --book-id example-book \
+  --root /tmp/novel-creation-runtime --run-key creation-control \
+  --evidence-dir /tmp/novel-creation-config-check
+```
+
+For a credentialed run, first load an explicitly authorized route, credentials,
+Principals and spending caps. Credential availability alone does not authorize spending.
+`config/provider/creation-synthesis.env.example` asserts required settings and supplies
+neither credentials nor budget amounts. The production profile's chapter count is a
+bounded sample, and its small text-length limits are an internal smoke configuration,
+not a literary acceptance rubric. Edit and freeze the policies before execution if a
+different bounded sample is authorized.
+
+```bash
+source config/provider/creation-synthesis.env.example
+PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
+  --brief config/production/short-arc-brief.json \
+  --policy config/production/short-arc-creation.json \
+  --formation-policy config/production/short-arc-formation.json \
+  --project-id "$NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE" \
+  --book-id "$NOVEL_FORGE_CREATION_BOOK_ID" \
+  --root "$NOVEL_FORGE_CREATION_RUNTIME_ROOT" \
+  --run-key "$NOVEL_FORGE_CREATION_RUN_KEY" \
+  --evidence-dir "$NOVEL_FORGE_CREATION_EVIDENCE_DIR" \
+  --expected-sha "$(git rev-parse HEAD)" --max-seconds 1800 --execute
+```
+
+Each invocation requires a new evidence directory. On interruption, keep the runtime,
+database, run key and policies; supply `--resume-formation-run-id` from
+`creation-run.json`. The original frozen brief and policy remain authoritative, and a
+different Formation policy is rejected. Failed/approval-waiting Formation uses its
+existing resume/approval commands before the driver continues; a live lease is not
+stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
+candidate has subsequently been approved. New generation under a changed source uses a
+new run; old terminal tasks and accepted history are not reopened.
+
+Exports include Foundation candidates/diagnoses, model/usage/cost records, request
+admission and recovery artifacts even if Formation fails before Book production.
+The project-scoped export is bounded; use a dedicated isolated project, and retain
+PostgreSQL for paged export if a bound is reached. Completed chapters include their
+actual text, Memo, edits, grounding and exact next-input sources.
+
+Preserve a baseline export from an isolated frozen old implementation. After both runs
+exist, compare actual accepted manuscripts without adding another product pipeline:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.compare_creation_exports \
+  "$NOVEL_FORGE_BASELINE_EXPORT" "$NOVEL_FORGE_CREATION_EVIDENCE_DIR" \
+  --output "$NOVEL_FORGE_COMPARISON_DIR"
+```
+
+The tool selects the final Quality-bound candidate, exports prose and unified diffs,
+Memo/diagnoses/support evidence, and distinguishes identical frozen plan hashes from a
+full-chain comparison with different plans. Costs remain per-currency receipt estimates,
+not invoices. Independent editorial judgments are left awaiting evidence; model scores
+are not converted into accuracy or human opinions. Missing authorized budget leaves
+the real experiment NOT_RUN while configuration and scripted wiring remain runnable.
+
 `events.jsonl` retains tick and failure results; the export includes exact world source,
 generation/evaluation artifacts, execution recovery sessions, request admission,
 model/usage/cost evidence and accepted Realities. Inspect that original preparation

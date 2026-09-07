@@ -13,7 +13,7 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
     AuthorityInputAsset,
 )
-from novel_forge.modules.book_design_authority.style_projection import compile_foundation_style
+from novel_forge.modules.creative.style_projection import compile_foundation_style
 from novel_forge.modules.characters.domain import (
     build_character,
     build_relationship_state,
