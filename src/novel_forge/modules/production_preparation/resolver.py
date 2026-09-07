@@ -195,6 +195,8 @@ class PostgresProductionAssetResolver:
                 "override AssetVersion is stale, revoked, or quarantined",
             )
         asset = self._asset(row[:10], "explicit audited AssetVersion override")
+        if asset.asset_type == "planning_generation_candidate" and asset.content.get("planning_scope") == "NOT_APPLICABLE":
+            asset = self._foundation_projection(asset)
         accepted_scope = self._accepted_snapshot_scope(
             project_id=project_id,
             asset_version_id=asset_version_id,
@@ -209,6 +211,30 @@ class PostgresProductionAssetResolver:
             if initial_scope is not None:
                 asset = self._bind_initial_state_scope(asset, *initial_scope)
         return asset
+
+    def _foundation_projection(self, asset: ResolvedProductionAsset) -> ResolvedProductionAsset:
+        from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+        role = FOUNDATION_GENERATORS.get(str(asset.content.get("generator_operation_name") or ""))
+        if role is None:
+            raise KernelError("PREPARATION_FOUNDATION_ROLE_INVALID", "Generated Foundation requires an exact semantic generator")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT binding.foundation_role
+                   FROM authority_book_foundation_binding AS binding
+                   JOIN authority_story_design_version_state AS state
+                     ON state.project_id=binding.project_id AND state.asset_version_id=binding.asset_version_id
+                   WHERE binding.project_id=%s AND binding.book_id=%s
+                     AND binding.asset_version_id=%s AND binding.content_hash=%s
+                     AND binding.foundation_role=%s AND binding.freshness='CURRENT'
+                     AND binding.retired_at IS NULL AND state.lifecycle='ACTIVE'
+                     AND state.qualification='QUALIFIED' AND state.approval='APPROVED'
+                     AND state.freshness='CURRENT'""",
+                [asset.project_id, asset.content.get("book_id"), asset.asset_version_id, asset.content_hash, role.value],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError("PREPARATION_FOUNDATION_NOT_CURRENT", "Only the exact current qualified Book Foundation can supply a semantic context role")
+        return replace(asset, asset_type=role.value.lower(), content={**asset.content, "physical_asset_type": asset.asset_type}, selected_reason="current qualified Foundation semantic projection")
 
     def resolve_active_arc_plan_override(
         self, *, project_id: str, book_id: str, asset_version_id: str

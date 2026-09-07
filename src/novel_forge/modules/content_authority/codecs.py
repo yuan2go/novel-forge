@@ -13,6 +13,7 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
     AuthorityInputAsset,
 )
+from novel_forge.modules.book_design_authority.style_projection import compile_foundation_style
 from novel_forge.modules.characters.domain import (
     build_character,
     build_relationship_state,
@@ -1754,6 +1755,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
             _state_initialize_empty,
         ),
         ("chapter.plan.author", "chapter_plan", "chapter.plan", author_chapter_plan),
+        ("chapter.style_policy.compile", "style_policy", "chapter.style_policy", compile_foundation_style),
         (
             "chapter.style_policy.author",
             "style_policy",

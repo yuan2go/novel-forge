@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.integration.creative_grounding_support import CreativeGroundingTransport
+
 import json
 
 from novel_forge.modules.provider_control.scripted import ScriptedProviderAdapterV2
@@ -14,14 +16,11 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
     def __init__(self):
         super().__init__()
         self.calls = []
+        self.chapter = SynthesisChapterTransport()
 
     def planning(self, stage, inputs):
         if stage not in FOUNDATION_GENERATORS:
-            from novel_forge.modules.story_planning_runtime.execution import (
-                planning_fixture_response,
-            )
-
-            return planning_fixture_response(stage, inputs)
+            return self.chapter.planning(stage, inputs)
         self.calls.append({"stage": stage, "input": inputs})
         role = FOUNDATION_GENERATORS[stage]
         parents = {
@@ -131,3 +130,17 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                     ],
                 )
         return result
+
+
+class SynthesisChapterTransport(CreativeGroundingTransport):
+    def planning(self, stage, inputs):
+        if stage == "world_candidates.generate":
+            if inputs["world_preparation"]["accepted_through_chapter"] >= 2:
+                result = {
+                    "disposition": "NO_OP",
+                    "reason": "This bounded scripted arc proposes no further world event after its disclosure chapter.",
+                    "candidates": [],
+                }
+                self.calls.append({"stage": stage, "input": inputs, "output": result})
+                return result
+        return super().planning(stage, inputs)

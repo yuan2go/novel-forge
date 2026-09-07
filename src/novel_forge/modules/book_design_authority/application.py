@@ -15,6 +15,7 @@ from novel_forge.modules.book_design_authority.domain import (
     BookDesignPayload,
     BookScope,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -696,7 +697,25 @@ class BookDesignAuthorityApplication:
             [design_asset_version_id],
         )
         row = uow.cursor.fetchone()
-        if row is None or str(row[1]) != EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
+        if row is None:
+            return {}
+        if str(row[1]) == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            bindings = dict(row[0])["foundation_set"]["bindings"]
+            source = next(item for item in bindings if item["role"] == "CHARACTER_CAST")
+            cast = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=source["asset_version_id"])
+            if cast.content_hash != source["content_hash"]:
+                raise KernelError("BOOK_DESIGN_CHARACTER_SOURCE_DRIFT", "Character projection requires its exact Foundation binding")
+            value = cast.content.get("candidate_payload", cast.content)
+            outputs = (("character_arc_portfolio", "character-arc-portfolio.v2", "character-arcs", {
+                "book_id": book_id,
+                "trajectories": [{key: item[key] for key in ("character_id", "desire", "need", "false_belief", "arc_direction")} for item in value["characters"]],
+                "foundation_design_asset_version_id": design_asset_version_id,
+                "source_cast_asset_version_id": cast.asset_version_id,
+                "source_cast_content_hash": cast.content_hash,
+                "authority": "FOUNDATION_PLANNING_PROJECTION",
+            }),)
+            return BookDesignAuthorityApplication._write_foundation_outputs(uow, operation_id=operation_id, project_id=project_id, book_id=book_id, design_asset_version_id=design_asset_version_id, trace_id=trace_id, correlation_id=correlation_id, outputs=outputs)
+        if str(row[1]) != EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
             return {}
         content = dict(row[0])
         characters = list(content["character_system"])
@@ -787,6 +806,10 @@ class BookDesignAuthorityApplication:
                 },
             ),
         )
+        return BookDesignAuthorityApplication._write_foundation_outputs(uow, operation_id=operation_id, project_id=project_id, book_id=book_id, design_asset_version_id=design_asset_version_id, trace_id=trace_id, correlation_id=correlation_id, outputs=outputs)
+
+    @staticmethod
+    def _write_foundation_outputs(uow, *, operation_id, project_id, book_id, design_asset_version_id, trace_id, correlation_id, outputs):
         versions: dict[str, str] = {}
         for asset_type, schema_version, category, output_content in outputs:
             logical_ref = f"books/{book_id}/{asset_type.replace('_', '-')}"

@@ -86,14 +86,14 @@ CHARACTER_REACH_VALUES = frozenset(
 
 REALIZATION_AUTHORITY_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
     "WORLD_INVARIANT": {
-        "world_bible": frozenset({"world_bible"}),
+        "world_bible": frozenset({"world_bible", "planning_generation_candidate"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
         "story_state": frozenset(
             {"story_state", "story_state_snapshot", "narrative_state"}
         ),
     },
     "WORLD_STRUCTURE": {
-        "world_bible": frozenset({"world_bible"}),
+        "world_bible": frozenset({"world_bible", "planning_generation_candidate"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
         "canon_snapshot": frozenset({"canon_snapshot"}),
     },
@@ -102,11 +102,11 @@ REALIZATION_AUTHORITY_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
             {"story_state", "story_state_snapshot", "narrative_state"}
         ),
         "canon_snapshot": frozenset({"canon_snapshot"}),
-        "world_bible": frozenset({"world_bible"}),
+        "world_bible": frozenset({"world_bible", "planning_generation_candidate"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
     },
     "CHARACTER_IDENTITY": {
-        "character_cast": frozenset({"character_cast"}),
+        "character_cast": frozenset({"character_cast", "planning_generation_candidate"}),
         "character_arc_portfolio": frozenset({"character_arc_portfolio"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
     },
@@ -114,12 +114,12 @@ REALIZATION_AUTHORITY_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
         "story_state": frozenset(
             {"story_state", "story_state_snapshot", "narrative_state"}
         ),
-        "character_cast": frozenset({"character_cast"}),
+        "character_cast": frozenset({"character_cast", "planning_generation_candidate"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
     },
     "CHARACTER_TRAJECTORY": {
         "character_arc_portfolio": frozenset({"character_arc_portfolio"}),
-        "character_cast": frozenset({"character_cast"}),
+        "character_cast": frozenset({"character_cast", "planning_generation_candidate"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
     },
 }

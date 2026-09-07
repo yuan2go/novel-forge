@@ -395,6 +395,12 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         else:
             from novel_forge.modules.review.diagnostics import open_diagnoses
             payload["review_issues"] = _compact(open_diagnoses(dict(inputs.get("review") or {})))
+            if (source.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v2":
+                payload["targeted_editing"] = {
+                    "mode": "DIAGNOSIS_DIRECTED_ONLY",
+                    "tasks": [{key: issue[key] for key in ("code", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria") if key in issue} for issue in open_diagnoses(dict(inputs.get("review") or {}))],
+                    "instructions": "Repair each evidenced problem using its stated criterion. Keep unaffected choices, information boundaries, and voice. An aesthetic suggestion is optional; unknown or unresolved blockers remain open. Read adjacent passages for continuity after a local edit.",
+                }
         return _task(stage, **payload)
     if stage == "rereview":
         from novel_forge.modules.review.diagnostics import open_diagnoses

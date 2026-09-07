@@ -41,6 +41,28 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 
 def test_native_formation_generates_foundation_from_author_brief(tmp_path):
     harness = CapabilityPackPostgresHarness("synthesis-formation")
+    from copy import copy
+
+    chapter_pack = copy(harness)
+    chapter_pack.pack_id += "-chapter"
+    approved_chapter = chapter_pack.register_compile_approve(
+        "1.0.0",
+        generation=1,
+        approval_scope=chapter_pack.approval_scope(
+            environments=("test",), runtime_profiles=("test",)
+        ),
+        target_runtime_profile="test",
+    )
+    chapter_pack.register_agents(approved_chapter.compiled)
+    chapter_deployment = chapter_pack.deploy(
+        approved_chapter, environment="test", runtime_profile="test"
+    )
+    chapter_pack.activate(chapter_deployment, environment="test")
+    from tests.integration.test_postgresql_only_chapter_slice import (
+        PostgreSQLOnlyChapterSliceTests,
+    )
+
+    PostgreSQLOnlyChapterSliceTests.release_evidence(harness.project_id)
     definition = story_planning_generation_definition(
         application_build_id="synthesis-formation", commit_sha=RELEASE_SHA
     )
@@ -79,7 +101,10 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
     principal = replace(
         principal,
         permissions=principal.permissions
-        | {"content.authority.execute", "content.operation:creative.brief.create"},
+        | {
+            "content.authority.execute",
+            *(f"content.operation:{name}" for name in CONTENT_CODECS),
+        },
     )
     content = ContentAuthorityApplication(
         DATABASE_URL,
@@ -122,6 +147,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         "NOVEL_FORGE_PLANNING_MODEL": "synthesis-scripted",
         "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path),
         "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack.pack_id,
         "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": harness.project_id,
     }
     settings = IndustrialSettings(
@@ -138,6 +164,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         env=env,
         provider_registry=registry,
         planning_fixture_factory=transport.planning,
+        chapter_fixture_factory=transport.chapter,
     )
     try:
         chapter = build_chapter_authority_application(
@@ -203,7 +230,106 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             "world.design.generate",
             "character.cast.generate",
         }
+        from novel_forge.modules.book_authority.creation_inputs import (
+            prepare_creation_inputs,
+        )
+        from novel_forge.modules.book_authority.opening import (
+            OpenBookProductionRequest,
+            _OPENING_INPUT_ROLES,
+        )
+        from novel_forge.modules.runtime_job import RuntimeJobAuthority
+        from novel_forge.workers.book_authority import execute_book_opening_claim
+
+        policy = json.loads(
+            (
+                Path(__file__).resolve().parents[2]
+                / "config/production/short-arc-creation.json"
+            ).read_text()
+        )
+        prepared = prepare_creation_inputs(
+            composition=composition,
+            content=content,
+            formation_run_id=admitted.formation_run_id,
+            policy=policy,
+        )
+        versions = prepared["versions"]
+        opening_request = OpenBookProductionRequest(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=harness.book_ids[0],
+            actor_id=principal.principal_id,
+            expected_book_version=prepared["book_version"],
+            production_profile=versions["production_profile"],
+            planning_input_versions={
+                role: versions[role] for role in _OPENING_INPUT_ROLES
+            },
+            arc_logical_keys=("arc:central", "arc:relationship"),
+            idempotency_key="synthesis:opening",
+            trace_id="trace:synthesis:opening",
+            correlation_id=harness.project_id,
+            initial_story_state_version=versions["story_state"],
+            initial_canon_snapshot_version=versions["canon_snapshot"],
+        )
+        opening = composition.open_book(opening_request)
+        assert opening.opening_run_id
+        claim = composition.opening.claim_next_execution(
+            worker_id="synthesis-opening",
+            lease_seconds=60,
+            project_id=harness.project_id,
+        )
+        assert claim is not None
+        opened = execute_book_opening_claim(
+            RuntimeJobAuthority(DATABASE_URL),
+            composition.opening,
+            principal,
+            claim,
+            lease_seconds=60,
+        )
+        snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
+        from scripts.run_world_production_smoke import drive, start_command
+        from novel_forge.modules.authority_security import PrincipalType
+        import time
+
+        book_run = composition.authority.start(
+            start_command(
+                snapshot,
+                actor=principal.principal_id,
+                run_key="synthesis:production",
+                chapters=3,
+            ),
+            principal=principal,
+        )
+        worker = replace(
+            principal,
+            principal_type=PrincipalType.WORKER,
+            permissions=principal.permissions - {"book.authority.approve_replan"},
+        )
+        ticks = []
+        stop = drive(
+            composition=composition,
+            chapter=chapter,
+            book_run_id=book_run.book_run_id,
+            worker=worker,
+            events=ticks.append,
+            maximum_ticks=80,
+            deadline=time.monotonic() + 240,
+        )
+        assert stop == "ACCEPTED_TARGET_REACHED", (stop, ticks[-3:])
+        from tests.integration.creative_grounding_support import (
+            verify_creative_workspace,
+        )
+
+        workspaces = verify_creative_workspace(
+            composition=composition,
+            chapter_application=chapter,
+            book_run_id=book_run.book_run_id,
+            transport=transport.chapter,
+        )
         artifact = {
+            "prepared": prepared,
+            "opening": opened,
+            "ticks": ticks,
+            "workspaces": workspaces,
             "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
             "formation": result,
             "provider_calls": transport.calls,
@@ -212,4 +338,16 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             json.dumps(artifact, ensure_ascii=False, indent=2, default=str)
         )
     finally:
+        (tmp_path / "provider-transcript.json").write_text(
+            json.dumps(
+                {
+                    "proof_ceiling": "SCRIPTED_TRANSPORT_ONLY",
+                    "foundation": transport.calls,
+                    "chapter": transport.chapter.calls,
+                },
+                ensure_ascii=False,
+                indent=2,
+                default=str,
+            )
+        )
         execution.close()

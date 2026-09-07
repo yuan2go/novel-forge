@@ -33,6 +33,17 @@ and retains the alternatives; it does not claim a literary ranking. World depth 
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
 
+The creation-input coordinator invokes existing Content commands for explicit runtime
+policies and empty genesis, then the existing Book Opening command. It does not
+create chapter-zero acceptance. Book Design activation projects the bound cast into
+its existing planning trajectory artifact. `chapter.style_policy.compile` derives a
+source-bound policy from the exact Creative Foundation and cast, including original
+voice examples. Its frozen policy enables `scene-realization-composition.v2`: one
+whole-chapter generation call receives distinct scene craft tasks and actor-scoped
+voice inputs; targeted revision consumes evidenced diagnoses. Slot concatenation is
+serialization only, not evidence of narrative integration or voice quality. Frozen
+styles without the new policy retain the v1 contract.
+
 ## Creative execution and prose evidence
 
 The selection node projects the immutable review of its selected prose. If a proposed
