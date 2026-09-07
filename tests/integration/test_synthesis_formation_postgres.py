@@ -4,6 +4,8 @@ from dataclasses import replace
 from pathlib import Path
 import json
 
+import pytest
+
 from novel_forge.api.authority_dependencies import (
     build_book_production_composition,
     build_chapter_authority_application,
@@ -405,7 +407,13 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             book_run_id=book_run.book_run_id,
             transport=transport.chapter,
         )
+        from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
+
         for workspace in workspaces["workspaces"]:
+            assert workspace["accepted_manuscript"]["status"] == "EXACT_ACCEPTANCE_BOUND", workspace["accepted_manuscript"]
+            accepted_text = resolve_accepted_manuscript(workspace)
+            assert accepted_text["candidate"]["content"]["text"]
+            assert accepted_text["outcome"]["asset_version_id"] == workspace["acceptance"]["outcome_asset_version_id"]
             assert workspace["creation_sources"]["status"] == "EXACT_FROZEN_INPUT"
             best = next(
                 item["content"]
@@ -445,6 +453,24 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             book_run_id=book_run.book_run_id,
             destination=tmp_path,
         )
+        from scripts.compare_creation_exports import chapters
+        from scripts.creation_pilot import prepare_pilot_book
+        assert set(chapters(tmp_path)) == {1, 2, 3}
+        assert len(list(tmp_path.glob("accepted-chapter-*.txt"))) == 3
+        assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="synthesis:formation")["formation_run_id"] == admitted.formation_run_id
+        assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="different-key") is None
+        assert composition.opening.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="synthesis:opening")["opening_run_id"] == opening.opening_run_id
+        pilot_project = harness.project_id + "-pilot"
+        pilot_principal = replace(principal, project_scope=frozenset({pilot_project}), permissions=principal.permissions | {"project.authority.execute"})
+        frozen_pilot = {"creation_policy": policy, "implementation_identity": RELEASE_SHA}
+        arguments = dict(composition=composition, principal=pilot_principal, project_id=pilot_project,
+                         workspace_id=pilot_project + "-workspace", book_id=pilot_project + "-book",
+                         run_key="pilot-prepare", title="隔离试运行", frozen=frozen_pilot)
+        first_book = prepare_pilot_book(**arguments, initialize=True)
+        assert prepare_pilot_book(**arguments, initialize=True) == first_book
+        assert prepare_pilot_book(**arguments, initialize=False) == first_book
+        with pytest.raises(ValueError, match="differs"):
+            prepare_pilot_book(**{**arguments, "frozen": {**frozen_pilot, "run_key": "changed"}}, initialize=False)
     finally:
         (tmp_path / "provider-transcript.json").write_text(
             json.dumps(

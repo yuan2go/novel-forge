@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timezone
 import re
+import unicodedata
 from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+
+from .context_views import compile_platform_policy
 
 from .longitudinal import (
     READER_OUTCOME_DIMENSIONS,
@@ -569,6 +572,25 @@ def _evaluate(
     fixture: bool,
     profile_ids: dict[str, str],
 ) -> dict[str, Any]:
+    if dimension == "chapter_length":
+        profile_id = profile_ids["platform_profile_version_id"]
+        for segment in segments:
+            if segment.get("asset_version_id") != profile_id:
+                continue
+            rules = compile_platform_policy(profile_asset_version_id=profile_id, segment=segment).chapter_length_rules
+            if "unit" not in rules:
+                break
+            if rules["unit"] != "HAN_CHARACTERS_V1":
+                raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", "Unsupported explicit chapter length unit")
+            minimum, maximum = rules.get("minimum"), rules.get("maximum")
+            if type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum:
+                raise KernelError("CHAPTER_LENGTH_POLICY_INVALID", "Frozen length bounds must be positive ordered integers")
+            count = metrics["han_characters"]
+            return _report(group, dimension, project_id, target,
+                "PASSED" if minimum <= count <= maximum else "FAILED",
+                score=None, calibration="DETERMINISTIC", source=profile_id,
+                locations=[{"unit": rules["unit"], "observed": count, "minimum": minimum, "maximum": maximum}],
+                fixture=fixture, profile_ids=profile_ids)
     calibrated = _calibrated_evidence(
         dimension, segments, target_asset_version_id=target, fixture=fixture
     )
@@ -946,6 +968,7 @@ def _structural_metrics(text: str) -> dict[str, Any]:
     normalized = [re.sub(r"\s+", " ", item.lower()) for item in sentences]
     return {
         "characters": len(text),
+        "han_characters": sum(unicodedata.name(char, "").startswith(("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")) for char in text),
         "paragraphs": len(paragraphs) or 1,
         "sentences": len(sentences) or 1,
         "average_sentence": sum(units) / max(len(units), 1),

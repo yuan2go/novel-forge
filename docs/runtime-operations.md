@@ -281,21 +281,33 @@ failed runs; these exports do not establish independent literary or human qualif
 ### Creating the inputs through native Formation
 
 `scripts.run_creation_synthesis` coordinates existing Content, Story Formation,
-Book Opening and Book Supervisor commands. It needs an isolated registered Project
-and new Book (`POST /authority/books`), migrated through `0120`, and the normal
+Book Opening and Book Supervisor commands. `--initialize --workspace-id ...` registers
+an isolated Project and Book through their existing Commands, idempotently. Existing
+Books must carry the identical frozen pilot configuration. PostgreSQL must be migrated
+through `0120`, with the normal
 configured operator/worker permissions. The approved current Planning Capability Pack
 must include the six Foundation generation capabilities and their qualification Skills;
 the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed
 qualified story assets or call a Provider SDK directly.
 
-The three checked-in files are complete inputs. Validate them without PostgreSQL or
+The `short-arc-*` files remain the small English engineering smoke. The separate
+`chinese-pilot-*` files freeze an original three-chapter Chinese Arc, limited third-person
+POV, character voice constraints, information asymmetry, a costly choice and setup/payoff.
+Each chapter requires 2000–3500 Han characters. `HAN_CHARACTERS_V1` counts Unicode
+CJK unified/compatibility ideographs, including supplementary planes; punctuation,
+Latin letters, numbers and whitespace do not count. This deterministic gate precedes
+model evidence and cannot be waived by a high model score. Profiles without an explicit
+unit retain their historical contract. These files contain author intent and policies,
+not prequalified Foundation or chapter assets.
+
+The checked-in files are complete inputs. Validate them without PostgreSQL or
 paid model access:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
-  --brief config/production/short-arc-brief.json \
-  --policy config/production/short-arc-creation.json \
-  --formation-policy config/production/short-arc-formation.json \
+  --brief config/production/chinese-pilot-brief.json \
+  --policy config/production/chinese-pilot-creation.json \
+  --formation-policy config/production/chinese-pilot-formation.json \
   --project-id example-project --book-id example-book \
   --root /tmp/novel-creation-runtime --run-key creation-control \
   --evidence-dir /tmp/novel-creation-config-check
@@ -312,11 +324,14 @@ different bounded sample is authorized.
 ```bash
 source config/provider/creation-synthesis.env.example
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
-  --brief config/production/short-arc-brief.json \
-  --policy config/production/short-arc-creation.json \
-  --formation-policy config/production/short-arc-formation.json \
+  --brief config/production/chinese-pilot-brief.json \
+  --policy config/production/chinese-pilot-creation.json \
+  --formation-policy config/production/chinese-pilot-formation.json \
   --project-id "$NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE" \
   --book-id "$NOVEL_FORGE_CREATION_BOOK_ID" \
+  --initialize --workspace-id "$NOVEL_FORGE_CREATION_WORKSPACE_ID" \
+  --authorized-total-usd "$NOVEL_FORGE_CREATION_AUTHORIZED_TOTAL_USD" \
+  --authorization-ref "$NOVEL_FORGE_CREATION_AUTHORIZATION_REF" \
   --root "$NOVEL_FORGE_CREATION_RUNTIME_ROOT" \
   --run-key "$NOVEL_FORGE_CREATION_RUN_KEY" \
   --evidence-dir "$NOVEL_FORGE_CREATION_EVIDENCE_DIR" \
@@ -324,9 +339,15 @@ PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
 ```
 
 Each invocation requires a new evidence directory. On interruption, keep the runtime,
-database, run key and policies; supply `--resume-formation-run-id` from
-`creation-run.json`. The original frozen brief and policy remain authoritative, and a
-different Formation policy is rejected. Failed/approval-waiting Formation uses its
+database, run key, model routes, authorization and policies; rerun the same command
+with a new evidence directory. Formation and Opening are located by their native
+idempotency keys; Book Run start reuses its frozen snapshot. An optional
+`--resume-formation-run-id` must match that key. Book runtime policy freezes the brief
+hash, creation/Formation policy, implementation, model and routing contracts, Prompt/Skill
+hashes, token accounting and budgets. Changed input is rejected before generation.
+The explicit total USD cap uses the existing atomic `project_total` reservation dimension,
+including settled and unknown effects across days and all books in the dedicated project.
+Baseline, revisions and retries share this cap; a lower configured cap is never raised. Failed/approval-waiting Formation uses its
 existing resume/approval commands before the driver continues; a live lease is not
 stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
 candidate has subsequently been approved. New generation under a changed source uses a
@@ -350,9 +371,16 @@ PYTHONPATH=src .venv/bin/python -m scripts.compare_creation_exports \
   --output "$NOVEL_FORGE_COMPARISON_DIR"
 ```
 
-The tool selects the final Quality-bound candidate, exports prose and unified diffs,
-Memo/diagnoses/support evidence, and distinguishes identical frozen plan hashes from a
-full-chain comparison with different plans. Costs remain per-currency estimates from uniquely identified effect receipts,
+The workspace and comparer follow committed Book Acceptance → immutable ChapterOutcome
+→ exact selected Candidate, Quality, Review, Canon and Context → Memo. They verify
+project/book/chapter identity, content and prose hashes, plan lineage and Grounding.
+Historical Quality targets, original drafts and discarded revisions remain available.
+Missing/conflicting bindings produce per-chapter errors; partial exports retain successful
+chapters and return nonzero. `accepted-chapter-N.txt` is extracted from that binding.
+The comparer exports prose and unified diffs,
+Memo/diagnoses/support evidence and records plan hashes and accepted boundaries.
+Comparison remains NONCOMPARABLE unless frozen inputs and model settings are independently
+matched; equal plan hashes alone do not establish creative improvement. Costs remain per-currency estimates from uniquely identified effect receipts,
 not invoices. The explicit unavailable list includes legacy operation-only receipts;
 when nonempty, reported sums are partial and must not be treated as the run total. Independent editorial judgments are left awaiting evidence; model scores
 are not converted into accuracy or human opinions. Missing authorized budget leaves

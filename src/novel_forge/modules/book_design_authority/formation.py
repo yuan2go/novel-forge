@@ -337,6 +337,15 @@ class StoryFormationApplication:
         )
         return self.require(formation_run_id)
 
+    def find_by_key(self, *, project_id: str, book_id: str, idempotency_key: str) -> dict[str, Any] | None:
+        identity = "\x00".join((project_id, book_id, idempotency_key)).encode("utf-8")
+        try:
+            return self.require("story-formation:" + hashlib.sha256(identity).hexdigest())
+        except KernelError as error:
+            if error.code != "STORY_FORMATION_NOT_FOUND":
+                raise
+            return None
+
     def require(self, formation_run_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             return StoryFormationRepository(uow.cursor).require(formation_run_id)

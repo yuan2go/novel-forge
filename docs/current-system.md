@@ -559,3 +559,20 @@ engineering only. Credentialed Provider execution is separately qualified and be
 stale when implementation or instruction identity changes. Neither route establishes
 admin UI execution, human editorial evidence, longitudinal narrative stability or
 production operation. No current capability is `PRODUCTION_PROVEN`.
+
+### Bounded Chinese creation pilot
+
+The native creation runner prepares isolated Project/Book records through existing
+Commands, freezes the pilot policy in Book runtime policy, and locates Formation and
+Opening by their original idempotency keys on resume. Confirmed outputs remain owned
+by the existing runtime. A project lifetime Provider cap spans Formation, Opening,
+chapters, revisions and retries; an explicit total authorization is required for paid
+execution. Configuration checks do not call a model.
+
+The Chinese pilot policy requires 2000–3500 Han ideographs per chapter under
+`HAN_CHARACTERS_V1`, independently of model scores. It is separate from the small
+English engineering smoke. The workspace and exports resolve committed Acceptance
+through its immutable ChapterOutcome, then verify exact Candidate/Quality/Review/Canon/
+Context/Memo bindings and hashes. Historical Quality targets remain in the workspace.
+Partial exports retain completed files and explicit errors. These contracts establish
+engineering behavior; real creative effects require actual authorized text and receipts.

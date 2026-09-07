@@ -239,12 +239,15 @@ class BookProductionCompositionTests(unittest.TestCase):
         planning = SimpleNamespace(
             planning=planning_authority,
             story_design=story_design,
+            database_url="postgresql://authority",
         )
         preparation = SimpleNamespace()
         projection_repair = SimpleNamespace()
 
+        book_design = SimpleNamespace()
         execution = SimpleNamespace()
         with (
+            patch("novel_forge.api.authority_dependencies.build_book_design_authority_application", return_value=book_design) as build_book_design,
             patch(
                 "novel_forge.api.authority_dependencies.build_book_authority_application",
                 return_value=book,
@@ -275,6 +278,8 @@ class BookProductionCompositionTests(unittest.TestCase):
                 chapter_application=chapter,
             )
 
+        build_book_design.assert_called_once()
+        self.assertIs(composition.formation.generation.book_design, book_design)
         self.assertIs(composition.authority, book)
         self.assertIs(composition.planning, planning)
         self.assertIs(composition.production_preparation, preparation)

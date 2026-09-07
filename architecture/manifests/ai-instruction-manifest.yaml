@@ -9,7 +9,10 @@
   "sources": [
     {
       "id": "coding-agent-policy",
-      "patterns": ["AGENTS.md", "CLAUDE.md"],
+      "patterns": [
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
       "kind": "CODING_AGENT_POLICY",
       "owner": "repository-governance",
       "consumer": "coding-agent",
@@ -17,7 +20,9 @@
     },
     {
       "id": "runtime-skills",
-      "patterns": ["skills/*/SKILL.md"],
+      "patterns": [
+        "skills/*/SKILL.md"
+      ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",
       "consumer": "coding-agent-and-agent-runtime",
@@ -25,7 +30,9 @@
     },
     {
       "id": "capability-pack-prompts",
-      "patterns": ["config/capability_packs/artifacts/*.md"],
+      "patterns": [
+        "config/capability_packs/artifacts/*.md"
+      ],
       "kind": "MODEL_INSTRUCTION",
       "owner": "capability-pack-authority",
       "consumer": "provider-runtime",
@@ -33,7 +40,9 @@
     },
     {
       "id": "capability-pack-instruction-bindings",
-      "patterns": ["config/capability_packs/*_pack.json"],
+      "patterns": [
+        "config/capability_packs/*_pack.json"
+      ],
       "kind": "INSTRUCTION_BINDING",
       "owner": "capability-pack-authority",
       "consumer": "provider-runtime",
@@ -45,7 +54,8 @@
         "src/novel_forge/modules/provider_qualification/runner.py",
         "src/novel_forge/modules/source_authority/deconstruction.py",
         "src/novel_forge/modules/source_import/execution.py",
-        "src/novel_forge/modules/story_planning_runtime/execution.py"
+        "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",
