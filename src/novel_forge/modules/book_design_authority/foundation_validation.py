@@ -206,7 +206,9 @@ def _validate_characters(
             )
         normalized = dict(raw)
         normalized.setdefault("false_belief", raw.get("falseBelief"))
-        _required_fields(normalized, _CHARACTER_FIELDS, f"CHARACTER_CAST[{index}]")
+        current_generation = dict(content.get("constraint_envelope") or {}).get("contract_version") == "foundation-generation.v1"
+        fields = tuple("private_history" if field == "secret" and current_generation else field for field in _CHARACTER_FIELDS)
+        _required_fields(normalized, fields, f"CHARACTER_CAST[{index}]")
         if not (raw.get("values") or raw.get("value_hierarchy")):
             raise KernelError(
                 "FOUNDATION_LAYER_STRUCTURAL_INVALID",

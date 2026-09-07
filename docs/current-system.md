@@ -17,6 +17,22 @@ Capability states are ordered `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`,
 implementation-tree identity, and Documentation Reality fails when code or instruction
 identity changes without a corresponding projection update.
 
+## Generated Foundation formation
+
+The existing Formation API accepts either six exact qualified layer references or one
+`creative-brief-v2` asset and a frozen `formation-generation.v1` policy. The latter
+uses Story Formation RuntimeJobs to generate Creative Foundation, Theme, Ending,
+Reader Promise, World and Character candidates through the governed Planning
+Provider path. Independent semantic diagnosis and bounded repair precede Story
+Design approval/activation; Book Design then validates the exact six-layer lineage.
+`AUTO` is explicit policy authorization, while `REVIEW_PLAN` waits for the existing
+approval commands. Generated assets remain proposals until their owning Authority
+activates them. Foundation activation is never chapter acceptance or narrative history.
+The bounded creative-search baseline selects the first independently qualified branch
+and retains the alternatives; it does not claim a literary ranking. World depth follows
+the current story need and includes deferred dimensions; generated voice anchors are
+part of character/creative inputs. Scripted Formation execution proves wiring only.
+
 ## Creative execution and prose evidence
 
 The selection node projects the immutable review of its selected prose. If a proposed

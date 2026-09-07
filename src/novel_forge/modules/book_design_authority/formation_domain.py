@@ -5,6 +5,7 @@ from enum import StrEnum
 import hashlib
 import json
 from typing import Any, Mapping
+from types import MappingProxyType
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from .foundation import FoundationRole
@@ -127,13 +128,25 @@ class FormationLayerInput:
 
 @dataclass(frozen=True, slots=True)
 class StoryFormationInput:
-    layers: tuple[FormationLayerInput, ...]
+    layers: tuple[FormationLayerInput, ...] = ()
     book_design_asset_version_id: str = ""
     book_design_content_hash: str = ""
+    creative_brief_asset_version_id: str = ""
+    creative_brief_content_hash: str = ""
+    generation_policy: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         by_role = {item.role: item for item in self.layers}
-        if len(by_role) != len(self.layers) or set(by_role) != set(FoundationRole):
+        if self.creative_brief_asset_version_id:
+            policy = dict(self.generation_policy or {})
+            if self.layers or self.book_design_asset_version_id or len(self.creative_brief_content_hash) != 71 or not self.creative_brief_content_hash.startswith("sha256:"):
+                raise ValueError("Generated Formation requires one hash-bound brief and no prequalified layers")
+            if set(policy) != {"contract_version", "approval_mode", "creative_candidates", "target_chapters", "title"} or policy["contract_version"] != "formation-generation.v1" or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"} or not isinstance(policy["creative_candidates"], int) or isinstance(policy["creative_candidates"], bool) or not 2 <= policy["creative_candidates"] <= 4 or not isinstance(policy["target_chapters"], int) or isinstance(policy["target_chapters"], bool) or not 1 <= policy["target_chapters"] <= 10000 or not str(policy["title"]).strip():
+                raise ValueError("Formation generation policy requires bounded search, scope and explicit approval mode")
+            object.__setattr__(self, "generation_policy", MappingProxyType(policy))
+        elif self.creative_brief_content_hash or self.generation_policy:
+            raise ValueError("Formation generation policy requires a frozen creative brief")
+        elif len(by_role) != len(self.layers) or set(by_role) != set(FoundationRole):
             raise ValueError("Story Formation requires one input for every Foundation role")
         has_version = bool(self.book_design_asset_version_id.strip())
         has_hash = bool(self.book_design_content_hash.strip())
@@ -150,11 +163,13 @@ class StoryFormationInput:
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "StoryFormationInput":
-        if set(value) != {
+        legacy = {
             "layers",
             "book_design_asset_version_id",
             "book_design_content_hash",
-        } or not isinstance(value.get("layers"), list):
+        }
+        current = legacy | {"creative_brief_asset_version_id", "creative_brief_content_hash", "generation_policy"}
+        if set(value) not in (legacy, current) or not isinstance(value.get("layers"), list):
             raise KernelError(
                 "STORY_FORMATION_INPUT_INVALID",
                 "Story Formation input fields must match exactly",
@@ -163,6 +178,9 @@ class StoryFormationInput:
             layers=tuple(FormationLayerInput.from_mapping(item) for item in value["layers"]),
             book_design_asset_version_id=str(value["book_design_asset_version_id"]),
             book_design_content_hash=str(value["book_design_content_hash"]),
+            creative_brief_asset_version_id=str(value.get("creative_brief_asset_version_id") or ""),
+            creative_brief_content_hash=str(value.get("creative_brief_content_hash") or ""),
+            generation_policy=value.get("generation_policy"),
         )
 
     @property
@@ -174,6 +192,7 @@ class StoryFormationInput:
             "layers": [item.to_dict() for item in self.layers],
             "book_design_asset_version_id": self.book_design_asset_version_id,
             "book_design_content_hash": self.book_design_content_hash,
+            **({"creative_brief_asset_version_id": self.creative_brief_asset_version_id, "creative_brief_content_hash": self.creative_brief_content_hash, "generation_policy": dict(self.generation_policy or {})} if self.creative_brief_asset_version_id else {}),
         }
 
     @property

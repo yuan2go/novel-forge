@@ -77,7 +77,7 @@ def require_current_foundation_set(
     allowed_formation_states = (
         {("READY", "COMPLETE")}
         if require_ready
-        else {("WAITING_APPROVAL", "BOOK_DESIGN"), ("READY", "COMPLETE")}
+        else {("RUNNING", "BOOK_DESIGN"), ("WAITING_APPROVAL", "BOOK_DESIGN"), ("READY", "COMPLETE")}
     )
     if any(
         (str(row[25]), str(row[26])) not in allowed_formation_states for row in rows

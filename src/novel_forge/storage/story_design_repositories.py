@@ -226,6 +226,7 @@ class StoryDesignRepository:
                     logical_key=logical_key,
                     asset_version_id=asset_version_id,
                     operation_id=operation_id,
+                    owns_asset_lifecycle=planning_scope == "NOT_APPLICABLE",
                 )
             self.cursor.execute(
                 """
@@ -506,6 +507,7 @@ class StoryDesignRepository:
         logical_key: str,
         asset_version_id: str,
         operation_id: str,
+        owns_asset_lifecycle: bool,
     ) -> None:
         self.cursor.execute(
             """
@@ -528,6 +530,25 @@ class StoryDesignRepository:
                 """,
                 [operation_id, project_id, str(previous[0])],
             )
+        if owns_asset_lifecycle:
+            self.cursor.execute(
+                """
+                UPDATE authority_asset_version AS version SET lifecycle='ACTIVE'
+                FROM authority_asset AS asset
+                WHERE asset.asset_id=version.asset_id AND asset.project_id=%s
+                  AND version.asset_version_id=%s
+                  AND version.lifecycle IN ('CANDIDATE','ACTIVE')
+                  AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'
+                """,
+                [project_id, asset_version_id],
+            )
+            if self.cursor.rowcount != 1:
+                raise KernelError("FOUNDATION_ARTIFACT_ACTIVATION_CONFLICT", "Foundation activation requires its qualified candidate Artifact")
+            if previous is not None and str(previous[0]) != asset_version_id:
+                self.cursor.execute(
+                    "UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s AND lifecycle='ACTIVE'",
+                    [str(previous[0])],
+                )
         self.cursor.execute(
             """
             INSERT INTO authority_story_design_active_version(

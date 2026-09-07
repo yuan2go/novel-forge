@@ -19,10 +19,11 @@ from novel_forge.storage.story_formation_repositories import StoryFormationRepos
 from .formation_domain import (
     STORY_FORMATION_POLICY_VERSION,
     StoryFormationInput,
+    FormationLayerInput,
 )
 
 
-STORY_FORMATION_DEFINITION_VERSION = "1.0.0"
+STORY_FORMATION_DEFINITION_VERSION = "1.1.0"
 STORY_FORMATION_HANDLER = "novel_forge.book_design.story_formation"
 STORY_FORMATION_OPERATIONS = frozenset(
     {
@@ -66,6 +67,7 @@ class StoryFormationApplication:
         application_build_id: str,
         commit_sha: str,
         fault_injector: Callable[[str], None] | None = None,
+        generation: Any = None,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("Story Formation requires PostgreSQL/build identity")
@@ -73,6 +75,7 @@ class StoryFormationApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.fault_injector = fault_injector
+        self.generation = generation
         self.runtime_jobs = RuntimeJobAuthority(database_url)
 
     def admit(
@@ -187,6 +190,15 @@ class StoryFormationApplication:
                 "Formation RuntimeJob has no frozen stage/version",
             )
         frozen = self._frozen_input(formation_run_id)
+        generated_layer = None
+        generated_design = None
+        if frozen.creative_brief_asset_version_id:
+            if self.generation is None:
+                raise KernelError("STORY_FORMATION_GENERATION_NOT_CONFIGURED", "Formation brief generation is not wired")
+            if expected_stage == "BOOK_DESIGN":
+                generated_design = self.generation.prepare_design(run, frozen, principal=principal)
+            else:
+                generated_layer = self.generation.prepare_layer(run, frozen, principal=principal)
         executed = self._control(
             run=run,
             principal=principal,
@@ -197,8 +209,15 @@ class StoryFormationApplication:
             payload={
                 "stage": expected_stage,
                 "expected_version": expected_version,
+                **({"generated_layer": generated_layer.to_dict()} if generated_layer else {}),
+                **({"generated_book_design": generated_design} if generated_design else {}),
             },
             frozen_input=frozen,
+            additional_input_assets=(
+                ({"asset_version_id": generated_layer.asset_version_id, "content_hash": generated_layer.content_hash},
+                 {"asset_version_id": generated_layer.qualification_evidence_asset_version_id, "content_hash": generated_layer.qualification_hash})
+                if generated_layer else (generated_design,) if generated_design else ()
+            ),
         )
         return {
             **self.require(formation_run_id),
@@ -459,6 +478,8 @@ class StoryFormationApplication:
                 operation_id,
                 expected_stage=str(payload["stage"]),
                 expected_version=int(payload["expected_version"]),
+                generated_layer=FormationLayerInput.from_mapping(payload["generated_layer"]) if payload.get("generated_layer") else None,
+                generated_book_design=payload.get("generated_book_design"),
             )
         elif definition_name == "story.formation.resume":
             result = repository.resume(
@@ -589,6 +610,8 @@ class StoryFormationApplication:
         }
         if frozen.book_design_asset_version_id:
             requested.add(frozen.book_design_asset_version_id)
+        if frozen.creative_brief_asset_version_id:
+            requested.add(frozen.creative_brief_asset_version_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -600,6 +623,8 @@ class StoryFormationApplication:
                 [project_id, list(requested)],
             )
             found = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
+        if frozen.creative_brief_asset_version_id and found.get(frozen.creative_brief_asset_version_id) != frozen.creative_brief_content_hash:
+            raise KernelError("STORY_FORMATION_BRIEF_DRIFT", "Formation author brief content hash differs")
         if set(found) != requested:
             raise KernelError(
                 "STORY_FORMATION_INPUT_ASSET_MISSING",

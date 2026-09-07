@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .foundation_generation import FOUNDATION_GENERATORS, validate_foundation_payload
+
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, replace
 import re
@@ -121,6 +123,8 @@ _AUTHORITY_INPUT_ASSET_TYPES = {
         {"story_state", "story_state_snapshot", "narrative_state"}
     ),
 }
+
+
 
 
 class _PlanningGenerationHandler:
@@ -310,6 +314,7 @@ class StoryPlanningGenerationHandlerRegistry:
             STORY_PLANNING_GENERATION_VERSION,
             "1.11.0",
             "1.12.0",
+            "1.13.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -855,25 +860,40 @@ class StoryPlanningGenerationApplication:
                 principal=principal,
             )
             story_design_transition_operation_id = str(prepared["operation_id"])
-        binding = self.planning.bind_active_contract(
-            project_id=generation["project_id"],
-            workspace_id=generation["workspace_id"],
-            book_id=generation["book_id"],
-            actor_id=principal.principal_id,
-            asset_version_id=candidate_asset_version_id,
-            contract_type=PlanContractType(generation["planning_scope"].value),
-            parent_version_id=generation["parent_version_id"],
-            execution_scope=PlanExecutionScope.PLANNED,
-            expected_active_asset_version_id=expected_active_asset_version_id,
-            replacement_approved=replacement_approved,
-            decision_evidence=dict(decision_evidence or {}),
-            idempotency_key=f"{idempotency_key}:planning-binding",
-            trace_id=trace_id,
-            correlation_id=correlation_id,
-            causation_operation_id=generation["generation_operation_id"],
-            story_design_transition_operation_id=(story_design_transition_operation_id),
-            principal=principal,
-        )
+        if generation["generator_operation_name"] in FOUNDATION_GENERATORS:
+            if state["lifecycle"] != "ACTIVE":
+                state = self.story_design.transition(
+                    StoryDesignTransitionCommand(
+                        project_id=generation["project_id"], workspace_id=generation["workspace_id"],
+                        actor_id=principal.principal_id, trace_id=trace_id, correlation_id=correlation_id,
+                        idempotency_key=f"{idempotency_key}:story-design",
+                        asset_version_id=candidate_asset_version_id, content_hash=generation["content_hash"],
+                        logical_key=generation["logical_key"], generator_operation_name=generation["generator_operation_name"],
+                        transition=DesignTransition.ACTIVATE, planning_scope=generation["planning_scope"],
+                        expected_version=int(state["version"]), evidence={"activation_policy_key": generation["activation_policy_key"]},
+                    ), principal=principal,
+                )
+            binding = None
+        else:
+            binding = self.planning.bind_active_contract(
+                project_id=generation["project_id"],
+                workspace_id=generation["workspace_id"],
+                book_id=generation["book_id"],
+                actor_id=principal.principal_id,
+                asset_version_id=candidate_asset_version_id,
+                contract_type=PlanContractType(generation["planning_scope"].value),
+                parent_version_id=generation["parent_version_id"],
+                execution_scope=PlanExecutionScope.PLANNED,
+                expected_active_asset_version_id=expected_active_asset_version_id,
+                replacement_approved=replacement_approved,
+                decision_evidence=dict(decision_evidence or {}),
+                idempotency_key=f"{idempotency_key}:planning-binding",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                causation_operation_id=generation["generation_operation_id"],
+                story_design_transition_operation_id=(story_design_transition_operation_id),
+                principal=principal,
+            )
         state = self.story_design.require(
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
@@ -1283,7 +1303,7 @@ class StoryPlanningGenerationApplication:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            if command.execution_contract_version != "1.13.0":
+            if command.execution_contract_version != STORY_PLANNING_GENERATION_VERSION:
                 raise KernelError(
                     "PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY",
                     "historical Planning definitions may only resume their already admitted commands",
@@ -1307,7 +1327,7 @@ class StoryPlanningGenerationApplication:
                 )
                 failed = uow.cursor.fetchone()
             if failed:
-                if command.execution_contract_version in {"1.12.0", "1.13.0"}:
+                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0"}:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
                         definition.maximum_semantic_repairs
@@ -1340,7 +1360,7 @@ class StoryPlanningGenerationApplication:
             self.planning.require_binding(
                 project_id=command.project_id, asset_version_id=str(row[4])
             )
-            if state["lifecycle"] == "ACTIVE"
+            if state["lifecycle"] == "ACTIVE" and command.generator_operation_name not in FOUNDATION_GENERATORS
             else None
         )
         return PlanningGenerationResult(
@@ -1746,35 +1766,39 @@ class StoryPlanningGenerationApplication:
                     planning_scope=command.planning_scope,
                     logical_key=command.logical_key,
                 )
-                contract = validate_planning_contract(
-                    project_id=command.project_id,
-                    book_id=command.book_id,
-                    contract_type=PlanContractType(command.planning_scope.value),
-                    asset_version_id=candidate_asset_version_id,
-                    parent_version_id=command.parent_version_id,
-                    execution_scope=PlanExecutionScope.PLANNED,
-                    content=content,
-                    require_current_chapter_contract=True,
-                )
-                if command.generator_operation_name == "arc_plan.generate":
-                    expected_volume_scope = (
-                        command.input_versions["volume_plan"],
-                        *command.arc_scope_volume_plan_version_ids,
+                contract = None
+                if command.generator_operation_name in FOUNDATION_GENERATORS:
+                    validate_foundation_payload(command.generator_operation_name, content)
+                else:
+                    contract = validate_planning_contract(
+                        project_id=command.project_id,
+                        book_id=command.book_id,
+                        contract_type=PlanContractType(command.planning_scope.value),
+                        asset_version_id=candidate_asset_version_id,
+                        parent_version_id=command.parent_version_id,
+                        execution_scope=PlanExecutionScope.PLANNED,
+                        content=content,
+                        require_current_chapter_contract=True,
                     )
-                    declared_volume_scope = tuple(
-                        str(item) for item in content.get("cross_volume_scope") or ()
-                    )
-                    if declared_volume_scope != expected_volume_scope:
-                        raise KernelError(
-                            "NARRATIVE_ARC_AUTHORITY_SCOPE_MISMATCH",
-                            "Arc cross_volume_scope must exactly match frozen Active VolumePlan versions",
+                    if command.generator_operation_name == "arc_plan.generate":
+                        expected_volume_scope = (
+                            command.input_versions["volume_plan"],
+                            *command.arc_scope_volume_plan_version_ids,
                         )
-                _validate_frozen_arc_references(command, content)
-                if contract.logical_key != command.logical_key:
-                    raise KernelError(
-                        "PLANNING_LOGICAL_KEY_MISMATCH",
-                        "Planning Candidate content differs from the admitted logical key",
-                    )
+                        declared_volume_scope = tuple(
+                            str(item) for item in content.get("cross_volume_scope") or ()
+                        )
+                        if declared_volume_scope != expected_volume_scope:
+                            raise KernelError(
+                                "NARRATIVE_ARC_AUTHORITY_SCOPE_MISMATCH",
+                                "Arc cross_volume_scope must exactly match frozen Active VolumePlan versions",
+                            )
+                    _validate_frozen_arc_references(command, content)
+                    if contract.logical_key != command.logical_key:
+                        raise KernelError(
+                            "PLANNING_LOGICAL_KEY_MISMATCH",
+                            "Planning Candidate content differs from the admitted logical key",
+                        )
             except KernelError as exc:
                 return self._repair_or_reject(
                     operation_id=operation_id,
@@ -1787,12 +1811,12 @@ class StoryPlanningGenerationApplication:
                 )
             evidence = {
                 **validation.to_evidence(),
-                "planning_contract": {
+                **({"planning_contract": {
                     "contract_type": contract.contract_type.value,
                     "logical_key": contract.logical_key,
                     "parent_version_id": contract.parent_version_id,
                     "execution_scope": contract.execution_scope.value,
-                },
+                }} if contract is not None else {"foundation_contract": content["constraint_envelope"]}),
             }
             self._record_validation(
                 operation_id=operation_id,
@@ -2182,7 +2206,16 @@ class StoryPlanningGenerationApplication:
                 allowed_asset_types = _AUTHORITY_INPUT_ASSET_TYPES.get(
                     role, frozenset({role})
                 )
-                if item["asset_type"] not in allowed_asset_types:
+                foundation_role = next((value for value in FOUNDATION_GENERATORS.values() if value.value.lower() == role), None)
+                generated_foundation = item["asset_type"] == "planning_generation_candidate" and foundation_role is not None
+                if generated_foundation:
+                    generator = str(item["content"].get("generator_operation_name") or "")
+                    if FOUNDATION_GENERATORS.get(generator) is not foundation_role or item["content"].get("planning_scope") != "NOT_APPLICABLE":
+                        raise KernelError("FOUNDATION_INPUT_OWNER_INVALID", "Generated Foundation role differs from its semantic owner")
+                    state = self.story_design.require(project_id=command.project_id, asset_version_id=asset_version_id)
+                    if (state["lifecycle"], state["qualification"], state["approval"], state["freshness"]) != ("ACTIVE", "QUALIFIED", "APPROVED", "CURRENT"):
+                        raise KernelError("FOUNDATION_INPUT_NOT_ACTIVE", "Generated Foundation must be independently qualified and activated")
+                if item["asset_type"] not in allowed_asset_types and not generated_foundation:
                     raise KernelError(
                         "PLANNING_GENERATION_INPUT_ROLE_INVALID",
                         f"Authority input {role} has asset type {item['asset_type']}",

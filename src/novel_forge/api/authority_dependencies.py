@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from novel_forge.modules.book_design_authority.formation_generation import FormationGeneration
+from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+
 import hashlib
 import os
 from collections.abc import Callable
@@ -913,6 +916,7 @@ def build_production_execution_composition(
             value,
         )
         if stage in {
+            *FOUNDATION_GENERATORS,
             "book_plan.generate",
             "volume_plan.generate",
             "arc_plan.generate",
@@ -934,6 +938,7 @@ def build_production_execution_composition(
         }:
             return content_intelligence_fixture_response(stage, inputs)
         if stage in {
+            *FOUNDATION_GENERATORS,
             "book_plan.generate",
             "volume_plan.generate",
             "arc_plan.generate",
@@ -1572,6 +1577,8 @@ def build_book_followup_authority_application(
     )
 
 
+
+
 def build_book_production_composition(
     settings: IndustrialSettings,
     *,
@@ -1732,6 +1739,7 @@ def build_book_production_composition(
             settings.database_url,
             application_build_id=authority.application_build_id,
             commit_sha=authority.commit_sha,
+            generation=FormationGeneration(planning, book_design=build_book_design_authority_application(settings, execution=execution, env=values)),
         ),
     )
 

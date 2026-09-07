@@ -126,8 +126,12 @@ from .narrative_search import (
 )
 
 
+from .foundation_generation import FOUNDATION_GENERATORS, foundation_output_schema, foundation_task
+
+
 _PLANNING_STAGES = frozenset(
     {
+        *FOUNDATION_GENERATORS,
         "book_plan.generate",
         "volume_plan.generate",
         "arc_plan.generate",
@@ -159,6 +163,7 @@ def _planning_narrative_intelligence_need(
     sources.extend((production_profile, dict(command.arc_working_set or {})))
     stage = command.generator_operation_name
     scope = {
+        **{name: "STORY" for name in FOUNDATION_GENERATORS},
         "book_plan.generate": "STORY",
         "volume_plan.generate": "STORY",
         "arc_plan.generate": "ARC",
@@ -166,6 +171,7 @@ def _planning_narrative_intelligence_need(
         "chapter_plan.generate": "SCENE",
     }[stage]
     families = {
+        **{name: ("NARRATIVE_MECHANISM", "CHARACTER_TRANSFORMATION", "WORLD_CONSEQUENCE", "THEME_MORAL_DILEMMA") for name in FOUNDATION_GENERATORS},
         "book_plan.generate": (
             "NARRATIVE_MECHANISM",
             "CHARACTER_TRANSFORMATION",
@@ -3305,7 +3311,7 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Planning Codex execution permits only model.provider.invoke",
             )
-        output_schema = planning_provider_output_schema(
+        output_schema = foundation_output_schema(command.generator_operation_name) if command.generator_operation_name in FOUNDATION_GENERATORS else planning_provider_output_schema(
             PlanContractType(command.planning_scope.value),
             logical_key=command.logical_key,
             parent_version_id=command.parent_version_id,
@@ -3358,6 +3364,8 @@ class PostgresPlanningExecutionPreparer:
                 else ":v1"
             )
         )
+        if command.generator_operation_name in FOUNDATION_GENERATORS:
+            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v1"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = f"schema:{stage_name}:v1"
@@ -3496,6 +3504,7 @@ class PostgresPlanningExecutionPreparer:
             "max_output_tokens": provider_token_contract["max_output_tokens"],
             "provider_token_contract": provider_token_contract,
             "input": {
+                **({"foundation_task": foundation_task(command.generator_operation_name)} if command.generator_operation_name in FOUNDATION_GENERATORS else {}),
                 "planning_command": {
                     "project_id": command.project_id,
                     "book_id": command.book_id,
@@ -3555,7 +3564,7 @@ class PostgresPlanningExecutionPreparer:
                     }
                     for item in inputs
                 ],
-                "authoritative_narrative_load": {
+                **({"authoritative_narrative_load": {
                     "narrative_load_policy": authoritative_envelope[
                         "narrative_load_policy"
                     ],
@@ -3565,7 +3574,7 @@ class PostgresPlanningExecutionPreparer:
                     "narrative_load_projection": authoritative_envelope[
                         "narrative_load_projection"
                     ],
-                },
+                }} if command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
                 "narrative_intelligence": context_document.content.get(
@@ -3971,7 +3980,9 @@ class PostgresPlanningExecutionPreparer:
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
         suffix = (
-            command.planning_scope.value.lower()
+            FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()
+            if command.generator_operation_name in FOUNDATION_GENERATORS
+            else command.planning_scope.value.lower()
             if stage_identity == "planning"
             else stage_identity.replace(".", "_")
         )
@@ -4370,12 +4381,12 @@ class PostgresPlanningExecutionPreparer:
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             "narrative_intelligence": narrative_intelligence,
-            "realization_reference_contract": _realization_reference_contract(
+            **({"foundation_task": foundation_task(command.generator_operation_name)} if command.generator_operation_name in FOUNDATION_GENERATORS else {"realization_reference_contract": _realization_reference_contract(
                 project_id=command.project_id,
                 book_id=command.book_id,
                 frozen_by_operation_id=operation_id,
                 inputs=inputs,
-            ),
+            )}),
             **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
