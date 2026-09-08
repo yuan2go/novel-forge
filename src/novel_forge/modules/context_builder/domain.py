@@ -81,6 +81,7 @@ class ContextSelection:
 _RAW_TYPES = frozenset(
     {
         "corpus_record",
+        "source_work",
         "source_document",
         "source_chunk",
         "source_deconstruction_observation",
