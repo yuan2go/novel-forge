@@ -397,14 +397,18 @@ class PostgresContentIntelligenceExecutionPort:
         methodology_registry: SourceMethodologyRegistry | None = None,
         source_object_reader: Any | None = None,
         provider_output_token_reserve: int = 4_096,
+        provider_timeout_seconds: int = 300,
     ) -> None:
         if (
             not database_url
             or not worker_id
             or lease_seconds <= 0
             or provider_output_token_reserve <= 0
+            or provider_timeout_seconds <= 0
         ):
-            raise ValueError("Source PEP port requires database, worker, and lease")
+            raise ValueError(
+                "Source PEP port requires database, worker, lease, and Provider limits"
+            )
         if not getattr(transport, "production_execution_gateway_backed", False):
             raise ValueError("Source execution requires ProductionExecutionGateway")
         self.database_url = database_url
@@ -444,6 +448,7 @@ class PostgresContentIntelligenceExecutionPort:
         )
         self.source_object_reader = source_object_reader
         self.provider_output_token_reserve = provider_output_token_reserve
+        self.provider_timeout_seconds = provider_timeout_seconds
 
     def recovery_adapter(
         self, *, worker: WorkerLeaseCommand, effect: Mapping[str, Any]
@@ -1057,7 +1062,7 @@ class PostgresContentIntelligenceExecutionPort:
             inputs=transient_inputs,
             materialization=materialization,
         )
-        provider_timeout = self.lease_seconds * 5
+        provider_timeout = self.provider_timeout_seconds
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
             model=base_route.model_profile.model_id,

@@ -1569,6 +1569,9 @@ def build_source_import_application(
         provider_output_token_reserve=int(
             values.get("NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE") or 4_096
         ),
+        provider_timeout_seconds=int(
+            values.get("NOVEL_FORGE_SOURCE_PROVIDER_TIMEOUT_SECONDS") or 300
+        ),
     )
     return SourceImportApplication(
         settings.database_url,

@@ -195,6 +195,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             worker_id="source-import-integration-worker",
             lease_seconds=30,
             source_object_reader=LocalObjectStoreReader(self.object_root),
+            provider_timeout_seconds=900,
         )
         self.execution_port = execution_port
         self.application = SourceImportApplication(
@@ -629,6 +630,10 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 [imported["operation_id"]],
             )
             self.assertEqual(cursor.fetchone(), ("SUCCEEDED", 1, 1))
+
+    def test_source_provider_timeout_is_independent_from_worker_lease(self) -> None:
+        self.assertEqual(self.execution_port.lease_seconds, 30)
+        self.assertEqual(self.execution_port.provider_timeout_seconds, 900)
 
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,
