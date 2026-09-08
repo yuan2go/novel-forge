@@ -57,6 +57,7 @@ def compound_deconstruction_output_schema() -> dict[str, Any]:
                             "enum": list(SUPPORTED_DECONSTRUCTION_DIMENSIONS),
                         },
                         "status": {
+                            "type": "string",
                             "enum": [
                                 "SUCCEEDED",
                                 "NOT_APPLICABLE",
@@ -74,7 +75,10 @@ def compound_deconstruction_output_schema() -> dict[str, Any]:
                             "minimum": 0,
                             "maximum": 1,
                         },
-                        "knowledge_status": {"const": "NOT_ABSTRACTED"},
+                        "knowledge_status": {
+                            "type": "string",
+                            "const": "NOT_ABSTRACTED",
+                        },
                         "applicability_note": {
                             "type": "string",
                             "maxLength": 2_000,
@@ -105,6 +109,7 @@ def compound_deconstruction_output_schema() -> dict[str, Any]:
                 "type": "object",
                 "properties": {
                     "scope_claim": {
+                        "type": "string",
                         "enum": ["FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"]
                     },
                     "uncovered_material_acknowledged": {"type": "boolean"},
@@ -156,7 +161,10 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "boundary_assessment": {
                     "type": "object",
                     "properties": {
-                        "scope_kind": {"const": "FILE_DOCUMENT"},
+                        "scope_kind": {
+                            "type": "string",
+                            "const": "FILE_DOCUMENT",
+                        },
                         "suspected_document_count": {
                             "type": "integer",
                             "minimum": 1,
@@ -212,12 +220,18 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                         "anyOf": [
                             {
                                 "required": ["evidence_span_ids"],
-                                "properties": {"evidence_span_ids": {"minItems": 1}},
+                                "properties": {
+                                    "evidence_span_ids": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                    }
+                                },
                             },
                             {
                                 "required": ["input_observation_asset_version_ids"],
                                 "properties": {
                                     "input_observation_asset_version_ids": {
+                                        "type": "array",
                                         "minItems": 1
                                     }
                                 },
@@ -226,7 +240,10 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                     },
                 },
                 "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-                "knowledge_status": {"const": "NOT_ABSTRACTED"},
+                "knowledge_status": {
+                    "type": "string",
+                    "const": "NOT_ABSTRACTED",
+                },
             },
             "required": ["findings", "confidence", "knowledge_status"],
             "additionalProperties": False,
@@ -254,9 +271,11 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "review_checks": string_list,
                 "copyright_boundaries": string_list,
                 "knowledge_kind": {
+                    "type": "string",
                     "enum": ["NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"]
                 },
                 "semantic_family": {
+                    "type": "string",
                     "enum": [
                         "NARRATIVE_PRIMITIVE",
                         "NARRATIVE_MECHANISM",
@@ -297,9 +316,18 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "originality_boundary": {
                     "type": "object",
                     "properties": {
-                        "source_specific_sequence_reusable": {"const": False},
-                        "named_entity_substitution_allowed": {"const": False},
-                        "expression_reuse_allowed": {"const": False},
+                        "source_specific_sequence_reusable": {
+                            "type": "boolean",
+                            "const": False,
+                        },
+                        "named_entity_substitution_allowed": {
+                            "type": "boolean",
+                            "const": False,
+                        },
+                        "expression_reuse_allowed": {
+                            "type": "boolean",
+                            "const": False,
+                        },
                     },
                     "required": [
                         "source_specific_sequence_reusable",

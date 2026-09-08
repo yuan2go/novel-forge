@@ -35,6 +35,48 @@ def _inputs(content: str) -> dict[str, object]:
     }
 
 
+def _properties_without_explicit_type(
+    schema: object, *, path: tuple[str, ...] = ()
+) -> list[str]:
+    if isinstance(schema, list):
+        return [
+            missing
+            for index, item in enumerate(schema)
+            for missing in _properties_without_explicit_type(
+                item, path=(*path, str(index))
+            )
+        ]
+    if not isinstance(schema, dict):
+        return []
+    missing = []
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        missing.extend(
+            ".".join((*path, "properties", str(name)))
+            for name, value in properties.items()
+            if not isinstance(value, dict) or "type" not in value
+        )
+    for name, value in schema.items():
+        missing.extend(
+            _properties_without_explicit_type(value, path=(*path, str(name)))
+        )
+    return missing
+
+
+def test_codex_source_output_schemas_type_every_declared_property() -> None:
+    schemas = (
+        content_intelligence_output_schema(CLASSIFICATION_STAGE),
+        content_intelligence_output_schema(DECONSTRUCTION_STAGE),
+        content_intelligence_output_schema(MKAOS_STAGE),
+        compound_deconstruction_output_schema(),
+    )
+    assert [
+        missing
+        for schema in schemas
+        for missing in _properties_without_explicit_type(schema)
+    ] == []
+
+
 def test_source_content_classification_is_registered_and_bounded() -> None:
     definition = default_capability_registry().resolve("source.content.classify")
     assert definition.domain.value == "source"
