@@ -10,7 +10,7 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, run_migrations
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     insert_definition,
@@ -89,7 +89,7 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
                 connection.execute(
                     "SELECT count(*) FROM nf_schema_migrations"
                 ).fetchone()[0]
-                == 121
+                == len(MIGRATIONS)
             )
             tables = connection.execute(
                 "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'authority_corpus_%'"
@@ -119,12 +119,20 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
             index_names = {
                 row[0]
                 for row in connection.execute(
-                    "SELECT indexname FROM pg_indexes WHERE tablename='authority_corpus_edition'"
+                    "SELECT indexname FROM pg_indexes WHERE indexname LIKE 'authority_corpus_%'"
                 )
             }
             assert {
                 "authority_corpus_edition_page_idx",
                 "authority_corpus_edition_book_idx",
+                "authority_corpus_source_workspace_idx",
+                "authority_corpus_rights_previous_scope_idx",
+                "authority_corpus_snapshot_rights_scope_idx",
+                "authority_corpus_snapshot_previous_scope_idx",
+                "authority_corpus_edition_snapshot_scope_idx",
+                "authority_corpus_edition_book_scope_idx",
+                "authority_corpus_membership_admission_idx",
+                "authority_corpus_retirement_source_scope_idx",
             } <= index_names
         assert run_migrations(url) == result
         evidence_dir = os.environ.get("CORPUS_EVIDENCE_DIR")
