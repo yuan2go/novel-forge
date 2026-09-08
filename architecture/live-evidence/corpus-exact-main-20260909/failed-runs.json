@@ -1,0 +1,62 @@
+{
+  "originals_retained_at": "/tmp/nf-corpus-exact-main-20260908",
+  "records": [
+    {
+      "path": "baseline-tests.log",
+      "original_sha256": "7a0ac1869b4b065c56742e9bee9c3ac01100d5f58edb88fd8a0d0de48a9e68e6",
+      "retained_sha256": "7a0ac1869b4b065c56742e9bee9c3ac01100d5f58edb88fd8a0d0de48a9e68e6",
+      "reason": "Exact main: legacy Corpus test assumed 121 instead of the current registry; Source execution constructor required a classical sampling budget even for unrelated metadata/document work.",
+      "scope": "BASELINE_EXACT_MAIN"
+    },
+    {
+      "path": "baseline-tests.xml",
+      "original_sha256": "3e262cfc98bb26978a7032185b3f6d78c7c8951f334fa8a50ecaf9c48e1774c9",
+      "retained_sha256": "3e262cfc98bb26978a7032185b3f6d78c7c8951f334fa8a50ecaf9c48e1774c9",
+      "reason": "Exact main: legacy Corpus test assumed 121 instead of the current registry; Source execution constructor required a classical sampling budget even for unrelated metadata/document work.",
+      "scope": "BASELINE_EXACT_MAIN"
+    },
+    {
+      "path": "baseline-validate.log",
+      "original_sha256": "f82f4045812ee7ffb1168af65e20a79faf2921d5b163f3f633f9b2b882330ef3",
+      "retained_sha256": "f82f4045812ee7ffb1168af65e20a79faf2921d5b163f3f633f9b2b882330ef3",
+      "reason": "Exact main: retained proposals had stale branch review baselines.",
+      "scope": "BASELINE_EXACT_MAIN"
+    },
+    {
+      "path": "source-work-isolation-red.log",
+      "original_sha256": "9de5f2eb47c78f6e166733a1b08201f2ae2ebd042384abb3ea03e160d1c532b4",
+      "retained_sha256": "9de5f2eb47c78f6e166733a1b08201f2ae2ebd042384abb3ea03e160d1c532b4",
+      "reason": "New negative assertion reproduced logical KnowledgeCard relabeling of a physical SourceWork manifest.",
+      "scope": "DEVELOPMENT_OR_DOCUMENTATION_ONLY"
+    },
+    {
+      "path": "source-fixes.log",
+      "original_sha256": "cb4629a24abf5a412cd03d83e7c6a9e45285edcdf0a7ec4b14fbebc3c856ed46",
+      "retained_sha256": "cb4629a24abf5a412cd03d83e7c6a9e45285edcdf0a7ec4b14fbebc3c856ed46",
+      "reason": "Classical fixture requires its own explicit large context configuration for bounded compound analysis; generic Source construction no longer requires that budget.",
+      "scope": "DEVELOPMENT_OR_DOCUMENTATION_ONLY"
+    },
+    {
+      "path": "source-fixes.xml",
+      "original_sha256": "cdaab962a9f935484d4cae4b9107546cfd6f32f63e4972c81567e81dd26230e9",
+      "retained_sha256": "cdaab962a9f935484d4cae4b9107546cfd6f32f63e4972c81567e81dd26230e9",
+      "reason": "Classical fixture requires its own explicit large context configuration for bounded compound analysis; generic Source construction no longer requires that budget.",
+      "scope": "DEVELOPMENT_OR_DOCUMENTATION_ONLY"
+    },
+    {
+      "path": "corpus-bridge-red.log",
+      "original_sha256": "442fc121a9df5d82311e9a68948c439c6418c1614f26ad6fb01a8bb55a4d02fe",
+      "retained_sha256": "442fc121a9df5d82311e9a68948c439c6418c1614f26ad6fb01a8bb55a4d02fe",
+      "reason": "SourceWork analysis candidates remained approvable after the exact acquisition was classified as Corpus Benchmark; new origin checks close approval and later consumption.",
+      "scope": "DEVELOPMENT_OR_DOCUMENTATION_ONLY"
+    },
+    {
+      "path": "final-validate-6612a5a.log",
+      "original_sha256": "9c7ca9e47ee68500c8d371c7258cd78fa5aa4a951b1a3798d40c916a4098597b",
+      "retained_sha256": "9c7ca9e47ee68500c8d371c7258cd78fa5aa4a951b1a3798d40c916a4098597b",
+      "reason": "Documentation Reality rejected duplicated full migration IDs in canonical prose; replaced the copy with a registry reference without changing implementation identity.",
+      "scope": "DEVELOPMENT_OR_DOCUMENTATION_ONLY"
+    }
+  ],
+  "not_current_pass_evidence": true
+}
