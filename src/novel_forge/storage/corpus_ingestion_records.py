@@ -254,12 +254,20 @@ class CorpusIngestionRecords:
     ) -> dict[str, Any] | None:
         self.corpus_authorization_lock(project_id)
         self.cursor.execute(
-            "SELECT edition_id,role FROM authority_corpus_content WHERE project_id=%s AND content_hash=%s LIMIT 100",
-            [project_id, blob["actual_hash"]],
+            """SELECT
+                EXISTS(SELECT 1 FROM authority_corpus_content WHERE project_id=%s AND content_hash=%s),
+                EXISTS(SELECT 1 FROM authority_corpus_content WHERE project_id=%s AND content_hash=%s AND edition_id=%s AND role='RAW_BUNDLE')""",
+            [
+                project_id,
+                blob["actual_hash"],
+                project_id,
+                blob["actual_hash"],
+                edition_id,
+            ],
         )
-        origins = self.cursor.fetchall()
+        has_origin, owns_bundle = self.cursor.fetchone()
         if edition_id is None:
-            if origins or str(blob.get("object_key", "")).startswith(
+            if has_origin or str(blob.get("object_key", "")).startswith(
                 f"source-import/{project_id}/corpus-"
             ):
                 raise KernelError(
@@ -267,7 +275,7 @@ class CorpusIngestionRecords:
                     "Corpus bytes cannot enter legacy Source registration without an exact Edition",
                 )
             return None
-        if (edition_id, "RAW_BUNDLE") not in origins:
+        if not owns_bundle:
             raise KernelError(
                 "CORPUS_DOCUMENT_LINEAGE_REQUIRED",
                 "Edition does not own the verified raw bundle",

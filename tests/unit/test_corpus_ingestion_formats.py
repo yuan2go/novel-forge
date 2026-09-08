@@ -96,6 +96,29 @@ def test_containers_reject_escape_and_enforce_expansion(tmp_path, kind):
             expand_container(path, path.name, tmp_path / "expanded", IngestionBudget())
         )
     assert not (tmp_path / "escape.txt").exists()
+    payload = "只展开声明的原始字节。".encode()
+    if kind == "zip":
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr("book/chapter.txt", payload)
+    else:
+        with tarfile.open(path, "w") as archive:
+            item = tarfile.TarInfo("book/chapter.txt")
+            item.size = len(payload)
+            archive.addfile(item, io.BytesIO(payload))
+    expanded = list(
+        expand_container(path, path.name, tmp_path / "valid", IngestionBudget())
+    )
+    assert len(expanded) == 1
+    assert Path(expanded[0]["cache_path"]).read_bytes() == payload
+    with pytest.raises(IngestionFailure, match="ARCHIVE_BUDGET_EXCEEDED"):
+        list(
+            expand_container(
+                path,
+                path.name,
+                tmp_path / "limited",
+                IngestionBudget(max_expanded_bytes=1),
+            )
+        )
 
 
 def test_input_drift_and_malformed_encoding_are_not_success(tmp_path):
@@ -122,3 +145,71 @@ def test_input_drift_and_malformed_encoding_are_not_success(tmp_path):
             IngestionBudget(),
             tmp_path / "parse",
         )
+
+
+def test_cross_shard_gap_conflict_and_replay_are_explicit(tmp_path):
+    parser = ParserProfile(
+        format="jsonl",
+        layout="CHAPTER_ROWS",
+        fields={
+            "work_id": "book",
+            "chapter_id": "chapter",
+            "order": "order",
+            "text": "text",
+        },
+        completeness="COMPLETE",
+        expected_units=3,
+    )
+    files = []
+    for n in (1, 3):
+        path = tmp_path / f"part-{n}.jsonl"
+        path.write_text(
+            json.dumps(
+                {
+                    "book": "original",
+                    "chapter": str(n),
+                    "order": n,
+                    "text": f"第{n}个明确的章节。",
+                },
+                ensure_ascii=False,
+            )
+        )
+        digest, size = file_identity(path)
+        files.append(
+            {
+                "path": path.name,
+                "cache_path": str(path),
+                "checksum": digest,
+                "size_bytes": size,
+            }
+        )
+    first = compile_work_index(files, parser, IngestionBudget(), tmp_path / "first")
+    second = compile_work_index(
+        list(reversed(files)), parser, IngestionBudget(), tmp_path / "second"
+    )
+    assert first["work_count"] == second["work_count"] == 1
+    assert first["works"][0]["completeness"] == "REVIEW_REQUIRED"
+    assert first["works"][0]["checksum"] == second["works"][0]["checksum"]
+    path = tmp_path / "conflict.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "book": "original",
+                "chapter": "1",
+                "order": 1,
+                "text": "同一身份不能悄悄覆盖成新正文。",
+            },
+            ensure_ascii=False,
+        )
+    )
+    digest, size = file_identity(path)
+    files.append(
+        {
+            "path": path.name,
+            "cache_path": str(path),
+            "checksum": digest,
+            "size_bytes": size,
+        }
+    )
+    with pytest.raises(IngestionFailure, match="DUPLICATE_UNIT_CONFLICT"):
+        compile_work_index(files, parser, IngestionBudget(), tmp_path / "conflict")

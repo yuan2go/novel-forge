@@ -170,3 +170,52 @@ def test_remote_private_dns_and_credential_url_are_rejected(monkeypatch):
         with pytest.raises(IngestionFailure, match=reason):
             with CorpusHttpTransport().open(url, timeout=1):
                 pytest.fail("unsafe origin reached transport")
+
+
+def test_streamed_object_reconciliation_verifies_bytes_not_metadata(tmp_path):
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.external_effect_adapters import (
+        MinioObjectStoreExternalEffectAdapter,
+    )
+
+    class Response(io.BytesIO):
+        def release_conn(self):
+            pass
+
+    class Storage:
+        body = b"corrupted"
+
+        def stat_object(self, bucket, key):
+            return SimpleNamespace(
+                size=len(self.body),
+                metadata={"content-hash": digest, "byte-verification": "required"},
+            )
+
+        def get_object(self, bucket, key):
+            return Response(self.body)
+
+    digest = "sha256:" + hashlib.sha256(b"canonical").hexdigest()
+    storage = Storage()
+    adapter = MinioObjectStoreExternalEffectAdapter(storage, bucket="isolated")
+    request = {
+        "object_key": "source/original",
+        "expected_hash": digest,
+        "expected_size": 9,
+    }
+    assert (
+        adapter.query(
+            stable_idempotency_key="frozen",
+            capability="object_store.put",
+            request_payload=request,
+        ).outcome
+        == "final_failure"
+    )
+    storage.body = b"canonical"
+    assert (
+        adapter.query(
+            stable_idempotency_key="frozen",
+            capability="object_store.put",
+            request_payload=request,
+        ).outcome
+        == "success"
+    )

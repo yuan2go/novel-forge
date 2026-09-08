@@ -336,6 +336,11 @@ class CorpusIngestionRuntime:
         if work["status"] in {"SUCCEEDED", "REUSED"}:
             return work["result"]
         manifest = IngestionManifest.model_validate(payload["manifest"])
+        if self.app.corpus_adapter is None:
+            raise KernelError(
+                "CORPUS_ACQUISITION_RUNTIME_REQUIRED",
+                "Corpus worker requires its governed acquisition cache and allowed source roots",
+            )
         receipt = self.app._execute_external_effect(
             worker=worker,
             effect_type="corpus.acquire",
@@ -654,14 +659,12 @@ class CorpusIngestionRuntime:
                 event_type="authority.source.corpus.ingestion.stage_completed",
                 payload=result,
             )
-            uow.commit()
-        with AuthorityUnitOfWork(self.app.database_url) as uow:
             repository = SourceImportRepository(uow.cursor)
             if result.get("stage") == "PREVIEW":
                 repository.transition_job(
                     project_id=worker.project_id,
                     import_job_id=job["import_job_id"],
-                    expected=("PROCESSING",),
+                    expected=("PROCESSING", "PAUSED"),
                     target="PREVIEWED",
                 )
             else:

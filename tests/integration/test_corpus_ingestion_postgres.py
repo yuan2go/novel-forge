@@ -114,6 +114,47 @@ def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypat
         and duplicate.json()["operation_id"] == admitted["operation_id"]
     )
 
+    # WHY: Representative query-only rows are rolled back and never count as ingested content.
+    with psycopg.connect(DATABASE_URL) as connection:
+        connection.execute(
+            """INSERT INTO authority_corpus_content(
+            content_id,project_id,snapshot_id,edition_id,blob_id,role,path,content_hash,byte_size,locator,acquisition_effect_id,created_by_operation_id)
+            SELECT 'query-only-'||n,c.project_id,c.snapshot_id,NULL,c.blob_id,c.role,'query-only-'||n,c.content_hash,c.byte_size,
+                '{"evidence_class":"QUERY_PLAN_FIXTURE"}'::jsonb,c.acquisition_effect_id,c.created_by_operation_id
+            FROM (SELECT * FROM authority_corpus_content WHERE project_id=%s AND role='ACQUISITION' ORDER BY content_id LIMIT 1) c
+            CROSS JOIN generate_series(1,5000) n""",
+            [corpus.project],
+        )
+        connection.execute("ANALYZE authority_corpus_content")
+        plan = connection.execute(
+            """EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT to_jsonb(c)
+            FROM authority_corpus_content c WHERE project_id=%s AND snapshot_id=%s AND content_id>%s ORDER BY content_id LIMIT 20""",
+            [corpus.project, result["snapshot_id"], "query-only-2000"],
+        ).fetchone()[0]
+        # WHY: With one dense snapshot PostgreSQL may correctly choose its primary key.
+        scan = plan[0]["Plan"]["Plans"][0]
+        assert scan["Node Type"] in {"Index Scan", "Index Only Scan"}, plan
+        assert scan["Actual Rows"] == 20, plan
+        assert scan.get("Rows Removed by Filter", 0) <= 20, plan
+        assert "content_id" in scan["Index Cond"], plan
+        connection.rollback()
+    import os
+    from pathlib import Path
+
+    if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+        Path(directory, "content-query-plan.json").write_text(
+            json.dumps(
+                {
+                    "query_plan": plan,
+                    "representative_rows": 5000,
+                    "evidence_class": "QUERY_PLAN_FIXTURE",
+                    "fixture_rolled_back": True,
+                    "planner_settings_changed": False,
+                },
+                indent=2,
+            )
+        )
+
 
 def test_authorized_bridge_reaches_existing_analysis_and_governance(
     corpus, tmp_path, monkeypatch
@@ -690,6 +731,12 @@ def test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed(
     scheduler.run_or_recover(
         operation_id=child["operation_id"], project_id=corpus.project
     )
+    status = corpus.client.get(
+        f"/product/source-imports/{admitted['import_job_id']}",
+        params={"project_id": corpus.project},
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["status"] == "AWAITING_GOVERNANCE"
     with psycopg.connect(DATABASE_URL) as connection:
         denied = connection.execute(
             "SELECT decision_id FROM authority_corpus_admission WHERE project_id=%s AND decision='DENY'",

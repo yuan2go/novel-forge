@@ -5229,12 +5229,15 @@ class SourceImportApplication:
         job = repository.job_for_update(
             project_id=project_id, import_job_id=import_job_id
         )
-        if job["status"] in {"PAUSED", "CANCELLED"}:
+        if job["status"] == "CANCELLED" or (
+            job["status"] == "PAUSED"
+            and statuses & {"PLANNED", "QUEUED", "RUNNING", "FAILED_RETRYABLE"}
+        ):
             return
         transition_failure: dict[str, Any] | None = None
         if statuses & {"FAILED_RETRYABLE", "FAILED_FINAL"}:
             target = "PARTIALLY_COMPLETED"
-        elif statuses & {"PLANNED", "RUNNING"}:
+        elif statuses & {"PLANNED", "QUEUED", "RUNNING"}:
             return
         else:
             requested_override = _source_analysis_override(job.get("analysis_override"))
@@ -5272,6 +5275,12 @@ class SourceImportApplication:
                         else ""
                     ),
                 }
+            elif job["source_type"] == "corpus_content" and any(
+                child.get("status") == "BLOCKED"
+                for item in work
+                for child in item.get("result", {}).get("children", [])
+            ):
+                target = "AWAITING_GOVERNANCE"
             elif statuses & {"BLOCKED"} or any(
                 item["work_kind"] == "MKAOS_EXTRACTION" for item in work
             ):
@@ -5285,6 +5294,7 @@ class SourceImportApplication:
             import_job_id=import_job_id,
             expected=(
                 "PROCESSING",
+                "PAUSED",
                 "PARTIALLY_COMPLETED",
                 "AWAITING_GOVERNANCE",
             ),
