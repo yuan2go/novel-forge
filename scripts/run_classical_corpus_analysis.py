@@ -217,6 +217,17 @@ def _model_effect_summary(database_url: str, *, project_id: str) -> dict[str, An
     }
 
 
+def _application_call_delta(
+    before: Mapping[str, Any], after: Mapping[str, Any]
+) -> int:
+    delta = int(after["application_effect_count"]) - int(
+        before["application_effect_count"]
+    )
+    if delta < 0:
+        raise RuntimeError("source model effect count cannot decrease during a run")
+    return delta
+
+
 def _approve_candidates(
     *,
     database_url: str,
@@ -516,6 +527,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         report["model_effects_after"] = _model_effect_summary(
             settings.database_url, project_id=args.project_id
         )
+        report["model_application_calls_performed_by_run"] = _application_call_delta(
+            before, report["model_effects_after"]
+        )
         report["run_hash"] = canonical_hash(report)
         _write_json(args.output, report)
         raise
@@ -523,9 +537,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     report["model_effects_after"] = _model_effect_summary(
         settings.database_url, project_id=args.project_id
     )
-    report["model_application_calls_performed_by_run"] = (
-        int(report["model_effects_after"]["application_effect_count"])
-        - int(before["application_effect_count"])
+    report["model_application_calls_performed_by_run"] = _application_call_delta(
+        before, report["model_effects_after"]
     )
     report["run_hash"] = canonical_hash(report)
     _write_json(args.output, report)

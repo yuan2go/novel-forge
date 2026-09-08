@@ -2,9 +2,16 @@ import json
 
 from novel_forge.modules.source_import.classical_corpus import load_corpus_registry
 from scripts.run_classical_corpus_analysis import (
+    _application_call_delta,
     _build_budget_plan,
     _load_native_report,
 )
+
+
+def test_analysis_call_delta_is_preserved_for_blocked_reports() -> None:
+    assert _application_call_delta(
+        {"application_effect_count": 81}, {"application_effect_count": 85}
+    ) == 4
 
 
 def test_frozen_corpus_analysis_budget_fits_approved_source_envelope() -> None:

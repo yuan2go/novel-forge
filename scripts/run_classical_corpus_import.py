@@ -23,6 +23,7 @@ from novel_forge.modules.project_authority import (
 )
 from novel_forge.modules.source_import import (
     CreateSourceImportCommand,
+    SourceAnalysisOverride,
     SourceImportPolicy,
     SourceImportQuery,
     SourceImportScheduler,
@@ -45,6 +46,9 @@ MODEL_CAPABILITIES = (
     "mkaos.rule.extract",
     "mkaos.template.extract",
 )
+ANALYSIS_OVERRIDE_SCHEMA_VERSION = "classical-corpus-analysis-overrides.v1"
+ANALYSIS_OVERRIDE_POLICY_VERSION = "classical-corpus-content-type-override.v1"
+ANALYSIS_OVERRIDE_REVIEW_CLASS = "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
 
 
 def _jsonable(value: Any) -> Any:
@@ -166,6 +170,91 @@ def _policy(work_key: str) -> SourceImportPolicy:
     )
 
 
+def _load_analysis_overrides(
+    path: Path | None,
+    *,
+    project_id: str,
+    workspace_id: str,
+    selected_work_keys: tuple[str, ...],
+    known_work_keys: frozenset[str],
+) -> tuple[dict[str, SourceAnalysisOverride], dict[str, Any]]:
+    if path is None:
+        return {}, {
+            "schema_version": ANALYSIS_OVERRIDE_SCHEMA_VERSION,
+            "mode": "NONE",
+            "override_count": 0,
+        }
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"analysis override manifest is unreadable: {exc}") from exc
+    if not isinstance(value, dict):
+        raise RuntimeError("analysis override manifest must be an object")
+    expected_identity = {
+        "schema_version": ANALYSIS_OVERRIDE_SCHEMA_VERSION,
+        "policy_version": ANALYSIS_OVERRIDE_POLICY_VERSION,
+        "review_class": ANALYSIS_OVERRIDE_REVIEW_CLASS,
+        "project_id": project_id,
+        "workspace_id": workspace_id,
+    }
+    mismatches = [
+        key for key, expected in expected_identity.items() if value.get(key) != expected
+    ]
+    if mismatches:
+        raise RuntimeError(
+            "analysis override manifest identity mismatch: " + ", ".join(mismatches)
+        )
+    raw_overrides = value.get("overrides")
+    if not isinstance(raw_overrides, list) or not raw_overrides:
+        raise RuntimeError("analysis override manifest requires non-empty overrides")
+    selected = frozenset(selected_work_keys)
+    overrides: dict[str, SourceAnalysisOverride] = {}
+    for index, raw_override in enumerate(raw_overrides):
+        if not isinstance(raw_override, dict):
+            raise RuntimeError(f"analysis override {index} must be an object")
+        work_key = str(raw_override.get("work_key") or "")
+        if work_key not in known_work_keys:
+            raise RuntimeError(f"analysis override has unknown work key: {work_key}")
+        if work_key not in selected:
+            raise RuntimeError(f"analysis override is outside this run: {work_key}")
+        if work_key in overrides:
+            raise RuntimeError(f"analysis override is duplicated: {work_key}")
+        try:
+            overrides[work_key] = SourceAnalysisOverride(
+                logical_document_scope_hash=str(
+                    raw_override.get("logical_document_scope_hash") or ""
+                ),
+                content_type=str(raw_override.get("content_type") or ""),
+                reason=str(raw_override.get("reason") or ""),
+                decision_ref=str(raw_override.get("decision_ref") or ""),
+            )
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError(
+                f"analysis override is invalid for {work_key}: {exc}"
+            ) from exc
+    manifest_hash = canonical_hash(value)
+    return overrides, {
+        "schema_version": ANALYSIS_OVERRIDE_SCHEMA_VERSION,
+        "mode": "EXACT_SCOPE_EXPERIMENTAL_POLICY",
+        "policy_version": ANALYSIS_OVERRIDE_POLICY_VERSION,
+        "review_class": ANALYSIS_OVERRIDE_REVIEW_CLASS,
+        "manifest_hash": manifest_hash,
+        "override_count": len(overrides),
+        "overrides": [
+            {
+                "work_key": work_key,
+                "contract_hash": override.contract_hash,
+                "logical_document_scope_hash": (
+                    override.logical_document_scope_hash
+                ),
+                "content_type": override.content_type.value,
+                "decision_ref": override.decision_ref,
+            }
+            for work_key, override in sorted(overrides.items())
+        ],
+    }
+
+
 def _materialize(args: argparse.Namespace) -> dict[str, Any]:
     settings = IndustrialSettings.from_env(root=ROOT)
     if not settings.database_url:
@@ -197,9 +286,19 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
     query = SourceImportQuery(settings.database_url)
     registry = load_corpus_registry()
     selected_keys = tuple(args.work_key or [row["work_key"] for row in registry["works"]])
-    unknown = sorted(set(selected_keys) - {row["work_key"] for row in registry["works"]})
+    known_work_keys = frozenset(str(row["work_key"]) for row in registry["works"])
+    unknown = sorted(set(selected_keys) - known_work_keys)
     if unknown:
         raise RuntimeError("unknown work keys: " + ", ".join(unknown))
+    if len(set(selected_keys)) != len(selected_keys):
+        raise RuntimeError("work selections must be unique")
+    analysis_overrides, analysis_override_manifest = _load_analysis_overrides(
+        args.analysis_override_file,
+        project_id=args.project_id,
+        workspace_id=args.workspace_id,
+        selected_work_keys=selected_keys,
+        known_work_keys=known_work_keys,
+    )
     model_effects_before = _model_effect_count(settings.database_url, args.project_id)
     results: list[dict[str, Any]] = []
     failures: list[dict[str, str]] = []
@@ -215,7 +314,7 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
                     requested_ref=spec.repository_commit_sha,
                     policy=_policy(spec.work_key),
                     intelligence_policy=SourceIntelligencePolicy(),
-                    analysis_override=None,
+                    analysis_override=analysis_overrides.get(spec.work_key),
                     mode="IMPORT",
                     rights_authorization="licensed",
                     license_name=spec.license_name,
@@ -264,6 +363,11 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
                     "discovery_recovery_mode": discovery.get("recovery_mode", ""),
                     "work_operation_id": work_operation_id,
                     "work_recovery_mode": materialized.get("recovery_mode", ""),
+                    "analysis_override_contract_hash": (
+                        analysis_overrides[spec.work_key].contract_hash
+                        if spec.work_key in analysis_overrides
+                        else ""
+                    ),
                     "source_work_asset_version_id": manifest["asset_version_id"],
                     "manifest_hash": manifest["manifest_hash"],
                     "unit_count": manifest["unit_count"],
@@ -300,6 +404,7 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
         "commit_sha": commit_sha,
         "registry_id": registry["registry_id"],
         "registry_hash": canonical_hash(registry),
+        "analysis_override_manifest": analysis_override_manifest,
         "project_operation": project,
         "requested_work_count": len(selected_keys),
         "materialized_work_count": len(results),
@@ -337,6 +442,7 @@ def main() -> int:
     parser.add_argument("--actor-id", default="operator:classical-corpus-validation")
     parser.add_argument("--work-key", action="append")
     parser.add_argument("--run-label", default="native-import")
+    parser.add_argument("--analysis-override-file", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--fail-fast", action="store_true")
     args = parser.parse_args()
