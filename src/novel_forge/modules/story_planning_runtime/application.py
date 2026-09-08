@@ -323,6 +323,10 @@ class StoryPlanningGenerationHandlerRegistry:
         return replace(item, definition_version=definition_version)
 
 
+def _requires_formation_decision_evidence(logical_key: str) -> bool:
+    return logical_key.startswith("story-formation:")
+
+
 class StoryPlanningGenerationApplication:
     def __init__(
         self,
@@ -737,7 +741,7 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.approve", generation["project_id"])
-        if str(generation["logical_key"]).startswith("story-formation:"):
+        if _requires_formation_decision_evidence(str(generation["logical_key"])):
             require_worker_scoped_auto_decision(
                 principal=principal,
                 evidence=decision_evidence,
@@ -805,7 +809,7 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
-        if str(generation["logical_key"]).startswith("story-formation:"):
+        if _requires_formation_decision_evidence(str(generation["logical_key"])):
             require_worker_scoped_auto_decision(
                 principal=principal,
                 evidence=decision_evidence,

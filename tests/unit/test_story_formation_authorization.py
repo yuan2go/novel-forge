@@ -9,6 +9,9 @@ from novel_forge.modules.book_design_authority.formation_domain import (
     deterministic_story_formation_run_id,
     require_worker_formation_auto_decision,
 )
+from novel_forge.modules.story_planning_runtime.application import (
+    _requires_formation_decision_evidence,
+)
 
 
 PROJECT_ID = "project-1"
@@ -76,6 +79,14 @@ def test_auto_formation_authorization_is_exactly_scope_bound() -> None:
             admitted_by_principal_id="trusted-local",
             admitted_by_principal_type=PrincipalType.LOCAL_OPERATOR,
         )
+
+
+def test_formation_decision_guard_does_not_capture_book_planning_keys() -> None:
+    assert _requires_formation_decision_evidence(
+        f"{FORMATION_RUN_ID}:WORLD_BIBLE:0"
+    )
+    assert not _requires_formation_decision_evidence("book:main")
+    assert not _requires_formation_decision_evidence("chapter-group:1-3")
 
 
 def test_auto_worker_decision_binds_exact_candidate_and_action() -> None:

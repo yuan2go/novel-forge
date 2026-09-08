@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 
@@ -15,6 +16,7 @@ from novel_forge.modules.command_kernel.budget_runtime import (
     deterministic_budget_scope_id,
     deterministic_budget_evidence_link_id,
     next_provider_budget_allowance,
+    _operation_cost_authority_payload,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -109,6 +111,50 @@ def test_account_entitlement_budget_rejects_monetary_cap_fields() -> None:
                 "cost_limit_usd": "1",
             }
         )
+
+
+def test_operation_cost_authority_payload_preserves_entitlement_reconciliation() -> (
+    None
+):
+    reconciliation = {
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "entitlement_usage_reconciled": {
+            "input_tokens": 120,
+            "output_tokens": 40,
+        },
+    }
+
+    payload = _operation_cost_authority_payload(
+        cost_evidence_id="budget-cost:reservation-1",
+        operation_id="operation-1",
+        provider="codex-cli",
+        model="gpt-5.6-sol",
+        amount=None,
+        currency="USD",
+        evidence=reconciliation,
+        accounting_basis="ACCOUNT_ENTITLEMENT",
+        cost_status="UNKNOWN",
+    )
+
+    assert payload["amount"] is None
+    assert payload["accounting_basis"] == "ACCOUNT_ENTITLEMENT"
+    assert payload["cost_status"] == "UNKNOWN"
+    assert payload["evidence"] == reconciliation
+
+    priced = _operation_cost_authority_payload(
+        cost_evidence_id="budget-cost:reservation-2",
+        operation_id="operation-2",
+        provider="openai",
+        model="gpt-test",
+        amount=Decimal("1.20"),
+        currency="USD",
+        evidence={"usage": {"input_tokens": 10}},
+        accounting_basis="PRICED",
+        cost_status="KNOWN",
+    )
+    assert priced["amount"] == "1.2"
+    assert "accounting_basis" not in priced
+    assert "cost_status" not in priced
 
 
 def test_next_provider_allowance_uses_frozen_per_call_limits() -> None:
