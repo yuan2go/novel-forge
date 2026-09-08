@@ -1044,6 +1044,7 @@ def build_production_execution_composition(
         key: str(values[value])
         for key, value in (
             ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+            ("project_total", "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"),
             ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
             ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
             ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),

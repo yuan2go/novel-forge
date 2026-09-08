@@ -681,6 +681,15 @@ class PostgresBookOpeningApplication:
             ),
         )
 
+    def find_by_key(self, *, project_id: str, book_id: str, idempotency_key: str) -> dict[str, Any] | None:
+        identity = "\x00".join((project_id, book_id, idempotency_key)).encode("utf-8")
+        try:
+            return self.require("book-opening:" + hashlib.sha256(identity).hexdigest())
+        except KernelError as error:
+            if error.code != "BOOK_OPENING_NOT_FOUND":
+                raise
+            return None
+
     def require(self, opening_run_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

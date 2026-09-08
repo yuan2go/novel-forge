@@ -190,7 +190,7 @@ def test_published_accepted_history_upgrades_and_frozen_planning_replays(
         from novel_forge.modules.command_kernel.errors import KernelError
 
         with pytest.raises(
-            KernelError, match=("NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE" if planning_contract == "1.13.0" else "PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY")
+            KernelError, match="PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY"
         ):
             application.generate(
                 replace(

@@ -9,33 +9,48 @@ import json
 from pathlib import Path
 
 
-def chapters(directory: Path) -> dict[int, dict]:
-    rows = json.loads((directory / "chapter-workspaces.json").read_text())
-    result = {}
+from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
+
+
+def chapter_results(directory: Path) -> tuple[dict[int, dict], list[dict]]:
+    result, errors = {}, []
+    try:
+        rows = json.loads((directory / "chapter-workspaces.json").read_text())
+    except (OSError, ValueError) as error:
+        return {}, [{"directory": str(directory), "error": str(error)}]
+    if not isinstance(rows, list):
+        return {}, [{"directory": str(directory), "error": "workspace export must be a list"}]
     for workspace in rows:
-        accepted = workspace.get("acceptance")
-        if not accepted or accepted["status"] != "COMMITTED":
+        if not isinstance(workspace, dict):
+            errors.append({"error": "workspace must be an object"})
             continue
-        number = accepted["accepted_through_chapter"]
-        targets = {
-            item["content"]["target_asset_version_id"]
-            for item in workspace["artifacts"]["gates"]
-            if item["asset_type"] == "quality_score_report"
-        }
-        if len(targets) != 1:
-            raise ValueError("export lacks one unambiguous final Quality candidate")
-        candidate = next(
-            item
-            for item in workspace["artifacts"]["candidates"]
-            if item["asset_version_id"] in targets
-        )
-        memos = workspace["artifacts"]["memo"]
-        if len(memos) != 1:
-            raise ValueError("export lacks one frozen Memo")
-        memo = memos[0]
-        if number in result:
-            raise ValueError("duplicate accepted chapter in export")
-        result[number] = {"candidate": candidate, "memo": memo, "workspace": workspace}
+        accepted = workspace.get("acceptance")
+        if not accepted or accepted.get("status") != "COMMITTED":
+            continue
+        try:
+            resolved = resolve_accepted_manuscript(workspace)
+            if not workspace.get("run", {}).get("command", {}).get("chapter_plan_content_hash"):
+                raise ValueError("frozen chapter plan hash is missing")
+            number = accepted["accepted_through_chapter"]
+            entry = {**resolved, "workspace": workspace}
+            if number in result:
+                previous = result[number]
+                if previous["workspace"]["acceptance"] != accepted:
+                    raise ValueError("conflicting accepted chapter in export")
+                if previous["candidate"] != resolved["candidate"]:
+                    raise ValueError("conflicting replayed candidate in export")
+            result[number] = entry
+        except (KeyError, TypeError, ValueError) as error:
+            errors.append({"root_operation_id": workspace.get("root_operation_id"),
+                           "acceptance_id": accepted.get("acceptance_id"),
+                           "error": str(error)})
+    return result, errors
+
+
+def chapters(directory: Path) -> dict[int, dict]:
+    result, errors = chapter_results(directory)
+    if errors:
+        raise ValueError(json.dumps(errors, ensure_ascii=False))
     return result
 
 
@@ -71,7 +86,7 @@ def cost_evidence(directory: Path) -> dict:
             raise ValueError("invalid cost receipt")
         totals[currency] = totals.get(currency, Decimal(0)) + amount
     return {
-        "status": "RECEIPTS_ONLY_NOT_PROVIDER_INVOICE",
+        "status": "PARTIAL_RECEIPTS_NOT_TOTAL_COST" if unavailable else "RECEIPTS_ONLY_NOT_PROVIDER_INVOICE",
         "totals": {key: str(value) for key, value in totals.items()},
         "effects": effects,
         "unavailable": unavailable,
@@ -102,8 +117,9 @@ def main(argv=None):
     parser.add_argument("candidate", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    left, right = chapters(args.baseline), chapters(args.candidate)
     args.output.mkdir(parents=True, exist_ok=False)
+    left, left_errors = chapter_results(args.baseline)
+    right, right_errors = chapter_results(args.candidate)
     records = []
     for number in sorted(set(left) & set(right)):
         old, new = left[number], right[number]
@@ -129,9 +145,10 @@ def main(argv=None):
         records.append(
             {
                 "chapter": number,
-                "comparison_scope": "SAME_FROZEN_PLAN"
-                if plans[0] == plans[1]
-                else "FULL_CHAIN_DIFFERENT_PLANS",
+                "comparison_scope": "NONCOMPARABLE_UNLESS_FROZEN_INPUTS_AND_MODEL_MATCH",
+                "same_plan_hash": plans[0] == plans[1],
+                "accepted_input_boundaries": [item["context"]["content"].get("chapter_execution", {}).get("accepted_boundary") for item in (old, new)],
+                "acceptance_ids": [item["workspace"]["acceptance"]["acceptance_id"] for item in (old, new)],
                 "plan_hashes": plans,
                 "candidate_refs": [
                     {
@@ -161,13 +178,22 @@ def main(argv=None):
                 },
             }
         )
+    costs, cost_errors = {}, []
+    for label, directory in (("baseline", args.baseline), ("candidate", args.candidate)):
+        try:
+            costs[label] = cost_evidence(directory)
+        except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+            costs[label] = {"status": "INVALID_OR_INCOMPLETE", "error": str(error)}
+            cost_errors.append({"side": label, "error": str(error)})
+    errors = [{"side": "baseline", **item} for item in left_errors] + [{"side": "candidate", **item} for item in right_errors] + cost_errors
     report = {
-        "status": "EXPORTED_COMPARISON_NOT_QUALITY_JUDGMENT",
+        "status": "PARTIAL_EXPORT" if errors else "EXPORTED_COMPARISON_NOT_QUALITY_JUDGMENT",
+        "errors": errors,
         "compared_chapters": records,
         "unmatched_baseline_chapters": sorted(set(left) - set(right)),
         "unmatched_candidate_chapters": sorted(set(right) - set(left)),
-        "baseline_cost": cost_evidence(args.baseline),
-        "candidate_cost": cost_evidence(args.candidate),
+        "baseline_cost": costs["baseline"],
+        "candidate_cost": costs["candidate"],
         "baseline_run": run_identity(args.baseline),
         "candidate_run": run_identity(args.candidate),
         "human_editorial": "WAITING_EVIDENCE",
@@ -177,7 +203,7 @@ def main(argv=None):
     (args.output / "comparison.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2)
     )
-    return 0 if records else 2
+    return 0 if records and not errors else 2
 
 
 if __name__ == "__main__":

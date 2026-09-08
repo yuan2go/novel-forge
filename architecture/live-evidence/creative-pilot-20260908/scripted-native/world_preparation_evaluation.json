@@ -1,0 +1,163 @@
+[
+  {
+    "asset_version_id": "cf760954-68d9-4a8d-8bd6-0dbebb580490",
+    "content_hash": "sha256:118154b5d79353eb58876e4273fddef918b326cc2651513010c3e15a68f67a7d",
+    "logical_ref": "asset-version:cf760954-68d9-4a8d-8bd6-0dbebb580490",
+    "content": {
+      "contract": {
+        "output": {
+          "evaluations": []
+        },
+        "source": {
+          "content_hash": "sha256:14f07b10d630e4f44687972ee126ca15b4555e1ad647e15aee650003889206da",
+          "asset_version_id": "aec28202-8a34-46bc-be6c-364975330a5e"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "21450140-2571-4bcc-8825-d07dc264e049",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:b0a5a0e3-c96b-419b-aabb-06ab64fc3182:21450140-2571-4bcc-8825-d07dc264e049",
+          "operation_id": "1ff3659c-90d7-49a8-974e-bdb9023a5880",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:ac1c247e-54ea-49c9-9bbf-ad0be4e01d5d",
+          "route_snapshot_id": "production_execution/routes/94b69810e2dcc7c9cfdc",
+          "usage_receipt_ref": "authority-asset-version:5b1f2dd1-c8cb-4b93-92ab-4550c39f7d96",
+          "input_manifest_ref": "production_execution/inputs/94b69810e2dcc7c9cfdc",
+          "output_manifest_ref": "authority-asset-version:016055a7-fbd1-4545-9518-7900ae0b0ae3",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "b0a5a0e3-c96b-419b-aabb-06ab64fc3182",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:03bbbe88-9eae-4719-ba44-2ce1c1089750"
+        },
+        "generation": {
+          "content_hash": "sha256:f90e9bc27a39ae9abb87e38377a2b0ca15a7b6553e6e5b8b42533f3521d9268e",
+          "asset_version_id": "87b02cfd-fa3c-4ac0-b0c9-b97736e9ace8"
+        }
+      }
+    }
+  },
+  {
+    "asset_version_id": "8fed5ca1-3e58-40f4-b704-818d4f030206",
+    "content_hash": "sha256:a7bb3e89ac6aafc5828d4843f54360f69a45696bd9866765dee201ea466edfad",
+    "logical_ref": "asset-version:8fed5ca1-3e58-40f4-b704-818d4f030206",
+    "content": {
+      "contract": {
+        "output": {
+          "evaluations": [
+            {
+              "rationale": "The generated transition follows the supplied rule and preserves information asymmetry.",
+              "dimensions": {
+                "theme": 0.8,
+                "pacing": 0.8,
+                "payoff": 0.8,
+                "emotion": 0.8,
+                "novelty": 0.8,
+                "conflict": 0.8,
+                "curiosity": 0.8,
+                "arc_progression": 0.8,
+                "causal_plausibility": 0.8,
+                "obligation_pressure": 0.8,
+                "character_consistency": 0.8
+              },
+              "transition_id": "reveal-accepted-notice",
+              "preferred_path_id": ""
+            }
+          ]
+        },
+        "source": {
+          "content_hash": "sha256:caf5ace069de7196dd5c2d1f67ee8bb4e968a87d1385b78cf4bbda2673f651c9",
+          "asset_version_id": "4d4bcfa4-f9b2-489a-abec-fc21e015c15f"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "694da966-f2ec-4755-9aff-c5127a5a0e08",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:e70aa324-c630-42b6-944d-a164891a2a0a:694da966-f2ec-4755-9aff-c5127a5a0e08",
+          "operation_id": "b6d373ec-6cd0-46a6-a952-c0d0f7f879b4",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:d1c51804-69dc-49c2-9549-6e54f0c2762f",
+          "route_snapshot_id": "production_execution/routes/64c8f1789318f07bd726",
+          "usage_receipt_ref": "authority-asset-version:1b7552a7-22c3-409e-9e41-386e23206aa2",
+          "input_manifest_ref": "production_execution/inputs/64c8f1789318f07bd726",
+          "output_manifest_ref": "authority-asset-version:a4563be3-7234-45d1-a537-537f68d2e0c1",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "e70aa324-c630-42b6-944d-a164891a2a0a",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:016cec2e-aaea-4697-86e5-026b8ef16812"
+        },
+        "generation": {
+          "content_hash": "sha256:ec7ad0a4a3ed3d0154b4bfece7bd922e96dc0ea8c8777c2da14a4d4415356495",
+          "asset_version_id": "ebcd111e-d388-43e9-9b06-5af2ce3e9705"
+        }
+      }
+    }
+  },
+  {
+    "asset_version_id": "35a7d87a-62c5-4d39-a971-dea3e6037d48",
+    "content_hash": "sha256:2a5c8efc36b1ff4569f2a3317050366369d1707415888334f84ef781630e65ec",
+    "logical_ref": "asset-version:35a7d87a-62c5-4d39-a971-dea3e6037d48",
+    "content": {
+      "contract": {
+        "output": {
+          "evaluations": [
+            {
+              "rationale": "The generated transition follows the supplied rule and preserves information asymmetry.",
+              "dimensions": {
+                "theme": 0.8,
+                "pacing": 0.8,
+                "payoff": 0.8,
+                "emotion": 0.8,
+                "novelty": 0.8,
+                "conflict": 0.8,
+                "curiosity": 0.8,
+                "arc_progression": 0.8,
+                "causal_plausibility": 0.8,
+                "obligation_pressure": 0.8,
+                "character_consistency": 0.8
+              },
+              "transition_id": "advance-faction-pressure",
+              "preferred_path_id": ""
+            }
+          ]
+        },
+        "source": {
+          "content_hash": "sha256:ef83e94985b4b8f971b00362a215d339bd376a82198875aba1376548466d50dc",
+          "asset_version_id": "98d07acc-b003-4951-85fb-abcfe24d1e9a"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "0986f565-7ee2-4ad7-9b7a-9b594bce7aa1",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:f157f3d4-55b1-470d-91d3-0d88b1e57ea5:0986f565-7ee2-4ad7-9b7a-9b594bce7aa1",
+          "operation_id": "ff560bc2-0683-47b3-9a7a-18ab8bd1b83c",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:7c290475-db5b-45e5-846a-ddd9210ccf09",
+          "route_snapshot_id": "production_execution/routes/03340fb072175297a079",
+          "usage_receipt_ref": "authority-asset-version:1f77f920-19e1-493a-8d6e-f5064693d461",
+          "input_manifest_ref": "production_execution/inputs/03340fb072175297a079",
+          "output_manifest_ref": "authority-asset-version:61dc4189-8efb-4fe9-9634-878db33c753d",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "f157f3d4-55b1-470d-91d3-0d88b1e57ea5",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:a68b9e9e-09ac-4f04-a9cd-387b3c6d3680"
+        },
+        "generation": {
+          "content_hash": "sha256:19cc3746245b2401c7e4da5e9bddf8807e4d1f82f7b0a86f5042894883130a04",
+          "asset_version_id": "329100e3-2b08-4164-b7c3-b67576869a2d"
+        }
+      }
+    }
+  }
+]

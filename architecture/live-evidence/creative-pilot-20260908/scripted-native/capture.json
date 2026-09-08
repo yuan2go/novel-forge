@@ -1,0 +1,30 @@
+{
+  "source_path": "/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-current/test_native_formation_generate0",
+  "tested_sha": "cb9a0ddb4a6d70bae33e844ef0aab82ee3518506",
+  "implementation_tree_sha": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e",
+  "p0_run_id": "p0-a3e0167255394e7dbfe6d6bbb7e4414b",
+  "proof_ceiling": "SCRIPTED_TRANSPORT_PRODUCTION_WIRING_ONLY",
+  "qualification": "SEE_FINAL_CANONICAL_P0_REPORT",
+  "sha256": {
+    "accepted-chapter-1.txt": "c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+    "accepted-chapter-2.txt": "d1d99c869472d05d037891955aafb210242d95b0c49d14d80d5137c69f063413",
+    "accepted-chapter-3.txt": "ccf8043073366d8e022c9696899499baf92f3c7871d5a2dde717283a5de1aac9",
+    "asset-export-status.json": "94a5a445531a74f3a4588134337e604bded738577cb8f81697fd8061d2cf080f",
+    "book.json": "f6ca7a7b44a9030dd4863f044ec56e5a671f6adab982254b7484837fa97b7602",
+    "chapter-workspaces.json": "35b6ec5d463259ef8159003c22b91d05eed7a4e6cd26308fd587cf6dcf8f0fad",
+    "cost_ledger.json": "fff7528b2c7d2e30fe204d88bd87d055d4724618b5bac29d4abb6419db0884f9",
+    "execution_recovery_session.json": "3d68b79b8aad42434a69769a7af88e8bb06318800ff27eed084ef4340752c85a",
+    "formation-production.json": "088373a6f5d948e302f85b1f20e7d4546938dbacfbff8f3777eed922e94f8971",
+    "model_call_log.json": "600d4d62871d5092c5032691b6e6c3f129e5088a1ef196794e37c5b4355ef3c6",
+    "narrative_design_evaluation.json": "2d7fd70e32557442ba815533b1420f147b8ee93b15a0e6cc8ed1b22203e2bc4d",
+    "narrative_governance_action.json": "81f1bd07720942c747e6a14ef09e7075234b52983c50ee5975c2f385375b452f",
+    "planning_generation_candidate.json": "c883610a88ecf2ffd6dc91ec133e4c2c51c1de286e3886a4a741e1a2c433f9b2",
+    "provider-transcript.json": "16d53ef6683e8da51f7bbf6e0cc8d6edc4d7129aacc6a1ef1916b8c19c8db63a",
+    "provider_request_admission_manifest.json": "6beabad67da2c87cc4952aaf02ed47ed3288e65407636e9f971a14bdd1e5243f",
+    "realities.json": "67173ffc384920fe49b0abda2e9a7dc12115b8833895db597b79108018b4abf6",
+    "workspace-export-status.json": "94a5a445531a74f3a4588134337e604bded738577cb8f81697fd8061d2cf080f",
+    "world_preparation_evaluation.json": "6c98c47e92c3249cf03c7573a70ec9396de309a9f7d4f988335e8f8a6d5dbf48",
+    "world_preparation_generation.json": "03262d1481d4181991a82106fe5efd10165527049672cd776b755e7af7e98bb5",
+    "world_preparation_source.json": "74b58c067b904094d7918b97e030a38062efedad755f0656db67cd420a851464"
+  }
+}

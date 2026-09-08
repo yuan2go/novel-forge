@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
+from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -257,6 +259,7 @@ class ChapterAuthorityQuery:
             outputs = [
                 {
                     "asset_type": row[0],
+                    "project_id": project_id,
                     "output_key": row[1],
                     "role": row[2],
                     "asset_version_id": row[3],
@@ -323,13 +326,23 @@ class ChapterAuthorityQuery:
                 SELECT acceptance.acceptance_id, acceptance.status, acceptance.chapter_number,
                        acceptance.chapter_outcome_asset_version_id,
                        acceptance.story_state_asset_version_id, acceptance.canon_snapshot_asset_version_id,
-                       acceptance.longform_projection_set_id, request.book_run_id
+                       acceptance.longform_projection_set_id, request.book_run_id, book_run.book_id
                 FROM authority_book_chapter_request request
+                JOIN authority_book_production book_run ON book_run.book_run_id=request.book_run_id
                 LEFT JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
                 WHERE request.chapter_root_operation_id=%s AND request.project_id=%s
                 """, [root_operation_id, project_id],
             )
             row = uow.cursor.fetchone()
+            outcome = None
+            outcome_error = None
+            if row and row[0] and row[1] == "COMMITTED":
+                try:
+                    outcome = asdict(uow.repositories.asset_documents.require(
+                        project_id=project_id, asset_version_id=row[3],
+                    ))
+                except KernelError as error:
+                    outcome_error = {"code": error.code, "message": str(error)}
             uow.cursor.execute(
                 """
                 SELECT attempt.attempt_id, attempt.operation_id, attempt.attempt_number,
@@ -352,11 +365,12 @@ class ChapterAuthorityQuery:
             attempts = [{"attempt_id": item[0], "operation_id": item[1], "attempt_number": item[2],
                          "status": item[3], "worker_id": item[4], "error": item[5]}
                         for item in attempt_rows]
-        return {
+        workspace = {
             "contract_version": "chapter-workspace.v1",
             "attempts": attempts,
             "creation_sources": creation,
             "book_run_id": row[7] if row else "", "authority": "READ_ONLY_PROJECTION",
+            "book_id": row[8] if row else "",
             "project_id": project_id, "root_operation_id": root_operation_id,
             "run": {key: value for key, value in evidence.items() if key != "outputs"},
             "artifacts": {stage: [item for item in evidence["outputs"] if item["asset_type"] in types]
@@ -364,10 +378,22 @@ class ChapterAuthorityQuery:
             "acceptance": None if row is None or row[0] is None else {
                 "acceptance_id": row[0], "status": row[1], "accepted_through_chapter": int(row[2]),
                 "outcome_asset_version_id": row[3], "story_state_asset_version_id": row[4],
+                "outcome": outcome,
                 "canon_snapshot_asset_version_id": row[5], "longform_projection_set_id": row[6],
                 "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS",
             },
         }
+        if workspace["acceptance"] and workspace["acceptance"]["status"] == "COMMITTED":
+            try:
+                resolved = resolve_accepted_manuscript(workspace)
+                workspace["accepted_manuscript"] = {"status": "EXACT_ACCEPTANCE_BOUND", "bindings": {
+                    key: {"asset_version_id": value["asset_version_id"], "content_hash": value["content_hash"]}
+                    for key, value in resolved.items()
+                }}
+            except (KernelError, KeyError, TypeError, ValueError) as error:
+                workspace["accepted_manuscript"] = {"status": "EVIDENCE_INCOMPLETE_OR_CONFLICTING",
+                    "error": outcome_error or {"code": getattr(error, "code", "EXPORT_CONTRACT_INVALID"), "message": str(error)}}
+        return workspace
 
     def require_operation_control_state(
         self,

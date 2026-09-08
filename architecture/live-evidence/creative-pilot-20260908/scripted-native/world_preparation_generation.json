@@ -1,0 +1,183 @@
+[
+  {
+    "asset_version_id": "87b02cfd-fa3c-4ac0-b0c9-b97736e9ace8",
+    "content_hash": "sha256:f90e9bc27a39ae9abb87e38377a2b0ca15a7b6553e6e5b8b42533f3521d9268e",
+    "logical_ref": "asset-version:87b02cfd-fa3c-4ac0-b0c9-b97736e9ace8",
+    "content": {
+      "contract": {
+        "output": {
+          "reason": "This bounded scripted arc proposes no further world event after its disclosure chapter.",
+          "candidates": [],
+          "disposition": "NO_OP"
+        },
+        "source": {
+          "content_hash": "sha256:14f07b10d630e4f44687972ee126ca15b4555e1ad647e15aee650003889206da",
+          "asset_version_id": "aec28202-8a34-46bc-be6c-364975330a5e"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "21450140-2571-4bcc-8825-d07dc264e049",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:f5230388-8d8e-48ea-a889-0ccce6fd9d8e:21450140-2571-4bcc-8825-d07dc264e049",
+          "operation_id": "1ff3659c-90d7-49a8-974e-bdb9023a5880",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:71644846-892e-49f7-84ec-80b3032d2184",
+          "route_snapshot_id": "production_execution/routes/893c60745fe4baad4233",
+          "usage_receipt_ref": "authority-asset-version:8f29c324-2d25-4839-8bed-069396a76de3",
+          "input_manifest_ref": "production_execution/inputs/893c60745fe4baad4233",
+          "output_manifest_ref": "authority-asset-version:750013cb-f539-4d0e-b64a-e2d819f78c04",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "f5230388-8d8e-48ea-a889-0ccce6fd9d8e",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:c231737a-f7b1-4488-a6a1-460c50aa9a2e"
+        }
+      }
+    }
+  },
+  {
+    "asset_version_id": "ebcd111e-d388-43e9-9b06-5af2ce3e9705",
+    "content_hash": "sha256:ec7ad0a4a3ed3d0154b4bfece7bd922e96dc0ea8c8777c2da14a4d4415356495",
+    "logical_ref": "asset-version:ebcd111e-d388-43e9-9b06-5af2ce3e9705",
+    "content": {
+      "contract": {
+        "output": {
+          "reason": "The approved faction pressure can advance off camera.",
+          "candidates": [
+            {
+              "risks": [],
+              "arc_refs": [],
+              "rationale": "Approved rule and initial faction provide causal support.",
+              "transition": {
+                "payload_json": "{\"transition_id\": \"reveal-accepted-notice\", \"actor_id\": \"faction:council\", \"camera\": \"ON_CAMERA\", \"story_time\": {\"timeline_id\": \"main\", \"start_ordinal\": 2, \"end_ordinal\": 2, \"precision\": \"EXACT\", \"label\": \"\"}, \"action\": \"act on the approved faction pressure\", \"state_kind\": \"disclosure_event\", \"entity_key\": \"disclosure_id=accepted-notice\", \"changes\": {\"disclosure_id\": \"accepted-notice\", \"fact_id\": \"narrative-event:sha256:364e94a71f3444818fe48f8723ef3fad9fa43ec9632c2f75a3acf8ca5c4ea3d0\", \"audience\": \"READER\", \"disclosure_mode\": \"CONFIRM\"}, \"requirements\": [], \"epistemic_basis\": [], \"cause_refs\": [\"narrative-event:sha256:364e94a71f3444818fe48f8723ef3fad9fa43ec9632c2f75a3acf8ca5c4ea3d0\"]}"
+              },
+              "obligation_refs": [],
+              "soft_assumptions": [
+                "The faction chooses to act."
+              ],
+              "affected_entities": [
+                "faction:council"
+              ],
+              "information_scope": {
+                "disclosures": [
+                  {
+                    "mode": "CONFIRM",
+                    "fields": [
+                      "status"
+                    ],
+                    "audience": "READER",
+                    "event_id": "narrative-event:sha256:364e94a71f3444818fe48f8723ef3fad9fa43ec9632c2f75a3acf8ca5c4ea3d0",
+                    "claim_kind": "HISTORICAL_OCCURRENCE",
+                    "disclosure_id": "accepted-notice",
+                    "presentation_channel": "LETTER"
+                  }
+                ]
+              },
+              "preparation_paths": [],
+              "world_consequences": [
+                "Faction pressure advances without public disclosure."
+              ],
+              "narrative_preferences": [
+                "Delay disclosure."
+              ]
+            }
+          ],
+          "disposition": "CANDIDATES"
+        },
+        "source": {
+          "content_hash": "sha256:caf5ace069de7196dd5c2d1f67ee8bb4e968a87d1385b78cf4bbda2673f651c9",
+          "asset_version_id": "4d4bcfa4-f9b2-489a-abec-fc21e015c15f"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "694da966-f2ec-4755-9aff-c5127a5a0e08",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:838ddd86-8ff6-49b1-b81a-555d616793f4:694da966-f2ec-4755-9aff-c5127a5a0e08",
+          "operation_id": "b6d373ec-6cd0-46a6-a952-c0d0f7f879b4",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:489a4b19-22bc-4be0-a59e-55b0a49ffe66",
+          "route_snapshot_id": "production_execution/routes/73e10ca1fabe9a974309",
+          "usage_receipt_ref": "authority-asset-version:38beac34-528a-46af-a1f6-e4bec92ed941",
+          "input_manifest_ref": "production_execution/inputs/73e10ca1fabe9a974309",
+          "output_manifest_ref": "authority-asset-version:619c12e6-49a4-4745-ba23-3bb08db2985d",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "838ddd86-8ff6-49b1-b81a-555d616793f4",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:8e380a07-7f2a-4e90-ac9e-28d3432f62a7"
+        }
+      }
+    }
+  },
+  {
+    "asset_version_id": "329100e3-2b08-4164-b7c3-b67576869a2d",
+    "content_hash": "sha256:19cc3746245b2401c7e4da5e9bddf8807e4d1f82f7b0a86f5042894883130a04",
+    "logical_ref": "asset-version:329100e3-2b08-4164-b7c3-b67576869a2d",
+    "content": {
+      "contract": {
+        "output": {
+          "reason": "The approved faction pressure can advance off camera.",
+          "candidates": [
+            {
+              "risks": [],
+              "arc_refs": [],
+              "rationale": "Approved rule and initial faction provide causal support.",
+              "transition": {
+                "payload_json": "{\"transition_id\": \"advance-faction-pressure\", \"actor_id\": \"faction:council\", \"camera\": \"OFF_CAMERA\", \"story_time\": {\"timeline_id\": \"main\", \"start_ordinal\": 1, \"end_ordinal\": 1, \"precision\": \"EXACT\", \"label\": \"\"}, \"action\": \"act on the approved faction pressure\", \"state_kind\": \"world_state\", \"entity_key\": \"world_state_id=council-inquiry\", \"changes\": {\"status\": \"OPEN\"}, \"requirements\": [], \"epistemic_basis\": [], \"cause_refs\": [\"foundation:authority-output:1c4404df-1739-4e08-aad9-f2f4538a2a77:story_planning.candidate:v1\"]}"
+              },
+              "obligation_refs": [],
+              "soft_assumptions": [
+                "The faction chooses to act."
+              ],
+              "affected_entities": [
+                "faction:council"
+              ],
+              "information_scope": {
+                "disclosures": []
+              },
+              "preparation_paths": [],
+              "world_consequences": [
+                "Faction pressure advances without public disclosure."
+              ],
+              "narrative_preferences": [
+                "Delay disclosure."
+              ]
+            }
+          ],
+          "disposition": "CANDIDATES"
+        },
+        "source": {
+          "content_hash": "sha256:ef83e94985b4b8f971b00362a215d339bd376a82198875aba1376548466d50dc",
+          "asset_version_id": "98d07acc-b003-4951-85fb-abcfe24d1e9a"
+        },
+        "evidence": {
+          "model_id": "synthesis-scripted",
+          "attempt_id": "0986f565-7ee2-4ad7-9b7a-9b594bce7aa1",
+          "backend_id": "scripted-fixture",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "scripted_provider_v2",
+          "execution_id": "planning-execution:42426952-09a2-4aa7-945d-0da7cf4a58b0:0986f565-7ee2-4ad7-9b7a-9b594bce7aa1",
+          "operation_id": "ff560bc2-0683-47b3-9a7a-18ab8bd1b83c",
+          "fencing_token": 1,
+          "real_model_call": false,
+          "cost_receipt_ref": "authority-asset-version:09ca086f-179b-4268-b9dd-94cb6ff08c68",
+          "route_snapshot_id": "production_execution/routes/53e1b72e08d407fa2035",
+          "usage_receipt_ref": "authority-asset-version:53890e04-5b17-4590-8883-1b27a9efe196",
+          "input_manifest_ref": "production_execution/inputs/53e1b72e08d407fa2035",
+          "output_manifest_ref": "authority-asset-version:b4061ced-b8f4-4a61-b9df-34a09b773aa5",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "42426952-09a2-4aa7-945d-0da7cf4a58b0",
+          "fixture_protocol_only": true,
+          "validation_manifest_ref": "authority-asset-version:e4ae6a57-8043-4b91-8847-02a70d6a126a"
+        }
+      }
+    }
+  }
+]

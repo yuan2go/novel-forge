@@ -153,53 +153,77 @@ def export_artifacts(*, database_url: str, project_id: str, destination: Path, e
         "execution_recovery_session",
         "provider_request_admission_manifest",
     )
-    for kind in (*kinds, *extra_kinds):
-        rows = query.list_versions(project_id=project_id, asset_type=kind, limit=500)
-        if len(rows) == 500:
-            raise RuntimeError(
-                f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"
+    errors = []
+    for kind in dict.fromkeys((*kinds, *extra_kinds)):
+        try:
+            rows = query.list_versions(project_id=project_id, asset_type=kind, limit=500)
+            if len(rows) == 500:
+                raise RuntimeError(
+                    f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"
+                )
+            (destination / f"{kind}.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "asset_version_id": row.asset_version_id,
+                            "content_hash": row.content_hash,
+                            "logical_ref": row.logical_ref,
+                            "content": row.content,
+                        }
+                        for row in rows
+                    ],
+                    default=str,
+                    indent=2,
+                )
+                + "\n"
             )
-        (destination / f"{kind}.json").write_text(
-            json.dumps(
-                [
-                    {
-                        "asset_version_id": row.asset_version_id,
-                        "content_hash": row.content_hash,
-                        "logical_ref": row.logical_ref,
-                        "content": row.content,
-                    }
-                    for row in rows
-                ],
-                default=str,
-                indent=2,
-            )
-            + "\n"
-        )
+        except Exception as error:
+            errors.append({"asset_type": kind, "error": redact_secret_text(str(error))})
+    (destination / "asset-export-status.json").write_text(json.dumps({"status": "PARTIAL" if errors else "COMPLETE", "errors": errors}, ensure_ascii=False, indent=2))
+    if errors:
+        raise RuntimeError("Partial artifact export; inspect asset-export-status.json")
 
 
-def export(*, composition, book_run_id: str, destination: Path):
-    book = composition.authority.require(book_run_id)
-    export_artifacts(database_url=composition.authority.database_url,
-                     project_id=book["project_id"], destination=destination)
+def export(*, composition, book_run_id: str, destination: Path, include_artifacts: bool = True):
     from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+    from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
+
+    book = composition.authority.require(book_run_id)
+    (destination / "book.json").write_text(json.dumps(book, default=str, indent=2) + "\n")
+    errors = []
+    if include_artifacts:
+        try:
+            export_artifacts(database_url=composition.authority.database_url, project_id=book["project_id"], destination=destination)
+        except Exception as error:
+            errors.append({"stage": "artifacts", "error": redact_secret_text(str(error))})
     chapters = ChapterAuthorityQuery(composition.authority.database_url)
     runs = chapters.list_runs(project_id=book["project_id"], book_run_id=book_run_id, limit=500)
     if len(runs) == 500:
-        raise RuntimeError("chapter workspace export bound reached; retain PostgreSQL for paged export")
-    (destination / "chapter-workspaces.json").write_text(json.dumps(
-        [chapters.require_workspace(project_id=book["project_id"], root_operation_id=run["root_operation_id"]) for run in runs],
-        default=str, ensure_ascii=False, indent=2,
-    ) + "\n")
-    realities = [
-        composition.query.narrative_reality(book_run_id=book_run_id, chapter_number=n)
-        for n in range(1, book["accepted_through_chapter"] + 1)
-    ]
-    (destination / "realities.json").write_text(
-        json.dumps(realities, default=str, indent=2) + "\n"
-    )
-    (destination / "book.json").write_text(
-        json.dumps(book, default=str, indent=2) + "\n"
-    )
+        errors.append({"stage": "chapters", "error": "500 chapter bound reached; PostgreSQL retained"})
+    workspaces = []
+    for run in runs:
+        try:
+            workspace = chapters.require_workspace(project_id=book["project_id"], root_operation_id=run["root_operation_id"])
+            workspaces.append(workspace)
+            accepted = workspace.get("acceptance") or {}
+            if accepted.get("status") == "COMMITTED":
+                selected = resolve_accepted_manuscript(workspace)
+                (destination / f"accepted-chapter-{accepted['accepted_through_chapter']}.txt").write_text(selected["candidate"]["content"]["text"], encoding="utf-8")
+        except Exception as error:
+            errors.append({"stage": "workspace", "root_operation_id": run["root_operation_id"], "error": redact_secret_text(str(error))})
+    (destination / "chapter-workspaces.json").write_text(json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n")
+    realities = []
+    for number in range(1, min(500, book["accepted_through_chapter"]) + 1):
+        try:
+            realities.append(composition.query.narrative_reality(book_run_id=book_run_id, chapter_number=number))
+        except Exception as error:
+            errors.append({"stage": "reality", "chapter": number, "error": redact_secret_text(str(error))})
+    if book["accepted_through_chapter"] > 500:
+        errors.append({"stage": "reality", "error": "500 revision bound reached; PostgreSQL retained"})
+    (destination / "realities.json").write_text(json.dumps(realities, default=str, indent=2) + "\n")
+    (destination / "workspace-export-status.json").write_text(json.dumps({"status": "PARTIAL" if errors else "COMPLETE", "errors": errors}, ensure_ascii=False, indent=2))
+    if errors:
+        raise RuntimeError("Partial workspace export; inspect workspace-export-status.json")
 
 
 def main(argv=None):

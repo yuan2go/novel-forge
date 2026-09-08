@@ -1249,6 +1249,39 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                     }
                 },
             )
+        style_creative = self.seed(
+            "creative_foundation",
+            {
+                "book_id": book_id,
+                "style_profile": {
+                    "narrator": "Limited third person; show the price of each choice.",
+                    "pov": {"mara": "Distinguish observation from suspicion."},
+                    "genre_conventions": "Pay off clues through public evidence.",
+                    "constraints": ["Do not narrate unobserved secrets as Mara's knowledge."],
+                },
+            },
+            "style-creative",
+        )
+        style_cast = self.seed(
+            "character_cast",
+            {"characters": [{"character_id": "mara", "voice_anchors": ["Asks who witnessed a claim."]}]},
+            "style-cast",
+        )
+        style_design = self.seed(
+            "book_design",
+            {"foundation_set": {"bindings": [
+                {"role": "CREATIVE_FOUNDATION", **style_creative},
+                {"role": "CHARACTER_CAST", **style_cast},
+            ]}},
+            "style-design",
+        )
+        compiled_style = self.run_op(
+            "chapter.style_policy.compile", [style_design, style_creative, style_cast]
+        )
+        style = self.read_content(compiled_style["asset_version_id"])
+        self.assertEqual(style["source_bindings"], [style_design, style_creative, style_cast])
+        self.assertEqual(style["book_id"], book_id)
+        self.assertFalse(style["narrative_truth_mutation_allowed"])
         campaign_identity = (
             "sha256:"
             + hashlib.sha256(

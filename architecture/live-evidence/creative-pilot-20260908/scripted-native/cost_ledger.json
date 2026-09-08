@@ -1,0 +1,2151 @@
+[
+  {
+    "asset_version_id": "6871308b-571d-4db9-a8d3-d4a370697fa9",
+    "content_hash": "sha256:b461f5061a6276e934b5dafed8612e1ef83e3e568530cbc9dcf53f8dde3fc545",
+    "logical_ref": "asset-version:6871308b-571d-4db9-a8d3-d4a370697fa9",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_platform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_platform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "b4b4de5b-e632-4135-8656-340a69cb12b8",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "20e0fd98-d1d8-4fc3-8c8c-842397fef584",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "eee8e118-c4fe-42aa-a67a-fe4db35241ad",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "270c1341-6b2f-4823-a188-a974d997782a",
+    "content_hash": "sha256:3f86dab090d1b97541b07779edc74573260193eabe5e2bdf7a827a1c418dc7b4",
+    "logical_ref": "asset-version:270c1341-6b2f-4823-a188-a974d997782a",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_longform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_longform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "df760eab-b751-49af-b00d-6a0e3533475a",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "06055c54-6378-4335-ba65-5ae5bb903655",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "0645e45d-6df5-46e9-b3a0-02f18c53f910",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "6d9e29a6-d7a6-4a59-a728-a9908ef09dd0",
+    "content_hash": "sha256:a8656a7cb10b0acf1368da2500e44333992cfaa2072990af9a85378fc1388048",
+    "logical_ref": "asset-version:6d9e29a6-d7a6-4a59-a728-a9908ef09dd0",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_source_originality",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_source_originality",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "1ebe28ed-ad8d-4852-8983-061fbe9d24a2",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "7dc08322-fdd9-41c6-bfc4-9b8c40e042ed",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "c5c4845f-e9cf-4f6b-89e5-387cdde09371",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "cd8593c0-6217-44c0-9bb4-f6a93705f0ba",
+    "content_hash": "sha256:d133bc9c2cd90ca9c33526f7af7bf917a9e666e934053fc3a9fd42f8ef17d899",
+    "logical_ref": "asset-version:cd8593c0-6217-44c0-9bb4-f6a93705f0ba",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_commercial",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_commercial",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "63e34f19-8939-45ed-a4ee-ea347540821e",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "2fef7b0f-6f9d-43e8-916f-d2d1ce05ae8d",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "ec8b9f4c-270a-4091-a50b-813407c85b8f",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "8a77f491-9024-430b-af77-a7b0668c1efe",
+    "content_hash": "sha256:c4169789427be2839c143ac0e1421e6c4195fd897d1fd432df73cd99a65b685b",
+    "logical_ref": "asset-version:8a77f491-9024-430b-af77-a7b0668c1efe",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_structural",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_structural",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "4576374b-a006-4b7a-bcf5-f0fc2df3392c",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "6314ff6f-574e-40d1-afba-3f53e05f91cf",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "cc57f347-5620-44e1-a499-cf6a26548c90",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "d647294c-a6c5-45ef-913a-5f9671db5fec",
+    "content_hash": "sha256:3463437ea8e34aa55fdabb821d5c00dd4fca992edb93b7edcdb9b7f54bc89750",
+    "logical_ref": "asset-version:d647294c-a6c5-45ef-913a-5f9671db5fec",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_support",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_support",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "d370aa3a-cb31-4f32-aed3-82ac4d275c48",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "386382ce-2813-44e9-9ae2-c7353f77077e",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "4aaa1a40-2334-435e-a02e-b3d1980e9aad",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "b4115f91-346a-475c-9275-b4fa85dfe0fb",
+    "content_hash": "sha256:452613e644f6b6e210e03d184978ee05ab6beb752f00dd4aad2d65443023d099",
+    "logical_ref": "asset-version:b4115f91-346a-475c-9275-b4fa85dfe0fb",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_extraction",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_extraction",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "9d2dbd05-b6a0-4b7e-a795-e7fc13aadd44",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "abb37352-4d95-4eec-82af-dfe78214c8bd",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "c9b6a238-b78e-4fae-aaed-6b195b0b2361",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "15b27efe-d1de-48d9-96bc-22b9780fac09",
+    "content_hash": "sha256:5782ce31d45bc159ae3599213c9ec51275d7fa11b9950da090fb328f06d4451d",
+    "logical_ref": "asset-version:15b27efe-d1de-48d9-96bc-22b9780fac09",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "rereview",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-rereview",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "1a26834e-5912-4da9-997a-3edf6017d92f",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "7a134d01-bb05-4479-8067-731b52f27fbc",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "40dfa627-d485-4ee6-a33f-0064336755c6",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "037254a3-8131-4508-a51b-78666d37278d",
+    "content_hash": "sha256:15fbbff292b7ff944ec7a75995d00f97fb547e94b09a457e2ad54087b2063d12",
+    "logical_ref": "asset-version:037254a3-8131-4508-a51b-78666d37278d",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "revision",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-revision",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "6f5c8aee-1f93-4f0a-b661-d55fb11db239",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "38a46bce-e440-4da7-98ac-dd0b2150b7aa",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "8e449090-bc33-4128-92fd-92f3a0731b8b",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "6b89554e-b597-406e-8057-8adbf2b21cd7",
+    "content_hash": "sha256:c88ba087d3e6e988b2b19bbf1200658780b140646073551be4b284c1efd34788",
+    "logical_ref": "asset-version:6b89554e-b597-406e-8057-8adbf2b21cd7",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "review",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-review",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "fb862b27-01c7-4c40-9d1d-ca00b7d9bd93",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "eed8d60b-324c-4183-a71e-3dcddec6b2a7",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "066234c1-49d0-47cb-b5b0-288f7173dd8c",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "b063ea1e-8ffb-4d5c-83ba-4e76bdb95daf",
+    "content_hash": "sha256:239e073171fd404e1185e0b015d02b01be02479cbca97abc3d07e1d392715e9d",
+    "logical_ref": "asset-version:b063ea1e-8ffb-4d5c-83ba-4e76bdb95daf",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "draft",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-draft",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "67d2e32c-2c40-4b8f-bd77-ff9fd0ba2e36",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "5b744d4c-4be2-44e6-a81d-afd444948d0e",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "fbe3ce3e-282a-43eb-af33-dc407daeda3c",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "2b40d81f-228e-4f1b-8aaf-1a8a1b10d432",
+    "content_hash": "sha256:ba4fa0401a9a35b08c0e22b4fe8abfacc2d4ed4e4a82608aa38157f434cd03f0",
+    "logical_ref": "asset-version:2b40d81f-228e-4f1b-8aaf-1a8a1b10d432",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "memo",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-memo",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:3",
+      "estimated": false,
+      "attempt_id": "ec537f0a-baf7-4e51-af56-55375a5200d6",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "3e1ca809-f10a-4c6c-97c7-14cca121484d",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "6017d94e-b3ca-4350-85c4-561c4b968abf",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "7dea54a4-d174-4fb6-b3c6-f43c9b404a8a",
+    "content_hash": "sha256:db0059512d76b77bc24e3f3b0561dc6cfc6504d737ec1a1678add4aaa1668ad7",
+    "logical_ref": "asset-version:7dea54a4-d174-4fb6-b3c6-f43c9b404a8a",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "1ff3659c-90d7-49a8-974e-bdb9023a5880",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "96b234f9-dab0-4ae4-93ea-24cbf9b4cb67",
+    "content_hash": "sha256:ed5a5d069644104dd418a73b1f199ec47352b18f125c89b8e3f1b63a21543647",
+    "logical_ref": "asset-version:96b234f9-dab0-4ae4-93ea-24cbf9b4cb67",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.evaluate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "1ff3659c-90d7-49a8-974e-bdb9023a5880",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "cba61622-a788-499e-9ccb-0bd8c6524260",
+    "content_hash": "sha256:66c187030eca394a7442d86481ef601f285ef3aeb2da0514266f4d7f4b975576",
+    "logical_ref": "asset-version:cba61622-a788-499e-9ccb-0bd8c6524260",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "1ff3659c-90d7-49a8-974e-bdb9023a5880",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "07a49dab-84b3-4426-b7be-3d51f17838ad",
+    "content_hash": "sha256:ac6f8b3039438dc34ffc86d18da8d31d9bcd50b8c73789f3c51c9c09dd96a14e",
+    "logical_ref": "asset-version:07a49dab-84b3-4426-b7be-3d51f17838ad",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_platform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_platform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "02b4c0ed-8d30-4449-aa82-cd56a5d2eb90",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "bc0464a9-f8f3-410c-a8bb-1bdab8bdce9a",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "e27e856e-ae92-4dae-b4ce-624965a14d9d",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "44220e49-457d-4925-8ce2-3126df4a326f",
+    "content_hash": "sha256:0df02df4f9558955b74fe143384d888cc89d317477eb3d77795728e3ac1fd664",
+    "logical_ref": "asset-version:44220e49-457d-4925-8ce2-3126df4a326f",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_longform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_longform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "29a9a5bb-94ea-49b8-b256-456824cf2ba7",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "ac17a5f5-7dc4-4825-baf6-b2f025e882ab",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "03203f6c-6128-4296-a690-30fbb5c38eda",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "70d01291-9fcd-4d88-8501-51bf8063751d",
+    "content_hash": "sha256:50559d98ee2bc624dd196895e9c9460a8416071ee4b26785a0795a095d47d1d4",
+    "logical_ref": "asset-version:70d01291-9fcd-4d88-8501-51bf8063751d",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_source_originality",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_source_originality",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "91f38c45-9877-4d2f-9710-ecafef0ff34f",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "9851e9a4-e99a-4ce7-901e-e80051746d3c",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "8f42bc4f-0009-4da5-80a8-87c7e03f1c07",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "6b36b97c-13a7-4b30-a25b-91c565141ef5",
+    "content_hash": "sha256:932c158bde65af1d218d2550967035a911df0ebba47300073ddf42ba82bf0272",
+    "logical_ref": "asset-version:6b36b97c-13a7-4b30-a25b-91c565141ef5",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_commercial",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_commercial",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "ca20102b-caf3-47c1-9af2-0063e46b3380",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "a629700c-fa3d-499b-b2f6-e31e747da720",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "5ff4ced7-5b57-4077-88b1-008f2fdb684e",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "3b4d4448-422b-4150-b36b-7f679ebbe713",
+    "content_hash": "sha256:2034ce86db762d75b3878c8117914c183a270ec08939182d52352bdae5e73640",
+    "logical_ref": "asset-version:3b4d4448-422b-4150-b36b-7f679ebbe713",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_structural",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_structural",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "73300d3b-0d23-46af-9627-8be770390c29",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "2e0b2368-f908-4339-90a4-1530970f29a0",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "6b6a94b8-17a9-467c-9339-f9a5f2508e72",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "ffb969f3-cdc7-4edb-973b-3cd7ec367963",
+    "content_hash": "sha256:bae8fd74d2676cb0dc87c5d8e83bbdbf8fad565e4b635dbaa68475650b72945f",
+    "logical_ref": "asset-version:ffb969f3-cdc7-4edb-973b-3cd7ec367963",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_support",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_support",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "d4e72587-19cd-49a3-b2b1-22d2df5fc450",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "ad2d3580-37ec-4c02-9fa3-87558fa60242",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "a019ccde-2b89-4916-b5d9-06104c8c18f9",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "15e4ba0d-ac60-4426-91d9-0060d012b51c",
+    "content_hash": "sha256:f14519e02fdcee17ee87b701028052458b623e6de3706cc7c83f60167ed65b42",
+    "logical_ref": "asset-version:15e4ba0d-ac60-4426-91d9-0060d012b51c",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_extraction",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_extraction",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "8fb8ffc6-9859-458d-ab2d-3e1fe3a7dc28",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "954bb4c6-8ba6-4ebc-989d-ec192cfb66a1",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "aca66b80-7545-4810-96d5-0d7c0996338b",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "fd05a780-29eb-43e5-8423-0c6626ee7267",
+    "content_hash": "sha256:bb8b1fa585900879e3f8430c662995333a02def74e2921863510eeefb0953914",
+    "logical_ref": "asset-version:fd05a780-29eb-43e5-8423-0c6626ee7267",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "rereview",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-rereview",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "685b9a8b-eba7-4fab-8b39-b72d0a9c8803",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "9ad52dd1-7551-4bfe-92e3-9e9796b1d911",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "7e887f32-d4de-4708-b0c0-3e04c512251e",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "4015700b-2c67-4136-942a-7d1d22734a39",
+    "content_hash": "sha256:a50a3f685bf765229edda481d719d0009410fd361ad660465f34f9062abfb72d",
+    "logical_ref": "asset-version:4015700b-2c67-4136-942a-7d1d22734a39",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "revision",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-revision",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "cf7dd5b9-e496-474f-a94a-dad60b8917d8",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "09555340-f1ad-4a87-98c7-345256936ab0",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "ca02f310-3ceb-46b3-9328-44f03b268ca0",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "590bcd90-ebed-4a34-b544-f6dbde832041",
+    "content_hash": "sha256:2e48d5c014697a9b10c8267fd1ae47ef836f7208fea5ad809a08244c6ccc53a6",
+    "logical_ref": "asset-version:590bcd90-ebed-4a34-b544-f6dbde832041",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "review",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-review",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "ea8d429c-0e08-404c-ac5c-96860dd39860",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "33e68fbe-6ec8-4217-9162-8a70c38f2b82",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "0df4e1e4-6924-4c81-895a-aa7af62be210",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "e4d0fbfb-4983-450a-ab13-2bb5955e696e",
+    "content_hash": "sha256:e7de28783a2fdd6b87b2844b393608420c18f193781a20630f3f4573c283369d",
+    "logical_ref": "asset-version:e4d0fbfb-4983-450a-ab13-2bb5955e696e",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "draft",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-draft",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "e6a081f1-9aa8-4238-b895-f7085a6b0395",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "6996dd27-e038-42dc-8e1a-cea07c926835",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "44b3f6d5-b27f-477f-9ea5-3ef2a8a18ed5",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "2b22ec05-f25f-4606-b6d2-7e409fbbb4ef",
+    "content_hash": "sha256:f8884981da56c9a682118e383a5154e41119b15d28b27d8870a6b66c52bcdef5",
+    "logical_ref": "asset-version:2b22ec05-f25f-4606-b6d2-7e409fbbb4ef",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "memo",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-memo",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:2",
+      "estimated": false,
+      "attempt_id": "45901915-6eb8-4dba-bab0-108a5010b449",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "6b18813b-b542-4db9-8f85-1c00959be3fa",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "822a2e5a-9e6b-4b56-9ad0-3fe3026a5115",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "a8c48e10-aaf2-4846-a82e-12c87c023b0b",
+    "content_hash": "sha256:16f6e9766a856933971c396210b68943bd769eab300cd3b49e77a579cc7d21fd",
+    "logical_ref": "asset-version:a8c48e10-aaf2-4846-a82e-12c87c023b0b",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "b6d373ec-6cd0-46a6-a952-c0d0f7f879b4",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "502d06dd-b9a0-4543-b1a0-35fbb2409521",
+    "content_hash": "sha256:7c5430da3e90165cb4a49678af817eef940e1de8716cca04544fa3b2c8e2507b",
+    "logical_ref": "asset-version:502d06dd-b9a0-4543-b1a0-35fbb2409521",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.evaluate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "b6d373ec-6cd0-46a6-a952-c0d0f7f879b4",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "10346057-d64a-4fff-8c03-9d3254c4a913",
+    "content_hash": "sha256:1211c18d17dcb0f1dec6104eb2747c00f034e59862c4165b41fd189707a99abc",
+    "logical_ref": "asset-version:10346057-d64a-4fff-8c03-9d3254c4a913",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "b6d373ec-6cd0-46a6-a952-c0d0f7f879b4",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "cee50d59-dddf-41fa-b0b6-51e7516f87c5",
+    "content_hash": "sha256:89a7337609a877b37305fa020db274a8e27082f30d0325adf02f9fbf4fa50046",
+    "logical_ref": "asset-version:cee50d59-dddf-41fa-b0b6-51e7516f87c5",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_platform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_platform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "e6bc9fda-7a37-49fc-935e-61bed904bd75",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "22b7c69c-78e9-4a61-84b9-a9d8baadf689",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "6542fcac-6464-486d-94a7-f83cd0a953ed",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "972007d3-988b-44f5-97e6-34d66e0401fb",
+    "content_hash": "sha256:788984bfba2483a5eff880a00f69be1b866cc8aa16d991543ade3e5e91dde740",
+    "logical_ref": "asset-version:972007d3-988b-44f5-97e6-34d66e0401fb",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_longform",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_longform",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "0d01c295-8b3c-4e90-ae09-5840ae49b34d",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "89f21e5d-56c9-4f20-a289-1d4c1d4a5ca7",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "edc3b03d-996a-4825-963e-9e8b2af490f0",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "f79ae40f-ac91-40a2-b433-2e344d2ee2d9",
+    "content_hash": "sha256:79147dbaa54b5c37a74c2d9e510250f9b30e5aafe953a49acf641f18f223e740",
+    "logical_ref": "asset-version:f79ae40f-ac91-40a2-b433-2e344d2ee2d9",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_source_originality",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_source_originality",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "bb58f1a1-f5b8-4896-82cb-85cdee53e1c7",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "3b8fb68b-783b-4c65-8a6b-99d82da60039",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "cacf79f8-9ed8-40a5-8ab9-aeb1494a35d9",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "7b369025-eba9-4351-8596-dc5f1c81fc93",
+    "content_hash": "sha256:fa9de033232338e67eae9b5d59d7b6844ab57b5020797366e7ef8b639a044a19",
+    "logical_ref": "asset-version:7b369025-eba9-4351-8596-dc5f1c81fc93",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_commercial",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_commercial",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "d3e7a274-67a7-42f0-bcb0-3511b58f14a6",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "90cf14a3-471e-44c8-bc41-4232ffbc1a1e",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "28e2c0ea-2029-46ae-905e-21369332a874",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "e4027e64-d2bf-4725-bca6-486d570f4e5c",
+    "content_hash": "sha256:0c06a2d4ff3da365f3e0b0d3005cd26264c593d8a53fbfef849c7fe544242b43",
+    "logical_ref": "asset-version:e4027e64-d2bf-4725-bca6-486d570f4e5c",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "quality_structural",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-quality_structural",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "80f688cf-5b26-4d19-bf6b-b0b79a3919cc",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "66c671d3-0e7a-4345-8495-c756e73cbd4e",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "0965c675-f780-44f2-84fd-62e02f43aea1",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "1f7ead5d-5a58-496a-8c28-149066e7481f",
+    "content_hash": "sha256:5f0ae937c8206c98c5b585b84eb23c7cfd1de7750cc0377e5660900af2e974f3",
+    "logical_ref": "asset-version:1f7ead5d-5a58-496a-8c28-149066e7481f",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_support",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_support",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "6ad99606-5374-4752-a8ec-8d8e09301224",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "1c21f4a0-76da-4687-bbe2-347ea3ce66ff",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "e11eafc7-0dbb-4f97-89e7-641d94b8bb42",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "c5876004-ee31-48a7-b11e-0c4f82cf7189",
+    "content_hash": "sha256:d28097e44552af9daec3d826f088e2d9767ae79c9f5472f96bafead535942a93",
+    "logical_ref": "asset-version:c5876004-ee31-48a7-b11e-0c4f82cf7189",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "canon_extraction",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-canon_extraction",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "01199082-61b5-446d-be07-4feefc567022",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "5fb5bfae-6494-451b-b0c3-288346a47bf8",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "a9220c68-2aef-4606-b78d-18c47d12742c",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "7c67719e-2dc7-4152-9641-9123dedda401",
+    "content_hash": "sha256:3f7c7345c76b85be72c8d04c7e1e8fa020f4c6d06abdde9e50b981bbe08126dc",
+    "logical_ref": "asset-version:7c67719e-2dc7-4152-9641-9123dedda401",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "rereview",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-rereview",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "2886bb0c-6ec1-43cb-ba78-fd9f62a1f8bb",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "8b19dfcd-b49b-4d32-b7f7-06fc05c9f079",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "8af89da8-8353-4fbe-a85e-b4753ce0da21",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "19096360-d6c0-432c-9b78-af8badd221ba",
+    "content_hash": "sha256:200566e3a493db79effa2b822a0c0532233db2df03f76c39c304c48680dbdcee",
+    "logical_ref": "asset-version:19096360-d6c0-432c-9b78-af8badd221ba",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "revision",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-revision",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "fa15a1c3-8e9a-415f-9caa-265608df8567",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "c4ecd3cc-76da-40eb-815c-30af3c409a60",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "de7b4f7e-a94a-4722-88bd-43d5721de32a",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "d9bb365b-1b5a-4c99-9325-1bd59286d0e3",
+    "content_hash": "sha256:422eb428adce0bf5816dd46563656b5e481ea247ddbace9fb8eaca39857fb3f3",
+    "logical_ref": "asset-version:d9bb365b-1b5a-4c99-9325-1bd59286d0e3",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "review",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-review",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "d94cc7f2-6529-47cb-bdf2-d5f0450363eb",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "c8f25d44-5906-4c6d-81c9-ac7787d47383",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "2261e660-eabe-4174-ae52-dd76430adb92",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "3b03773f-008d-4f72-9955-e2ccb34f2bca",
+    "content_hash": "sha256:b8dcd50f8d1dbd6d014489b1e68ae97ef0736ee61a9bbbc9105cee0067731b0a",
+    "logical_ref": "asset-version:3b03773f-008d-4f72-9955-e2ccb34f2bca",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "draft",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-draft",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "c0a73687-23e0-4657-ad78-46ccc9772c13",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "06b96291-eb1d-4701-a17f-70897a80cbdf",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "946fa806-5fdc-49a6-92f3-e1e4ea380c5e",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "92f763ca-7e3a-44f6-90e8-d31a88b3c415",
+    "content_hash": "sha256:f450789e12a4ac0a3784da80b4c83f81210a25bd458009f2d0989a6564e526cb",
+    "logical_ref": "asset-version:92f763ca-7e3a-44f6-90e8-d31a88b3c415",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD"
+      },
+      "type": "cost_ledger",
+      "stage": "memo",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "amount": "0",
+      "currency": "USD",
+      "model_id": "scripted_provider_v2-memo",
+      "trace_id": "138b41c3-00a5-47e9-9cd5-49dbac82843a:chapter:1",
+      "estimated": false,
+      "attempt_id": "a91f84a6-9ac5-4056-b154-9f8cafee0158",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "pricing_ref": "",
+      "provider_id": "scripted_provider_v2",
+      "availability": "AVAILABLE",
+      "operation_id": "aeb7671d-1132-4528-bf83-0a9d934b070d",
+      "total_tokens": 0,
+      "provider_billed": false,
+      "calculation_basis": {},
+      "external_effect_id": "aed64993-ba68-44c6-a53e-f8bece5f1168",
+      "pricing_snapshot_hash": ""
+    }
+  },
+  {
+    "asset_version_id": "7417b830-70e2-44ae-b25f-76610aa25b38",
+    "content_hash": "sha256:51a061a7f713844c18889eacfde04545a1dd3d2ba1878d59b8607b7da44789fa",
+    "logical_ref": "asset-version:7417b830-70e2-44ae-b25f-76610aa25b38",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "ff560bc2-0683-47b3-9a7a-18ab8bd1b83c",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "06a8e7d4-5a57-43f9-b2bb-804e3f9f9f35",
+    "content_hash": "sha256:04a5ec796a8f6248e6f16462a651b37726a504c272e5a331e9581cd314e1a686",
+    "logical_ref": "asset-version:06a8e7d4-5a57-43f9-b2bb-804e3f9f9f35",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.evaluate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "ff560bc2-0683-47b3-9a7a-18ab8bd1b83c",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "f126cdfe-0582-4225-b18e-61fb0de7632c",
+    "content_hash": "sha256:eb350a8eaa50ca5f117f4dfc7fcd9d8848fb9fedf5ff8208a8ad2f5886d903fb",
+    "logical_ref": "asset-version:f126cdfe-0582-4225-b18e-61fb0de7632c",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world_candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "ff560bc2-0683-47b3-9a7a-18ab8bd1b83c",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "cf9ec936-7b91-4f51-8811-fe63bd039712",
+    "content_hash": "sha256:797f0830c3f92c43b0d8a0fbca53507177908ebaf7ba747993a9ce68f4908ade",
+    "logical_ref": "asset-version:cf9ec936-7b91-4f51-8811-fe63bd039712",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_group_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "60aa095d-164d-4317-9af5-68fd4685a569",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "9054dc4d-2ade-493b-9acc-810ef7d2b14c",
+    "content_hash": "sha256:2a59010ee43e85695510fa52a62218ddc6c183c172d759f0f3cc8dee62ba1a8f",
+    "logical_ref": "asset-version:9054dc4d-2ade-493b-9acc-810ef7d2b14c",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_group_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "0bcd8d89-7be7-4a5d-b001-bfc31a1e0b06",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "2bfecfff-2c29-4cb9-8dfa-a383e8fa8b27",
+    "content_hash": "sha256:ea36f22dfad707ddbc3c0279cc5fa095950cee4310c2c706acb73748d4686ddc",
+    "logical_ref": "asset-version:2bfecfff-2c29-4cb9-8dfa-a383e8fa8b27",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "chapter_group_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "9c175789-aef9-407a-93ad-35330feead6a",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "97c18aa3-329b-4b09-98c6-88072eeac08f",
+    "content_hash": "sha256:1206ecf6655a89c8de075cdd87b4e7de38d444a2c6f28b7f862f76ee7d129a9d",
+    "logical_ref": "asset-version:97c18aa3-329b-4b09-98c6-88072eeac08f",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "10a28f5f-65cd-40dc-9af1-a7da84ce65af",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "67a1ca8f-8b9c-4225-828e-6485e52de078",
+    "content_hash": "sha256:c71d1ee0730ebc8a59dc63f2ffa30b873c132819a51e829c0cbdb50bc5eb4ac0",
+    "logical_ref": "asset-version:67a1ca8f-8b9c-4225-828e-6485e52de078",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "f5eee701-2f1a-45f6-9fbf-0c82ae2102c9",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "60005d7b-1eb9-4aaa-afe6-b01679f49b17",
+    "content_hash": "sha256:bca619914d512e93b1acbaa1fe03ce9fcd198be382580ec266b92f7b0dd13ce0",
+    "logical_ref": "asset-version:60005d7b-1eb9-4aaa-afe6-b01679f49b17",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "15772453-9236-4ad1-91ae-83204bea77e9",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "83e40dc0-06ce-4a6a-967c-7408dce00971",
+    "content_hash": "sha256:7465af1c9aecd123f4293a121d8cb5891e927b9f25db110eda0aa7439342e391",
+    "logical_ref": "asset-version:83e40dc0-06ce-4a6a-967c-7408dce00971",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "e89337de-cf33-4b2e-a9d2-84d5e3b93377",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "8584bab8-2ec0-4caf-a3a9-ed62b76d9852",
+    "content_hash": "sha256:cb54c8136675b444644a5df2ca2b31fb5e664e670177143f4f75f2b4552f5d60",
+    "logical_ref": "asset-version:8584bab8-2ec0-4caf-a3a9-ed62b76d9852",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "a64fab06-2899-486f-9864-5ba750d6812d",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "473d79e4-bcbe-4a59-8e94-9202530ebaf3",
+    "content_hash": "sha256:0754038931823eb4784be80b4468a2e346ef69ce56a8f9919817ce347324ee88",
+    "logical_ref": "asset-version:473d79e4-bcbe-4a59-8e94-9202530ebaf3",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "arc_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "5cc4afb8-1834-4ed5-80eb-85c00f0361d0",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "c7e618a7-4336-418b-9e68-9f57ce4b9601",
+    "content_hash": "sha256:83243333d5ba6719ac95702a5d09d0632a5158edf97227da51ffccf8ea1935da",
+    "logical_ref": "asset-version:c7e618a7-4336-418b-9e68-9f57ce4b9601",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "volume_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "e4042d38-e48e-4590-afdf-edce16d0a06a",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "00a4650b-4f5f-4aa2-a486-1fe284a1de0a",
+    "content_hash": "sha256:9e6f3d12f9f395694624b2df1712e0234a0768a86c1e069cb402310b3ed13c58",
+    "logical_ref": "asset-version:00a4650b-4f5f-4aa2-a486-1fe284a1de0a",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "volume_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "f8485680-908f-4e47-af76-e4c38d3ef1bd",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "79c9b725-3a49-4059-b127-47b5efba9846",
+    "content_hash": "sha256:82b4079a9a49bd3adcf103ea8462bde5fbd02870d3607b206474ef923815becc",
+    "logical_ref": "asset-version:79c9b725-3a49-4059-b127-47b5efba9846",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "volume_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "e0511d6c-1d8e-4d5e-b186-99672d793d8a",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "aa452e20-462d-4da1-8bf1-ea9a75878736",
+    "content_hash": "sha256:d486d7dd23fb83b3ad16d65b300fe0bbc5c3fd056a43a00240cd15f5e900ea25",
+    "logical_ref": "asset-version:aa452e20-462d-4da1-8bf1-ea9a75878736",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "book_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "c9de4b55-5397-4d3c-bf72-0c4b840d302d",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "52651f36-f5c7-4860-8c63-77a60205dbab",
+    "content_hash": "sha256:680d9ada539e84888f33282b9dec8a2ba3898ff3492f44c6517a46fd606f098a",
+    "logical_ref": "asset-version:52651f36-f5c7-4860-8c63-77a60205dbab",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "book_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "c59e3cba-68ee-4ff5-9076-313470bd921e",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "57670a22-27d1-4e47-a78a-f0f55ed06fc8",
+    "content_hash": "sha256:7429ef73dded01dc5f1065d14d7da47b7d8d1f766b97f300fe4e12824400bdde",
+    "logical_ref": "asset-version:57670a22-27d1-4e47-a78a-f0f55ed06fc8",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "book_plan.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "944fd0c0-3a96-4697-981a-a9f598c9f22e",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "243fb6e9-b6a0-47a1-b1e5-1d3f50702250",
+    "content_hash": "sha256:f5c577dd0bf50c2ffdda2bd56903e633c66ec3e7559ac91266ad4c87386d62d1",
+    "logical_ref": "asset-version:243fb6e9-b6a0-47a1-b1e5-1d3f50702250",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "character.cast.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "e1d9d240-4863-4bf1-9678-324920f69cf4",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "81875166-de2d-4991-98b1-7b37c6f45be2",
+    "content_hash": "sha256:172386584501f24626ec802d7954ccf5a9e6dd67eb920ef8ee471b0932c9bae9",
+    "logical_ref": "asset-version:81875166-de2d-4991-98b1-7b37c6f45be2",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "world.design.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "11018fe8-ac95-4413-afab-6ff8056f149d",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "8115fd3d-6fb4-4704-a266-6a97ac6f6b3d",
+    "content_hash": "sha256:58a757f7a63a2d4d39dfdb3ee3549bc7305203b7e073ceb74b480c14cdc68ef8",
+    "logical_ref": "asset-version:8115fd3d-6fb4-4704-a266-6a97ac6f6b3d",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "reader.promise.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "ad1a1590-c374-427b-8799-78ec069bf913",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "0751c0e8-de84-4dcc-837e-a89e74fc430f",
+    "content_hash": "sha256:4e28b7f6dcdd16f4e7aa7888449dc312b797ad02dadb4fe6d720a2ef093a9692",
+    "logical_ref": "asset-version:0751c0e8-de84-4dcc-837e-a89e74fc430f",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "ending.intent.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "25dc235e-48e1-430b-af39-7df6f580630c",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "e220eb52-4464-4cb7-b1c2-cfdf06937a0b",
+    "content_hash": "sha256:9e8a60ffefe0ed7b2aa21a8aa86ff3931cc04bcf6d67b871aa82d131f8355c5a",
+    "logical_ref": "asset-version:e220eb52-4464-4cb7-b1c2-cfdf06937a0b",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "theme.candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "cc92ab7b-0533-4f37-b253-ba3ae68b402c",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "22ef065e-19f8-4745-a2a9-654fd6f69933",
+    "content_hash": "sha256:c41db81b04631563c3e77aa3eec711d5a9c8acf89b8917142b3fc366c8ded9cc",
+    "logical_ref": "asset-version:22ef065e-19f8-4745-a2a9-654fd6f69933",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "creative.candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "567a05ff-2131-433e-b53b-8ab3ced88c47",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  },
+  {
+    "asset_version_id": "051df3a2-5bb6-487a-a5f5-c7a98b888392",
+    "content_hash": "sha256:955c1252063f17dab430b1f07c98843d4b8a7c15acc9d5b6546bfc115fcad3e3",
+    "logical_ref": "asset-version:051df3a2-5bb6-487a-a5f5-c7a98b888392",
+    "content": {
+      "cost": {
+        "amount": "0",
+        "currency": "USD",
+        "budget_settlement_basis": "FIXTURE_RECEIPT",
+        "provider_reported_amount": "0"
+      },
+      "type": "cost_ledger",
+      "stage": "creative.candidates.generate",
+      "usage": {
+        "input_tokens": 0,
+        "total_tokens": 0,
+        "output_tokens": 0,
+        "budget_settlement_basis": "FIXTURE_RECEIPT"
+      },
+      "amount": "0",
+      "currency": "USD",
+      "project_id": "project-7d62f1bcdde04b76b8c3874c9f60d310",
+      "availability": "AVAILABLE",
+      "operation_id": "1c4404df-1739-4e08-aad9-f2f4538a2a77",
+      "total_tokens": 0,
+      "candidate_accepted": true,
+      "post_provider_failure": {},
+      "provider_invoked_this_attempt": true,
+      "recovered_external_effect_success": false
+    }
+  }
+]

@@ -2112,7 +2112,9 @@ def test_world_runtime_contract_preserves_historical_frozen_commands():
 
     command = _command("chapter_plan.generate")
     current = _command_payload(command)
-    assert current["execution_contract_version"] == "1.13.0"
+    assert current["execution_contract_version"] == "1.14.0"
+    previous = {**current, "execution_contract_version": "1.13.0"}
+    assert _command_payload(_command_from_payload(previous)) == previous
     published = {**current, "execution_contract_version": "1.12.0"}
     assert _command_payload(_command_from_payload(published)) == published
     assert _command_from_payload(current) == command

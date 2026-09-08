@@ -66,7 +66,7 @@ def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
     assert "`semantic_payload`" in instruction["content"]["text"]
 
 
-def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
+def test_story_planning_profile_owns_typed_plans_and_foundation_generators() -> None:
     profile = build_story_planning_pack_profile(
         ROOT,
         operation_definition_hash="sha256:" + "a" * 64,
@@ -102,6 +102,12 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     assert {
         node["node_id"] for node in profile.manifest["workflow_template"]["nodes"]
     } == {
+        "creative.candidates.generate",
+        "world.design.generate",
+        "character.cast.generate",
+        "theme.candidates.generate",
+        "reader.promise.generate",
+        "ending.intent.generate",
         "book_plan.generate",
         "volume_plan.generate",
         "arc_plan.generate",
@@ -123,7 +129,7 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
         and item["content"].get("authority_binding")
         == STORY_PLANNING_OPERATION_DEFINITION_REF
     ]
-    assert len(timeout_policies) == 5
+    assert len(timeout_policies) == 11
     assert {
         item["content"]["operation_timeout_seconds"] for item in timeout_policies
     } == {STORY_PLANNING_OPERATION_TIMEOUT_SECONDS}
@@ -133,6 +139,9 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     assert {
         item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]
     } == {
+        "worldbuilding",
+        "topic-development",
+        "hot-novel-business-deconstruction",
         "canon-continuity-graph",
         "chapter-outline",
         "character-design",

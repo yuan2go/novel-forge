@@ -75,7 +75,6 @@ from novel_forge.modules.story_planning_runtime import (
     PlanningGenerationStatus,
     NarrativeSearchRequest,
     PostgresNarrativeSearchApplication,
-    STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     STORY_PLANNING_WORKFLOW_DEFINITION_REF,
     StoryPlanningGenerationApplication,
@@ -95,14 +94,11 @@ from novel_forge.modules.story_design_authority import (
 )
 from novel_forge.modules.capability_packs.longform_profiles import (
     build_narrative_evaluation_pack_profile,
+    build_story_planning_pack_profile,
 )
 from novel_forge.modules.provider_control import (
     OpenAIProviderAdapterV2,
     ProviderAdapterRegistry,
-)
-from novel_forge.modules.production_execution.capability_registry import (
-    PLANNING_TIMEOUT_POLICY_VERSION,
-    default_capability_registry,
 )
 from novel_forge.modules.production_execution.contracts import ExecutionOutcome
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
@@ -236,146 +232,23 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
-    capabilities = [
-        "planning.book.generate",
-        "planning.volume.generate",
-        "planning.arc.generate",
-        "planning.chapter_group.generate",
-        "planning.story_chapter.generate",
-    ]
-    template = next(
-        node
-        for node in harness._base_manifest["workflow_template"]["nodes"]
-        if node.get("node_id") == "draft"
+    profile = build_story_planning_pack_profile(
+        Path(__file__).resolve().parents[2],
+        operation_definition_hash=definition_hash,
+        pack_id=harness.pack_id,
     )
-    nodes = []
-    for generator, capability in zip(
-        (
-            "book_plan.generate",
-            "volume_plan.generate",
-            "arc_plan.generate",
-            "chapter_group_plan.generate",
-            "chapter_plan.generate",
-        ),
-        capabilities,
-        strict=True,
-    ):
-        node = deepcopy(template)
-        node.update(
-            node_id=generator,
-            operation_name="story_planning.generate",
-            operation_definition_ref=STORY_PLANNING_OPERATION_DEFINITION_REF,
-            operation_definition_hash=definition_hash,
-            handler_key="novel_forge.story_planning.generate",
-            stage=generator,
-            capability_id=capability,
-            input_asset_types=["planning_generation_input_snapshot"],
-            output_asset_types=["planning_generation_candidate"],
-            depends_on=[],
-            commit_authority="STORY_DESIGN_AUTHORITY",
-            retry_policy={
-                "max_attempts": 3,
-                "retryable_errors": [],
-                "dead_letter_on_exhausted": True,
-            },
-            timeout_policy_ref=(
-                f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
-            ),
-        )
-        nodes.append(node)
-    manifest = harness._base_manifest
-    manifest["identity"].update(
-        name="Story Planning Generator Pack",
-        domain="story_planning",
-        description="Five governed Planning Candidate generators.",
-    )
-    manifest["compatibility"]["required_capabilities"] = [
-        *capabilities,
-        "quality.originality.judge",
-    ]
-    manifest["workflow_template"].update(
-        workflow_id="story_planning_generators",
-        workflow_version=STORY_PLANNING_WORKFLOW_DEFINITION_REF.rpartition("@")[2],
-        nodes=nodes,
-    )
-    manifest["workflow_template"]["completion"] = {
-        "required_terminal_nodes": [item["node_id"] for item in nodes],
-        "required_evidence": ["trace", "audit"],
-        "required_output_asset_types": ["planning_generation_candidate"],
-    }
-    manifest["context_sources"]["allowed_asset_types"].append(
-        "planning_generation_input_snapshot"
-    )
-    manifest["tool_permissions"]["tools"] = [
-        {
-            **manifest["tool_permissions"]["tools"][0],
-            "allowed_operations": [item["node_id"] for item in nodes],
-        }
-    ]
-    manifest["evaluation"]["required_gates"] = [
-        {
-            "gate_id": "planning_source_isolation",
-            "judge_capability_id": "quality.originality.judge",
-            "blocking": True,
-            "threshold": 1,
-            "required_evidence": ["planning_generation_candidate"],
-        }
-    ]
-    manifest["evaluation"]["metrics"] = []
-    timeout_refs = {
-        f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
-        for capability in capabilities
-    }
-    harness._base_catalog["artifacts"] = [
-        artifact
-        for artifact in harness._base_catalog["artifacts"]
-        if artifact["ref"] not in timeout_refs
-    ]
-    for artifact in harness._base_catalog["artifacts"]:
-        if artifact["ref"] == manifest["context_sources"]["policy_id"]:
-            artifact["content"]["allowed_asset_types"] = list(
-                manifest["context_sources"]["allowed_asset_types"]
-            )
-            artifact["content_hash"] = canonical_hash(artifact["content"])
-        elif artifact["ref"] == manifest["tool_permissions"]["policy_id"]:
-            artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
-            artifact["content_hash"] = canonical_hash(artifact["content"])
-    for capability in capabilities:
-        contract = default_capability_registry().resolve(capability)
-        for schema_ref in (contract.input_schema_ref, contract.output_schema_ref):
-            harness._base_catalog["artifacts"].append(
-                {
-                    "kind": "SCHEMA",
-                    "ref": schema_ref,
-                    "version": "v1",
-                    "content": {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "type": "object",
-                        "additionalProperties": True,
-                    },
-                }
-            )
-        harness._base_catalog["artifacts"].append(
-            {
-                "kind": "TIMEOUT_POLICY",
-                "ref": f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}",
-                "version": PLANNING_TIMEOUT_POLICY_VERSION,
-                "content": {
-                    "policy_id": f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}",
-                    "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
-                    "timeout_action": "FAIL_ATTEMPT",
-                    "authority_binding": STORY_PLANNING_OPERATION_DEFINITION_REF,
-                },
-            }
-        )
+    harness._base_manifest = profile.manifest
+    harness._base_catalog = profile.artifact_catalog
     scope = harness.approval_scope(environments=("test",), runtime_profiles=("test",))
-    scope["allowed_workflow_definition_refs"] = [STORY_PLANNING_WORKFLOW_DEFINITION_REF]
+    scope["allowed_workflow_definition_refs"] = [profile.workflow_ref]
     pack = harness.register_compile_approve(
         "1.1.0",
         generation=1,
         approval_scope=scope,
         target_runtime_profile="test",
+        proof_skill_ref=profile.agent_skill_ref,
     )
+    harness.register_agents(pack.compiled)
     deployment = harness.deploy(pack, environment="test", runtime_profile="test")
     harness.activate(deployment, environment="test")
     return deployment.deployment_id
@@ -2708,6 +2581,7 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
             generation=2,
             approval_scope=replacement_scope,
             target_runtime_profile="test",
+            proof_skill_ref="long-outline",
         )
         replacement_deployment = harness.deploy(
             replacement_pack, environment="test", runtime_profile="test"

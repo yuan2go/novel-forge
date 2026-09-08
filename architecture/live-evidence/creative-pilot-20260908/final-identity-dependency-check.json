@@ -1,0 +1,11 @@
+{
+  "tested_sha": "cb9a0ddb4a6d70bae33e844ef0aab82ee3518506",
+  "tested_implementation_identity": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e",
+  "observed_implementation_identity": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e",
+  "identity_match": true,
+  "tested_dependency_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "observed_dependency_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "dependencies_match": true,
+  "qualification": "FAIL_COMPOSE_EXTERNAL_REGISTRY",
+  "no_current_qualified_claim": true
+}

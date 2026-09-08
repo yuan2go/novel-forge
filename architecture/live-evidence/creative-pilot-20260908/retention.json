@@ -1,0 +1,60 @@
+{
+  "tested_implementation_sha": "cb9a0ddb4a6d70bae33e844ef0aab82ee3518506",
+  "implementation_tree_sha": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e",
+  "archives": [
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/p0-1-raw.tar.gz",
+      "sha256": "sha256:8a79fc8b53b4fe7d35fcf19c8ca6a75d6e7761b2b0cbc4662fd7c9eb0d294d08",
+      "classification": "FAILED_OR_INTERRUPTED_ATTEMPT_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/p0-2-raw.tar.gz",
+      "sha256": "sha256:07c06b0a477b4185f67fc411f017730aba5b8d649635391910d29aa06b4ee367",
+      "classification": "FAILED_OR_INTERRUPTED_ATTEMPT_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/p0-3-raw.tar.gz",
+      "sha256": "sha256:38d5ea276931dbaa887e4cd1a3c28c4b76a4131d7a6f4d7a583976d763c925a6",
+      "classification": "FAILED_OR_INTERRUPTED_ATTEMPT_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/p0-4-raw.tar.gz",
+      "sha256": "sha256:77f9ce7df594be1ff94a7ef3ea902d4ec7433e6e23d4f38ff6cfe8038b4a0572",
+      "classification": "FAILED_OR_INTERRUPTED_ATTEMPT_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/p0-5-raw.tar.gz",
+      "sha256": "sha256:98d962bd2af4e1baae15dc6bf3c2763ae02e74548dd885dac004ca4cbeca9613",
+      "classification": "CURRENT_IMPLEMENTATION_FAILED_P0_NOT_QUALIFIED"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/development-originals.tar.gz",
+      "sha256": "sha256:c5c1e4f36fe7873e17730e7ee233ee065427371601e305c11f38ce36c449e662",
+      "classification": "DEVELOPMENT_EVIDENCE_MULTIPLE_EXPLICIT_REVISIONS"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/historical-native-db10f97c.tar.gz",
+      "sha256": "sha256:7e0598aaa0aa5869d4b587e2496d0fad89dc38a658a96e3c9647c3ed400c97c8",
+      "classification": "HISTORICAL_IMPLEMENTATION_SCRIPTED_EVIDENCE"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/historical-native-5ec8b271.tar.gz",
+      "sha256": "sha256:09e0c1d950ae1b802df8f34e5ad5eb297de71ce6c12eaf5b49f901d60d95bfe0",
+      "classification": "HISTORICAL_IMPLEMENTATION_SCRIPTED_EVIDENCE"
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/final-verification.tar.gz",
+      "sha256": "sha256:e11993c25aa41173d5f4f07b649f1c09ff041be835bfafe29a5e3b42cd20b29d",
+      "classification": "FINAL_GOVERNANCE_AND_EXTERNAL_BLOCKER_OBSERVATIONS"
+    }
+  ],
+  "real_provider": "NOT_RUN_NO_EXPLICIT_NEW_TOTAL_BUDGET",
+  "scripted_artifacts_ceiling": "PRODUCTION_WIRING_AND_LINEAGE_ONLY",
+  "canonical_runner_report": {
+    "path": "architecture/live-evidence/creative-pilot-20260908/p0-backend-qualification-cb9a0ddb4a6d70bae33e844ef0aab82ee3518506.json",
+    "sha256": "sha256:1585594357aa65affb71cb51a9aa26ff2ebc5fa284a46228725b2b7984f60673",
+    "status": "FAIL",
+    "failure": "COMPOSE_RUNTIME_EXTERNAL_REGISTRY",
+    "current_qualification": false
+  }
+}

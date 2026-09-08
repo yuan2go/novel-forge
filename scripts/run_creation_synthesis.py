@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 import hashlib
 import json
 import os
@@ -30,7 +29,6 @@ from novel_forge.modules.book_design_authority.formation import (
 from novel_forge.modules.book_design_authority.formation_domain import (
     StoryFormationInput,
 )
-from novel_forge.modules.book_design_authority.query import BookDesignAuthorityQuery
 from novel_forge.modules.content_authority.application import ContentOperationRequest
 from novel_forge.modules.creative.domain import validate_creative_brief
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
@@ -44,6 +42,7 @@ from novel_forge.workers.book_authority import (
     execute_book_opening_claim,
     execute_story_formation_claim,
 )
+from scripts.creation_pilot import authorize_total, freeze_routes, prepare_pilot_book
 from scripts.run_world_production_smoke import (
     drive,
     export,
@@ -69,6 +68,10 @@ def main(argv=None):
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--run-key", required=True)
     parser.add_argument("--resume-formation-run-id", default="")
+    parser.add_argument("--initialize", action="store_true", help="Register isolated Project/Book through existing Commands; idempotent on resume")
+    parser.add_argument("--workspace-id", default="")
+    parser.add_argument("--authorized-total-usd", default="")
+    parser.add_argument("--authorization-ref", default="")
     parser.add_argument("--expected-sha", default="")
     parser.add_argument("--evidence-dir", type=Path, required=True)
     parser.add_argument(
@@ -105,6 +108,8 @@ def main(argv=None):
     args.evidence_dir.mkdir(parents=True, exist_ok=False)
     report = {
         "source_sha": source_sha,
+        "project_id": args.project_id, "book_id": args.book_id, "run_key": args.run_key,
+        "stage": "CONFIGURATION",
         "implementation_identity": build_implementation_tree_identity(repo)[
             "implementation_tree_sha"
         ],
@@ -140,6 +145,9 @@ def main(argv=None):
         ):
             raise ValueError("execution requires a clean exact expected SHA")
         values = dict(os.environ)
+        total = authorize_total(values, args.authorized_total_usd, args.authorization_ref)
+        report["authorized_total_usd"] = total
+        report["authorization_ref"] = args.authorization_ref
         validate_configuration(values)
         database_url = values.get("NOVEL_FORGE_DATABASE_URL", "")
         import psycopg
@@ -161,9 +169,6 @@ def main(argv=None):
         principal.require("book.authority.execute", args.project_id)
         worker = resolver.resolve_worker_principal("creation-synthesis-worker")
         content = build_content_authority_application(settings, env=values)
-        book = BookDesignAuthorityQuery(database_url).require_book(
-            project_id=args.project_id, book_id=args.book_id
-        )
         execution = build_production_execution_composition(settings, env=values)
         if any(
             route.model_profile.model_provider == "scripted_provider_v2"
@@ -180,11 +185,35 @@ def main(argv=None):
             chapter_application=chapter,
             env=values,
         )
+        frozen = {
+            "contract_version": "creation-pilot.v1", "run_key": args.run_key,
+            "brief_input_hash": report["brief_input_hash"], "creation_policy": policy,
+            "formation_policy": formation_policy, "implementation_identity": report["implementation_identity"],
+            "models": freeze_routes(execution.gateway.routes),
+            "total_project_cap_usd": total, "authorization_ref": args.authorization_ref,
+            "runtime_settings": {key: value for key, value in values.items() if key in {
+                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL", "NOVEL_FORGE_OPERATION_PROVIDER_CAP", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP", "NOVEL_FORGE_DAILY_PROVIDER_CAP",
+                "NOVEL_FORGE_CHAPTER_PROVIDER_CAP", "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID",
+                "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET", "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET",
+                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT",
+                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT",
+                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS"}},
+        }
+        report["frozen_configuration"] = frozen
+        report["stage"] = "PREPARATION"
+        book = prepare_pilot_book(composition=composition, principal=principal, project_id=args.project_id,
+            workspace_id=args.workspace_id, book_id=args.book_id, run_key=args.run_key,
+            title=formation_policy["title"], frozen=frozen, initialize=args.initialize)
+        record({"kind": "PREPARATION", "book_id": args.book_id, "version": book["version"]})
         deadline = time.monotonic() + args.max_seconds
         formation = composition.formation
-        if args.resume_formation_run_id:
-            formation_run_id = args.resume_formation_run_id
-            run = formation.require(formation_run_id)
+        report["stage"] = "FORMATION"
+        existing_formation = formation.find_by_key(project_id=args.project_id, book_id=args.book_id, idempotency_key=f"{args.run_key}:formation")
+        if args.resume_formation_run_id and (not existing_formation or existing_formation["formation_run_id"] != args.resume_formation_run_id):
+            raise ValueError("Explicit Formation id must match this exact pilot run key")
+        if existing_formation:
+            run = existing_formation
+            formation_run_id = run["formation_run_id"]
             if run["project_id"] != args.project_id or run["book_id"] != args.book_id:
                 raise ValueError("resume Formation belongs to another Book")
             frozen = StoryFormationInput.from_mapping(run["frozen_input"])
@@ -271,26 +300,32 @@ def main(argv=None):
             policy=policy,
         )
         versions = prepared["versions"]
-        opening = composition.open_book(
-            OpenBookProductionRequest(
-                project_id=args.project_id,
-                workspace_id=book["workspace_id"],
-                book_id=args.book_id,
-                actor_id=principal.principal_id,
-                expected_book_version=prepared["book_version"],
-                production_profile=versions["production_profile"],
-                planning_input_versions={
-                    role: versions[role] for role in _OPENING_INPUT_ROLES
-                },
-                arc_logical_keys=("arc:central",),
-                idempotency_key=f"{args.run_key}:opening",
-                trace_id=f"trace:{args.run_key}",
-                correlation_id=args.run_key,
-                initial_story_state_version=versions["story_state"],
-                initial_canon_snapshot_version=versions["canon_snapshot"],
+        report["stage"] = "OPENING"
+        opening_state = composition.opening.find_by_key(project_id=args.project_id, book_id=args.book_id, idempotency_key=f"{args.run_key}:opening")
+        if opening_state is None:
+            opening = composition.open_book(
+                OpenBookProductionRequest(
+                    project_id=args.project_id,
+                    workspace_id=book["workspace_id"],
+                    book_id=args.book_id,
+                    actor_id=principal.principal_id,
+                    expected_book_version=prepared["book_version"],
+                    production_profile=versions["production_profile"],
+                    planning_input_versions={
+                        role: versions[role] for role in _OPENING_INPUT_ROLES
+                    },
+                    arc_logical_keys=("arc:central",),
+                    idempotency_key=f"{args.run_key}:opening",
+                    trace_id=f"trace:{args.run_key}",
+                    correlation_id=args.run_key,
+                    initial_story_state_version=versions["story_state"],
+                    initial_canon_snapshot_version=versions["canon_snapshot"],
+                )
             )
-        )
-        opening_state = composition.opening.require(opening.opening_run_id)
+            opening_state = composition.opening.require(opening.opening_run_id)
+        opening_run_id = opening_state["opening_run_id"]
+        report["opening_run_id"] = opening_run_id
+        record({"kind": "OPENING_PROGRESS", "progress": composition.opening.require_progress(opening_run_id)})
         if opening_state["lifecycle"] == "COMPLETE":
             opened = opening_state["result"]
         else:
@@ -302,7 +337,7 @@ def main(argv=None):
                 worker_id=worker.principal_id,
                 lease_seconds=60,
                 project_id=args.project_id,
-                expected_opening_run_id=opening.opening_run_id,
+                expected_opening_run_id=opening_run_id,
             )
             if claim is None:
                 raise RuntimeError(
@@ -315,7 +350,7 @@ def main(argv=None):
                 claim,
                 lease_seconds=60,
             )
-        record({"kind": "OPENING", "admission": asdict(opening), "result": opened})
+        record({"kind": "OPENING", "opening_run_id": opening_run_id, "result": opened})
         snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
         admitted = composition.authority.start(
             start_command(
@@ -328,6 +363,7 @@ def main(argv=None):
         )
         book_run_id = admitted.book_run_id
         report["book_run_id"] = book_run_id
+        report["stage"] = "CHAPTER_PRODUCTION"
         report["status"] = drive(
             composition=composition,
             chapter=chapter,
@@ -344,7 +380,9 @@ def main(argv=None):
             status="BLOCKED",
             error={"type": type(exc).__name__, "message": redact_secret_text(str(exc))},
         )
-        record({"kind": "FAILURE", "error": report["error"]})
+        record({"kind": "FAILURE", "stage": report["stage"], "error": report["error"]})
+        if execution is not None:
+            report["real_provider"] = "INSPECT_RECEIPTS_PARTIAL_OR_FAILED"
         return 2
     finally:
         try:
@@ -362,12 +400,18 @@ def main(argv=None):
                         "character_arc_portfolio",
                     ),
                 )
+        except Exception as exc:
+            report["artifact_export_error"] = redact_secret_text(str(exc))
+        try:
             if composition is not None and book_run_id:
                 export(
                     composition=composition,
                     book_run_id=book_run_id,
                     destination=args.evidence_dir,
+                    include_artifacts=False,
                 )
+            if report.get("artifact_export_error"):
+                raise RuntimeError("Partial artifact export; inspect retained status")
         except Exception as exc:
             report["export_error"] = redact_secret_text(str(exc))
             report["status"] = "EVIDENCE_EXPORT_BLOCKED"
