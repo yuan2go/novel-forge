@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `8a1fc65bf5ecd80ec5ead17e6bf677d77a202e14`
-Baseline implementation identity: `sha256:25322467ecb8af4c2d5f48b395a11dc67a20dffaafceeba27989381a9d0a998b`
+Current-reality baseline: `8476699c63e391cf5cee6d12bdc79d018a543ae0`
+Baseline implementation identity: `sha256:91a84084e93dca80d12fd29195628ab7921e99afa34e5211b8052817f147aa3f`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:25322467ecb8af4c2d5f48b395a11dc67a20df
   "reviewed_on": "2026-09-08",
   "review_due": "2026-10-07",
   "reality_baseline": {
-    "sha": "8a1fc65bf5ecd80ec5ead17e6bf677d77a202e14",
-    "implementation_tree_sha": "sha256:25322467ecb8af4c2d5f48b395a11dc67a20dffaafceeba27989381a9d0a998b"
+    "sha": "8476699c63e391cf5cee6d12bdc79d018a543ae0",
+    "implementation_tree_sha": "sha256:91a84084e93dca80d12fd29195628ab7921e99afa34e5211b8052817f147aa3f"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
