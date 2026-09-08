@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import default_capability_registry
+from novel_forge.modules.source_import.execution import (
+    _order_compound_observations,
+)
 from novel_forge.modules.source_import.execution_contracts import (
     CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
@@ -179,6 +183,30 @@ def test_compound_deconstruction_keeps_typed_dimensions_in_one_bounded_output() 
         "scope_claim": "BOUNDED_STRATIFIED_SAMPLE",
         "uncovered_material_acknowledged": True,
     }
+
+
+def test_compound_deconstruction_canonicalizes_provider_dimension_order() -> None:
+    observations = [
+        {"dimension": "structure"},
+        {"dimension": "pacing"},
+        {"dimension": "conflict"},
+    ]
+
+    ordered = _order_compound_observations(
+        observations,
+        requested_dimensions=("structure", "conflict", "pacing"),
+    )
+
+    assert [item["dimension"] for item in ordered] == [
+        "structure",
+        "conflict",
+        "pacing",
+    ]
+    with pytest.raises(KernelError, match="SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH"):
+        _order_compound_observations(
+            observations,
+            requested_dimensions=("structure", "conflict", "chapter_hook"),
+        )
 
 
 def test_compound_not_applicable_result_cannot_smuggle_findings() -> None:

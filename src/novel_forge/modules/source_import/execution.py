@@ -771,14 +771,10 @@ class PostgresContentIntelligenceExecutionPort:
         )
         if compound:
             requested_dimensions = tuple(item.dimension for item in analyzers)
-            returned_dimensions = tuple(
-                str(item["dimension"]) for item in provider_output["observations"]
+            ordered_observations = _order_compound_observations(
+                provider_output["observations"],
+                requested_dimensions=requested_dimensions,
             )
-            if returned_dimensions != requested_dimensions:
-                raise KernelError(
-                    "SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH",
-                    "Provider dimensions differ from the frozen analyzer order",
-                )
             whole_work = frozen_sampling_manifest.get("whole_work_analyzed") is True
             expected_coverage = {
                 "scope_claim": (
@@ -794,7 +790,7 @@ class PostgresContentIntelligenceExecutionPort:
             dimension_results: list[dict[str, Any]] = []
             bindings: list[dict[str, Any]] = []
             for result, item_analyzer in zip(
-                provider_output["observations"], analyzers, strict=True
+                ordered_observations, analyzers, strict=True
             ):
                 normalized = {
                     "dimension": item_analyzer.dimension,
@@ -924,7 +920,6 @@ class PostgresContentIntelligenceExecutionPort:
                 execution.get("provider_execution_reused")
             ),
         }
-
     def execute_mkaos_extraction(
         self,
         *,
@@ -1815,6 +1810,26 @@ class PostgresContentIntelligenceExecutionPort:
         ):
             return "PROVIDER_QUALIFIED"
         return "PROVIDER_UNCALIBRATED"
+
+
+def _order_compound_observations(
+    observations: list[dict[str, Any]],
+    *,
+    requested_dimensions: tuple[str, ...],
+) -> tuple[dict[str, Any], ...]:
+    by_dimension = {
+        str(observation.get("dimension") or ""): observation
+        for observation in observations
+    }
+    if (
+        len(by_dimension) != len(observations)
+        or set(by_dimension) != set(requested_dimensions)
+    ):
+        raise KernelError(
+            "SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH",
+            "Provider dimensions differ from the frozen analyzer set",
+        )
+    return tuple(by_dimension[dimension] for dimension in requested_dimensions)
 
 
 def _evidence_manifest_hash(
