@@ -40,6 +40,8 @@ from novel_forge.modules.mkaos_authority.domain import (
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     ExecutionOutcome,
+    ExecutionRecoveryAction,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     ExecutionRuntimeClass,
     FallbackPolicy,
@@ -182,58 +184,11 @@ class _SourceGatewayEffectAdapter:
                 f"Source PEP execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,
             ) from exc
-        record = self.session.evidence_store.get_record(request.execution_id)
-        evidence: dict[str, Any] = {
-            "provider_id": self.binding.route_snapshot.model_provider,
-            "model_id": self.binding.route_snapshot.model_id,
-            "prompt_version": self.binding.input_manifest.prompt_bundle_version,
-            "skill_version": self.binding.input_manifest.skill_bundle_version,
-            "real_model_call": handle.transport
-            in {
-                ExecutionRuntimeClass.REMOTE_PROVIDER_API,
-                ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-            },
-            "fixture_protocol_only": (
-                handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
-            ),
-            "production_verified": False,
-            "production_execution": {
-                "execution_request": request.to_dict(),
-                "execution_handle": handle.to_dict(),
-                "execution_result": result.to_dict(),
-                "route_snapshot": self.binding.route_snapshot.to_dict(),
-                "input_manifest": self.binding.input_manifest.to_dict(),
-                "process_evidence": dict(record.raw_evidence),
-            },
-        }
-        capability_evidence = record.raw_evidence.get("capability_evidence")
-        if isinstance(capability_evidence, Mapping):
-            evidence["capability_runtime"] = dict(capability_evidence)
-        if result.normalized_output_ref:
-            evidence["result"] = self.session.evidence_store.read_evidence(
-                str(result.normalized_output_ref)
-            )
-        if result.usage_receipt_ref:
-            evidence["usage"] = self.session.evidence_store.read_evidence(
-                str(result.usage_receipt_ref)
-            )
-        if result.cost_receipt_ref:
-            evidence["cost"] = self.session.evidence_store.read_evidence(
-                str(result.cost_receipt_ref)
-            )
-        outcome = {
-            ExecutionOutcome.SUCCEEDED: "success",
-            ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
-            ExecutionOutcome.TIMED_OUT: "retryable_failure",
-            ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
-            ExecutionOutcome.FINAL_FAILURE: "final_failure",
-            ExecutionOutcome.CANCELLED: "cancelled",
-        }.get(result.outcome, "unknown")
-        return ProviderResult(
-            outcome,
-            handle.backend_execution_id,
-            evidence,
-            handle.provider_request_id or "",
+        return _source_gateway_provider_result(
+            binding=self.binding,
+            session=self.session,
+            handle=handle,
+            result=result,
         )
 
     def query(self, **kwargs: Any) -> ProviderResult:
@@ -255,6 +210,174 @@ class _SourceGatewayEffectAdapter:
             handle.backend_execution_id,
             {"production_execution_cancellation": result.to_dict()},
             provider_request_id,
+        )
+
+
+def _source_gateway_provider_result(
+    *,
+    binding: ChapterExecutionBinding,
+    session: Any,
+    handle: Any,
+    result: Any,
+) -> ProviderResult:
+    record = session.evidence_store.get_record(binding.request.execution_id)
+    evidence: dict[str, Any] = {
+        "provider_id": binding.route_snapshot.model_provider,
+        "model_id": binding.route_snapshot.model_id,
+        "prompt_version": binding.input_manifest.prompt_bundle_version,
+        "skill_version": binding.input_manifest.skill_bundle_version,
+        "real_model_call": handle.transport
+        in {
+            ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+            ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        },
+        "fixture_protocol_only": (
+            handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+        ),
+        "production_verified": False,
+        "production_execution": {
+            "execution_request": binding.request.to_dict(),
+            "execution_handle": handle.to_dict(),
+            "execution_result": result.to_dict(),
+            "route_snapshot": binding.route_snapshot.to_dict(),
+            "input_manifest": binding.input_manifest.to_dict(),
+            "process_evidence": dict(record.raw_evidence),
+        },
+    }
+    capability_evidence = record.raw_evidence.get("capability_evidence")
+    if isinstance(capability_evidence, Mapping):
+        evidence["capability_runtime"] = dict(capability_evidence)
+    if result.normalized_output_ref:
+        evidence["result"] = session.evidence_store.read_evidence(
+            str(result.normalized_output_ref)
+        )
+    if result.usage_receipt_ref:
+        evidence["usage"] = session.evidence_store.read_evidence(
+            str(result.usage_receipt_ref)
+        )
+    if result.cost_receipt_ref:
+        evidence["cost"] = session.evidence_store.read_evidence(
+            str(result.cost_receipt_ref)
+        )
+    outcome = {
+        ExecutionOutcome.SUCCEEDED: "success",
+        ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
+        ExecutionOutcome.TIMED_OUT: "retryable_failure",
+        ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
+        ExecutionOutcome.FINAL_FAILURE: "final_failure",
+        ExecutionOutcome.CANCELLED: "cancelled",
+    }.get(result.outcome, "unknown")
+    return ProviderResult(
+        outcome,
+        handle.backend_execution_id,
+        evidence,
+        handle.provider_request_id or "",
+    )
+
+
+class _SourceGatewayRecoveryEffectAdapter:
+    production_execution_gateway_backed = True
+
+    def __init__(
+        self,
+        *,
+        transport: ProductionExecutionGatewayExternalEffectAdapter,
+        worker: WorkerLeaseCommand,
+        effect: Mapping[str, Any],
+    ) -> None:
+        self.transport = transport
+        self.worker = worker
+        self.effect = dict(effect)
+        self.provider = transport.provider
+        self.reconciliation_mode = transport.reconciliation_mode
+        self.capability_profile = transport.capability_profile
+
+    def execute(self, **_kwargs: Any) -> ProviderResult:
+        raise ExternalEffectAdapterError(
+            "Source recovery adapter cannot dispatch a new execution",
+            request_sent=False,
+        )
+
+    def query(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        effect_id = str(self.effect["external_effect_id"])
+        if (
+            stable_idempotency_key != self.effect["stable_idempotency_key"]
+            or capability != self.effect["capability"]
+            or str(request_payload.get("external_effect_id") or "") != effect_id
+        ):
+            raise ExternalEffectAdapterError(
+                "Source recovery differs from its frozen ExternalEffect",
+                request_sent=False,
+            )
+        metadata = self.effect.get("request_payload", {}).get("_production_execution")
+        if not isinstance(metadata, Mapping):
+            raise ExternalEffectAdapterError(
+                "Source recovery has no frozen execution identity",
+                request_sent=False,
+            )
+        execution_id = f"source-intelligence-execution:{effect_id}"
+        session = self.transport.session_for_project(self.worker.project_id)
+        record = session.evidence_store.find_record(execution_id)
+        if record is None:
+            return ProviderResult("not_found", "", {"execution_id": execution_id})
+        request = record.request
+        execution_fence = int(metadata.get("fencing_token") or 0)
+        if (
+            request.external_effect_id != effect_id
+            or request.operation_id != self.worker.causation_id
+            or request.attempt_id != self.worker.attempt_id
+            or request.fencing_token != execution_fence
+        ):
+            raise ExternalEffectAdapterError(
+                "persisted Source execution differs from frozen recovery identity",
+                request_sent=True,
+            )
+        authorization = ExecutionRecoveryAuthorization(
+            authorization_id=(
+                "execution-recovery:"
+                + _token(
+                    f"{execution_id}:{self.worker.fencing_token}:"
+                    f"{ExecutionRecoveryAction.QUERY.value}"
+                )
+            ),
+            execution_id=execution_id,
+            external_effect_id=effect_id,
+            operation_id=self.worker.causation_id,
+            attempt_id=self.worker.attempt_id,
+            execution_fencing_token=execution_fence,
+            recovery_fencing_token=self.worker.fencing_token,
+            recovery_worker_id=self.worker.worker_id,
+            action=ExecutionRecoveryAction.QUERY,
+            trace_id=self.worker.trace_id,
+            correlation_id=self.worker.correlation_id,
+        )
+        self.transport.recovery_authorizations.record(authorization)
+        result = session.gateway.recover_existing_execution(
+            request,
+            record.handle,
+            authorization,
+        )
+        route = session.gateway.admission.resolve_route(request)
+        manifest = session.gateway.admission.contracts.input_manifest(
+            request.input_manifest_ref
+        )
+        return _source_gateway_provider_result(
+            binding=ChapterExecutionBinding(request, route, manifest),
+            session=session,
+            handle=record.handle,
+            result=result,
+        )
+
+    def cancel(self, **_kwargs: Any) -> ProviderResult:
+        raise ExternalEffectAdapterError(
+            "Source recovery cancellation requires an explicit cancellation command",
+            request_sent=False,
         )
 
 
@@ -321,6 +444,20 @@ class PostgresContentIntelligenceExecutionPort:
         )
         self.source_object_reader = source_object_reader
         self.provider_output_token_reserve = provider_output_token_reserve
+
+    def recovery_adapter(
+        self, *, worker: WorkerLeaseCommand, effect: Mapping[str, Any]
+    ) -> _SourceGatewayRecoveryEffectAdapter:
+        if str(effect.get("provider") or "") != self.transport.provider:
+            raise KernelError(
+                "SOURCE_PEP_RECOVERY_PROVIDER_CONFLICT",
+                "uncertain Source execution belongs to another Provider",
+            )
+        return _SourceGatewayRecoveryEffectAdapter(
+            transport=self.transport,
+            worker=worker,
+            effect=effect,
+        )
 
     def execute_classification(
         self,

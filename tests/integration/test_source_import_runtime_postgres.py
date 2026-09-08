@@ -17,7 +17,10 @@ from fastapi.testclient import TestClient
 
 from novel_forge.api.authority_app import create_authority_app
 from novel_forge.modules.authority_security import Principal, PrincipalType
-from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+    ProviderResult,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority import (
     ApproveKnowledgeCandidateCommand,
@@ -90,6 +93,33 @@ class _RetryOnceGitAdapter:
 
     def query(self, **kwargs: object) -> ProviderResult:
         return self.delegate.query(**kwargs)  # type: ignore[arg-type]
+
+    def cancel(self, **kwargs: object) -> ProviderResult:
+        return self.delegate.cancel(**kwargs)  # type: ignore[arg-type]
+
+    def read_blob(self, repository_identity: str, object_id: str) -> bytes:
+        return self.delegate.read_blob(repository_identity, object_id)
+
+
+class _UnknownOnceGitAdapter:
+    def __init__(self, delegate: GitRepositoryExternalEffectAdapter) -> None:
+        self.delegate = delegate
+        self.provider = delegate.provider
+        self.reconciliation_mode = delegate.reconciliation_mode
+        self.capability_profile = delegate.capability_profile
+        self.execute_count = 0
+        self.query_count = 0
+
+    def execute(self, **kwargs: object) -> ProviderResult:
+        self.execute_count += 1
+        raise ExternalEffectAdapterError(
+            "injected transport loss after request send",
+            request_sent=True,
+        )
+
+    def query(self, **kwargs: object) -> ProviderResult:
+        self.query_count += 1
+        return self.delegate.execute(**kwargs)  # type: ignore[arg-type]
 
     def cancel(self, **kwargs: object) -> ProviderResult:
         return self.delegate.cancel(**kwargs)  # type: ignore[arg-type]
@@ -541,6 +571,64 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 [self.project_id],
             )
             self.assertGreater(cursor.fetchone()[0], 0)
+
+    def test_unknown_effect_checkpoints_and_reconciles_without_redispatch(self) -> None:
+        adapter = _UnknownOnceGitAdapter(self.git_adapter)
+        self.application.git_adapter = adapter
+        imported = self._create_import("unknown-effect", self.commit_a, mode="PREVIEW")
+
+        with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+            self.scheduler.run_or_recover(
+                operation_id=str(imported["operation_id"]),
+                project_id=self.project_id,
+            )
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, attempt.status, effect.status
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                """,
+                [imported["operation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("WAITING_EXTERNAL_RESULT", "CHECKPOINTED", "UNKNOWN"),
+            )
+        self.assertIn(
+            (str(imported["operation_id"]), self.project_id),
+            self.scheduler.pending_operations(),
+        )
+
+        recovered = self.scheduler.run_or_recover(
+            operation_id=str(imported["operation_id"]),
+            project_id=self.project_id,
+        )
+
+        self.assertEqual(recovered["status"], "SUCCEEDED")
+        self.assertEqual(recovered["recovery_mode"], "external_effect_reconciled:success")
+        self.assertEqual((adapter.execute_count, adapter.query_count), (1, 1))
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT effect.status, COUNT(dispatch.dispatch_id),
+                       COUNT(reconciliation.reconciliation_id)
+                FROM authority_external_effect AS effect
+                LEFT JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
+                LEFT JOIN authority_effect_reconciliation_evidence AS reconciliation
+                  ON reconciliation.external_effect_id=effect.external_effect_id
+                WHERE effect.operation_id=%s
+                GROUP BY effect.status
+                """,
+                [imported["operation_id"]],
+            )
+            self.assertEqual(cursor.fetchone(), ("SUCCEEDED", 1, 1))
 
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,

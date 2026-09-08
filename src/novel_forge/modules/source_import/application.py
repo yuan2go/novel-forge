@@ -554,7 +554,14 @@ class SourceImportApplication:
             resumable = [
                 operation_id
                 for operation_id, status in states.items()
-                if status in {"READY", "FAILED_RETRYABLE", "EXECUTING"}
+                if status
+                in {
+                    "READY",
+                    "FAILED_RETRYABLE",
+                    "EXECUTING",
+                    "WAITING_EXTERNAL_RESULT",
+                    "RECONCILIATION_REQUIRED",
+                }
             ]
             if terminal:
                 raise KernelError(
@@ -582,6 +589,86 @@ class SourceImportApplication:
             "resumable_operation_ids": resumable,
             "new_provider_work_created": False,
         }
+
+    def reconcile_external_state(self, worker: WorkerLeaseCommand) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            attempt = uow.repositories.attempt_runtime.get_for_update(
+                worker.attempt_id, worker.project_id
+            )
+            valid, _current_token = (
+                uow.repositories.attempt_runtime.current_fence(
+                    worker.attempt_id,
+                    worker.worker_id,
+                    worker.fencing_token,
+                )
+            )
+            if not valid:
+                raise KernelError(
+                    "ATTEMPT_FENCING_TOKEN_STALE",
+                    "Source reconciliation does not hold the current Attempt fence",
+                )
+            if attempt["operation_status"] not in {
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+            }:
+                raise KernelError(
+                    "SOURCE_RECONCILIATION_STATE_INVALID",
+                    "Source Operation is not waiting for external reconciliation",
+                )
+            uow.cursor.execute(
+                """
+                SELECT external_effect_id
+                FROM authority_external_effect
+                WHERE project_id=%s AND operation_id=%s
+                  AND status IN (
+                      'DISPATCHING', 'DISPATCHED', 'UNKNOWN',
+                      'RECONCILIATION_REQUIRED'
+                  )
+                ORDER BY created_at, external_effect_id
+                """,
+                [worker.project_id, worker.causation_id],
+            )
+            effect_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+        if not effect_ids:
+            raise KernelError(
+                "SOURCE_RECONCILIATION_EFFECT_MISSING",
+                "waiting Source Operation has no uncertain ExternalEffect",
+            )
+        outcomes = []
+        for effect_id in effect_ids:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                effect = uow.repositories.external_effects.get_for_update(effect_id)
+            adapter: Any | None = None
+            for candidate in (self.git_adapter, self.object_store_adapter):
+                if candidate is not None and str(candidate.provider) == str(
+                    effect["provider"]
+                ):
+                    adapter = candidate
+                    break
+            if adapter is None:
+                port = self._require_execution_port()
+                recovery_adapter = getattr(port, "recovery_adapter", None)
+                if callable(recovery_adapter):
+                    adapter = recovery_adapter(worker=worker, effect=effect)
+            if adapter is None or str(adapter.provider) != str(effect["provider"]):
+                raise KernelError(
+                    "SOURCE_RECONCILIATION_ADAPTER_MISSING",
+                    "uncertain Source ExternalEffect has no matching recovery adapter",
+                )
+            result = reconcile_external_effect(
+                self.database_url,
+                self._effect_context(worker),
+                effect_id=effect_id,
+                adapter=adapter,
+                attempt_command=worker,
+            )
+            outcomes.append(str(result["outcome"]))
+            if result["outcome"] != "success":
+                raise KernelError(
+                    "SOURCE_RECONCILIATION_INCONCLUSIVE",
+                    f"Source ExternalEffect reconciled as {result['outcome']}",
+                )
+        return "external_effect_reconciled:" + ",".join(outcomes)
 
     def record_execution_failure(
         self,
@@ -4816,7 +4903,11 @@ class SourceImportApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT COALESCE(effect.reconciliation, dispatch.evidence)
+                SELECT CASE
+                         WHEN effect.reconciliation <> '{}'::jsonb
+                           THEN effect.reconciliation
+                         ELSE dispatch.evidence
+                       END
                 FROM authority_external_effect AS effect
                 LEFT JOIN LATERAL (
                     SELECT evidence

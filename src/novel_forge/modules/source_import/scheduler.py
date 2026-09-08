@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.scheduler import SourceAuthorityScheduler
 
@@ -24,6 +25,9 @@ class SourceImportScheduler(SourceAuthorityScheduler):
         )
         self.operation_names = SOURCE_IMPORT_OPERATIONS
         self.output_keys = frozenset({"source.import.repository_snapshot"})
+
+    def _reconcile_waiting_operation(self, worker: WorkerLeaseCommand) -> str:
+        return self.application.reconcile_external_state(worker)
 
     def run_or_recover(
         self, *, operation_id: str, project_id: str

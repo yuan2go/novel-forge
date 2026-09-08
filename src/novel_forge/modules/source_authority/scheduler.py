@@ -6,6 +6,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
     acquire_attempt_lease,
+    checkpoint_attempt_for_external_reconciliation,
     create_attempt,
     heartbeat_attempt,
     queue_attempt,
@@ -75,7 +76,10 @@ class SourceAuthorityScheduler:
                     LIMIT 1
                 ) AS active_lease ON TRUE
                 WHERE operation.definition_name = ANY(%s)
-                  AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
+                  AND operation.status IN (
+                      'READY', 'FAILED_RETRYABLE', 'EXECUTING',
+                      'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED'
+                  )
                   AND (
                       active_lease.expires_at IS NULL
                       OR active_lease.expires_at <= NOW()
@@ -131,15 +135,25 @@ class SourceAuthorityScheduler:
             attempt_status = "QUEUED"
             if retrying:
                 recovery_mode = "retry_attempt"
-        elif operation_status == "EXECUTING" and state.get("attempt_id"):
+        elif operation_status in {
+            "EXECUTING",
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+        } and state.get("attempt_id"):
             attempt_id = str(state["attempt_id"])
             attempt_number = int(state["attempt_number"])
             attempt_status = str(state["attempt_status"])
-            recovery_mode = (
-                "output_replay_takeover"
-                if self._has_output(operation_id, project_id)
-                else "lease_takeover"
-            )
+            if operation_status in {
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+            }:
+                recovery_mode = "external_effect_reconciliation"
+            else:
+                recovery_mode = (
+                    "output_replay_takeover"
+                    if self._has_output(operation_id, project_id)
+                    else "lease_takeover"
+                )
         else:
             raise KernelError(
                 "SOURCE_RECOVERY_STATE_INVALID",
@@ -180,6 +194,11 @@ class SourceAuthorityScheduler:
                 f"Source Attempt cannot resume from {attempt_status}",
             )
         try:
+            if operation_status in {
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+            }:
+                recovery_mode = self._reconcile_waiting_operation(worker)
             with LeaseHeartbeatGuard(
                 lambda: heartbeat_attempt(
                     self.database_url, worker, self.lease_seconds
@@ -221,6 +240,18 @@ class SourceAuthorityScheduler:
                     worker,
                     expected_operation_version=int(current["version"]),
                 )
+            elif classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
+                checkpoint_attempt_for_external_reconciliation(
+                    self.database_url,
+                    worker,
+                    {
+                        "reason": "external_state_unknown",
+                        "error_code": (
+                            exc.code if isinstance(exc, KernelError) else "UNKNOWN"
+                        ),
+                        "error_message": str(exc),
+                    },
+                )
             elif classification not in {
                 WorkerFailureClass.LEASE_CONFLICT,
                 WorkerFailureClass.FENCING_CONFLICT,
@@ -242,6 +273,12 @@ class SourceAuthorityScheduler:
             "attempt_number": attempt_number,
             "recovery_mode": recovery_mode,
         }
+
+    def _reconcile_waiting_operation(self, worker: WorkerLeaseCommand) -> str:
+        raise KernelError(
+            "SOURCE_EXTERNAL_EFFECT_RECONCILER_MISSING",
+            "waiting Source Operation has no external-effect recovery adapter",
+        )
 
     def _state(self, operation_id: str, project_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
