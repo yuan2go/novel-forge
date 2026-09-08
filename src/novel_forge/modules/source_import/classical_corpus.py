@@ -254,7 +254,7 @@ def parse_classical_work(
         units, diagnostics, excluded = _parse_chinese_novel(spec, files)
     elif spec.parser_profile == "chinese-poetry-json.v1":
         units, diagnostics, excluded = _parse_chinese_poetry(spec, files)
-    else:  # guarded by CorpusWorkSpec, retained for frozen replay defense
+    else:
         raise CorpusParseError("CORPUS_PARSER_UNSUPPORTED", spec.parser_profile)
     finalized, normalized, chunks = _finalize_units(
         spec,

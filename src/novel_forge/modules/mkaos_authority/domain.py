@@ -169,8 +169,6 @@ def resolve_book_knowledge_access_policy(
     project_id: str,
     book_id: str,
 ) -> dict[str, Any]:
-    """Freeze a Book-scoped exact KnowledgeCard access boundary."""
-
     if not project_id.strip() or not book_id.strip():
         raise ValueError("Book Knowledge access requires project and Book identity")
     configured = production_profile.get("knowledge_access_policy")

@@ -370,8 +370,6 @@ class ProductionPreparationService:
             and knowledge_access["mode"] == "ALLOW_ONLY"
             and not override
         ):
-            # The exact card versions are injected directly. A project-level pack
-            # could contain cards outside the Book boundary and is not needed.
             assets = ()
         elif override:
             ids = [override] if isinstance(override, str) else list(override)

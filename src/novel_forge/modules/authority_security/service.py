@@ -206,13 +206,6 @@ class TrustedPrincipalResolver:
         )
 
     def resolve_book_formation_worker_principal(self, worker_id: str) -> Principal:
-        """Resolve the narrow worker role that may execute a scoped Formation.
-
-        Candidate decisions remain guarded by the frozen Formation AUTO
-        authorization.  Keeping these permissions out of the generic worker
-        role prevents an unrelated worker from becoming a universal approver.
-        """
-
         worker_id = worker_id.strip()
         if not worker_id:
             raise RuntimeError("configured Book Formation worker identity is required")

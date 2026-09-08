@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run governed corpus intelligence work through the production SourceImport chain."""
 
 from __future__ import annotations

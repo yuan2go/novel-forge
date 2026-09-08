@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Materialize the frozen 20-work corpus through the production SourceImport chain."""
 
 from __future__ import annotations

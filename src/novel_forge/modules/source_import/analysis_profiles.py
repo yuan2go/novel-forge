@@ -516,8 +516,6 @@ def resolve_corpus_analysis_strategy(
     routing_policy_version: str,
     sample_byte_limit: int,
 ) -> ResolvedAnalysisStrategy:
-    """Resolve one bounded compound call while retaining typed Observations."""
-
     try:
         profile_id, skill_id, dimensions, mkaos_capability = (
             _CORPUS_ANALYSIS_CONTRACTS[collection_kind]

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Reconcile the frozen classical corpus without executing source repository code."""
 
 from __future__ import annotations
