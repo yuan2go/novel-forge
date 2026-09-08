@@ -264,9 +264,7 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
                     "discovery_recovery_mode": discovery.get("recovery_mode", ""),
                     "work_operation_id": work_operation_id,
                     "work_recovery_mode": materialized.get("recovery_mode", ""),
-                    "source_work_asset_version_id": manifest[
-                        "source_work_asset_version_id"
-                    ],
+                    "source_work_asset_version_id": manifest["asset_version_id"],
                     "manifest_hash": manifest["manifest_hash"],
                     "unit_count": manifest["unit_count"],
                     "body_unit_count": manifest["body_unit_count"],
