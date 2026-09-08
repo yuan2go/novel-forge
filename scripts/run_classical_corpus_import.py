@@ -227,7 +227,7 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
                     actor_id=args.actor_id,
                     idempotency_key=(
                         f"{spec.registry_id}:{spec.registry_hash}:"
-                        f"{spec.work_key}:native-import"
+                        f"{spec.work_key}:{args.run_label}"
                     ),
                     trace_id=f"trace:classical-corpus:{args.project_id}:{spec.work_key}",
                     correlation_id=f"correlation:classical-corpus:{args.project_id}",
@@ -293,6 +293,7 @@ def _materialize(args: argparse.Namespace) -> dict[str, Any]:
     report = {
         "schema_version": "classical-corpus-native-import-run.v1",
         "run_mode": "MATERIALIZE_ONLY",
+        "run_label": args.run_label,
         "project_id": args.project_id,
         "workspace_id": args.workspace_id,
         "application_build_id": build_id,
@@ -335,9 +336,16 @@ def main() -> int:
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--actor-id", default="operator:classical-corpus-validation")
     parser.add_argument("--work-key", action="append")
+    parser.add_argument("--run-label", default="native-import")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--fail-fast", action="store_true")
     args = parser.parse_args()
+    if (
+        not args.run_label.strip()
+        or len(args.run_label) > 96
+        or any(character.isspace() for character in args.run_label)
+    ):
+        parser.error("--run-label must be a non-empty, whitespace-free identity")
     report = _materialize(args)
     _write_json(args.output, report)
     print(json.dumps(_jsonable(report), ensure_ascii=False, indent=2, sort_keys=True))

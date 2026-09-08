@@ -432,6 +432,9 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 self._source_intelligence_counts()["knowledge_candidates"], 7
             )
 
+            profiling_operations_before_replay = len(
+                self._operations("source.import.document.profile")
+            )
             second = create("second")
             self.scheduler.run_or_recover(
                 operation_id=str(second["operation_id"]), project_id=self.project_id
@@ -441,12 +444,16 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             self.scheduler.run_or_recover(
                 operation_id=work_operations[-1], project_id=self.project_id
             )
+            self.assertEqual(
+                len(self._operations("source.import.document.profile")),
+                profiling_operations_before_replay + 1,
+            )
             replay = self.query.import_job(
                 project_id=self.project_id,
                 import_job_id=str(second["import_job_id"]),
             )
 
-        self.assertEqual(replay["effective_status"], "IMPORTED")
+        self.assertEqual(replay["effective_status"], "PROCESSING")
         self.assertEqual(replay["counters"]["files_to_fetch"], 0)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(

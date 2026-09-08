@@ -2076,6 +2076,12 @@ class SourceImportApplication:
                 "provider_tokens": 0,
                 "snapshot_reused": True,
             }
+            self._admit_profiling_child(
+                worker,
+                job,
+                result,
+                source_paths=tuple(str(row["path"]) for row in selected),
+            )
             with AuthorityUnitOfWork(self.database_url) as uow:
                 require_current_fence(uow, worker)
                 repository = SourceImportRepository(uow.cursor)
