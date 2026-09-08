@@ -12,6 +12,12 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
+from novel_forge.modules.source_authority import (
+    SourceAuthorityApplication,
+    SourceAuthorityScheduler,
+)
+from novel_forge.modules.source_authority.corpus import validate_corpus_action
+from novel_forge.modules.source_authority.corpus_application import CorpusCommand
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -21,6 +27,28 @@ from tests.integration.authority_postgres_support import (
 from tests.integration.migration_window_postgres_support import (
     disposable_database_at_migration,
 )
+
+
+CORPUS_TABLES = (
+    "authority_corpus_source",
+    "authority_corpus_rights",
+    "authority_corpus_snapshot",
+    "authority_corpus_book_identity",
+    "authority_corpus_edition",
+    "authority_corpus_admission",
+    "authority_corpus_membership",
+    "authority_corpus_retirement",
+)
+CORPUS_INDEX_REPAIR = {
+    "authority_corpus_source_workspace_idx",
+    "authority_corpus_rights_previous_scope_idx",
+    "authority_corpus_snapshot_rights_scope_idx",
+    "authority_corpus_snapshot_previous_scope_idx",
+    "authority_corpus_edition_snapshot_scope_idx",
+    "authority_corpus_edition_book_scope_idx",
+    "authority_corpus_membership_admission_idx",
+    "authority_corpus_retirement_source_scope_idx",
+}
 
 
 @pytest.mark.parametrize(
@@ -129,14 +157,7 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
             assert {
                 "authority_corpus_edition_page_idx",
                 "authority_corpus_edition_book_idx",
-                "authority_corpus_source_workspace_idx",
-                "authority_corpus_rights_previous_scope_idx",
-                "authority_corpus_snapshot_rights_scope_idx",
-                "authority_corpus_snapshot_previous_scope_idx",
-                "authority_corpus_edition_snapshot_scope_idx",
-                "authority_corpus_edition_book_scope_idx",
-                "authority_corpus_membership_admission_idx",
-                "authority_corpus_retirement_source_scope_idx",
+                *CORPUS_INDEX_REPAIR,
             } <= index_names
         assert run_migrations(url) == result
         evidence_dir = os.environ.get("CORPUS_EVIDENCE_DIR")
@@ -157,14 +178,175 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
             )
 
 
+def test_corpus_index_repair_preserves_existing_complete_lineage():
+    with disposable_database_at_migration(
+        DATABASE_URL,
+        prefix="corpus_index_repair",
+        target_migration_id="20260908_0123_source_analysis_dimensions",
+    ) as url:
+        project, workspace = f"index-project-{uuid4()}", f"index-workspace-{uuid4()}"
+        ProjectAuthorityApplication(
+            url, application_build_id="index-repair", commit_sha="e" * 40
+        ).execute(
+            ProjectAuthorityCommand(
+                definition_name="project_lifecycle.create",
+                project_id=project,
+                workspace_id=workspace,
+                actor_id="index-operator",
+                idempotency_key=project,
+                trace_id=project,
+                correlation_id=project,
+                payload={"title": "Existing Corpus lineage"},
+            )
+        )
+        application = SourceAuthorityApplication(
+            url, application_build_id="index-repair", commit_sha="e" * 40
+        )
+        scheduler = SourceAuthorityScheduler(
+            application, worker_id=f"index-worker-{uuid4()}"
+        )
+        source = _execute_corpus_action(
+            application,
+            scheduler,
+            project,
+            workspace,
+            {
+                "action": "register_source",
+                "source_kind": "repository_manifest",
+                "external_identity": "repository:existing-corpus",
+                "purpose": "RESEARCH",
+            },
+        )["source_id"]
+        rights = _execute_corpus_action(
+            application,
+            scheduler,
+            project,
+            workspace,
+            {
+                "action": "declare_rights",
+                "source_id": source,
+                "dataset_license": "test-fixture-license",
+                "underlying_rights": "UNKNOWN",
+                "allowed_purposes": ["RESEARCH"],
+                "evidence_refs": ["fixture:index-repair"],
+                "copyright_boundary": "migration preservation fixture only",
+                "scope": "ALL_WORKS_IN_SNAPSHOT",
+            },
+        )["rights_id"]
+        digest = "sha256:" + "a" * 64
+        snapshot = _execute_corpus_action(
+            application,
+            scheduler,
+            project,
+            workspace,
+            {
+                "action": "freeze_snapshot",
+                "source_id": source,
+                "rights_id": rights,
+                "manifest": {
+                    "origin_uri": "https://example.invalid/existing-corpus",
+                    "external_version": "frozen-revision",
+                    "format": "json",
+                    "checksum": digest,
+                    "adapter_profile": "migration-fixture",
+                    "adapter_contract_version": "1",
+                },
+                "acquisition": {
+                    "locator": "fixture:manifest.json",
+                    "acquired_at": "2026-09-09T00:00:00Z",
+                    "receipt_ref": "fixture:index-repair",
+                    "checksum": digest,
+                },
+            },
+        )["snapshot_id"]
+        _execute_corpus_action(
+            application,
+            scheduler,
+            project,
+            workspace,
+            {
+                "action": "import_batch",
+                "snapshot_id": snapshot,
+                "batch_key": "existing-page",
+                "entries": [
+                    {
+                        "external_work_id": "existing-work",
+                        "external_edition_id": "existing-edition",
+                        "title": "既有语料",
+                        "checksum": digest,
+                        "locator": "fixture:existing-work",
+                    }
+                ],
+            },
+        )
+        _execute_corpus_action(
+            application,
+            scheduler,
+            project,
+            workspace,
+            {
+                "action": "retire_source",
+                "source_id": source,
+                "reason": "exercise immutable history during index repair",
+            },
+        )
+        with psycopg.connect(url) as connection:
+            before = _project_facts(connection, project, CORPUS_TABLES)
+        assert all(len(rows) == 1 for rows in before.values())
+
+        result = run_migrations(url)
+
+        assert result["ok"] and result["current"] == "20260909_0124_corpus_fk_indexes"
+        with psycopg.connect(url) as connection:
+            assert _project_facts(connection, project, CORPUS_TABLES) == before
+            index_names = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT indexname FROM pg_indexes WHERE indexname LIKE 'authority_corpus_%'"
+                )
+            }
+        assert CORPUS_INDEX_REPAIR <= index_names
+        assert run_migrations(url) == result
+
+
 def _authority_facts(connection, project):
+    return _project_facts(
+        connection,
+        project,
+        (
+            "authority_source_document",
+            "authority_source_chunk",
+            "authority_mkaos_knowledge_candidate",
+            "authority_book",
+        ),
+    )
+
+
+def _project_facts(connection, project, tables):
     return {
         table: sorted(
             [row[0] for row in connection.execute(sql.SQL("SELECT to_jsonb(r) FROM {} r WHERE project_id=%s").format(sql.Identifier(table)), [project])],
             key=lambda row: json.dumps(row, sort_keys=True, default=str),
         )
-        for table in ("authority_source_document", "authority_source_chunk", "authority_mkaos_knowledge_candidate", "authority_book")
+        for table in tables
     }
+
+
+def _execute_corpus_action(application, scheduler, project, workspace, action):
+    operation = application.admit_corpus(
+        CorpusCommand(
+            project_id=project,
+            workspace_id=workspace,
+            actor_id="index-operator",
+            idempotency_key=str(uuid4()),
+            trace_id=str(uuid4()),
+            correlation_id=project,
+            action=validate_corpus_action(action),
+        )
+    )
+    return scheduler.run_or_recover(
+        operation_id=operation["operation_id"], project_id=project
+    )
 
 
 def _seed_premerge_authority_facts(url, project, workspace):
