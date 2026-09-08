@@ -4787,16 +4787,16 @@
           "locator": "MIGRATION_ID = \"20260716_0019_external_effect_protocol\"",
           "id": "20260716_0019_external_effect_protocol"
         },
-      {
-        "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
-        "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\"",
-        "id": "20260718_0028_provider_adapter_v2"
-      },
-      {
-        "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_account_entitlement_budget.py",
-        "locator": "MIGRATION_ID = \"20260908_0121_account_entitlement_budget\"",
-        "id": "20260908_0121_account_entitlement_budget"
-      }
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
+          "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\"",
+          "id": "20260718_0028_provider_adapter_v2"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_account_entitlement_budget.py",
+          "locator": "MIGRATION_ID = \"20260908_0121_account_entitlement_budget\"",
+          "id": "20260908_0121_account_entitlement_budget"
+        }
       ],
       "external_effects": {
         "mode": "DIRECT",
@@ -4963,6 +4963,10 @@
         {
           "path": "src/novel_forge/storage/source_authority_repositories.py",
           "symbol": "SourceAuthorityRepository"
+        },
+        {
+          "path": "src/novel_forge/storage/mkaos_authority_repositories.py",
+          "symbol": "MkaosAuthorityRepository.corpus_candidate_origins"
         }
       ],
       "migrations": [
@@ -4971,22 +4975,26 @@
           "locator": "MIGRATION_ID = \"20260801_0050_mkaos_authority\"",
           "id": "20260801_0050_mkaos_authority"
         },
-      {
-        "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
-        "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\"",
-        "id": "20260811_0076_source_import_runtime"
-      },
-      {
-        "path": "src/novel_forge/storage/migrations/versions/v20260908_0122_source_work_manifest.py",
-        "locator": "MIGRATION_ID = \"20260908_0122_source_work_manifest\"",
-        "id": "20260908_0122_source_work_manifest"
-      },
-      {
-        "path": "src/novel_forge/storage/migrations/versions/v20260908_0123_source_analysis_dimensions.py",
-        "locator": "MIGRATION_ID = \"20260908_0123_source_analysis_dimensions\"",
-        "id": "20260908_0123_source_analysis_dimensions"
-      },
-{"path":"src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py","locator":"MIGRATION_ID = \"20260908_0121_corpus_foundation\"","id":"20260908_0121_corpus_foundation"}
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
+          "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\"",
+          "id": "20260811_0076_source_import_runtime"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260908_0122_source_work_manifest.py",
+          "locator": "MIGRATION_ID = \"20260908_0122_source_work_manifest\"",
+          "id": "20260908_0122_source_work_manifest"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260908_0123_source_analysis_dimensions.py",
+          "locator": "MIGRATION_ID = \"20260908_0123_source_analysis_dimensions\"",
+          "id": "20260908_0123_source_analysis_dimensions"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
+          "locator": "MIGRATION_ID = \"20260908_0121_corpus_foundation\"",
+          "id": "20260908_0121_corpus_foundation"
+        }
       ],
       "external_effects": {
         "mode": "DIRECT",
@@ -5026,6 +5034,22 @@
         {
           "path": "tests/unit/test_corpus_admission.py",
           "symbol": "test_dataset_license_never_authorizes_underlying_prose"
+        },
+        {
+          "path": "tests/integration/test_corpus_foundation_postgres.py",
+          "symbol": "test_native_worker_process_and_trusted_principal"
+        },
+        {
+          "path": "tests/integration/test_corpus_foundation_postgres.py",
+          "symbol": "test_corpus_stale_fence_and_retired_source_cannot_mutate"
+        },
+        {
+          "path": "tests/integration/test_source_import_runtime_postgres.py",
+          "symbol": "SourceImportRuntimePostgresTests.test_work_import_materializes_native_manifest_and_exact_replay"
+        },
+        {
+          "path": "tests/integration/test_corpus_migrations_postgres.py",
+          "symbol": "test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7507,7 +7531,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:91a84084e93dca80d12fd29195628ab7921e99afa34e5211b8052817f147aa3f"
+    "implementation_tree_sha": "sha256:2c115a348cde4e87ef6d1591cea908b51b5b74fb8c58eda6f97e946266606167"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -1,0 +1,135 @@
+{
+  "evidence_class": "FOCUSED_CORPUS_SOURCE_CONVERGENCE_ENGINEERING",
+  "recorded_at": "2026-09-08T16:13:25.000077+00:00",
+  "baseline_origin_main": "7b3130660f518e94c7f802c9c47057ca25a2bd5b",
+  "final_checked_origin_main": "7b3130660f518e94c7f802c9c47057ca25a2bd5b",
+  "origin_main_drift": false,
+  "implementation_commit": "cd3c574dd7c1a102c1a8de7eb9c93a75a8cd3db9",
+  "tested_revision": "6612a5a07c157531d4369c8a68227861fd5096d1",
+  "tested_source_tree": "5d820fd8a662fe11b500d9be3edc4e368ed57f67",
+  "documentation_checked_revision": "e4c944a058a23fffde0dac142351643ad509a635",
+  "implementation_tree_identity": "sha256:1a5a50ca225265ab824e1ed7cdc9c704ae68e916e2ac359e6f4679a0f955d3af",
+  "reality_identity_match": true,
+  "dependency_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "commands": {
+    "selected_regression": {
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$NOVEL_FORGE_DATABASE_URL\" CORPUS_TESTED_SHA=6612a5a07c157531d4369c8a68227861fd5096d1 CORPUS_EVIDENCE_DIR=/tmp/nf-corpus-exact-main-20260908/final-6612a5a PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_corpus_admission.py tests/unit/test_context_authority_domain.py tests/unit/test_source_authority_domain.py tests/unit/test_mkaos_authority_domain.py tests/unit/test_source_import_domain.py tests/unit/test_source_intelligence_routing.py tests/unit/test_source_intelligence_execution_contracts.py tests/integration/test_corpus_foundation_postgres.py tests/integration/test_corpus_migrations_postgres.py tests/integration/test_source_import_runtime_postgres.py tests/integration/test_source_document_authority_postgres.py tests/integration/test_mkaos_authority_postgres.py tests/integration/test_account_entitlement_budget_upgrade_postgres.py tests/integration/test_source_analysis_dimension_upgrade_postgres.py tests/integration/test_command_kernel_attempt_runtime_postgres.py tests/integration/test_authority_attempt_lease_schema_postgres.py -q --junitxml=/tmp/nf-corpus-exact-main-20260908/final-6612a5a/tests.xml > /tmp/nf-corpus-exact-main-20260908/final-6612a5a/tests.log 2>&1",
+      "exit_code": 0,
+      "git_revision": "6612a5a07c157531d4369c8a68227861fd5096d1"
+    },
+    "canonical_checks": {
+      "command": "make validate head-integrity-check PYTHON=.venv/bin/python RUFF=.venv/bin/ruff",
+      "exit_code": 0,
+      "git_revision": "e4c944a058a23fffde0dac142351643ad509a635"
+    },
+    "additional_native_worker": {
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$NOVEL_FORGE_DATABASE_URL\" CORPUS_TESTED_SHA=6612a5a07c157531d4369c8a68227861fd5096d1 CORPUS_EVIDENCE_DIR=/tmp/nf-corpus-exact-main-20260908/final-6612a5a PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_corpus_foundation_postgres.py -k native_worker_process -q --junitxml=/tmp/nf-corpus-exact-main-20260908/final-6612a5a/worker-principal.xml",
+      "exit_code": 0,
+      "git_revision": "e4c944a058a23fffde0dac142351643ad509a635"
+    }
+  },
+  "test_accounting": {
+    "pytest_nodes": 129,
+    "additional_subtests": 14,
+    "junit": {
+      "tests": 143,
+      "passed": 143,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 155.255
+    },
+    "nodes_per_class": {
+      "tests.unit.test_corpus_admission": 11,
+      "tests.unit.test_context_authority_domain.ContextAuthorityDomainTests": 12,
+      "tests.unit.test_source_authority_domain.SourceAuthorityDomainTests": 4,
+      "tests.unit.test_mkaos_authority_domain.MkaosAuthorityDomainTests": 12,
+      "tests.unit.test_source_import_domain": 7,
+      "tests.unit.test_source_intelligence_routing": 29,
+      "tests.unit.test_source_intelligence_execution_contracts": 8,
+      "tests.integration.test_corpus_foundation_postgres": 9,
+      "tests.integration.test_corpus_migrations_postgres": 2,
+      "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests": 8,
+      "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests": 6,
+      "tests.integration.test_mkaos_authority_postgres.MkaosAuthorityPostgresTests": 3,
+      "tests.integration.test_account_entitlement_budget_upgrade_postgres": 1,
+      "tests.integration.test_source_analysis_dimension_upgrade_postgres": 1,
+      "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests": 10,
+      "tests.integration.test_authority_attempt_lease_schema_postgres.AuthorityAttemptLeaseSchemaPostgresTests": 6
+    },
+    "additional_native_worker_run": {
+      "tests": 1,
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 3.892
+    },
+    "additional_run_not_added_to_main_collection_count": true
+  },
+  "migration": {
+    "head": "20260908_0123_source_analysis_dimensions",
+    "applied_count": 124,
+    "fresh": "PASS",
+    "premerge_main_0120_upgrade": "PASS",
+    "existing_facts_preserved": {
+      "authority_source_document": 1,
+      "authority_source_chunk": 1,
+      "authority_mkaos_knowledge_candidate": 1,
+      "authority_book": 1
+    },
+    "new_ddl_in_this_change": false
+  },
+  "local_gates": {
+    "rights_and_purpose": "PASS",
+    "identity_and_lineage": "PASS",
+    "atomic_import_duplicate_concurrency": "PASS",
+    "stale_fence_recovery_replay": "PASS",
+    "postgres_illegal_allow_guard": "PASS",
+    "trusted_api_native_worker_process": "PASS",
+    "corpus_sourcework_coexistence": "PASS",
+    "bounded_query_plan": "PASS",
+    "make_validate": "PASS",
+    "head_integrity": "PASS"
+  },
+  "runtime_evidence": {
+    "corpus_api_scheduler": "native-vertical.json",
+    "canonical_worker_process": "native-worker-vertical.json",
+    "sourcework_analysis_and_corpus_bridge_denial": "sourcework-corpus-coexistence.json",
+    "query_plan": "query-plan.json",
+    "definition_fixture_note": "The SourceWork regression retains its existing fixture release/model identities. The surrounding test invocation is bound to the current implementation tree; it is not real-provider qualification."
+  },
+  "fixes": [
+    "Defer classical sample-budget validation until that budget is consumed; keep insufficient-context hard stop.",
+    "Reject physical SourceWork manifests in generation Context even when logically relabeled.",
+    "Resolve exact Corpus acquisition lineage for MKAOS approval, Pack use and planning-card consumption; metadata admission is not a governed adapter/generation bridge.",
+    "Update migration accounting from an obsolete numeric constant to the canonical registry and preserve existing Source/MKAOS/Book facts.",
+    "Refresh retained proposal review baselines and avoid duplicate migration truth in canonical prose."
+  ],
+  "not_run": {
+    "full_p0": "User requested focused Corpus/Source qualification; broader backend and creative/Provider campaigns are outside this proof.",
+    "unrelated_ui_creative_tests": "No related changes.",
+    "real_provider": "No credentialed or paid calls required or authorized.",
+    "full_historical_migration_matrix": "Ran the existing applicable fresh/0120, account-entitlement and Source-dimension upgrade paths.",
+    "compose_stack": "Used isolated Docker PostgreSQL, native FastAPI composition and the canonical Source worker process; did not launch unrelated workers."
+  },
+  "sourcework_bridge_boundary": "Corpus catalog/reference permission never automatically grants derivative generation permission. The future adapter must supply explicit admitted Edition/purpose lineage. Independent legacy acquisitions retain their prior governance; no fuzzy or cross-source equivalence is inferred.",
+  "local_fixed_implementation_qualification": "PASS",
+  "unmodified_origin_main_qualification": "NOT_PASS",
+  "unmodified_origin_main_reason": "Baseline runtime failures and reproduced isolation bypasses were repaired only on the local branch. The original remote main does not yet contain those fixes; no push or merge was performed.",
+  "repository_capability_state": "EXECUTABLE; not promoted to full backend P0 QUALIFIED",
+  "ready_for_wp2_on_origin_main": false,
+  "resource_cleanup": {
+    "evidence": "cleanup.json",
+    "resource_residue": 0
+  },
+  "origin_recheck_at": "2026-09-08T16:18:43.358271+00:00",
+  "evidence_only_checks": {
+    "command": "make documentation-reality-check historical-reality-check PYTHON=.venv/bin/python",
+    "exit_code": 0,
+    "log": "evidence-checks.log.gz",
+    "source_revision": "e4c944a058a23fffde0dac142351643ad509a635"
+  },
+  "final_evidence_commit_contract": "The containing Git commit adds only this evidence directory. Its implementation identity must equal the tested revision; resolve the containing commit with git log -1 --format=%H -- architecture/live-evidence/corpus-exact-main-20260909.",
+  "log_packaging": "tests.log.gz and worker-principal.log.gz preserve sanitized command output losslessly, including upstream deprecation-warning whitespace."
+}

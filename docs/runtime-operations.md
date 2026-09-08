@@ -53,6 +53,10 @@ The authoritative registry is `src/novel_forge/storage/migrations/versions/__ini
 the head is also checked by `architecture/manifests/migration-manifest.yaml`. Applied IDs
 live in `nf_schema_migrations`.
 
+The Source convergence segment includes two distinct `0121` entries connected by
+declared parents. Use full identities and the registry's parent chain, not numeric
+filename prefixes, to determine order.
+
 Do not edit an applied migration to repair live data. Respect its declared preflight,
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
@@ -152,6 +156,12 @@ the trusted Principal supplies the actor. The existing Project/Workspace must be
 `source.authority.execute` permits writes and `source.authority.query` permits reads.
 Run migrations, the Authority API and the existing Source worker using the same database
 and release identity. No Provider or download adapter is invoked by these commands.
+
+Classical analysis validates its frozen sample budget when analysis needs that budget;
+constructing the Source Import query/metadata runtime does not require a large model
+context. An insufficient analysis route still fails closed at the sampling boundary.
+The existing Source integration fixture explicitly supplies its scripted model's context
+limit; it does not establish a real Provider's capacity.
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m novel_forge.workers.source_authority

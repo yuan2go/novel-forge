@@ -450,6 +450,9 @@ class PostgresContentIntelligenceExecutionPort:
         self.source_object_reader = source_object_reader
         self.provider_output_token_reserve = provider_output_token_reserve
         self.provider_timeout_seconds = provider_timeout_seconds
+
+    @property
+    def source_sample_byte_limit(self) -> int:
         source_route = self.transport.routes["quality_source_originality"]
         source_token_contract = build_route_token_accounting_contract(
             provider=source_route.model_profile.model_provider,
@@ -465,11 +468,11 @@ class PostgresContentIntelligenceExecutionPort:
             accounting_method=source_route.token_accounting_method,
             accounting_evidence_ref=source_route.token_accounting_evidence_ref,
             model_context_limit=source_route.model_context_limit,
-            output_reserve=provider_output_token_reserve,
+            output_reserve=self.provider_output_token_reserve,
             safety_margin=source_route.token_safety_margin,
             framing_overhead=source_route.token_framing_overhead,
         )
-        self.source_sample_byte_limit = derive_corpus_sample_byte_limit(
+        return derive_corpus_sample_byte_limit(
             model_context_limit=source_token_contract.model_context_limit,
             output_token_reserve=source_token_contract.output_reserve,
             token_safety_margin=source_token_contract.safety_margin,

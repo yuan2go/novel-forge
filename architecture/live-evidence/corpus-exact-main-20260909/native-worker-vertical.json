@@ -1,0 +1,440 @@
+{
+  "result": {
+    "action": "import_batch",
+    "entries": [
+      {
+        "admission": {
+          "purpose": "RESEARCH",
+          "reasons": [
+            "EXPLICIT_PURPOSE_DECLARATION"
+          ],
+          "decision": "ALLOW",
+          "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+          "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+          "evidence_refs": [
+            "operator-declaration:corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91:UNKNOWN"
+          ],
+          "policy_version": "source-corpus-admission.v1",
+          "source_purpose": "RESEARCH",
+          "source_retired": false,
+          "dataset_license": "MIT",
+          "current_rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+          "underlying_rights": "UNKNOWN",
+          "generation_context_allowed": false,
+          "requires_source_mkaos_governance": true
+        },
+        "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+        "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+        "decision_id": "corpus-admission:8392e2f1bc859770458b4bc1bfce53cd7a406090bd80f33f9d835cfa9c7bbd53",
+        "membership_id": "corpus-membership:099309364937728dcf30253d70c24774aa46bb9bf05950ca2fcfdfcadb3f49a5",
+        "book_source_id": "corpus-book:d41547a0c2972a7d9dfaf2c89a92e611c91f0672ee72c0748237078fc211114e"
+      }
+    ],
+    "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+    "input_hash": "sha256:b0c5aca873243beb6a7845ad0e2532bb24cfd455efede8c578c95a7f6c39d59c",
+    "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+    "import_job_id": "source-import:f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+    "policy_version": "source-corpus-admission.v1",
+    "schema_version": "source-corpus-result.v1",
+    "asset_version_id": "corpus-result:46823eb35e25c0f004b9c88b36cb50f4c036139077d60b1eb4b2fdf468f50dbb:v1"
+  },
+  "job": {
+    "mode": "FOUNDATION",
+    "status": "IMPORTED",
+    "failure": {},
+    "counters": {
+      "editions": 1,
+      "denied_memberships": 0
+    },
+    "created_at": "2026-09-08T16:07:37.19569+00:00",
+    "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+    "updated_at": "2026-09-08T16:07:37.287527+00:00",
+    "source_type": "corpus_manifest",
+    "workspace_id": "workspace-6cf0a0a2-18e1-49c9-b65c-0556955499ff",
+    "import_job_id": "source-import:f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+    "import_policy": {
+      "version": "source-corpus-admission.v1",
+      "max_batch_entries": 100
+    },
+    "requested_ref": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+    "source_locator": {
+      "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183"
+    },
+    "analysis_override": {},
+    "corpus_snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+    "import_policy_hash": "sha256:2390110d97d480971159750d32c4d6bf93ef7ab291a0a0552671e6f64da210b7",
+    "intelligence_policy": {},
+    "discovery_operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+    "legacy_analysis_profile": null,
+    "intelligence_policy_hash": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "previous_snapshot_asset_version_id": null,
+    "repository_snapshot_asset_version_id": null,
+    "operation_status": "SUCCEEDED",
+    "frozen_input": {
+      "payload": {
+        "action": "import_batch",
+        "entries": [
+          {
+            "title": "\u539f\u521b\u4e66\u76ee\u7532",
+            "locator": "manifest:book/one",
+            "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "metadata": {
+              "language": "zh",
+              "external_work_identifiers": {
+                "catalog": "one"
+              }
+            },
+            "external_work_id": "work-one",
+            "external_edition_id": "edition-a"
+          }
+        ],
+        "batch_key": "page-1",
+        "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183"
+      },
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "workspace_id": "workspace-6cf0a0a2-18e1-49c9-b65c-0556955499ff"
+    },
+    "operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+    "effective_status": "IMPORTED",
+    "definition_snapshot": {
+      "name": "source.corpus.commit",
+      "family": "source_governance",
+      "policy": {
+        "max_batch_entries": 100,
+        "max_command_bytes": 262144,
+        "corpus_policy_version": "source-corpus-admission.v1",
+        "project_scope_required": true,
+        "execution_classification": "durable_job",
+        "generation_context_forbidden": true,
+        "postgresql_authority_required": true
+      },
+      "enabled": true,
+      "commit_sha": "6612a5a07c157531d4369c8a68227861fd5096d1",
+      "handler_key": "novel_forge.source_authority.corpus_commit",
+      "permissions": [
+        "source.authority.execute"
+      ],
+      "retry_policy": {
+        "max_attempts": 3
+      },
+      "result_schema": {
+        "type": "object",
+        "required": [
+          "asset_version_id"
+        ],
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "command_schema": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "workspace_id",
+          "payload"
+        ],
+        "properties": {
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "execution_mode": "worker",
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      },
+      "approval_policy": {
+        "required": false,
+        "policy_key": "source-corpus-admission.v1"
+      },
+      "definition_hash": "sha256:25678f01c034f2bb4ec611d3c1fc0b3a45f715e3da78526682b64b965642585b",
+      "idempotency_scope": "project:source-corpus",
+      "definition_version": "1.0.0",
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "compensation_policy": {
+        "reason": "append-only Corpus lineage",
+        "supported": false
+      },
+      "completion_contract": {
+        "version": "source.corpus.completion.v1",
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "authority.source.corpus.committed"
+        ],
+        "required_asset_selectors": [
+          {
+            "role": "evidence",
+            "selector": "corpus_record",
+            "lifecycle": "ACTIVE",
+            "governance": "CLEAR",
+            "output_key": "source.corpus.record",
+            "eligibility": "INELIGIBLE"
+          }
+        ]
+      },
+      "application_build_id": "corpus-test",
+      "external_capabilities": [],
+      "concurrency_key_template": "project:{project_id}:source-corpus",
+      "handler_contract_version": "source-corpus-handler.v1",
+      "irreversible_effect_policy": {
+        "allowed": false
+      }
+    },
+    "trace_id": "trace:corpus:worker-batch",
+    "attempts": [
+      {
+        "error": {},
+        "result": {
+          "action": "import_batch",
+          "entries": [
+            {
+              "admission": {
+                "purpose": "RESEARCH",
+                "reasons": [
+                  "EXPLICIT_PURPOSE_DECLARATION"
+                ],
+                "decision": "ALLOW",
+                "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+                "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+                "evidence_refs": [
+                  "operator-declaration:corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91:UNKNOWN"
+                ],
+                "policy_version": "source-corpus-admission.v1",
+                "source_purpose": "RESEARCH",
+                "source_retired": false,
+                "dataset_license": "MIT",
+                "current_rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+                "underlying_rights": "UNKNOWN",
+                "generation_context_allowed": false,
+                "requires_source_mkaos_governance": true
+              },
+              "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+              "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+              "decision_id": "corpus-admission:8392e2f1bc859770458b4bc1bfce53cd7a406090bd80f33f9d835cfa9c7bbd53",
+              "membership_id": "corpus-membership:099309364937728dcf30253d70c24774aa46bb9bf05950ca2fcfdfcadb3f49a5",
+              "book_source_id": "corpus-book:d41547a0c2972a7d9dfaf2c89a92e611c91f0672ee72c0748237078fc211114e"
+            }
+          ],
+          "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+          "input_hash": "sha256:b0c5aca873243beb6a7845ad0e2532bb24cfd455efede8c578c95a7f6c39d59c",
+          "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+          "import_job_id": "source-import:f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+          "policy_version": "source-corpus-admission.v1",
+          "schema_version": "source-corpus-result.v1",
+          "asset_version_id": "corpus-result:46823eb35e25c0f004b9c88b36cb50f4c036139077d60b1eb4b2fdf468f50dbb:v1"
+        },
+        "status": "SUCCEEDED",
+        "queued_at": "2026-09-08T16:07:37.274029+00:00",
+        "worker_id": "corpus-native-worker",
+        "attempt_id": "49bb3d02-4d4d-4870-b244-198431363844",
+        "checkpoint": {},
+        "started_at": "2026-09-08T16:07:37.281708+00:00",
+        "finished_at": "2026-09-08T16:07:37.307219+00:00",
+        "max_attempts": 3,
+        "operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+        "attempt_number": 1,
+        "checkpointed_at": null,
+        "result_submitted_at": "2026-09-08T16:07:37.307219+00:00",
+        "business_deadline_at": "2026-09-08T16:09:37.19569+00:00"
+      }
+    ],
+    "result": {
+      "action": "import_batch",
+      "entries": [
+        {
+          "admission": {
+            "purpose": "RESEARCH",
+            "reasons": [
+              "EXPLICIT_PURPOSE_DECLARATION"
+            ],
+            "decision": "ALLOW",
+            "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+            "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+            "evidence_refs": [
+              "operator-declaration:corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91:UNKNOWN"
+            ],
+            "policy_version": "source-corpus-admission.v1",
+            "source_purpose": "RESEARCH",
+            "source_retired": false,
+            "dataset_license": "MIT",
+            "current_rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+            "underlying_rights": "UNKNOWN",
+            "generation_context_allowed": false,
+            "requires_source_mkaos_governance": true
+          },
+          "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+          "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+          "decision_id": "corpus-admission:8392e2f1bc859770458b4bc1bfce53cd7a406090bd80f33f9d835cfa9c7bbd53",
+          "membership_id": "corpus-membership:099309364937728dcf30253d70c24774aa46bb9bf05950ca2fcfdfcadb3f49a5",
+          "book_source_id": "corpus-book:d41547a0c2972a7d9dfaf2c89a92e611c91f0672ee72c0748237078fc211114e"
+        }
+      ],
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "input_hash": "sha256:b0c5aca873243beb6a7845ad0e2532bb24cfd455efede8c578c95a7f6c39d59c",
+      "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+      "import_job_id": "source-import:f65a10c7-b0ac-48fd-b66b-4de13055a8ae",
+      "policy_version": "source-corpus-admission.v1",
+      "schema_version": "source-corpus-result.v1",
+      "asset_version_id": "corpus-result:46823eb35e25c0f004b9c88b36cb50f4c036139077d60b1eb4b2fdf468f50dbb:v1"
+    }
+  },
+  "lineage": {
+    "edition": {
+      "title": "\u539f\u521b\u4e66\u76ee\u7532",
+      "locator": "manifest:book/one",
+      "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "metadata": {
+        "language": "zh",
+        "external_work_identifiers": {
+          "catalog": "one"
+        }
+      },
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "created_at": "2026-09-08T16:07:37.287527+00:00",
+      "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+      "book_source_id": "corpus-book:d41547a0c2972a7d9dfaf2c89a92e611c91f0672ee72c0748237078fc211114e",
+      "external_edition_id": "edition-a",
+      "created_by_operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae"
+    },
+    "snapshot": {
+      "manifest": {
+        "format": "jsonl",
+        "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "metadata": {},
+        "origin_uri": "https://example.invalid/dataset",
+        "schema_version": "corpus-dataset-manifest.v1",
+        "adapter_profile": "operator-metadata",
+        "external_version": "v1",
+        "adapter_contract_version": "1"
+      },
+      "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "created_at": "2026-09-08T16:07:37.156288+00:00",
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "acquisition": {
+        "locator": "archive:manifest.json",
+        "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "acquired_at": "2026-09-08T00:00:00Z",
+        "receipt_ref": "operator-receipt:1",
+        "repository_snapshot_asset_version_id": null
+      },
+      "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+      "revision_number": 1,
+      "previous_snapshot_id": null,
+      "created_by_operation_id": "3db0ae99-4f37-4871-8b7d-5f9a56c1307b",
+      "repository_snapshot_asset_version_id": null
+    },
+    "book_source_identity": {
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "created_at": "2026-09-08T16:07:37.287527+00:00",
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "book_source_id": "corpus-book:d41547a0c2972a7d9dfaf2c89a92e611c91f0672ee72c0748237078fc211114e",
+      "external_work_id": "work-one",
+      "created_by_operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae"
+    },
+    "source": {
+      "purpose": "RESEARCH",
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "created_at": "2026-09-08T16:07:36.882368+00:00",
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "source_kind": "operator_manifest",
+      "workspace_id": "workspace-6cf0a0a2-18e1-49c9-b65c-0556955499ff",
+      "external_identity": "native-worker-source",
+      "created_by_operation_id": "ae626cdd-b9ec-470f-aa9b-64075bdf8baf"
+    },
+    "rights": {
+      "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+      "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+      "created_at": "2026-09-08T16:07:37.017948+00:00",
+      "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+      "declaration": {
+        "scope": "ALL_WORKS_IN_SNAPSHOT",
+        "action": "declare_rights",
+        "source_id": "corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91",
+        "restrictions": [],
+        "evidence_refs": [
+          "operator-declaration:corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91:UNKNOWN"
+        ],
+        "dataset_license": "MIT",
+        "denied_purposes": [],
+        "allowed_purposes": [
+          "RESEARCH",
+          "BENCHMARK",
+          "PRODUCTION_REFERENCE"
+        ],
+        "underlying_rights": "UNKNOWN",
+        "copyright_boundary": "metadata catalog and governed abstraction; no raw generation",
+        "previous_rights_id": null,
+        "underlying_license": ""
+      },
+      "revision_number": 1,
+      "previous_rights_id": null,
+      "created_by_operation_id": "80ce0125-0298-4ad7-9cf1-6b3c580f6df7"
+    },
+    "current_rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+    "retired": false,
+    "memberships": [
+      {
+        "purpose": "RESEARCH",
+        "decision": "ALLOW",
+        "created_at": "2026-09-08T16:07:37.287527+00:00",
+        "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+        "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+        "decision_id": "corpus-admission:8392e2f1bc859770458b4bc1bfce53cd7a406090bd80f33f9d835cfa9c7bbd53",
+        "membership_id": "corpus-membership:099309364937728dcf30253d70c24774aa46bb9bf05950ca2fcfdfcadb3f49a5",
+        "created_by_operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae"
+      }
+    ],
+    "admissions": [
+      {
+        "purpose": "RESEARCH",
+        "decision": "ALLOW",
+        "evidence": {
+          "purpose": "RESEARCH",
+          "reasons": [
+            "EXPLICIT_PURPOSE_DECLARATION"
+          ],
+          "decision": "ALLOW",
+          "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+          "snapshot_id": "corpus-snapshot:38228a00e742f02c3a00a732e5547ceed774ea118bc62295720bfa72b299e183",
+          "evidence_refs": [
+            "operator-declaration:corpus-source:42598472b347d9ea24f9b79d6f4c36372415b5399321dd96bf41a4ac7337bd91:UNKNOWN"
+          ],
+          "policy_version": "source-corpus-admission.v1",
+          "source_purpose": "RESEARCH",
+          "source_retired": false,
+          "dataset_license": "MIT",
+          "current_rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+          "underlying_rights": "UNKNOWN",
+          "generation_context_allowed": false,
+          "requires_source_mkaos_governance": true
+        },
+        "rights_id": "corpus-rights:b6c067469e2bc5edaf3fdf1225edbedaf5cab3ad2927ce10872439135549f8d8",
+        "created_at": "2026-09-08T16:07:37.287527+00:00",
+        "edition_id": "corpus-edition:4a9dae5dedba9b178a5f84dac3219cf4da5dd34e8704256fa09a4fa3010738d2",
+        "project_id": "corpus-9c780f60-bb62-4867-a98e-426ac4e60504",
+        "decision_id": "corpus-admission:8392e2f1bc859770458b4bc1bfce53cd7a406090bd80f33f9d835cfa9c7bbd53",
+        "created_by_operation_id": "f65a10c7-b0ac-48fd-b66b-4de13055a8ae"
+      }
+    ],
+    "admissions_page_limit": 100
+  },
+  "principal": "corpus-trusted-operator"
+}

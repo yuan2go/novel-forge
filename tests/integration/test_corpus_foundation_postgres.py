@@ -14,6 +14,10 @@ import pytest
 from novel_forge.api.authority_app import create_authority_app
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.attempt_runtime import (
+    WorkerLeaseCommand, create_attempt, queue_attempt, acquire_attempt_lease, start_attempt,
+)
+from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
@@ -280,6 +284,94 @@ def test_rights_update_cannot_reauthorize_frozen_editions_and_benchmark_stays_is
     )
     assert corpus.lineage(edition)["retired"]
     assert corpus.lineage(edition)["rights"]["rights_id"] == old_rights
+
+
+def test_native_worker_process_and_trusted_principal(corpus, monkeypatch, tmp_path):
+    principal = TrustedPrincipalResolver(environment="production",
+        configured_local_operator_id="corpus-trusted-operator",
+        configured_project_scope=frozenset({corpus.project})).resolve_api_principal(claimed_actor_id="forged")
+    assert principal.principal_id == "corpus-trusted-operator"
+    for permission in ("source.authority.execute", "source.authority.query"):
+        principal.require(permission, corpus.project)
+        with pytest.raises(PermissionError):
+            principal.require(permission, "other-project")
+    monkeypatch.setenv("NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID", principal.principal_id)
+    environment = {**os.environ, "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_AUTHORITY_POLL_SECONDS": "0.05",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "*", "NOVEL_FORGE_SOURCE_AUTHORITY_WORKER_ID": "corpus-native-worker"}
+    log = tmp_path / "native-worker.log"
+    with log.open("w") as output:
+        process = subprocess.Popen([sys.executable, "-m", "novel_forge.workers.source_authority"],
+            env=environment, stdout=output, stderr=subprocess.STDOUT)
+        try:
+            def run(action, key=None):
+                operation = corpus.admit(action, key)
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    assert process.poll() is None, log.read_text()
+                    response = corpus.client.get(BASE + "/operations/" + operation["operation_id"],
+                        params={"project_id": corpus.project})
+                    assert response.status_code == 200, response.text
+                    status = response.json()
+                    if status["status"] == "SUCCEEDED":
+                        return status["result"]
+                    assert status["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}, status
+                    time.sleep(0.05)
+                pytest.fail(f"worker did not complete {operation}: {log.read_text()}")
+            corpus.run = run
+            source = corpus.source("RESEARCH", "native-worker-source")
+            snapshot = corpus.snapshot(source, corpus.rights(source))
+            result = corpus.run(corpus.batch(snapshot), "worker-batch")
+            job = corpus.client.get(BASE + "/imports/" + result["import_job_id"],
+                params={"project_id": corpus.project}).json()
+            legacy = corpus.client.get("/product/source-imports/" + result["import_job_id"],
+                params={"project_id": corpus.project})
+            assert legacy.status_code == 200, legacy.text
+            assert legacy.json()["effective_status"] == job["effective_status"] == "IMPORTED"
+            lineage = corpus.lineage(result["entries"][0]["edition_id"])
+            assert len(lineage["memberships"]) == 1
+            if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+                Path(directory, "native-worker-vertical.json").write_text(json.dumps(
+                    {"result": result, "job": job, "lineage": lineage, "principal": principal.principal_id}, indent=2))
+        finally:
+            process.terminate()
+            process.wait(timeout=15)
+            if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+                Path(directory, "native-worker.log").write_text(log.read_text())
+        assert process.returncode == 0, log.read_text()
+
+
+def test_corpus_stale_fence_and_retired_source_cannot_mutate(corpus):
+    source = corpus.source()
+    rights = corpus.rights(source)
+    snapshot = corpus.snapshot(source, rights)
+    admitted = corpus.admit(corpus.batch(snapshot))
+    operation = admitted["operation_id"]
+    attempt = create_attempt(DATABASE_URL, operation_id=operation, project_id=corpus.project,
+        max_attempts=3, trace_id="corpus-fence", correlation_id=operation)
+    queue_attempt(DATABASE_URL, attempt_id=attempt["attempt_id"], project_id=corpus.project,
+        trace_id="corpus-fence", correlation_id=operation)
+    lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt["attempt_id"],
+        project_id=corpus.project, worker_id="corpus-fence-worker", lease_seconds=1,
+        trace_id="corpus-fence", correlation_id=operation)
+    worker = WorkerLeaseCommand(attempt_id=attempt["attempt_id"], project_id=corpus.project,
+        worker_id="corpus-fence-worker", fencing_token=lease["fencing_token"],
+        trace_id="corpus-fence", correlation_id=operation, causation_id=operation)
+    start_attempt(DATABASE_URL, worker)
+    time.sleep(1.1)
+    recovered = corpus.scheduler.run_or_recover(operation_id=operation, project_id=corpus.project)
+    before = corpus.lineage(recovered["entries"][0]["edition_id"])
+    with pytest.raises(KernelError):
+        corpus.scheduler.application.execute_fenced(worker)
+    assert corpus.lineage(recovered["entries"][0]["edition_id"]) == before
+    corpus.run({"action": "retire_source", "source_id": source, "reason": "source withdrawn"})
+    with pytest.raises(KernelError, match="retirement"):
+        corpus.snapshot(source, rights, previous=snapshot, version="after-retirement")
+    action = corpus.batch(snapshot)
+    action["batch_key"] = "after-retirement"
+    with pytest.raises(KernelError, match="retirement"):
+        corpus.run(action)
+    assert len(corpus.lineage(recovered["entries"][0]["edition_id"])["memberships"]) == 1
 
 
 def test_concurrent_duplicate_import_and_immutable_batch_input(corpus):

@@ -6,6 +6,7 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.mkaos_authority_repositories import MkaosAuthorityRepository
 
 from .domain import (
     NarrativeIntelligenceNeed,
@@ -134,6 +135,10 @@ class MkaosAuthorityQuery:
                 ],
             )
             rows = uow.cursor.fetchall()
+            blocked = MkaosAuthorityRepository(uow.cursor).corpus_candidate_origins(
+                project_id, tuple(str(row[4]) for row in rows)
+            )
+            rows = [row for row in rows if str(row[4]) not in blocked]
         keys = (
             "knowledge_card_id",
             "project_id",
@@ -285,6 +290,8 @@ class MkaosAuthorityQuery:
                 [project_id, asset_version_id],
             )
             row = uow.cursor.fetchone()
+            if row is not None:
+                MkaosAuthorityRepository(uow.cursor).require_corpus_bridge(project_id, (str(row[4]),))
         if row is None:
             raise KernelError(
                 "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
@@ -516,6 +523,10 @@ class MkaosAuthorityQuery:
         if not matches:
             raise KernelError(
                 "MKAOS_PACK_NOT_FOUND", "KnowledgePack does not exist in project"
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            MkaosAuthorityRepository(uow.cursor).knowledge_cards(
+                project_id=project_id, asset_version_ids=tuple(_pack_items(matches[0]))
             )
         return matches[0]
 

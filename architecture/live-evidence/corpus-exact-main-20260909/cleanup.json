@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-09-08T16:16:59.154093+00:00",
+  "owned_container": "nf-corpus-qualification-20260908",
+  "owned_container_id": "99588d76af96cae980880ab0aa76af21d93c35beeb2764f96e6a5a7fdd4a37da",
+  "ownership_label": "novel-forge.task=corpus-qualification-20260908",
+  "owned_volumes": [
+    "08dcdf6ecef9fb19c8d166e6b6415dcdcb993a10f925cf023ff686021978b4e2"
+  ],
+  "command": "docker rm -f -v nf-corpus-qualification-20260908",
+  "exit_code": 0,
+  "stdout": "nf-corpus-qualification-20260908\n",
+  "remaining_owned_containers": [],
+  "remaining_owned_volumes": [],
+  "resource_residue": 0,
+  "scope": "Only this task-created container and its anonymous volume were removed; unrelated resources were untouched."
+}
