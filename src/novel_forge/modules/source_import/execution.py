@@ -451,11 +451,29 @@ class PostgresContentIntelligenceExecutionPort:
         self.provider_output_token_reserve = provider_output_token_reserve
         self.provider_timeout_seconds = provider_timeout_seconds
         source_route = self.transport.routes["quality_source_originality"]
-        self.source_sample_byte_limit = derive_corpus_sample_byte_limit(
+        source_token_contract = build_route_token_accounting_contract(
+            provider=source_route.model_profile.model_provider,
+            model=source_route.model_profile.model_id,
+            route_identity=":".join(
+                (
+                    "source-corpus-sampling",
+                    source_route.model_profile.model_provider,
+                    source_route.model_profile.model_id,
+                    source_route.release_sha,
+                )
+            ),
+            accounting_method=source_route.token_accounting_method,
+            accounting_evidence_ref=source_route.token_accounting_evidence_ref,
             model_context_limit=source_route.model_context_limit,
-            output_token_reserve=provider_output_token_reserve,
-            token_safety_margin=source_route.token_safety_margin,
-            token_framing_overhead=source_route.token_framing_overhead,
+            output_reserve=provider_output_token_reserve,
+            safety_margin=source_route.token_safety_margin,
+            framing_overhead=source_route.token_framing_overhead,
+        )
+        self.source_sample_byte_limit = derive_corpus_sample_byte_limit(
+            model_context_limit=source_token_contract.model_context_limit,
+            output_token_reserve=source_token_contract.output_reserve,
+            token_safety_margin=source_token_contract.safety_margin,
+            token_framing_overhead=source_token_contract.framing_overhead,
         )
 
     def recovery_adapter(
