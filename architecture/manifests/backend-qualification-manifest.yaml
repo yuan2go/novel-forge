@@ -57,6 +57,7 @@
       "tests/integration/test_book_completion_postgres.py"
     ],
     "migration_matrix": [
+      "tests/integration/test_corpus_migrations_postgres.py",
       "tests/integration/test_authority_migrations_postgres.py",
       "tests/integration/test_authority_schema_postgres.py",
       "tests/integration/test_authority_legacy_migration_postgres.py",
