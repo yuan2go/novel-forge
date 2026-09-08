@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-09-08T13:38:40.002713+00:00",
+  "owned_container_id": "26e3a53b137951a26e13c73f00f204ce769cc390e1ee88d272e5388fb8815492",
+  "owned_anonymous_volumes": [
+    "1c2dcc1752b69f270e6de1e4d76c32e6d59481ca7af35d1dab7678e61a142d4e"
+  ],
+  "cleanup_command": [
+    "docker",
+    "rm",
+    "-f",
+    "-v",
+    "nf-corpus-foundation-20260908"
+  ],
+  "exit_code": 0,
+  "remaining_task_containers": [],
+  "remaining_owned_volumes": [],
+  "resource_residue": 0,
+  "other_resources_modified": false
+}
