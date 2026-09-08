@@ -1,0 +1,41 @@
+{
+  "tested_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+  "owned_container": "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0",
+  "label": {
+    "novel-forge.task": "corpus-wp2-20260909"
+  },
+  "mounts": [
+    {
+      "Type": "volume",
+      "Name": "be23bd0480934d54a12884760867b8a17ef012356b6f7a44decfacc7a08d34d6",
+      "Source": "/var/lib/docker/volumes/be23bd0480934d54a12884760867b8a17ef012356b6f7a44decfacc7a08d34d6/_data",
+      "Destination": "/var/lib/postgresql/data",
+      "Driver": "local",
+      "Mode": "",
+      "RW": true,
+      "Propagation": ""
+    }
+  ],
+  "databases_before": [
+    "novel_forge_corpus_wp2_d9345317_fresh_test",
+    "novel_forge_corpus_wp2_final_fresh_test",
+    "novel_forge_corpus_wp2_test",
+    "novel_forge_corpus_wp2_v2_test",
+    "novel_forge_corpus_wp2_v3_test"
+  ],
+  "migration_count": 126,
+  "command": [
+    "docker",
+    "rm",
+    "--force",
+    "--volumes",
+    "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0"
+  ],
+  "exit_code": 0,
+  "stdout": "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0\n",
+  "stderr": "",
+  "remaining_containers": [],
+  "remaining_owned_volumes": [],
+  "owned_running_resource_residue": 0,
+  "retained_evidence_and_content_cache": "/tmp/nf-corpus-wp2-20260909 (verified bytes/receipts and failure originals retained outside Git; not running services)"
+}

@@ -1,0 +1,230 @@
+{
+  "tested_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+  "artifacts": [
+    {
+      "path": "collection.log",
+      "bytes": 25780,
+      "sha256": "76ad5de223a9a4b4092850067ff282441762f001508d056daf2a2ed36f0fa2d3"
+    },
+    {
+      "path": "content-query-plan.json",
+      "bytes": 2716,
+      "sha256": "30f767031f394870e693e09884912625a97a4253d08dc46549014f7f2329c38b"
+    },
+    {
+      "path": "dependencies.txt",
+      "bytes": 956,
+      "sha256": "b3f36ac2b3110c6a2fd2f3ba98b00172ea02fc7f4b7cdad854b45a652e185fa4"
+    },
+    {
+      "path": "evidence-only-checks.log",
+      "bytes": 623484,
+      "sha256": "52fcd2874311a8008c6409662724a9f3c3c4c13f1cd79874b60bc70742b36b68"
+    },
+    {
+      "path": "failed-originals/bridge-01.log",
+      "bytes": 5244,
+      "sha256": "113475c6adf8c6dddc25bde5ba4d27a87c4586b827f87e368c2ef349e7ede7e1"
+    },
+    {
+      "path": "failed-originals/control-02.log",
+      "bytes": 4464,
+      "sha256": "1714f7bca1ddff8756488c55398e386f2d9ea40a7cfb2b4b7e9c8878426e5642"
+    },
+    {
+      "path": "failed-originals/converged-development.log",
+      "bytes": 8977,
+      "sha256": "228b17b31628cea300b741ec9ccbebea5349a42b2e07a03777819aa2e6480e69"
+    },
+    {
+      "path": "failed-originals/formats-01.log",
+      "bytes": 6561,
+      "sha256": "0546ba968411bee3c074aa71a717fabf8cd238d5ab80dfa4fd444462cd99a11a"
+    },
+    {
+      "path": "failed-originals/formats-final-development.log",
+      "bytes": 4356,
+      "sha256": "1c94e0dab8d8b20146d2aa7c5eaadae5be29669c589490ab84fb8dbbd15bc142"
+    },
+    {
+      "path": "failed-originals/governance-pre-freeze.log",
+      "bytes": 632998,
+      "sha256": "34d1fb0f40d5a158601574c4fef3f2114a0247f302dda2b3ec047fa458a9704d"
+    },
+    {
+      "path": "failed-originals/ingestion-risk-01.log",
+      "bytes": 18364,
+      "sha256": "6f23d6e527245d84bb550540dbef074cdcb74b0c1cae025d235fee749059435e"
+    },
+    {
+      "path": "failed-originals/ingestion-risk-02.log",
+      "bytes": 4995,
+      "sha256": "99c42e8602bd1e72528e4292151da4ef8dbecb95d47ba83e60391633591f0ad4"
+    },
+    {
+      "path": "failed-originals/source-regression-development.log",
+      "bytes": 5621,
+      "sha256": "81d5e162a50aeb76744e7ffa8269468dc65790fe8edbc4800ce8e5cf4a3bb446"
+    },
+    {
+      "path": "failed-originals/terminal-fixed.log",
+      "bytes": 1803,
+      "sha256": "00cbc4cfbd8ecc5b0460851a7809eb6fd678b85e6eceb29c68c43877d9aaba34"
+    },
+    {
+      "path": "failed-originals/terminal-original.log",
+      "bytes": 3785,
+      "sha256": "c799aa10d7c04d1225108767bd97afe00775bd8829af0a9089759c8db91e5e59"
+    },
+    {
+      "path": "failed-originals/vertical-01.log",
+      "bytes": 3686,
+      "sha256": "458a8e1b8a93ec39b0639b438c6731da3c281b30ad0abafeb3ed221eca3cd363"
+    },
+    {
+      "path": "failed-originals/vertical-02.log",
+      "bytes": 3694,
+      "sha256": "2c365a017632531b3e4e5629734766e72573c18cd8c4f27b33549fe33e0dd239"
+    },
+    {
+      "path": "failed-originals/vertical-03.log",
+      "bytes": 7272,
+      "sha256": "9eaa02b29a701f255f9e516f64f4dc094b5d9a258eabbe904ea210944fe374e3"
+    },
+    {
+      "path": "focused-run.json",
+      "bytes": 7302,
+      "sha256": "2b7c218d6c65798a6f2b805b6a7af29958db01dc61474cd1c88f999de0dc9922"
+    },
+    {
+      "path": "focused.log",
+      "bytes": 2176,
+      "sha256": "8329daf73c88775be5da8e38cfbd956bbaab284f016ad2755a7f895d311dbcfe"
+    },
+    {
+      "path": "focused.xml",
+      "bytes": 33161,
+      "sha256": "44a28e9a83f5d360ce3560725688d6812b0d7ae1dac5e6da1742792460139707"
+    },
+    {
+      "path": "fresh-install.json",
+      "bytes": 24810,
+      "sha256": "7c1f985e3c018c17cc0d5baaaab28d5aec214e0e50942045055e4201e0ac908b"
+    },
+    {
+      "path": "fresh-install.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh-install.stdout",
+      "bytes": 23121,
+      "sha256": "2d38757078534196ff410daad1868c0439df8df3e3c48ea36cb334b0bb143da8"
+    },
+    {
+      "path": "governance.log",
+      "bytes": 631999,
+      "sha256": "8a9236f9cce8150878b95ae71cea1232b1735f5327da5e2b905a01dbb4bf03ea"
+    },
+    {
+      "path": "implementation-identity.json",
+      "bytes": 315061,
+      "sha256": "42b2cabed1f3b632218f38e3d318a1b78278fc0dcc8d90bf32ce02956da4534e"
+    },
+    {
+      "path": "migration-20260625_0001_initial_industrial_schema.json",
+      "bytes": 24543,
+      "sha256": "7e365b4251e41b8b0f04e1ba4a4b29c2d923b1bbcd9d0cedf9ab690b31a2c9e3"
+    },
+    {
+      "path": "migration-20260907_0120_foundation_generation.json",
+      "bytes": 24680,
+      "sha256": "282030d71805a95772d0887e363c2c7a59b9ba83a93e19c5c4321bcc06c7f8bd"
+    },
+    {
+      "path": "migration-20260908_0123_source_analysis_dimensions.json",
+      "bytes": 24940,
+      "sha256": "a43116e1b0bdacea8a9d1bcf001cb9c51b47f8bfdfb8e6da1dbf17fe24a787c3"
+    },
+    {
+      "path": "migration-20260909_0124_corpus_fk_indexes.json",
+      "bytes": 24931,
+      "sha256": "57cc36854b82983fa8e3e3d365037dd1b62aec7f6537a6ecf98ffc8b47ffd685"
+    },
+    {
+      "path": "native-audit.log",
+      "bytes": 11267,
+      "sha256": "a564c9aa3b02fa9f383cb5807b3c9f88aed6c1115921b837cdc1585a413be1a0"
+    },
+    {
+      "path": "native-cli-errors/corpus-wp2-native-06addb69be744bff96cdc4f159137014-huggingface-fixed-lineage.stderr",
+      "bytes": 91,
+      "sha256": "2cd809d7d11d6d94884fc31d102e6358932acda25308a64c2f25083eda193c95"
+    },
+    {
+      "path": "native-cli-errors/corpus-wp2-native-06addb69be744bff96cdc4f159137014-huggingface-fixed-run.stderr",
+      "bytes": 106,
+      "sha256": "ef61ea1d3d17d7ebd551417abfcc8649dd1885c5e301e42b21342324daff8905"
+    },
+    {
+      "path": "native-cli-errors/corpus-wp2-native-06addb69be744bff96cdc4f159137014-internet-archive-lineage.stderr",
+      "bytes": 91,
+      "sha256": "2cd809d7d11d6d94884fc31d102e6358932acda25308a64c2f25083eda193c95"
+    },
+    {
+      "path": "native-cli-errors/corpus-wp2-native-06addb69be744bff96cdc4f159137014-internet-archive-run.stderr",
+      "bytes": 106,
+      "sha256": "ef61ea1d3d17d7ebd551417abfcc8649dd1885c5e301e42b21342324daff8905"
+    },
+    {
+      "path": "native-cli-results.json",
+      "bytes": 97069,
+      "sha256": "061d2e13e7e0e605a2eebfb9e8e147a647a050d99faa61d16fca968732f5be2a"
+    },
+    {
+      "path": "native-effect-evidence.json",
+      "bytes": 240517,
+      "sha256": "ce408b1ce2c36d67eafa5f70e021cb1cc6da98ff4787ec42218039182e24a224"
+    },
+    {
+      "path": "native-source-run.log",
+      "bytes": 188,
+      "sha256": "d5802b0275283e14104baeb306cf1aa6539d3bee929096bda68ee04a5418c075"
+    },
+    {
+      "path": "native-vertical.json",
+      "bytes": 20320,
+      "sha256": "0c8652e9c0d7ed0ab52ee3f1a5a9cc0748bcdf37648fafcd95ee0dc292e477ff"
+    },
+    {
+      "path": "native-worker-vertical.json",
+      "bytes": 20052,
+      "sha256": "f7e285183ecc384cb0d03338c0b33d8dcf18e346ba6595c2daa58554c4c6f95b"
+    },
+    {
+      "path": "native-worker.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "query-plan.json",
+      "bytes": 2637,
+      "sha256": "aed9a8d4f4f7cf6f4a58ca75e1634d841a26e6a917a1260511b8095141df313a"
+    },
+    {
+      "path": "real-sources.json",
+      "bytes": 12537,
+      "sha256": "56a129d3e8b9d34a9bdc1d6cd2192ab7c3b0c24170ab1c3dceda8fa38dcaf19a"
+    },
+    {
+      "path": "report.json",
+      "bytes": 29448,
+      "sha256": "e3822d5f583c5046d4caf8877519d3acf04971e35127d7bccdeb9624a2596ae9"
+    },
+    {
+      "path": "resource-cleanup.json",
+      "bytes": 1390,
+      "sha256": "b9eea353d85ba367ffaa94873b4dfc117a2cf431bc185d02a988f00a09abfb5b"
+    }
+  ]
+}

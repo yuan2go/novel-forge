@@ -1,0 +1,32 @@
+........................................................................ [ 36%]
+........................................................................ [ 73%]
+...................................................               [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py: 9 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+tests/integration/test_source_import_runtime_postgres.py: 2 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py: 9 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+tests/integration/test_source_import_runtime_postgres.py: 2 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+195 passed, 41 warnings, 7 subtests passed in 234.28s (0:03:54)

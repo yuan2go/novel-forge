@@ -1,0 +1,642 @@
+{
+  "schema_version": "corpus-ingestion-focused-evidence.v1",
+  "evidence_class": "FOCUSED_LOCAL_ENGINEERING_EVIDENCE",
+  "baseline_main": "c4d9af8f0f6c877c6bc7c04cd63ff1bb38229f0f",
+  "baseline_source_tree": "d3b48ff2535974f40872efce9c17329c4cda35a7",
+  "baseline_implementation_identity": "sha256:2c115a348cde4e87ef6d1591cea908b51b5b74fb8c58eda6f97e946266606167",
+  "reconciled_main": "41b4f0336b11e7c240a01deb4c2dbdb978e373ed",
+  "final_remote_main": "41b4f0336b11e7c240a01deb4c2dbdb978e373ed",
+  "final_fetch_checked_at": "2026-09-08T19:12:52.288655+00:00",
+  "tested_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+  "implementation_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+  "source_tree": "1800eab5233615173c8e2bcb6460af972e408a03",
+  "implementation_tree_identity": "sha256:c45ebff46c0e203a40f48a052c5b7c80d327bd5fa34c9793b63f0e8b123ef4ed",
+  "evidence_only_changes_allowed": true,
+  "branch": "codex/universal-corpus-ingestion-20260909",
+  "environment": {
+    "python": "3.12.2 (main, Feb  6 2024, 20:19:44) [Clang 15.0.0 (clang-1500.1.0.2.5)]",
+    "postgresql": "PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "dependency_sha256": "b3f36ac2b3110c6a2fd2f3ba98b00172ea02fc7f4b7cdad854b45a652e185fa4"
+  },
+  "checks": {
+    "make validate": "PASS",
+    "head-integrity-check": "PASS",
+    "check-skills": "PASS",
+    "focused_pytest": "PASS",
+    "collected_nodes": 195,
+    "passed_nodes": 195,
+    "subtests_passed": 7,
+    "junit_tests_attribute": 202,
+    "junit_testcase_elements": 195,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "node_groups": {
+      "unit": 123,
+      "integration": 66,
+      "architecture": 6
+    },
+    "seconds": 234.229,
+    "command": "make validate head-integrity-check check-skills RUFF=.venv/bin/ruff",
+    "evidence_only_checks": {
+      "exit_code": 0,
+      "log": "evidence-only-checks.log",
+      "implementation_identity_unchanged": true
+    }
+  },
+  "migration": {
+    "head": "20260909_0125_corpus_ingestion_bridge",
+    "registry_count": 126,
+    "published_migrations_modified": false,
+    "new_migration": "20260909_0125_corpus_ingestion_bridge",
+    "chain_segment": [
+      "20260907_0120_foundation_generation",
+      "20260908_0121_account_entitlement_budget",
+      "20260908_0121_corpus_foundation",
+      "20260908_0122_source_work_manifest",
+      "20260908_0123_source_analysis_dimensions",
+      "20260909_0124_corpus_fk_indexes",
+      "20260909_0125_corpus_ingestion_bridge"
+    ],
+    "fresh_install": "fresh-install.json",
+    "upgrade_paths": [
+      {
+        "baseline": "20260907_0120_foundation_generation",
+        "current": "20260909_0125_corpus_ingestion_bridge",
+        "applied_count": 126,
+        "existing_operation_preserved": true,
+        "preserved_fact_counts": {
+          "authority_source_document": 1,
+          "authority_source_chunk": 1,
+          "authority_mkaos_knowledge_candidate": 1,
+          "authority_book": 1
+        },
+        "evidence": "migration-20260907_0120_foundation_generation.json"
+      },
+      {
+        "baseline": "20260909_0124_corpus_fk_indexes",
+        "current": "20260909_0125_corpus_ingestion_bridge",
+        "applied_count": 126,
+        "existing_operation_preserved": true,
+        "preserved_fact_counts": {
+          "authority_source_document": 1,
+          "authority_source_chunk": 1,
+          "authority_mkaos_knowledge_candidate": 1,
+          "authority_book": 1,
+          "authority_corpus_source": 1,
+          "authority_corpus_rights": 1,
+          "authority_corpus_snapshot": 1,
+          "authority_corpus_book_identity": 1,
+          "authority_corpus_edition": 1,
+          "authority_corpus_admission": 1,
+          "authority_corpus_membership": 1
+        },
+        "evidence": "migration-20260909_0124_corpus_fk_indexes.json"
+      },
+      {
+        "baseline": "20260908_0123_source_analysis_dimensions",
+        "current": "20260909_0125_corpus_ingestion_bridge",
+        "applied_count": 126,
+        "existing_operation_preserved": true,
+        "preserved_fact_counts": {
+          "authority_source_document": 1,
+          "authority_source_chunk": 1,
+          "authority_mkaos_knowledge_candidate": 1,
+          "authority_book": 1,
+          "authority_corpus_source": 1,
+          "authority_corpus_rights": 1,
+          "authority_corpus_snapshot": 1,
+          "authority_corpus_book_identity": 1,
+          "authority_corpus_edition": 1,
+          "authority_corpus_admission": 1,
+          "authority_corpus_membership": 1
+        },
+        "evidence": "migration-20260908_0123_source_analysis_dimensions.json"
+      },
+      {
+        "baseline": "20260625_0001_initial_industrial_schema",
+        "current": "20260909_0125_corpus_ingestion_bridge",
+        "applied_count": 126,
+        "existing_operation_preserved": false,
+        "preserved_fact_counts": {},
+        "evidence": "migration-20260625_0001_initial_industrial_schema.json"
+      }
+    ]
+  },
+  "authority": "Source owns Corpus/import/content lineage; existing MKAOS owns decisions/Cards/Packs; Command Kernel owns execution/effects; current shared provenance admission gates Source analysis and generation consumption. No new Authority or queue.",
+  "proofs": {
+    "native_API_and_worker": "test_native_corpus_cross_shard_import_and_replay; native-cli-results.json",
+    "authorized_bridge": "test_authorized_bridge_reaches_existing_analysis_and_governance: original content -> native analysis -> scripted transport -> candidate -> approval -> Pack -> shared consumption check. Fixture Card remains ineligible for production Planning.",
+    "purpose_and_physical_isolation": [
+      "test_corpus_native_research_and_benchmark_cannot_be_generation_input",
+      "test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed",
+      "test_corpus_current_rights_checked_before_external_acquisition"
+    ],
+    "concurrency_and_independent_process_recovery": [
+      "test_native_import_new_process_recovery_and_concurrent_admission[after_output]",
+      "test_native_import_new_process_recovery_and_concurrent_admission[after_receipt]",
+      "test_concurrent_duplicate_import_and_immutable_batch_input",
+      "test_corpus_stale_fence_and_retired_source_cannot_mutate"
+    ],
+    "terminal_failure": "test_final_acquisition_failure_cannot_reopen_import + actual HF/IA FAILED_FINAL native results",
+    "query_plans": [
+      "content-query-plan.json (5,000 query-only records rolled back)",
+      "query-plan.json (500 representative catalog records)"
+    ],
+    "formats": "test_real_parsers_preserve_chinese_text_and_declared_structure[txt/html/json/jsonl/parquet/epub]; safe ZIP/TAR; gap/conflict/order permutation checks",
+    "no_optimizer_overrides": true
+  },
+  "real_sources": {
+    "tested_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+    "project": "corpus-wp2-native-06addb69be744bff96cdc4f159137014",
+    "results_file": "/tmp/nf-corpus-wp2-20260909/final/native-source-runs/corpus-wp2-native-06addb69be744bff96cdc4f159137014-results.json",
+    "model_effect_count": 0,
+    "sources": [
+      {
+        "source": "local-original",
+        "status": "VERIFIED",
+        "scope": "Actual content through native CLI/worker/PostgreSQL",
+        "import_job_id": "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+        "job_status": "IMPORTED",
+        "failure": {},
+        "configuration_hash": "sha256:31f841c9f6c5f8ae1444d8ea6c3656c56d52fcc96753d5ab308718e878aaa7c6",
+        "command_results": [
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "import",
+              "--workspace-id",
+              "workspace-b82382a054ba4207b9556a51be94120e",
+              "--manifest",
+              "config/corpus/local-original.json",
+              "--run-key",
+              "local-original",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.6050789580331184
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "run",
+              "--job-id",
+              "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+              "--max-stages",
+              "10",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 1.3769622500403784
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "status",
+              "--job-id",
+              "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5404132920084521
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "lineage",
+              "--job-id",
+              "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+              "--limit",
+              "5",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5368532079737633
+          }
+        ]
+      },
+      {
+        "source": "github-fixed",
+        "status": "VERIFIED",
+        "scope": "Actual content through native CLI/worker/PostgreSQL",
+        "import_job_id": "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+        "job_status": "IMPORTED",
+        "failure": {},
+        "configuration_hash": "sha256:ee474fbe8f980761f74decad31a97e2c216efc5ca21d32d5eb47effdbb2b77a3",
+        "command_results": [
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "import",
+              "--workspace-id",
+              "workspace-b82382a054ba4207b9556a51be94120e",
+              "--manifest",
+              "config/corpus/github-fixed.json",
+              "--run-key",
+              "github-fixed",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5907042080070823
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "run",
+              "--job-id",
+              "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+              "--max-stages",
+              "10",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 6.853280624956824
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "status",
+              "--job-id",
+              "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5381886250106618
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "lineage",
+              "--job-id",
+              "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+              "--limit",
+              "5",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5285581250209361
+          }
+        ]
+      },
+      {
+        "source": "huggingface-fixed",
+        "status": "BLOCKED",
+        "scope": "Adapter implemented; controlled transport tests pass; actual network blocked",
+        "import_job_id": "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+        "job_status": "FAILED_FINAL",
+        "failure": {
+          "code": "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+          "message": "SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+          "operation_id": "df2109f7-c076-4d62-9708-de846f6842f3"
+        },
+        "configuration_hash": "sha256:be32386d04e957281c6bbc33d3a16fdfd352b92f557df5fb9ca19cd2b5e7aa88",
+        "command_results": [
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "import",
+              "--workspace-id",
+              "workspace-b82382a054ba4207b9556a51be94120e",
+              "--manifest",
+              "config/corpus/huggingface-fixed.json",
+              "--run-key",
+              "huggingface-fixed",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5631016659899615
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "run",
+              "--job-id",
+              "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+              "--max-stages",
+              "10",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 1,
+            "elapsed_seconds": 0.6417413749732077
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "status",
+              "--job-id",
+              "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5397578339907341
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "lineage",
+              "--job-id",
+              "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+              "--limit",
+              "5",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 1,
+            "elapsed_seconds": 0.5375154999783263
+          }
+        ]
+      },
+      {
+        "source": "internet-archive",
+        "status": "BLOCKED",
+        "scope": "Adapter implemented; controlled transport tests pass; actual network blocked",
+        "import_job_id": "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+        "job_status": "FAILED_FINAL",
+        "failure": {
+          "code": "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+          "message": "SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+          "operation_id": "8054e268-4b0b-4d8a-8be9-08c1843fd1db"
+        },
+        "configuration_hash": "sha256:ac7f645486bc7cbe2dc1368a8edfadf00259bda0d881847f1b252c086e34d5c8",
+        "command_results": [
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "import",
+              "--workspace-id",
+              "workspace-b82382a054ba4207b9556a51be94120e",
+              "--manifest",
+              "config/corpus/internet-archive.json",
+              "--run-key",
+              "internet-archive",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5675927500124089
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "run",
+              "--job-id",
+              "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+              "--max-stages",
+              "10",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 1,
+            "elapsed_seconds": 0.6402563750161789
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "status",
+              "--job-id",
+              "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 0,
+            "elapsed_seconds": 0.5376645840005949
+          },
+          {
+            "command": [
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+              "-m",
+              "novel_forge.cli.authority",
+              "corpus",
+              "lineage",
+              "--job-id",
+              "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+              "--limit",
+              "5",
+              "--project-id",
+              "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+            ],
+            "exit_code": 1,
+            "elapsed_seconds": 0.5286277920240536
+          }
+        ]
+      }
+    ],
+    "actual_bytes": 1115836,
+    "underlying_rights_scope": "Original operator declaration; remote examples remain UNKNOWN/RESEARCH or BENCHMARK; verified bytes do not constitute production rights",
+    "network_block": "REMOTE_ADDRESS_FORBIDDEN: public host resolves to non-global address; SSRF protection retained"
+  },
+  "failed_and_retried_evidence": [
+    {
+      "path": "failed-originals/vertical-01.log",
+      "sha256": "458a8e1b8a93ec39b0639b438c6731da3c281b30ad0abafeb3ed221eca3cd363",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Test input used a format spelling outside the current typed contract; corrected fixture."
+    },
+    {
+      "path": "failed-originals/vertical-02.log",
+      "sha256": "2c365a017632531b3e4e5629734766e72573c18cd8c4f27b33549fe33e0dd239",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Test rights declaration omitted an explicit scope; corrected fixture, no rights relaxation."
+    },
+    {
+      "path": "failed-originals/vertical-03.log",
+      "sha256": "9eaa02b29a701f255f9e516f64f4dc094b5d9a258eabbe904ea210944fe374e3",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Acquisition capability profile used an unsupported control-level name; corrected production profile."
+    },
+    {
+      "path": "failed-originals/bridge-01.log",
+      "sha256": "113475c6adf8c6dddc25bde5ba4d27a87c4586b827f87e368c2ef349e7ede7e1",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Scripted classifier returned UNKNOWN; retained production denial and supplied explicit classification only at the transport response seam."
+    },
+    {
+      "path": "failed-originals/ingestion-risk-01.log",
+      "sha256": "6f23d6e527245d84bb550540dbef074cdcb74b0c1cae025d235fee749059435e",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Fixture-derived planning Card correctly denied; separate real duplicate chunk Blob constraint failure fixed with Edition-bound chunk identities."
+    },
+    {
+      "path": "failed-originals/ingestion-risk-02.log",
+      "sha256": "99c42e8602bd1e72528e4292151da4ef8dbecb95d47ba83e60391633591f0ad4",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Concurrent duplicate admission raced child readiness; fixed within owning locked/nested UoW."
+    },
+    {
+      "path": "failed-originals/control-02.log",
+      "sha256": "1714f7bca1ddff8756488c55398e386f2d9ea40a7cfb2b4b7e9c8878426e5642",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Two test collections concurrently truncated the same owned fixture database; reran serially, no production gate change."
+    },
+    {
+      "path": "failed-originals/source-regression-development.log",
+      "sha256": "81d5e162a50aeb76744e7ffa8269468dc65790fe8edbc4800ce8e5cf4a3bb446",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Transient syntax error in TAR parsing during development; fixed before subsequent collection."
+    },
+    {
+      "path": "failed-originals/formats-01.log",
+      "sha256": "0546ba968411bee3c074aa71a717fabf8cd238d5ab80dfa4fd444462cd99a11a",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Raw TXT/JSONL byte-start contract is zero; incorrect test expectation corrected."
+    },
+    {
+      "path": "failed-originals/converged-development.log",
+      "sha256": "228b17b31628cea300b741ec9ccbebea5349a42b2e07a03777819aa2e6480e69",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Over-specific index-name expectation despite bounded primary-key scan; now asserts indexed range scan and actual row/filter bounds without optimizer overrides."
+    },
+    {
+      "path": "failed-originals/formats-final-development.log",
+      "sha256": "1c94e0dab8d8b20146d2aa7c5eaadae5be29669c589490ab84fb8dbbd15bc142",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Archive limit correctly rejected; test error-code expectation corrected to ARCHIVE_BUDGET_EXCEEDED."
+    },
+    {
+      "path": "failed-originals/terminal-original.log",
+      "sha256": "c799aa10d7c04d1225108767bd97afe00775bd8829af0a9089759c8db91e5e59",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "Real failure: final acquisition Effect was exposed as retryable ImportJob. Fixed Source error classification; confirmed final native failures and refusal to reopen."
+    },
+    {
+      "path": "failed-originals/governance-pre-freeze.log",
+      "sha256": "34d1fb0f40d5a158601574c4fef3f2114a0247f302dda2b3ec047fa458a9704d",
+      "identity_scope": "UNCOMMITTED_DEVELOPMENT_OR_PRE_TERMINAL_FIX; NOT_CURRENT_QUALIFICATION",
+      "classification_and_resolution": "make validate and Head Integrity passed; additional generated Skill copies were missing in isolated worktree. Generated them with make sync-skills, then check passed."
+    }
+  ],
+  "historical_prior_focused_run": {
+    "sha": "e4edf84f6bbb9ad1cdae4e345272a5faf4b29938",
+    "path": "/tmp/nf-corpus-wp2-20260909/pre-terminal-fix-e4edf84f",
+    "status": "HISTORICAL_COMPATIBILITY_FACT; superseded after actual terminal-state defect"
+  },
+  "resource_cleanup": {
+    "tested_sha": "d93453177658ac2f345f7f46d8e00142d60cf2a9",
+    "owned_container": "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0",
+    "label": {
+      "novel-forge.task": "corpus-wp2-20260909"
+    },
+    "mounts": [
+      {
+        "Type": "volume",
+        "Name": "be23bd0480934d54a12884760867b8a17ef012356b6f7a44decfacc7a08d34d6",
+        "Source": "/var/lib/docker/volumes/be23bd0480934d54a12884760867b8a17ef012356b6f7a44decfacc7a08d34d6/_data",
+        "Destination": "/var/lib/postgresql/data",
+        "Driver": "local",
+        "Mode": "",
+        "RW": true,
+        "Propagation": ""
+      }
+    ],
+    "databases_before": [
+      "novel_forge_corpus_wp2_d9345317_fresh_test",
+      "novel_forge_corpus_wp2_final_fresh_test",
+      "novel_forge_corpus_wp2_test",
+      "novel_forge_corpus_wp2_v2_test",
+      "novel_forge_corpus_wp2_v3_test"
+    ],
+    "migration_count": 126,
+    "command": [
+      "docker",
+      "rm",
+      "--force",
+      "--volumes",
+      "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0"
+    ],
+    "exit_code": 0,
+    "stdout": "d90e7d18c2c542cbfdfe1d5bfbaf38e436a176fc259d5f22bc9b41b8102227a0\n",
+    "stderr": "",
+    "remaining_containers": [],
+    "remaining_owned_volumes": [],
+    "owned_running_resource_residue": 0,
+    "retained_evidence_and_content_cache": "/tmp/nf-corpus-wp2-20260909 (verified bytes/receipts and failure originals retained outside Git; not running services)",
+    "retained_task_directory_approximate_bytes": 29360128
+  },
+  "not_run": {
+    "full_P0": "NOT_RUN: user requested focused applicable qualification, not a full backend campaign",
+    "whole_repository_pytest_and_UI": "NOT_RUN: unrelated creative/UI scope; mandatory repository static/governance checks did run",
+    "paid_or_real_model": "NOT_RUN: no explicit call/token/cost authorization; native samples performed zero model Effects",
+    "human_editorial_longitudinal_production": "NOT_PROVEN: outside this corpus engineering proof",
+    "real_MinIO_service": "NOT_RUN: actual local object storage plus adapter byte-verification regression; no real MinIO deployment claim",
+    "large_corpus_scale_and_peak_RSS": "NOT_RUN: bounded record/work/shard policies and representative query plans are tested, not arbitrary large-corpus scale"
+  },
+  "implementation_boundaries": [
+    "GitHub selected blobs <= 8 MB; LFS/submodule/symlink explicitly rejected.",
+    "HTTP transport must resolve allowlisted public addresses; HF/IA current environment blocked. No access or SSRF bypass.",
+    "No HTTP Range resume claim; confirmed receipt reuse and bounded verified full re-fetch after known 5xx. Terminal jobs require a new run key.",
+    "Formats use explicit mappings and conservative budgets; excerpts/missing units are not full-book proof.",
+    "No near-dedup, cross-source equivalence, embeddings, advanced segmentation, new classifier/deconstruction algorithm or Admin UI.",
+    "No unreviewed Corpus or fixture-derived Card enters production Planning.",
+    "Verified bytes are separate from underlying rights; remote example rights remain UNKNOWN."
+  ],
+  "states": {
+    "WP-2 IMPLEMENTATION": "COMPLETE",
+    "FOCUSED ENGINEERING QUALIFICATION": "PASS",
+    "REAL SOURCE VERIFICATION": {
+      "LOCAL": "VERIFIED",
+      "GITHUB": "VERIFIED",
+      "HUGGING_FACE": "BLOCKED (implemented, controlled transport verified)",
+      "INTERNET_ARCHIVE": "BLOCKED (implemented, controlled transport verified)"
+    },
+    "GOVERNED CORPUS BRIDGE": "PASS (scripted analysis/approval/Pack wiring and fail-closed generation boundaries)",
+    "READY_FOR_WP-3_ON_TESTED_REVISION": "YES",
+    "REMOTE_MAIN_INCLUDES_DELIVERY": "NO"
+  }
+}

@@ -1,0 +1,113 @@
+F..F.....                                                                [100%]
+=================================== FAILURES ===================================
+_____ test_real_parsers_preserve_chinese_text_and_declared_structure[txt] ______
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-632/test_real_parsers_preserve_chi0')
+format = 'txt'
+
+    @pytest.mark.parametrize("format", ["txt", "html", "json", "jsonl", "parquet", "epub"])
+    def test_real_parsers_preserve_chinese_text_and_declared_structure(tmp_path, format):
+        text = "阿青决定归还钥匙。第二天，守门人打开了仓门。"
+        path = tmp_path / f"original.{format}"
+        options = {"format": format, "completeness": "EXCERPT"}
+        if format == "txt":
+            path.write_bytes(text.encode("gb18030"))
+            options["encoding"] = "gb18030"
+        elif format == "html":
+            path.write_text(f"<html><body><nav>不要读导航</nav><p>{text}</p><script>leak()</script></body></html>")
+        elif format in {"json", "jsonl"}:
+            value = {"text": text}
+            path.write_text(json.dumps([value] if format == "json" else value, ensure_ascii=False))
+        elif format == "parquet":
+            import pyarrow as pa
+            import pyarrow.parquet as pq
+            pq.write_table(pa.table({"text": [text]}), path)
+        else:
+            from ebooklib import epub
+            book = epub.EpubBook()
+            book.set_identifier("original")
+            book.set_title("原创片段")
+            book.set_language("zh")
+            chapter = epub.EpubHtml(title="片段", file_name="chapter.xhtml", lang="zh")
+            chapter.content = f"<html><body><p>{text}</p></body></html>"
+            book.add_item(chapter)
+            book.spine = [chapter]
+            book.toc = (chapter,)
+            book.add_item(epub.EpubNcx())
+            epub.write_epub(str(path), book)
+        digest, size = file_identity(path)
+        result = compile_work_index([{"path": path.name, "cache_path": str(path), "checksum": digest, "size_bytes": size}],
+            ParserProfile(**options), IngestionBudget(), tmp_path / "parse")
+        work = json.loads(Path(result["works"][0]["cache_path"]).read_text())
+        assert work["completeness"] == "EXCERPT" and work["units"][0]["text"] == text
+        assert work["units"][0]["source_locator"]["path"] == path.name
+>       assert work["units"][0]["source_locator"]["original_byte_offset"] is None
+E       assert 0 is None
+
+tests/unit/test_corpus_ingestion_formats.py:50: AssertionError
+____ test_real_parsers_preserve_chinese_text_and_declared_structure[jsonl] _____
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-632/test_real_parsers_preserve_chi3')
+format = 'jsonl'
+
+    @pytest.mark.parametrize("format", ["txt", "html", "json", "jsonl", "parquet", "epub"])
+    def test_real_parsers_preserve_chinese_text_and_declared_structure(tmp_path, format):
+        text = "阿青决定归还钥匙。第二天，守门人打开了仓门。"
+        path = tmp_path / f"original.{format}"
+        options = {"format": format, "completeness": "EXCERPT"}
+        if format == "txt":
+            path.write_bytes(text.encode("gb18030"))
+            options["encoding"] = "gb18030"
+        elif format == "html":
+            path.write_text(f"<html><body><nav>不要读导航</nav><p>{text}</p><script>leak()</script></body></html>")
+        elif format in {"json", "jsonl"}:
+            value = {"text": text}
+            path.write_text(json.dumps([value] if format == "json" else value, ensure_ascii=False))
+        elif format == "parquet":
+            import pyarrow as pa
+            import pyarrow.parquet as pq
+            pq.write_table(pa.table({"text": [text]}), path)
+        else:
+            from ebooklib import epub
+            book = epub.EpubBook()
+            book.set_identifier("original")
+            book.set_title("原创片段")
+            book.set_language("zh")
+            chapter = epub.EpubHtml(title="片段", file_name="chapter.xhtml", lang="zh")
+            chapter.content = f"<html><body><p>{text}</p></body></html>"
+            book.add_item(chapter)
+            book.spine = [chapter]
+            book.toc = (chapter,)
+            book.add_item(epub.EpubNcx())
+            epub.write_epub(str(path), book)
+        digest, size = file_identity(path)
+        result = compile_work_index([{"path": path.name, "cache_path": str(path), "checksum": digest, "size_bytes": size}],
+            ParserProfile(**options), IngestionBudget(), tmp_path / "parse")
+        work = json.loads(Path(result["works"][0]["cache_path"]).read_text())
+        assert work["completeness"] == "EXCERPT" and work["units"][0]["text"] == text
+        assert work["units"][0]["source_locator"]["path"] == path.name
+>       assert work["units"][0]["source_locator"]["original_byte_offset"] is None
+E       assert 0 is None
+
+tests/unit/test_corpus_ingestion_formats.py:50: AssertionError
+=============================== warnings summary ===============================
+tests/unit/test_corpus_ingestion_formats.py::test_real_parsers_preserve_chinese_text_and_declared_structure[json]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/ijson/compat.py:32: DeprecationWarning: 
+  ijson works by reading bytes, but a string reader has been given instead. This
+  probably, but not necessarily, means a file-like object has been opened in text
+  mode ('t') rather than binary mode ('b').
+  
+  An automatic conversion is being performed on the fly to continue, but on the
+  other hand this creates unnecessary encoding/decoding operations that decrease
+  the efficiency of the system. In the future this automatic conversion will be
+  removed, and users will receive errors instead of this warning. To avoid this
+  problem make sure file-like objects are opened in binary mode instead of text
+  mode.
+  
+    warnings.warn(_str_vs_bytes_warning, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_corpus_ingestion_formats.py::test_real_parsers_preserve_chinese_text_and_declared_structure[txt]
+FAILED tests/unit/test_corpus_ingestion_formats.py::test_real_parsers_preserve_chinese_text_and_declared_structure[jsonl]
+2 failed, 7 passed, 1 warning in 3.44s

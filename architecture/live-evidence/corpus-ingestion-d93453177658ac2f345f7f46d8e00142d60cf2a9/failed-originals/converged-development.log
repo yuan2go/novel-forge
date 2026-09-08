@@ -1,0 +1,122 @@
+F............................                                            [100%]
+=================================== FAILURES ===================================
+_______________ test_native_corpus_cross_shard_import_and_replay _______________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10b16cda0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-643/test_native_corpus_cross_shard0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a53bbc0>
+
+    def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypatch):
+        source = tmp_path / "input"
+        source.mkdir()
+        for index, text in ((1, "阿青把旧钥匙留给守门人。"), (2, "守门人用钥匙打开仓门。")):
+            (source / f"part-{index}.jsonl").write_text(
+                json.dumps(
+                    {
+                        "book": "original",
+                        "chapter": f"c{index}",
+                        "order": index,
+                        "text": text,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        request = {
+            "project_id": corpus.project,
+            "workspace_id": corpus.workspace,
+            "run_key": "local-cross-shard",
+            "manifest": _manifest(source),
+        }
+        response = corpus.client.post("/product/source-imports/corpus", json=request)
+        assert response.status_code == 202, response.text
+        admitted = response.json()
+        root = scheduler.run_or_recover(
+            operation_id=admitted["operation_id"], project_id=corpus.project
+        )
+        assert root["result"]["work_count"] == 1
+        assert root["result"]["parsed_records"] == 2
+        child = root["result"]["children"][0]["operation_id"]
+        completed = scheduler.run_or_recover(operation_id=child, project_id=corpus.project)
+        result = completed["result"]
+        assert result["unit_count"] == 2 and result["completeness"] == "COMPLETE"
+        assert result["analysis_scheduled"] is False
+        replay = scheduler.run_or_recover(operation_id=child, project_id=corpus.project)
+        assert replay["result"] == result and replay["replayed"]
+        with psycopg.connect(DATABASE_URL) as connection:
+            rows = connection.execute(
+                "SELECT edition_id,source_document_id FROM authority_corpus_bridge WHERE project_id=%s",
+                [corpus.project],
+            ).fetchall()
+            assert rows == [(result["edition_id"], result["source_document_id"])]
+        duplicate = corpus.client.post("/product/source-imports/corpus", json=request)
+        assert (
+            duplicate.status_code == 202
+            and duplicate.json()["operation_id"] == admitted["operation_id"]
+        )
+    
+        # WHY: Representative query-only rows are rolled back and never count as ingested content.
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                """INSERT INTO authority_corpus_content(
+                content_id,project_id,snapshot_id,edition_id,blob_id,role,path,content_hash,byte_size,locator,acquisition_effect_id,created_by_operation_id)
+                SELECT 'query-only-'||n,c.project_id,c.snapshot_id,NULL,c.blob_id,c.role,'query-only-'||n,c.content_hash,c.byte_size,
+                    '{"evidence_class":"QUERY_PLAN_FIXTURE"}'::jsonb,c.acquisition_effect_id,c.created_by_operation_id
+                FROM (SELECT * FROM authority_corpus_content WHERE project_id=%s AND role='ACQUISITION' ORDER BY content_id LIMIT 1) c
+                CROSS JOIN generate_series(1,5000) n""",
+                [corpus.project],
+            )
+            connection.execute("ANALYZE authority_corpus_content")
+            plan = connection.execute(
+                """EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT to_jsonb(c)
+                FROM authority_corpus_content c WHERE project_id=%s AND snapshot_id=%s AND content_id>%s ORDER BY content_id LIMIT 20""",
+                [corpus.project, result["snapshot_id"], "query-only-2000"],
+            ).fetchone()[0]
+>           assert "corpus_content_project_snapshot_page_idx" in json.dumps(plan)
+E           assert 'corpus_content_project_snapshot_page_idx' in '[{"Plan": {"Node Type": "Limit", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 0.28, "Total Cost":...0, "Temp Read Blocks": 0, "Temp Written Blocks": 0}, "Planning Time": 0.189, "Triggers": [], "Execution Time": 0.168}]'
+E            +  where '[{"Plan": {"Node Type": "Limit", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 0.28, "Total Cost":...0, "Temp Read Blocks": 0, "Temp Written Blocks": 0}, "Planning Time": 0.189, "Triggers": [], "Execution Time": 0.168}]' = <function dumps at 0x106912340>([{'Plan': {'Node Type': 'Limit', 'Parallel Aware': False, 'Async Capable': False, 'Startup Cost': 0.28, ...}, 'Plannin...Blocks': 0, 'Shared Dirtied Blocks': 0, 'Shared Written Blocks': 0, ...}, 'Planning Time': 0.189, 'Triggers': [], ...}])
+E            +    where <function dumps at 0x106912340> = json.dumps
+
+tests/integration/test_corpus_ingestion_postgres.py:134: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_native_research_and_benchmark_cannot_be_generation_input
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_current_rights_checked_before_external_acquisition
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission[after_output]
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission[after_receipt]
+tests/integration/test_corpus_ingestion_postgres.py::test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_native_research_and_benchmark_cannot_be_generation_input
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_current_rights_checked_before_external_acquisition
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission[after_output]
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission[after_receipt]
+tests/integration/test_corpus_ingestion_postgres.py::test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+1 failed, 28 passed, 17 warnings in 82.37s (0:01:22)

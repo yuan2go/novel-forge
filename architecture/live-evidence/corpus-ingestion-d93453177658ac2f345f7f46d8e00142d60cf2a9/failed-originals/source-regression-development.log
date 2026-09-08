@@ -1,0 +1,95 @@
+....F.......................                                             [100%]
+=================================== FAILURES ===================================
+_ SourceImportRuntimePostgresTests.test_production_composition_runs_automatic_document_routing _
+
+self = <tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests testMethod=test_production_composition_runs_automatic_document_routing>
+
+    def test_production_composition_runs_automatic_document_routing(self) -> None:
+        settings = IndustrialSettings(root=self.root, database_url=DATABASE_URL)
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+            "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+            "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                self.root / "composed-objects"
+            ),
+            "NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT": str(
+                self.root / "composed-git-cache"
+            ),
+            "NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT": str(self.root),
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "source-import-composition-test",
+            "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+        }
+        execution = build_production_execution_composition(settings, env=env)
+>       composed = build_source_import_application(
+            settings,
+            execution=execution,
+            env=env,
+        )
+
+tests/integration/test_source_import_runtime_postgres.py:262: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/api/authority_dependencies.py:1574: in build_source_import_application
+    corpus_adapter=_build_corpus_acquisition_adapter(git_adapter, values),
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/api/authority_dependencies.py:2162: in _build_corpus_acquisition_adapter
+    from novel_forge.modules.source_import.corpus_ingestion.acquisition import CorpusAcquisitionAdapter
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    from __future__ import annotations
+    
+    from dataclasses import asdict
+    from datetime import datetime, timezone
+    from fnmatch import fnmatch
+    import fcntl
+    import hashlib
+    import io
+    import json
+    from pathlib import Path
+    from typing import Any
+    from urllib.parse import quote
+    
+    from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+    from novel_forge.modules.source_import.domain import SourceImportPolicy
+    from novel_forge.modules.source_import.git_adapter import GitRepositoryExternalEffectAdapter
+    
+    from .contracts import IngestionFailure, IngestionFile, IngestionManifest
+    from .http_transport import CorpusHttpTransport
+>   from .safety import atomic_receipt, checked_local, expand_container, file_identity, local_identity, spool_bytes, stable_local_file
+E     File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/modules/source_import/corpus_ingestion/safety.py", line 162
+E       raise IngestionFailure("ARCHIVE_ENTRY_LIMIT")                safe_relative_path(item.name.rstrip("/"))
+E                                                                    ^^^^^^^^^^^^^^^^^^
+E   SyntaxError: invalid syntax
+
+src/novel_forge/modules/source_import/corpus_ingestion/acquisition.py:21: SyntaxError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_source_import_runtime_postgres.py: 2 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_source_import_runtime_postgres.py: 2 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_source_import_runtime_postgres.py::SourceImportRuntimePostgresTests::test_production_composition_runs_automatic_document_routing
+1 failed, 27 passed, 23 warnings in 155.57s (0:02:35)

@@ -1,0 +1,88 @@
+......FF..                                                               [100%]
+=================================== FAILURES ===================================
+___________ test_containers_reject_escape_and_enforce_expansion[zip] ___________
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-645/test_containers_reject_escape_0')
+kind = 'zip'
+
+    @pytest.mark.parametrize("kind", ["zip", "tar"])
+    def test_containers_reject_escape_and_enforce_expansion(tmp_path, kind):
+        path = tmp_path / ("unsafe." + kind)
+        if kind == "zip":
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("../escape.txt", "不允许")
+        else:
+            with tarfile.open(path, "w") as archive:
+                item = tarfile.TarInfo("../escape.txt")
+                item.size = 3
+                archive.addfile(item, io.BytesIO(b"bad"))
+        with pytest.raises(IngestionFailure, match="UNSAFE_PATH"):
+            list(
+                expand_container(path, path.name, tmp_path / "expanded", IngestionBudget())
+            )
+        assert not (tmp_path / "escape.txt").exists()
+        payload = "只展开声明的原始字节。".encode()
+        if kind == "zip":
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("book/chapter.txt", payload)
+        else:
+            with tarfile.open(path, "w") as archive:
+                item = tarfile.TarInfo("book/chapter.txt")
+                item.size = len(payload)
+                archive.addfile(item, io.BytesIO(payload))
+        expanded = list(
+            expand_container(path, path.name, tmp_path / "valid", IngestionBudget())
+        )
+        assert len(expanded) == 1
+        assert Path(expanded[0]["cache_path"]).read_bytes() == payload
+>       with pytest.raises(IngestionFailure, match="LIMIT"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'LIMIT'
+E         Actual message: 'ARCHIVE_BUDGET_EXCEEDED'
+
+tests/unit/test_corpus_ingestion_formats.py:113: AssertionError
+___________ test_containers_reject_escape_and_enforce_expansion[tar] ___________
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-645/test_containers_reject_escape_1')
+kind = 'tar'
+
+    @pytest.mark.parametrize("kind", ["zip", "tar"])
+    def test_containers_reject_escape_and_enforce_expansion(tmp_path, kind):
+        path = tmp_path / ("unsafe." + kind)
+        if kind == "zip":
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("../escape.txt", "不允许")
+        else:
+            with tarfile.open(path, "w") as archive:
+                item = tarfile.TarInfo("../escape.txt")
+                item.size = 3
+                archive.addfile(item, io.BytesIO(b"bad"))
+        with pytest.raises(IngestionFailure, match="UNSAFE_PATH"):
+            list(
+                expand_container(path, path.name, tmp_path / "expanded", IngestionBudget())
+            )
+        assert not (tmp_path / "escape.txt").exists()
+        payload = "只展开声明的原始字节。".encode()
+        if kind == "zip":
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("book/chapter.txt", payload)
+        else:
+            with tarfile.open(path, "w") as archive:
+                item = tarfile.TarInfo("book/chapter.txt")
+                item.size = len(payload)
+                archive.addfile(item, io.BytesIO(payload))
+        expanded = list(
+            expand_container(path, path.name, tmp_path / "valid", IngestionBudget())
+        )
+        assert len(expanded) == 1
+        assert Path(expanded[0]["cache_path"]).read_bytes() == payload
+>       with pytest.raises(IngestionFailure, match="LIMIT"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'LIMIT'
+E         Actual message: 'ARCHIVE_BUDGET_EXCEEDED'
+
+tests/unit/test_corpus_ingestion_formats.py:113: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_corpus_ingestion_formats.py::test_containers_reject_escape_and_enforce_expansion[zip]
+FAILED tests/unit/test_corpus_ingestion_formats.py::test_containers_reject_escape_and_enforce_expansion[tar]
+2 failed, 8 passed in 0.70s

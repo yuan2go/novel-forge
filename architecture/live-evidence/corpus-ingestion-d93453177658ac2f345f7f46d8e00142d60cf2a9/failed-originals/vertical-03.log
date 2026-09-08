@@ -1,0 +1,122 @@
+F
+=================================== FAILURES ===================================
+_______________ test_native_corpus_cross_shard_import_and_replay _______________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10e520350>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-630/test_native_corpus_cross_shard0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10da61fa0>
+
+    def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypatch):
+        source = tmp_path / "input"
+        source.mkdir()
+        for index, text in ((1, "阿青把旧钥匙留给守门人。"), (2, "守门人用钥匙打开仓门。")):
+            (source / f"part-{index}.jsonl").write_text(json.dumps({"book": "original", "chapter": f"c{index}", "order": index, "text": text}, ensure_ascii=False) + "\n")
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        request = {"project_id": corpus.project, "workspace_id": corpus.workspace, "run_key": "local-cross-shard", "manifest": _manifest(source)}
+        response = corpus.client.post("/product/source-imports/corpus", json=request)
+        assert response.status_code == 202, response.text
+        admitted = response.json()
+>       root = scheduler.run_or_recover(operation_id=admitted["operation_id"], project_id=corpus.project)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_corpus_ingestion_postgres.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/source_import/scheduler.py:36: in run_or_recover
+    return super().run_or_recover(
+src/novel_forge/modules/source_authority/scheduler.py:226: in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:792: in execute_fenced
+    return runtime.acquire(worker) if definition.endswith("acquire") else runtime.process_work(worker)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/corpus_ingestion/runtime.py:123: in acquire
+    receipt = self.app._execute_external_effect(worker=worker, effect_type="corpus.acquire", capability="source.remote.fetch",
+src/novel_forge/modules/source_import/application.py:4914: in _execute_external_effect
+    planned = plan_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:288: in plan_external_effect
+    profile = capability_profile_from_dict(capability_profile)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/provider_control/contracts.py:144: in capability_profile_from_dict
+    control_level=ProviderControlLevel(str(payload.get("control_level"))),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/enum.py:744: in __call__
+    return cls.__new__(cls, value)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <enum 'ProviderControlLevel'>, value = 'SELF_HOSTED_CONTROLLED'
+
+    def __new__(cls, value):
+        # all enum instances are actually created during class construction
+        # without calling this method; this method is called by the metaclass'
+        # __call__ (i.e. Color(3) ), and by pickle
+        if type(value) is cls:
+            # For lookups like Color(Color.RED)
+            return value
+        # by-value search for a matching enum member
+        # see if it's in the reverse mapping (for hashable values)
+        try:
+            return cls._value2member_map_[value]
+        except KeyError:
+            # Not found, no need to do long O(n) search
+            pass
+        except TypeError:
+            # not there, now do long search -- O(n) behavior
+            for member in cls._member_map_.values():
+                if member._value_ == value:
+                    return member
+        # still not found -- verify that members exist, in-case somebody got here mistakenly
+        # (such as via super when trying to override __new__)
+        if not cls._member_map_:
+            raise TypeError("%r has no members defined" % cls)
+        #
+        # still not found -- try _missing_ hook
+        try:
+            exc = None
+            result = cls._missing_(value)
+        except Exception as e:
+            exc = e
+            result = None
+        try:
+            if isinstance(result, cls):
+                return result
+            elif (
+                    Flag is not None and issubclass(cls, Flag)
+                    and cls._boundary_ is EJECT and isinstance(result, int)
+                ):
+                return result
+            else:
+                ve_exc = ValueError("%r is not a valid %s" % (value, cls.__qualname__))
+                if result is None and exc is None:
+>                   raise ve_exc
+E                   ValueError: 'SELF_HOSTED_CONTROLLED' is not a valid ProviderControlLevel
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/enum.py:1158: ValueError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 3 warnings in 4.63s

@@ -1,0 +1,87 @@
+E                                                                        [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename <> 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+>                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10a2ae750>
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 650 waits for AccessExclusiveLock on relation 72443 of database 71916; blocked by process 597.
+E           Process 597 waits for RowExclusiveLock on relation 72335 of database 71916; blocked by process 650.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/integration/test_corpus_ingestion_postgres.py::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content
+1 warning, 1 error in 1.94s

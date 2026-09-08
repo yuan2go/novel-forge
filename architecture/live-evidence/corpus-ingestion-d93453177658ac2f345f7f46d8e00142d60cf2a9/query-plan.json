@@ -1,0 +1,78 @@
+{
+  "catalog_rows": 500,
+  "query_plan": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.27,
+        "Total Cost": 5.31,
+        "Plan Rows": 5,
+        "Plan Width": 112,
+        "Actual Startup Time": 0.021,
+        "Actual Total Time": 0.035,
+        "Actual Rows": 5,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 6,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "authority_corpus_edition_page_idx",
+            "Relation Name": "authority_corpus_edition",
+            "Alias": "r",
+            "Startup Cost": 0.27,
+            "Total Cost": 95.99,
+            "Plan Rows": 95,
+            "Plan Width": 112,
+            "Actual Startup Time": 0.021,
+            "Actual Total Time": 0.034,
+            "Actual Rows": 5,
+            "Actual Loops": 1,
+            "Index Cond": "((project_id = 'corpus-82edf2a6-0ace-4571-b61c-ea481ae028c4'::text) AND (snapshot_id = 'corpus-snapshot:88270978bfe015e517d3d5e44e5f4062509d9b697e33ff8cb1f1e40c0b64a151'::text) AND (edition_id > 'corpus-edition:0befe42179499288d0fbb709da9e3443f250f3d65b889c9e868960bd75cacfde'::text))",
+            "Rows Removed by Index Recheck": 0,
+            "Shared Hit Blocks": 6,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 120,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.164,
+      "Triggers": [],
+      "Execution Time": 0.042
+    }
+  ],
+  "planner_settings_changed": false
+}
