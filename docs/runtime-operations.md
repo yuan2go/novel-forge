@@ -53,11 +53,9 @@ The authoritative registry is `src/novel_forge/storage/migrations/versions/__ini
 the head is also checked by `architecture/manifests/migration-manifest.yaml`. Applied IDs
 live in `nf_schema_migrations`.
 
-The Source convergence segment is `20260907_0120_foundation_generation` →
-`20260908_0121_account_entitlement_budget` → `20260908_0121_corpus_foundation` →
-`20260908_0122_source_work_manifest` → `20260908_0123_source_analysis_dimensions`.
-The two `0121` entries have distinct full identities and a single declared parent chain;
-use the registry, not numeric filename prefixes, to determine order.
+The Source convergence segment includes two distinct `0121` entries connected by
+declared parents. Use full identities and the registry's parent chain, not numeric
+filename prefixes, to determine order.
 
 Do not edit an applied migration to repair live data. Respect its declared preflight,
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
