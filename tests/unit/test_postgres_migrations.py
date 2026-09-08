@@ -1,13 +1,66 @@
 from pathlib import Path
+import re
 import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, downgrade_plan, pending_migrations, validate_migration_chain
+from novel_forge.storage.migrations.versions import v20260909_0124_corpus_fk_indexes
 
 
 class PostgresMigrationTests(unittest.TestCase):
+    def test_corpus_foreign_key_repair_indexes_every_missing_key_shape(self):
+        expected = {
+            ("authority_corpus_source", ("workspace_id",)),
+            (
+                "authority_corpus_rights",
+                ("project_id", "source_id", "previous_rights_id"),
+            ),
+            (
+                "authority_corpus_snapshot",
+                ("project_id", "source_id", "rights_id"),
+            ),
+            (
+                "authority_corpus_snapshot",
+                ("project_id", "source_id", "previous_snapshot_id"),
+            ),
+            (
+                "authority_corpus_edition",
+                ("project_id", "source_id", "snapshot_id"),
+            ),
+            (
+                "authority_corpus_edition",
+                ("project_id", "source_id", "book_source_id"),
+            ),
+            (
+                "authority_corpus_membership",
+                ("project_id", "edition_id", "purpose", "decision_id", "decision"),
+            ),
+            ("authority_corpus_retirement", ("project_id", "source_id")),
+        }
+        index_pattern = re.compile(
+            r"^CREATE INDEX IF NOT EXISTS \S+ ON (\w+)\(([^)]+)\)"
+        )
+        actual = set()
+        for statement in v20260909_0124_corpus_fk_indexes.UPGRADE_STATEMENTS:
+            match = index_pattern.match(statement)
+            self.assertIsNotNone(match, statement)
+            assert match is not None
+            actual.add(
+                (
+                    match.group(1),
+                    tuple(column.strip() for column in match.group(2).split(",")),
+                )
+            )
+
+        self.assertTrue(v20260909_0124_corpus_fk_indexes.FORWARD_ONLY)
+        self.assertEqual(
+            v20260909_0124_corpus_fk_indexes.DOWN_REVISION,
+            "20260908_0123_source_analysis_dimensions",
+        )
+        self.assertEqual(actual, expected)
+
     def test_migration_chain_is_ordered_and_pending_is_deterministic(self):
         validate_migration_chain()
         self.assertGreaterEqual(len(MIGRATIONS), 2)

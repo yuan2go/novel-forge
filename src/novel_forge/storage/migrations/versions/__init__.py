@@ -125,6 +125,7 @@ from . import (
     v20260908_0121_corpus_foundation,
     v20260908_0122_source_work_manifest,
     v20260908_0123_source_analysis_dimensions,
+    v20260909_0124_corpus_fk_indexes,
 )
 
 VERSION_MODULES = [
@@ -252,6 +253,7 @@ VERSION_MODULES = [
     v20260908_0121_corpus_foundation,
     v20260908_0122_source_work_manifest,
     v20260908_0123_source_analysis_dimensions,
+    v20260909_0124_corpus_fk_indexes,
 ]
 
 __all__ = ["VERSION_MODULES"]
