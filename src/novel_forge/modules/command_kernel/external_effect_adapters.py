@@ -254,6 +254,41 @@ class LocalFileObjectStoreAdapter:
             },
         )
 
+    def execute_stream(self, *, stable_idempotency_key: str, capability: str, request_payload: dict[str, Any], source_path: Path) -> ProviderResult:
+        import os
+        import tempfile
+        if capability != "object_store.put":
+            return ProviderResult("final_failure", stable_idempotency_key, {"error": "unsupported_capability"})
+        object_key = str(request_payload.get("object_key") or "")
+        destination = (self.root / object_key).resolve()
+        if self.root not in destination.parents:
+            return ProviderResult("final_failure", stable_idempotency_key, {"error": "object_key_escapes_root"})
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        handle, name = tempfile.mkstemp(dir=destination.parent, prefix=".upload-")
+        digest, size = hashlib.sha256(), 0
+        try:
+            with os.fdopen(handle, "wb") as output, source_path.open("rb") as source:
+                while block := source.read(65536):
+                    size += len(block)
+                    if size > int(request_payload["expected_size"]):
+                        raise ValueError("stream exceeds frozen object size")
+                    digest.update(block)
+                    output.write(block)
+                output.flush()
+                os.fsync(output.fileno())
+            if "sha256:" + digest.hexdigest() != request_payload["expected_hash"] or size != int(request_payload["expected_size"]):
+                raise ValueError("stream differs from frozen object identity")
+            try:
+                os.link(name, destination)
+            except FileExistsError:
+                pass
+            result = self.query(stable_idempotency_key=stable_idempotency_key, capability=capability, request_payload=request_payload)
+            if result.evidence.get("actual_hash") != request_payload["expected_hash"] or result.evidence.get("actual_size") != size:
+                return ProviderResult("final_failure", stable_idempotency_key, {"error": "object_identity_conflict"})
+            return result
+        finally:
+            Path(name).unlink(missing_ok=True)
+
     def query(
         self,
         *,
@@ -269,14 +304,18 @@ class LocalFileObjectStoreAdapter:
                 f"local-query:{stable_idempotency_key}",
                 {"object_key": object_key},
             )
-        content = destination.read_bytes()
+        digest, size = hashlib.sha256(), 0
+        with destination.open("rb") as source:
+            while block := source.read(65536):
+                digest.update(block)
+                size += len(block)
         return ProviderResult(
             "success",
             f"local-query:{stable_idempotency_key}",
             {
                 "object_key": object_key,
-                "actual_hash": "sha256:" + hashlib.sha256(content).hexdigest(),
-                "actual_size": len(content),
+                "actual_hash": "sha256:" + digest.hexdigest(),
+                "actual_size": size,
             },
         )
 
@@ -382,6 +421,31 @@ class MinioObjectStoreExternalEffectAdapter:
             stable_idempotency_key, object_key, digest, len(content), False
         )
 
+    def execute_stream(self, *, stable_idempotency_key: str, capability: str, request_payload: dict[str, Any], source_path: Path) -> ProviderResult:
+        if capability != "object_store.put":
+            return ProviderResult("final_failure", stable_idempotency_key, {"error": "unsupported_capability"})
+        object_key = self._object_key(request_payload)
+        digest, size = hashlib.sha256(), 0
+        with source_path.open("rb") as source:
+            while block := source.read(65536):
+                digest.update(block)
+                size += len(block)
+        identity = "sha256:" + digest.hexdigest()
+        if identity != request_payload["expected_hash"] or size != int(request_payload["expected_size"]):
+            raise ValueError("stream differs from frozen object identity")
+        previous = self.query(stable_idempotency_key=stable_idempotency_key, capability=capability, request_payload=request_payload)
+        if previous.outcome == "success":
+            if previous.evidence.get("actual_hash") != identity or previous.evidence.get("actual_size") != size:
+                return ProviderResult("final_failure", stable_idempotency_key, {"error": "object_identity_conflict"})
+            return previous
+        if not self.client.bucket_exists(self.bucket):
+            self.client.make_bucket(self.bucket)
+        with source_path.open("rb") as source:
+            self.client.put_object(self.bucket, object_key, source, length=size,
+                content_type=str(request_payload.get("media_type") or "application/octet-stream"),
+                metadata={"content-hash": identity, "stable-idempotency-key": stable_idempotency_key, "byte-verification": "required"})
+        return self.query(stable_idempotency_key=stable_idempotency_key, capability=capability, request_payload=request_payload)
+
     def query(
         self,
         *,
@@ -404,6 +468,22 @@ class MinioObjectStoreExternalEffectAdapter:
             or metadata.get("content-hash")
             or ""
         )
+        if (metadata.get("x-amz-meta-byte-verification") or metadata.get("byte-verification")) == "required":
+            response = self.client.get_object(self.bucket, object_key)
+            verified, byte_size = hashlib.sha256(), 0
+            try:
+                while block := response.read(65536):
+                    verified.update(block)
+                    byte_size += len(block)
+                    if byte_size > int(request_payload["expected_size"]):
+                        break
+            finally:
+                response.close()
+                response.release_conn()
+            actual = "sha256:" + verified.hexdigest()
+            if (actual != request_payload["expected_hash"] or byte_size != int(request_payload["expected_size"])
+                    or actual != digest or byte_size != int(existing.size)):
+                return ProviderResult("final_failure", stable_idempotency_key, {"error": "stored_stream_identity_conflict"})
         return self._result(
             stable_idempotency_key,
             object_key,

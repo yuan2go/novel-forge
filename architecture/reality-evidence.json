@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260909_0124_corpus_fk_indexes",
+  "migration_head": "20260909_0125_corpus_ingestion_bridge",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4839,7 +4839,7 @@
     {
       "concept": "source-import-and-knowledge",
       "fact_type": "CURRENT_RUNTIME_FACT",
-      "owner": "Source Import, Source, and MKAOS Authorities",
+      "owner": "Source Authority and MKAOS Authority; Source Import coordinates their commands",
       "production_entries": [
         {
           "path": "src/novel_forge/api/routers/source_import.py",
@@ -4856,6 +4856,10 @@
         {
           "path": "src/novel_forge/api/routers/source_authority.py",
           "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/cli/corpus.py",
+          "symbol": "run_corpus_command"
         }
       ],
       "application": [
@@ -4874,6 +4878,10 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus_application.py",
           "symbol": "SourceCorpusApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
+          "symbol": "CorpusIngestionRuntime"
         }
       ],
       "domain_symbols": [
@@ -4896,6 +4904,14 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus.py",
           "symbol": "corpus_admission"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/contracts.py",
+          "symbol": "IngestionManifest"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "corpus_use_admission"
         }
       ],
       "commands_operations": [
@@ -4919,7 +4935,9 @@
           "deconstruction observations",
           "knowledge decisions and packs",
           "immutable Corpus source purposes, snapshots, work identities and editions",
-          "versioned dataset/underlying-work rights and admission decisions"
+          "versioned dataset/underlying-work rights and admission decisions",
+          "verified Corpus content/acquisition bindings and exact SourceWork bridges",
+          "versioned work-scoped use grants and current consumption admission"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -4967,6 +4985,10 @@
         {
           "path": "src/novel_forge/storage/mkaos_authority_repositories.py",
           "symbol": "MkaosAuthorityRepository.corpus_candidate_origins"
+        },
+        {
+          "path": "src/novel_forge/storage/corpus_ingestion_records.py",
+          "symbol": "CorpusIngestionRecords"
         }
       ],
       "migrations": [
@@ -4981,11 +5003,6 @@
           "id": "20260811_0076_source_import_runtime"
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
-          "locator": "MIGRATION_ID = \"20260908_0121_corpus_foundation\"",
-          "id": "20260908_0121_corpus_foundation"
-        },
-        {
           "path": "src/novel_forge/storage/migrations/versions/v20260908_0122_source_work_manifest.py",
           "locator": "MIGRATION_ID = \"20260908_0122_source_work_manifest\"",
           "id": "20260908_0122_source_work_manifest"
@@ -4996,9 +5013,19 @@
           "id": "20260908_0123_source_analysis_dimensions"
         },
         {
+          "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
+          "locator": "MIGRATION_ID = \"20260908_0121_corpus_foundation\"",
+          "id": "20260908_0121_corpus_foundation"
+        },
+        {
           "path": "src/novel_forge/storage/migrations/versions/v20260909_0124_corpus_fk_indexes.py",
           "locator": "MIGRATION_ID = \"20260909_0124_corpus_fk_indexes\"",
           "id": "20260909_0124_corpus_fk_indexes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260909_0125_corpus_ingestion_bridge.py",
+          "locator": "MIGRATION_ID = \"20260909_0125_corpus_ingestion_bridge\"",
+          "id": "20260909_0125_corpus_ingestion_bridge"
         }
       ],
       "external_effects": {
@@ -5008,6 +5035,10 @@
           {
             "path": "src/novel_forge/modules/source_import/execution.py",
             "symbol": "PostgresContentIntelligenceExecutionPort"
+          },
+          {
+            "path": "src/novel_forge/modules/source_import/corpus_ingestion/acquisition.py",
+            "symbol": "CorpusAcquisitionAdapter"
           }
         ]
       },
@@ -5055,6 +5086,22 @@
         {
           "path": "tests/integration/test_corpus_migrations_postgres.py",
           "symbol": "test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_corpus_cross_shard_import_and_replay"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_authorized_bridge_reaches_existing_analysis_and_governance"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_import_new_process_recovery_and_concurrent_admission"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7536,7 +7583,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:fb58c2e1357322beeb394a469de52e654984acdfc3518bc5258cf973e83b1d80"
+    "implementation_tree_sha": "sha256:3048926f6c9f628deea5f09e69a412b5fd1da4373a2c9cd0ebdf09231c81744a"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -28,6 +28,8 @@ SOURCE_IMPORT_REPROCESSING_HANDLER = "novel_forge.source_import.reprocessing_app
 SOURCE_IMPORT_OPERATIONS = frozenset(
     {
         SOURCE_IMPORT_DISCOVERY_OPERATION,
+        "source.import.corpus.acquire",
+        "source.import.corpus.work",
         SOURCE_IMPORT_FILE_OPERATION,
         SOURCE_IMPORT_WORK_OPERATION,
         SOURCE_IMPORT_PROFILING_OPERATION,
@@ -93,6 +95,8 @@ def source_import_definitions(
         },
     }
     rows = (
+        ("source.import.corpus.acquire", "novel_forge.source_import.corpus_acquire", "corpus-acquire:{project_id}", ["source.remote.fetch", "object_store.put"]),
+        ("source.import.corpus.work", "novel_forge.source_import.corpus_work", "corpus-work:{project_id}", ["object_store.put"]),
         (
             SOURCE_IMPORT_DISCOVERY_OPERATION,
             SOURCE_IMPORT_DISCOVERY_HANDLER,

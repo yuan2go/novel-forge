@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "corpus-ingestion-runtime",
+      "patterns": [
+        "tests/integration/test_corpus_ingestion_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "corpus-parser-contract",
+      "patterns": [
+        "tests/unit/test_corpus_ingestion_formats.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/parsers.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "corpus-transport-support",
+      "patterns": [
+        "tests/unit/test_corpus_ingestion_transports.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/acquisition.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
       "id": "corpus-migration-upgrade",
       "patterns": [
         "tests/integration/test_corpus_migrations_postgres.py"

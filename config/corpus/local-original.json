@@ -1,0 +1,35 @@
+{
+  "schema_version": "corpus-ingestion-manifest.v1",
+  "purpose": "RESEARCH",
+  "analyze": false,
+  "source": {
+    "kind": "LOCAL",
+    "location": "examples/sample_inputs/corpus-original.jsonl"
+  },
+  "parser": {
+    "format": "jsonl",
+    "layout": "CHAPTER_ROWS",
+    "fields": {
+      "work_id": "book",
+      "chapter_id": "chapter",
+      "order": "order",
+      "text": "text"
+    },
+    "completeness": "EXCERPT"
+  },
+  "rights": {
+    "dataset_license": "CC0-1.0",
+    "underlying_rights": "OWNED",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "allowed_purposes": [
+      "RESEARCH"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING"
+    ],
+    "evidence_refs": [
+      "repository-authored:examples/sample_inputs/corpus-original.jsonl"
+    ],
+    "copyright_boundary": "No prose, derived knowledge, model call or production use authorized by this example."
+  }
+}

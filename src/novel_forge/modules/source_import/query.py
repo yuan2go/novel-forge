@@ -14,6 +14,24 @@ class SourceImportQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
+    def corpus_lineage(self, *, project_id: str, import_job_id: str, after: str = "", limit: int = 100, principal: Principal | None = None) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+        self._require(principal, project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            job = SourceImportRepository(uow.cursor).job(project_id=project_id, import_job_id=import_job_id)
+            if job["source_type"] != "corpus_content" or not job["corpus_snapshot_id"]:
+                raise KernelError("CORPUS_SNAPSHOT_NOT_AVAILABLE", "content acquisition has not frozen a Corpus snapshot")
+            repository = SourceAuthorityRepository(uow.cursor)
+            snapshot = repository.corpus_record("snapshot", project_id, job["corpus_snapshot_id"])
+            editions = repository.corpus_page("edition", project_id, parent_id=snapshot["snapshot_id"], after=after, limit=limit)
+            uow.cursor.execute("SELECT edition_id,to_jsonb(b) FROM authority_corpus_bridge b WHERE project_id=%s AND edition_id=ANY(%s)",
+                [project_id, [edition["edition_id"] for edition in editions]])
+            bridges = {row[0]: row[1] for row in uow.cursor.fetchall()}
+            return {"import_job_id": import_job_id, "snapshot": snapshot,
+                "rights": repository.corpus_record("rights", project_id, snapshot["rights_id"]),
+                "editions": [{**edition, "bridge": bridges.get(edition["edition_id"])} for edition in editions],
+                "page_limit": limit, "next_after": editions[-1]["edition_id"] if len(editions) == limit else None}
+
     def import_job(
         self,
         *,
@@ -60,8 +78,17 @@ class SourceImportQuery:
                     if work_kind_counts.get("MKAOS_EXTRACTION", 0)
                     else "IMPORTED"
                 )
+        corpus_summary = {}
+        if job["source_type"] == "corpus_content":
+            acquisition = next((item["result"] for item in work if item["work_kind"] == "DISCOVERY"), {})
+            corpus_summary = {"snapshot_id": job["corpus_snapshot_id"], "acquisition": acquisition,
+                "content_imported": sum(item["work_kind"] == "WORK" and item["status"] in {"SUCCEEDED", "REUSED"} for item in work),
+                "content_blocked": sum(child.get("status") == "BLOCKED" for child in acquisition.get("children", [])),
+                "knowledge_approved_by_import": False, "purpose": job["source_locator"]["manifest"]["purpose"],
+                "stage_results": [{"operation_id": item["operation_id"], "kind": item["work_kind"], "status": item["status"], "result": item["result"], "failure": item["failure"]} for item in work]}
         return {
             **_serializable(job),
+            "corpus": corpus_summary,
             "effective_status": effective_status,
             "work_counts": work_counts,
             "work_kind_counts": work_kind_counts,

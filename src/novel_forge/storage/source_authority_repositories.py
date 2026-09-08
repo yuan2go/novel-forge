@@ -71,17 +71,17 @@ class SourceAuthorityRepository(CorpusRecords):
                 asset_version_id, blob_id, source_content_hash,
                 source_size, media_type, title, source_kind, source_uri,
                 rights_authorization, license_name, copyright_boundary,
-                governance_status, created_by_operation_id
+                governance_status, created_by_operation_id, corpus_edition_id
             ) VALUES (
                 %(source_document_id)s, %(project_id)s, %(workspace_id)s,
                 %(asset_version_id)s, %(blob_id)s, %(source_content_hash)s,
                 %(source_size)s, %(media_type)s, %(title)s, %(source_kind)s,
                 %(source_uri)s, %(rights_authorization)s, %(license_name)s,
                 %(copyright_boundary)s, %(governance_status)s,
-                %(created_by_operation_id)s
+                %(created_by_operation_id)s, %(corpus_edition_id)s
             )
             """,
-            row,
+            {**row, "corpus_edition_id": row.get("corpus_edition_id")},
         )
 
     def source_for_transform(

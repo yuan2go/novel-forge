@@ -26,6 +26,7 @@ def apply_corpus_action(
     workspace_id: str,
     operation_id: str,
 ) -> dict[str, Any]:
+    repository.corpus_authorization_lock(project_id, write=True)
     scope = {"project_id": project_id, "created_by_operation_id": operation_id}
     if isinstance(action, RegisterCorpusSource):
         source_id = corpus_identity(
@@ -217,6 +218,7 @@ def _decision(
         requested_purpose=purpose,
         retired=source["retired"],
         rights_current=latest == frozen["rights_id"],
+        external_work_id=repository.corpus_record("book_identity", scope["project_id"], edition["book_source_id"])["external_work_id"],
     )
     decision_id = corpus_identity(
         "admission", scope["created_by_operation_id"], edition["edition_id"], purpose

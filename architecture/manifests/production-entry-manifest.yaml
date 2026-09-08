@@ -270,6 +270,15 @@
       "dispatch": "worker_claim",
       "api_call": "application.admit_corpus",
       "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.import.corpus.acquire",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.create_corpus_import",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
     }
   ]
 }

@@ -116,8 +116,20 @@ class ParsedSourceUnit:
 
 
 @dataclass(frozen=True, slots=True)
+class AcquiredWorkSpec:
+    work_key: str
+    title: str
+    collection_kind: str
+    parser_profile: str
+    registry_id: str
+    registry_hash: str
+    acquisition: dict[str, Any]
+    repository_commit_sha: None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ParsedSourceWork:
-    spec: CorpusWorkSpec
+    spec: CorpusWorkSpec | AcquiredWorkSpec
     units: tuple[ParsedSourceUnit, ...]
     normalized: NormalizedSource
     chunks: tuple[NormalizedChunk, ...]
@@ -143,13 +155,15 @@ class ParsedSourceWork:
                 "registry_id": self.spec.registry_id,
                 "registry_hash": self.spec.registry_hash,
             },
-            "repository": {
-                "repository_key": self.spec.repository_key,
-                "repository_url": self.spec.repository_url,
-                "commit_sha": self.spec.repository_commit_sha,
-                "license_name": self.spec.license_name,
-                "license_path": self.spec.license_path,
-            },
+            **({"acquisition": self.spec.acquisition} if isinstance(self.spec, AcquiredWorkSpec) else {
+                "repository": {
+                    "repository_key": self.spec.repository_key,
+                    "repository_url": self.spec.repository_url,
+                    "commit_sha": self.spec.repository_commit_sha,
+                    "license_name": self.spec.license_name,
+                    "license_path": self.spec.license_path,
+                }
+            }),
             "units": [item.manifest_entry() for item in self.units],
             "diagnostics": self.diagnostics,
             "excluded_fields": list(self.excluded_fields),

@@ -8,6 +8,13 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class SourceImportRepository:
+    def corpus_frozen_request(self, project_id: str, key: str) -> dict[str, Any] | None:
+        self.cursor.execute("""SELECT command_payload->'payload' FROM authority_operation
+            WHERE project_id=%s AND idempotency_scope='project:source-import' AND idempotency_key=%s
+            AND definition_name='source.import.corpus.acquire'""", [project_id, key])
+        row = self.cursor.fetchone()
+        return dict(row[0]) if row else None
+
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
 
@@ -79,7 +86,7 @@ class SourceImportRepository:
                    intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
-                   created_at, updated_at
+                   created_at, updated_at, corpus_snapshot_id
             FROM authority_source_import_job
             WHERE project_id=%s AND import_job_id=%s
             FOR UPDATE
@@ -102,7 +109,7 @@ class SourceImportRepository:
                    intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
-                   created_at, updated_at
+                   created_at, updated_at, corpus_snapshot_id
             FROM authority_source_import_job
             WHERE project_id=%s AND import_job_id=%s
             """,
@@ -132,7 +139,7 @@ class SourceImportRepository:
                    intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
-                   created_at, updated_at
+                   created_at, updated_at, corpus_snapshot_id
             FROM authority_source_import_job
             WHERE project_id=%s {status_clause}
             ORDER BY created_at DESC, import_job_id
@@ -622,6 +629,7 @@ def _job_row(row: Any) -> dict[str, Any]:
         "failure",
         "created_at",
         "updated_at",
+        "corpus_snapshot_id",
     )
     return dict(zip(keys, row, strict=True))
 
