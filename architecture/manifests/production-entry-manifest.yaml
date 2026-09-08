@@ -261,6 +261,15 @@
       "dispatch": "inline_atomic",
       "api_call": "_composition(ctx).controls.decide",
       "definition_factory": "novel_forge.modules.book_authority.control_application:control_decision_definition"
+    },
+    {
+      "name": "source.corpus.commit",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/corpus_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_corpus",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
     }
   ]
 }

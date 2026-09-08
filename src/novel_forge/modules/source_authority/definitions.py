@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from novel_forge.modules.source_authority.corpus_application import CORPUS_OPERATION, corpus_definition
+
 
 SOURCE_AUTHORITY_DEFINITION_VERSION = "1.0.2"
 SOURCE_AUTHORITY_HANDLER_KEY = "novel_forge.source_authority.document_register"
@@ -29,6 +31,7 @@ SOURCE_ANALYSIS_PLAN_HANDLER_KEY = "novel_forge.source_authority.analysis_plan_c
 SOURCE_ANALYSIS_PLAN_OPERATION = "source.analysis.plan.commit"
 SOURCE_AUTHORITY_OPERATIONS = frozenset(
     {
+        CORPUS_OPERATION,
         SOURCE_AUTHORITY_OPERATION,
         SOURCE_TRANSFORM_OPERATION,
         SOURCE_OBSERVATION_OPERATION,
@@ -44,6 +47,7 @@ def source_authority_definitions(
 ) -> tuple[dict[str, Any], ...]:
     event = "authority.source.document.registered"
     return (
+        corpus_definition(application_build_id=application_build_id, commit_sha=commit_sha),
         {
             "name": SOURCE_AUTHORITY_OPERATION,
             "definition_version": SOURCE_AUTHORITY_DEFINITION_VERSION,

@@ -39,6 +39,7 @@ class SourceImportRepository:
     def register_job(self, row: dict[str, Any]) -> bool:
         parameters = {
             **row,
+            "corpus_snapshot_id": row.get("corpus_snapshot_id"),
             "source_locator": Jsonb(dict(row["source_locator"])),
             "import_policy": Jsonb(dict(row["import_policy"])),
             "intelligence_policy": Jsonb(dict(row["intelligence_policy"])),
@@ -53,14 +54,14 @@ class SourceImportRepository:
                 source_locator, requested_ref, import_policy,
                 import_policy_hash, intelligence_policy,
                 intelligence_policy_hash, analysis_override, mode, status,
-                discovery_operation_id, counters, failure
+                discovery_operation_id, counters, failure, corpus_snapshot_id
             ) VALUES (
                 %(import_job_id)s, %(project_id)s, %(workspace_id)s,
                 %(source_type)s, %(source_locator)s, %(requested_ref)s,
                 %(import_policy)s, %(import_policy_hash)s,
                 %(intelligence_policy)s, %(intelligence_policy_hash)s,
                 %(analysis_override)s, %(mode)s, %(status)s,
-                %(discovery_operation_id)s, %(counters)s, %(failure)s
+                %(discovery_operation_id)s, %(counters)s, %(failure)s, %(corpus_snapshot_id)s
             )
             ON CONFLICT (discovery_operation_id) DO NOTHING
             RETURNING import_job_id

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260907_0120_foundation_generation",
+  "head": "20260908_0121_corpus_foundation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -122,6 +122,7 @@
     "20260906_0117_world_causal_event_locators",
     "20260907_0118_preparation_event_lineage",
     "20260907_0119_grounded_chapter_acceptance",
-    "20260907_0120_foundation_generation"
+    "20260907_0120_foundation_generation",
+    "20260908_0121_corpus_foundation"
   ]
 }

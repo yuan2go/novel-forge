@@ -160,6 +160,8 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 ),
                 self.candidate("raw", "source_document", raw_source=True),
                 self.candidate("observation", "source_deconstruction_observation"),
+                self.candidate("corpus", "corpus_record"),
+                self.candidate("spoofed-corpus", "knowledge_card", physical_asset_type="corpus_record"),
             ],
         )
         self.assertEqual(
@@ -176,6 +178,8 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertEqual(reasons["review-only"], "SOURCE_MODE_review_only")
         self.assertEqual(reasons["raw"], "RAW_SOURCE_FORBIDDEN")
         self.assertEqual(reasons["observation"], "RAW_SOURCE_FORBIDDEN")
+        self.assertEqual(reasons["corpus"], "RAW_SOURCE_FORBIDDEN")
+        self.assertEqual(reasons["spoofed-corpus"], "RAW_SOURCE_FORBIDDEN")
 
     def test_budget_is_deterministic_and_never_exceeded(self) -> None:
         selection = select_context_candidates(

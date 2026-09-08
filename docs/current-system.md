@@ -183,7 +183,7 @@ ownership boundaries are:
 | Narrative State projection | deterministic as-of view over Book-accepted evidence | source outcomes or Canon decisions |
 | Reader/recap/calibration Authorities | observation, proxy, preference and proposal evidence | Canon, executed history or active plans |
 | ReaderProxy policy Authority | versioned advisory thresholds frozen per admission | human judgment, reader causality or accepted facts |
-| Source and MKAOS Authorities | source lineage, abstractions, knowledge decisions and packs | draft prose or accepted story facts |
+| Source and MKAOS Authorities | source/Corpus lineage, frozen rights and purpose admission, abstractions, knowledge decisions and packs | draft prose or accepted story facts |
 | Agent Runtime Authority | definitions, bindings, sessions, checkpoints and transcript provenance | domain assets or narrative truth |
 | Command Kernel / Provider effect Authority | Operation, Attempt, Lease, Fence, ExternalEffect and receipt lifecycle | domain activation |
 
@@ -544,6 +544,56 @@ Independent relationship/thematic trajectory portfolio activation remains unimpl
 current character/Arc contracts and accepted relationship projections do not establish
 that capability. It requires explicit design review rather than promotion of generic
 plan fields into a second Authority.
+
+## Corpus Foundation
+
+Source Authority owns Corpus metadata through `source.corpus.commit`, the Source worker,
+`SourceAuthorityRepository` and the existing Command Kernel/UoW. MKAOS remains the owner
+of downstream abstractions and knowledge decisions. Corpus does not create another
+import executor or knowledge policy engine: bounded metadata batches use the existing
+`authority_source_import_job` with `mode=FOUNDATION`; Attempts, leases, fences, failures
+and terminal replay remain Command Kernel records.
+
+The immutable lineage is Source → DatasetManifest/acquisition snapshot → source-local
+book identity → Edition → purpose membership. A source's external identity and purpose
+are fixed. Source metadata changes create snapshots; rights declarations and snapshots
+form explicit parent chains with monotonically ordered revisions. Edition identity is
+bound to the source snapshot, work key and edition key, independently of its checksum.
+Identical checksums do not deduplicate works or assert cross-source equivalence.
+
+Rights declarations separate the dataset license from underlying-work authorization and
+its evidence, copyright boundary, allowed/denied purposes and unresolved restrictions.
+Declarations explicitly cover all works in the snapshot; heterogeneous or unverified
+work rights must remain unresolved rather than inherit the repository's software license.
+Production-reference admission denies UNKNOWN, CONFLICTING and RESTRICTED rights, any
+unresolved restriction, purpose mismatch, retirement and changed rights requiring review.
+BENCHMARK sources cannot acquire production-reference membership. PostgreSQL checks,
+composite foreign keys, immutable-row guards and admission guards enforce these boundaries.
+
+An ALLOW grants only the declared catalog/reference purpose; it never grants raw prose
+entry to a model. Corpus output assets are ineligible for generation Context even if a
+caller relabels their logical kind. Source abstraction, MKAOS and Context admission remain
+mandatory. Rights changes neither rewrite historical decisions nor upgrade old Editions;
+new use requires an explicit declaration/snapshot and a new admission. Retirement is an
+append-only record, preserving every historical identity and decision.
+
+Each import freezes one snapshot and at most 100 metadata entries within 256 KiB. Identical
+snapshot/batch keys resolve the same Operation; changed payloads conflict. Source-scoped
+locking and natural-key constraints serialize competing revisions and duplicate entries.
+Edition records, admissions, allowed memberships, result asset, import outcome and outbox
+evidence commit together under the current fence. Recovered committed outputs are reused
+before rechecking mutable upstream state; failed transactions leave no partial catalog.
+New rights do not change the meaning of an already committed result. Queries use bounded
+keyset pages; current rights/snapshot lookup uses a revision index.
+
+The manifest's format, external version, checksum and versioned adapter profile are the
+extension contract. Acquisition receipts are explicit operator declarations unless bound
+to an existing Source repository snapshot; registering metadata performs no download or
+content verification. Subsequent adapters must retain that exact acquisition and Edition
+identity when supplying bytes to the existing Source pipeline. Parsing/normalization,
+chapter segmentation, deduplication/equivalence, embeddings, Deconstruction and corpus-scale
+knowledge extraction are not implemented by this foundation. No Corpus metadata is a
+Provider, content-quality or production qualification claim.
 
 ## Qualification ceiling
 

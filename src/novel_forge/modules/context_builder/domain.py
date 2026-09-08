@@ -76,6 +76,7 @@ class ContextSelection:
 
 _RAW_TYPES = frozenset(
     {
+        "corpus_record",
         "source_document",
         "source_chunk",
         "source_deconstruction_observation",
@@ -517,7 +518,11 @@ def _eligibility_reason(
         return "READ_GENERATION_UNRESOLVED"
     if candidate.read_generation_id != candidate.active_read_generation_id:
         return "WRONG_READ_GENERATION"
-    if candidate.raw_source or logical_kind in profile.forbidden_asset_types:
+    if (
+        candidate.raw_source
+        or logical_kind in profile.forbidden_asset_types
+        or physical_type in profile.forbidden_asset_types
+    ):
         return "RAW_SOURCE_FORBIDDEN"
     if logical_kind in policy.denied_logical_kinds:
         return "LOGICAL_CONTEXT_KIND_DENIED"
