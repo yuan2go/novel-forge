@@ -172,7 +172,14 @@ class SourceImportQuery:
                        work_version.body_unit_count,
                        work_version.character_count, work_version.status,
                        version.lifecycle, version.content_hash, version.content,
-                       work_version.created_at
+                       work_version.created_at,
+                       (
+                         SELECT COUNT(*)
+                         FROM authority_source_chunk AS chunk
+                         WHERE chunk.project_id=work_version.project_id
+                           AND chunk.source_transform_id=
+                               work_version.source_transform_id
+                       ) AS chunk_count
                 FROM authority_source_work_version AS work_version
                 JOIN authority_source_work AS work
                   ON work.source_work_id=work_version.source_work_id
@@ -248,6 +255,7 @@ class SourceImportQuery:
             "asset_content_hash",
             "manifest",
             "created_at",
+            "chunk_count",
         )
         result = _serializable(dict(zip(keys, row, strict=True)))
         result["units"] = units

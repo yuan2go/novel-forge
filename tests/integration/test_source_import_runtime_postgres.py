@@ -368,6 +368,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             )
             self.assertEqual(manifest["unit_count"], 3)
             self.assertEqual(manifest["body_unit_count"], 3)
+            self.assertEqual(manifest["chunk_count"], 3)
             self.assertEqual(
                 [unit["kind"] for unit in manifest["units"]],
                 ["PREFACE", "CHAPTER", "APPENDIX"],
