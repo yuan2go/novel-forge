@@ -602,11 +602,12 @@ class ResultValidator:
         if isinstance(cost, Mapping):
             availability = str(cost.get("availability") or "").upper()
             if availability == "UNAVAILABLE":
+                currency = str(cost.get("currency") or "").upper()
                 if (
                     str(cost.get("measurement") or "").upper() != "UNKNOWN"
                     or not str(cost.get("reason") or "").strip()
                     or "amount" in cost
-                    or "currency" in cost
+                    or ("currency" in cost and currency != "UNKNOWN")
                 ):
                     raise ValueError("unknown execution cost receipt is invalid")
             else:

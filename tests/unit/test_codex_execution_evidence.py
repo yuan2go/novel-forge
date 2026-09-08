@@ -309,7 +309,10 @@ def test_provider_process_timeout_preserves_external_effect_settlement_headroom(
     assert _provider_process_timeout_seconds(1_800, max_attempts=3) == 570
 
 
-def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
+@pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
+def test_codex_backend_validates_schema_and_semantics_before_success(
+    accounting_basis: str,
+) -> None:
     contract_set = contracts(
         backend_id="codex-cli",
         runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
@@ -387,7 +390,10 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
                 allowed_command_prefixes=((sys.executable,),),
                 maximum_result_bytes=1_000_000,
             ),
-            pricing=_pricing(),
+            pricing=_pricing() if accounting_basis == "PRICED" else None,
+            account_entitlement=(
+                _entitlement() if accounting_basis == "ACCOUNT_ENTITLEMENT" else None
+            ),
             structured_result_validator=validator,
         )
 
@@ -397,6 +403,12 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
     evidence = store.get_record(request.execution_id).raw_evidence
     assert evidence["result"] == {"text": "Validated chapter.", "scene_artifacts": []}
     assert evidence["usage"]["measurement"] == "MEASURED"
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        assert evidence["cost"]["availability"] == "UNAVAILABLE"
+        assert evidence["cost"]["currency"] == "UNKNOWN"
+        assert "amount" not in evidence["cost"]
+    else:
+        assert evidence["cost"]["availability"] == "AVAILABLE"
     assert set(evidence["validation_checks"]) == {
         "output_schema",
         "stage_semantics",
