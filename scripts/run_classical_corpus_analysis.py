@@ -189,16 +189,19 @@ def _model_effect_summary(database_url: str, *, project_id: str) -> dict[str, An
         uow.cursor.execute(
             """
             SELECT COUNT(*),
-                   COALESCE(SUM(actual_tokens), 0),
+                   COALESCE(SUM(reservation.actual_tokens), 0),
                    COUNT(*) FILTER (
-                     WHERE accounting_basis='ACCOUNT_ENTITLEMENT'
-                       AND settled_cost_status='UNKNOWN'
+                     WHERE reservation.accounting_basis='ACCOUNT_ENTITLEMENT'
+                       AND reservation.settled_cost_status='UNKNOWN'
                    )
-            FROM authority_budget_reservation
-            WHERE project_id=%s
-              AND provider='codex-cli'
+            FROM authority_budget_reservation AS reservation
+            JOIN authority_external_effect AS effect
+              ON effect.external_effect_id=reservation.external_effect_id
+             AND effect.project_id=reservation.project_id
+            WHERE reservation.project_id=%s
+              AND effect.capability=ANY(%s)
             """,
-            [project_id],
+            [project_id, list(SOURCE_MODEL_CAPABILITIES)],
         )
         budget_row = uow.cursor.fetchone()
     by_capability = [
