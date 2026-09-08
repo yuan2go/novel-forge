@@ -1,0 +1,46 @@
+{
+  "schema_version": "classical-corpus-registry.v1",
+  "registry_id": "classical-corpus-20260908",
+  "rights_policy": {
+    "authorization": "local-research-validation-only",
+    "publication": "FORBIDDEN",
+    "repository_license_scope": "Repository-level MIT notices are recorded but are not treated as proof that every modern collation, annotation, commentary, or edition element is independently cleared.",
+    "raw_source_in_generation_context": false
+  },
+  "repositories": {
+    "chinese-novel": {
+      "url": "https://github.com/luoxuhai/chinese-novel.git",
+      "commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "license_name": "MIT",
+      "license_path": "LICENSE"
+    },
+    "chinese-poetry": {
+      "url": "https://github.com/chinese-poetry/chinese-poetry.git",
+      "commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "license_name": "MIT",
+      "license_path": "LICENSE"
+    }
+  },
+  "works": [
+    {"work_key":"chinese-novel.sanguoyanyi","repository":"chinese-novel","title":"三国演义","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/历史演义/三国演义","include_globs":["resources/历史演义/三国演义/info.json","resources/历史演义/三国演义/*.html"]},
+    {"work_key":"chinese-novel.shuihuzhuan","repository":"chinese-novel","title":"水浒传","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/英雄传奇/水浒传","include_globs":["resources/英雄传奇/水浒传/info.json","resources/英雄传奇/水浒传/*.html"]},
+    {"work_key":"chinese-novel.xiyouji","repository":"chinese-novel","title":"西游记","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/鬼怪神魔/西游记","include_globs":["resources/鬼怪神魔/西游记/info.json","resources/鬼怪神魔/西游记/*.html"]},
+    {"work_key":"chinese-novel.hongloumeng","repository":"chinese-novel","title":"红楼梦","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/世态人情/红楼梦","include_globs":["resources/世态人情/红楼梦/info.json","resources/世态人情/红楼梦/*.html"]},
+    {"work_key":"chinese-novel.fengshenyanyi","repository":"chinese-novel","title":"封神演义","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/鬼怪神魔/封神演义","include_globs":["resources/鬼怪神魔/封神演义/info.json","resources/鬼怪神魔/封神演义/*.html"]},
+    {"work_key":"chinese-novel.liaozhaizhiyi","repository":"chinese-novel","title":"聊斋志异","collection_kind":"SHORT_STORY_COLLECTION","parser_profile":"chinese-novel-html.v1","root_path":"resources/鬼怪神魔/聊斋志异","include_globs":["resources/鬼怪神魔/聊斋志异/info.json","resources/鬼怪神魔/聊斋志异/*.html"]},
+    {"work_key":"chinese-novel.rulinwaishi","repository":"chinese-novel","title":"儒林外史","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/谴责公案/儒林外史","include_globs":["resources/谴责公案/儒林外史/info.json","resources/谴责公案/儒林外史/*.html"]},
+    {"work_key":"chinese-novel.sanxiawuyi","repository":"chinese-novel","title":"三侠五义","collection_kind":"LONG_NOVEL","parser_profile":"chinese-novel-html.v1","root_path":"resources/英雄传奇/三侠五义","include_globs":["resources/英雄传奇/三侠五义/info.json","resources/英雄传奇/三侠五义/*.html"]},
+    {"work_key":"chinese-novel.yushimingyan","repository":"chinese-novel","title":"喻世明言","collection_kind":"SHORT_STORY_COLLECTION","parser_profile":"chinese-novel-html.v1","root_path":"resources/世态人情/喻世明言","include_globs":["resources/世态人情/喻世明言/info.json","resources/世态人情/喻世明言/*.html"]},
+    {"work_key":"chinese-novel.chukepaianjingqi","repository":"chinese-novel","title":"初刻拍案惊奇","collection_kind":"SHORT_STORY_COLLECTION","parser_profile":"chinese-novel-html.v1","root_path":"resources/世态人情/初刻拍案惊奇","include_globs":["resources/世态人情/初刻拍案惊奇/info.json","resources/世态人情/初刻拍案惊奇/*.html"]},
+    {"work_key":"chinese-poetry.shijing","repository":"chinese-poetry","title":"诗经","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"shijing","paths":["诗经/shijing.json"],"include_globs":["诗经/shijing.json"]},
+    {"work_key":"chinese-poetry.chuci","repository":"chinese-poetry","title":"楚辞","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"chuci","paths":["楚辞/chuci.json"],"include_globs":["楚辞/chuci.json"]},
+    {"work_key":"chinese-poetry.caocao","repository":"chinese-poetry","title":"曹操诗集","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"caocao","paths":["曹操诗集/caocao.json"],"include_globs":["曹操诗集/caocao.json"]},
+    {"work_key":"chinese-poetry.nalanxingde","repository":"chinese-poetry","title":"纳兰性德诗集","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"nalan","paths":["纳兰性德/纳兰性德诗集.json"],"include_globs":["纳兰性德/纳兰性德诗集.json"]},
+    {"work_key":"chinese-poetry.huajianji","repository":"chinese-poetry","title":"花间集","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"huajianji","root_path":"五代诗词/huajianji","include_globs":["五代诗词/huajianji/*.json"]},
+    {"work_key":"chinese-poetry.nantang","repository":"chinese-poetry","title":"南唐二主词","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"nantang","paths":["五代诗词/nantang/poetrys.json"],"include_globs":["五代诗词/nantang/poetrys.json"]},
+    {"work_key":"chinese-poetry.youmengying","repository":"chinese-poetry","title":"幽梦影","collection_kind":"APHORISM_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"youmengying","paths":["幽梦影/youmengying.json"],"include_globs":["幽梦影/youmengying.json"]},
+    {"work_key":"chinese-poetry.lunyu","repository":"chinese-poetry","title":"论语","collection_kind":"PHILOSOPHY_CLASSIC","parser_profile":"chinese-poetry-json.v1","parser_variant":"lunyu","paths":["论语/lunyu.json"],"include_globs":["论语/lunyu.json"]},
+    {"work_key":"chinese-poetry.shenglvqimeng","repository":"chinese-poetry","title":"声律启蒙","collection_kind":"DIDACTIC_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"shenglvqimeng","paths":["蒙学/shenglvqimeng.json"],"include_globs":["蒙学/shenglvqimeng.json"]},
+    {"work_key":"chinese-poetry.tangshisanbaishou","repository":"chinese-poetry","title":"唐诗三百首","collection_kind":"POETRY_COLLECTION","parser_profile":"chinese-poetry-json.v1","parser_variant":"tangshisanbaishou","paths":["蒙学/tangshisanbaishou.json"],"include_globs":["蒙学/tangshisanbaishou.json"]}
+  ]
+}

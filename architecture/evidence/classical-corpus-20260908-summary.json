@@ -1,0 +1,731 @@
+{
+  "full_manifest_hash": "sha256:ba7916e7dd6527a7d1e3a8a1400675138fe38d6f768a9821d8635f6c918f388b",
+  "proof_scope": {
+    "does_not_establish": [
+      "authoritative-edition-completeness",
+      "publication-rights-for-every-modern-editorial-element",
+      "model-deconstruction-completion",
+      "creative-quality"
+    ],
+    "proves": [
+      "frozen-repository-body-parsing",
+      "unit-boundary-preservation",
+      "source-location-and-hash-accounting"
+    ]
+  },
+  "registry_hash": "sha256:ba60f7154beeefc047fe723f4832f94a7350f762988fdc494e656346888b79cb",
+  "registry_id": "classical-corpus-20260908",
+  "repositories": {
+    "chinese-novel": {
+      "commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "license_content_hash": "sha256:77f51a8ecfd56a18f5d351764033a09b9d3aea6386a8a08f80c2e34e142af518",
+      "license_name": "MIT",
+      "license_path": "LICENSE",
+      "repository_url": "https://github.com/luoxuhai/chinese-novel.git",
+      "tree_sha": "08858eddbcdd3aae777b8d076b89ce52520f7c2d"
+    },
+    "chinese-poetry": {
+      "commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "license_content_hash": "sha256:c195319aeaa3ffcbe16aa5d26eec19eae5a42f84337dd2b3dc3c9d5ccbbd6507",
+      "license_name": "MIT",
+      "license_path": "LICENSE",
+      "repository_url": "https://github.com/chinese-poetry/chinese-poetry.git",
+      "tree_sha": "947aca5eebbf110a34e0f7fbe108929708541d49"
+    }
+  },
+  "schema_version": "classical-corpus-reconciliation-summary.v1",
+  "totals": {
+    "body_unit_count": 3596,
+    "character_count": 5832060,
+    "chunk_count": 4494,
+    "duplicate_content_group_count": 4,
+    "empty_unit_count": 0,
+    "missing_title_count": 1,
+    "parser_failure_count": 0,
+    "repository_work_counts": {
+      "chinese-novel": 10,
+      "chinese-poetry": 10
+    },
+    "selected_file_count": 1348,
+    "selected_source_bytes": 18340564,
+    "unit_count": 3596,
+    "work_count": 20
+  },
+  "works": [
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 120,
+      "character_count": 593349,
+      "chunk_count": 225,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 121,
+      "selected_files_manifest_hash": "sha256:01b673c33c88de819f79795154132f31e4b6ce48f039b97c241d6b38b156c49a",
+      "selected_source_bytes": 1806250,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:a54efb4e84aa57331af53eddd5f014e005b8d6c3f08578f91e115532eab1d6bb",
+      "title": "三国演义",
+      "unit_count": 120,
+      "work_key": "chinese-novel.sanguoyanyi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 121,
+      "character_count": 861232,
+      "chunk_count": 273,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 122,
+      "selected_files_manifest_hash": "sha256:0bf5fadc7ce0635ec09a05087a32d7a7aeae68474c94e7750cbc283b99bbeebf",
+      "selected_source_bytes": 2624649,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:540d25eb9233a134f6a3e1ba051ead043e2e73deab7e8e378ae7e4e1b92c2b44",
+      "title": "水浒传",
+      "unit_count": 121,
+      "work_key": "chinese-novel.shuihuzhuan"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 101,
+      "character_count": 717065,
+      "chunk_count": 210,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 102,
+      "selected_files_manifest_hash": "sha256:14c75a17d3cb180ca294b540461bee01dbff5e1bbad430c03294386ecac89d20",
+      "selected_source_bytes": 2191706,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:508e7915d0ba83643f45c563186fe97ad1b66fa38fd1a9026910aa396dbd9276",
+      "title": "西游记",
+      "unit_count": 101,
+      "work_key": "chinese-novel.xiyouji"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 120,
+      "character_count": 817927,
+      "chunk_count": 262,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 121,
+      "selected_files_manifest_hash": "sha256:fca06a5f972d5a712570b795d2716445922c9faf327b9b7b8c7a11c6c2488dc5",
+      "selected_source_bytes": 2505387,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:b6d70ee0a45f9e06148c29140ed75ec1619f1d94f92f1ab861f9c837e33fafb2",
+      "title": "红楼梦",
+      "unit_count": 120,
+      "work_key": "chinese-novel.hongloumeng"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 100,
+      "character_count": 586218,
+      "chunk_count": 201,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 101,
+      "selected_files_manifest_hash": "sha256:3cbd9e75bd9a04646a59f012c4c0c2f7497a222729cf64b3d01d10611e9a724b",
+      "selected_source_bytes": 1791201,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:1089fccd6d5b5f9d37030c88954cdd7148c2439772ea31c87dcd6110947090ff",
+      "title": "封神演义",
+      "unit_count": 100,
+      "work_key": "chinese-novel.fengshenyanyi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 499,
+      "character_count": 481576,
+      "chunk_count": 503,
+      "collection_kind": "SHORT_STORY_COLLECTION",
+      "duplicate_content_groups": [
+        {
+          "content_hash": "sha256:8d098b3df6e3a71721dbcd2c807461472f9a71fbd7458e425464f24a39abd748",
+          "ordinals": [
+            202,
+            203
+          ]
+        },
+        {
+          "content_hash": "sha256:d21f596d0a23fc0170b7c0b178a5182289efdd5f20ff57a7cf60df4b9a71525a",
+          "ordinals": [
+            135,
+            136
+          ]
+        }
+      ],
+      "duplicate_title_groups": [
+        {
+          "ordinals": [
+            64,
+            65
+          ],
+          "title": "卷二 猎婆龙"
+        },
+        {
+          "ordinals": [
+            202,
+            203
+          ],
+          "title": "卷六 上仙"
+        },
+        {
+          "ordinals": [
+            135,
+            136
+          ],
+          "title": "卷四 保住"
+        },
+        {
+          "ordinals": [
+            137,
+            138
+          ],
+          "title": "卷四 公孙九娘"
+        }
+      ],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 500,
+      "selected_files_manifest_hash": "sha256:9f7d78cbda1cbda8a60d0abd5b42353906d53ba450fd4522b9d43d3df3782a05",
+      "selected_source_bytes": 1467672,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:8cf4e5b8f05452210046a8a1fe8740711201f43d5be108e7ea69384061cf647a",
+      "title": "聊斋志异",
+      "unit_count": 499,
+      "work_key": "chinese-novel.liaozhaizhiyi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 57,
+      "character_count": 327594,
+      "chunk_count": 112,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 58,
+      "selected_files_manifest_hash": "sha256:31c86ad0a566fb0896839e01073919559ccab0a493dff1e98fcc943239cfc16c",
+      "selected_source_bytes": 1005330,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:69cdc3c9d36a1b84497cd7b6181cd316c9aa4e0e239610c5cb91dc3730871bd7",
+      "title": "儒林外史",
+      "unit_count": 57,
+      "work_key": "chinese-novel.rulinwaishi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 120,
+      "character_count": 507509,
+      "chunk_count": 199,
+      "collection_kind": "LONG_NOVEL",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 121,
+      "selected_files_manifest_hash": "sha256:944cdc073fa165b6d7b92cc8df69956c125b2f172b071f08fd2c56b27256b219",
+      "selected_source_bytes": 1542089,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:181aa1fd310e394de889779792a335338b087ac63d833b32d6e58517cb14defa",
+      "title": "三侠五义",
+      "unit_count": 120,
+      "work_key": "chinese-novel.sanxiawuyi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 40,
+      "character_count": 358058,
+      "chunk_count": 112,
+      "collection_kind": "SHORT_STORY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 41,
+      "selected_files_manifest_hash": "sha256:8c0dfe38a7e314d86c2ac3d8abcf86d5aee84233276c6685d5f2e5c9206ed6b7",
+      "selected_source_bytes": 1096176,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:969c9f4744b0962d05defc62f8455e2247354937cc46e94e386d926e52b16a23",
+      "title": "喻世明言",
+      "unit_count": 40,
+      "work_key": "chinese-novel.yushimingyan"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 40,
+      "character_count": 396411,
+      "chunk_count": 119,
+      "collection_kind": "SHORT_STORY_COLLECTION",
+      "duplicate_content_groups": [
+        {
+          "content_hash": "sha256:c4d6e17a7f6b19ea98308ae9b5f67d685357e9a9684b6169272be3021f9e7cb0",
+          "ordinals": [
+            37,
+            38
+          ]
+        }
+      ],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-novel-html.v1",
+      "repository": "chinese-novel",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "selected_file_count": 41,
+      "selected_files_manifest_hash": "sha256:8c1e502a62ae5cefbf2544f93a4990393bcf5d6d65fe2c74ce71daa2181fef6d",
+      "selected_source_bytes": 1246839,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:4c0d5d00e4ada8b0fc2724863e67e999b859cee2d01b475562ba3707be434457",
+      "title": "初刻拍案惊奇",
+      "unit_count": 40,
+      "work_key": "chinese-novel.chukepaianjingqi"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 305,
+      "character_count": 37955,
+      "chunk_count": 305,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [
+        {
+          "ordinals": [
+            68,
+            92,
+            116
+          ],
+          "title": "扬之水"
+        },
+        {
+          "ordinals": [
+            122,
+            133
+          ],
+          "title": "无衣"
+        },
+        {
+          "ordinals": [
+            119,
+            169
+          ],
+          "title": "杕杜"
+        },
+        {
+          "ordinals": [
+            26,
+            45
+          ],
+          "title": "柏舟"
+        },
+        {
+          "ordinals": [
+            102,
+            211
+          ],
+          "title": "甫田"
+        },
+        {
+          "ordinals": [
+            80,
+            120,
+            146
+          ],
+          "title": "羔裘"
+        },
+        {
+          "ordinals": [
+            35,
+            201
+          ],
+          "title": "谷风"
+        },
+        {
+          "ordinals": [
+            131,
+            187
+          ],
+          "title": "黄鸟"
+        }
+      ],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:c4c6708cd473d728aad9b5dbaad523c39059ac0056d2eb3e78a78e3a3a5a24c2",
+      "selected_source_bytes": 156972,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:7159396df9fd0cd38eaf127b2f10271b900aa6338934d531f3a9bbd3553f3e7e",
+      "title": "诗经",
+      "unit_count": 305,
+      "work_key": "chinese-poetry.shijing"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 65,
+      "character_count": 33692,
+      "chunk_count": 65,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [
+        {
+          "ordinals": [
+            34,
+            50
+          ],
+          "title": "怨思"
+        },
+        {
+          "ordinals": [
+            23,
+            56
+          ],
+          "title": "远游"
+        }
+      ],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:d72a4d81c2f2bd56f47ccf110a3ef8dcab0a0e945302ee309f8f25732cf1cc59",
+      "selected_source_bytes": 141832,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:f74df2df3c6c931fb386e01c22d2b5c85a0401bcd737122086aa29bcf9c903d6",
+      "title": "楚辞",
+      "unit_count": 65,
+      "work_key": "chinese-poetry.chuci"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 26,
+      "character_count": 3646,
+      "chunk_count": 26,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:1ff800278b29a4b487a145eeb32e101fb54298ffb9ff3dfb245b79bfcdfdc992",
+      "selected_source_bytes": 16894,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:acb8ca6d4b89bbaeab00522c72985013d403d747856d86365d2e63538667ed4b",
+      "title": "曹操诗集",
+      "unit_count": 26,
+      "work_key": "chinese-poetry.caocao"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 258,
+      "character_count": 14768,
+      "chunk_count": 258,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [
+        {
+          "content_hash": "sha256:0f0b9d37622cba889cf13d8497aa19e177b81bafb76f36e566b274e9e78b1796",
+          "ordinals": [
+            175,
+            180
+          ]
+        }
+      ],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [
+        228
+      ],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:01871a2d1dfba3e50e19810e97332d006d2a9c1affbfd2875a257eae3d9026ba",
+      "selected_source_bytes": 79626,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:863edb891bf151b708bd5f5fa001c462f2b668e8c367cb221063f63bff4a2d4a",
+      "title": "纳兰性德诗集",
+      "unit_count": 258,
+      "work_key": "chinese-poetry.nalanxingde"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 498,
+      "character_count": 27195,
+      "chunk_count": 498,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [
+        {
+          "ordinals": [
+            163,
+            212
+          ],
+          "title": "更漏子·春夜阑"
+        }
+      ],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 498,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 11,
+      "selected_files_manifest_hash": "sha256:947cdc3f759d2a49ddbe17b024f86455f9a63c694c8edf0b97c9b1724c4da5bb",
+      "selected_source_bytes": 245088,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:361d4198cd4cff6af1428e98fd31fa5fd6c6a7a2c34cdd2c9c422ae5bca3d5f4",
+      "title": "花间集",
+      "unit_count": 498,
+      "work_key": "chinese-poetry.huajianji"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 45,
+      "character_count": 2529,
+      "chunk_count": 45,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 45,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:dcbf21bd655141c816661f3562dfdf8a4863a4e25ab5b72f9fea25b0903a22fe",
+      "selected_source_bytes": 71500,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:30c94887e05cd6c17e63577c20b6d5d64e4368bef9b01a21bdea3d2ca8d29d60",
+      "title": "南唐二主词",
+      "unit_count": 45,
+      "work_key": "chinese-poetry.nantang"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 219,
+      "character_count": 10750,
+      "chunk_count": 219,
+      "collection_kind": "APHORISM_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 219,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:31a04b218aa50eef07fb8eae0d9337fb26b876aae897bd4d03c1919e85565744",
+      "selected_source_bytes": 97571,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:9cbc2dc527ed567f0fee6068b8f23183d8aa7d12c0cc473081aaef0d73db2cd8",
+      "title": "幽梦影",
+      "unit_count": 219,
+      "work_key": "chinese-poetry.youmengying"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 512,
+      "character_count": 21480,
+      "chunk_count": 512,
+      "collection_kind": "PHILOSOPHY_CLASSIC",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:c643bf68f8f511e5a0917edbab5ed32c13bc9ad2c0933c7b5feb18c2e12b97ce",
+      "selected_source_bytes": 74799,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:efaf0acc9dda172dd405541145a983c3792a97c76ec36f2fb04ec0331c60257e",
+      "title": "论语",
+      "unit_count": 512,
+      "work_key": "chinese-poetry.lunyu"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 30,
+      "character_count": 8438,
+      "chunk_count": 30,
+      "collection_kind": "DIDACTIC_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 1,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:59c2724061a2c9d23f4456ed6b367784fca9ad7da8b9576983dd65064384fb39",
+      "selected_source_bytes": 30154,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:aec3bf7bdfe63f0cd766d6524e07735476143886dcfae5e9b103c97b614cf987",
+      "title": "声律启蒙",
+      "unit_count": 30,
+      "work_key": "chinese-poetry.shenglvqimeng"
+    },
+    {
+      "authoritative_edition_claim": "NOT_MADE",
+      "body_unit_count": 320,
+      "character_count": 24668,
+      "chunk_count": 320,
+      "collection_kind": "POETRY_COLLECTION",
+      "duplicate_content_groups": [],
+      "duplicate_title_groups": [
+        {
+          "ordinals": [
+            23,
+            80,
+            212
+          ],
+          "title": "宮詞"
+        },
+        {
+          "ordinals": [
+            196,
+            224
+          ],
+          "title": "春思"
+        },
+        {
+          "ordinals": [
+            19,
+            74
+          ],
+          "title": "春怨"
+        },
+        {
+          "ordinals": [
+            73,
+            116
+          ],
+          "title": "月夜"
+        },
+        {
+          "ordinals": [
+            34,
+            277
+          ],
+          "title": "涼州詞"
+        },
+        {
+          "ordinals": [
+            43,
+            180
+          ],
+          "title": "隋宮"
+        },
+        {
+          "ordinals": [
+            5,
+            70
+          ],
+          "title": "雜詩"
+        }
+      ],
+      "empty_unit_ordinals": [],
+      "excluded_field_count": 0,
+      "missing_title_ordinals": [],
+      "parser_failures": [],
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository": "chinese-poetry",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "selected_file_count": 1,
+      "selected_files_manifest_hash": "sha256:0b0aa47e0daa273c586315098710f027c57fc1eafb542207ca27d276693e6833",
+      "selected_source_bytes": 148829,
+      "source_version_scope": "REPOSITORY_AVAILABLE_AT_FROZEN_COMMIT",
+      "structure_manifest_hash": "sha256:bd37833041a485cf19cb5d528ce96f83c31add6913c29e9991fe158f289d2c44",
+      "title": "唐诗三百首",
+      "unit_count": 320,
+      "work_key": "chinese-poetry.tangshisanbaishou"
+    }
+  ]
+}

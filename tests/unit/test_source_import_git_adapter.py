@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 import hashlib
 from pathlib import Path
 import subprocess
 
 from novel_forge.modules.source_import import GitRepositoryExternalEffectAdapter
+from novel_forge.modules.source_import.domain import SourceImportPolicy
 
 
 def _git(path: Path, *arguments: str) -> str:
@@ -89,3 +91,55 @@ def test_git_adapter_new_commit_manifest_changes_without_mutating_old_snapshot(t
     assert first.evidence["manifest_hash"] != second.evidence["manifest_hash"]
     assert {row["path"] for row in first.evidence["files"]} == {"a.txt"}
     assert {row["path"] for row in second.evidence["files"]} == {"b.txt", "renamed.txt"}
+
+
+def test_git_adapter_excludes_out_of_scope_tree_entries_before_snapshot_limits(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "scoped-repository"
+    repository.mkdir()
+    _git(repository, "init")
+    _git(repository, "config", "user.name", "Novel Forge Test")
+    _git(repository, "config", "user.email", "test@novel-forge.invalid")
+    (repository / "selected").mkdir()
+    (repository / "other").mkdir()
+    (repository / "selected" / "1.html").write_text("正文<br>第二段", encoding="utf-8")
+    for index in range(5):
+        (repository / "other" / f"{index}.txt").write_text("不属于作品", encoding="utf-8")
+    (repository / "LICENSE").write_text("MIT License\n", encoding="utf-8")
+    _git(repository, "add", ".")
+    _git(repository, "commit", "-m", "scoped")
+    adapter = GitRepositoryExternalEffectAdapter(
+        tmp_path / "cache",
+        allow_file_repositories=True,
+        allowed_file_roots=(tmp_path,),
+    )
+    policy = SourceImportPolicy(
+        include_globs=("selected/*.html",),
+        extension_allowlist=(".html", ".json"),
+        max_files=1,
+        parser_profile="chinese-novel-html.v1",
+        source_work_key="fixture.work",
+        corpus_registry_id="fixture-registry",
+        corpus_registry_hash="sha256:" + "a" * 64,
+    )
+
+    result = adapter.execute(
+        stable_idempotency_key="scoped",
+        capability="source.remote.fetch",
+        request_payload={
+            "repository_url": repository.as_uri(),
+            "ref": "HEAD",
+            "policy": asdict(policy),
+        },
+    )
+
+    assert result.outcome == "success"
+    assert [row["path"] for row in result.evidence["files"]] == [
+        "selected/1.html"
+    ]
+    assert result.evidence["tree_entry_count"] == 7
+    assert result.evidence["excluded_tree_entry_count"] == 6
+    assert result.evidence["license_findings"][0]["detected_identifiers"] == [
+        "MIT"
+    ]

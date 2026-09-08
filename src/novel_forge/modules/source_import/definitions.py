@@ -3,11 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 
-SOURCE_IMPORT_DEFINITION_VERSION = "1.1.0"
+SOURCE_IMPORT_DEFINITION_VERSION = "1.2.0"
 SOURCE_IMPORT_DISCOVERY_OPERATION = "source.import.repository.discover"
 SOURCE_IMPORT_DISCOVERY_HANDLER = "novel_forge.source_import.repository_discover"
 SOURCE_IMPORT_FILE_OPERATION = "source.import.file.process"
 SOURCE_IMPORT_FILE_HANDLER = "novel_forge.source_import.file_process"
+SOURCE_IMPORT_WORK_OPERATION = "source.import.work.process"
+SOURCE_IMPORT_WORK_HANDLER = "novel_forge.source_import.work_process"
 SOURCE_IMPORT_PROFILING_OPERATION = "source.import.document.profile"
 SOURCE_IMPORT_PROFILING_HANDLER = "novel_forge.source_import.document_profile"
 SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION = "source.import.analysis.plan"
@@ -25,6 +27,7 @@ SOURCE_IMPORT_OPERATIONS = frozenset(
     {
         SOURCE_IMPORT_DISCOVERY_OPERATION,
         SOURCE_IMPORT_FILE_OPERATION,
+        SOURCE_IMPORT_WORK_OPERATION,
         SOURCE_IMPORT_PROFILING_OPERATION,
         SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
         SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
@@ -99,6 +102,12 @@ def source_import_definitions(
             ["object_store.put"],
         ),
         (
+            SOURCE_IMPORT_WORK_OPERATION,
+            SOURCE_IMPORT_WORK_HANDLER,
+            "source-work:{project_id}",
+            ["object_store.put"],
+        ),
+        (
             SOURCE_IMPORT_PROFILING_OPERATION,
             SOURCE_IMPORT_PROFILING_HANDLER,
             "source-profile:{project_id}",
@@ -156,6 +165,7 @@ __all__ = [
     "SOURCE_IMPORT_DEFINITION_VERSION",
     "SOURCE_IMPORT_DISCOVERY_OPERATION",
     "SOURCE_IMPORT_FILE_OPERATION",
+    "SOURCE_IMPORT_WORK_OPERATION",
     "SOURCE_IMPORT_PROFILING_OPERATION",
     "SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION",
     "SOURCE_IMPORT_MKAOS_OPERATION",

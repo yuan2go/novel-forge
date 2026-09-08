@@ -122,6 +122,7 @@ from . import (
     v20260907_0119_grounded_chapter_acceptance,
     v20260907_0120_foundation_generation,
     v20260908_0121_account_entitlement_budget,
+    v20260908_0122_source_work_manifest,
 )
 
 VERSION_MODULES = [
@@ -246,6 +247,7 @@ VERSION_MODULES = [
     v20260907_0119_grounded_chapter_acceptance,
     v20260907_0120_foundation_generation,
     v20260908_0121_account_entitlement_budget,
+    v20260908_0122_source_work_manifest,
 ]
 
 __all__ = ["VERSION_MODULES"]

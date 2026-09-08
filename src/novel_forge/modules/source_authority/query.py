@@ -676,6 +676,7 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
                   'source.deconstruction.reprocessing.plan',
                   'source.import.repository.discover',
                   'source.import.file.process',
+                  'source.import.work.process',
                   'source.import.deconstruction.execute',
                   'source.import.mkaos.extract',
                   'source.import.reprocessing.apply'

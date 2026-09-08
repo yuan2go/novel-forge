@@ -156,6 +156,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise _http_error(exc, not_found=True) from exc
 
+    @router.get("/{import_job_id}/source-work")
+    def source_work_manifest(
+        import_job_id: str, project_id: str
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.source_work_manifest(
+                project_id=project_id,
+                import_job_id=import_job_id,
+                principal=principal,
+            )
+        except KernelError as exc:
+            raise _http_error(exc, not_found=True) from exc
+
     @router.get("/{import_job_id}/downstream")
     def downstream(import_job_id: str, project_id: str) -> dict[str, Any]:
         principal = _authorize("source.authority.query", project_id)

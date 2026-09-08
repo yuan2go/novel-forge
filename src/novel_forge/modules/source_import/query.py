@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
 
@@ -146,6 +147,111 @@ class SourceImportQuery:
                 project_id=project_id, import_job_id=import_job_id
             )
         return [_serializable(row) for row in rows]
+
+    def source_work_manifest(
+        self,
+        *,
+        project_id: str,
+        import_job_id: str,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._require(principal, project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            job = SourceImportRepository(uow.cursor).job(
+                project_id=project_id, import_job_id=import_job_id
+            )
+            snapshot_id = str(job["repository_snapshot_asset_version_id"] or "")
+            uow.cursor.execute(
+                """
+                SELECT work.source_work_id, work.work_key, work.title,
+                       work.collection_kind, work_version.asset_version_id,
+                       work_version.repository_commit_sha,
+                       work_version.parser_profile, work_version.parser_version,
+                       work_version.registry_id, work_version.registry_hash,
+                       work_version.manifest_hash, work_version.unit_count,
+                       work_version.body_unit_count,
+                       work_version.character_count, work_version.status,
+                       version.lifecycle, version.content_hash, version.content,
+                       work_version.created_at
+                FROM authority_source_work_version AS work_version
+                JOIN authority_source_work AS work
+                  ON work.source_work_id=work_version.source_work_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=work_version.asset_version_id
+                WHERE work_version.project_id=%s
+                  AND work_version.repository_snapshot_asset_version_id=%s
+                ORDER BY work_version.created_at DESC
+                LIMIT 1
+                """,
+                [project_id, snapshot_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "SOURCE_WORK_NOT_FOUND",
+                    "Source import has no materialized SourceWork manifest",
+                )
+            uow.cursor.execute(
+                """
+                SELECT source_unit_version_id, source_unit_id, ordinal, kind,
+                       title, author, raw_file_path, raw_file_hash,
+                       source_locator, original_content_hash,
+                       normalized_content_hash, normalized_byte_start,
+                       normalized_byte_end, character_count, line_count,
+                       metadata, status
+                FROM authority_source_unit_version
+                WHERE source_work_asset_version_id=%s
+                ORDER BY ordinal
+                """,
+                [str(row[4])],
+            )
+            unit_keys = (
+                "source_unit_version_id",
+                "source_unit_id",
+                "ordinal",
+                "kind",
+                "title",
+                "author",
+                "raw_file_path",
+                "raw_file_hash",
+                "source_locator",
+                "original_content_hash",
+                "normalized_content_hash",
+                "normalized_byte_start",
+                "normalized_byte_end",
+                "character_count",
+                "line_count",
+                "metadata",
+                "status",
+            )
+            units = [
+                _serializable(dict(zip(unit_keys, item, strict=True)))
+                for item in uow.cursor.fetchall()
+            ]
+        keys = (
+            "source_work_id",
+            "work_key",
+            "title",
+            "collection_kind",
+            "asset_version_id",
+            "repository_commit_sha",
+            "parser_profile",
+            "parser_version",
+            "registry_id",
+            "registry_hash",
+            "manifest_hash",
+            "unit_count",
+            "body_unit_count",
+            "character_count",
+            "status",
+            "asset_lifecycle",
+            "asset_content_hash",
+            "manifest",
+            "created_at",
+        )
+        result = _serializable(dict(zip(keys, row, strict=True)))
+        result["units"] = units
+        return result
 
     def preview(
         self,

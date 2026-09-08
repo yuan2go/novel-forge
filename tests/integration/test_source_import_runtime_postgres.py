@@ -44,6 +44,7 @@ from novel_forge.modules.source_import import (
     SourceImportScheduler,
     SourceMethodologyRegistry,
 )
+from novel_forge.modules.source_import.classical_corpus import resolve_work_spec
 from novel_forge.modules.source_import.methodologies import METHODOLOGY_VERSIONS
 from novel_forge.modules.source_import import analysis_profiles
 from novel_forge.modules.source_import.profiling import SourceContentType
@@ -275,6 +276,212 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             item["skill_id"] for item in routes["theory.md"]["methodologies"]
         }
         self.assertEqual(methodology_ids, {"multidisciplinary-knowledge"})
+
+    def test_work_import_materializes_native_manifest_and_exact_replay(self) -> None:
+        spec = resolve_work_spec("chinese-novel.sanguoyanyi")
+        root = self.repository / spec.root_path
+        root.mkdir(parents=True)
+        info = {
+            "catalogueTotal": 3,
+            "catalogues": ["序言", "第一回", "附录"],
+            "author": {
+                "name": "测试作者",
+                "dynasty": "测试朝代",
+                "intro": "这段作者介绍不得混入正文。",
+            },
+        }
+        (root / "info.json").write_text(
+            json.dumps(info, ensure_ascii=False), encoding="utf-8"
+        )
+        (root / "0.html").write_text("序文<br>第二行", encoding="utf-8")
+        (root / "1.html").write_text(
+            "原生作品正文第一段<br><br>原生作品正文第二段", encoding="utf-8"
+        )
+        (root / "2.html").write_text("附录文本", encoding="utf-8")
+        self._git("add", ".")
+        self._git("commit", "-m", "add governed work fixture")
+        commit = self._git("rev-parse", "HEAD").strip()
+        fixture_spec = replace(
+            spec,
+            repository_url=self.repository.as_uri(),
+            repository_commit_sha=commit,
+            registry_id="fixture-classical-corpus",
+            registry_hash="sha256:" + "a" * 64,
+        )
+        policy = SourceImportPolicy(
+            include_globs=fixture_spec.include_globs,
+            extension_allowlist=(".html", ".json"),
+            max_file_bytes=1_000_000,
+            max_repository_bytes=5_000_000,
+            max_files=10,
+            max_chunk_bytes=256,
+            parser_profile=fixture_spec.parser_profile,
+            source_work_key=fixture_spec.work_key,
+            corpus_registry_id=fixture_spec.registry_id,
+            corpus_registry_hash=fixture_spec.registry_hash,
+        )
+
+        def create(
+            suffix: str,
+            *,
+            pinned_commit: str = commit,
+            pinned_policy: SourceImportPolicy = policy,
+        ) -> dict[str, object]:
+            return self.application.create_import(
+                CreateSourceImportCommand(
+                    project_id=self.project_id,
+                    workspace_id=self.workspace_id,
+                    source_type="github_repository",
+                    repository_url=self.repository.as_uri(),
+                    requested_ref=pinned_commit,
+                    policy=pinned_policy,
+                    intelligence_policy=SourceIntelligencePolicy(),
+                    analysis_override=None,
+                    mode="IMPORT",
+                    rights_authorization="licensed",
+                    license_name="MIT",
+                    copyright_boundary="local analysis and abstraction only",
+                    actor_id="source-import-operator",
+                    idempotency_key=f"work-import:{self.project_id}:{suffix}",
+                    trace_id=f"trace:{self.project_id}:work:{suffix}",
+                    correlation_id=f"correlation:{self.project_id}",
+                )
+            )
+
+        with patch(
+            "novel_forge.modules.source_import.application.resolve_work_spec",
+            return_value=fixture_spec,
+        ):
+            first = create("first")
+            self.scheduler.run_or_recover(
+                operation_id=str(first["operation_id"]), project_id=self.project_id
+            )
+            work_operations = self._operations("source.import.work.process")
+            self.assertEqual(len(work_operations), 1)
+            self.scheduler.run_or_recover(
+                operation_id=work_operations[0], project_id=self.project_id
+            )
+            manifest = self.query.source_work_manifest(
+                project_id=self.project_id,
+                import_job_id=str(first["import_job_id"]),
+            )
+            self.assertEqual(manifest["unit_count"], 3)
+            self.assertEqual(manifest["body_unit_count"], 3)
+            self.assertEqual(
+                [unit["kind"] for unit in manifest["units"]],
+                ["PREFACE", "CHAPTER", "APPENDIX"],
+            )
+            self.assertEqual(
+                manifest["manifest"]["normalized_projection"]
+                ["traditional_simplified_conversion"],
+                "NOT_APPLIED",
+            )
+            serialized = json.dumps(manifest, ensure_ascii=False, default=str)
+            self.assertNotIn("原生作品正文第一段", serialized)
+            self.assertNotIn("这段作者介绍不得混入正文", serialized)
+
+            second = create("second")
+            self.scheduler.run_or_recover(
+                operation_id=str(second["operation_id"]), project_id=self.project_id
+            )
+            work_operations = self._operations("source.import.work.process")
+            self.assertEqual(len(work_operations), 2)
+            self.scheduler.run_or_recover(
+                operation_id=work_operations[-1], project_id=self.project_id
+            )
+            replay = self.query.import_job(
+                project_id=self.project_id,
+                import_job_id=str(second["import_job_id"]),
+            )
+
+        self.assertEqual(replay["effective_status"], "IMPORTED")
+        self.assertEqual(replay["counters"]["files_to_fetch"], 0)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_work_version "
+                "WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_transform WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+
+        (root / "1.html").write_text(
+            "原生作品正文改版第一段<br><br>原生作品正文改版第二段",
+            encoding="utf-8",
+        )
+        self._git("add", ".")
+        self._git("commit", "-m", "update governed work fixture")
+        updated_commit = self._git("rev-parse", "HEAD").strip()
+        updated_spec = replace(
+            fixture_spec,
+            repository_commit_sha=updated_commit,
+            registry_hash="sha256:" + "b" * 64,
+        )
+        updated_policy = replace(
+            policy,
+            corpus_registry_hash=updated_spec.registry_hash,
+        )
+        with patch(
+            "novel_forge.modules.source_import.application.resolve_work_spec",
+            return_value=updated_spec,
+        ):
+            updated = create(
+                "updated",
+                pinned_commit=updated_commit,
+                pinned_policy=updated_policy,
+            )
+            self.scheduler.run_or_recover(
+                operation_id=str(updated["operation_id"]), project_id=self.project_id
+            )
+            updated_work_operation = self._operations(
+                "source.import.work.process"
+            )[-1]
+            updated_result = self.scheduler.run_or_recover(
+                operation_id=updated_work_operation, project_id=self.project_id
+            )
+            updated_manifest = self.query.source_work_manifest(
+                project_id=self.project_id,
+                import_job_id=str(updated["import_job_id"]),
+            )
+
+        self.assertFalse(updated_result["result"]["source_work_version_reused"])
+        self.assertGreater(
+            updated_result["result"]["invalidated_descendant_count"], 0
+        )
+        self.assertEqual(updated_manifest["repository_commit_sha"], updated_commit)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT work_version.status, version.lifecycle
+                FROM authority_source_work_version AS work_version
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=work_version.asset_version_id
+                WHERE work_version.project_id=%s
+                ORDER BY work_version.created_at
+                """,
+                [self.project_id],
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [("SUPERSEDED", "SUPERSEDED"), ("ACTIVE", "ACTIVE")],
+            )
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_content_invalidation
+                WHERE project_id=%s AND cause_type='UPSTREAM_REPLACED'
+                """,
+                [self.project_id],
+            )
+            self.assertGreater(cursor.fetchone()[0], 0)
 
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,

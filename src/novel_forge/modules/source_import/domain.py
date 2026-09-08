@@ -61,6 +61,10 @@ class SourceImportPolicy:
     allow_git_lfs: bool = False
     normalization_version: str = "source-normalization.v1"
     chunking_version: str = "source-structural-chunking.v1"
+    parser_profile: str = "generic-text.v1"
+    source_work_key: str = ""
+    corpus_registry_id: str = ""
+    corpus_registry_hash: str = ""
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[a-z][a-z0-9_.-]+\.v[0-9]+", self.policy_version):
@@ -90,6 +94,40 @@ class SourceImportPolicy:
             "extension_allowlist",
             tuple(sorted({item.lower() for item in self.extension_allowlist})),
         )
+        if not re.fullmatch(
+            r"[a-z][a-z0-9_.-]+\.v[0-9]+", self.parser_profile
+        ):
+            raise ValueError("Source parser_profile is invalid")
+        work_aware = self.parser_profile != "generic-text.v1"
+        if work_aware:
+            if (
+                not re.fullmatch(r"[a-z0-9][a-z0-9.-]+", self.source_work_key)
+                or not self.corpus_registry_id.strip()
+                or not _SHA256.fullmatch(self.corpus_registry_hash)
+            ):
+                raise ValueError(
+                    "work-aware Source import requires a frozen work and registry"
+                )
+        elif any(
+            value.strip()
+            for value in (
+                self.source_work_key,
+                self.corpus_registry_id,
+                self.corpus_registry_hash,
+            )
+        ):
+            raise ValueError("generic Source import cannot declare a corpus work")
+        if ".html" in self.extension_allowlist and not work_aware:
+            raise ValueError("HTML requires a governed work-aware parser")
+        if self.parser_profile == "chinese-novel-html.v1" and not {
+            ".html",
+            ".json",
+        }.issubset(self.extension_allowlist):
+            raise ValueError("Chinese novel parser requires JSON and HTML inputs")
+        if self.parser_profile == "chinese-poetry-json.v1" and (
+            ".json" not in self.extension_allowlist or ".html" in self.extension_allowlist
+        ):
+            raise ValueError("Chinese poetry parser accepts JSON inputs only")
 
     @property
     def policy_hash(self) -> str:
@@ -103,6 +141,10 @@ class SourceImportPolicy:
                 "max_chunk_bytes": self.max_chunk_bytes,
                 "structure": "heading-paragraph-preserving",
                 "token_estimator": "unicode-weighted-v1",
+                "parser_profile": self.parser_profile,
+                "source_work_key": self.source_work_key,
+                "corpus_registry_id": self.corpus_registry_id,
+                "corpus_registry_hash": self.corpus_registry_hash,
             }
         )
 

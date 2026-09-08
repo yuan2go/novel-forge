@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
 from dataclasses import asdict, dataclass
 import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 from uuid import uuid4
+
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
 from novel_forge.modules.authority_security import Principal
@@ -15,6 +18,7 @@ from novel_forge.modules.command_kernel.asset_runtime import (
     reserve_blob,
     verify_blob,
 )
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
@@ -70,6 +74,7 @@ from .definitions import (
     SOURCE_IMPORT_DEFINITION_VERSION,
     SOURCE_IMPORT_DISCOVERY_OPERATION,
     SOURCE_IMPORT_FILE_OPERATION,
+    SOURCE_IMPORT_WORK_OPERATION,
     SOURCE_IMPORT_MKAOS_OPERATION,
     SOURCE_IMPORT_REPROCESSING_OPERATION,
     source_import_definitions,
@@ -82,6 +87,12 @@ from .domain import (
     normalize_repository_url,
     normalize_source_bytes,
     chunk_normalized_text,
+)
+from .classical_corpus import (
+    ParsedSourceWork,
+    canonical_hash as corpus_canonical_hash,
+    parse_classical_work,
+    resolve_work_spec,
 )
 from .methodologies import SourceMethodologyRegistry
 from .profiling import (
@@ -179,6 +190,24 @@ class CreateSourceImportCommand:
             license_name=self.license_name,
             copyright_boundary=self.copyright_boundary,
         )
+        if self.policy.parser_profile != "generic-text.v1":
+            spec = resolve_work_spec(self.policy.source_work_key)
+            if (
+                normalize_repository_url(
+                    self.repository_url,
+                    allow_file=self.repository_url.startswith("file://"),
+                )
+                != spec.repository_url
+                or self.requested_ref != spec.repository_commit_sha
+                or self.policy.parser_profile != spec.parser_profile
+                or self.policy.corpus_registry_id != spec.registry_id
+                or self.policy.corpus_registry_hash != spec.registry_hash
+                or tuple(self.policy.include_globs) != spec.include_globs
+                or self.license_name != spec.license_name
+            ):
+                raise ValueError(
+                    "work-aware Source import differs from the frozen corpus registry"
+                )
 
 
 @dataclass(frozen=True, slots=True)
@@ -661,6 +690,8 @@ class SourceImportApplication:
             return self._execute_discovery(worker)
         if definition == SOURCE_IMPORT_FILE_OPERATION:
             return self._execute_file(worker)
+        if definition == SOURCE_IMPORT_WORK_OPERATION:
+            return self._execute_work(worker)
         if definition == SOURCE_IMPORT_PROFILING_OPERATION:
             return self._execute_profiling(worker)
         if definition == SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION:
@@ -878,8 +909,22 @@ class SourceImportApplication:
                     project_id=worker.project_id,
                     snapshot_asset_version_id=str(existing["asset_version_id"]),
                 )
+                uow.cursor.execute(
+                    "SELECT content FROM authority_asset_version "
+                    "WHERE asset_version_id=%s",
+                    [str(existing["asset_version_id"])],
+                )
+                stored_snapshot = dict(uow.cursor.fetchone()[0] or {})
                 counters = self._discovery_counters(
-                    stored_files, policy=policy, snapshot_reused=True
+                    stored_files,
+                    policy=policy,
+                    snapshot_reused=True,
+                    tree_entry_count=int(
+                        stored_snapshot.get("tree_entry_count") or len(stored_files)
+                    ),
+                    excluded_tree_entry_count=int(
+                        stored_snapshot.get("excluded_tree_entry_count") or 0
+                    ),
                 )
                 target = "PREVIEWED" if job["mode"] == "PREVIEW" else "PROCESSING"
                 repository.transition_job(
@@ -948,6 +993,7 @@ class SourceImportApplication:
                 diffs=diffs,
                 repository=repository,
                 governance_eligible=governance.analysis_allowed,
+                policy=policy,
             )
             snapshot_content = {
                 "schema_version": "source-repository-snapshot.v1",
@@ -961,6 +1007,12 @@ class SourceImportApplication:
                 "governance_policy_hash": governance_policy_hash,
                 "file_count": discovery["file_count"],
                 "repository_bytes": discovery["repository_bytes"],
+                "tree_entry_count": discovery.get(
+                    "tree_entry_count", discovery["file_count"]
+                ),
+                "excluded_tree_entry_count": discovery.get(
+                    "excluded_tree_entry_count", 0
+                ),
                 "files": [
                     {
                         key: row[key]
@@ -1048,7 +1100,15 @@ class SourceImportApplication:
             )
             repository.register_files(file_rows)
             counters = self._discovery_counters(
-                file_rows, policy=policy, snapshot_reused=False
+                file_rows,
+                policy=policy,
+                snapshot_reused=False,
+                tree_entry_count=int(
+                    discovery.get("tree_entry_count") or discovery["file_count"]
+                ),
+                excluded_tree_entry_count=int(
+                    discovery.get("excluded_tree_entry_count") or 0
+                ),
             )
             target = "PREVIEWED" if job["mode"] == "PREVIEW" else "PROCESSING"
             repository.transition_job(
@@ -1412,6 +1472,7 @@ class SourceImportApplication:
         diffs: tuple[ManifestDiffEntry, ...],
         repository: SourceImportRepository,
         governance_eligible: bool,
+        policy: SourceImportPolicy,
     ) -> list[dict[str, Any]]:
         current = {item.path: item for item in current_files}
         previous = {str(item["path"]): item for item in previous_rows}
@@ -1442,7 +1503,11 @@ class SourceImportApplication:
                 eligibility = "BLOCKED"
                 block_reason = "rights_governance"
                 status = "BLOCKED"
-            elif eligibility == "ELIGIBLE" and item.content_hash:
+            elif (
+                eligibility == "ELIGIBLE"
+                and item.content_hash
+                and policy.parser_profile == "generic-text.v1"
+            ):
                 if (
                     prior
                     and str(prior.get("content_hash") or "") == item.content_hash
@@ -1483,6 +1548,10 @@ class SourceImportApplication:
         job: dict[str, Any],
         discovery_result: dict[str, Any],
     ) -> None:
+        policy = SourceImportPolicy(**dict(job["import_policy"]))
+        if policy.parser_profile != "generic-text.v1":
+            self._admit_work_child(worker, job, discovery_result, policy=policy)
+            return
         snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows = SourceImportRepository(uow.cursor).snapshot_files(
@@ -1563,12 +1632,135 @@ class SourceImportApplication:
                 reason="Source import file processing ready",
             )
 
+    def _admit_work_child(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        discovery_result: dict[str, Any],
+        *,
+        policy: SourceImportPolicy,
+    ) -> None:
+        snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            rows = SourceImportRepository(uow.cursor).snapshot_files(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=snapshot_id,
+            )
+        selected = tuple(
+            row for row in rows if str(row["status"]) != "REMOVED"
+        )
+        if not selected:
+            raise KernelError(
+                "SOURCE_WORK_INPUT_MISSING",
+                "work-aware import selected no repository files",
+            )
+        blocked = tuple(
+            row for row in selected if str(row["eligibility"]) != "ELIGIBLE"
+        )
+        if blocked:
+            raise KernelError(
+                "SOURCE_WORK_INPUT_BLOCKED",
+                "work-aware import has blocked selected files: "
+                + ", ".join(str(row["path"]) for row in blocked[:5]),
+            )
+        selected_manifest = [
+            {
+                "path": str(row["path"]),
+                "object_id": str(row["object_id"]),
+                "content_hash": str(row["content_hash"]),
+                "size_bytes": int(row["size_bytes"]),
+            }
+            for row in sorted(selected, key=lambda item: str(item["path"]))
+        ]
+        selected_manifest_hash = corpus_canonical_hash(selected_manifest)
+        stable_key = corpus_canonical_hash(
+            {
+                "source_work_key": policy.source_work_key,
+                "snapshot_asset_version_id": snapshot_id,
+                "selected_manifest_hash": selected_manifest_hash,
+                "parser_profile": policy.parser_profile,
+                "registry_hash": policy.corpus_registry_hash,
+            }
+        )
+        child = self._admit_child(
+            definition_name=SOURCE_IMPORT_WORK_OPERATION,
+            project_id=worker.project_id,
+            workspace_id=str(job["workspace_id"]),
+            actor_id=self.worker_id,
+            idempotency_key=(
+                f"source.import.work:{job['import_job_id']}:{stable_key}"
+            ),
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=worker.causation_id,
+            parent_operation_id=worker.causation_id,
+            payload={
+                "import_job_id": job["import_job_id"],
+                "repository_snapshot_asset_version_id": snapshot_id,
+                "source_work_key": policy.source_work_key,
+                "parser_profile": policy.parser_profile,
+                "corpus_registry_id": policy.corpus_registry_id,
+                "corpus_registry_hash": policy.corpus_registry_hash,
+                "selected_manifest_hash": selected_manifest_hash,
+            },
+            input_assets=(
+                {
+                    "asset_version_id": snapshot_id,
+                    "role": "repository_snapshot",
+                    "content_hash": str(discovery_result["manifest_hash"]),
+                },
+            ),
+            ready=False,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            for row in selected:
+                if str(row["status"]) == "DISCOVERED":
+                    repository.update_file(
+                        project_id=worker.project_id,
+                        snapshot_asset_version_id=snapshot_id,
+                        path=str(row["path"]),
+                        expected=("DISCOVERED", "QUEUED"),
+                        status="QUEUED",
+                        processing_operation_id=child,
+                    )
+            repository.register_work(
+                {
+                    "work_id": str(uuid4()),
+                    "import_job_id": job["import_job_id"],
+                    "project_id": worker.project_id,
+                    "work_kind": "WORK",
+                    "stable_key": stable_key,
+                    "source_path": policy.source_work_key,
+                    "target_asset_version_id": snapshot_id,
+                    "operation_id": child,
+                    "status": "PLANNED",
+                    "result": {},
+                    "failure": {},
+                }
+            )
+            uow.commit()
+        self._ready_child(
+            operation_id=child,
+            project_id=worker.project_id,
+            actor_id=self.worker_id,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=worker.causation_id,
+            reason="Governed SourceWork parsing ready",
+        )
+
     def _admit_reused_profiling_children(
         self,
         worker: WorkerLeaseCommand,
         job: dict[str, Any],
         discovery_result: dict[str, Any],
     ) -> None:
+        if (
+            SourceImportPolicy(**dict(job["import_policy"])).parser_profile
+            != "generic-text.v1"
+        ):
+            return
         snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows = SourceImportRepository(uow.cursor).snapshot_files(
@@ -1757,6 +1949,763 @@ class SourceImportApplication:
             causation_id=transform_version,
             reason="LogicalDocument Source profiling ready",
         )
+
+    def _execute_work(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
+        if self.git_adapter is None or self.object_store_adapter is None:
+            raise KernelError(
+                "SOURCE_IMPORT_STORAGE_RUNTIME_REQUIRED",
+                "SourceWork import lacks Git or object-store execution",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence(uow, worker)
+            repository = SourceImportRepository(uow.cursor)
+            work = repository.work_by_operation(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                for_update=True,
+            )
+            if work["status"] in {"SUCCEEDED", "REUSED"}:
+                return dict(work["result"])
+            job = repository.job_for_update(
+                project_id=worker.project_id,
+                import_job_id=work["import_job_id"],
+            )
+            snapshot = repository.snapshot(
+                project_id=worker.project_id,
+                asset_version_id=str(job["repository_snapshot_asset_version_id"]),
+            )
+            operation = uow.repositories.chapter_authority.operation_execution(
+                worker.causation_id, worker.project_id
+            )
+            payload = dict(operation["command_payload"])["payload"]
+            policy = SourceImportPolicy(**dict(job["import_policy"]))
+            spec = resolve_work_spec(policy.source_work_key)
+            self._verify_work_operation_payload(
+                payload=payload,
+                policy=policy,
+                snapshot=snapshot,
+                spec=spec,
+            )
+            files = repository.snapshot_files(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=str(snapshot["asset_version_id"]),
+            )
+            selected = tuple(
+                row for row in files if str(row["status"]) != "REMOVED"
+            )
+            selected_manifest_hash = corpus_canonical_hash(
+                [
+                    {
+                        "path": str(row["path"]),
+                        "object_id": str(row["object_id"]),
+                        "content_hash": str(row["content_hash"]),
+                        "size_bytes": int(row["size_bytes"]),
+                    }
+                    for row in sorted(selected, key=lambda item: str(item["path"]))
+                ]
+            )
+            if selected_manifest_hash != str(payload["selected_manifest_hash"]):
+                raise KernelError(
+                    "SOURCE_WORK_INPUT_MANIFEST_DRIFT",
+                    "SourceWork selected files differ from the frozen child Operation",
+                )
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, version.content,
+                       work_version.source_document_id,
+                       work_version.source_transform_id,
+                       work_version.unit_count, work_version.character_count
+                FROM authority_source_work AS source_work
+                JOIN authority_source_work_version AS work_version
+                  ON work_version.source_work_id=source_work.source_work_id
+                 AND work_version.status='ACTIVE'
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=work_version.asset_version_id
+                 AND version.lifecycle='ACTIVE'
+                WHERE source_work.project_id=%s AND source_work.work_key=%s
+                  AND work_version.repository_snapshot_asset_version_id=%s
+                  AND work_version.registry_hash=%s
+                """,
+                [
+                    worker.project_id,
+                    policy.source_work_key,
+                    str(snapshot["asset_version_id"]),
+                    policy.corpus_registry_hash,
+                ],
+            )
+            existing = uow.cursor.fetchone()
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("PLANNED", "RUNNING", "FAILED_RETRYABLE"),
+                status="RUNNING",
+            )
+            if existing is None:
+                for row in selected:
+                    if (
+                        str(row["eligibility"]) != "ELIGIBLE"
+                        or str(row["status"]) not in {"QUEUED", "PROCESSING"}
+                        or str(row.get("processing_operation_id") or "")
+                        != worker.causation_id
+                    ):
+                        raise KernelError(
+                            "SOURCE_WORK_INPUT_STATE_INVALID",
+                            f"SourceWork input is not exclusively leased: {row['path']}",
+                        )
+                    repository.update_file(
+                        project_id=worker.project_id,
+                        snapshot_asset_version_id=str(snapshot["asset_version_id"]),
+                        path=str(row["path"]),
+                        expected=("QUEUED", "PROCESSING"),
+                        status="PROCESSING",
+                        processing_operation_id=worker.causation_id,
+                    )
+            uow.commit()
+        if existing is not None:
+            content = dict(existing[1] or {})
+            result = {
+                "source_work_asset_version_id": str(existing[0]),
+                "source_document_id": str(existing[2]),
+                "source_transform_id": str(existing[3]),
+                "unit_count": int(existing[4]),
+                "character_count": int(existing[5]),
+                "manifest_hash": str(content.get("manifest_hash") or ""),
+                "provider_tokens": 0,
+                "snapshot_reused": True,
+            }
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_current_fence(uow, worker)
+                repository = SourceImportRepository(uow.cursor)
+                repository.update_work(
+                    project_id=worker.project_id,
+                    operation_id=worker.causation_id,
+                    expected=("RUNNING",),
+                    status="REUSED",
+                    result=result,
+                )
+                self._refresh_job(
+                    repository, str(job["import_job_id"]), worker.project_id
+                )
+                uow.commit()
+            return result
+
+        raw_files: dict[str, bytes] = {}
+        raw_bundle_entries: list[dict[str, Any]] = []
+        for row in sorted(selected, key=lambda item: str(item["path"])):
+            raw = self.git_adapter.read_blob(
+                str(snapshot["repository_identity"]), str(row["object_id"])
+            )
+            actual_hash = "sha256:" + hashlib.sha256(raw).hexdigest()
+            if actual_hash != str(row["content_hash"]) or len(raw) != int(
+                row["size_bytes"]
+            ):
+                raise KernelError(
+                    "SOURCE_IMPORT_GIT_OBJECT_DRIFT",
+                    "Git object bytes differ from the frozen SourceWork manifest",
+                )
+            path = str(row["path"])
+            raw_files[path] = raw
+            raw_bundle_entries.append(
+                {
+                    "path": path,
+                    "git_object_id": str(row["object_id"]),
+                    "content_hash": actual_hash,
+                    "byte_size": len(raw),
+                    "content_base64": base64.b64encode(raw).decode("ascii"),
+                }
+            )
+        parsed = parse_classical_work(
+            spec,
+            raw_files,
+            max_chunk_bytes=policy.max_chunk_bytes,
+            normalization_version=policy.normalization_version,
+        )
+        raw_bundle = json.dumps(
+            {
+                "schema_version": "source-work-raw-bundle.v1",
+                "work_key": spec.work_key,
+                "repository_url": spec.repository_url,
+                "repository_commit_sha": spec.repository_commit_sha,
+                "selected_manifest_hash": selected_manifest_hash,
+                "files": raw_bundle_entries,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        raw_bundle_hash = "sha256:" + hashlib.sha256(raw_bundle).hexdigest()
+        raw_blob_id = self._put_blob(
+            worker,
+            content=raw_bundle,
+            content_hash=raw_bundle_hash,
+            media_type="application/vnd.novel-forge.source-work+json",
+            purpose=f"source-work-raw:{spec.work_key}",
+        )
+        source_result = self.source_authority.execute(
+            RegisterSourceDocumentCommand(
+                project_id=worker.project_id,
+                workspace_id=str(job["workspace_id"]),
+                blob_id=raw_blob_id,
+                title=spec.title,
+                source_kind="github_repository_work_bundle",
+                source_uri=(
+                    f"{snapshot['repository_url']}@"
+                    f"{snapshot['resolved_commit_sha']}#{spec.work_key}"
+                ),
+                rights_authorization=str(
+                    job["source_locator"]["rights_authorization"]
+                ),
+                license_name=str(job["source_locator"].get("license_name") or ""),
+                copyright_boundary=str(
+                    job["source_locator"].get("copyright_boundary") or ""
+                ),
+                actor_id=self.worker_id,
+                idempotency_key=(
+                    f"import-work-source:{worker.project_id}:{spec.work_key}:"
+                    f"{parsed.manifest_hash}"
+                ),
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+            )
+        )
+        if source_result["governance_status"] != "ELIGIBLE":
+            raise KernelError(
+                "SOURCE_IMPORT_RIGHTS_REVIEW_REQUIRED",
+                "SourceWork was imported but governance blocks transformation",
+            )
+        normalized_bytes = parsed.normalized.text.encode("utf-8")
+        normalized_blob_id = self._put_blob(
+            worker,
+            content=normalized_bytes,
+            content_hash=parsed.normalized.content_hash,
+            media_type="text/plain",
+            purpose=f"source-work-normalized:{spec.work_key}",
+        )
+        chunk_candidates: list[SourceChunkCandidate] = []
+        for chunk in parsed.chunks:
+            blob_id = self._put_blob(
+                worker,
+                content=chunk.content,
+                content_hash=chunk.content_hash,
+                media_type="text/plain",
+                purpose=(
+                    f"source-work-chunk:{spec.work_key}:"
+                    f"{parsed.manifest_hash.removeprefix('sha256:')}:"
+                    f"{chunk.chunk_index}"
+                ),
+            )
+            chunk_candidates.append(
+                SourceChunkCandidate(
+                    chunk_index=chunk.chunk_index,
+                    blob_id=blob_id,
+                    content_hash=chunk.content_hash,
+                    byte_size=chunk.byte_size,
+                    character_count=chunk.character_count,
+                    token_count=chunk.token_count,
+                    source_byte_start=chunk.normalized_byte_start,
+                    source_byte_end=chunk.normalized_byte_end,
+                )
+            )
+        transform = self.source_authority.execute_transform(
+            CommitSourceTransformCommand(
+                project_id=worker.project_id,
+                workspace_id=str(job["workspace_id"]),
+                source_document_id=str(source_result["source_document_id"]),
+                normalization_version=policy.normalization_version,
+                chunking_version=policy.chunking_version,
+                chunking_policy_hash=policy.chunking_policy_hash,
+                chunks=tuple(chunk_candidates),
+                actor_id=self.worker_id,
+                idempotency_key=(
+                    f"import-work-transform:{source_result['asset_version_id']}:"
+                    f"{policy.chunking_policy_hash}"
+                ),
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                normalized_blob_id=normalized_blob_id,
+                normalized_content_hash=parsed.normalized.content_hash,
+                normalized_byte_size=parsed.normalized.byte_size,
+            )
+        )
+        materialized = self._materialize_source_work(
+            worker=worker,
+            job=job,
+            snapshot=snapshot,
+            parsed=parsed,
+            source_result=source_result,
+            transform=transform,
+            raw_blob_id=raw_blob_id,
+            raw_bundle_hash=raw_bundle_hash,
+            raw_bundle_size=len(raw_bundle),
+            normalized_blob_id=normalized_blob_id,
+        )
+        result = {
+            **materialized,
+            "source_document_id": source_result["source_document_id"],
+            "source_asset_version_id": source_result["asset_version_id"],
+            "source_transform_id": transform["source_transform_id"],
+            "source_transform_asset_version_id": transform["asset_version_id"],
+            "chunk_count": transform["chunk_count"],
+            "raw_blob_id": raw_blob_id,
+            "normalized_blob_id": normalized_blob_id,
+            "manifest_hash": parsed.manifest_hash,
+            "unit_count": len(parsed.units),
+            "body_unit_count": sum(
+                item.status == "AVAILABLE" for item in parsed.units
+            ),
+            "character_count": parsed.normalized.character_count,
+            "diagnostics": parsed.diagnostics,
+            "provider_tokens": 0,
+            "snapshot_reused": False,
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence(uow, worker)
+            repository = SourceImportRepository(uow.cursor)
+            for row in selected:
+                repository.update_file(
+                    project_id=worker.project_id,
+                    snapshot_asset_version_id=str(snapshot["asset_version_id"]),
+                    path=str(row["path"]),
+                    expected=("PROCESSING", "QUEUED"),
+                    status="TRANSFORMED",
+                    source_document_id=str(source_result["source_document_id"]),
+                    source_transform_id=str(transform["source_transform_id"]),
+                    processing_operation_id=worker.causation_id,
+                )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("RUNNING",),
+                status="RUNNING",
+                result=result,
+            )
+            uow.commit()
+        self._admit_profiling_child(
+            worker,
+            job,
+            result,
+            source_paths=tuple(str(row["path"]) for row in selected),
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            SourceImportRepository(uow.cursor).update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("RUNNING",),
+                status="SUCCEEDED",
+                result=result,
+            )
+            uow.commit()
+        return result
+
+    @staticmethod
+    def _verify_work_operation_payload(
+        *,
+        payload: Mapping[str, Any],
+        policy: SourceImportPolicy,
+        snapshot: Mapping[str, Any],
+        spec: Any,
+    ) -> None:
+        observed = (
+            str(payload.get("source_work_key") or ""),
+            str(payload.get("parser_profile") or ""),
+            str(payload.get("corpus_registry_id") or ""),
+            str(payload.get("corpus_registry_hash") or ""),
+            str(snapshot.get("repository_url") or ""),
+            str(snapshot.get("resolved_commit_sha") or ""),
+        )
+        expected = (
+            policy.source_work_key,
+            policy.parser_profile,
+            policy.corpus_registry_id,
+            policy.corpus_registry_hash,
+            spec.repository_url,
+            spec.repository_commit_sha,
+        )
+        if observed != expected:
+            raise KernelError(
+                "SOURCE_WORK_FROZEN_IDENTITY_MISMATCH",
+                "SourceWork Operation, registry, and repository identities differ",
+            )
+
+    def _materialize_source_work(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        job: Mapping[str, Any],
+        snapshot: Mapping[str, Any],
+        parsed: ParsedSourceWork,
+        source_result: Mapping[str, Any],
+        transform: Mapping[str, Any],
+        raw_blob_id: str,
+        raw_bundle_hash: str,
+        raw_bundle_size: int,
+        normalized_blob_id: str,
+    ) -> dict[str, Any]:
+        spec = parsed.spec
+        source_work_id = "source-work:" + _hash(
+            {"project_id": worker.project_id, "work_key": spec.work_key}
+        ).removeprefix("sha256:")
+        content = {
+            **parsed.structure_manifest(),
+            "manifest_hash": parsed.manifest_hash,
+            "project_id": worker.project_id,
+            "workspace_id": str(job["workspace_id"]),
+            "raw_bundle": {
+                "blob_id": raw_blob_id,
+                "content_hash": raw_bundle_hash,
+                "byte_size": raw_bundle_size,
+                "format": "source-work-raw-bundle.v1",
+            },
+            "lineage": {
+                "repository_snapshot_asset_version_id": str(snapshot["asset_version_id"]),
+                "source_document_id": str(source_result["source_document_id"]),
+                "source_document_asset_version_id": str(
+                    source_result["asset_version_id"]
+                ),
+                "source_transform_id": str(transform["source_transform_id"]),
+                "source_transform_asset_version_id": str(transform["asset_version_id"]),
+                "created_by_operation_id": worker.causation_id,
+            },
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence(uow, worker)
+            uow.cursor.execute(
+                """
+                SELECT work.source_work_id, version.asset_version_id,
+                       work_version.manifest_hash
+                FROM authority_source_work AS work
+                JOIN authority_source_work_version AS work_version
+                  ON work_version.source_work_id=work.source_work_id
+                 AND work_version.status='ACTIVE'
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=work_version.asset_version_id
+                 AND version.lifecycle='ACTIVE'
+                WHERE work.project_id=%s AND work.work_key=%s
+                FOR UPDATE OF work, work_version, version
+                """,
+                [worker.project_id, spec.work_key],
+            )
+            current = uow.cursor.fetchone()
+            if current is not None and str(current[2]) == parsed.manifest_hash:
+                return {
+                    "source_work_id": str(current[0]),
+                    "source_work_asset_version_id": str(current[1]),
+                    "source_work_version_reused": True,
+                    "invalidated_descendant_count": 0,
+                }
+            reference_version_ids = (
+                str(snapshot["asset_version_id"]),
+                str(source_result["asset_version_id"]),
+                str(transform["asset_version_id"]),
+            )
+            uow.cursor.execute(
+                """
+                SELECT asset_id FROM authority_asset_version
+                WHERE asset_version_id=ANY(%s)
+                ORDER BY asset_id
+                """,
+                [list(reference_version_ids)],
+            )
+            reference_asset_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            if len(reference_asset_ids) != len(reference_version_ids):
+                raise KernelError(
+                    "SOURCE_WORK_LINEAGE_MISSING",
+                    "SourceWork lineage AssetVersion is unavailable",
+                )
+            created = uow.repositories.asset_documents.materialize_output(
+                AuthorityAssetWriteCommand(
+                    operation_id=worker.causation_id,
+                    project_id=worker.project_id,
+                    asset_id=source_work_id,
+                    asset_type="source_work",
+                    schema_version="source-work-structure.v1",
+                    logical_ref=f"source-works/{spec.work_key}.json",
+                    category="source-library",
+                    output_key="source.import.work_manifest",
+                    role="manifest",
+                    content=content,
+                    qualification_policy="source-work-parser-governance-v1",
+                    trace_id=worker.trace_id,
+                    correlation_id=worker.correlation_id,
+                    causation_id=str(transform["asset_version_id"]),
+                    expected_current_asset_version_id=(
+                        str(current[1]) if current is not None else None
+                    ),
+                    reference_asset_ids=reference_asset_ids,
+                    eligibility="ELIGIBLE",
+                    governance="CLEAR",
+                )
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_source_work (
+                    source_work_id, project_id, workspace_id, work_key, title,
+                    collection_kind, repository_identity, repository_url,
+                    status, created_by_operation_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'ACTIVE', %s)
+                ON CONFLICT (source_work_id) DO NOTHING
+                """,
+                [
+                    source_work_id,
+                    worker.project_id,
+                    str(job["workspace_id"]),
+                    spec.work_key,
+                    spec.title,
+                    spec.collection_kind,
+                    str(snapshot["repository_identity"]),
+                    str(snapshot["repository_url"]),
+                    worker.causation_id,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                SELECT project_id, workspace_id, work_key, title,
+                       collection_kind, repository_identity, repository_url
+                FROM authority_source_work WHERE source_work_id=%s
+                """,
+                [source_work_id],
+            )
+            stored_identity = uow.cursor.fetchone()
+            expected_identity = (
+                worker.project_id,
+                str(job["workspace_id"]),
+                spec.work_key,
+                spec.title,
+                spec.collection_kind,
+                str(snapshot["repository_identity"]),
+                str(snapshot["repository_url"]),
+            )
+            if stored_identity != expected_identity:
+                raise KernelError(
+                    "SOURCE_WORK_IDENTITY_CONFLICT",
+                    "stable SourceWork identity differs from the frozen work",
+                )
+            if current is not None:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_source_work_version SET status='SUPERSEDED'
+                    WHERE source_work_id=%s AND asset_version_id=%s
+                      AND status='ACTIVE'
+                    """,
+                    [source_work_id, str(current[1])],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "SOURCE_WORK_VERSION_CONFLICT",
+                        "active SourceWork version changed during materialization",
+                    )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_source_work_version (
+                    asset_version_id, source_work_id, project_id, workspace_id,
+                    repository_snapshot_asset_version_id, source_document_id,
+                    source_transform_id, repository_commit_sha, parser_profile,
+                    parser_version, registry_id, registry_hash, manifest_hash,
+                    unit_count, body_unit_count, character_count, status,
+                    created_by_operation_id
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, 'ACTIVE', %s
+                )
+                """,
+                [
+                    created.asset_version_id,
+                    source_work_id,
+                    worker.project_id,
+                    str(job["workspace_id"]),
+                    str(snapshot["asset_version_id"]),
+                    str(source_result["source_document_id"]),
+                    str(transform["source_transform_id"]),
+                    spec.repository_commit_sha,
+                    spec.parser_profile,
+                    parsed.parser_version,
+                    spec.registry_id,
+                    spec.registry_hash,
+                    parsed.manifest_hash,
+                    len(parsed.units),
+                    sum(item.status == "AVAILABLE" for item in parsed.units),
+                    parsed.normalized.character_count,
+                    worker.causation_id,
+                ],
+            )
+            for unit in parsed.units:
+                source_unit_id = "source-unit:" + _hash(
+                    {
+                        "project_id": worker.project_id,
+                        "source_work_id": source_work_id,
+                        "parser_unit_id": unit.unit_id,
+                    }
+                ).removeprefix("sha256:")
+                unit_version_id = "source-unit-version:" + _hash(
+                    {
+                        "source_work_asset_version_id": created.asset_version_id,
+                        "source_unit_id": source_unit_id,
+                        "parser_unit_version_id": unit.unit_version_id,
+                    }
+                ).removeprefix("sha256:")
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_source_unit (
+                        source_unit_id, source_work_id, project_id, unit_key
+                    ) VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (source_unit_id) DO NOTHING
+                    """,
+                    [source_unit_id, source_work_id, worker.project_id, unit.unit_id],
+                )
+                uow.cursor.execute(
+                    """
+                    SELECT source_work_id, project_id, unit_key
+                    FROM authority_source_unit WHERE source_unit_id=%s
+                    """,
+                    [source_unit_id],
+                )
+                if uow.cursor.fetchone() != (
+                    source_work_id,
+                    worker.project_id,
+                    unit.unit_id,
+                ):
+                    raise KernelError(
+                        "SOURCE_UNIT_IDENTITY_CONFLICT",
+                        "stable SourceUnit identity differs from its frozen locator",
+                    )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_source_unit_version (
+                        source_unit_version_id, source_work_asset_version_id,
+                        source_unit_id, project_id, ordinal, kind, title, author,
+                        raw_file_path, raw_file_hash, source_locator,
+                        original_content_hash, normalized_content_hash,
+                        normalized_byte_start, normalized_byte_end,
+                        character_count, line_count, metadata, status
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s
+                    )
+                    """,
+                    [
+                        unit_version_id,
+                        created.asset_version_id,
+                        source_unit_id,
+                        worker.project_id,
+                        unit.ordinal,
+                        unit.kind,
+                        unit.title,
+                        unit.author,
+                        unit.raw_file_path,
+                        unit.raw_file_hash,
+                        Jsonb(unit.source_locator),
+                        unit.original_content_hash,
+                        unit.normalized_content_hash,
+                        unit.normalized_byte_start,
+                        unit.normalized_byte_end,
+                        unit.character_count,
+                        unit.line_count,
+                        Jsonb(unit.metadata),
+                        unit.status,
+                    ],
+                )
+            for role, ordinal, blob_id in (
+                ("source.raw_work_bundle", 0, raw_blob_id),
+                ("source.normalized_work_projection", 0, normalized_blob_id),
+            ):
+                blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
+                if blob["project_id"] != worker.project_id or blob["status"] != "AVAILABLE":
+                    raise KernelError(
+                        "SOURCE_WORK_BLOB_UNAVAILABLE",
+                        "SourceWork can only bind an AVAILABLE project Blob",
+                    )
+                reference_id = "source-work-blob-ref:" + _hash(
+                    {
+                        "asset_version_id": created.asset_version_id,
+                        "role": role,
+                        "ordinal": ordinal,
+                    }
+                ).removeprefix("sha256:")
+                uow.repositories.asset_blobs.bind_blob(
+                    reference_id,
+                    created.asset_version_id,
+                    blob_id,
+                    role,
+                    ordinal,
+                    str(blob["media_type"]),
+                    str(blob["actual_hash"]),
+                )
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id FROM authority_source_chunk
+                WHERE project_id=%s AND source_transform_id=%s
+                ORDER BY chunk_index
+                """,
+                [worker.project_id, str(transform["source_transform_id"])],
+            )
+            chunk_version_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            if len(chunk_version_ids) != len(parsed.chunks):
+                raise KernelError(
+                    "SOURCE_WORK_CHUNK_LINEAGE_MISMATCH",
+                    "SourceWork chunk lineage differs from parsed projection",
+                )
+            intelligence = SourceIntelligenceRepository(uow.cursor)
+            for chunk_version_id in chunk_version_ids:
+                intelligence.record_dependency(
+                    {
+                        "dependency_id": str(uuid4()),
+                        "project_id": worker.project_id,
+                        "upstream_asset_version_id": created.asset_version_id,
+                        "downstream_asset_version_id": chunk_version_id,
+                        "relationship": "PROJECTS",
+                        "selector_key": spec.work_key,
+                        "created_by_operation_id": worker.causation_id,
+                    }
+                )
+            invalidated = 0
+            if current is not None:
+                descendants = intelligence.descendants(
+                    project_id=worker.project_id,
+                    upstream_asset_version_id=str(current[1]),
+                )
+                for descendant in descendants:
+                    if str(descendant["lifecycle"]) in {
+                        "RETIRED",
+                        "DELETED",
+                        "SUPERSEDED",
+                    }:
+                        continue
+                    intelligence.record_invalidation(
+                        {
+                            "invalidation_id": str(uuid4()),
+                            "project_id": worker.project_id,
+                            "target_asset_version_id": str(
+                                descendant["asset_version_id"]
+                            ),
+                            "cause_type": "UPSTREAM_REPLACED",
+                            "cause_ref": created.asset_version_id,
+                            "dimension": spec.work_key,
+                            "created_by_operation_id": worker.causation_id,
+                        }
+                    )
+                    invalidated += 1
+            self._record_event(
+                uow,
+                worker,
+                aggregate_type="authority_source_work",
+                aggregate_id=source_work_id,
+                event_type="authority.source.work.materialized",
+                payload={
+                    "asset_version_id": created.asset_version_id,
+                    "manifest_hash": parsed.manifest_hash,
+                    "unit_count": len(parsed.units),
+                    "chunk_count": len(parsed.chunks),
+                    "invalidated_descendant_count": invalidated,
+                    "provider_calls_by_commit": 0,
+                },
+            )
+            uow.commit()
+        return {
+            "source_work_id": source_work_id,
+            "source_work_asset_version_id": created.asset_version_id,
+            "source_work_version_reused": False,
+            "invalidated_descendant_count": invalidated,
+        }
 
     def _execute_file(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         if self.git_adapter is None or self.object_store_adapter is None:
@@ -3921,7 +4870,12 @@ class SourceImportApplication:
 
     @staticmethod
     def _discovery_counters(
-        rows: list[dict[str, Any]], *, policy: SourceImportPolicy, snapshot_reused: bool
+        rows: list[dict[str, Any]],
+        *,
+        policy: SourceImportPolicy,
+        snapshot_reused: bool,
+        tree_entry_count: int | None = None,
+        excluded_tree_entry_count: int = 0,
     ) -> dict[str, Any]:
         counts: dict[str, int] = {}
         for row in rows:
@@ -3929,33 +4883,42 @@ class SourceImportApplication:
             counts[key] = counts.get(key, 0) + 1
         eligible = [row for row in rows if row["eligibility"] == "ELIGIBLE"]
         to_process = [row for row in eligible if row["status"] == "DISCOVERED"]
-        unique_to_process = list(
-            {
-                str(row.get("content_hash") or row["object_id"]): row
-                for row in reversed(to_process)
-            }.values()
-        )
-        estimated_chunks = sum(
-            max(
-                1,
-                (int(row["size_bytes"]) + policy.max_chunk_bytes - 1)
-                // policy.max_chunk_bytes,
+        work_aware = policy.parser_profile != "generic-text.v1"
+        fetch_rows = (
+            to_process
+            if work_aware
+            else list(
+                {
+                    str(row.get("content_hash") or row["object_id"]): row
+                    for row in reversed(to_process)
+                }.values()
             )
-            for row in unique_to_process
         )
-        estimated_tokens = sum(
-            max(1, int(row["size_bytes"]) // 3) for row in unique_to_process
+        estimated_bytes = sum(int(row["size_bytes"]) for row in fetch_rows)
+        estimated_chunks = max(
+            int(bool(fetch_rows)),
+            (estimated_bytes + policy.max_chunk_bytes - 1)
+            // policy.max_chunk_bytes,
         )
+        estimated_tokens = sum(max(1, int(row["size_bytes"]) // 3) for row in fetch_rows)
         return {
             "files_discovered": len(rows),
+            "repository_tree_entries": (
+                tree_entry_count if tree_entry_count is not None else len(rows)
+            ),
+            "repository_tree_entries_excluded": excluded_tree_entry_count,
             "files_eligible": len(eligible),
             "files_blocked": sum(row["eligibility"] == "BLOCKED" for row in rows),
             "files_reused": sum(row["status"] == "REUSED" for row in rows),
-            "files_to_fetch": len(unique_to_process),
-            "estimated_bytes": sum(int(row["size_bytes"]) for row in unique_to_process),
+            "files_to_fetch": len(fetch_rows),
+            "estimated_bytes": estimated_bytes,
             "estimated_chunks": estimated_chunks,
-            "estimated_classification_calls": len(unique_to_process),
-            "estimated_model_work": len(unique_to_process),
+            "estimated_classification_calls": int(bool(fetch_rows))
+            if work_aware
+            else len(fetch_rows),
+            "estimated_model_work": int(bool(fetch_rows))
+            if work_aware
+            else len(fetch_rows),
             "estimated_tokens": estimated_tokens,
             "provider_calls_performed": 0,
             "snapshot_reused": snapshot_reused,

@@ -335,6 +335,10 @@ class ProductSourceImportPolicyRequest(BaseModel):
     allow_git_lfs: bool = False
     normalization_version: str = "source-normalization.v1"
     chunking_version: str = "source-structural-chunking.v1"
+    parser_profile: str = "generic-text.v1"
+    source_work_key: str = ""
+    corpus_registry_id: str = ""
+    corpus_registry_hash: str = ""
 
 
 class ProductSourceIntelligencePolicyRequest(BaseModel):
