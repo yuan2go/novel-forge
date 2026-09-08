@@ -34,6 +34,12 @@ class LeaseHeartbeatGuard:
         )
 
     def __enter__(self) -> "LeaseHeartbeatGuard":
+        # Fail closed before a handler can invoke an external Provider.  A queued
+        # Operation may already be past its frozen business deadline by the time
+        # a worker acquires its lease; waiting for the first background interval
+        # would allow that expired Operation to perform and commit work.
+        if self._probe is not None:
+            self._probe()
         self._thread.start()
         return self
 
