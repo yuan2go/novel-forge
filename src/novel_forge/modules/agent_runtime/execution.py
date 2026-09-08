@@ -86,6 +86,24 @@ class ChapterGatewayAgentExecutionPreparer:
         self.lease_seconds = lease_seconds
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.cost_accounting_basis = str(
+            getattr(adapter, "cost_accounting_basis", "PRICED") or "PRICED"
+        ).upper()
+        self.account_authorization_ref = str(
+            getattr(adapter, "account_authorization_ref", "") or ""
+        )
+        self.provider_call_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(adapter, "provider_call_caps", {}) or {}
+            ).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(adapter, "provider_token_caps", {}) or {}
+            ).items()
+        }
         self.assets = AuthorityAssetQuery(database_url)
         self.evidence_writer = ExternalEffectChapterModelPort(
             database_url,
@@ -156,12 +174,32 @@ class ChapterGatewayAgentExecutionPreparer:
                 "MODEL_EFFECT_PROVIDER_TOKEN_CEILING_REQUIRED",
                 "Agent-bound Provider execution requires a positive token ceiling",
             )
+        cost_accounting_basis = str(
+            getattr(
+                self,
+                "cost_accounting_basis",
+                getattr(self.adapter, "cost_accounting_basis", "PRICED"),
+            )
+            or "PRICED"
+        ).upper()
+        account_authorization_ref = str(
+            getattr(
+                self,
+                "account_authorization_ref",
+                getattr(self.adapter, "account_authorization_ref", ""),
+            )
+            or ""
+        )
         provider_token_contract = resolve_provider_token_reservation_contract(
             self.database_url,
             operation_id=str(operation["operation_id"]),
             project_id=str(operation["project_id"]),
-            currency="USD",
+            currency=(
+                "UNKNOWN" if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else "USD"
+            ),
             frozen_request_token_ceiling=frozen_request_token_ceiling,
+            accounting_basis=cost_accounting_basis,
+            cost_authorization_ref=account_authorization_ref,
         )
         provider_output_token_ceiling = int(
             provider_token_contract["max_output_tokens"]
@@ -225,7 +263,9 @@ class ChapterGatewayAgentExecutionPreparer:
         if existing_intent is not None:
             frozen_payload = dict(existing_intent["request_payload"])
             expected_outer = {
-                key: value for key, value in payload.items() if key != "_production_execution"
+                key: value
+                for key, value in payload.items()
+                if key != "_production_execution"
             }
             frozen_outer = {
                 key: value
@@ -343,14 +383,24 @@ class ChapterGatewayAgentExecutionPreparer:
                 project_id=str(operation["project_id"]),
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
-                currency="USD",
-                estimated_amount=str(
-                    provider_token_contract.get("estimated_cost_amount")
-                    or self.max_cost_per_call
+                currency=(
+                    "UNKNOWN"
+                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
+                estimated_amount=(
+                    None
+                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else str(
+                        provider_token_contract.get("estimated_cost_amount")
+                        or self.max_cost_per_call
+                    )
                 ),
                 estimated_tokens=provider_budget_tokens,
                 chapter=int(command["chapter_number"]),
                 caps=self.budget_caps,
+                call_caps=dict(getattr(self, "provider_call_caps", {}) or {}),
+                token_caps=dict(getattr(self, "provider_token_caps", {}) or {}),
                 budget_scope_id=str(
                     provider_token_contract.get("budget_scope_id") or ""
                 ),
@@ -359,6 +409,8 @@ class ChapterGatewayAgentExecutionPreparer:
                     if provider_token_contract.get("budget_scope_revision") is not None
                     else None
                 ),
+                accounting_basis=cost_accounting_basis,
+                cost_authorization_ref=account_authorization_ref,
             ),
         )
         payload["external_effect_id"] = str(effect["external_effect_id"])
@@ -384,6 +436,7 @@ class ChapterGatewayAgentExecutionPreparer:
                 operation=operation,
                 inputs=inputs,
                 evidence_writer=self.evidence_writer,
+                accounting_basis=cost_accounting_basis,
             ),
             **contracts,
         )
@@ -505,6 +558,7 @@ class _ExternalEffectPepAgentPort:
     operation: dict[str, Any]
     inputs: tuple[ChapterInputAsset, ...]
     evidence_writer: ExternalEffectChapterModelPort
+    accounting_basis: str = "PRICED"
 
     external_effect_backed = True
     production_execution_gateway_backed = True
@@ -554,7 +608,11 @@ class _ExternalEffectPepAgentPort:
             self.database_url,
             reservation_id=self.reservation_id,
             project_id=self.effect_context.project_id,
-            actual_amount=result.cost_amount,
+            actual_amount=(
+                None
+                if self.accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else result.cost_amount
+            ),
             actual_tokens=result.total_tokens,
             evidence={
                 "provider_id": result.provider_id,
@@ -562,6 +620,12 @@ class _ExternalEffectPepAgentPort:
                 "real_model_call": result.real_model_call,
                 "fixture": not result.real_model_call,
                 "recovered_completed_effect": recovered_completed_effect,
+                "accounting_basis": self.accounting_basis,
+                "cost_status": (
+                    "UNKNOWN"
+                    if self.accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "KNOWN"
+                ),
             },
         )
         stage = self.binding.request.stage

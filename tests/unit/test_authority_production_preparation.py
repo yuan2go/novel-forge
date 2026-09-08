@@ -548,6 +548,23 @@ class ProductionPreparationTests(unittest.TestCase):
             "book-worker"
         )
         self.assertTrue(worker.allows("story_planning.authority.execute", "project-1"))
+        self.assertFalse(worker.allows("story_planning.authority.approve", "project-1"))
+        self.assertFalse(worker.allows("story_planning.authority.activate", "project-1"))
+
+        formation_worker = TrustedPrincipalResolver(
+            environment="test"
+        ).resolve_book_formation_worker_principal("book-worker")
+        self.assertEqual(formation_worker.principal_id, worker.principal_id)
+        self.assertTrue(
+            formation_worker.allows("story_planning.authority.approve", "project-1")
+        )
+        self.assertTrue(
+            formation_worker.allows("story_planning.authority.activate", "project-1")
+        )
+        self.assertTrue(
+            formation_worker.allows("story_design.authority.execute", "project-1")
+        )
+        self.assertFalse(formation_worker.allows("mkaos.authority.approve", "project-1"))
 
     def test_production_requires_configured_trusted_principal(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "trusted local operator"):

@@ -69,6 +69,48 @@ def test_canonical_budget_policy_is_order_independent_and_decimal_stable() -> No
     assert first["policy_hash"].startswith("sha256:")
 
 
+def test_account_entitlement_budget_is_bounded_by_calls_and_tokens_without_fake_cost() -> (
+    None
+):
+    canonical = canonical_budget_policy(
+        {
+            "execution_mode": "PROVIDER_ALLOWED",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "task-authorization:classical-corpus-20260908",
+            "provider_call_limit": 180,
+            "token_limit": 9_000_000,
+            "per_call_token_limit": 50_000,
+            "cost_observability": "UNKNOWN",
+        }
+    )["policy_snapshot"]
+
+    assert canonical["accounting_basis"] == "ACCOUNT_ENTITLEMENT"
+    assert "cost_limit_usd" not in canonical
+    assert "per_call_cost_limit_usd" not in canonical
+    assert next_provider_budget_allowance(canonical) == {
+        "execution_mode": "PROVIDER_ALLOWED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "requested_calls": 1,
+        "requested_tokens": 50_000,
+        "requested_amount": None,
+        "cost_status": "UNKNOWN",
+    }
+
+
+def test_account_entitlement_budget_rejects_monetary_cap_fields() -> None:
+    with pytest.raises(KernelError, match="must not declare monetary limits"):
+        canonical_budget_policy(
+            {
+                "execution_mode": "PROVIDER_ALLOWED",
+                "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                "authorization_ref": "task-authorization:bounded",
+                "provider_call_limit": 1,
+                "token_limit": 100,
+                "cost_limit_usd": "1",
+            }
+        )
+
+
 def test_next_provider_allowance_uses_frozen_per_call_limits() -> None:
     allowance = next_provider_budget_allowance(
         {
@@ -171,12 +213,14 @@ def test_canonical_budget_snapshot_sorts_evidence_and_hashes_authority_only() ->
     )
 
     assert first == second
-    assert [
-        item["reservation_id"] for item in first["reservations"]
-    ] == ["reservation:1", "reservation:2"]
-    assert [
-        item["budget_evidence_link_id"] for item in first["evidence_links"]
-    ] == ["link:1", "link:2"]
+    assert [item["reservation_id"] for item in first["reservations"]] == [
+        "reservation:1",
+        "reservation:2",
+    ]
+    assert [item["budget_evidence_link_id"] for item in first["evidence_links"]] == [
+        "link:1",
+        "link:2",
+    ]
     assert first["snapshot_hash"].startswith("sha256:")
     assert "observed_at" not in first
 
@@ -243,9 +287,7 @@ def test_budget_scope_request_rejects_unknown_owner_or_unbounded_deadline() -> N
             **{
                 **base,
                 "started_at": started_at.replace(tzinfo=None),
-                "deadline_at": (started_at + timedelta(hours=1)).replace(
-                    tzinfo=None
-                ),
+                "deadline_at": (started_at + timedelta(hours=1)).replace(tzinfo=None),
             }
         )
 

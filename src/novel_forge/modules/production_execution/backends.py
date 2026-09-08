@@ -162,6 +162,45 @@ class CodexPricingSnapshot:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class CodexAccountEntitlementSnapshot:
+    authorization_ref: str
+    account_identity_ref: str
+    cli_version: str
+    executable_sha256: str
+    configuration_ref: str
+
+    def __post_init__(self) -> None:
+        if not all(
+            str(value).strip()
+            for value in (
+                self.authorization_ref,
+                self.account_identity_ref,
+                self.cli_version,
+                self.executable_sha256,
+                self.configuration_ref,
+            )
+        ):
+            raise ValueError("Codex account entitlement snapshot is incomplete")
+        if len(self.executable_sha256) != 71 or not self.executable_sha256.startswith(
+            "sha256:"
+        ):
+            raise ValueError("Codex executable digest must be SHA-256")
+
+    @property
+    def snapshot_hash(self) -> str:
+        return _sha256(self.to_dict())
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "authorization_ref": self.authorization_ref,
+            "account_identity_ref": self.account_identity_ref,
+            "cli_version": self.cli_version,
+            "executable_sha256": self.executable_sha256,
+            "configuration_ref": self.configuration_ref,
+        }
+
+
 class CodexStructuredResultValidator(Protocol):
     def __call__(
         self,
@@ -183,7 +222,8 @@ def parse_codex_jsonl_evidence(
     stdout: str,
     *,
     model_id: str,
-    pricing: CodexPricingSnapshot,
+    pricing: CodexPricingSnapshot | None = None,
+    account_entitlement: CodexAccountEntitlementSnapshot | None = None,
     allowed_tools: tuple[str, ...],
     denied_tools: tuple[str, ...] = (),
 ) -> dict[str, Any]:
@@ -219,15 +259,22 @@ def parse_codex_jsonl_evidence(
     reasoning_output_tokens = token("reasoning_output_tokens")
     if cached_input_tokens > input_tokens:
         raise ValueError("Codex cached input tokens exceed total input tokens")
-    if pricing.model_id != model_id:
-        raise ValueError("Codex pricing snapshot model differs from execution model")
+    if (pricing is None) == (account_entitlement is None):
+        raise ValueError(
+            "Codex evidence requires exactly one pricing or account entitlement basis"
+        )
     uncached_input_tokens = input_tokens - cached_input_tokens
-    million = Decimal(1_000_000)
-    amount = (
-        Decimal(uncached_input_tokens) * Decimal(pricing.input_per_million)
-        + Decimal(cached_input_tokens) * Decimal(pricing.cached_input_per_million)
-        + Decimal(output_tokens) * Decimal(pricing.output_per_million)
-    ) / million
+    if pricing is not None:
+        if pricing.model_id != model_id:
+            raise ValueError(
+                "Codex pricing snapshot model differs from execution model"
+            )
+        million = Decimal(1_000_000)
+        amount = (
+            Decimal(uncached_input_tokens) * Decimal(pricing.input_per_million)
+            + Decimal(cached_input_tokens) * Decimal(pricing.cached_input_per_million)
+            + Decimal(output_tokens) * Decimal(pricing.output_per_million)
+        ) / million
     invocations: list[dict[str, Any]] = [
         {
             "tool_ref": "model.provider.invoke",
@@ -261,19 +308,8 @@ def parse_codex_jsonl_evidence(
     if set(allowed) & set(denied):
         raise ValueError("Codex Tool policy allows and denies the same Tool")
     unauthorized = tuple(item for item in invoked if item not in allowed)
-    return {
-        "usage": {
-            "availability": "AVAILABLE",
-            "measurement": "MEASURED",
-            "model": model_id,
-            "input_tokens": input_tokens,
-            "cached_input_tokens": cached_input_tokens,
-            "uncached_input_tokens": uncached_input_tokens,
-            "output_tokens": output_tokens,
-            "reasoning_output_tokens": reasoning_output_tokens,
-            "total_tokens": input_tokens + output_tokens,
-        },
-        "cost": {
+    cost = (
+        {
             "availability": "AVAILABLE",
             "measurement": "ESTIMATED",
             "model": model_id,
@@ -293,7 +329,34 @@ def parse_codex_jsonl_evidence(
             },
             "estimated": True,
             "provider_billed": False,
+        }
+        if pricing is not None
+        else {
+            "availability": "UNAVAILABLE",
+            "measurement": "UNKNOWN",
+            "model": model_id,
+            "currency": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "reason": "monetary_cost_not_observable",
+            "authorization_ref": account_entitlement.authorization_ref,
+            "entitlement_snapshot_hash": account_entitlement.snapshot_hash,
+            "entitlement_snapshot": account_entitlement.to_dict(),
+            "provider_billed": "UNKNOWN",
+        }
+    )
+    return {
+        "usage": {
+            "availability": "AVAILABLE",
+            "measurement": "MEASURED",
+            "model": model_id,
+            "input_tokens": input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "uncached_input_tokens": uncached_input_tokens,
+            "output_tokens": output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
+            "total_tokens": input_tokens + output_tokens,
         },
+        "cost": cost,
         "tools": {
             "policy": "DEFAULT_DENY",
             "allowed": list(allowed),
@@ -352,7 +415,6 @@ class ExecutionPayloadResolver(Protocol):
 
 
 class StaticExecutionPayloadResolver:
-
     def __init__(self, payloads: Mapping[str, ResolvedExecutionPayload]) -> None:
         self._payloads = dict(payloads)
 
@@ -369,7 +431,6 @@ class StaticExecutionPayloadResolver:
 
 
 class InMemoryExecutionRecordStore:
-
     def __init__(self) -> None:
         self._records: dict[str, ExecutionRecord] = {}
         self._evidence: dict[str, dict[str, Any]] = {}
@@ -539,12 +600,24 @@ class ResultValidator:
         )
         cost = record.raw_evidence.get("cost")
         if isinstance(cost, Mapping):
-            try:
-                amount = Decimal(str(cost.get("amount") or "0"))
-            except InvalidOperation as exc:
-                raise ValueError("execution cost receipt amount is invalid") from exc
-            if amount < 0 or not str(cost.get("currency") or ""):
-                raise ValueError("execution cost receipt is invalid")
+            availability = str(cost.get("availability") or "").upper()
+            if availability == "UNAVAILABLE":
+                if (
+                    str(cost.get("measurement") or "").upper() != "UNKNOWN"
+                    or not str(cost.get("reason") or "").strip()
+                    or "amount" in cost
+                    or "currency" in cost
+                ):
+                    raise ValueError("unknown execution cost receipt is invalid")
+            else:
+                try:
+                    amount = Decimal(str(cost.get("amount") or "0"))
+                except InvalidOperation as exc:
+                    raise ValueError(
+                        "execution cost receipt amount is invalid"
+                    ) from exc
+                if amount < 0 or not str(cost.get("currency") or ""):
+                    raise ValueError("execution cost receipt is invalid")
             cost_receipt = dict(cost)
         else:
             cost_receipt = {
@@ -1249,6 +1322,7 @@ class CodexCliExecutionBackend:
         qualification_ref: str = "capability-probe:codex-cli:1",
         codex_executable: str = "",
         pricing: CodexPricingSnapshot | None = None,
+        account_entitlement: CodexAccountEntitlementSnapshot | None = None,
         structured_result_validator: CodexStructuredResultValidator | None = None,
     ) -> None:
         self.admission = admission
@@ -1258,13 +1332,23 @@ class CodexCliExecutionBackend:
         self.execution_policy = execution_policy
         self.codex_executable = codex_executable
         self.pricing = pricing
+        self.account_entitlement = account_entitlement
         self.structured_result_validator = structured_result_validator
         if codex_executable:
             executable = Path(codex_executable)
             if not executable.is_absolute() or not executable.is_file():
                 raise ValueError("Codex executable must be an existing absolute file")
-            if pricing is None or structured_result_validator is None:
-                raise ValueError("real Codex execution requires pricing and validation")
+            if (pricing is None) == (account_entitlement is None):
+                raise ValueError(
+                    "real Codex execution requires exactly one pricing or account entitlement basis"
+                )
+            if structured_result_validator is None:
+                raise ValueError("real Codex execution requires semantic validation")
+        elif pricing is not None and account_entitlement is not None:
+            raise ValueError(
+                "Codex backend cannot mix pricing and account entitlement bases"
+            )
+        measured_evidence = pricing is not None or account_entitlement is not None
         self.capability_profile = ExecutionCapabilityProfile(
             backend_id=self.backend_id,
             backend_version=backend_version,
@@ -1274,8 +1358,8 @@ class CodexCliExecutionBackend:
             supports_query=True,
             supports_cancel=True,
             supports_callback=False,
-            supports_usage_receipt=pricing is not None,
-            supports_cost_receipt=pricing is not None,
+            supports_usage_receipt=measured_evidence,
+            supports_cost_receipt=measured_evidence,
             supports_structured_output=True,
             supports_process_group_control=True,
             supports_persistent_execution_directory=True,
@@ -1638,7 +1722,7 @@ class CodexCliExecutionBackend:
                     "actual Codex stdin differs from frozen rendered prompt",
                     retryable=False,
                 )
-        if self.pricing is not None:
+        if self.pricing is not None or self.account_entitlement is not None:
             authority = record.raw_evidence.get("model_authority")
             if not isinstance(authority, Mapping):
                 raise _CodexResultFailure(
@@ -1658,6 +1742,7 @@ class CodexCliExecutionBackend:
                     Path(receipt.stdout_path).read_text(encoding="utf-8"),
                     model_id=frozen_model,
                     pricing=self.pricing,
+                    account_entitlement=self.account_entitlement,
                     allowed_tools=tuple(
                         str(item)
                         for item in record.raw_evidence.get("allowed_tools") or ()
@@ -1809,6 +1894,7 @@ class CodexCliExecutionBackend:
 
 
 __all__ = [
+    "CodexAccountEntitlementSnapshot",
     "CodexPricingSnapshot",
     "CodexCliExecutionBackend",
     "CodexStructuredResultValidator",

@@ -16,7 +16,9 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     dispatch_external_effect,
     plan_external_effect,
 )
-from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    FakeDeterministicProvider,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -101,6 +103,121 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 evidence={"model_id": "fixture-model"},
             )
         self.assertEqual(overrun.exception.code, "BUDGET_SETTLEMENT_CONFLICT")
+
+    def test_account_entitlement_settles_tokens_with_unknown_monetary_cost(
+        self,
+    ) -> None:
+        context, effect_id = self._effect("success")
+        authorization_ref = "task-authorization:classical-corpus-20260908"
+        reservation = reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=context.operation_id,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+                stable_idempotency_key=f"budget:{effect_id}",
+                provider="production_execution_gateway",
+                currency="UNKNOWN",
+                estimated_amount=None,
+                estimated_tokens=1_200,
+                accounting_basis="ACCOUNT_ENTITLEMENT",
+                cost_authorization_ref=authorization_ref,
+                call_caps={"project_total": 1},
+                token_caps={"project_total": 2_000},
+            ),
+        )
+
+        settled = settle_provider_budget(
+            DATABASE_URL,
+            reservation_id=str(reservation["reservation_id"]),
+            project_id=context.project_id,
+            actual_amount=None,
+            actual_tokens=800,
+            evidence={
+                "model_id": "gpt-5.6-sol",
+                "real_model_call": True,
+                "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                "cost_status": "UNKNOWN",
+            },
+        )
+
+        self.assertEqual(settled["status"], "SETTLED")
+        self.assertEqual(settled["accounting_basis"], "ACCOUNT_ENTITLEMENT")
+        self.assertEqual(settled["cost_status"], "UNKNOWN")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT estimated_amount,reserved_amount,settled_amount,
+                       accounting_basis,estimated_cost_status,settled_cost_status,
+                       evidence->>'cost_authorization_ref'
+                FROM authority_budget_reservation
+                WHERE reservation_id=%s
+                """,
+                [reservation["reservation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    None,
+                    None,
+                    None,
+                    "ACCOUNT_ENTITLEMENT",
+                    "UNKNOWN",
+                    "UNKNOWN",
+                    authorization_ref,
+                ),
+            )
+            cursor.execute(
+                """
+                SELECT amount,currency,accounting_basis,cost_status,
+                       evidence->>'cost_authorization_ref'
+                FROM authority_operation_cost_evidence
+                WHERE cost_evidence_id=%s
+                """,
+                [f"budget-cost:{reservation['reservation_id']}"],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    None,
+                    "UNKNOWN",
+                    "ACCOUNT_ENTITLEMENT",
+                    "UNKNOWN",
+                    authorization_ref,
+                ),
+            )
+
+        with self.assertRaises(KernelError) as fake_cost:
+            settle_provider_budget(
+                DATABASE_URL,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=context.project_id,
+                actual_amount="0",
+                actual_tokens=800,
+                evidence={"model_id": "gpt-5.6-sol"},
+            )
+        self.assertEqual(fake_cost.exception.code, "BUDGET_SETTLEMENT_INVALID")
+
+        second_context, second_effect_id = self._effect_for_project(context.project_id)
+        with self.assertRaises(KernelError) as exhausted:
+            reserve_provider_budget(
+                DATABASE_URL,
+                BudgetReservationRequest(
+                    operation_id=second_context.operation_id,
+                    external_effect_id=second_effect_id,
+                    project_id=context.project_id,
+                    stable_idempotency_key=f"budget:{second_effect_id}",
+                    provider="production_execution_gateway",
+                    currency="UNKNOWN",
+                    estimated_amount=None,
+                    estimated_tokens=1_000,
+                    accounting_basis="ACCOUNT_ENTITLEMENT",
+                    cost_authorization_ref=authorization_ref,
+                    call_caps={"project_total": 1},
+                    token_caps={"project_total": 2_000},
+                ),
+            )
+        self.assertEqual(exhausted.exception.code, "BUDGET_CALL_CAP_EXCEEDED")
 
     def test_unknown_effect_holds_reservation_for_reconciliation(self) -> None:
         context, effect_id = self._effect("timeout_after")
@@ -195,10 +312,15 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                     reserve_provider_budget(
                         DATABASE_URL,
                         BudgetReservationRequest(
-                            operation_id=context.operation_id, external_effect_id=effect_id,
-                            project_id=context.project_id, stable_idempotency_key=identifier("invalid-budget"),
-                            provider="fake_deterministic_provider", currency="USD",
-                            estimated_amount="0.5", estimated_tokens=10, caps=caps,
+                            operation_id=context.operation_id,
+                            external_effect_id=effect_id,
+                            project_id=context.project_id,
+                            stable_idempotency_key=identifier("invalid-budget"),
+                            provider="fake_deterministic_provider",
+                            currency="USD",
+                            estimated_amount="0.5",
+                            estimated_tokens=10,
+                            caps=caps,
                             budget_timezone=timezone,
                         ),
                     )
@@ -209,21 +331,31 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         reservation = reserve_provider_budget(
             DATABASE_URL,
             BudgetReservationRequest(
-                operation_id=context.operation_id, external_effect_id=effect_id,
-                project_id=context.project_id, stable_idempotency_key=identifier("breach"),
-                provider="fake_deterministic_provider", currency="USD",
-                estimated_amount="0.5", estimated_tokens=10,
+                operation_id=context.operation_id,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+                stable_idempotency_key=identifier("breach"),
+                provider="fake_deterministic_provider",
+                currency="USD",
+                estimated_amount="0.5",
+                estimated_tokens=10,
             ),
         )
         with self.assertRaises(KernelError) as error:
             settle_provider_budget(
-                DATABASE_URL, reservation_id=reservation["reservation_id"],
-                project_id=context.project_id, actual_amount="0.75", actual_tokens=11,
+                DATABASE_URL,
+                reservation_id=reservation["reservation_id"],
+                project_id=context.project_id,
+                actual_amount="0.75",
+                actual_tokens=11,
                 evidence={"fixture": True},
             )
         self.assertEqual(error.exception.code, "BUDGET_ACTUAL_EXCEEDS_RESERVATION")
         with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT status, budget_breach FROM authority_budget_reservation WHERE reservation_id = %s", [reservation["reservation_id"]])
+            cursor.execute(
+                "SELECT status, budget_breach FROM authority_budget_reservation WHERE reservation_id = %s",
+                [reservation["reservation_id"]],
+            )
             self.assertEqual(cursor.fetchone(), ("HELD_UNKNOWN", True))
 
     def test_concurrent_project_cap_serializes_reservations(self) -> None:
@@ -236,10 +368,14 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 return reserve_provider_budget(
                     DATABASE_URL,
                     BudgetReservationRequest(
-                        operation_id=context.operation_id, external_effect_id=effect_id,
-                        project_id=project_id, stable_idempotency_key=identifier("concurrent"),
-                        provider="fake_deterministic_provider", currency="USD",
-                        estimated_amount="0.75", estimated_tokens=10,
+                        operation_id=context.operation_id,
+                        external_effect_id=effect_id,
+                        project_id=project_id,
+                        stable_idempotency_key=identifier("concurrent"),
+                        provider="fake_deterministic_provider",
+                        currency="USD",
+                        estimated_amount="0.75",
+                        estimated_tokens=10,
                         caps={"project_total": "1.00"},
                     ),
                 )["status"]
@@ -262,10 +398,14 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             reserved = reserve_provider_budget(
                 DATABASE_URL,
                 BudgetReservationRequest(
-                    operation_id=context.operation_id, external_effect_id=effect,
-                    project_id=project_id, stable_idempotency_key=identifier(currency),
-                    provider="fake_deterministic_provider", currency=currency,
-                    estimated_amount="0.75", estimated_tokens=10,
+                    operation_id=context.operation_id,
+                    external_effect_id=effect,
+                    project_id=project_id,
+                    stable_idempotency_key=identifier(currency),
+                    provider="fake_deterministic_provider",
+                    currency=currency,
+                    estimated_amount="0.75",
+                    estimated_tokens=10,
                     caps={"global_daily": "1.00"},
                 ),
             )
@@ -275,7 +415,9 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         project_id = identifier("budget-project")
         return self._effect_for_project(project_id, scenario=scenario)
 
-    def _effect_for_project(self, project_id: str, *, scenario: str = "success") -> tuple[EffectCommandContext, str]:
+    def _effect_for_project(
+        self, project_id: str, *, scenario: str = "success"
+    ) -> tuple[EffectCommandContext, str]:
         operation_id = identifier("budget-operation")
         definition = identifier("budget-definition")
         with transaction() as connection, connection.cursor() as cursor:

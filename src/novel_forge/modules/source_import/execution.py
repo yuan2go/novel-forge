@@ -124,7 +124,6 @@ class _ExecutionSpec:
 
 
 class _SourceGatewayEffectAdapter:
-
     production_execution_gateway_backed = True
 
     def __init__(
@@ -164,9 +163,7 @@ class _SourceGatewayEffectAdapter:
             request_sent = True
             result = self.session.gateway.reconcile(handle)
         except Exception as exc:
-            recovered = self.session.evidence_store.find_record(
-                request.execution_id
-            )
+            recovered = self.session.evidence_store.find_record(request.execution_id)
             submission_phase = (
                 str(recovered.raw_evidence.get("submission_phase") or "")
                 if recovered is not None
@@ -261,7 +258,6 @@ class _SourceGatewayEffectAdapter:
 
 
 class PostgresContentIntelligenceExecutionPort:
-
     external_effect_backed = True
     production_execution_gateway_backed = True
 
@@ -293,6 +289,30 @@ class PostgresContentIntelligenceExecutionPort:
         self.lease_seconds = lease_seconds
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.cost_accounting_basis = str(
+            getattr(transport, "cost_accounting_basis", "PRICED") or "PRICED"
+        ).upper()
+        self.account_authorization_ref = str(
+            getattr(transport, "account_authorization_ref", "") or ""
+        )
+        self.provider_call_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(transport, "provider_call_caps", {}) or {}
+            ).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(transport, "provider_token_caps", {}) or {}
+            ).items()
+        }
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+            not self.account_authorization_ref or self.budget_caps
+        ):
+            raise ValueError(
+                "Source account-entitlement execution requires authorization and no monetary caps"
+            )
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
         self.methodology_registry = methodology_registry or SourceMethodologyRegistry(
@@ -707,9 +727,7 @@ class PostgresContentIntelligenceExecutionPort:
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
             model=base_route.model_profile.model_id,
-            protocol=provider_request_protocol(
-                base_route.model_profile.model_provider
-            ),
+            protocol=provider_request_protocol(base_route.model_profile.model_provider),
             input_text=prompt,
             max_output_tokens=self.provider_output_token_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
@@ -739,9 +757,7 @@ class PostgresContentIntelligenceExecutionPort:
         provider_admission = prepare_provider_admission(
             envelope,
             token_contract,
-            input_component_hashes=dict(
-                prompt_evidence.get("component_hashes") or {}
-            ),
+            input_component_hashes=dict(prompt_evidence.get("component_hashes") or {}),
             complete_request_coverage=(
                 "system_runtime_instructions",
                 "prompt_template",
@@ -854,10 +870,22 @@ class PostgresContentIntelligenceExecutionPort:
                 project_id=worker.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.transport.provider,
-                currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=0,
+                currency=(
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
+                estimated_amount=(
+                    None
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else self.max_cost_per_call
+                ),
+                estimated_tokens=int(provider_admission.total_reserved),
                 caps=self.budget_caps,
+                call_caps=self.provider_call_caps,
+                token_caps=self.provider_token_caps,
+                accounting_basis=self.cost_accounting_basis,
+                cost_authorization_ref=self.account_authorization_ref,
             ),
         )
         binding = self._binding(
@@ -917,7 +945,11 @@ class PostgresContentIntelligenceExecutionPort:
             or int(usage.get("input_tokens") or 0)
             + int(usage.get("output_tokens") or 0)
         )
-        amount = str(cost.get("amount") or cost.get("amount_usd") or "0")
+        amount = (
+            None
+            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+            else str(cost.get("amount") or cost.get("amount_usd") or "0")
+        )
         settle_provider_budget(
             self.database_url,
             reservation_id=str(reservation["reservation_id"]),
@@ -929,6 +961,12 @@ class PostgresContentIntelligenceExecutionPort:
                 "model_id": str(evidence.get("model_id") or ""),
                 "real_model_call": bool(evidence.get("real_model_call")),
                 "fixture": bool(evidence.get("fixture_protocol_only")),
+                "accounting_basis": self.cost_accounting_basis,
+                "cost_status": (
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "KNOWN"
+                ),
             },
         )
         return evidence
@@ -998,7 +1036,11 @@ class PostgresContentIntelligenceExecutionPort:
                 self.database_url,
                 reservation_id=str(row[2]),
                 project_id=worker.project_id,
-                actual_amount=str(cost.get("amount") or cost.get("amount_usd") or "0"),
+                actual_amount=(
+                    None
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else str(cost.get("amount") or cost.get("amount_usd") or "0")
+                ),
                 actual_tokens=total_tokens,
                 evidence={
                     "replayed_after_worker_failure": True,

@@ -39,6 +39,7 @@ from .contracts import (
     ValidationManifest,
 )
 from .backends import (
+    CodexAccountEntitlementSnapshot,
     CodexCliExecutionBackend,
     CodexPricingSnapshot,
     CodexStructuredResultValidator,
@@ -173,6 +174,7 @@ __all__ = [
     "CapabilityRegistry",
     "CapabilityProbe",
     "CancellationOutcome",
+    "CodexAccountEntitlementSnapshot",
     "CodexCliExecutionBackend",
     "CodexPricingSnapshot",
     "CodexStructuredResultValidator",

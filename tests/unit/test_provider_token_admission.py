@@ -57,6 +57,44 @@ def _envelope(text: str = "hello") -> ProviderRequestEnvelope:
     )
 
 
+def test_codex_cli_admission_bounds_visible_stdin_without_claiming_final_request():
+    contract = build_route_token_accounting_contract(
+        provider="codex-cli",
+        model="gpt-5.6-sol",
+        route_identity="route:codex:1",
+        accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        accounting_evidence_ref="contract:codex-visible-stdin:v1",
+        model_context_limit=1_000_000,
+        execution_token_limit=100_000,
+        output_reserve=1_000,
+        safety_margin=256,
+        framing_overhead=16,
+    )
+    envelope = ProviderRequestEnvelope(
+        provider="codex-cli",
+        model="gpt-5.6-sol",
+        protocol="codex-cli-application-stdin-v1",
+        input_text="可见输入",
+        max_output_tokens=1_000,
+        timeout_seconds=300,
+        stable_idempotency_key="codex:visible:1",
+    )
+
+    receipt = prepare_provider_admission(
+        envelope,
+        contract,
+        complete_request_coverage=COMPLETE_COVERAGE,
+    )
+
+    assert receipt.status == "ADMITTED"
+    assert receipt.reason == "ADMITTED_APPLICATION_VISIBLE_ONLY"
+    assert receipt.precision == "APPLICATION_VISIBLE_UPPER_BOUND"
+    assert receipt.accounting_contract["serialization_contract"] == (
+        "codex-cli-application-stdin-v1"
+    )
+    verify_provider_admission(envelope, receipt)
+
+
 def test_complete_admission_counts_exact_envelope_and_reserves_output() -> None:
     receipt = prepare_provider_admission(
         _envelope("x" * 100),
@@ -187,13 +225,18 @@ def test_serialization_drift_is_rejected_before_dispatch() -> None:
         verify_provider_admission(_envelope("changed"), receipt)
 
 
-def test_manifest_identity_excludes_prompt_body_but_reconstructs_exact_envelope() -> None:
+def test_manifest_identity_excludes_prompt_body_but_reconstructs_exact_envelope() -> (
+    None
+):
     envelope = _envelope("sensitive governed prompt")
     identity = envelope.to_identity_dict()
 
     assert "input_text" not in identity
-    assert ProviderRequestEnvelope.from_identity_dict(
-        identity, input_text="sensitive governed prompt"
-    ) == envelope
+    assert (
+        ProviderRequestEnvelope.from_identity_dict(
+            identity, input_text="sensitive governed prompt"
+        )
+        == envelope
+    )
     with pytest.raises(ValueError, match="PROVIDER_REQUEST_IDENTITY_DRIFT"):
         ProviderRequestEnvelope.from_identity_dict(identity, input_text="changed")

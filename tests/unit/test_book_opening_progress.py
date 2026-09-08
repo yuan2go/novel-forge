@@ -860,6 +860,50 @@ def test_budget_usage_is_a_fail_closed_execution_gate() -> None:
     }
 
 
+def test_account_entitlement_progress_never_reports_zero_monetary_cost() -> None:
+    snapshot = _snapshot(
+        nodes=_canonical_nodes(),
+        receipts=(),
+        current_workflow_node_id="node:1",
+        execution=_valid_scheduled_execution(workflow_node_id="node:1"),
+    )
+    progress = project_book_opening_workflow_progress(
+        BookOpeningWorkflowProgressSnapshot(
+            opening=snapshot.opening,
+            nodes=snapshot.nodes,
+            receipts=snapshot.receipts,
+            execution=snapshot.execution,
+            budget={
+                **snapshot.budget,
+                "policy_snapshot": {
+                    "execution_mode": "PROVIDER_ALLOWED",
+                    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                    "authorization_ref": (
+                        "task-authorization:classical-corpus-20260908"
+                    ),
+                    "cost_observability": "UNKNOWN",
+                    "provider_call_limit": 420,
+                    "token_limit": 42_000_000,
+                },
+                "accounted_cost_usd": Decimal("0"),
+                "settled_cost_usd": Decimal("0"),
+            },
+            legacy_checkpoint=snapshot.legacy_checkpoint,
+            observed_at=snapshot.observed_at,
+            edges=snapshot.edges,
+        )
+    ).to_dict()
+
+    assert progress["budget_usage"]["cost_usd"] == {
+        "used": None,
+        "settled": None,
+        "limit": None,
+        "status": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    }
+    assert "COST_LIMIT_REACHED" not in progress["budget_usage"]["exhaustion_reasons"]
+
+
 def test_bound_budget_without_authority_row_requires_reconciliation() -> None:
     snapshot = _snapshot(
         nodes=_canonical_nodes(),

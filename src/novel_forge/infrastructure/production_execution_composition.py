@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 from novel_forge.infrastructure.environment import RuntimeEnvironment
@@ -14,7 +14,6 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
 
 @dataclass(frozen=True, slots=True)
 class ProductionExecutionComposition:
-
     gateway: ProductionExecutionGatewayExternalEffectAdapter
     object_store: ExternalEffectAdapter
     source_object_reader: Any
@@ -22,6 +21,10 @@ class ProductionExecutionComposition:
     max_cost_per_call: str
     shared_budget_caps: Mapping[str, str]
     chapter_total_budget_cap: str = ""
+    cost_accounting_basis: str = "PRICED"
+    account_authorization_ref: str = ""
+    provider_call_caps: Mapping[str, int] = field(default_factory=dict)
+    provider_token_caps: Mapping[str, int] = field(default_factory=dict)
 
     def budget_caps(self, *, include_chapter_total: bool = False) -> dict[str, str]:
         caps = dict(self.shared_budget_caps)

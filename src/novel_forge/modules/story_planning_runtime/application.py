@@ -15,7 +15,10 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRegistration,
     AuthorityHandlerRequest,
 )
-from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.authority_security import (
+    Principal,
+    require_worker_scoped_auto_decision,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.asset_commands import (
     AuthorityAssetWriteCommand,
@@ -730,9 +733,20 @@ class StoryPlanningGenerationApplication:
         idempotency_key: str,
         trace_id: str,
         correlation_id: str,
+        decision_evidence: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.approve", generation["project_id"])
+        require_worker_scoped_auto_decision(
+            principal=principal,
+            evidence=decision_evidence,
+            project_id=generation["project_id"],
+            workspace_id=generation["workspace_id"],
+            book_id=generation["book_id"],
+            action="story_planning.candidate.approve",
+            candidate_asset_version_id=candidate_asset_version_id,
+            candidate_content_hash=generation["content_hash"],
+        )
         state = self.story_design.require(
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
@@ -762,6 +776,11 @@ class StoryPlanningGenerationApplication:
                 evidence={
                     "approval_policy_key": generation["approval_policy_key"],
                     "approved_by": principal.principal_id,
+                    **(
+                        {"formation_auto_decision": dict(decision_evidence)}
+                        if decision_evidence
+                        else {}
+                    ),
                 },
             ),
             principal=principal,
@@ -785,6 +804,16 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
+        require_worker_scoped_auto_decision(
+            principal=principal,
+            evidence=decision_evidence,
+            project_id=generation["project_id"],
+            workspace_id=generation["workspace_id"],
+            book_id=generation["book_id"],
+            action="story_planning.candidate.activate",
+            candidate_asset_version_id=candidate_asset_version_id,
+            candidate_content_hash=generation["content_hash"],
+        )
         generation_record = self.require_generation(
             generation["generation_operation_id"]
         )
@@ -854,7 +883,12 @@ class StoryPlanningGenerationApplication:
                     planning_scope=generation["planning_scope"],
                     expected_version=int(state["version"]),
                     evidence={
-                        "activation_policy_key": generation["activation_policy_key"]
+                        "activation_policy_key": generation["activation_policy_key"],
+                        **(
+                            {"formation_auto_decision": dict(decision_evidence)}
+                            if decision_evidence
+                            else {}
+                        ),
                     },
                 ),
                 principal=principal,
@@ -870,7 +904,14 @@ class StoryPlanningGenerationApplication:
                         asset_version_id=candidate_asset_version_id, content_hash=generation["content_hash"],
                         logical_key=generation["logical_key"], generator_operation_name=generation["generator_operation_name"],
                         transition=DesignTransition.ACTIVATE, planning_scope=generation["planning_scope"],
-                        expected_version=int(state["version"]), evidence={"activation_policy_key": generation["activation_policy_key"]},
+                        expected_version=int(state["version"]), evidence={
+                            "activation_policy_key": generation["activation_policy_key"],
+                            **(
+                                {"formation_auto_decision": dict(decision_evidence)}
+                                if decision_evidence
+                                else {}
+                            ),
+                        },
                     ), principal=principal,
                 )
             binding = None

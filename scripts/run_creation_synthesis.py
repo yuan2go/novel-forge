@@ -42,7 +42,11 @@ from novel_forge.workers.book_authority import (
     execute_book_opening_claim,
     execute_story_formation_claim,
 )
-from scripts.creation_pilot import authorize_total, freeze_routes, prepare_pilot_book
+from scripts.creation_pilot import (
+    authorize_execution,
+    freeze_routes,
+    prepare_pilot_book,
+)
 from scripts.run_world_production_smoke import (
     drive,
     export,
@@ -68,7 +72,11 @@ def main(argv=None):
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--run-key", required=True)
     parser.add_argument("--resume-formation-run-id", default="")
-    parser.add_argument("--initialize", action="store_true", help="Register isolated Project/Book through existing Commands; idempotent on resume")
+    parser.add_argument(
+        "--initialize",
+        action="store_true",
+        help="Register isolated Project/Book through existing Commands; idempotent on resume",
+    )
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--authorized-total-usd", default="")
     parser.add_argument("--authorization-ref", default="")
@@ -108,13 +116,15 @@ def main(argv=None):
     args.evidence_dir.mkdir(parents=True, exist_ok=False)
     report = {
         "source_sha": source_sha,
-        "project_id": args.project_id, "book_id": args.book_id, "run_key": args.run_key,
+        "project_id": args.project_id,
+        "book_id": args.book_id,
+        "run_key": args.run_key,
         "stage": "CONFIGURATION",
         "implementation_identity": build_implementation_tree_identity(repo)[
             "implementation_tree_sha"
         ],
         "real_provider": "NOT_RUN",
-        "human_editorial": "NOT_PROVEN",
+        "human_editorial": "NOT_RUN",
         "longitudinal": "NOT_PROVEN",
         "creation_policy": policy,
         "formation_policy": formation_policy,
@@ -145,9 +155,10 @@ def main(argv=None):
         ):
             raise ValueError("execution requires a clean exact expected SHA")
         values = dict(os.environ)
-        total = authorize_total(values, args.authorized_total_usd, args.authorization_ref)
-        report["authorized_total_usd"] = total
-        report["authorization_ref"] = args.authorization_ref
+        authorization = authorize_execution(
+            values, args.authorized_total_usd, args.authorization_ref
+        )
+        report.update(authorization)
         validate_configuration(values)
         database_url = values.get("NOVEL_FORGE_DATABASE_URL", "")
         import psycopg
@@ -168,6 +179,9 @@ def main(argv=None):
         principal = resolver.resolve_api_principal()
         principal.require("book.authority.execute", args.project_id)
         worker = resolver.resolve_worker_principal("creation-synthesis-worker")
+        formation_worker = resolver.resolve_book_formation_worker_principal(
+            worker.principal_id
+        )
         content = build_content_authority_application(settings, env=values)
         execution = build_production_execution_composition(settings, env=values)
         if any(
@@ -186,31 +200,86 @@ def main(argv=None):
             env=values,
         )
         frozen = {
-            "contract_version": "creation-pilot.v1", "run_key": args.run_key,
-            "brief_input_hash": report["brief_input_hash"], "creation_policy": policy,
-            "formation_policy": formation_policy, "implementation_identity": report["implementation_identity"],
+            "contract_version": "creation-pilot.v1",
+            "run_key": args.run_key,
+            "brief_input_hash": report["brief_input_hash"],
+            "creation_policy": policy,
+            "formation_policy": formation_policy,
+            "implementation_identity": report["implementation_identity"],
             "models": freeze_routes(execution.gateway.routes),
-            "total_project_cap_usd": total, "authorization_ref": args.authorization_ref,
-            "runtime_settings": {key: value for key, value in values.items() if key in {
-                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL", "NOVEL_FORGE_OPERATION_PROVIDER_CAP", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP", "NOVEL_FORGE_DAILY_PROVIDER_CAP",
-                "NOVEL_FORGE_CHAPTER_PROVIDER_CAP", "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID",
-                "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET", "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET",
-                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT",
-                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT",
-                "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT", "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS"}},
+            "cost_accounting": authorization,
+            "runtime_settings": {
+                key: value
+                for key, value in values.items()
+                if key
+                in {
+                    "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL",
+                    "NOVEL_FORGE_OPERATION_PROVIDER_CAP",
+                    "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP",
+                    "NOVEL_FORGE_DAILY_PROVIDER_CAP",
+                    "NOVEL_FORGE_CHAPTER_PROVIDER_CAP",
+                    "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID",
+                    "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID",
+                    "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET",
+                    "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT",
+                    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS",
+                    "NOVEL_FORGE_CODEX_ACCOUNTING_MODE",
+                    "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF",
+                    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF",
+                    "NOVEL_FORGE_CODEX_CLI_VERSION",
+                    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256",
+                    "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
+                    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
+                    "NOVEL_FORGE_OPERATION_PROVIDER_CALL_LIMIT",
+                    "NOVEL_FORGE_PROVIDER_PROJECT_CALL_LIMIT",
+                    "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CALL_LIMIT",
+                    "NOVEL_FORGE_PROVIDER_DAILY_CALL_LIMIT",
+                    "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_CALL_LIMIT",
+                    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
+                    "NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT",
+                    "NOVEL_FORGE_PROVIDER_PROJECT_TOKEN_LIMIT",
+                    "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_TOKEN_LIMIT",
+                    "NOVEL_FORGE_PROVIDER_DAILY_TOKEN_LIMIT",
+                    "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_TOKEN_LIMIT",
+                }
+            },
         }
         report["frozen_configuration"] = frozen
         report["stage"] = "PREPARATION"
-        book = prepare_pilot_book(composition=composition, principal=principal, project_id=args.project_id,
-            workspace_id=args.workspace_id, book_id=args.book_id, run_key=args.run_key,
-            title=formation_policy["title"], frozen=frozen, initialize=args.initialize)
-        record({"kind": "PREPARATION", "book_id": args.book_id, "version": book["version"]})
+        book = prepare_pilot_book(
+            composition=composition,
+            principal=principal,
+            project_id=args.project_id,
+            workspace_id=args.workspace_id,
+            book_id=args.book_id,
+            run_key=args.run_key,
+            title=formation_policy["title"],
+            frozen=frozen,
+            initialize=args.initialize,
+        )
+        record(
+            {"kind": "PREPARATION", "book_id": args.book_id, "version": book["version"]}
+        )
         deadline = time.monotonic() + args.max_seconds
         formation = composition.formation
         report["stage"] = "FORMATION"
-        existing_formation = formation.find_by_key(project_id=args.project_id, book_id=args.book_id, idempotency_key=f"{args.run_key}:formation")
-        if args.resume_formation_run_id and (not existing_formation or existing_formation["formation_run_id"] != args.resume_formation_run_id):
-            raise ValueError("Explicit Formation id must match this exact pilot run key")
+        existing_formation = formation.find_by_key(
+            project_id=args.project_id,
+            book_id=args.book_id,
+            idempotency_key=f"{args.run_key}:formation",
+        )
+        if args.resume_formation_run_id and (
+            not existing_formation
+            or existing_formation["formation_run_id"] != args.resume_formation_run_id
+        ):
+            raise ValueError(
+                "Explicit Formation id must match this exact pilot run key"
+            )
         if existing_formation:
             run = existing_formation
             formation_run_id = run["formation_run_id"]
@@ -269,10 +338,19 @@ def main(argv=None):
             if state["lifecycle"] == "READY":
                 break
             if (
-                state["lifecycle"] in {"FAILED", "ABORTED", "WAITING_APPROVAL"}
+                state["lifecycle"] in {"FAILED", "ABORTED"}
                 or time.monotonic() >= deadline
             ):
                 raise RuntimeError(f"Formation stopped: {state}")
+            if state["lifecycle"] == "WAITING_APPROVAL":
+                report["status"] = "WAITING_APPROVAL"
+                report["approval_checkpoint"] = {
+                    "formation_run_id": formation_run_id,
+                    "stage": state["current_stage"],
+                    "version": state["version"],
+                    "frozen_input_digest": state["frozen_input_digest"],
+                }
+                return 3
             formation.schedule_candidates(
                 limit=1, project_id=args.project_id, formation_run_id=formation_run_id
             )
@@ -290,7 +368,11 @@ def main(argv=None):
                     "Formation awaits its existing lease/retry; resume the same run"
                 )
             execute_story_formation_claim(
-                formation.runtime_jobs, formation, principal, claim, lease_seconds=60
+                formation.runtime_jobs,
+                formation,
+                formation_worker,
+                claim,
+                lease_seconds=60,
             )
             record({"kind": "FORMATION", "run": formation.require(formation_run_id)})
         prepared = prepare_creation_inputs(
@@ -301,7 +383,11 @@ def main(argv=None):
         )
         versions = prepared["versions"]
         report["stage"] = "OPENING"
-        opening_state = composition.opening.find_by_key(project_id=args.project_id, book_id=args.book_id, idempotency_key=f"{args.run_key}:opening")
+        opening_state = composition.opening.find_by_key(
+            project_id=args.project_id,
+            book_id=args.book_id,
+            idempotency_key=f"{args.run_key}:opening",
+        )
         if opening_state is None:
             opening = composition.open_book(
                 OpenBookProductionRequest(
@@ -325,7 +411,12 @@ def main(argv=None):
             opening_state = composition.opening.require(opening.opening_run_id)
         opening_run_id = opening_state["opening_run_id"]
         report["opening_run_id"] = opening_run_id
-        record({"kind": "OPENING_PROGRESS", "progress": composition.opening.require_progress(opening_run_id)})
+        record(
+            {
+                "kind": "OPENING_PROGRESS",
+                "progress": composition.opening.require_progress(opening_run_id),
+            }
+        )
         if opening_state["lifecycle"] == "COMPLETE":
             opened = opening_state["result"]
         else:
@@ -346,7 +437,7 @@ def main(argv=None):
             opened = execute_book_opening_claim(
                 RuntimeJobAuthority(database_url),
                 composition.opening,
-                principal,
+                worker,
                 claim,
                 lease_seconds=60,
             )

@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import (
 )
 from novel_forge.modules.production_execution import ExecutionOutcome
 from novel_forge.modules.production_execution.backends import (
+    CodexAccountEntitlementSnapshot,
     CodexCliExecutionBackend,
     CodexPricingSnapshot,
     InMemoryExecutionRecordStore,
@@ -48,6 +49,16 @@ def _pricing() -> CodexPricingSnapshot:
         input_per_million="10",
         cached_input_per_million="1",
         output_per_million="30",
+    )
+
+
+def _entitlement() -> CodexAccountEntitlementSnapshot:
+    return CodexAccountEntitlementSnapshot(
+        authorization_ref="task-authorization:classical-corpus-20260908",
+        account_identity_ref="chatgpt-login:local-account",
+        cli_version="codex-cli 0.153.4",
+        executable_sha256="sha256:" + "c" * 64,
+        configuration_ref="codex-config:ignored-user-config:ephemeral",
     )
 
 
@@ -95,6 +106,78 @@ def test_codex_jsonl_produces_measured_usage_and_estimated_cost() -> None:
             }
         ],
     }
+
+
+def test_codex_jsonl_account_entitlement_keeps_measured_usage_and_unknown_cost() -> (
+    None
+):
+    evidence = parse_codex_jsonl_evidence(
+        json.dumps(
+            {
+                "type": "turn.completed",
+                "usage": {
+                    "input_tokens": 21,
+                    "cached_input_tokens": 5,
+                    "output_tokens": 8,
+                    "reasoning_output_tokens": 3,
+                },
+            }
+        ),
+        model_id="codex-test",
+        account_entitlement=_entitlement(),
+        allowed_tools=("model.provider.invoke",),
+    )
+
+    assert evidence["usage"]["measurement"] == "MEASURED"
+    assert evidence["usage"]["total_tokens"] == 29
+    assert evidence["cost"] == {
+        "availability": "UNAVAILABLE",
+        "measurement": "UNKNOWN",
+        "model": "codex-test",
+        "currency": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "reason": "monetary_cost_not_observable",
+        "authorization_ref": "task-authorization:classical-corpus-20260908",
+        "entitlement_snapshot_hash": _entitlement().snapshot_hash,
+        "entitlement_snapshot": _entitlement().to_dict(),
+        "provider_billed": "UNKNOWN",
+    }
+
+
+def test_real_codex_backend_accepts_one_account_entitlement_without_pricing() -> None:
+    _capability, profile, policy, route, manifest, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    admission = AdmissionController(
+        StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        ),
+        StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        backend = CodexCliExecutionBackend(
+            admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver({}),
+            record_store=InMemoryExecutionRecordStore(),
+            supervisor=CodexProcessSupervisor(
+                PersistentExecutionDirectory(Path(tmp) / "executions")
+            ),
+            execution_policy=LocalProcessExecutionPolicy(
+                fixed_working_directory=tmp,
+                allowed_command_prefixes=((sys.executable, "exec"),),
+                maximum_result_bytes=1_000_000,
+            ),
+            codex_executable=sys.executable,
+            account_entitlement=_entitlement(),
+            structured_result_validator=lambda _stage, _schema, value: value,
+        )
+
+    assert backend.capability_profile.supports_usage_receipt is True
+    assert backend.capability_profile.supports_cost_receipt is True
 
 
 def test_codex_jsonl_records_and_denies_observed_cli_tools() -> None:

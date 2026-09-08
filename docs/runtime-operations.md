@@ -162,10 +162,12 @@ make real-provider-qualification
 ```
 
 The runner first records exact-identity credential and complete-request admission
-preflight. A missing API key, an unsupported qualification transport and unproven Codex
-request accounting are distinct blockers; a ChatGPT login is not a token-admission
+preflight. A missing API key, an unsupported qualification transport and unproven request
+accounting are distinct blockers; a ChatGPT login alone is not a token-admission
 contract. Blocked preflight writes evidence without creating runtime or database state.
-It cannot confer current Provider or real-Chapter qualification.
+It cannot confer current Provider or real-Chapter qualification. The dedicated
+qualification runner remains a priced API-key path; account-entitlement Codex validation
+uses the ordinary production Gateway and records its narrower proof scope.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider
@@ -182,12 +184,22 @@ ExternalEffect can be created. Configure the actual model context limit, account
 method, immutable evidence reference, framing allowance, safety margin and Source output
 reserve through the corresponding `NOVEL_FORGE_PROVIDER_*` and
 `NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE` settings in `.env.example`. The
-currently implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
+implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
 bytes are treated as a conservative provider/model-bound input-token upper bound, and the
 frozen evidence reference must justify the route's framing and limit assumptions. Generic
 character estimates are never used for admission. Missing or unproven accounting fails
-before Provider effect creation; Codex CLI remains fail-closed because its hidden request
-framing cannot currently satisfy the complete-request identity contract.
+before Provider effect creation.
+
+The controlled Codex account-entitlement route may instead use
+`CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1`. This is explicitly an
+`APPLICATION_VISIBLE_UPPER_BOUND`: it bounds the serialized stdin Novel Forge passes to
+the CLI, including visible instruction, schema and context, plus the configured reserve
+and margin. It does not prove or precisely limit hidden CLI framing, injected provider
+context, or the final remote request. The route therefore freezes the absolute executable,
+binary hash, observed CLI version, account/configuration references, model and reasoning
+setting, and reconciles observable terminal usage after execution. Reports must preserve
+that proof ceiling rather than describing the post-call usage as a precise pre-call hard
+limit.
 
 The ContextBundle estimate is only an assembly limit. Admission separately counts the
 serialized system instruction, template, Skill, tool/schema material, Context projection,

@@ -10,6 +10,10 @@ PROVIDER_ADMISSION_CONTRACT_VERSION = "provider-token-admission-v1"
 _SUPPORTED_METHODS = {
     "OPENAI_UTF8_BYTES_UPPER_BOUND_V1": ("openai", "PROVEN_UPPER_BOUND"),
     "SCRIPTED_UTF8_BYTES_EXACT_V1": ("scripted_provider_v2", "EXACT"),
+    "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1": (
+        "codex-cli",
+        "APPLICATION_VISIBLE_UPPER_BOUND",
+    ),
 }
 _SCRIPTED_PROVIDER_CONTEXT_BYTES = 262_144
 _REQUIRED_COMPLETE_COVERAGE = frozenset(
@@ -31,13 +35,13 @@ def provider_request_protocol(provider: str) -> str:
         return "openai-responses-text-envelope-v1"
     if provider == "scripted_provider_v2":
         return "scripted-responses-text-envelope-v1"
+    if provider == "codex-cli":
+        return "codex-cli-application-stdin-v1"
     return "unsupported-provider-envelope-v1"
 
 
 def _canonical(value: Mapping[str, Any]) -> str:
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    )
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _hash(value: Mapping[str, Any]) -> str:
@@ -100,9 +104,7 @@ class ProviderRequestEnvelope:
             input_text=str(payload.get("input_text") or ""),
             max_output_tokens=int(payload.get("max_output_tokens") or 0),
             timeout_seconds=int(payload.get("timeout_seconds") or 0),
-            stable_idempotency_key=str(
-                payload.get("stable_idempotency_key") or ""
-            ),
+            stable_idempotency_key=str(payload.get("stable_idempotency_key") or ""),
         )
 
     @classmethod
@@ -116,9 +118,7 @@ class ProviderRequestEnvelope:
             input_text=input_text,
             max_output_tokens=int(payload.get("max_output_tokens") or 0),
             timeout_seconds=int(payload.get("timeout_seconds") or 0),
-            stable_idempotency_key=str(
-                payload.get("stable_idempotency_key") or ""
-            ),
+            stable_idempotency_key=str(payload.get("stable_idempotency_key") or ""),
         )
         if envelope.input_text_hash != str(payload.get("input_text_hash") or ""):
             raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT: input hash changed")
@@ -176,15 +176,27 @@ class TokenAccountingContract:
             raise ValueError(
                 "TokenAccountingContract v2 requires an execution token limit"
             )
-        if min(
-            self.model_context_limit,
-            self.execution_token_limit,
-            self.output_reserve,
-            self.safety_margin,
-            self.framing_overhead,
-        ) < 0 or self.model_context_limit <= 0:
+        if (
+            min(
+                self.model_context_limit,
+                self.execution_token_limit,
+                self.output_reserve,
+                self.safety_margin,
+                self.framing_overhead,
+            )
+            < 0
+            or self.model_context_limit <= 0
+        ):
             raise ValueError("TokenAccountingContract limits are invalid")
-        if self.precision in {"EXACT", "PROVEN_UPPER_BOUND"} and not self.evidence_ref:
+        if (
+            self.precision
+            in {
+                "EXACT",
+                "PROVEN_UPPER_BOUND",
+                "APPLICATION_VISIBLE_UPPER_BOUND",
+            }
+            and not self.evidence_ref
+        ):
             raise ValueError("proven TokenAccountingContract requires evidence")
 
     def to_dict(self) -> dict[str, Any]:
@@ -201,9 +213,7 @@ class TokenAccountingContract:
             accounting_method=str(payload.get("accounting_method") or ""),
             precision=str(payload.get("precision") or ""),
             evidence_ref=str(payload.get("evidence_ref") or ""),
-            serialization_contract=str(
-                payload.get("serialization_contract") or ""
-            ),
+            serialization_contract=str(payload.get("serialization_contract") or ""),
             model_context_limit=int(payload.get("model_context_limit") or 0),
             execution_token_limit=int(
                 payload.get("execution_token_limit")
@@ -275,12 +285,10 @@ class ProviderAdmissionReceipt:
                 ).items()
             },
             complete_request_coverage=tuple(
-                str(value)
-                for value in payload.get("complete_request_coverage") or ()
+                str(value) for value in payload.get("complete_request_coverage") or ()
             ),
             contract_version=str(
-                payload.get("contract_version")
-                or PROVIDER_ADMISSION_CONTRACT_VERSION
+                payload.get("contract_version") or PROVIDER_ADMISSION_CONTRACT_VERSION
             ),
         )
 
@@ -313,6 +321,16 @@ def build_route_token_accounting_contract(
         precision = "PROVEN_UPPER_BOUND"
         evidence_ref = accounting_evidence_ref
         context_limit = model_context_limit
+    elif (
+        provider == "codex-cli"
+        and accounting_method == "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
+        and model_context_limit > 0
+        and accounting_evidence_ref
+    ):
+        method = accounting_method
+        precision = "APPLICATION_VISIBLE_UPPER_BOUND"
+        evidence_ref = accounting_evidence_ref
+        context_limit = model_context_limit
     else:
         method = accounting_method or "UNSUPPORTED"
         precision = "UNPROVEN"
@@ -325,6 +343,8 @@ def build_route_token_accounting_contract(
         meter_identity=(
             "openai-byte-token-upper-bound"
             if provider == "openai"
+            else "codex-cli-application-stdin-byte-upper-bound"
+            if provider == "codex-cli"
             else "scripted-byte-token-meter"
             if provider == "scripted_provider_v2"
             else "unavailable-provider-meter"
@@ -350,7 +370,11 @@ def prepare_provider_admission(
     input_component_hashes: Mapping[str, str] | None = None,
     complete_request_coverage: tuple[str, ...] = (),
 ) -> ProviderAdmissionReceipt:
-    reason = "ADMITTED"
+    reason = (
+        "ADMITTED_APPLICATION_VISIBLE_ONLY"
+        if contract.precision == "APPLICATION_VISIBLE_UPPER_BOUND"
+        else "ADMITTED"
+    )
     status = "ADMITTED"
     supported = _SUPPORTED_METHODS.get(contract.accounting_method)
     coverage = frozenset(complete_request_coverage)
@@ -360,10 +384,14 @@ def prepare_provider_admission(
         or contract.serialization_contract != envelope.protocol
     ):
         status, reason = "REJECTED", "TOKEN_ACCOUNTING_ROUTE_MISMATCH"
-    elif (
-        supported != (contract.provider, contract.precision)
-        or contract.precision not in {"EXACT", "PROVEN_UPPER_BOUND"}
-    ):
+    elif supported != (
+        contract.provider,
+        contract.precision,
+    ) or contract.precision not in {
+        "EXACT",
+        "PROVEN_UPPER_BOUND",
+        "APPLICATION_VISIBLE_UPPER_BOUND",
+    }:
         status, reason = "REJECTED", "TOKEN_ACCOUNTING_UNPROVEN"
     elif envelope.max_output_tokens != contract.output_reserve:
         status, reason = "REJECTED", "OUTPUT_RESERVE_MISMATCH"

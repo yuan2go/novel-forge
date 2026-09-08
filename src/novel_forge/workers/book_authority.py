@@ -20,6 +20,9 @@ from novel_forge.modules.book_authority import (
 )
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_design_authority import StoryFormationApplication
+from novel_forge.modules.book_design_authority.formation_generation import (
+    FormationApprovalRequired,
+)
 from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerProgrammingError,
@@ -273,6 +276,53 @@ def execute_story_formation_claim(
         )
         runtime_jobs.complete(claim, result)
         return result
+    except FormationApprovalRequired as approval:
+        try:
+            waiting = formation.wait_for_approval(
+                claim.subject_id,
+                expected_stage=str(
+                    claim.input_snapshot.get("observed_stage") or ""
+                ),
+                expected_version=int(
+                    claim.input_snapshot.get("observed_version", -1)
+                ),
+                authority=approval.authority,
+                candidate_asset_version_id=approval.candidate_asset_version_id,
+                candidate_content_hash=approval.candidate_content_hash,
+                candidate_asset_version_ids=approval.candidate_asset_version_ids,
+                runtime_attempt_id=claim.attempt_id,
+                principal=principal,
+            )
+        except Exception as exc:
+            failure = {
+                "code": getattr(exc, "code", type(exc).__name__),
+                "message": str(exc),
+                "formation_run_id": claim.subject_id,
+                "approval_target": approval.candidate_asset_version_id,
+            }
+            formation.record_failure(
+                claim.subject_id,
+                error=failure,
+                runtime_attempt_id=claim.attempt_id,
+            )
+            runtime_jobs.fail(claim, failure)
+            raise
+        business_committed = True
+        runtime_jobs.checkpoint(
+            claim,
+            {
+                "stage": "STORY_FORMATION_WAITING_APPROVAL",
+                "current_stage": waiting["current_stage"],
+                "lifecycle": waiting["lifecycle"],
+                "version": waiting["version"],
+                "candidate_asset_version_id": (
+                    approval.candidate_asset_version_id
+                ),
+                "candidate_content_hash": approval.candidate_content_hash,
+            },
+        )
+        runtime_jobs.complete(claim, waiting)
+        return waiting
     except Exception as exc:
         failure = {
             "code": getattr(exc, "code", type(exc).__name__),
@@ -548,7 +598,11 @@ def main() -> int:
         os.environ.get("NOVEL_FORGE_BOOK_AUTHORITY_WORKER_ID")
         or "book-authority-worker"
     ).strip()
-    principal = build_trusted_principal_resolver().resolve_worker_principal(worker_id)
+    principal_resolver = build_trusted_principal_resolver()
+    principal = principal_resolver.resolve_worker_principal(worker_id)
+    formation_principal = (
+        principal_resolver.resolve_book_formation_worker_principal(worker_id)
+    )
     production_execution = build_production_execution_composition(settings)
     chapter = build_chapter_authority_application(
         settings, execution=production_execution
@@ -603,7 +657,7 @@ def main() -> int:
                             execute=lambda item: execute_story_formation_claim(
                                 runtime_jobs,
                                 composition.formation,
-                                principal,
+                                formation_principal,
                                 item,
                                 lease_seconds=lease_seconds,
                             ),

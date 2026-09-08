@@ -25,7 +25,6 @@ _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningWorkflowProgressSnapshot:
-
     opening: Mapping[str, Any]
     nodes: tuple[Mapping[str, Any], ...]
     receipts: tuple[Mapping[str, Any], ...]
@@ -39,7 +38,6 @@ class BookOpeningWorkflowProgressSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningWorkflowProgressProjection:
-
     schema_version: str
     opening_run_id: str
     project_id: str
@@ -894,8 +892,16 @@ def _budget_usage(
 ) -> dict[str, Any]:
     policy = dict(budget.get("policy_snapshot") or {})
     deadline = budget.get("deadline_at")
-    cost = Decimal(str(budget.get("accounted_cost_usd") or "0"))
-    settled_cost = Decimal(str(budget.get("settled_cost_usd") or "0"))
+    accounting_basis = str(policy.get("accounting_basis") or "PRICED").upper()
+    cost_observable = accounting_basis != "ACCOUNT_ENTITLEMENT"
+    cost = (
+        Decimal(str(budget.get("accounted_cost_usd") or "0"))
+        if cost_observable
+        else None
+    )
+    settled_cost = (
+        Decimal(str(budget.get("settled_cost_usd") or "0")) if cost_observable else None
+    )
     contract_state = str(opening.get("budget_contract_state") or "UNBOUND")
     expected_scope_id = str(opening.get("budget_scope_id") or "")
     expected_scope_revision = int(opening.get("budget_scope_revision") or 0)
@@ -910,7 +916,9 @@ def _budget_usage(
     )
     call_limit = int(policy.get("provider_call_limit") or 0)
     token_limit = int(policy.get("token_limit") or 0)
-    cost_limit = Decimal(str(policy.get("cost_limit_usd") or "0"))
+    cost_limit = (
+        Decimal(str(policy.get("cost_limit_usd") or "0")) if cost_observable else None
+    )
     committed_calls = int(budget.get("committed_call_count") or 0)
     accounted_tokens = int(budget.get("accounted_tokens") or 0)
     deadline_exceeded = isinstance(deadline, datetime) and observed_at >= deadline
@@ -921,7 +929,12 @@ def _budget_usage(
         exhaustion_reasons.append("PROVIDER_CALL_LIMIT_REACHED")
     if token_limit > 0 and accounted_tokens >= token_limit:
         exhaustion_reasons.append("TOKEN_LIMIT_REACHED")
-    if cost_limit > 0 and cost >= cost_limit:
+    if (
+        cost_limit is not None
+        and cost is not None
+        and cost_limit > 0
+        and cost >= cost_limit
+    ):
         exhaustion_reasons.append("COST_LIMIT_REACHED")
     if deadline_exceeded:
         exhaustion_reasons.append("DEADLINE_REACHED")
@@ -960,9 +973,13 @@ def _budget_usage(
             "limit": token_limit,
         },
         "cost_usd": {
-            "used": _decimal_text(cost),
-            "settled": _decimal_text(settled_cost),
-            "limit": _decimal_text(cost_limit),
+            "used": _decimal_text(cost) if cost is not None else None,
+            "settled": (
+                _decimal_text(settled_cost) if settled_cost is not None else None
+            ),
+            "limit": _decimal_text(cost_limit) if cost_limit is not None else None,
+            "status": "KNOWN" if cost_observable else "UNKNOWN",
+            "accounting_basis": accounting_basis,
         },
         "reservation_count": int(budget.get("reservation_count") or 0),
         "budget_breach_count": int(budget.get("budget_breach_count") or 0),
@@ -1011,7 +1028,6 @@ def _budget_blocking_reason(budget_usage: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class PostgresBookOpeningWorkflowProgressQuery:
-
     def __init__(self, database_url: str) -> None:
         if not str(database_url).strip():
             raise ValueError("Book Opening progress query requires PostgreSQL")

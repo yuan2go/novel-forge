@@ -136,6 +136,85 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
         self.assertNotEqual(before["snapshot_hash"], after["snapshot_hash"])
         self.assertEqual(after["scope"]["revision"], scope["revision"])
 
+    def test_account_entitlement_scope_enforces_calls_and_tokens_without_cost(
+        self,
+    ) -> None:
+        fixture = self._opening_scope()
+        authorization_ref = "task-authorization:classical-corpus-20260908"
+        request_values = self._request_values(fixture)
+        request_values.update(
+            {
+                "currency": "UNKNOWN",
+                "policy_snapshot": {
+                    "execution_mode": "PROVIDER_ALLOWED",
+                    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                    "authorization_ref": authorization_ref,
+                    "cost_observability": "UNKNOWN",
+                    "provider_call_limit": 1,
+                    "token_limit": 1_000,
+                    "per_call_token_limit": 1_000,
+                },
+            }
+        )
+        scope = self._live_scope(
+            fixture,
+            request=BudgetScopeRequest(**request_values),
+        )
+        context = EffectCommandContext(
+            operation_id=fixture["operation_id"],
+            project_id=fixture["project_id"],
+            actor_id="budget-scope-test",
+            trace_id=identifier("budget-scope-trace"),
+            correlation_id=identifier("budget-scope-correlation"),
+        )
+        effect_id = str(
+            plan_external_effect(
+                DATABASE_URL,
+                context,
+                effect_type="model.invoke",
+                provider="production_execution_gateway",
+                capability="model.fixture",
+                stable_idempotency_key=identifier("entitlement-scope-effect"),
+                request_payload={"fixture": True},
+                max_attempts=1,
+                reversible=False,
+            )["external_effect_id"]
+        )
+        reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=fixture["operation_id"],
+                external_effect_id=effect_id,
+                project_id=fixture["project_id"],
+                stable_idempotency_key=f"budget:{effect_id}",
+                provider="production_execution_gateway",
+                currency="UNKNOWN",
+                estimated_amount=None,
+                estimated_tokens=1_000,
+                budget_scope_id=str(scope["budget_scope_id"]),
+                expected_budget_scope_revision=int(scope["revision"]),
+                accounting_basis="ACCOUNT_ENTITLEMENT",
+                cost_authorization_ref=authorization_ref,
+            ),
+        )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            assessment = assess_budget_scope_in_uow(
+                uow,
+                budget_scope_id=str(scope["budget_scope_id"]),
+                project_id=fixture["project_id"],
+                requested_amount=None,
+                requested_tokens=1,
+                requested_calls=1,
+                expected_revision=int(scope["revision"]),
+            )
+
+        self.assertEqual(assessment["outcome"], BudgetAssessmentOutcome.EXHAUSTED)
+        self.assertIsNone(assessment["usage"]["committed_amount"])
+        self.assertEqual(assessment["usage"]["cost_status"], "UNKNOWN")
+        self.assertIsNone(assessment["headroom"]["cost_amount"])
+        self.assertIsNone(assessment["request"]["requested_amount"])
+
     def test_durable_result_replay_validates_evidence_without_new_call_headroom(
         self,
     ) -> None:
