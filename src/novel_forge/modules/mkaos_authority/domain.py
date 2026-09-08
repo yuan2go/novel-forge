@@ -63,6 +63,9 @@ BOOK_KNOWLEDGE_ACCESS_MODES = frozenset(
     {"PROJECT_DEFAULT", "ALLOW_ONLY", "DENY_ALL"}
 )
 BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION = "book-knowledge-access-policy.v1"
+BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION = (
+    "book-knowledge-access-policy.v2"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +189,8 @@ def resolve_book_knowledge_access_policy(
         "policy_version",
         "mode",
         "allowed_knowledge_card_asset_version_ids",
+        "usage_scope",
+        "experimental_policy_version",
     }
     if set(value) - allowed_fields:
         raise KernelError(
@@ -198,6 +203,10 @@ def resolve_book_knowledge_access_policy(
     ).strip()
     policy_version = value.get("policy_version", 1)
     raw_allowed = value.get("allowed_knowledge_card_asset_version_ids") or ()
+    usage_scope = str(value.get("usage_scope") or "PRODUCTION").strip().upper()
+    experimental_policy_version = str(
+        value.get("experimental_policy_version") or ""
+    ).strip()
     if (
         mode not in BOOK_KNOWLEDGE_ACCESS_MODES
         or not policy_id
@@ -206,6 +215,7 @@ def resolve_book_knowledge_access_policy(
         or isinstance(policy_version, bool)
         or policy_version <= 0
         or not isinstance(raw_allowed, (list, tuple))
+        or usage_scope not in {"PRODUCTION", "EXPERIMENTAL_VALIDATION"}
     ):
         raise KernelError(
             "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
@@ -223,8 +233,25 @@ def resolve_book_knowledge_access_policy(
             "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
             "ALLOW_ONLY requires a unique non-empty set; other modes require an empty set",
         )
+    if (
+        usage_scope == "EXPERIMENTAL_VALIDATION"
+        and (
+            not explicit
+            or mode != "ALLOW_ONLY"
+            or not experimental_policy_version
+            or len(experimental_policy_version) > 128
+        )
+    ) or (usage_scope == "PRODUCTION" and experimental_policy_version):
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
+            "experimental Knowledge access requires an explicit allowlist and policy version",
+        )
     body = {
-        "schema_version": BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION,
+        "schema_version": (
+            BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION
+            if usage_scope == "EXPERIMENTAL_VALIDATION"
+            else BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION
+        ),
         "policy_id": policy_id,
         "policy_version": policy_version,
         "project_id": project_id,
@@ -233,6 +260,13 @@ def resolve_book_knowledge_access_policy(
         "allowed_knowledge_card_asset_version_ids": sorted(allowed),
         "configured_explicitly": explicit,
     }
+    if usage_scope == "EXPERIMENTAL_VALIDATION":
+        body.update(
+            {
+                "usage_scope": usage_scope,
+                "experimental_policy_version": experimental_policy_version,
+            }
+        )
     return {**body, "policy_hash": _canonical_hash(body)}
 
 
@@ -251,9 +285,16 @@ def validate_book_knowledge_access_policy(
         "policy_hash",
     }
     frozen = dict(policy)
+    schema_version = frozen.get("schema_version")
+    if schema_version == BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION:
+        required.update({"usage_scope", "experimental_policy_version"})
     if (
         set(frozen) != required
-        or frozen.get("schema_version") != BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION
+        or schema_version
+        not in {
+            BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION,
+            BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION,
+        }
         or frozen.get("project_id") != project_id
         or frozen.get("book_id") != book_id
         or not isinstance(frozen.get("configured_explicitly"), bool)
@@ -271,6 +312,17 @@ def validate_book_knowledge_access_policy(
                 "allowed_knowledge_card_asset_version_ids": frozen[
                     "allowed_knowledge_card_asset_version_ids"
                 ],
+                **(
+                    {
+                        "usage_scope": frozen["usage_scope"],
+                        "experimental_policy_version": frozen[
+                            "experimental_policy_version"
+                        ],
+                    }
+                    if schema_version
+                    == BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION
+                    else {}
+                ),
             }
         },
         project_id=project_id,

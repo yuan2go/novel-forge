@@ -647,6 +647,7 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
               AND card.status='ACTIVE'
               AND candidate_version.content->'execution_evidence'->'binding'->>'validation_status'='VERIFIED'
               AND COALESCE((version.content->'source_policy'->>'fixture_protocol_only')::boolean, TRUE)=FALSE
+              AND COALESCE((version.content->'source_policy'->>'production_context_eligible')::boolean, TRUE)=TRUE
         """,
         "reuse_plan_items": """
             SELECT COUNT(*) FROM authority_source_reprocessing_plan_item

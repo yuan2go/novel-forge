@@ -20,6 +20,7 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.mkaos_authority import (
     ApproveKnowledgeCandidateCommand,
+    ExperimentalKnowledgeApprovalPolicy,
     MkaosAuthorityApplication,
 )
 from novel_forge.modules.source_import import (
@@ -254,6 +255,12 @@ def _approve_candidates(
         commit_sha=commit_sha,
         worker_id="worker:classical-corpus-governance",
         allow_fixture_activation=False,
+        experimental_approval_policy=ExperimentalKnowledgeApprovalPolicy(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            policy_version="classical-corpus-experimental-auto-review.v1",
+            reviewer_id=reviewer_id,
+        ),
     )
     approvals = []
     for candidate_id in candidate_ids:
@@ -272,6 +279,7 @@ def _approve_candidates(
                 idempotency_key=f"classical-corpus:experimental-approve:{candidate_id}",
                 trace_id=f"trace:classical-corpus:approve:{candidate_id}",
                 correlation_id=f"correlation:classical-corpus:{project_id}",
+                approval_class="EXPERIMENTAL_VALIDATION",
             ),
             principal=principal,
         )

@@ -5106,6 +5106,8 @@ class PostgresPlanningExecutionPreparer:
                 project_id=command.project_id,
                 asset_version_id=asset_version_id,
                 content_hash=content_hash,
+                book_id=command.book_id,
+                knowledge_access_policy=dict(access),
             )
             document = self.query.require(
                 project_id=command.project_id,

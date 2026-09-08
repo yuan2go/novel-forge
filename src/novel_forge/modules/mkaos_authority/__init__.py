@@ -2,6 +2,7 @@ from .application import (
     ApproveKnowledgeCandidateCommand,
     BuildKnowledgePackCommand,
     CommitKnowledgeCandidateCommand,
+    ExperimentalKnowledgeApprovalPolicy,
     MkaosAuthorityApplication,
 )
 from .domain import (
@@ -17,6 +18,7 @@ __all__ = [
     "ApproveKnowledgeCandidateCommand",
     "BuildKnowledgePackCommand",
     "CommitKnowledgeCandidateCommand",
+    "ExperimentalKnowledgeApprovalPolicy",
     "KnowledgeEvidenceSpan",
     "KnowledgePackSelection",
     "MkaosAuthorityApplication",

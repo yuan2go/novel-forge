@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority.application import (
+    ExperimentalKnowledgeApprovalPolicy,
+    MkaosAuthorityApplication,
     _candidate_execution_binding,
     _hash,
 )
@@ -74,6 +76,66 @@ def _planning_card(index: int) -> dict[str, object]:
 
 
 class MkaosAuthorityDomainTests(unittest.TestCase):
+    def test_experimental_approval_requires_exact_real_provider_scope(self) -> None:
+        project_id = "project:experimental"
+        workspace_id = "workspace:experimental"
+        reviewer_id = "operator:experimental-policy"
+        policy_version = "experimental-policy.v1"
+        candidate = {
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "status": "NEEDS_REVIEW",
+            "lifecycle": "CANDIDATE",
+            "eligibility": "PENDING_EVALUATION",
+            "governance": "CLEAR",
+            "content": {
+                "execution_evidence": {
+                    "proof": {
+                        "fixture_protocol_only": False,
+                        "real_provider_proven": True,
+                        "production_verified": False,
+                    }
+                }
+            },
+        }
+        application = MkaosAuthorityApplication(
+            "postgresql://not-used",
+            application_build_id="test",
+            commit_sha="f" * 40,
+            experimental_approval_policy=ExperimentalKnowledgeApprovalPolicy(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                policy_version=policy_version,
+                reviewer_id=reviewer_id,
+            ),
+        )
+
+        contract = application._require_approvable(
+            candidate,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            policy_version=policy_version,
+            reviewer_id=reviewer_id,
+            approval_class="EXPERIMENTAL_VALIDATION",
+        )
+
+        self.assertEqual(
+            contract["review_class"], "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        )
+        self.assertFalse(contract["production_context_eligible"])
+        self.assertTrue(contract["experimental_context_eligible"])
+        with self.assertRaisesRegex(
+            KernelError, "MKAOS_EXPERIMENTAL_APPROVAL_SCOPE_INVALID"
+        ):
+            application._require_approvable(
+                candidate,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                policy_version=policy_version,
+                reviewer_id="operator:other",
+                approval_class="EXPERIMENTAL_VALIDATION",
+            )
+
     def test_book_knowledge_access_policy_distinguishes_empty_deny_from_default(
         self,
     ) -> None:
@@ -133,6 +195,66 @@ class MkaosAuthorityDomainTests(unittest.TestCase):
         self.assertEqual(
             selection["pool_query_mode"], "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION"
         )
+
+    def test_experimental_card_requires_exact_experimental_allowlist(self) -> None:
+        project_id = "project:experimental"
+        book_id = "book:experimental"
+        policy_version = "experimental-policy.v1"
+        card = _planning_card(0)
+        card["project_id"] = project_id
+        card["workspace_id"] = "workspace:experimental"
+        content = dict(card["content"])
+        source_policy = dict(content["source_policy"])
+        source_policy.update(
+            {
+                "approval_class": "EXPERIMENTAL_VALIDATION",
+                "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN",
+                "production_context_eligible": False,
+                "experimental_context_eligible": True,
+                "approval_policy_version": policy_version,
+                "activation_scope": {
+                    "kind": "ISOLATED_PROJECT_AND_WORKSPACE",
+                    "project_id": project_id,
+                    "workspace_id": "workspace:experimental",
+                },
+            }
+        )
+        content["source_policy"] = source_policy
+        card["content"] = content
+        query = MkaosAuthorityQuery("postgresql://not-used")
+        access = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "policy_id": "experimental-comparison",
+                    "policy_version": 1,
+                    "mode": "ALLOW_ONLY",
+                    "allowed_knowledge_card_asset_version_ids": ["card:0:v1"],
+                    "usage_scope": "EXPERIMENTAL_VALIDATION",
+                    "experimental_policy_version": policy_version,
+                }
+            },
+            project_id=project_id,
+            book_id=book_id,
+        )
+        with patch.object(query, "_planning_cards", return_value=[card]):
+            experimental = query.resolve_narrative_intelligence(
+                project_id=project_id,
+                book_id=book_id,
+                need=NarrativeIntelligenceNeed(
+                    scope="STORY", target_stage="book_plan.generate"
+                ),
+                knowledge_access_policy=access,
+            )
+            production = query.resolve_narrative_intelligence(
+                project_id=project_id,
+                need=NarrativeIntelligenceNeed(
+                    scope="STORY", target_stage="book_plan.generate"
+                ),
+            )
+
+        self.assertEqual(experimental["eligible_card_count"], 1)
+        self.assertEqual(experimental["pool_query_mode"], "EXACT_ALLOWLIST")
+        self.assertEqual(production["eligible_card_count"], 0)
 
     def test_explicit_deny_all_never_queries_or_falls_back_to_project_cards(
         self,

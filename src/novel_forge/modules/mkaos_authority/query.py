@@ -71,7 +71,7 @@ class MkaosAuthorityQuery:
             and card["eligibility"] in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             and card["governance"] == "CLEAR"
             and card["operation_status"] == "SUCCEEDED"
-            and _production_context_eligible_card(card)
+            and _context_eligible_card(card, access)
         )
         if mode == "ALLOW_ONLY" and {
             str(card["asset_version_id"]) for card in eligible
@@ -255,6 +255,8 @@ class MkaosAuthorityQuery:
         project_id: str,
         asset_version_id: str,
         content_hash: str,
+        book_id: str = "",
+        knowledge_access_policy: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
 
         if not project_id or not asset_version_id or not content_hash:
@@ -306,6 +308,19 @@ class MkaosAuthorityQuery:
             "created_at",
         )
         card = dict(zip(keys, row, strict=True))
+        access = (
+            validate_book_knowledge_access_policy(
+                knowledge_access_policy,
+                project_id=project_id,
+                book_id=book_id,
+            )
+            if knowledge_access_policy is not None
+            else {
+                "mode": "PROJECT_DEFAULT",
+                "usage_scope": "PRODUCTION",
+                "allowed_knowledge_card_asset_version_ids": [],
+            }
+        )
         if (
             card["content_hash"] != content_hash
             or card["card_status"] != "ACTIVE"
@@ -313,7 +328,7 @@ class MkaosAuthorityQuery:
             or card["eligibility"] not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             or card["governance"] != "CLEAR"
             or card["operation_status"] != "SUCCEEDED"
-            or not _production_context_eligible_card(card)
+            or not _context_eligible_card(card, access)
         ):
             raise KernelError(
                 "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
@@ -725,15 +740,39 @@ def _validate(project_id: str, limit: int) -> None:
         raise ValueError("project_id and a limit between 1 and 500 are required")
 
 
-def _production_context_eligible_card(card: dict[str, Any]) -> bool:
+def _context_eligible_card(
+    card: dict[str, Any], access: dict[str, Any]
+) -> bool:
     content = card.get("content")
     policy = content.get("source_policy") if isinstance(content, dict) else None
-    return bool(
+    if not (
         isinstance(policy, dict)
         and policy.get("knowledge_card_context_eligible") is True
         and policy.get("raw_source_expression_included") is False
         and policy.get("source_chunks_direct_context_eligible") is False
         and policy.get("fixture_protocol_only") is False
+    ):
+        return False
+    approval_class = str(policy.get("approval_class") or "PRODUCTION")
+    usage_scope = str(access.get("usage_scope") or "PRODUCTION")
+    if usage_scope == "EXPERIMENTAL_VALIDATION":
+        activation_scope = dict(policy.get("activation_scope") or {})
+        return bool(
+            access.get("mode") == "ALLOW_ONLY"
+            and approval_class == "EXPERIMENTAL_VALIDATION"
+            and policy.get("review_class")
+            == "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+            and policy.get("production_context_eligible") is False
+            and policy.get("experimental_context_eligible") is True
+            and policy.get("approval_policy_version")
+            == access.get("experimental_policy_version")
+            and activation_scope.get("kind") == "ISOLATED_PROJECT_AND_WORKSPACE"
+            and activation_scope.get("project_id") == card.get("project_id")
+            and activation_scope.get("workspace_id") == card.get("workspace_id")
+        )
+    return bool(
+        approval_class == "PRODUCTION"
+        and policy.get("production_context_eligible", True) is True
     )
 
 
