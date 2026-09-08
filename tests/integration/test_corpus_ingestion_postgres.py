@@ -779,3 +779,52 @@ def test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed(
                 correlation_id=corpus.project,
             )
         )
+
+
+def test_final_acquisition_failure_cannot_reopen_import(corpus, tmp_path, monkeypatch):
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    admitted = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={
+            "project_id": corpus.project,
+            "workspace_id": corpus.workspace,
+            "run_key": "missing-source-final",
+            "manifest": _manifest(tmp_path / "missing.jsonl"),
+        },
+    ).json()
+    with pytest.raises(KernelError):
+        scheduler.run_or_recover(
+            operation_id=admitted["operation_id"], project_id=corpus.project
+        )
+    status = corpus.client.get(
+        f"/product/source-imports/{admitted['import_job_id']}",
+        params={"project_id": corpus.project},
+    ).json()
+    assert status["status"] == "FAILED_FINAL", status["failure"]
+    assert status["failure"]["code"] == "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
+    from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+
+    with pytest.raises(KernelError, match="SOURCE_IMPORT_RETRY_REQUIRES_NEW_JOB"):
+        app.resume_import(
+            project_id=corpus.project,
+            import_job_id=admitted["import_job_id"],
+            principal=build_trusted_principal_resolver().resolve_api_principal(),
+        )
+    with pytest.raises(KernelError, match="SOURCE_RECOVERY_TERMINAL"):
+        scheduler.run_or_recover(
+            operation_id=admitted["operation_id"], project_id=corpus.project
+        )
+    with psycopg.connect(DATABASE_URL) as connection:
+        assert connection.execute(
+            "SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status",
+            [admitted["operation_id"]],
+        ).fetchall() == [("FAILED_FINAL", 1)]
+        assert (
+            connection.execute(
+                "SELECT count(*) FROM authority_corpus_snapshot WHERE project_id=%s",
+                [corpus.project],
+            ).fetchone()[0]
+            == 0
+        )

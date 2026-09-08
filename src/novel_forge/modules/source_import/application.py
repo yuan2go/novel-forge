@@ -4962,7 +4962,9 @@ class SourceImportApplication:
             )
             if reconciled["outcome"] != "success":
                 raise KernelError(
-                    "SOURCE_IMPORT_EFFECT_RECONCILIATION_FAILED",
+                    "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
+                    if reconciled["outcome"] in {"final_failure", "cancelled"}
+                    else "SOURCE_IMPORT_EFFECT_RECONCILIATION_FAILED",
                     f"ExternalEffect reconciliation returned {reconciled['outcome']}",
                 )
             return self._effect_evidence(effect_id)
@@ -4970,8 +4972,8 @@ class SourceImportApplication:
             return self._effect_evidence(effect_id)
         if disposition.value in {"TERMINAL_FAILURE", "TERMINAL_CANCELLED"}:
             raise KernelError(
-                "SOURCE_IMPORT_EFFECT_TERMINAL",
-                f"ExternalEffect is terminal: {effect['status']}",
+                "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+                f"ExternalEffect is terminal: {effect['status']}; {effect.get('last_error', '')}",
             )
         dispatched = dispatch_external_effect(
             self.database_url,
@@ -4984,8 +4986,11 @@ class SourceImportApplication:
         )
         if dispatched["outcome"] != "success":
             raise KernelError(
-                "SOURCE_IMPORT_EFFECT_FAILED",
-                f"ExternalEffect returned {dispatched['outcome']}",
+                "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
+                if dispatched["outcome"] in {"final_failure", "cancelled"}
+                else "SOURCE_IMPORT_EFFECT_FAILED",
+                f"ExternalEffect returned {dispatched['outcome']}; "
+                f"{(dispatched.get('provider_evidence') or {}).get('error_code', '')}",
             )
         evidence = dispatched.get("provider_evidence")
         if not isinstance(evidence, Mapping):
