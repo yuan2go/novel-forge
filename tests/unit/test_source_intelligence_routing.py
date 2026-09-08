@@ -422,6 +422,7 @@ def test_classical_long_novel_uses_one_compound_stratified_task() -> None:
         collection_kind="LONG_NOVEL",
         registry=SourceMethodologyRegistry(SKILL_ROOT),
         routing_policy_version="source-analysis-routing.v2",
+        sample_byte_limit=107_504,
     )
 
     tasks = plan_analysis_tasks(
@@ -452,6 +453,64 @@ def test_classical_long_novel_uses_one_compound_stratified_task() -> None:
     assert tasks[0].sampling_manifest["coverage_claim"] == (
         "BOUNDED_STRATIFIED_SAMPLE"
     )
+
+
+def test_short_story_sampling_keeps_complete_units_within_provider_budget() -> None:
+    sizes = (62_579, 50_653, 56_384)
+    starts = (0, sizes[0], sizes[0] + sizes[1])
+    chunks = tuple(
+        {
+            "asset_version_id": f"source-chunk:stories:{index}:v1",
+            "chunk_index": index,
+            "byte_size": size,
+            "content_hash": "sha256:" + f"{index:064x}",
+            "source_byte_start": starts[index],
+            "source_byte_end": starts[index] + size,
+        }
+        for index, size in enumerate(sizes)
+    )
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:classical:stories",
+        source_transform_id="source-transform:classical:stories",
+        source_chunk_asset_version_ids=tuple(
+            str(item["asset_version_id"]) for item in chunks
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed classical story collection",
+    )
+    units = tuple(
+        {
+            "ordinal": index + 1,
+            "kind": "STORY",
+            "title": f"Story {index + 1}",
+            "normalized_byte_start": starts[index],
+            "normalized_byte_end": starts[index] + size,
+            "status": "AVAILABLE",
+        }
+        for index, size in enumerate(sizes)
+    )
+    strategy = resolve_corpus_analysis_strategy(
+        SourceContentType.CLASSIC_LITERATURE,
+        collection_kind="SHORT_STORY_COLLECTION",
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-analysis-routing.v2",
+        sample_byte_limit=107_504,
+    )
+
+    task = plan_analysis_tasks(
+        strategy=strategy,
+        logical_document_scope=scope,
+        analysis_plan_asset_version_id="source-analysis-plan:stories:v1",
+        chunks=chunks,
+        source_units=units,
+        collection_kind="SHORT_STORY_COLLECTION",
+    )[0]
+
+    assert task.sampling_manifest["sampled_source_unit_ordinals"] == [2, 3]
+    assert task.sampling_manifest["sampled_byte_count"] == 107_037
+    assert task.sampling_manifest["sample_byte_limit"] == 107_504
+    assert all(item["complete_unit"] for item in task.sampling_manifest["samples"])
 
 
 def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() -> None:

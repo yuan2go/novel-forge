@@ -24,7 +24,7 @@ SOURCE_CONTENT_PROFILE_HANDLER_KEY = (
     "novel_forge.source_authority.content_profile_commit"
 )
 SOURCE_CONTENT_PROFILE_OPERATION = "source.content.profile.commit"
-SOURCE_ANALYSIS_PLAN_DEFINITION_VERSION = "1.0.0"
+SOURCE_ANALYSIS_PLAN_DEFINITION_VERSION = "1.1.0"
 SOURCE_ANALYSIS_PLAN_HANDLER_KEY = "novel_forge.source_authority.analysis_plan_commit"
 SOURCE_ANALYSIS_PLAN_OPERATION = "source.analysis.plan.commit"
 SOURCE_AUTHORITY_OPERATIONS = frozenset(
@@ -371,6 +371,7 @@ def source_authority_definitions(
             event="authority.source.analysis.plan.committed",
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            handler_contract_version="source-intelligence-authority-v2",
         ),
     )
 

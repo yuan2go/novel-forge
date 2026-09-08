@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-SOURCE_IMPORT_DEFINITION_VERSION = "1.3.2"
+SOURCE_IMPORT_DEFINITION_VERSION = "1.3.3"
 SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS = 900
 SOURCE_IMPORT_PROFILING_QUEUE_TIMEOUT_SECONDS = 14_400
 SOURCE_IMPORT_DISCOVERY_OPERATION = "source.import.repository.discover"
@@ -161,6 +161,8 @@ def source_import_definitions(
                 if name == SOURCE_IMPORT_DECONSTRUCTION_OPERATION
                 else "source-import-profile-handler-v2"
                 if name == SOURCE_IMPORT_PROFILING_OPERATION
+                else "source-import-analysis-plan-handler-v2"
+                if name == SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION
                 else "source-import-handler-v1"
             ),
             "concurrency_key_template": concurrency,

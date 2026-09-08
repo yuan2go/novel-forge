@@ -29,6 +29,8 @@ from novel_forge.modules.source_import import (
     SourceMethodologyRegistry,
 )
 from novel_forge.modules.source_import.analysis_profiles import (
+    SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES,
+    derive_corpus_sample_byte_limit,
     resolve_corpus_analysis_strategy,
 )
 from novel_forge.modules.source_import.classical_corpus import (
@@ -86,9 +88,17 @@ def _build_budget_plan(
     selected_work_keys: tuple[str, ...],
     model_context_limit: int,
     output_token_reserve: int,
+    token_safety_margin: int,
+    token_framing_overhead: int,
 ) -> dict[str, Any]:
     methodology = SourceMethodologyRegistry(ROOT / "skills")
     selected = set(selected_work_keys)
+    sample_byte_limit = derive_corpus_sample_byte_limit(
+        model_context_limit=model_context_limit,
+        output_token_reserve=output_token_reserve,
+        token_safety_margin=token_safety_margin,
+        token_framing_overhead=token_framing_overhead,
+    )
     works: list[dict[str, Any]] = []
     for row in registry["works"]:
         spec = resolve_work_spec(str(row["work_key"]), registry=dict(registry))
@@ -97,6 +107,7 @@ def _build_budget_plan(
             collection_kind=spec.collection_kind,
             registry=methodology,
             routing_policy_version="source-analysis-routing.v2",
+            sample_byte_limit=sample_byte_limit,
         )
         model_calls = 2 + len(strategy.analyzers)
         works.append(
@@ -130,6 +141,12 @@ def _build_budget_plan(
         "selected_normal_application_calls": selected_calls,
         "application_visible_input_upper_bound_per_call": model_context_limit,
         "provider_output_token_reserve_per_call": output_token_reserve,
+        "token_safety_margin": token_safety_margin,
+        "token_framing_overhead": token_framing_overhead,
+        "source_prompt_overhead_reserve_bytes": (
+            SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES
+        ),
+        "source_sample_byte_limit": sample_byte_limit,
         "project_token_limit": SOURCE_APPLICATION_CALL_LIMIT
         * model_context_limit,
         "token_control_scope": (
@@ -352,11 +369,19 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     output_reserve = int(
         os.environ.get("NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE") or 4096
     )
+    token_safety_margin = int(
+        os.environ.get("NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN") or 256
+    )
+    token_framing_overhead = int(
+        os.environ.get("NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD") or 16
+    )
     budget = _build_budget_plan(
         registry,
         selected_work_keys=selected_keys,
         model_context_limit=context_limit,
         output_token_reserve=output_reserve,
+        token_safety_margin=token_safety_margin,
+        token_framing_overhead=token_framing_overhead,
     )
     environment_limit = int(
         os.environ.get("NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT") or 0

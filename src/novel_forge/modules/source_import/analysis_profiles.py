@@ -10,6 +10,28 @@ from .methodologies import SourceMethodologyRegistry
 from .profiling import LogicalDocumentScope, SourceContentType, canonical_hash
 
 
+SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES = 32_000
+
+
+def derive_corpus_sample_byte_limit(
+    *,
+    model_context_limit: int,
+    output_token_reserve: int,
+    token_safety_margin: int,
+    token_framing_overhead: int,
+) -> int:
+    limit = (
+        model_context_limit
+        - output_token_reserve
+        - token_safety_margin
+        - token_framing_overhead
+        - SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES
+    )
+    if limit <= 0:
+        raise ValueError("Provider context leaves no bounded corpus sample budget")
+    return limit
+
+
 @dataclass(frozen=True, slots=True)
 class AnalyzerMethodologySpec:
     dimension: str
@@ -42,6 +64,7 @@ class ResolvedAnalysisStrategy:
     abstraction_policy_version: str
     execution_mode: str = "WINDOWED_SINGLE_DIMENSION"
     sampling_policy_version: str = "source-analysis-windowing.v2"
+    sample_byte_limit: int = 0
 
     def __post_init__(self) -> None:
         if self.execution_mode not in {
@@ -53,6 +76,14 @@ class ResolvedAnalysisStrategy:
             raise ValueError("Source analysis sampling policy is required")
         if self.window_chunks <= 0 or self.max_analyzer_calls <= 0:
             raise ValueError("Source analysis bounds must be positive")
+        if self.execution_mode == "CORPUS_COMPOUND_SAMPLE" and (
+            self.sample_byte_limit <= 0
+        ):
+            raise ValueError("compound corpus analysis requires a sample byte limit")
+        if self.execution_mode != "CORPUS_COMPOUND_SAMPLE" and (
+            self.sample_byte_limit != 0
+        ):
+            raise ValueError("windowed Source analysis cannot claim a corpus byte limit")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -67,6 +98,7 @@ class ResolvedAnalysisStrategy:
             "abstraction_policy_version": self.abstraction_policy_version,
             "execution_mode": self.execution_mode,
             "sampling_policy_version": self.sampling_policy_version,
+            "sample_byte_limit": self.sample_byte_limit,
         }
 
     @property
@@ -104,6 +136,7 @@ def analysis_strategy_from_dict(
                 payload.get("sampling_policy_version")
                 or "source-analysis-windowing.v2"
             ),
+            sample_byte_limit=int(payload.get("sample_byte_limit") or 0),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("frozen Source analysis strategy is invalid") from exc
@@ -481,6 +514,7 @@ def resolve_corpus_analysis_strategy(
     collection_kind: str,
     registry: SourceMethodologyRegistry,
     routing_policy_version: str,
+    sample_byte_limit: int,
 ) -> ResolvedAnalysisStrategy:
     """Resolve one bounded compound call while retaining typed Observations."""
 
@@ -517,7 +551,7 @@ def resolve_corpus_analysis_strategy(
     )
     return ResolvedAnalysisStrategy(
         profile_id=profile_id,
-        profile_version="1.0",
+        profile_version="1.1",
         content_type=SourceContentType(content_type),
         routing_policy_version=routing_policy_version,
         analyzers=analyzers,
@@ -526,7 +560,8 @@ def resolve_corpus_analysis_strategy(
         mkaos_capability=mkaos_capability,
         abstraction_policy_version="classical-corpus-anti-copy.1.0",
         execution_mode="CORPUS_COMPOUND_SAMPLE",
-        sampling_policy_version="classical-corpus-stratified-sampling.v1",
+        sampling_policy_version="classical-corpus-stratified-sampling.v2",
+        sample_byte_limit=sample_byte_limit,
     )
 
 
@@ -668,21 +703,47 @@ def _plan_corpus_compound_task(
             if collection_kind == "SHORT_STORY_COLLECTION"
             else "COMPLETE_PIECE"
         )
+        candidates: list[tuple[int, dict[str, Any], int]] = []
+        chunk_bytes = {
+            str(item["asset_version_id"]): int(item["byte_size"]) for item in chunks
+        }
         for position, index in enumerate(indexes, start=1):
             unit = ordered_units[index]
             selected_chunks = unit_chunks(unit)
             if not selected_chunks:
                 raise ValueError("complete SourceUnit sample has no SourceChunk")
-            sampled.append(
-                {
-                    "role": f"{role}_{position}",
-                    "complete_unit": True,
-                    "source_unit_ordinals": [int(unit["ordinal"])],
-                    "source_chunk_asset_version_ids": [
-                        str(item["asset_version_id"]) for item in selected_chunks
-                    ],
-                }
+            sample = {
+                "role": f"{role}_{position}",
+                "complete_unit": True,
+                "source_unit_ordinals": [int(unit["ordinal"])],
+                "source_chunk_asset_version_ids": [
+                    str(item["asset_version_id"]) for item in selected_chunks
+                ],
+            }
+            candidates.append(
+                (
+                    position,
+                    sample,
+                    sum(
+                        chunk_bytes[chunk_id]
+                        for chunk_id in sample["source_chunk_asset_version_ids"]
+                    ),
+                )
             )
+        selected_ids: set[str] = set()
+        for _position, sample, _sample_bytes in sorted(
+            candidates, key=lambda item: (item[2], item[0])
+        ):
+            candidate_ids = set(sample["source_chunk_asset_version_ids"])
+            total = sum(chunk_bytes[item] for item in selected_ids | candidate_ids)
+            if total <= strategy.sample_byte_limit:
+                sampled.append(sample)
+                selected_ids.update(candidate_ids)
+        if not sampled:
+            raise ValueError(
+                "complete SourceUnit exceeds the frozen corpus sample byte limit"
+            )
+        sampled.sort(key=lambda item: int(str(item["role"]).rsplit("_", 1)[1]))
     selected_ids = {
         chunk_id
         for sample in sampled
@@ -693,6 +754,9 @@ def _plan_corpus_compound_task(
     )
     if not selected_chunks:
         raise ValueError("compound corpus sampling produced no SourceChunk evidence")
+    sampled_byte_count = sum(int(item["byte_size"]) for item in selected_chunks)
+    if sampled_byte_count > strategy.sample_byte_limit:
+        raise ValueError("compound corpus sample exceeds its frozen byte limit")
     _, _, dimension_specs, _ = _CORPUS_ANALYSIS_CONTRACTS[collection_kind]
     whole_work_analyzed = len(selected_chunks) == len(chunks)
     sampling_manifest = {
@@ -708,7 +772,8 @@ def _plan_corpus_compound_task(
             }
         ),
         "sampled_chunk_count": len(selected_chunks),
-        "sampled_byte_count": sum(int(item["byte_size"]) for item in selected_chunks),
+        "sampled_byte_count": sampled_byte_count,
+        "sample_byte_limit": strategy.sample_byte_limit,
         "whole_work_analyzed": whole_work_analyzed,
         "uncovered_chunk_count": len(chunks) - len(selected_chunks),
         "samples": sampled,
@@ -772,7 +837,9 @@ __all__ = [
     "ResolvedAnalysisStrategy",
     "SourceAnalysisProfile",
     "analysis_strategy_from_dict",
+    "derive_corpus_sample_byte_limit",
     "plan_analysis_tasks",
     "resolve_analysis_strategy",
     "resolve_corpus_analysis_strategy",
+    "SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES",
 ]

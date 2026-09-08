@@ -24,6 +24,8 @@ def test_frozen_corpus_analysis_budget_fits_approved_source_envelope() -> None:
         ),
         model_context_limit=160_000,
         output_token_reserve=4_096,
+        token_safety_margin=16_384,
+        token_framing_overhead=16,
     )
 
     assert plan["normal_application_calls"] == 166
@@ -31,6 +33,7 @@ def test_frozen_corpus_analysis_budget_fits_approved_source_envelope() -> None:
     assert plan["maximum_application_calls"] == 180
     assert plan["selected_normal_application_calls"] == 17
     assert plan["project_token_limit"] == 28_800_000
+    assert plan["source_sample_byte_limit"] == 107_504
     assert len(plan["works"]) == 20
 
 

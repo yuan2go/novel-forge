@@ -110,6 +110,7 @@ from .object_store_adapter import SourceImportObjectStoreAdapter
 class ContentIntelligenceExecutionPort(Protocol):
     external_effect_backed: bool
     production_execution_gateway_backed: bool
+    source_sample_byte_limit: int
 
     def execute_classification(
         self,
@@ -3363,6 +3364,9 @@ class SourceImportApplication:
                 collection_kind=corpus_spec.collection_kind,
                 registry=self.methodology_registry,
                 routing_policy_version=policy.routing_policy_version,
+                sample_byte_limit=(
+                    self._require_execution_port().source_sample_byte_limit
+                ),
             )
         else:
             strategy = resolve_analysis_strategy(
