@@ -129,12 +129,31 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
             "properties": {
-                "content_type": {"type": "string", "enum": list(_CONTENT_TYPES)},
-                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                "content_type": {
+                    "type": "string",
+                    "enum": list(_CONTENT_TYPES),
+                    "description": (
+                        "Selected type; it must also be the first and "
+                        "highest-confidence item in alternatives."
+                    ),
+                },
+                "confidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": (
+                        "Confidence of content_type; it must exactly equal the "
+                        "confidence on the first alternatives item."
+                    ),
+                },
                 "alternatives": {
                     "type": "array",
                     "minItems": 2,
                     "maxItems": 5,
+                    "description": (
+                        "Complete ranked candidate list, including content_type "
+                        "as the first and highest-confidence item."
+                    ),
                     "items": {
                         "type": "object",
                         "properties": {

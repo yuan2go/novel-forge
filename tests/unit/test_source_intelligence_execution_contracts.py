@@ -83,6 +83,9 @@ def test_source_content_classification_is_registered_and_bounded() -> None:
     schema = content_intelligence_output_schema(CLASSIFICATION_STAGE)
     assert schema["additionalProperties"] is False
     assert schema["properties"]["alternatives"]["maxItems"] == 5
+    assert "including content_type" in schema["properties"]["alternatives"][
+        "description"
+    ]
 
 
 def test_fixture_classifier_uses_semantics_and_routes_heterogeneous_documents() -> None:

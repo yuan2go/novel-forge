@@ -11,7 +11,7 @@ from typing import Any, Iterable, Mapping
 _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 _VERSION = re.compile(r"^[a-z][a-z0-9_.-]+\.v[0-9]+$")
 
-SOURCE_CLASSIFIER_METHODOLOGY = """Classify one governed LogicalDocument from deterministic metadata, structural signals, generic path hints, and bounded semantic samples. Treat path as weak evidence only. Select exactly one governed taxonomy type, report calibrated alternatives and evidence codes, and flag suspected multi-document or mixed boundaries. Return UNKNOWN or MIXED when evidence is insufficient or composite; never force a routable type and never quote source expression."""
+SOURCE_CLASSIFIER_METHODOLOGY = """Classify one governed LogicalDocument from deterministic metadata, structural signals, generic path hints, and bounded semantic samples. Treat path as weak evidence only. Select exactly one governed taxonomy type and flag suspected multi-document or mixed boundaries. The alternatives array is the complete ranked candidate list: include the selected content_type as its first and highest-confidence item, with confidence exactly equal to the top-level confidence, followed by other candidates. Return UNKNOWN or MIXED when evidence is insufficient or composite; never force a routable type and never quote source expression."""
 SOURCE_CLASSIFIER_METHODOLOGY_HASH = (
     "sha256:"
     + hashlib.sha256(SOURCE_CLASSIFIER_METHODOLOGY.encode("utf-8")).hexdigest()
