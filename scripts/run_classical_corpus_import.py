@@ -130,13 +130,20 @@ def _seed_project(
             idempotency_key=f"classical-corpus:project:{project_id}",
             trace_id=f"trace:classical-corpus:{project_id}",
             correlation_id=f"correlation:classical-corpus:{project_id}",
-            payload={
-                "title": "Classical Corpus Local Validation",
-                "stage": "SOURCE_GOVERNANCE",
-                "publication": "FORBIDDEN",
-            },
+            payload=_project_payload(),
         )
     )
+
+
+def _project_payload() -> dict[str, Any]:
+    return {
+        "title": "Classical Corpus Local Validation",
+        "stage": "DESIGN",
+        "config": {
+            "validation_scope": "CLASSICAL_CORPUS_SOURCE_ONLY",
+            "publication_policy": "FORBIDDEN",
+        },
+    }
 
 
 def _policy(work_key: str) -> SourceImportPolicy:
