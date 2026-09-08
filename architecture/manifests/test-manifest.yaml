@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "corpus-migration-upgrade",
+      "patterns": [
+        "tests/integration/test_corpus_migrations_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "corpus-native-runtime",
+      "patterns": [
+        "tests/integration/test_corpus_foundation_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/modules/source_authority/corpus_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "corpus-rights-contract",
+      "patterns": [
+        "tests/unit/test_corpus_admission.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/modules/source_authority/corpus.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "creation-pilot-policy",
       "patterns": [
         "tests/unit/test_creation_pilot.py"

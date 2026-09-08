@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from novel_forge.storage.corpus_records import CorpusRecords
+
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-class SourceAuthorityRepository:
+class SourceAuthorityRepository(CorpusRecords):
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
 

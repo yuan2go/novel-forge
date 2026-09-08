@@ -7,7 +7,7 @@ name = "novel-forge"
 version = "6.0.0"
 description = "Local-first Novel OS runtime for traceable AI novel production"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["pydantic>=2.13.5,<3"]
 
 [project.optional-dependencies]
 api = [

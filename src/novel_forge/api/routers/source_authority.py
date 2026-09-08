@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+from novel_forge.api.corpus_models import CorpusCommandRequest
 from novel_forge.api.models import (
     AuthorityDeconstructionObservationCommitRequest,
     AuthoritySourceDocumentRegisterRequest,
@@ -13,6 +14,7 @@ from novel_forge.api.models import (
 )
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.source_authority.corpus_application import CorpusCommand
 from novel_forge.modules.source_authority import (
     AnalyzerContract,
     CommitDeconstructionObservationCommand,
@@ -30,6 +32,52 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["source-authority"])
     application = ctx.services.source_authority_application
     query = ctx.services.source_authority_query
+
+    @router.post("/product/source-governance/corpus/commands", status_code=202)
+    def corpus_command(request: CorpusCommandRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_corpus(CorpusCommand(
+                project_id=request.project_id, workspace_id=request.workspace_id,
+                actor_id=principal.principal_id, idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id or f"trace:corpus:{request.idempotency_key}",
+                correlation_id=request.correlation_id or f"correlation:corpus:{request.idempotency_key}",
+                action=request.action,
+            ), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/imports/{import_job_id}")
+    def corpus_import(import_job_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_import(project_id=project_id, import_job_id=import_job_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/lineage/{edition_id}")
+    def corpus_lineage(edition_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_lineage(project_id=project_id, edition_id=edition_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/records/{kind}")
+    def corpus_records(kind: str, project_id: str, parent_id: str = "", after: str = "", limit: int = Query(default=100, ge=1, le=100)) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_records(kind=kind, project_id=project_id, parent_id=parent_id, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/operations/{operation_id}")
+    def corpus_operation(operation_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_operation(project_id=project_id, operation_id=operation_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
 
     @router.post("/product/source-governance/documents", status_code=202)
     def register(

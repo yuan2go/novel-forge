@@ -537,7 +537,10 @@ class SourceImportApplication:
             work = repository.list_work(
                 project_id=project_id, import_job_id=import_job_id
             )
-            operation_ids = [str(item["operation_id"]) for item in work]
+            operation_ids = (
+                [str(job["discovery_operation_id"])] if job["mode"] == "FOUNDATION"
+                else [str(item["operation_id"]) for item in work]
+            )
             uow.cursor.execute(
                 """
                 SELECT operation_id, status
@@ -570,7 +573,7 @@ class SourceImportApplication:
                     "terminal Source import work cannot be mutated; create a new import "
                     "request so completed assets are reused",
                 )
-            if resumable and job["status"] in {
+            if resumable and job["mode"] != "FOUNDATION" and job["status"] in {
                 "FAILED_RETRYABLE",
                 "PARTIALLY_COMPLETED",
                 "PROCESSING",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 MIGRATION_ID = "20260908_0122_source_work_manifest"
-DOWN_REVISION = "20260908_0121_account_entitlement_budget"
+DOWN_REVISION = "20260908_0121_corpus_foundation"
 FORWARD_ONLY = True
 BACKUP_REQUIRED = False
 FORWARD_FIX = (

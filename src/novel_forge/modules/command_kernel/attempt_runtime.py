@@ -44,6 +44,11 @@ def create_attempt(
             operation_id,
             project_id,
         )
+        if uow.repositories.cancellations.active_attempt(operation_id) is not None:
+            raise KernelError(
+                "ATTEMPT_ALREADY_ACTIVE",
+                "operation already has an active Attempt; recover it instead of creating another",
+            )
         if operation["status"] not in {"READY", "FAILED_RETRYABLE"}:
             raise KernelError(
                 "OPERATION_STATUS_CONFLICT",

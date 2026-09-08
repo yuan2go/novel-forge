@@ -1,0 +1,92 @@
+{
+  "evidence_class": "UNBOUND_DEVELOPMENT_FAILURES",
+  "not_current_qualification": true,
+  "originals_preserved_at": "/tmp/nf-corpus-foundation-20260908",
+  "redaction": "Existing repository evidence sanitizer; originals retained unchanged.",
+  "records": [
+    {
+      "file": "corpus-first.log",
+      "original_sha256": "114c3e5cd80c47f186b853131fac4d5a6127b0d24d93b0e80c1f7cb0ec122046",
+      "retained_sha256": "114c3e5cd80c47f186b853131fac4d5a6127b0d24d93b0e80c1f7cb0ec122046",
+      "resolution": "Missing operation_id in Source outbox event blocked completion; event now includes owner operation."
+    },
+    {
+      "file": "corpus-first.xml",
+      "original_sha256": "2734068127d720058131b648d166b971c87515496534939eb51a6b0303c2213d",
+      "retained_sha256": "2734068127d720058131b648d166b971c87515496534939eb51a6b0303c2213d",
+      "resolution": "Missing operation_id in Source outbox event blocked completion; event now includes owner operation."
+    },
+    {
+      "file": "corpus-fourth.log",
+      "original_sha256": "66d43a090e8dc291433d11be8e2a7400c67611e3412aa27f6bca7c34bc43d6a3",
+      "retained_sha256": "66d43a090e8dc291433d11be8e2a7400c67611e3412aa27f6bca7c34bc43d6a3",
+      "resolution": "Logical kind spoofing bypassed Context physical raw-asset rejection; physical forbidden types are now checked."
+    },
+    {
+      "file": "corpus-fourth.xml",
+      "original_sha256": "c17a0af1160554cc8471b6fd8e9637f7cbc1ded08d5655fb53410adaf0fbaedc",
+      "retained_sha256": "c17a0af1160554cc8471b6fd8e9637f7cbc1ded08d5655fb53410adaf0fbaedc",
+      "resolution": "Logical kind spoofing bypassed Context physical raw-asset rejection; physical forbidden types are now checked."
+    },
+    {
+      "file": "corpus-fifth.log",
+      "original_sha256": "3253eb92012c3dab63be5e4d786b8dc4c26a6c1e1c6e0e793b257c47cd2a8bae",
+      "retained_sha256": "3253eb92012c3dab63be5e4d786b8dc4c26a6c1e1c6e0e793b257c47cd2a8bae",
+      "resolution": "Query-plan fixture assumed a single snapshot would make its composite index preferable; representative 500-row / five-snapshot fixture now proves bounded indexed access without planner overrides."
+    },
+    {
+      "file": "corpus-fifth.xml",
+      "original_sha256": "937b3a0d85c67dbcf7a122bbaf37ad23817129acca21dfde8b5cf88a9a17cd59",
+      "retained_sha256": "937b3a0d85c67dbcf7a122bbaf37ad23817129acca21dfde8b5cf88a9a17cd59",
+      "resolution": "Query-plan fixture assumed a single snapshot would make its composite index preferable; representative 500-row / five-snapshot fixture now proves bounded indexed access without planner overrides."
+    },
+    {
+      "file": "corpus-seventh.log",
+      "original_sha256": "7201a4b2d5e44f298aab9ac1a60f90c0afc28ba6f22fbe174b5cb7ce53a61392",
+      "retained_sha256": "7201a4b2d5e44f298aab9ac1a60f90c0afc28ba6f22fbe174b5cb7ce53a61392",
+      "resolution": "Concurrent workers attempted a second active Attempt; Kernel returns typed contention and Source scheduler resumes existing CREATED/QUEUED work."
+    },
+    {
+      "file": "corpus-seventh.xml",
+      "original_sha256": "64b2babbe169a40523aafbd5700a3ddd65fe8141f18c8a0697377d9f85188339",
+      "retained_sha256": "64b2babbe169a40523aafbd5700a3ddd65fe8141f18c8a0697377d9f85188339",
+      "resolution": "Concurrent workers attempted a second active Attempt; Kernel returns typed contention and Source scheduler resumes existing CREATED/QUEUED work."
+    },
+    {
+      "file": "upgrade-final-focused.log",
+      "original_sha256": "5fe3fd4a344d36ae22b08362a1e0fd5540037680818ddc99fc6cd845fff8fc0b",
+      "retained_sha256": "5fe3fd4a344d36ae22b08362a1e0fd5540037680818ddc99fc6cd845fff8fc0b",
+      "resolution": "Upgrade fixture used a column already removed before the latest-main migration head; historical row fixture now uses the actual 0120 contract."
+    },
+    {
+      "file": "upgrade-final-focused.xml",
+      "original_sha256": "9e9ed52addd4377019d25fec4a934347cc7813f124b858a2fe021d5697823ec1",
+      "retained_sha256": "9e9ed52addd4377019d25fec4a934347cc7813f124b858a2fe021d5697823ec1",
+      "resolution": "Upgrade fixture used a column already removed before the latest-main migration head; historical row fixture now uses the actual 0120 contract."
+    },
+    {
+      "file": "final-invocation-error.log",
+      "original_sha256": "6c6a300e5a70506912f34601d733b955bf8053d4fdac5ef48aa21fabe121445c",
+      "retained_sha256": "6c6a300e5a70506912f34601d733b955bf8053d4fdac5ef48aa21fabe121445c",
+      "resolution": "Test path typo; collection did not run. Corrected to test_authority_worker_execution.py."
+    },
+    {
+      "file": "validate-first.log",
+      "original_sha256": "b7f02f8157da75d59a9470df552183d52dcbd1a75aea9b13a71ecbf950185ebe",
+      "retained_sha256": "b7f02f8157da75d59a9470df552183d52dcbd1a75aea9b13a71ecbf950185ebe",
+      "resolution": "Reality projection identity stale during development edits; refreshed only after implementation freeze."
+    },
+    {
+      "file": "final-validate.log",
+      "original_sha256": "bd014f1e9c94122d530030f3c8404e1aa6603bd8a997f11869b325ad86e21834",
+      "retained_sha256": "bd014f1e9c94122d530030f3c8404e1aa6603bd8a997f11869b325ad86e21834",
+      "resolution": "Proposal lifecycle baseline required review after Context and migration changes; reviewed unresolved proposals against implemented facts."
+    },
+    {
+      "file": "final-validate-reviewed.log",
+      "original_sha256": "34f1c6c73eedb388795282dfe369121721529779211fab3c78bfbba93a3beca9",
+      "retained_sha256": "34f1c6c73eedb388795282dfe369121721529779211fab3c78bfbba93a3beca9",
+      "resolution": "Head Integrity required Corpus upgrade test registration in the existing canonical migration matrix; added explicit registration."
+    }
+  ]
+}
