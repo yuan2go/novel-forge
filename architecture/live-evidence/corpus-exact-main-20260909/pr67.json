@@ -1,0 +1,9 @@
+{
+  "baseRefOid": "dd97911944a92aca9f511f3b4913beb2f7816956",
+  "body": "Combine governed Corpus foundation and recoverable metadata imports with classical source-work imports, bounded resumable analysis, account-entitlement Codex execution, and isolated experimental approvals.\n\nPreserves 37 existing commits and adds one integration merge commit. Conflict resolution retains both upgrade matrices, Corpus and SourceWork schema entries, and both sets of runtime/documentation changes. Existing full migration IDs are preserved; the two independent 0121 migrations are linked in order before SourceWork 0122 and analysis dimensions 0123. The reality projection reflects the merged implementation; prior qualification evidence does not establish qualification for this merged tree. Proposal review baselines remain historical branch observations.\n\nStatic Python syntax, JSON parsing and the 124-entry migration linkage were checked. Tests: NOT_RUN as requested. Original log whitespace is retained. GitHub Actions remains disabled.\n",
+  "headRefOid": "aba13172b7a83c5cf46ecb9aeb5e050f4b4ade86",
+  "mergeCommit": {
+    "oid": "7b3130660f518e94c7f802c9c47057ca25a2bd5b"
+  },
+  "title": "Integrate governed Corpus foundation and classical source runtime"
+}

@@ -193,7 +193,46 @@ class MkaosAuthorityRepository:
             "content_hash",
             "content",
         )
+        self.require_corpus_bridge(project_id, (asset_version_id,))
         return dict(zip(keys, row, strict=True))
+
+    def corpus_candidate_origins(self, project_id: str, candidate_ids: tuple[str, ...]) -> dict[str, str]:
+        origins: dict[str, str] = {}
+        for offset in range(0, len(candidate_ids), 100):
+            self.cursor.execute(
+                """
+                SELECT DISTINCT ON (e.candidate_asset_version_id)
+                    e.candidate_asset_version_id, corpus.snapshot_id
+                FROM authority_mkaos_evidence_span e
+                JOIN authority_source_chunk chunk
+                  ON chunk.source_chunk_id=e.source_chunk_id AND chunk.project_id=e.project_id
+                JOIN LATERAL (
+                    SELECT f.repository_snapshot_asset_version_id
+                    FROM authority_source_repository_file f
+                    WHERE f.source_document_id=chunk.source_document_id AND f.project_id=e.project_id
+                    UNION
+                    SELECT w.repository_snapshot_asset_version_id
+                    FROM authority_source_work_version w
+                    WHERE w.source_document_id=chunk.source_document_id AND w.project_id=e.project_id
+                ) acquisition ON TRUE
+                JOIN authority_corpus_snapshot corpus
+                  ON corpus.repository_snapshot_asset_version_id=acquisition.repository_snapshot_asset_version_id
+                 AND corpus.project_id=e.project_id
+                WHERE e.project_id=%s AND e.candidate_asset_version_id=ANY(%s)
+                ORDER BY e.candidate_asset_version_id, corpus.snapshot_id
+                """,
+                [project_id, list(candidate_ids[offset:offset + 100])],
+            )
+            origins.update((str(row[0]), str(row[1])) for row in self.cursor.fetchall())
+        return origins
+
+    def require_corpus_bridge(self, project_id: str, candidate_ids: tuple[str, ...]) -> None:
+        origins = self.corpus_candidate_origins(project_id, candidate_ids)
+        if origins:
+            raise KernelError(
+                "MKAOS_CORPUS_BRIDGE_REQUIRED",
+                f"Corpus metadata admission does not authorize SourceWork-derived generation: {origins}",
+            )
 
     def target_asset(
         self,
@@ -342,9 +381,11 @@ class MkaosAuthorityRepository:
             "governance",
             "content",
         )
+        rows = self.cursor.fetchall()
+        self.require_corpus_bridge(project_id, tuple(str(row[4]) for row in rows))
         return {
             str(row[0]): dict(zip(keys, row, strict=True))
-            for row in self.cursor.fetchall()
+            for row in rows
         }
 
     def register_candidate(self, row: dict[str, Any]) -> None:

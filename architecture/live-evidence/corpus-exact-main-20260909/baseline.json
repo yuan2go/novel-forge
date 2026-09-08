@@ -1,0 +1,11 @@
+{
+  "baseline": "7b3130660f518e94c7f802c9c47057ca25a2bd5b",
+  "source_tree": "044222d14adcf36b54f2404e3d23608807c239c4",
+  "identity": "sha256:6002f4953f60d551fd1f6b1a09248e11f7f409f0abd245d047e61e9a82642e94",
+  "projection": {
+    "authority": "EXECUTABLE_CODE",
+    "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
+    "implementation_tree_sha": "sha256:6002f4953f60d551fd1f6b1a09248e11f7f409f0abd245d047e61e9a82642e94"
+  },
+  "migration_head": "20260908_0123_source_analysis_dimensions"
+}

@@ -1,0 +1,8 @@
+{
+  "python": "3.12.2",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "postgresql": "PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "migration_count": 124,
+  "container_image": "sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b",
+  "provider": "NOT_RUN_REAL_PROVIDER; Source analysis transport fixture only"
+}
