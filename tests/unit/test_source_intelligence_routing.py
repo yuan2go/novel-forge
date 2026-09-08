@@ -121,6 +121,43 @@ def test_classification_evidence_is_bounded_and_contains_no_source_text() -> Non
     assert "Distributed Systems" not in str(payload)
 
 
+def test_classification_signal_boundary_may_end_before_a_chinese_character() -> None:
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:project:utf8",
+        source_transform_id="source-transform:project:utf8",
+        source_chunk_asset_version_ids=(
+            "source-chunk:project:utf8:0:v1",
+            "source-chunk:project:utf8:1:v1",
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed UTF-8 boundary fixture",
+    )
+    contents = ("a", "中文正文")
+    segments = tuple(
+        {
+            "source_chunk_asset_version_id": chunk_id,
+            "content": content,
+            "content_hash": "sha256:"
+            + hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            "byte_size": len(content.encode("utf-8")),
+        }
+        for chunk_id, content in zip(
+            scope.source_chunk_asset_version_ids, contents, strict=True
+        )
+    )
+
+    evidence = build_classification_evidence(
+        scope=scope,
+        path_hints=("中文/作品.json",),
+        source_segments=segments,
+        policy=SourceIntelligencePolicy(max_signal_bytes=2),
+    )
+
+    assert evidence.signals["total_bytes"] == 13
+    assert len(evidence.samples) == 2
+
+
 def test_low_confidence_unknown_and_boundary_review_fail_closed() -> None:
     policy = SourceIntelligencePolicy(min_confidence=0.75, min_margin=0.2)
     low = resolve_profile(

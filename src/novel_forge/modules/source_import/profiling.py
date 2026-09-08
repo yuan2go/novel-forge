@@ -310,9 +310,12 @@ def build_classification_evidence(
         encoded = text.encode("utf-8")
         if remaining_signal_bytes:
             bounded = encoded[:remaining_signal_bytes]
-            bounded = _valid_utf8_prefix(bounded)
-            signal_parts.append(bounded.decode("utf-8"))
-            remaining_signal_bytes -= len(bounded)
+            bounded = _valid_utf8_prefix(bounded, allow_empty=True)
+            if bounded:
+                signal_parts.append(bounded.decode("utf-8"))
+                remaining_signal_bytes -= len(bounded)
+            else:
+                remaining_signal_bytes = 0
         if index not in indexes:
             continue
         sample_bytes = _valid_utf8_prefix(encoded[: policy.max_sample_bytes_per_chunk])
@@ -451,13 +454,15 @@ def _stratified_indexes(count: int, limit: int) -> tuple[int, ...]:
     return tuple(dict.fromkeys(candidates[:limit]))
 
 
-def _valid_utf8_prefix(value: bytes) -> bytes:
+def _valid_utf8_prefix(value: bytes, *, allow_empty: bool = False) -> bytes:
     while value:
         try:
             value.decode("utf-8", errors="strict")
             return value
         except UnicodeDecodeError:
             value = value[:-1]
+    if allow_empty:
+        return b""
     raise ValueError("classification sample is empty")
 
 
