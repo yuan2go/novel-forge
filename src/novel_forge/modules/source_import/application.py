@@ -1937,6 +1937,33 @@ class SourceImportApplication:
                 }
                 for row in rows
             )
+            source_work_asset_version_id = str(
+                transform.get("source_work_asset_version_id") or ""
+            )
+            source_work_unit_count = 0
+            source_work_content_hash = ""
+            if source_work_asset_version_id:
+                uow.cursor.execute(
+                    """
+                    SELECT work_version.unit_count, version.content_hash
+                    FROM authority_source_work_version AS work_version
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=work_version.asset_version_id
+                    WHERE work_version.project_id=%s
+                      AND work_version.asset_version_id=%s
+                      AND work_version.source_transform_id=%s
+                      AND work_version.status='ACTIVE'
+                    """,
+                    [worker.project_id, source_work_asset_version_id, transform_id],
+                )
+                source_work_row = uow.cursor.fetchone()
+                if source_work_row is None:
+                    raise KernelError(
+                        "SOURCE_PROFILE_WORK_MANIFEST_MISSING",
+                        "aggregate profiling requires the active SourceWork manifest",
+                    )
+                source_work_unit_count = int(source_work_row[0])
+                source_work_content_hash = str(source_work_row[1])
         policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
         scope = LogicalDocumentScope(
             scope_kind="FILE_DOCUMENT",
@@ -1960,9 +1987,27 @@ class SourceImportApplication:
                 "logical_document_scope_hash": scope.scope_hash,
                 "profiling_policy_hash": policy.profiling_policy_hash,
                 "override_contract_hash": (override.contract_hash if override else ""),
+                "source_work_asset_version_id": source_work_asset_version_id,
+                "source_work_unit_count": source_work_unit_count,
                 "path_hints": list(source_paths),
             }
         )
+        input_assets = tuple(
+            {
+                "asset_version_id": item["asset_version_id"],
+                "role": "source_chunk_evidence",
+                "content_hash": item["content_hash"],
+            }
+            for item in chunks
+        )
+        if source_work_asset_version_id:
+            input_assets += (
+                {
+                    "asset_version_id": source_work_asset_version_id,
+                    "role": "source_work_manifest",
+                    "content_hash": source_work_content_hash,
+                },
+            )
         child = self._admit_child(
             definition_name=SOURCE_IMPORT_PROFILING_OPERATION,
             project_id=worker.project_id,
@@ -1983,16 +2028,11 @@ class SourceImportApplication:
                 "logical_document_scope": scope.to_dict(),
                 "intelligence_policy": asdict(policy),
                 "analysis_override": (override.to_dict() if override else {}),
+                "source_work_asset_version_id": source_work_asset_version_id,
+                "source_work_unit_count": source_work_unit_count,
                 "source_paths": list(source_paths),
             },
-            input_assets=tuple(
-                {
-                    "asset_version_id": item["asset_version_id"],
-                    "role": "source_chunk_evidence",
-                    "content_hash": item["content_hash"],
-                }
-                for item in chunks
-            ),
+            input_assets=input_assets,
             ready=False,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -3045,6 +3085,44 @@ class SourceImportApplication:
             )
             payload = dict(operation["command_payload"])["payload"]
             scope = LogicalDocumentScope(**dict(payload["logical_document_scope"]))
+            policy = SourceIntelligencePolicy(**dict(payload["intelligence_policy"]))
+            override = _source_analysis_override(payload.get("analysis_override"))
+            if (
+                override is not None
+                and override.logical_document_scope_hash != scope.scope_hash
+            ):
+                raise KernelError(
+                    "SOURCE_PROFILE_OVERRIDE_SCOPE_MISMATCH",
+                    "governance override belongs to another LogicalDocument",
+                )
+            if override is not None and override.boundary_resolution:
+                source_work_asset_version_id = str(
+                    payload.get("source_work_asset_version_id") or ""
+                )
+                uow.cursor.execute(
+                    """
+                    SELECT unit_count
+                    FROM authority_source_work_version
+                    WHERE project_id=%s AND asset_version_id=%s
+                      AND source_transform_id=%s AND status='ACTIVE'
+                    """,
+                    [
+                        worker.project_id,
+                        source_work_asset_version_id,
+                        scope.source_transform_id,
+                    ],
+                )
+                source_work_row = uow.cursor.fetchone()
+                if (
+                    source_work_row is None
+                    or int(payload.get("source_work_unit_count") or 0)
+                    != override.expected_document_count
+                    or int(source_work_row[0]) != override.expected_document_count
+                ):
+                    raise KernelError(
+                        "SOURCE_PROFILE_OVERRIDE_AGGREGATE_COUNT_MISMATCH",
+                        "aggregate boundary decision differs from SourceWork units",
+                    )
             uow.cursor.execute(
                 """
                 SELECT chunk.asset_version_id, chunk.blob_id, chunk.byte_size,
@@ -3098,16 +3176,6 @@ class SourceImportApplication:
                     "content_hash": str(row[3]),
                     "byte_size": int(row[2]),
                 }
-            )
-        policy = SourceIntelligencePolicy(**dict(payload["intelligence_policy"]))
-        override = _source_analysis_override(payload.get("analysis_override"))
-        if (
-            override is not None
-            and override.logical_document_scope_hash != scope.scope_hash
-        ):
-            raise KernelError(
-                "SOURCE_PROFILE_OVERRIDE_SCOPE_MISMATCH",
-                "governance override belongs to another LogicalDocument",
             )
         evidence = build_classification_evidence(
             scope=scope,

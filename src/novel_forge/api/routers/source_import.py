@@ -60,6 +60,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     ),
                     reason=request.analysis_override.reason,
                     decision_ref=request.analysis_override.decision_ref,
+                    boundary_resolution=request.analysis_override.boundary_resolution,
+                    expected_document_count=(
+                        request.analysis_override.expected_document_count
+                    ),
                 )
                 if request.analysis_override is not None
                 else None

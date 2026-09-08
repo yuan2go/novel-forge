@@ -40,6 +40,8 @@ def _override_manifest(**updates: object) -> dict[str, object]:
                 "content_type": "CLASSIC_LITERATURE",
                 "reason": "The frozen repository work identity is a classical story collection.",
                 "decision_ref": "experimental-policy:content-type:yushimingyan:v1",
+                "boundary_resolution": "CONFIRM_SOURCE_WORK_AGGREGATE",
+                "expected_document_count": 40,
             }
         ],
     }
@@ -65,6 +67,7 @@ def test_analysis_override_manifest_is_exactly_scoped_and_auditable(tmp_path) ->
     assert evidence["review_class"] == ANALYSIS_OVERRIDE_REVIEW_CLASS
     assert evidence["override_count"] == 1
     assert evidence["overrides"][0]["contract_hash"].startswith("sha256:")
+    assert evidence["overrides"][0]["expected_document_count"] == 40
 
 
 @pytest.mark.parametrize(
@@ -80,6 +83,8 @@ def test_analysis_override_manifest_is_exactly_scoped_and_auditable(tmp_path) ->
                         "content_type": "CLASSIC_LITERATURE",
                         "reason": "This override must not escape the frozen work set.",
                         "decision_ref": "experimental-policy:content-type:other:v1",
+                        "boundary_resolution": "CONFIRM_SOURCE_WORK_AGGREGATE",
+                        "expected_document_count": 40,
                     }
                 ]
             },

@@ -405,14 +405,32 @@ class SourceProfilingApplication:
         if str(command.classifier_output.get("content_type")) != predicted:
             raise ValueError("Source Profile prediction differs from classifier output")
         if override:
+            base_override_keys = {
+                "logical_document_scope_hash",
+                "content_type",
+                "reason",
+                "decision_ref",
+            }
+            aggregate_override_keys = base_override_keys | {
+                "boundary_resolution",
+                "expected_document_count",
+            }
+            override_keys = set(override)
+            boundary = dict(command.classifier_output.get("boundary_assessment") or {})
+            aggregate_boundary_is_valid = bool(
+                override_keys == aggregate_override_keys
+                and override.get("boundary_resolution")
+                == "CONFIRM_SOURCE_WORK_AGGREGATE"
+                and isinstance(override.get("expected_document_count"), int)
+                and not isinstance(override.get("expected_document_count"), bool)
+                and int(override["expected_document_count"]) >= 2
+            )
+            override_keys_are_valid = override_keys in (
+                base_override_keys,
+                aggregate_override_keys,
+            )
             if (
-                set(override)
-                != {
-                    "logical_document_scope_hash",
-                    "content_type",
-                    "reason",
-                    "decision_ref",
-                }
+                not override_keys_are_valid
                 or override.get("logical_document_scope_hash") != scope_hash
                 or (status == "ROUTABLE" and override.get("content_type") != resolved)
                 or len(str(override.get("reason") or "").strip()) < 20
@@ -420,6 +438,18 @@ class SourceProfilingApplication:
                 or override.get("decision_ref")
                 != resolution.get("override_decision_ref")
                 or resolution_mode != "GOVERNANCE_OVERRIDE"
+                or (
+                    override_keys == aggregate_override_keys
+                    and not aggregate_boundary_is_valid
+                )
+                or (
+                    status == "ROUTABLE"
+                    and override_keys == aggregate_override_keys
+                    and (
+                        int(boundary.get("suspected_document_count") or 0)
+                        != int(override["expected_document_count"])
+                    )
+                )
             ):
                 raise ValueError(
                     "Source Profile governance override differs from resolution scope"

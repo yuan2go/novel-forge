@@ -20,6 +20,7 @@ from novel_forge.modules.source_import.profiling import (
     LogicalDocumentScope,
     SourceAnalysisOverride,
     SourceContentType,
+    SOURCE_WORK_AGGREGATE_BOUNDARY,
     SourceIntelligencePolicy,
     build_classification_evidence,
     resolve_profile,
@@ -225,6 +226,39 @@ def test_content_override_cannot_bypass_unresolved_document_boundary() -> None:
     assert resolution.resolved_content_type == SourceContentType.UNKNOWN
     assert resolution.resolution_mode == "GOVERNANCE_OVERRIDE"
     assert resolution.manual_review_required
+
+
+def test_exact_source_work_aggregate_boundary_decision_can_route() -> None:
+    output = _classification("CLASSIC_LITERATURE", 0.99, 0.01)
+    output["boundary_assessment"]["review_required"] = True  # type: ignore[index]
+    output["boundary_assessment"]["suspected_document_count"] = 40  # type: ignore[index]
+    override = SourceAnalysisOverride(
+        logical_document_scope_hash="sha256:" + "c" * 64,
+        content_type=SourceContentType.CLASSIC_LITERATURE,
+        reason="the governed SourceWork manifest confirms forty chapter units",
+        decision_ref="experimental-policy:source-work-boundary:40",
+        boundary_resolution=SOURCE_WORK_AGGREGATE_BOUNDARY,
+        expected_document_count=40,
+    )
+
+    resolution = resolve_profile(
+        classifier_output=output,
+        policy=SourceIntelligencePolicy(),
+        override=override,
+    )
+    mismatched = resolve_profile(
+        classifier_output=output,
+        policy=SourceIntelligencePolicy(),
+        override=replace(override, expected_document_count=39),
+    )
+
+    assert resolution.status == "ROUTABLE"
+    assert resolution.resolved_content_type == SourceContentType.CLASSIC_LITERATURE
+    assert resolution.reasons == (
+        "SOURCE_WORK_AGGREGATE_BOUNDARY_CONFIRMED_BY_GOVERNANCE",
+    )
+    assert mismatched.status == "NEEDS_REVIEW"
+    assert "LOGICAL_DOCUMENT_BOUNDARY_REVIEW_REQUIRED" in mismatched.reasons
 
 
 def test_heterogeneous_content_routes_to_exact_different_skill_methodologies() -> None:

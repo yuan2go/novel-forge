@@ -9,6 +9,7 @@ from typing import Any, Iterable, Mapping
 
 
 _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
+SOURCE_WORK_AGGREGATE_BOUNDARY = "CONFIRM_SOURCE_WORK_AGGREGATE"
 _VERSION = re.compile(r"^[a-z][a-z0-9_.-]+\.v[0-9]+$")
 
 SOURCE_CLASSIFIER_METHODOLOGY = """Classify one governed LogicalDocument from deterministic metadata, structural signals, generic path hints, and bounded semantic samples. Treat path as weak evidence only. Select exactly one governed taxonomy type and flag suspected multi-document or mixed boundaries. The alternatives array is the complete ranked candidate list: include the selected content_type as its first and highest-confidence item, with confidence exactly equal to the top-level confidence, followed by other candidates. Return UNKNOWN or MIXED when evidence is insufficient or composite; never force a routable type and never quote source expression."""
@@ -134,6 +135,8 @@ class SourceAnalysisOverride:
     content_type: SourceContentType
     reason: str
     decision_ref: str
+    boundary_resolution: str = ""
+    expected_document_count: int = 0
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "content_type", SourceContentType(self.content_type))
@@ -147,18 +150,39 @@ class SourceAnalysisOverride:
             raise ValueError(
                 "governance override requires a substantive reason and decision ref"
             )
+        if self.boundary_resolution:
+            if (
+                self.boundary_resolution != SOURCE_WORK_AGGREGATE_BOUNDARY
+                or self.expected_document_count < 2
+            ):
+                raise ValueError(
+                    "aggregate boundary override requires a supported decision and "
+                    "an expected document count of at least two"
+                )
+        elif self.expected_document_count:
+            raise ValueError(
+                "expected document count requires an aggregate boundary decision"
+            )
 
     @property
     def contract_hash(self) -> str:
         return canonical_hash(self.to_dict())
 
-    def to_dict(self) -> dict[str, str]:
-        return {
+    def to_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
             "logical_document_scope_hash": self.logical_document_scope_hash,
             "content_type": self.content_type.value,
             "reason": self.reason.strip(),
             "decision_ref": self.decision_ref.strip(),
         }
+        if self.boundary_resolution:
+            value.update(
+                {
+                    "boundary_resolution": self.boundary_resolution,
+                    "expected_document_count": self.expected_document_count,
+                }
+            )
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -403,11 +427,21 @@ def resolve_profile(
         reasons.append("LOW_CONFIDENCE")
     if margin < policy.min_margin:
         reasons.append("LOW_CLASSIFICATION_MARGIN")
-    if (
+    suspected_document_count = int(boundary.get("suspected_document_count") or 0)
+    boundary_requires_review = (
         bool(boundary.get("review_required"))
-        or int(boundary.get("suspected_document_count") or 0) != 1
-    ):
+        or suspected_document_count != 1
+    )
+    boundary_confirmed = bool(
+        boundary_requires_review
+        and override is not None
+        and override.boundary_resolution == SOURCE_WORK_AGGREGATE_BOUNDARY
+        and override.expected_document_count == suspected_document_count
+    )
+    if boundary_requires_review and not boundary_confirmed:
         reasons.append("LOGICAL_DOCUMENT_BOUNDARY_REVIEW_REQUIRED")
+    elif boundary_confirmed:
+        reasons.append("SOURCE_WORK_AGGREGATE_BOUNDARY_CONFIRMED_BY_GOVERNANCE")
     if override is not None:
         if "LOGICAL_DOCUMENT_BOUNDARY_REVIEW_REQUIRED" in reasons:
             return SourceProfileResolution(
@@ -534,6 +568,7 @@ __all__ = [
     "SourceContentType",
     "SourceIntelligencePolicy",
     "SourceProfileResolution",
+    "SOURCE_WORK_AGGREGATE_BOUNDARY",
     "SOURCE_CLASSIFIER_METHODOLOGY",
     "SOURCE_CLASSIFIER_METHODOLOGY_HASH",
     "build_classification_evidence",

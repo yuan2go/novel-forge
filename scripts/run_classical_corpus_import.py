@@ -227,6 +227,12 @@ def _load_analysis_overrides(
                 content_type=str(raw_override.get("content_type") or ""),
                 reason=str(raw_override.get("reason") or ""),
                 decision_ref=str(raw_override.get("decision_ref") or ""),
+                boundary_resolution=str(
+                    raw_override.get("boundary_resolution") or ""
+                ),
+                expected_document_count=int(
+                    raw_override.get("expected_document_count") or 0
+                ),
             )
         except (TypeError, ValueError) as exc:
             raise RuntimeError(
@@ -249,6 +255,8 @@ def _load_analysis_overrides(
                 ),
                 "content_type": override.content_type.value,
                 "decision_ref": override.decision_ref,
+                "boundary_resolution": override.boundary_resolution,
+                "expected_document_count": override.expected_document_count,
             }
             for work_key, override in sorted(overrides.items())
         ],
