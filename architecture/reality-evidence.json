@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260907_0120_foundation_generation",
+  "migration_head": "20260908_0123_source_analysis_dimensions",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4787,11 +4787,16 @@
           "locator": "MIGRATION_ID = \"20260716_0019_external_effect_protocol\"",
           "id": "20260716_0019_external_effect_protocol"
         },
-        {
-          "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
-          "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\"",
-          "id": "20260718_0028_provider_adapter_v2"
-        }
+      {
+        "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
+        "locator": "MIGRATION_ID = \"20260718_0028_provider_adapter_v2\"",
+        "id": "20260718_0028_provider_adapter_v2"
+      },
+      {
+        "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_account_entitlement_budget.py",
+        "locator": "MIGRATION_ID = \"20260908_0121_account_entitlement_budget\"",
+        "id": "20260908_0121_account_entitlement_budget"
+      }
       ],
       "external_effects": {
         "mode": "DIRECT",
@@ -4928,11 +4933,21 @@
           "locator": "MIGRATION_ID = \"20260801_0050_mkaos_authority\"",
           "id": "20260801_0050_mkaos_authority"
         },
-        {
-          "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
-          "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\"",
-          "id": "20260811_0076_source_import_runtime"
-        }
+      {
+        "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
+        "locator": "MIGRATION_ID = \"20260811_0076_source_import_runtime\"",
+        "id": "20260811_0076_source_import_runtime"
+      },
+      {
+        "path": "src/novel_forge/storage/migrations/versions/v20260908_0122_source_work_manifest.py",
+        "locator": "MIGRATION_ID = \"20260908_0122_source_work_manifest\"",
+        "id": "20260908_0122_source_work_manifest"
+      },
+      {
+        "path": "src/novel_forge/storage/migrations/versions/v20260908_0123_source_analysis_dimensions.py",
+        "locator": "MIGRATION_ID = \"20260908_0123_source_analysis_dimensions\"",
+        "id": "20260908_0123_source_analysis_dimensions"
+      }
       ],
       "external_effects": {
         "mode": "DIRECT",
@@ -7441,7 +7456,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:1c614233dc3a6bc69c6fe5808594106cf9b1796bb81853a5bf5a34881d27a6ec"
+    "implementation_tree_sha": "sha256:23bc182a8c5b416ccdb0797e6d9692df15c32b4fddde346bae2648f7e3604be5"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
