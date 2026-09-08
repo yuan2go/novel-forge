@@ -3131,7 +3131,45 @@ def settle_provider_budget_in_uow(
         and row["reserved_amount"] is not None
         and amount > row["reserved_amount"]
     )
-    if monetary_breach or actual_tokens > int(row["estimated_tokens"]):
+    token_overrun = actual_tokens > int(row["estimated_tokens"])
+    settlement_evidence = dict(evidence)
+    entitlement_usage_reconciled = False
+    entitlement_usage_cap_error = ""
+    request = _request_from_row(row)
+    if (
+        token_overrun
+        and accounting_basis == "ACCOUNT_ENTITLEMENT"
+        and settlement_evidence.get("token_accounting_precision")
+        == "APPLICATION_VISIBLE_UPPER_BOUND"
+        and settlement_evidence.get("actual_token_source")
+        == "PROVIDER_USAGE_RECEIPT"
+        and bool(request.token_caps)
+    ):
+        try:
+            _enforce_usage_caps(
+                uow.cursor,
+                request,
+                tokens=actual_tokens,
+                call_caps={},
+                token_caps=request.token_caps or {},
+            )
+        except KernelError as exc:
+            if exc.code != "BUDGET_TOKEN_CAP_EXCEEDED":
+                raise
+            entitlement_usage_cap_error = exc.code
+        else:
+            token_overrun = False
+            entitlement_usage_reconciled = True
+            settlement_evidence.update(
+                {
+                    "application_visible_estimate_overrun": True,
+                    "actual_usage_cap_revalidated": True,
+                    "budget_breach": False,
+                    "manual_resolution_required": False,
+                    "pre_call_token_control": "APPLICATION_VISIBLE_ONLY",
+                }
+            )
+    if monetary_breach or token_overrun:
         uow.cursor.execute(
             """
             UPDATE authority_budget_reservation
@@ -3142,7 +3180,7 @@ def settle_provider_budget_in_uow(
             [
                 Jsonb(
                     {
-                        **dict(evidence),
+                        **settlement_evidence,
                         "budget_breach": True,
                         "actual_amount": str(amount) if amount is not None else None,
                         "reserved_amount": (
@@ -3154,6 +3192,7 @@ def settle_provider_budget_in_uow(
                         "actual_tokens": actual_tokens,
                         "estimated_tokens": int(row["estimated_tokens"]),
                         "manual_resolution_required": True,
+                        "token_cap_error_code": entitlement_usage_cap_error,
                     }
                 ),
                 reservation_id,
@@ -3175,6 +3214,7 @@ def settle_provider_budget_in_uow(
                 "cost_status": cost_status,
                 "actual_tokens": actual_tokens,
                 "estimated_tokens": int(row["estimated_tokens"]),
+                "token_cap_error_code": entitlement_usage_cap_error,
             },
         )
         return {
@@ -3190,10 +3230,11 @@ def settle_provider_budget_in_uow(
         }
     cost_evidence_id = f"budget-cost:{reservation_id}"
     cost_payload = {
-        **dict(evidence),
+        **settlement_evidence,
         "reservation_id": reservation_id,
         "accounting_basis": accounting_basis,
         "cost_status": cost_status,
+        "entitlement_usage_reconciled": entitlement_usage_reconciled,
         "cost_authorization_ref": str(
             dict(row.get("evidence") or {}).get("cost_authorization_ref") or ""
         ),
@@ -3203,7 +3244,7 @@ def settle_provider_budget_in_uow(
         UPDATE authority_budget_reservation
         SET status='SETTLED',settled_amount=%s,actual_tokens=%s,
             evidence=evidence || %s,settled_at=NOW(),version=version+1,
-            updated_at=NOW(),settled_cost_status=%s
+            updated_at=NOW(),settled_cost_status=%s,budget_breach=FALSE
         WHERE reservation_id=%s AND project_id=%s
         """,
         [
@@ -3269,6 +3310,7 @@ def settle_provider_budget_in_uow(
         "agent_budget_exceeded": agent_budget_exceeded,
         "accounting_basis": accounting_basis,
         "cost_status": cost_status,
+        "entitlement_usage_reconciled": entitlement_usage_reconciled,
     }
 
 

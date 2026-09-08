@@ -219,6 +219,134 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             )
         self.assertEqual(exhausted.exception.code, "BUDGET_CALL_CAP_EXCEEDED")
 
+    def test_account_entitlement_reconciles_cli_visible_estimate_within_token_cap(
+        self,
+    ) -> None:
+        context, effect_id = self._effect("success")
+        reservation = reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=context.operation_id,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+                stable_idempotency_key=f"budget:{effect_id}",
+                provider="production_execution_gateway",
+                currency="UNKNOWN",
+                estimated_amount=None,
+                estimated_tokens=1_200,
+                accounting_basis="ACCOUNT_ENTITLEMENT",
+                cost_authorization_ref="task-authorization:cli-entitlement",
+                call_caps={"project_total": 1},
+                token_caps={"project_total": 2_000},
+            ),
+        )
+
+        with self.assertRaises(KernelError) as initial:
+            settle_provider_budget(
+                DATABASE_URL,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=context.project_id,
+                actual_amount=None,
+                actual_tokens=1_800,
+                evidence={"model_id": "gpt-5.6-sol", "real_model_call": True},
+            )
+        self.assertEqual(
+            initial.exception.code, "BUDGET_ACTUAL_EXCEEDS_RESERVATION"
+        )
+
+        settled = settle_provider_budget(
+            DATABASE_URL,
+            reservation_id=str(reservation["reservation_id"]),
+            project_id=context.project_id,
+            actual_amount=None,
+            actual_tokens=1_800,
+            evidence={
+                "model_id": "gpt-5.6-sol",
+                "real_model_call": True,
+                "token_accounting_precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
+            },
+        )
+
+        self.assertEqual(settled["status"], "SETTLED")
+        self.assertTrue(settled["entitlement_usage_reconciled"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT estimated_tokens,actual_tokens,status,budget_breach,
+                       evidence->>'pre_call_token_control',
+                       evidence->>'actual_usage_cap_revalidated'
+                FROM authority_budget_reservation
+                WHERE reservation_id=%s
+                """,
+                [reservation["reservation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    1_200,
+                    1_800,
+                    "SETTLED",
+                    False,
+                    "APPLICATION_VISIBLE_ONLY",
+                    "true",
+                ),
+            )
+
+    def test_account_entitlement_cli_estimate_overrun_still_honors_token_cap(
+        self,
+    ) -> None:
+        context, effect_id = self._effect("success")
+        reservation = reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=context.operation_id,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+                stable_idempotency_key=f"budget:{effect_id}",
+                provider="production_execution_gateway",
+                currency="UNKNOWN",
+                estimated_amount=None,
+                estimated_tokens=1_200,
+                accounting_basis="ACCOUNT_ENTITLEMENT",
+                cost_authorization_ref="task-authorization:cli-entitlement",
+                call_caps={"project_total": 1},
+                token_caps={"project_total": 1_500},
+            ),
+        )
+
+        with self.assertRaises(KernelError) as error:
+            settle_provider_budget(
+                DATABASE_URL,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=context.project_id,
+                actual_amount=None,
+                actual_tokens=1_800,
+                evidence={
+                    "model_id": "gpt-5.6-sol",
+                    "real_model_call": True,
+                    "token_accounting_precision": (
+                        "APPLICATION_VISIBLE_UPPER_BOUND"
+                    ),
+                    "actual_token_source": "PROVIDER_USAGE_RECEIPT",
+                },
+            )
+
+        self.assertEqual(error.exception.code, "BUDGET_ACTUAL_EXCEEDS_RESERVATION")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT status,budget_breach,evidence->>'token_cap_error_code'
+                FROM authority_budget_reservation
+                WHERE reservation_id=%s
+                """,
+                [reservation["reservation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("HELD_UNKNOWN", True, "BUDGET_TOKEN_CAP_EXCEEDED"),
+            )
+
     def test_unknown_effect_holds_reservation_for_reconciliation(self) -> None:
         context, effect_id = self._effect("timeout_after")
         reservation = reserve_provider_budget(

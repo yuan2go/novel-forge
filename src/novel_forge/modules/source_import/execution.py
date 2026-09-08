@@ -1306,6 +1306,8 @@ class PostgresContentIntelligenceExecutionPort:
                     if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                     else "KNOWN"
                 ),
+                "token_accounting_precision": token_contract.precision,
+                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
             },
         )
         return evidence
@@ -1325,7 +1327,8 @@ class PostgresContentIntelligenceExecutionPort:
                              ELSE dispatch.evidence
                            END,
                            reservation.reservation_id,
-                           reservation.status
+                           reservation.status,
+                           effect.request_payload
                     FROM authority_external_effect AS effect
                     JOIN LATERAL (
                         SELECT evidence
@@ -1371,6 +1374,18 @@ class PostgresContentIntelligenceExecutionPort:
                 or int(usage.get("input_tokens") or 0)
                 + int(usage.get("output_tokens") or 0)
             )
+            request_payload = row[4] if isinstance(row[4], Mapping) else {}
+            production = request_payload.get("_production_execution", {})
+            runtime = (
+                production.get("capability_runtime", {})
+                if isinstance(production, Mapping)
+                else {}
+            )
+            token_contract = (
+                runtime.get("token_accounting_contract", {})
+                if isinstance(runtime, Mapping)
+                else {}
+            )
             settle_provider_budget(
                 self.database_url,
                 reservation_id=str(row[2]),
@@ -1384,6 +1399,10 @@ class PostgresContentIntelligenceExecutionPort:
                 evidence={
                     "replayed_after_worker_failure": True,
                     "external_effect_id": str(row[0]),
+                    "token_accounting_precision": str(
+                        token_contract.get("precision") or ""
+                    ),
+                    "actual_token_source": "PROVIDER_USAGE_RECEIPT",
                 },
             )
         return {
