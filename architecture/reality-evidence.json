@@ -4852,6 +4852,10 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"mkaos.knowledge_candidate.commit\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/source_authority.py",
+          "symbol": "create_router"
         }
       ],
       "application": [
@@ -4866,6 +4870,10 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/application.py",
           "symbol": "MkaosAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus_application.py",
+          "symbol": "SourceCorpusApplication"
         }
       ],
       "domain_symbols": [
@@ -4876,6 +4884,18 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/domain.py",
           "symbol": "NarrativeIntelligenceNeed"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "DatasetManifest"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "RightsDeclaration"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "corpus_admission"
         }
       ],
       "commands_operations": [
@@ -4886,6 +4906,10 @@
         {
           "path": "src/novel_forge/modules/source_authority/application.py",
           "symbol": "RegisterSourceDocumentCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus_application.py",
+          "symbol": "CorpusCommand"
         }
       ],
       "state_ownership": {
@@ -4893,7 +4917,9 @@
           "source import runs",
           "source documents and transforms",
           "deconstruction observations",
-          "knowledge decisions and packs"
+          "knowledge decisions and packs",
+          "immutable Corpus source purposes, snapshots, work identities and editions",
+          "versioned dataset/underlying-work rights and admission decisions"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -4904,6 +4930,10 @@
           {
             "path": "src/novel_forge/modules/mkaos_authority/application.py",
             "symbol": "MkaosAuthorityApplication.execute_candidate"
+          },
+          {
+            "path": "src/novel_forge/modules/source_authority/corpus_mutations.py",
+            "symbol": "apply_corpus_action"
           }
         ]
       },
@@ -4915,6 +4945,10 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/application.py",
           "symbol": "MkaosAuthorityApplication.execute_candidate"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus_application.py",
+          "symbol": "SourceCorpusApplication.execute_fenced"
         }
       ],
       "persistence": [
@@ -4925,6 +4959,10 @@
         {
           "path": "src/novel_forge/storage/mkaos_authority_repositories.py",
           "symbol": "MkaosAuthorityRepository"
+        },
+        {
+          "path": "src/novel_forge/storage/source_authority_repositories.py",
+          "symbol": "SourceAuthorityRepository"
         }
       ],
       "migrations": [
@@ -4947,7 +4985,8 @@
         "path": "src/novel_forge/storage/migrations/versions/v20260908_0123_source_analysis_dimensions.py",
         "locator": "MIGRATION_ID = \"20260908_0123_source_analysis_dimensions\"",
         "id": "20260908_0123_source_analysis_dimensions"
-      }
+      },
+{"path":"src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py","locator":"MIGRATION_ID = \"20260908_0121_corpus_foundation\"","id":"20260908_0121_corpus_foundation"}
       ],
       "external_effects": {
         "mode": "DIRECT",
@@ -4975,6 +5014,18 @@
         {
           "path": "tests/integration/test_mkaos_authority_postgres.py",
           "symbol": "MkaosAuthorityPostgresTests.test_candidate_decision_card_and_deterministic_pack_are_separate"
+        },
+        {
+          "path": "tests/integration/test_corpus_foundation_postgres.py",
+          "symbol": "test_native_api_worker_vertical_multi_source_editions_and_replay"
+        },
+        {
+          "path": "tests/integration/test_corpus_foundation_postgres.py",
+          "symbol": "test_new_process_recovers_committed_batch_without_duplicate_state"
+        },
+        {
+          "path": "tests/unit/test_corpus_admission.py",
+          "symbol": "test_dataset_license_never_authorizes_underlying_prose"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7456,7 +7507,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4db6c0ce96d0dfcf565a7fa3ab79a7cc3b3755b5ef62bac1feaf21f21113aebe"
+    "implementation_tree_sha": "sha256:a9df04a69e291bd95fc9910be1fea844eafa6db29b93c67b06154e5aa8f75134"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

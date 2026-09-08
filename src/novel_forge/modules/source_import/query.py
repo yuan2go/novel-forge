@@ -25,6 +25,10 @@ class SourceImportQuery:
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = SourceImportRepository(uow.cursor)
             job = repository.job(project_id=project_id, import_job_id=import_job_id)
+            if job["mode"] == "FOUNDATION":
+                from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+
+                return SourceAuthorityRepository(uow.cursor).corpus_import_status(project_id, import_job_id)
             work = repository.list_work(
                 project_id=project_id, import_job_id=import_job_id
             )

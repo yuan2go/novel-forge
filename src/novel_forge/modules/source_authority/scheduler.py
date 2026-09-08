@@ -49,6 +49,7 @@ class SourceAuthorityScheduler:
         self.operation_names = SOURCE_AUTHORITY_OPERATIONS
         self.output_keys = frozenset(
             {
+                "source.corpus.record",
                 "source.document",
                 "source.transform.manifest",
                 "source.deconstruction.observation",
@@ -109,7 +110,18 @@ class SourceAuthorityScheduler:
             )
 
         recovery_mode = "fresh_attempt"
-        if operation_status in {"READY", "FAILED_RETRYABLE"}:
+        if operation_status == "READY" and state.get("attempt_id"):
+            attempt_id = str(state["attempt_id"])
+            attempt_number = int(state["attempt_number"])
+            attempt_status = str(state["attempt_status"])
+            recovery_mode = "unstarted_attempt_resume"
+            if attempt_status == "CREATED":
+                queue_attempt(
+                    self.database_url, attempt_id=attempt_id, project_id=project_id,
+                    trace_id=str(state["trace_id"]), correlation_id=str(state["correlation_id"]),
+                )
+                attempt_status = "QUEUED"
+        elif operation_status in {"READY", "FAILED_RETRYABLE"}:
             retrying = operation_status == "FAILED_RETRYABLE"
             attempt = create_attempt(
                 self.database_url,

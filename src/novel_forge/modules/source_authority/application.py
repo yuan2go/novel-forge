@@ -52,6 +52,9 @@ from novel_forge.modules.source_authority.domain import (
     decide_source_governance,
     validate_source_chunk_candidates,
 )
+from novel_forge.modules.source_authority.corpus_application import (
+    CORPUS_OPERATION, CorpusCommand, SourceCorpusApplication,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
 
@@ -145,6 +148,9 @@ class SourceAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.corpus = SourceCorpusApplication(
+            database_url, application_build_id=application_build_id, commit_sha=commit_sha,
+        )
         self.deconstruction = SourceDeconstructionApplication(
             database_url,
             application_build_id=application_build_id,
@@ -157,6 +163,9 @@ class SourceAuthorityApplication:
             commit_sha=commit_sha,
             allow_fixture_profiles=allow_fixture_observations,
         )
+
+    def admit_corpus(self, command: CorpusCommand, *, principal: Principal | None = None) -> dict[str, Any]:
+        return self.corpus.admit(command, principal=principal)
 
     def execute_content_profile(
         self,
@@ -1214,6 +1223,8 @@ class SourceAuthorityApplication:
             row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
+        if row[0] == CORPUS_OPERATION:
+            return self.corpus.execute_fenced(worker)
         if row[0] == SOURCE_AUTHORITY_OPERATION:
             return self._execute_document_fenced(worker)
         if row[0] == SOURCE_TRANSFORM_OPERATION:
@@ -1293,6 +1304,8 @@ class SourceAuthorityApplication:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
         if row[0] == SOURCE_AUTHORITY_OPERATION:
             return self._result(operation_id, project_id, replayed=replayed)
+        if row[0] == CORPUS_OPERATION:
+            return self.corpus.result(operation_id, project_id, replayed=replayed)
         if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:
             return self.deconstruction.result(
                 operation_id,

@@ -1,0 +1,136 @@
+{
+  "evidence_class": "FOCUSED_SOURCE_CORPUS_RUNTIME_AND_POSTGRESQL_TESTS",
+  "recorded_at": "2026-09-08T13:38:08.475436+00:00",
+  "baseline_origin_main": "dd97911944a92aca9f511f3b4913beb2f7816956",
+  "baseline_source_tree": "50f67320c10a9f182dce0aeb49653995a2f474b7",
+  "baseline_implementation_tree_identity": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e",
+  "tested_implementation_sha": "d503697a3daac123cbd72f99453a16979c127e5c",
+  "tested_source_tree": "e520cb27bf9355e25f594c538faf8c48eb9882a2",
+  "implementation_tree_identity": "sha256:12f471049e1422eef1c111307ab5bb9868fb20e04008a05036b500265c77d7e8",
+  "reality_projection_identity": "sha256:12f471049e1422eef1c111307ab5bb9868fb20e04008a05036b500265c77d7e8",
+  "dependency_digest": "sha256:5e61f2424f98f422a3859fb3d48be73c2fd6cb712d08b4df6308331dc3cab83d",
+  "test_accounting": {
+    "pytest_nodes": 131,
+    "additional_subtests": 36,
+    "junit": {
+      "tests": 167,
+      "passed": 167,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 151.525
+    },
+    "per_class_nodes": {
+      "tests.unit.test_corpus_admission": 11,
+      "tests.unit.test_context_authority_domain.ContextAuthorityDomainTests": 11,
+      "tests.unit.test_source_authority_domain.SourceAuthorityDomainTests": 4,
+      "tests.unit.test_source_intelligence_routing": 25,
+      "tests.unit.test_mkaos_authority_domain.MkaosAuthorityDomainTests": 6,
+      "tests.unit.test_context_governance_closure": 27,
+      "tests.unit.test_provider_context_policy_compilation": 2,
+      "tests.unit.test_postgres_migrations.PostgresMigrationTests": 2,
+      "tests.unit.test_authority_worker_execution.AuthorityWorkerExecutionTests": 4,
+      "tests.integration.test_corpus_foundation_postgres": 7,
+      "tests.integration.test_corpus_migrations_postgres": 2,
+      "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests": 6,
+      "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests": 5,
+      "tests.integration.test_mkaos_authority_postgres.MkaosAuthorityPostgresTests": 3,
+      "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests": 10,
+      "tests.integration.test_authority_attempt_lease_schema_postgres.AuthorityAttemptLeaseSchemaPostgresTests": 6
+    },
+    "warnings": 17
+  },
+  "commands": {
+    "focused_tests": {
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$NOVEL_FORGE_DATABASE_URL\" CORPUS_TESTED_SHA=d503697a3daac123cbd72f99453a16979c127e5c CORPUS_EVIDENCE_DIR=/tmp/nf-corpus-foundation-20260908 PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_corpus_admission.py tests/unit/test_context_authority_domain.py tests/unit/test_source_authority_domain.py tests/unit/test_source_intelligence_routing.py tests/unit/test_mkaos_authority_domain.py tests/unit/test_context_governance_closure.py tests/unit/test_provider_context_policy_compilation.py tests/unit/test_postgres_migrations.py tests/unit/test_authority_worker_execution.py tests/integration/test_corpus_foundation_postgres.py tests/integration/test_corpus_migrations_postgres.py tests/integration/test_source_document_authority_postgres.py tests/integration/test_source_import_runtime_postgres.py tests/integration/test_mkaos_authority_postgres.py tests/integration/test_command_kernel_attempt_runtime_postgres.py tests/integration/test_authority_attempt_lease_schema_postgres.py -q --junitxml=/tmp/nf-corpus-foundation-20260908/tests-d503697.xml > /tmp/nf-corpus-foundation-20260908/tests-d503697.log 2>&1",
+      "exit_code": 0
+    },
+    "static_governance": {
+      "command": "make validate head-integrity-check PYTHON=.venv/bin/python RUFF=.venv/bin/ruff",
+      "exit_code": 0
+    },
+    "evidence_only_checks": {
+      "command": "make documentation-reality-check historical-reality-check PYTHON=.venv/bin/python",
+      "exit_code": 0
+    }
+  },
+  "migration_head": "20260908_0121_corpus_foundation",
+  "migration_previous_head": "20260907_0120_foundation_generation",
+  "migration_applied_count": 121,
+  "fresh_migration": "PASS",
+  "latest_main_existing_data_upgrade": "PASS",
+  "production_entry": "POST /product/source-governance/corpus/commands -> SourceAuthorityApplication.admit_corpus -> Command Kernel -> SourceAuthorityScheduler -> SourceAuthorityRepository / UoW -> corpus_record + outbox",
+  "provider_execution": "NOT_RUN_AND_NOT_REQUIRED: metadata-only commands; no ExternalEffect is created",
+  "native_vertical_slice": {
+    "status": "PASS",
+    "evidence": "native-vertical.json",
+    "scope": "In-process native FastAPI composition with real Source scheduler and PostgreSQL; isolated test metadata, no download, parser or provider.",
+    "query_plan": "query-plan.json"
+  },
+  "recovery_concurrency": {
+    "status": "PASS",
+    "evidence": "tests.xml",
+    "covered": [
+      "parallel duplicate native command admission and workers",
+      "separate-process exit after Attempt creation",
+      "separate-process exit after committed output before response",
+      "expired lease takeover and result reuse",
+      "transaction rollback on conflicting Edition metadata",
+      "terminal failure does not reopen",
+      "Kernel lease/fence regression collection"
+    ]
+  },
+  "authority_state": "EXECUTABLE",
+  "full_p0": "NOT_RUN",
+  "full_repository_pytest": "NOT_RUN",
+  "does_not_establish": [
+    "remote CI enforcement",
+    "adapter acquisition authenticity",
+    "underlying rights legal adjudication",
+    "parsing or normalization",
+    "cross-source equivalence or deduplication",
+    "real-provider execution",
+    "content quality",
+    "production operation"
+  ],
+  "final_main_recheck": {
+    "origin_main": "dd97911944a92aca9f511f3b4913beb2f7816956",
+    "checked_at": "2026-09-08T13:39:06.357290+00:00",
+    "drift": false
+  },
+  "resource_cleanup": {
+    "recorded_at": "2026-09-08T13:38:40.002713+00:00",
+    "owned_container_id": "26e3a53b137951a26e13c73f00f204ce769cc390e1ee88d272e5388fb8815492",
+    "owned_anonymous_volumes": [
+      "1c2dcc1752b69f270e6de1e4d76c32e6d59481ca7af35d1dab7678e61a142d4e"
+    ],
+    "cleanup_command": [
+      "docker",
+      "rm",
+      "-f",
+      "-v",
+      "nf-corpus-foundation-20260908"
+    ],
+    "exit_code": 0,
+    "remaining_task_containers": [],
+    "remaining_owned_volumes": [],
+    "resource_residue": 0,
+    "other_resources_modified": false
+  },
+  "proof_files": {
+    "cleanup.json": "sha256:bcf2bf701ffc997b739fade05f08e158c8f1b4b9fb506bf6a7601a602aa586ea",
+    "dependencies.json": "sha256:b7182eb750cc30090ef61554d6f27ce7df488241214564c6b0a25a2d64e547da",
+    "development-failures.json": "sha256:b8c40daeaa7e257361b3b4602d4b59d93c0700e2c483044c6f6472cb0c66dd6b",
+    "development-failures.tar.gz": "sha256:f1c255116bca2ca7a426d645ee311c43ec477524f4669faa29c0f0a18a22cf36",
+    "environment.json": "sha256:f8d051a4b90a1570631877d145c4dfec3fb68fb47ba65ef1e661cbc64f6cc0e5",
+    "evidence-check.log.gz": "sha256:56f5de160a96e74ef8701ae4fc3d5003020c69389860257dcae2f454b1675cca",
+    "implementation-identity.json": "sha256:ea9f3ff005c8ecb151420a7312e4a2c93171707c5e3c1332373fd192109b623c",
+    "migration-fresh.json": "sha256:687a9ff04bf5cf8346ead8c1636c53a76cd2ae092c15bb72e07893373051d6c7",
+    "migration-upgrade-0120.json": "sha256:f57869e9ec42f08495c6f112dd71a204851d5c163d6f778ccdb3d4864a12f4e2",
+    "native-vertical.json": "sha256:79877b28cda566c87d5a03598feda136fa81357f916b3d7fec578aa3b7b5daf9",
+    "query-plan.json": "sha256:2fc3c685af14799a36a8822f0d877eeef08f30d30bacc1e9d6c4206f260069d5",
+    "tests.log": "sha256:44879d3879d8faf6c7dddea59840829b12724dd1451a7d32df5fd43bf47e016d",
+    "tests.xml": "sha256:f60c82d53c1062724f3f0b33cd0f3126d0fc9983ced7fa77c57eef64e8d0702c",
+    "validate.log.gz": "sha256:ed71ba4720968945e8c8c6feda7921bbfb06a143de260197e44d88d1141e368a"
+  }
+}
