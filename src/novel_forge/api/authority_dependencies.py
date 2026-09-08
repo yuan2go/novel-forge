@@ -9,7 +9,6 @@ from novel_forge.modules.story_planning_runtime.foundation_generation import (
 
 import hashlib
 import os
-import subprocess
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -187,6 +186,7 @@ from novel_forge.modules.production_execution import (
     RoutePolicy,
     ScriptedFixtureExecutionBackend,
     default_capability_registry,
+    observe_codex_cli_version,
 )
 
 
@@ -944,19 +944,10 @@ def build_production_execution_composition(
                 raise RuntimeError(
                     "controlled Codex executable differs from its frozen digest"
                 )
-            try:
-                observed_cli_version = subprocess.run(
-                    (str(executable_path), "--version"),
-                    cwd=codex_workspace,
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=15,
-                ).stdout.strip()
-            except (OSError, subprocess.SubprocessError) as exc:
-                raise RuntimeError(
-                    "controlled Codex CLI version could not be observed"
-                ) from exc
+            observed_cli_version = observe_codex_cli_version(
+                executable_path,
+                working_directory=codex_workspace,
+            )
             if observed_cli_version != entitlement_values["cli_version"]:
                 raise RuntimeError(
                     "controlled Codex CLI version differs from its frozen identity"

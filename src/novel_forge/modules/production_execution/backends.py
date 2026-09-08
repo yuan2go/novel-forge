@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 from threading import Lock
 from typing import Any, Mapping, Protocol
 
@@ -40,6 +41,7 @@ from .gateway import AdmissionController, ExecutionAdmission
 from .evidence import ExecutionRecord, ExecutionRecordStore
 from .process_supervisor import (
     CodexProcessSupervisor,
+    EnvironmentAllowlist,
     ProcessLaunchRequest,
     ProcessReceiptStatus,
     ProcessTimeout,
@@ -62,6 +64,38 @@ def _sha256(payload: Mapping[str, Any]) -> str:
     return (
         "sha256:" + hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
     )
+
+
+def observe_codex_cli_version(
+    executable: str | Path,
+    *,
+    working_directory: str | Path,
+    timeout_seconds: int = 15,
+) -> str:
+    executable_path = Path(executable)
+    workspace = Path(working_directory)
+    if not executable_path.is_absolute() or not executable_path.is_file():
+        raise RuntimeError("controlled Codex executable is unavailable")
+    if not workspace.is_dir() or timeout_seconds <= 0:
+        raise RuntimeError("controlled Codex identity probe is invalid")
+    try:
+        completed = subprocess.run(
+            (str(executable_path), "--version"),
+            cwd=workspace,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            env=EnvironmentAllowlist.codex_default().build(),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(
+            "controlled Codex CLI version could not be observed"
+        ) from exc
+    observed = completed.stdout.strip()
+    if not observed:
+        raise RuntimeError("controlled Codex CLI version could not be observed")
+    return observed
 
 
 @dataclass(frozen=True, slots=True)
@@ -1912,4 +1946,5 @@ __all__ = [
     "ScriptedFixtureExecutionBackend",
     "StaticExecutionPayloadResolver",
     "parse_codex_jsonl_evidence",
+    "observe_codex_cli_version",
 ]
