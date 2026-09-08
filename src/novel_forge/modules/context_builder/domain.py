@@ -6,6 +6,10 @@ import json
 from typing import Any, Iterable
 
 from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+    validate_book_knowledge_access_policy,
+)
 from novel_forge.modules.context_builder.governance import (
     ContextBudgetLimits,
     ContextPolicyCompilation,
@@ -76,6 +80,7 @@ class ContextSelection:
 
 _RAW_TYPES = frozenset(
     {
+        "corpus_record",
         "source_document",
         "source_chunk",
         "source_deconstruction_observation",
@@ -517,7 +522,11 @@ def _eligibility_reason(
         return "READ_GENERATION_UNRESOLVED"
     if candidate.read_generation_id != candidate.active_read_generation_id:
         return "WRONG_READ_GENERATION"
-    if candidate.raw_source or logical_kind in profile.forbidden_asset_types:
+    if (
+        candidate.raw_source
+        or logical_kind in profile.forbidden_asset_types
+        or physical_type in profile.forbidden_asset_types
+    ):
         return "RAW_SOURCE_FORBIDDEN"
     if logical_kind in policy.denied_logical_kinds:
         return "LOGICAL_CONTEXT_KIND_DENIED"
@@ -1012,7 +1021,24 @@ def build_authority_context_bundle(
     authority_state_boundary: dict[str, Any] | None = None,
     accessible_knowledge_fact_ids: Iterable[str] = (),
     required_long_distance_fact_ids: Iterable[str] = (),
+    knowledge_access_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    scoped_book_id = book_id or f"book:{project_id}"
+    access = (
+        validate_book_knowledge_access_policy(
+            knowledge_access_policy,
+            project_id=project_id,
+            book_id=scoped_book_id,
+        )
+        if knowledge_access_policy
+        else resolve_book_knowledge_access_policy(
+            production_profile={},
+            project_id=project_id,
+            book_id=scoped_book_id,
+        )
+    )
+    frozen_candidates = tuple(candidates)
+    _validate_context_knowledge_access(frozen_candidates, access)
     profile = resolve_context_profile(stage)
     required = frozenset(str(item) for item in required_asset_types if str(item))
     unsupported = required - profile.allowed_asset_types
@@ -1036,7 +1062,7 @@ def build_authority_context_bundle(
         project_id=project_id,
         book_id=book_id,
         profile=profile,
-        candidates=candidates,
+        candidates=frozen_candidates,
         token_budget=token_budget,
         effective_policy=compilation.effective_policy,
         authority_state_boundary=dict(authority_state_boundary or {}),
@@ -1090,6 +1116,7 @@ def build_authority_context_bundle(
         ],
         "stage_context_view": stage_view,
         "context_correctness": correctness,
+        "knowledge_access_policy": access,
     }
     actual_context_digest = (
         "sha256:"
@@ -1166,6 +1193,7 @@ def build_authority_context_bundle(
             "compression_policy": profile.compression_policy,
             "copyright_mode": profile.copyright_mode,
         },
+        "knowledge_access_policy": access,
     }
     replay_input_digest = (
         "sha256:"
@@ -1204,6 +1232,7 @@ def build_authority_context_bundle(
             for item in selection.selected
             if item.asset_type in {"knowledge_pack", "knowledge_card"}
         ],
+        "knowledge_access_policy": access,
         "narrative_boundaries": _narrative_boundaries(segments),
         "protected_context": [
             item for item in selected_inputs if item["context_class"] == "PROTECTED"
@@ -1336,6 +1365,7 @@ def build_authority_context_bundle(
             for item in selection.selected
             if item.asset_type == "knowledge_pack"
         ],
+        "knowledge_access_policy": access,
         "material_asset_versions": [
             item.asset_version_id
             for item in selection.selected
@@ -1577,6 +1607,39 @@ def _normalize_narrative_position(value: dict[str, Any] | None) -> dict[str, Any
     return normalized
 
 
+def _validate_context_knowledge_access(
+    candidates: tuple[ContextCandidate, ...], access: dict[str, Any]
+) -> None:
+    knowledge = tuple(
+        item
+        for item in candidates
+        if item.asset_type in {"knowledge_card", "knowledge_pack"}
+    )
+    if access["mode"] == "DENY_ALL" and knowledge:
+        raise ValueError("DENY_ALL Book context contains Knowledge assets")
+    if access["mode"] != "ALLOW_ONLY":
+        return
+    allowed = set(access["allowed_knowledge_card_asset_version_ids"])
+    for item in knowledge:
+        if item.asset_type == "knowledge_card":
+            card_ids = {item.asset_version_id}
+        else:
+            raw_ids = dict(item.provenance or {}).get(
+                "knowledge_card_asset_version_ids"
+            )
+            if not isinstance(raw_ids, list) or not raw_ids:
+                raise ValueError(
+                    "ALLOW_ONLY KnowledgePack lacks exact KnowledgeCard lineage"
+                )
+            card_ids = {str(identity) for identity in raw_ids if str(identity)}
+            if len(card_ids) != len(raw_ids):
+                raise ValueError(
+                    "ALLOW_ONLY KnowledgePack has invalid KnowledgeCard lineage"
+                )
+        if not card_ids.issubset(allowed):
+            raise ValueError("Context Knowledge asset is outside the Book allowlist")
+
+
 def _inclusion_reason(candidate: ContextCandidate, profile: ContextProfile) -> str:
     if candidate.asset_type in profile.required_asset_types:
         return "REQUIRED_BY_CONTEXT_PROFILE"
@@ -1795,6 +1858,10 @@ def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
         "stage_context_view": bundle.get("stage_context_view"),
         "context_correctness": bundle.get("context_correctness"),
     }
+    if "knowledge_access_policy" in bundle:
+        digest_payload["knowledge_access_policy"] = bundle[
+            "knowledge_access_policy"
+        ]
     reconstructed_output = "sha256:" + hashlib.sha256(
         json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -1837,6 +1904,10 @@ def replay_context_bundle(bundle: dict[str, Any]) -> dict[str, Any]:
             "copyright_mode": str(profile_contract.get("copyright_mode") or ""),
         },
     }
+    if "knowledge_access_policy" in manifest:
+        replay_inputs["knowledge_access_policy"] = manifest[
+            "knowledge_access_policy"
+        ]
     reconstructed_input = "sha256:" + hashlib.sha256(
         json.dumps(replay_inputs, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()

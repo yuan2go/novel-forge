@@ -4,7 +4,10 @@ from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import uuid4
 
-from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.authority_security import (
+    Principal,
+    require_worker_scoped_auto_decision,
+)
 from novel_forge.modules.book_design_authority.definitions import (
     BOOK_DESIGN_DEFINITION_VERSION,
     BOOK_DESIGN_HANDLER_KEY,
@@ -159,6 +162,11 @@ class BookDesignAuthorityApplication:
         actor_id = command.actor_id
         if principal is not None:
             principal.require("book_design.authority.execute", command.project_id)
+            if principal.principal_id != command.actor_id:
+                raise KernelError(
+                    "ACTOR_IDENTITY_INVALID",
+                    "BookDesign actor differs from authenticated Principal",
+                )
             actor_id = principal.principal_id
         self._register_definitions()
         migration_lineage = (
@@ -192,6 +200,7 @@ class BookDesignAuthorityApplication:
             ),
         }
         input_assets: list[dict[str, str]] = []
+        target_content_hash = ""
         if command.target_asset_version_id:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
@@ -209,12 +218,30 @@ class BookDesignAuthorityApplication:
                         "BOOK_DESIGN_CANDIDATE_NOT_FOUND",
                         "target AssetVersion is outside project scope",
                     )
+                target_content_hash = str(row[0])
                 input_assets.append(
                     {
                         "asset_version_id": command.target_asset_version_id,
-                        "content_hash": row[0],
+                        "content_hash": target_content_hash,
                     }
                 )
+        if (
+            principal is not None
+            and command.definition_name in {"book_design.decide", "book_design.activate"}
+        ):
+            require_worker_scoped_auto_decision(
+                principal=principal,
+                evidence=command.payload.get("formation_auto_decision"),
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+                action={
+                    "book_design.decide": "book_design.candidate.decide",
+                    "book_design.activate": "book_design.candidate.activate",
+                }[command.definition_name],
+                candidate_asset_version_id=command.target_asset_version_id,
+                candidate_content_hash=target_content_hash,
+            )
         if migration_lineage is not None:
             input_assets.append(
                 {

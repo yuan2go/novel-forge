@@ -2,14 +2,21 @@ from __future__ import annotations
 
 import pytest
 
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import default_capability_registry
+from novel_forge.modules.source_import.execution import (
+    _order_compound_observations,
+)
 from novel_forge.modules.source_import.execution_contracts import (
     CLASSIFICATION_STAGE,
+    DECONSTRUCTION_STAGE,
     MKAOS_STAGE,
+    compound_deconstruction_output_schema,
     content_intelligence_fixture_response,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
 )
+from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 
 def _inputs(content: str) -> dict[str, object]:
@@ -32,12 +39,57 @@ def _inputs(content: str) -> dict[str, object]:
     }
 
 
+def _properties_without_explicit_type(
+    schema: object, *, path: tuple[str, ...] = ()
+) -> list[str]:
+    if isinstance(schema, list):
+        return [
+            missing
+            for index, item in enumerate(schema)
+            for missing in _properties_without_explicit_type(
+                item, path=(*path, str(index))
+            )
+        ]
+    if not isinstance(schema, dict):
+        return []
+    missing = []
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        missing.extend(
+            ".".join((*path, "properties", str(name)))
+            for name, value in properties.items()
+            if not isinstance(value, dict) or "type" not in value
+        )
+    for name, value in schema.items():
+        missing.extend(
+            _properties_without_explicit_type(value, path=(*path, str(name)))
+        )
+    return missing
+
+
+def test_codex_source_output_schemas_type_every_declared_property() -> None:
+    schemas = (
+        content_intelligence_output_schema(CLASSIFICATION_STAGE),
+        content_intelligence_output_schema(DECONSTRUCTION_STAGE),
+        content_intelligence_output_schema(MKAOS_STAGE),
+        compound_deconstruction_output_schema(),
+    )
+    assert [
+        missing
+        for schema in schemas
+        for missing in _properties_without_explicit_type(schema)
+    ] == []
+
+
 def test_source_content_classification_is_registered_and_bounded() -> None:
     definition = default_capability_registry().resolve("source.content.classify")
     assert definition.domain.value == "source"
     schema = content_intelligence_output_schema(CLASSIFICATION_STAGE)
     assert schema["additionalProperties"] is False
     assert schema["properties"]["alternatives"]["maxItems"] == 5
+    assert "including content_type" in schema["properties"]["alternatives"][
+        "description"
+    ]
 
 
 def test_fixture_classifier_uses_semantics_and_routes_heterogeneous_documents() -> None:
@@ -89,3 +141,98 @@ def test_mkaos_extraction_requires_structured_originality_safe_intelligence() ->
     }
     with pytest.raises(ValueError, match="originality_boundary"):
         validate_content_intelligence_output(MKAOS_STAGE, schema, unsafe)
+
+
+def test_compound_deconstruction_keeps_typed_dimensions_in_one_bounded_output() -> None:
+    analyzers = [
+        AnalyzerContract(
+            analyzer_id=f"novel-forge.test.{dimension}",
+            analyzer_version="1.0",
+            dimension=dimension,
+            schema_version="source-deconstruction-observation.v1",
+            prompt_id="source.test.compound",
+            prompt_version="1.0",
+            skill_id="published-fiction-craft-analysis",
+            skill_version="1.0",
+            capability_id="deconstruction.observe",
+            capability_version="1.0",
+            provider_policy_version="1.0",
+            aggregation_policy_version="3.0",
+            recommended_scales=("BOOK",),
+        ).to_dict()
+        for dimension in ("structure", "conflict", "pacing")
+    ]
+    inputs = {
+        "analyzers": analyzers,
+        "evidence_span_ids": ["source-evidence-span:one"],
+        "sampling_manifest": {"whole_work_analyzed": False},
+    }
+    output = content_intelligence_fixture_response(DECONSTRUCTION_STAGE, inputs)
+    schema = compound_deconstruction_output_schema()
+
+    validated = validate_content_intelligence_output(
+        DECONSTRUCTION_STAGE, schema, output
+    )
+
+    assert [item["dimension"] for item in validated["observations"]] == [
+        "structure",
+        "conflict",
+        "pacing",
+    ]
+    assert validated["coverage_acknowledgement"] == {
+        "scope_claim": "BOUNDED_STRATIFIED_SAMPLE",
+        "uncovered_material_acknowledged": True,
+    }
+
+
+def test_compound_deconstruction_canonicalizes_provider_dimension_order() -> None:
+    observations = [
+        {"dimension": "structure"},
+        {"dimension": "pacing"},
+        {"dimension": "conflict"},
+    ]
+
+    ordered = _order_compound_observations(
+        observations,
+        requested_dimensions=("structure", "conflict", "pacing"),
+    )
+
+    assert [item["dimension"] for item in ordered] == [
+        "structure",
+        "conflict",
+        "pacing",
+    ]
+    with pytest.raises(KernelError, match="SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH"):
+        _order_compound_observations(
+            observations,
+            requested_dimensions=("structure", "conflict", "chapter_hook"),
+        )
+
+
+def test_compound_not_applicable_result_cannot_smuggle_findings() -> None:
+    schema = compound_deconstruction_output_schema()
+    output = {
+        "observations": [
+            {
+                "dimension": "character_choice_cost",
+                "status": "NOT_APPLICABLE",
+                "findings": [
+                    {
+                        "finding_code": "INVENTED_ARC",
+                        "statement": "This should not be accepted.",
+                        "evidence_span_ids": ["source-evidence-span:one"],
+                    }
+                ],
+                "confidence": 0.5,
+                "knowledge_status": "NOT_ABSTRACTED",
+                "applicability_note": "The source contains no character arc.",
+                "validation_errors": [],
+            }
+        ],
+        "coverage_acknowledgement": {
+            "scope_claim": "BOUNDED_STRATIFIED_SAMPLE",
+            "uncovered_material_acknowledged": True,
+        },
+    }
+    with pytest.raises(ValueError, match="NOT_APPLICABLE"):
+        validate_content_intelligence_output(DECONSTRUCTION_STAGE, schema, output)

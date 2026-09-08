@@ -298,14 +298,44 @@ if __name__ == "__main__":
 
 
 def test_world_smoke_requires_explicit_budgets_and_a_controlled_project():
-    from scripts.run_world_production_smoke import validate_configuration, CAPS
+    from scripts.run_world_production_smoke import (
+        ACCOUNT_ENTITLEMENT_IDENTITY,
+        ACCOUNT_ENTITLEMENT_LIMITS,
+        CAPS,
+        validate_configuration,
+    )
     import pytest
-    with pytest.raises(ValueError, match='authorized budget'):
+
+    with pytest.raises(ValueError, match="authorized budget"):
         validate_configuration({})
-    values = {**dict.fromkeys(CAPS, '1.00'), 'NOVEL_FORGE_ENVIRONMENT': 'validation', 'NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID': 'reviewed-operator', 'NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE': 'isolated-project'}
+    values = {
+        **dict.fromkeys(CAPS, "1.00"),
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "reviewed-operator",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "isolated-project",
+    }
     validate_configuration(values)
     for key in CAPS:
-        with pytest.raises(ValueError, match='authorized budget'):
-            validate_configuration({**values, key: 'NaN'})
-    with pytest.raises(ValueError, match='isolated project'):
-        validate_configuration({**values, 'NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE': '*'})
+        with pytest.raises(ValueError, match="authorized budget"):
+            validate_configuration({**values, key: "NaN"})
+    with pytest.raises(ValueError, match="isolated project"):
+        validate_configuration({**values, "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "*"})
+    account_values = {
+        "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+        **dict.fromkeys(ACCOUNT_ENTITLEMENT_IDENTITY, "frozen-value"),
+        **dict.fromkeys(ACCOUNT_ENTITLEMENT_LIMITS, "1"),
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "reviewed-operator",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "isolated-project",
+    }
+    validate_configuration(account_values)
+    with pytest.raises(ValueError, match="monetary Provider caps"):
+        validate_configuration(
+            {**account_values, "NOVEL_FORGE_DAILY_PROVIDER_CAP": "1.00"}
+        )
+    for key in ACCOUNT_ENTITLEMENT_IDENTITY:
+        with pytest.raises(ValueError, match="identity is incomplete"):
+            validate_configuration({**account_values, key: ""})
+    for key in ACCOUNT_ENTITLEMENT_LIMITS:
+        with pytest.raises(ValueError, match="account-entitlement limit"):
+            validate_configuration({**account_values, key: "0"})

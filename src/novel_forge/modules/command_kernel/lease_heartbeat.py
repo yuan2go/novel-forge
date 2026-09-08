@@ -34,6 +34,8 @@ class LeaseHeartbeatGuard:
         )
 
     def __enter__(self) -> "LeaseHeartbeatGuard":
+        if self._probe is not None:
+            self._probe()
         self._thread.start()
         return self
 

@@ -1411,11 +1411,20 @@ def _execution_binding(
             else {}
         ),
     }
-    binding = (
-        content.get("source_deconstruction_binding")
-        if isinstance(content, dict)
-        else None
-    )
+    binding = None
+    if isinstance(content, dict):
+        binding = content.get("source_deconstruction_binding")
+        compound_bindings = content.get("source_deconstruction_bindings")
+        if binding is None and isinstance(compound_bindings, list):
+            binding = next(
+                (
+                    item
+                    for item in compound_bindings
+                    if isinstance(item, dict)
+                    and all(item.get(key) == value for key, value in expected.items())
+                ),
+                None,
+            )
     if (
         binding is None
         and evidence_class == "FIXTURE"

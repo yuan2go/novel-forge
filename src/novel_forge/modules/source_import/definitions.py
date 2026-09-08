@@ -3,11 +3,15 @@ from __future__ import annotations
 from typing import Any
 
 
-SOURCE_IMPORT_DEFINITION_VERSION = "1.1.0"
+SOURCE_IMPORT_DEFINITION_VERSION = "1.3.3"
+SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS = 900
+SOURCE_IMPORT_PROFILING_QUEUE_TIMEOUT_SECONDS = 14_400
 SOURCE_IMPORT_DISCOVERY_OPERATION = "source.import.repository.discover"
 SOURCE_IMPORT_DISCOVERY_HANDLER = "novel_forge.source_import.repository_discover"
 SOURCE_IMPORT_FILE_OPERATION = "source.import.file.process"
 SOURCE_IMPORT_FILE_HANDLER = "novel_forge.source_import.file_process"
+SOURCE_IMPORT_WORK_OPERATION = "source.import.work.process"
+SOURCE_IMPORT_WORK_HANDLER = "novel_forge.source_import.work_process"
 SOURCE_IMPORT_PROFILING_OPERATION = "source.import.document.profile"
 SOURCE_IMPORT_PROFILING_HANDLER = "novel_forge.source_import.document_profile"
 SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION = "source.import.analysis.plan"
@@ -25,6 +29,7 @@ SOURCE_IMPORT_OPERATIONS = frozenset(
     {
         SOURCE_IMPORT_DISCOVERY_OPERATION,
         SOURCE_IMPORT_FILE_OPERATION,
+        SOURCE_IMPORT_WORK_OPERATION,
         SOURCE_IMPORT_PROFILING_OPERATION,
         SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
         SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
@@ -63,7 +68,9 @@ def source_import_definitions(
         "approval_policy": {"required": False, "policy_key": "source-import-v1"},
         "idempotency_scope": "project:source-import",
         "retry_policy": {"max_attempts": 3},
-        "timeout_policy": {"operation_timeout_seconds": 900},
+        "timeout_policy": {
+            "operation_timeout_seconds": SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS
+        },
         "cancellation_policy": {"mode": "cancel_active_attempt"},
         "compensation_policy": {
             "supported": False,
@@ -96,6 +103,12 @@ def source_import_definitions(
             SOURCE_IMPORT_FILE_OPERATION,
             SOURCE_IMPORT_FILE_HANDLER,
             "source-file:{project_id}",
+            ["object_store.put"],
+        ),
+        (
+            SOURCE_IMPORT_WORK_OPERATION,
+            SOURCE_IMPORT_WORK_HANDLER,
+            "source-work:{project_id}",
             ["object_store.put"],
         ),
         (
@@ -143,9 +156,24 @@ def source_import_definitions(
             **common,
             "name": name,
             "handler_key": handler,
-            "handler_contract_version": "source-import-handler-v1",
+            "handler_contract_version": (
+                "source-import-deconstruction-handler-v2"
+                if name == SOURCE_IMPORT_DECONSTRUCTION_OPERATION
+                else "source-import-profile-handler-v2"
+                if name == SOURCE_IMPORT_PROFILING_OPERATION
+                else "source-import-analysis-plan-handler-v2"
+                if name == SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION
+                else "source-import-handler-v1"
+            ),
             "concurrency_key_template": concurrency,
             "external_capabilities": capabilities,
+            "timeout_policy": {
+                "operation_timeout_seconds": (
+                    SOURCE_IMPORT_PROFILING_QUEUE_TIMEOUT_SECONDS
+                    if name == SOURCE_IMPORT_PROFILING_OPERATION
+                    else SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS
+                )
+            },
         }
         for name, handler, concurrency, capabilities in rows
     )
@@ -156,7 +184,10 @@ __all__ = [
     "SOURCE_IMPORT_DEFINITION_VERSION",
     "SOURCE_IMPORT_DISCOVERY_OPERATION",
     "SOURCE_IMPORT_FILE_OPERATION",
+    "SOURCE_IMPORT_WORK_OPERATION",
     "SOURCE_IMPORT_PROFILING_OPERATION",
+    "SOURCE_IMPORT_PROFILING_QUEUE_TIMEOUT_SECONDS",
+    "SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS",
     "SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION",
     "SOURCE_IMPORT_MKAOS_OPERATION",
     "SOURCE_IMPORT_OPERATIONS",

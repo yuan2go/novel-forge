@@ -245,7 +245,10 @@ class BookProductionCompositionTests(unittest.TestCase):
         projection_repair = SimpleNamespace()
 
         book_design = SimpleNamespace()
-        execution = SimpleNamespace()
+        execution = SimpleNamespace(
+            cost_accounting_basis="PRICED",
+            account_authorization_ref="",
+        )
         with (
             patch("novel_forge.api.authority_dependencies.build_book_design_authority_application", return_value=book_design) as build_book_design,
             patch(

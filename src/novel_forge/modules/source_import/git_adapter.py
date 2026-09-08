@@ -183,9 +183,15 @@ class GitRepositoryExternalEffectAdapter:
                 ("git", "--git-dir", str(mirror), "ls-tree", "-r", "-l", "-z", resolved),
                 binary=True,
             )
+        tree_files = self._parse_tree(raw_tree, policy)
+        scoped_files = tuple(
+            item
+            for item in tree_files
+            if item.block_reason not in {"not_included", "excluded_path"}
+        )
         files = self._inspect_text_candidates(
             repository_identity,
-            self._parse_tree(raw_tree, policy),
+            scoped_files,
             policy,
         )
         if len(files) > policy.max_files:
@@ -222,7 +228,11 @@ class GitRepositoryExternalEffectAdapter:
                 }
                 for item in files
             ],
-            "license_findings": self._license_findings(repository_identity, files),
+            "tree_entry_count": len(tree_files),
+            "excluded_tree_entry_count": len(tree_files) - len(scoped_files),
+            "license_findings": self._license_findings(
+                repository_identity, tree_files
+            ),
             "network_access_used": repository_url.startswith("https://"),
             "fixture_protocol_only": repository_url.startswith("file://"),
             "real_model_call": False,

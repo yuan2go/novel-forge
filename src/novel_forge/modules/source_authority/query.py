@@ -4,6 +4,7 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
 
 
 class SourceAuthorityQuery:
@@ -11,6 +12,37 @@ class SourceAuthorityQuery:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
+
+    def corpus_import(self, *, project_id: str, import_job_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return SourceAuthorityRepository(uow.cursor).corpus_import_status(project_id, import_job_id)
+
+    def corpus_operation(self, *, project_id: str, operation_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return SourceAuthorityRepository(uow.cursor).corpus_operation_status(project_id, operation_id)
+
+    def corpus_records(self, *, kind: str, project_id: str, parent_id: str = "", after: str = "", limit: int = 100) -> list[dict[str, Any]]:
+        if kind not in {"source", "rights", "snapshot", "book_identity", "edition", "admission", "membership"}:
+            raise ValueError("unsupported Corpus record kind")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return SourceAuthorityRepository(uow.cursor).corpus_page(kind, project_id, parent_id=parent_id, after=after, limit=limit)
+
+    def corpus_lineage(self, *, project_id: str, edition_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceAuthorityRepository(uow.cursor)
+            edition = repository.corpus_record("edition", project_id, edition_id)
+            snapshot = repository.corpus_record("snapshot", project_id, edition["snapshot_id"])
+            return {
+                "edition": edition, "snapshot": snapshot,
+                "book_source_identity": repository.corpus_record("book_identity", project_id, edition["book_source_id"]),
+                "source": repository.corpus_record("source", project_id, edition["source_id"]),
+                "rights": repository.corpus_record("rights", project_id, snapshot["rights_id"]),
+                "current_rights_id": repository.corpus_latest("rights", project_id, edition["source_id"]),
+                "retired": repository.corpus_existing("retirement", project_id, edition["source_id"]),
+                "memberships": repository.corpus_page("membership", project_id, parent_id=edition_id),
+                "admissions": repository.corpus_page("admission", project_id, parent_id=edition_id),
+                "admissions_page_limit": 100,
+            }
 
     def list_documents(
         self,
@@ -647,6 +679,7 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
               AND card.status='ACTIVE'
               AND candidate_version.content->'execution_evidence'->'binding'->>'validation_status'='VERIFIED'
               AND COALESCE((version.content->'source_policy'->>'fixture_protocol_only')::boolean, TRUE)=FALSE
+              AND COALESCE((version.content->'source_policy'->>'production_context_eligible')::boolean, TRUE)=TRUE
         """,
         "reuse_plan_items": """
             SELECT COUNT(*) FROM authority_source_reprocessing_plan_item
@@ -676,6 +709,7 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
                   'source.deconstruction.reprocessing.plan',
                   'source.import.repository.discover',
                   'source.import.file.process',
+                  'source.import.work.process',
                   'source.import.deconstruction.execute',
                   'source.import.mkaos.extract',
                   'source.import.reprocessing.apply'

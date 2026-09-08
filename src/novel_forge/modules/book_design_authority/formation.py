@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import hashlib
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -20,15 +19,17 @@ from .formation_domain import (
     STORY_FORMATION_POLICY_VERSION,
     StoryFormationInput,
     FormationLayerInput,
+    deterministic_story_formation_run_id,
 )
 
 
-STORY_FORMATION_DEFINITION_VERSION = "1.1.0"
+STORY_FORMATION_DEFINITION_VERSION = "1.2.0"
 STORY_FORMATION_HANDLER = "novel_forge.book_design.story_formation"
 STORY_FORMATION_OPERATIONS = frozenset(
     {
         "story.formation.admit",
         "story.formation.advance",
+        "story.formation.wait_for_approval",
         "story.formation.approve_book_design",
         "story.formation.resume",
         "story.formation.abort",
@@ -103,14 +104,19 @@ class StoryFormationApplication:
             )
         ):
             raise ValueError("Story Formation command is incomplete")
-        identity = "\x00".join(
-            (
-                command.project_id,
-                command.book_id,
-                command.stable_idempotency_key,
-            )
-        ).encode("utf-8")
-        formation_run_id = "story-formation:" + hashlib.sha256(identity).hexdigest()
+        formation_run_id = deterministic_story_formation_run_id(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            stable_idempotency_key=command.stable_idempotency_key,
+        )
+        command.frozen_input.require_admission_scope(
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            formation_run_id=formation_run_id,
+            admitted_by_principal_id=principal.principal_id,
+            admitted_by_principal_type=principal.principal_type,
+        )
         self._register_definitions()
         executed = execute_transaction_command(
             self.database_url,
@@ -184,12 +190,26 @@ class StoryFormationApplication:
             and int(run["version"]) == expected_version
         ):
             return run
+        if run["lifecycle"] == "WAITING_APPROVAL" and (
+            str(run["current_stage"]) == expected_stage
+            and int(run["version"]) == expected_version + 1
+        ):
+            return run
         if not expected_stage.strip() or expected_version < 0:
             raise KernelError(
                 "STORY_FORMATION_JOB_INVALID",
                 "Formation RuntimeJob has no frozen stage/version",
             )
         frozen = self._frozen_input(formation_run_id)
+        if frozen.creative_brief_asset_version_id:
+            self._require_generation_permissions(
+                principal=principal,
+                project_id=str(run["project_id"]),
+                stage=expected_stage,
+                approval_mode=str(
+                    dict(frozen.generation_policy or {}).get("approval_mode") or ""
+                ),
+            )
         generated_layer = None
         generated_design = None
         if frozen.creative_brief_asset_version_id:
@@ -217,6 +237,53 @@ class StoryFormationApplication:
                 ({"asset_version_id": generated_layer.asset_version_id, "content_hash": generated_layer.content_hash},
                  {"asset_version_id": generated_layer.qualification_evidence_asset_version_id, "content_hash": generated_layer.qualification_hash})
                 if generated_layer else (generated_design,) if generated_design else ()
+            ),
+        )
+        return {
+            **self.require(formation_run_id),
+            "operation_id": executed["operation_id"],
+            "replayed": bool(executed["replayed"]),
+        }
+
+    def wait_for_approval(
+        self,
+        formation_run_id: str,
+        *,
+        expected_stage: str,
+        expected_version: int,
+        authority: str,
+        candidate_asset_version_id: str,
+        candidate_content_hash: str,
+        candidate_asset_version_ids: tuple[str, ...],
+        runtime_attempt_id: str,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        run = self.require(formation_run_id)
+        principal.require("book.authority.execute", str(run["project_id"]))
+        frozen = self._frozen_input(formation_run_id)
+        executed = self._control(
+            run=run,
+            principal=principal,
+            definition_name="story.formation.wait_for_approval",
+            idempotency_key=(
+                f"{formation_run_id}:wait-approval:{expected_stage}:"
+                f"{expected_version}:{candidate_asset_version_id}"
+            ),
+            payload={
+                "expected_stage": expected_stage,
+                "expected_version": expected_version,
+                "authority": authority,
+                "candidate_asset_version_id": candidate_asset_version_id,
+                "candidate_content_hash": candidate_content_hash,
+                "candidate_asset_version_ids": list(candidate_asset_version_ids),
+                "runtime_attempt_id": runtime_attempt_id,
+            },
+            frozen_input=frozen,
+            additional_input_assets=(
+                {
+                    "asset_version_id": candidate_asset_version_id,
+                    "content_hash": candidate_content_hash,
+                },
             ),
         )
         return {
@@ -338,9 +405,14 @@ class StoryFormationApplication:
         return self.require(formation_run_id)
 
     def find_by_key(self, *, project_id: str, book_id: str, idempotency_key: str) -> dict[str, Any] | None:
-        identity = "\x00".join((project_id, book_id, idempotency_key)).encode("utf-8")
         try:
-            return self.require("story-formation:" + hashlib.sha256(identity).hexdigest())
+            return self.require(
+                deterministic_story_formation_run_id(
+                    project_id=project_id,
+                    book_id=book_id,
+                    stable_idempotency_key=idempotency_key,
+                )
+            )
         except KernelError as error:
             if error.code != "STORY_FORMATION_NOT_FOUND":
                 raise
@@ -492,6 +564,22 @@ class StoryFormationApplication:
                 generated_layer=FormationLayerInput.from_mapping(payload["generated_layer"]) if payload.get("generated_layer") else None,
                 generated_book_design=payload.get("generated_book_design"),
             )
+        elif definition_name == "story.formation.wait_for_approval":
+            result = repository.wait_for_approval(
+                formation_run_id,
+                operation_id=operation_id,
+                expected_stage=str(payload["expected_stage"]),
+                expected_version=int(payload["expected_version"]),
+                authority=str(payload["authority"]),
+                candidate_asset_version_id=str(
+                    payload["candidate_asset_version_id"]
+                ),
+                candidate_content_hash=str(payload["candidate_content_hash"]),
+                candidate_asset_version_ids=tuple(
+                    str(item) for item in payload["candidate_asset_version_ids"]
+                ),
+                runtime_attempt_id=str(payload["runtime_attempt_id"]),
+            )
         elif definition_name == "story.formation.resume":
             result = repository.resume(
                 formation_run_id, int(payload["expected_version"])
@@ -537,6 +625,32 @@ class StoryFormationApplication:
             "current_stage": str(result["current_stage"]),
             "version": int(result["version"]),
         }
+
+    @staticmethod
+    def _require_generation_permissions(
+        *,
+        principal: Principal,
+        project_id: str,
+        stage: str,
+        approval_mode: str,
+    ) -> None:
+        permissions = {
+            "story_planning.authority.execute",
+            "story_design.authority.execute",
+        }
+        if approval_mode == "AUTO":
+            permissions.update(
+                {
+                    "story_planning.authority.approve",
+                    "story_planning.authority.activate",
+                }
+            )
+        elif stage != "BOOK_DESIGN":
+            permissions.add("story_planning.authority.activate")
+        if stage == "BOOK_DESIGN":
+            permissions.add("book_design.authority.execute")
+        for permission in sorted(permissions):
+            principal.require(permission, project_id)
 
     def _schedule(self, run: dict[str, Any]) -> dict[str, Any]:
         return self.runtime_jobs.schedule(

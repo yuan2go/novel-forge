@@ -335,6 +335,10 @@ class ProductSourceImportPolicyRequest(BaseModel):
     allow_git_lfs: bool = False
     normalization_version: str = "source-normalization.v1"
     chunking_version: str = "source-structural-chunking.v1"
+    parser_profile: str = "generic-text.v1"
+    source_work_key: str = ""
+    corpus_registry_id: str = ""
+    corpus_registry_hash: str = ""
 
 
 class ProductSourceIntelligencePolicyRequest(BaseModel):
@@ -366,6 +370,10 @@ class ProductSourceAnalysisOverrideRequest(BaseModel):
     )
     reason: str = Field(min_length=20, max_length=2_000)
     decision_ref: str = Field(min_length=1, max_length=500)
+    boundary_resolution: str = Field(
+        default="", pattern=r"^(|CONFIRM_SOURCE_WORK_AGGREGATE)$"
+    )
+    expected_document_count: int = Field(default=0, ge=0, le=10_000)
 
 
 class ProductSourceImportRequest(BaseModel):

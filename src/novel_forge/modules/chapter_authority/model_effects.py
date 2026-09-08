@@ -185,10 +185,10 @@ class ModelProviderResult:
 def _model_budget_settlement(
     result: ModelProviderResult,
     *,
-    reserved_amount: str,
+    reserved_amount: str | None,
     reserved_tokens: int,
     frozen_capability_profile: Mapping[str, Any],
-) -> tuple[str, int, dict[str, Any]]:
+) -> tuple[str | None, int, dict[str, Any]]:
     """INVARIANT: Use frozen receipt capabilities or retain the reservation ceiling.
 
     A successful real Provider response is not evidence that its transport
@@ -196,6 +196,28 @@ def _model_budget_settlement(
     frozen Adapter declared ``supports_cost_receipt=False`` makes the hard
     stop fail open.  Fixtures retain their explicit zero-cost semantics.
     """
+    cost = dict(result.cost_evidence or {})
+    accounting_basis = str(cost.get("accounting_basis") or "PRICED").upper()
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        return (
+            None,
+            result.total_tokens if result.total_tokens > 0 else reserved_tokens,
+            {
+                "token_settlement_basis": (
+                    "PROVIDER_USAGE_RECEIPT"
+                    if result.total_tokens > 0
+                    else "RESERVATION_CEILING"
+                ),
+                "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+                "accounting_basis": accounting_basis,
+                "cost_status": "UNKNOWN",
+            },
+        )
+    if reserved_amount is None:
+        raise KernelError(
+            "MODEL_EFFECT_COST_ACCOUNTING_CONFLICT",
+            "priced Provider result has no monetary reservation",
+        )
     if not result.real_model_call:
         return (
             result.cost_amount,
@@ -211,7 +233,6 @@ def _model_budget_settlement(
     actual_tokens = (
         usage_tokens if supports_usage and usage_tokens > 0 else reserved_tokens
     )
-    cost = dict(result.cost_evidence or {})
     cost_available = (
         supports_cost
         and str(cost.get("availability") or "").upper() == "AVAILABLE"
@@ -302,7 +323,7 @@ def _model_failed_provider_submission_state(
 def _model_failed_provider_budget_decision(
     *,
     dispatched: Mapping[str, Any],
-    reserved_amount: str,
+    reserved_amount: str | None,
     reserved_tokens: int,
     frozen_capability_profile: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -315,38 +336,56 @@ def _model_failed_provider_budget_decision(
             "submission_state": submission_state,
         }
     measurement = _failed_provider_measurement(dispatched)
-    measurement_authoritative = bool(
+    usage_authoritative = bool(
         measurement is not None
         and frozen_capability_profile.get("supports_usage_receipt") is True
+    )
+    cost_authoritative = bool(
+        measurement is not None
+        and reserved_amount is not None
         and frozen_capability_profile.get("supports_cost_receipt") is True
     )
-    if measurement_authoritative:
+    measurement_authoritative = usage_authoritative and (
+        cost_authoritative or reserved_amount is None
+    )
+    if usage_authoritative:
         assert measurement is not None
-        usage, cost = measurement
+        usage, _cost = measurement
         actual_tokens = int(usage.get("total_tokens") or 0) or int(
             usage.get("input_tokens") or 0
         ) + int(usage.get("output_tokens") or 0)
-        actual_amount = str(cost.get("amount") or "0")
     else:
         actual_tokens = reserved_tokens
+    if cost_authoritative:
+        assert measurement is not None
+        _usage, cost = measurement
+        actual_amount: str | None = str(cost.get("amount") or "0")
+    else:
         actual_amount = reserved_amount
-    return {
+    decision = {
         "disposition": "SETTLE",
         "submission_state": submission_state,
         "measurement_available": measurement_authoritative,
         "actual_amount": actual_amount,
         "actual_tokens": actual_tokens,
         "token_settlement_basis": (
-            "PROVIDER_USAGE_RECEIPT"
-            if measurement_authoritative
-            else "RESERVATION_CEILING"
+            "PROVIDER_USAGE_RECEIPT" if usage_authoritative else "RESERVATION_CEILING"
         ),
         "cost_settlement_basis": (
             "PROVIDER_COST_RECEIPT"
-            if measurement_authoritative
-            else "RESERVATION_CEILING"
+            if cost_authoritative
+            else (
+                "ACCOUNT_ENTITLEMENT_UNKNOWN"
+                if reserved_amount is None
+                else "RESERVATION_CEILING"
+            )
         ),
     }
+    if reserved_amount is None:
+        decision.update(
+            {"accounting_basis": "ACCOUNT_ENTITLEMENT", "cost_status": "UNKNOWN"}
+        )
+    return decision
 
 
 class ChapterModelPort(Protocol):
@@ -437,6 +476,33 @@ class ExternalEffectChapterModelPort:
             ) from exc
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.cost_accounting_basis = str(
+            getattr(adapter, "cost_accounting_basis", "PRICED") or "PRICED"
+        ).upper()
+        self.account_authorization_ref = str(
+            getattr(adapter, "account_authorization_ref", "") or ""
+        )
+        self.provider_call_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(adapter, "provider_call_caps", {}) or {}
+            ).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(adapter, "provider_token_caps", {}) or {}
+            ).items()
+        }
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT":
+            if not self.account_authorization_ref:
+                raise ValueError(
+                    "account-entitlement model execution requires authorization"
+                )
+            if self.budget_caps:
+                raise ValueError(
+                    "account-entitlement model execution cannot use monetary caps"
+                )
         self.agent_binding_recorder = agent_binding_recorder
         self.agent_binding_required = agent_binding_required
         self.fault_injector = fault_injector or (lambda _checkpoint: None)
@@ -451,7 +517,14 @@ class ExternalEffectChapterModelPort:
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
-    def _bounded_reservation_amount(self, requested: str | None) -> str:
+    def _bounded_reservation_amount(self, requested: str | None) -> str | None:
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT":
+            if requested is not None:
+                raise KernelError(
+                    "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                    "account entitlement cannot declare a monetary reservation",
+                )
+            return None
         if requested is None:
             return self.max_cost_per_call
         try:
@@ -519,8 +592,14 @@ class ExternalEffectChapterModelPort:
             self.database_url,
             operation_id=request.operation_id,
             project_id=request.project_id,
-            currency="USD",
+            currency=(
+                "UNKNOWN"
+                if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else "USD"
+            ),
             frozen_request_token_ceiling=bounded_reservation_tokens,
+            accounting_basis=self.cost_accounting_basis,
+            cost_authorization_ref=self.account_authorization_ref,
         )
         provider_output_token_ceiling = bounded_reservation_tokens
         budget_scope_id = ""
@@ -532,8 +611,9 @@ class ExternalEffectChapterModelPort:
             provider_output_token_ceiling = int(
                 reservation_contract["max_output_tokens"]
             )
-            bounded_reservation_amount = str(
-                reservation_contract["estimated_cost_amount"]
+            contract_amount = reservation_contract["estimated_cost_amount"]
+            bounded_reservation_amount = (
+                str(contract_amount) if contract_amount is not None else None
             )
             budget_scope_id = str(reservation_contract["budget_scope_id"])
             budget_scope_revision = int(reservation_contract["budget_scope_revision"])
@@ -851,7 +931,11 @@ class ExternalEffectChapterModelPort:
                 project_id=request.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
-                currency="USD",
+                currency=(
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
                 estimated_amount=bounded_reservation_amount,
                 estimated_tokens=bounded_reservation_tokens,
                 chapter=int(
@@ -861,8 +945,12 @@ class ExternalEffectChapterModelPort:
                 )
                 or None,
                 caps=self.budget_caps,
+                call_caps=self.provider_call_caps,
+                token_caps=self.provider_token_caps,
                 budget_scope_id=budget_scope_id,
                 expected_budget_scope_revision=budget_scope_revision,
+                accounting_basis=self.cost_accounting_basis,
+                cost_authorization_ref=self.account_authorization_ref,
             ),
         )
         execution_binding = None
@@ -1029,7 +1117,11 @@ class ExternalEffectChapterModelPort:
                     self.database_url,
                     reservation_id=str(reservation["reservation_id"]),
                     project_id=request.project_id,
-                    actual_amount=str(decision["actual_amount"]),
+                    actual_amount=(
+                        str(decision["actual_amount"])
+                        if decision["actual_amount"] is not None
+                        else None
+                    ),
                     actual_tokens=int(decision["actual_tokens"]),
                     evidence={
                         "provider_id": str(
@@ -1049,6 +1141,14 @@ class ExternalEffectChapterModelPort:
                             decision["token_settlement_basis"]
                         ),
                         "cost_settlement_basis": str(decision["cost_settlement_basis"]),
+                        **(
+                            {
+                                "accounting_basis": str(decision["accounting_basis"]),
+                                "cost_status": str(decision["cost_status"]),
+                            }
+                            if "accounting_basis" in decision
+                            else {}
+                        ),
                     },
                 )
             measurement = _failed_provider_measurement(dispatched)
@@ -1400,7 +1500,14 @@ class ExternalEffectChapterModelPort:
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
                     "target_lineage": self._target_lineage(request),
-                    "context_bundle_asset_version_id": next((item.asset_version_id for item in request.inputs if item.asset_type == "context_bundle"), ""),
+                    "context_bundle_asset_version_id": next(
+                        (
+                            item.asset_version_id
+                            for item in request.inputs
+                            if item.asset_type == "context_bundle"
+                        ),
+                        "",
+                    ),
                     "provider_evidence": result.to_evidence(),
                 },
                 qualification_policy="model-call-evidence-v1",
@@ -1519,6 +1626,10 @@ class ExternalEffectChapterModelPort:
                 raise
         provider_evidence = dispatched.get("provider_evidence")
         provider = provider_evidence if isinstance(provider_evidence, dict) else {}
+        accounting_basis = str(
+            cost.get("accounting_basis") or self.cost_accounting_basis
+        ).upper()
+        cost_unknown = accounting_basis == "ACCOUNT_ENTITLEMENT"
         self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
@@ -1546,9 +1657,16 @@ class ExternalEffectChapterModelPort:
                     "stage": stage,
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
-                    "availability": "AVAILABLE",
-                    "amount": str(cost.get("amount") or "0"),
-                    "currency": str(cost.get("currency") or "USD"),
+                    "availability": "UNAVAILABLE" if cost_unknown else "AVAILABLE",
+                    "measurement": "UNKNOWN" if cost_unknown else "MEASURED",
+                    "amount": None if cost_unknown else str(cost.get("amount") or "0"),
+                    "currency": (
+                        "UNKNOWN"
+                        if cost_unknown
+                        else str(cost.get("currency") or "USD")
+                    ),
+                    "accounting_basis": accounting_basis,
+                    "cost_status": "UNKNOWN" if cost_unknown else "KNOWN",
                     "provider_id": str(provider.get("provider_id") or ""),
                     "model_id": str(provider.get("model_id") or ""),
                     "total_tokens": int(usage.get("total_tokens") or 0),
@@ -1560,7 +1678,11 @@ class ExternalEffectChapterModelPort:
                     ),
                     "calculation_basis": dict(cost.get("calculation_basis") or {}),
                     "estimated": bool(cost.get("estimated", False)),
-                    "provider_billed": bool(cost.get("provider_billed", False)),
+                    "provider_billed": (
+                        "UNKNOWN"
+                        if cost_unknown
+                        else bool(cost.get("provider_billed", False))
+                    ),
                     "execution_outcome": str(dispatched.get("outcome") or "").upper(),
                     "accepted_candidate": False,
                 },
@@ -1597,6 +1719,11 @@ class ExternalEffectChapterModelPort:
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+        cost_evidence = dict(result.cost_evidence or {})
+        accounting_basis = str(
+            cost_evidence.get("accounting_basis") or self.cost_accounting_basis
+        ).upper()
+        cost_unknown = accounting_basis == "ACCOUNT_ENTITLEMENT"
         self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
@@ -1623,14 +1750,17 @@ class ExternalEffectChapterModelPort:
                     "stage": stage,
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
-                    "availability": "AVAILABLE",
-                    "amount": result.cost_amount,
-                    "currency": result.currency,
+                    "availability": "UNAVAILABLE" if cost_unknown else "AVAILABLE",
+                    "measurement": "UNKNOWN" if cost_unknown else "MEASURED",
+                    "amount": None if cost_unknown else result.cost_amount,
+                    "currency": "UNKNOWN" if cost_unknown else result.currency,
+                    "accounting_basis": accounting_basis,
+                    "cost_status": "UNKNOWN" if cost_unknown else "KNOWN",
                     "provider_id": result.provider_id,
                     "model_id": result.model_id,
                     "total_tokens": result.total_tokens,
                     "usage": dict(result.usage_evidence or {}),
-                    "cost": dict(result.cost_evidence or {}),
+                    "cost": cost_evidence,
                     "pricing_ref": str(
                         (result.cost_evidence or {}).get("pricing_ref") or ""
                     ),
@@ -1643,8 +1773,10 @@ class ExternalEffectChapterModelPort:
                     "estimated": bool(
                         (result.cost_evidence or {}).get("estimated", False)
                     ),
-                    "provider_billed": bool(
-                        (result.cost_evidence or {}).get("provider_billed", False)
+                    "provider_billed": (
+                        "UNKNOWN"
+                        if cost_unknown
+                        else bool(cost_evidence.get("provider_billed", False))
                     ),
                 },
                 qualification_policy="model-cost-evidence-v1",
@@ -1966,16 +2098,31 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 raise KernelError(
                     "MODEL_RESPONSE_INVALID", "review issue identity is incomplete"
                 )
-            normalized.append({**item, "code": code, "severity": severity, "message": message})
+            normalized.append(
+                {**item, "code": code, "severity": severity, "message": message}
+            )
         decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
-        return {"decision": decision, "score": score, "issues": normalized,
-                **({"diagnostic_contract_version": "actionable-diagnostics.v1", "resolution_checks": raw["resolution_checks"]} if "resolution_checks" in raw else {})}
+        return {
+            "decision": decision,
+            "score": score,
+            "issues": normalized,
+            **(
+                {
+                    "diagnostic_contract_version": "actionable-diagnostics.v1",
+                    "resolution_checks": raw["resolution_checks"],
+                }
+                if "resolution_checks" in raw
+                else {}
+            ),
+        }
     if stage in {"memo", "canon_support"}:
         return dict(raw)
     if stage == "canon_extraction":
         from .provider_output_contracts import (
-            canon_provider_array_fields, validate_chapter_provider_output_semantics,
+            canon_provider_array_fields,
+            validate_chapter_provider_output_semantics,
         )
+
         raw = validate_chapter_provider_output_semantics(stage, raw)
         fields = canon_provider_array_fields()
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
@@ -1989,12 +2136,22 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                     f"Canon semantic extraction field {field} must be an array of objects",
                 )
             normalized_extraction[field] = [dict(item) for item in values]
-        if not any(normalized_extraction.values()) and raw.get("extraction_status") != "NO_CHANGE":
+        if (
+            not any(normalized_extraction.values())
+            and raw.get("extraction_status") != "NO_CHANGE"
+        ):
             raise KernelError(
                 "MODEL_RESPONSE_INVALID",
                 "Canon semantic extraction cannot be empty on the Provider path",
             )
-        return {**normalized_extraction, **{key: raw[key] for key in ("extraction_status", "no_change_reason") if key in raw}}
+        return {
+            **normalized_extraction,
+            **{
+                key: raw[key]
+                for key in ("extraction_status", "no_change_reason")
+                if key in raw
+            },
+        }
     if stage.startswith("quality_"):
         dimensions = raw.get("dimensions")
         if not isinstance(dimensions, list) or not dimensions:
@@ -2121,7 +2278,11 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         raise KernelError(
             "MODEL_RESPONSE_INVALID", "revision response has no revised text"
         )
-    return {"text": text, "resolved_issue_codes": resolved, "scene_artifacts": raw.get("scene_artifacts", [])}
+    return {
+        "text": text,
+        "resolved_issue_codes": resolved,
+        "scene_artifacts": raw.get("scene_artifacts", []),
+    }
 
 
 def normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:

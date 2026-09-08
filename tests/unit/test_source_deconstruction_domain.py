@@ -52,6 +52,22 @@ class SourceDeconstructionDomainTests(unittest.TestCase):
         )
         self.assertEqual(bound["validation_status"], "VERIFIED")
 
+        compound_bound = _execution_binding(
+            {
+                "source_deconstruction_bindings": [
+                    {**expected, "analyzer_contract_hash": "sha256:" + "d" * 64},
+                    expected,
+                ]
+            },
+            evidence_class="PROVIDER_QUALIFIED",
+            analyzer_contract_hash=expected["analyzer_contract_hash"],
+            scope_hash=expected["scope_hash"],
+            observation_hash=expected["observation_hash"],
+            evidence_span_ids=("source-evidence-span:1",),
+            input_observation_asset_version_ids=("observation:1:v1",),
+        )
+        self.assertEqual(compound_bound["validation_status"], "VERIFIED")
+
     def test_deterministic_execution_proves_zero_provider_usage(self) -> None:
         proof = _execution_proof(
             {

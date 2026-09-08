@@ -1,0 +1,684 @@
+{
+  "analysis_override_manifest": {
+    "manifest_hash": "sha256:14aaa0bff40a4ca85e6c00c67c65cb189efa876b7df2b4f7ed85af8e438ea631",
+    "mode": "EXACT_SCOPE_EXPERIMENTAL_POLICY",
+    "override_count": 1,
+    "overrides": [
+      {
+        "boundary_resolution": "CONFIRM_SOURCE_WORK_AGGREGATE",
+        "content_type": "CLASSIC_LITERATURE",
+        "contract_hash": "sha256:ecc06a402f90f611f7d7c4610939d9460ce9bbf50f71c0d25fdca3e8935c8245",
+        "decision_ref": "experimental-policy:classical-corpus-source-work-boundary.v1:yushimingyan:not-human",
+        "expected_document_count": 40,
+        "logical_document_scope_hash": "sha256:dbef4084aff8b0d9e36dab47cc9fcfcee7de218bdeedb3b9ca5935fcc8543276",
+        "work_key": "chinese-novel.yushimingyan"
+      }
+    ],
+    "policy_version": "classical-corpus-content-type-override.v1",
+    "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN",
+    "schema_version": "classical-corpus-analysis-overrides.v1"
+  },
+  "application_build_id": "classical-corpus-862f1c52",
+  "commit_sha": "862f1c52e76b9970fdecc30aa06db5cbd757d904",
+  "failed_work_count": 0,
+  "failures": [],
+  "materialized_work_count": 20,
+  "project_id": "project:classical-corpus-validation-20260908",
+  "project_operation": {
+    "asset_version_id": "8414f102-e8c6-4ed5-a15e-cf5fc2985854",
+    "content_hash": "sha256:930fb6e713d737f51111e64ecef3e9b8d7a9068959b81cdbc0724a9a7e5420b1",
+    "operation_id": "c44058b2-15a5-4838-b8b0-b6499829accf",
+    "project_id": "project:classical-corpus-validation-20260908",
+    "replayed": true,
+    "status": "SUCCEEDED",
+    "version": 1,
+    "workspace_id": "workspace:classical-corpus-validation-20260908"
+  },
+  "proof_scope": {
+    "does_not_establish": [
+      "model-classification",
+      "model-deconstruction",
+      "knowledge-approval",
+      "creative-consumption"
+    ],
+    "proves": [
+      "production-source-import-discovery",
+      "native-source-work-materialization",
+      "postgresql-source-work-and-unit-authority",
+      "object-store-raw-and-normalized-boundary"
+    ]
+  },
+  "provider_model_calls_performed_by_run": 0,
+  "provider_model_effect_count_after": 85,
+  "provider_model_effect_count_before": 85,
+  "registry_hash": "sha256:ba60f7154beeefc047fe723f4832f94a7350f762988fdc494e656346888b79cb",
+  "registry_id": "classical-corpus-20260908",
+  "requested_work_count": 20,
+  "run_hash": "sha256:529c6a8ac6efc36f55cdc21d153d1d4e3bb05e749ab853058dddf8fa0affd900",
+  "run_label": "native-import-repair-862f1c52",
+  "run_mode": "MATERIALIZE_ONLY",
+  "schema_version": "classical-corpus-native-import-run.v1",
+  "works": [
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 120,
+      "character_count": 593588,
+      "chunk_count": 225,
+      "discovery_operation_id": "5eb66829-a594-46b5-bf8a-cdf2802eb6be",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:5eb66829-a594-46b5-bf8a-cdf2802eb6be",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:a54efb4e84aa57331af53eddd5f014e005b8d6c3f08578f91e115532eab1d6bb",
+      "ordinal": 1,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "5157fe7b-c287-4b28-9b4f-78f9e7ad3cf2",
+      "title": "三国演义",
+      "unit_count": 120,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.sanguoyanyi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "11c1346e-145a-48b7-b839-00dff686a014",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 121,
+      "character_count": 861473,
+      "chunk_count": 273,
+      "discovery_operation_id": "c0d0c412-2803-4506-8908-65d24f37742a",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:c0d0c412-2803-4506-8908-65d24f37742a",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:540d25eb9233a134f6a3e1ba051ead043e2e73deab7e8e378ae7e4e1b92c2b44",
+      "ordinal": 2,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "d975efb1-47c6-4e59-a98c-f197388f5693",
+      "title": "水浒传",
+      "unit_count": 121,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.shuihuzhuan",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "0f8764a6-5ebe-4df1-b28f-7aa87a7f676d",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 101,
+      "character_count": 717266,
+      "chunk_count": 210,
+      "discovery_operation_id": "c4ec69a2-1ce5-4243-835b-82888e6342e4",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:c4ec69a2-1ce5-4243-835b-82888e6342e4",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:508e7915d0ba83643f45c563186fe97ad1b66fa38fd1a9026910aa396dbd9276",
+      "ordinal": 3,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "9a376e05-51b6-461b-b374-07cb43c660e9",
+      "title": "西游记",
+      "unit_count": 101,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.xiyouji",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "6b049b06-2d57-40e4-86ad-2fc41e6344a0",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 120,
+      "character_count": 818166,
+      "chunk_count": 262,
+      "discovery_operation_id": "f3467575-acb4-46ff-a56c-a279a315b0fe",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:f3467575-acb4-46ff-a56c-a279a315b0fe",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:b6d70ee0a45f9e06148c29140ed75ec1619f1d94f92f1ab861f9c837e33fafb2",
+      "ordinal": 4,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "8a39095d-561d-4940-861e-926964a5e0c0",
+      "title": "红楼梦",
+      "unit_count": 120,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.hongloumeng",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "cf5b159d-aaea-477e-b186-93f81a91ee51",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 100,
+      "character_count": 586417,
+      "chunk_count": 201,
+      "discovery_operation_id": "940e2026-e8ac-45c9-8f11-b25d426923ee",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:940e2026-e8ac-45c9-8f11-b25d426923ee",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:1089fccd6d5b5f9d37030c88954cdd7148c2439772ea31c87dcd6110947090ff",
+      "ordinal": 5,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "1c7ec23b-5a22-4411-9624-784a3b475cd5",
+      "title": "封神演义",
+      "unit_count": 100,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.fengshenyanyi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "61c332ae-2c03-4d7d-a21f-3eea3642b9ec",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 499,
+      "character_count": 482573,
+      "chunk_count": 503,
+      "discovery_operation_id": "10578284-d37c-42f0-8b49-5db7fc45d084",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:10578284-d37c-42f0-8b49-5db7fc45d084",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:8cf4e5b8f05452210046a8a1fe8740711201f43d5be108e7ea69384061cf647a",
+      "ordinal": 6,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "b3ba3ff1-7bfb-42bf-b719-1ef322c37b8f",
+      "title": "聊斋志异",
+      "unit_count": 499,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.liaozhaizhiyi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "256eda27-81a0-45e5-a8d1-477c040ca3b4",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 57,
+      "character_count": 327707,
+      "chunk_count": 112,
+      "discovery_operation_id": "ddd7a0b7-46a5-4109-b38a-a59ffba95620",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:ddd7a0b7-46a5-4109-b38a-a59ffba95620",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:69cdc3c9d36a1b84497cd7b6181cd316c9aa4e0e239610c5cb91dc3730871bd7",
+      "ordinal": 7,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "d836477a-36fb-457c-9265-23f977ef00e2",
+      "title": "儒林外史",
+      "unit_count": 57,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.rulinwaishi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "131ac5f5-a789-4b0e-896d-ad1e702e6f8f",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 120,
+      "character_count": 507748,
+      "chunk_count": 199,
+      "discovery_operation_id": "a3b91739-b214-45c3-b26f-50113edf1560",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:a3b91739-b214-45c3-b26f-50113edf1560",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:181aa1fd310e394de889779792a335338b087ac63d833b32d6e58517cb14defa",
+      "ordinal": 8,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "a5de93f7-b800-4c67-b867-a9464dedeb11",
+      "title": "三侠五义",
+      "unit_count": 120,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.sanxiawuyi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "765019a5-c59f-49c9-853f-f7bedbd2f41d",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "sha256:ecc06a402f90f611f7d7c4610939d9460ce9bbf50f71c0d25fdca3e8935c8245",
+      "body_unit_count": 40,
+      "character_count": 358137,
+      "chunk_count": 112,
+      "discovery_operation_id": "22212976-dbff-41e5-b13e-67e6d9e0c0e9",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:22212976-dbff-41e5-b13e-67e6d9e0c0e9",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:969c9f4744b0962d05defc62f8455e2247354937cc46e94e386d926e52b16a23",
+      "ordinal": 9,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "8026a7e8-3dc6-4cac-8242-2558d251c90c",
+      "title": "喻世明言",
+      "unit_count": 40,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.yushimingyan",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "89bc7d8f-9c94-40ea-945d-37f3b13f53c3",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 40,
+      "character_count": 396490,
+      "chunk_count": 119,
+      "discovery_operation_id": "9580f9bd-ec36-4122-be09-3f42334cf369",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:9580f9bd-ec36-4122-be09-3f42334cf369",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:4c0d5d00e4ada8b0fc2724863e67e999b859cee2d01b475562ba3707be434457",
+      "ordinal": 10,
+      "parser_profile": "chinese-novel-html.v1",
+      "repository_commit_sha": "aecdc1a1b8153011f3446ebc5a0d89c3a24fc122",
+      "source_work_asset_version_id": "27a450c6-8a5b-4c97-981e-b909c0a252d5",
+      "title": "初刻拍案惊奇",
+      "unit_count": 40,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-novel.chukepaianjingqi",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "e53414bc-5e52-4e12-9abd-4b1b551a8531",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 305,
+      "character_count": 38564,
+      "chunk_count": 305,
+      "discovery_operation_id": "9d8664d6-ce9a-4589-88ff-de044053f1e0",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:9d8664d6-ce9a-4589-88ff-de044053f1e0",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:7159396df9fd0cd38eaf127b2f10271b900aa6338934d531f3a9bbd3553f3e7e",
+      "ordinal": 11,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "c544760a-c4a5-463e-aba2-12f957aab536",
+      "title": "诗经",
+      "unit_count": 305,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.shijing",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "7caf6c22-7bac-43bc-bbed-6da731ded211",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 65,
+      "character_count": 33821,
+      "chunk_count": 65,
+      "discovery_operation_id": "7e862583-079b-4a13-9255-5f96d06105e7",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:7e862583-079b-4a13-9255-5f96d06105e7",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:f74df2df3c6c931fb386e01c22d2b5c85a0401bcd737122086aa29bcf9c903d6",
+      "ordinal": 12,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "5d33c684-74ee-4d68-93e9-180beabbdb78",
+      "title": "楚辞",
+      "unit_count": 65,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.chuci",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "31cd1340-e003-48bf-8b97-3e5a55a52f5d",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 26,
+      "character_count": 3697,
+      "chunk_count": 26,
+      "discovery_operation_id": "09fa91c8-139d-46cf-8351-c42e2afa9207",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:09fa91c8-139d-46cf-8351-c42e2afa9207",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:acb8ca6d4b89bbaeab00522c72985013d403d747856d86365d2e63538667ed4b",
+      "ordinal": 13,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "7d584b06-05a2-40df-9e27-26f5f97ef454",
+      "title": "曹操诗集",
+      "unit_count": 26,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.caocao",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "c9a53e2e-b4b9-49f8-9908-038297a09b0e",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 258,
+      "character_count": 15283,
+      "chunk_count": 258,
+      "discovery_operation_id": "9a999b08-5f6f-477d-8fee-0772cbd3f1cc",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:9a999b08-5f6f-477d-8fee-0772cbd3f1cc",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:863edb891bf151b708bd5f5fa001c462f2b668e8c367cb221063f63bff4a2d4a",
+      "ordinal": 14,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "35d1e444-8c85-4315-b3ec-8e1c89600b1f",
+      "title": "纳兰性德诗集",
+      "unit_count": 258,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.nalanxingde",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "e4b45d40-52b8-4313-84a0-4c13b8541a89",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 498,
+      "character_count": 28190,
+      "chunk_count": 498,
+      "discovery_operation_id": "3f1e50c8-094d-41da-9c7f-7a82870a1990",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:3f1e50c8-094d-41da-9c7f-7a82870a1990",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:361d4198cd4cff6af1428e98fd31fa5fd6c6a7a2c34cdd2c9c422ae5bca3d5f4",
+      "ordinal": 15,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "c9651619-6f42-48aa-9634-e780a607368c",
+      "title": "花间集",
+      "unit_count": 498,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.huajianji",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "87652d0c-c144-4229-9220-c51d90e62081",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 45,
+      "character_count": 2618,
+      "chunk_count": 45,
+      "discovery_operation_id": "b8ca12bc-83be-4d57-ae73-9323360a3744",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:b8ca12bc-83be-4d57-ae73-9323360a3744",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:30c94887e05cd6c17e63577c20b6d5d64e4368bef9b01a21bdea3d2ca8d29d60",
+      "ordinal": 16,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "a84384a0-1128-4029-9c39-4c81f74da49b",
+      "title": "南唐二主词",
+      "unit_count": 45,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.nantang",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "927e6630-4fe9-44f4-a147-7658fbdafe09",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 219,
+      "character_count": 11187,
+      "chunk_count": 219,
+      "discovery_operation_id": "5ff96329-dec4-4b5e-8e63-b44f6bcaf341",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:5ff96329-dec4-4b5e-8e63-b44f6bcaf341",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:9cbc2dc527ed567f0fee6068b8f23183d8aa7d12c0cc473081aaef0d73db2cd8",
+      "ordinal": 17,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "7660947e-8071-4040-bc79-f3b4c71cd6ac",
+      "title": "幽梦影",
+      "unit_count": 219,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.youmengying",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "6a882930-6064-4096-a78d-3f26ca54696a",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 512,
+      "character_count": 22503,
+      "chunk_count": 512,
+      "discovery_operation_id": "28180de8-3783-4efa-811a-1efce2c71e75",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:28180de8-3783-4efa-811a-1efce2c71e75",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:efaf0acc9dda172dd405541145a983c3792a97c76ec36f2fb04ec0331c60257e",
+      "ordinal": 18,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "c4a8c04c-e6ab-4165-bbfb-441afbb6b071",
+      "title": "论语",
+      "unit_count": 512,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.lunyu",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "eb640202-ba45-4f1f-9511-2cd1af93bffb",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 30,
+      "character_count": 8497,
+      "chunk_count": 30,
+      "discovery_operation_id": "ea1b0be4-3e86-4b40-bfa5-fdd738318708",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:ea1b0be4-3e86-4b40-bfa5-fdd738318708",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:aec3bf7bdfe63f0cd766d6524e07735476143886dcfae5e9b103c97b614cf987",
+      "ordinal": 19,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "ba0cfbbc-74e3-4ff0-a8c4-681ef072b94e",
+      "title": "声律启蒙",
+      "unit_count": 30,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.shenglvqimeng",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "2999896e-23e1-4cd4-abf4-ae93c5550120",
+      "work_recovery_mode": "fresh_attempt"
+    },
+    {
+      "analysis_override_contract_hash": "",
+      "body_unit_count": 320,
+      "character_count": 25307,
+      "chunk_count": 320,
+      "discovery_operation_id": "e6d4435d-8dc1-476b-b489-0191aa094cf8",
+      "discovery_recovery_mode": "fresh_attempt",
+      "effective_status": "PROCESSING",
+      "import_job_id": "source-import:e6d4435d-8dc1-476b-b489-0191aa094cf8",
+      "job_status": "PROCESSING",
+      "manifest_hash": "sha256:bd37833041a485cf19cb5d528ce96f83c31add6913c29e9991fe158f289d2c44",
+      "ordinal": 20,
+      "parser_profile": "chinese-poetry-json.v1",
+      "repository_commit_sha": "b8594f81a89752241442f2ce267d6f66f96704ee",
+      "source_work_asset_version_id": "20ec475f-3c1c-4e05-a440-8ceb855b2ce7",
+      "title": "唐诗三百首",
+      "unit_count": 320,
+      "work_counts": {
+        "PLANNED": 1,
+        "REUSED": 1,
+        "SUCCEEDED": 1
+      },
+      "work_key": "chinese-poetry.tangshisanbaishou",
+      "work_kind_counts": {
+        "DISCOVERY": 1,
+        "PROFILING": 1,
+        "WORK": 1
+      },
+      "work_operation_id": "e59d5424-3f45-49e5-8c97-8f779704c56e",
+      "work_recovery_mode": "fresh_attempt"
+    }
+  ],
+  "workspace_id": "workspace:classical-corpus-validation-20260908"
+}

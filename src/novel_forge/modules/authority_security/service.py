@@ -106,6 +106,8 @@ class TrustedPrincipalResolver:
                     "book.authority.approve_replan",
                     "book.authority.query",
                     "story_planning.authority.execute",
+                    "story_planning.authority.approve",
+                    "story_planning.authority.activate",
                     "story_design.authority.execute",
                     "narrative_design.evaluate",
                     "book_design.authority.execute",
@@ -201,4 +203,26 @@ class TrustedPrincipalResolver:
             ),
             project_scope=self.configured_project_scope,
             authentication_source="worker_configuration",
+        )
+
+    def resolve_book_formation_worker_principal(self, worker_id: str) -> Principal:
+        worker_id = worker_id.strip()
+        if not worker_id:
+            raise RuntimeError("configured Book Formation worker identity is required")
+        return Principal(
+            principal_id=worker_id,
+            principal_type=PrincipalType.WORKER,
+            permissions=frozenset(
+                {
+                    "book.authority.execute",
+                    "book_design.authority.execute",
+                    "narrative_design.evaluate",
+                    "story_design.authority.execute",
+                    "story_planning.authority.execute",
+                    "story_planning.authority.approve",
+                    "story_planning.authority.activate",
+                }
+            ),
+            project_scope=self.configured_project_scope,
+            authentication_source="book_formation_worker_configuration",
         )

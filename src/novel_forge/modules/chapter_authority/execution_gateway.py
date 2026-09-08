@@ -194,7 +194,11 @@ def _provider_context_selection(
     if retrieval_projection:
         context = selected_inputs
     elif stage == "memo":
-        context = [item for item in selected_inputs if item["artifact_type"] == "chapter_execution_intent"]
+        context = [
+            item
+            for item in selected_inputs
+            if item["artifact_type"] == "chapter_execution_intent"
+        ]
     elif stage in {"retrieval", "retrieval_query_expansion"}:
         context = [
             item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
@@ -300,19 +304,30 @@ def _provider_effective_context_policy(
         )
     if selected_physical == ("chapter_execution_intent",):
         from .execution_artifacts import validate_chapter_execution_intent
+
         validate_chapter_execution_intent(content)
         snapshot = ContextPolicySnapshot(
-            identity=PolicyIdentity(policy_id=context_policy_ref, version="capability-pack-context-policy-v1",
-                                    content_hash=context_policy_hash, snapshot_ref=context_policy_ref),
-            allowed_physical_types=("chapter_execution_intent",), denied_physical_types=physical_denied,
-            limits=ContextBudgetLimits(total=int(context_policy_payload.get("max_tokens") or 0)),
+            identity=PolicyIdentity(
+                policy_id=context_policy_ref,
+                version="capability-pack-context-policy-v1",
+                content_hash=context_policy_hash,
+                snapshot_ref=context_policy_ref,
+            ),
+            allowed_physical_types=("chapter_execution_intent",),
+            denied_physical_types=physical_denied,
+            limits=ContextBudgetLimits(
+                total=int(context_policy_payload.get("max_tokens") or 0)
+            ),
             maximum_raw_source_ratio=0.0,
         )
         compilation = compile_effective_context_policy((snapshot,))
-        return {"compiler_version": "effective-context-policy-compiler-v1", "policy_compilation": dict(compilation.receipt),
-                "effective_policy": compilation.effective_policy.to_dict(),
-                "selected_physical_types": list(selected_physical),
-                "intent_fingerprint": content["intent_fingerprint"]}
+        return {
+            "compiler_version": "effective-context-policy-compiler-v1",
+            "policy_compilation": dict(compilation.receipt),
+            "effective_policy": compilation.effective_policy.to_dict(),
+            "selected_physical_types": list(selected_physical),
+            "intent_fingerprint": content["intent_fingerprint"],
+        }
     bundle_version = str(content.get("context_contract_version") or "")
     if bundle_version == "authority-context-bundle-v7":
         replay = replay_context_bundle(dict(content))
@@ -1043,7 +1058,9 @@ class PostgresChapterExecutionContractBinder:
         request_payload: Mapping[str, Any],
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
-        causal_batch = bool((inputs.get("execution_expectations") or {}).get("world_preparation"))
+        causal_batch = bool(
+            (inputs.get("execution_expectations") or {}).get("world_preparation")
+        )
         return chapter_provider_output_schema(
             stage, causal_batch=causal_batch
         ), chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
@@ -1788,10 +1805,16 @@ class PostgresChapterExecutionContractBinder:
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
         from .definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
-        if (str(row[0]).startswith("chapter.") and str(row[1]).startswith("3.")
-            and str(row[1]) != CHAPTER_MODEL_EFFECT_DEFINITION_VERSION):
-            raise KernelError("CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
-                              "unfinished legacy Chapter execution requires current prepared input; accepted history and confirmed receipts remain unchanged")
+
+        if (
+            str(row[0]).startswith("chapter.")
+            and str(row[1]).startswith("3.")
+            and str(row[1]) != CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+        ):
+            raise KernelError(
+                "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
+                "unfinished legacy Chapter execution requires current prepared input; accepted history and confirmed receipts remain unchanged",
+            )
         return {
             "definition_name": str(row[0]),
             "definition_version": str(row[1]),
@@ -1824,7 +1847,9 @@ class PostgresChapterExecutionContractBinder:
                     workspace_id=workspace_id,
                     book_id=book_id,
                     workflow_definition_ref=self.workflow_definition_ref,
-                    workflow_node_id="canon_proposal" if stage == "canon_support" else stage,
+                    workflow_node_id="canon_proposal"
+                    if stage == "canon_support"
+                    else stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
                     release_channel=self.pack_release_channel,
@@ -2337,33 +2362,57 @@ def default_chapter_fixture_response(
         intent = inputs["execution_intent"]
         scenes = intent.get("scene_plans") or []
         mission = intent.get("chapter_mission") or {}
-        participants = sorted({str(value) for scene in scenes for value in scene.get("participants", [])})
+        participants = sorted(
+            {str(value) for scene in scenes for value in scene.get("participants", [])}
+        )
         return {
-            "execution_strategy": "Make the locked goal demand an observable costly choice: " + str(intent.get("chapter_objective")),
+            "execution_strategy": "Make the locked goal demand an observable costly choice: "
+            + str(intent.get("chapter_objective")),
             "tension_strategy": "Let resistance make the safe option progressively unavailable.",
             "composition_strategy": "Carry each scene consequence into the next scene's obstacle.",
             "creative_guidance": {
-                "chapter_goal": str(intent.get("chapter_objective") or "Advance the frozen mission"),
+                "chapter_goal": str(
+                    intent.get("chapter_objective") or "Advance the frozen mission"
+                ),
                 "pov": "Follow the focal participant's available perception; do not disclose hidden causes.",
                 "voice": "Concrete language shaped by the frozen character and narrator voice constraints.",
                 "emotional_turn": "Move from guarded certainty to the cost of committing in public.",
                 "reader_promise": "Show what the choice costs, while preserving unresolved questions.",
                 "ending_change": "The choice removes a safe option and changes the next scene's pressure.",
-                "character_choices": [{"character_id": who, "choice": "Act despite the loss of a safe exit",
-                                      "motivation": "Pursue the locked scene goal under pressure",
-                                      "cost": "Lose the option to retreat unnoticed"} for who in participants],
-                "constraints": ["No new Canon; no knowledge beyond the frozen Scene boundaries."],
+                "character_choices": [
+                    {
+                        "character_id": who,
+                        "choice": "Act despite the loss of a safe exit",
+                        "motivation": "Pursue the locked scene goal under pressure",
+                        "cost": "Lose the option to retreat unnoticed",
+                    }
+                    for who in participants
+                ],
+                "constraints": [
+                    "No new Canon; no knowledge beyond the frozen Scene boundaries."
+                ],
             },
-            "scene_directives": [{"scene_id": scene["scene_id"],
-                "directive": "Dramatize the goal through resistance: " + str(scene.get("goal") or "advance the mission"),
-                "conflict_progression": "An attempted solution creates a visible cost.",
-                "information_release": "Reveal only the information assigned to this Scene's audience.",
-                "emotional_change": "Confidence narrows into a committed choice.",
-                "transition": "Carry the consequence into the following Scene, without recap."} for scene in scenes],
+            "scene_directives": [
+                {
+                    "scene_id": scene["scene_id"],
+                    "directive": "Dramatize the goal through resistance: "
+                    + str(scene.get("goal") or "advance the mission"),
+                    "conflict_progression": "An attempted solution creates a visible cost.",
+                    "information_release": "Reveal only the information assigned to this Scene's audience.",
+                    "emotional_change": "Confidence narrows into a committed choice.",
+                    "transition": "Carry the consequence into the following Scene, without recap.",
+                }
+                for scene in scenes
+            ],
             "retrieval_queries": ["accepted consequences relevant to the locked goal"],
             "obligation_actions": [],
-            "arc_actions": [{"arc_plan_version_id": arc["arc_plan_version_id"], "action": "ADVANCE"} for arc in mission.get("arc_contributions", [])],
-            "stop_conditions": ["Stop on a frozen constraint conflict; do not invent a fact to resolve it."],
+            "arc_actions": [
+                {"arc_plan_version_id": arc["arc_plan_version_id"], "action": "ADVANCE"}
+                for arc in mission.get("arc_contributions", [])
+            ],
+            "stop_conditions": [
+                "Stop on a frozen constraint conflict; do not invent a fact to resolve it."
+            ],
         }
     if stage == "retrieval_query_expansion":
         coverage = dict(inputs.get("coverage") or {})
@@ -2470,22 +2519,44 @@ def default_chapter_fixture_response(
         text = f"{plan.get('premise') or 'The chapter objective advances.'} The choice is public, and the irreversible cost is witnessed."
         contract = inputs.get("realization_contract") or {}
         artifacts = [
-            {"slot_id": slot["slot_id"], "text": text if index == 0 else f"The scene carries its {slot['capability'].lower()} contribution forward.", "used_fact_ids": []}
+            {
+                "slot_id": slot["slot_id"],
+                "text": text
+                if index == 0
+                else f"The scene carries its {slot['capability'].lower()} contribution forward.",
+                "used_fact_ids": [],
+            }
             for index, slot in enumerate(contract.get("slots", []))
         ]
-        return {"text": "\n\n".join(item["text"] for item in artifacts) if artifacts else text, "scene_artifacts": artifacts}
-    if stage == "review":
-        text = str((inputs.get("draft") or {}).get("text") or "The choice has no visible cost.")
         return {
-            "score": 72, "resolution_checks": [],
-            "issues": [{"code": "COST_NOT_CONCRETE", "severity": "blocking",
-                "message": "Make the irreversible cost concrete in the scene.", "category": "CAUSALITY",
-                "judgment_kind": "SEMANTIC_CONFLICT",
-                "evidence": {"start": 0, "end": len(text), "quote": text},
-                "violated_constraint": "A decisive choice must have a visible cost.",
-                "revision_goal": "Show the protagonist giving up a concrete safe option.",
-                "preserve": ["The frozen choice and all unrelated Scene actions."],
-                "acceptance_criteria": ["The text identifies the lost option and the consequence."]}],
+            "text": "\n\n".join(item["text"] for item in artifacts)
+            if artifacts
+            else text,
+            "scene_artifacts": artifacts,
+        }
+    if stage == "review":
+        text = str(
+            (inputs.get("draft") or {}).get("text") or "The choice has no visible cost."
+        )
+        return {
+            "score": 72,
+            "resolution_checks": [],
+            "issues": [
+                {
+                    "code": "COST_NOT_CONCRETE",
+                    "severity": "blocking",
+                    "message": "Make the irreversible cost concrete in the scene.",
+                    "category": "CAUSALITY",
+                    "judgment_kind": "SEMANTIC_CONFLICT",
+                    "evidence": {"start": 0, "end": len(text), "quote": text},
+                    "violated_constraint": "A decisive choice must have a visible cost.",
+                    "revision_goal": "Show the protagonist giving up a concrete safe option.",
+                    "preserve": ["The frozen choice and all unrelated Scene actions."],
+                    "acceptance_criteria": [
+                        "The text identifies the lost option and the consequence."
+                    ],
+                }
+            ],
         }
     if stage == "revision":
         draft = inputs.get("draft") if isinstance(inputs.get("draft"), Mapping) else {}
@@ -2493,22 +2564,48 @@ def default_chapter_fixture_response(
         artifacts = json.loads(json.dumps(draft.get("scene_artifacts", [])))
         if artifacts:
             artifacts[-1]["text"] += " " + suffix
-        text = "\n\n".join(item["text"] for item in artifacts) if artifacts else f"{draft.get('text') or 'The choice is made.'} {suffix}"
-        return {"text": text, "scene_artifacts": artifacts, "resolved_issue_codes": ["COST_NOT_CONCRETE"]}
+        text = (
+            "\n\n".join(item["text"] for item in artifacts)
+            if artifacts
+            else f"{draft.get('text') or 'The choice is made.'} {suffix}"
+        )
+        return {
+            "text": text,
+            "scene_artifacts": artifacts,
+            "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+        }
     if stage == "rereview":
-        text = str((inputs.get("revision") or {}).get("text") or "The choice costs a safe route home.")
-        return {"score": 90, "issues": [], "resolution_checks": [
-            {"code": issue["code"], "status": "SATISFIED", "preservation": "PRESERVED",
-             "evidence": {"start": 0, "end": len(text), "quote": text},
-             "reason": "Scripted transport verifies the explicit cost sentence; not model quality evidence."}
-            for issue in (inputs.get("review") or {}).get("issues", [])]}
+        text = str(
+            (inputs.get("revision") or {}).get("text")
+            or "The choice costs a safe route home."
+        )
+        return {
+            "score": 90,
+            "issues": [],
+            "resolution_checks": [
+                {
+                    "code": issue["code"],
+                    "status": "SATISFIED",
+                    "preservation": "PRESERVED",
+                    "evidence": {"start": 0, "end": len(text), "quote": text},
+                    "reason": "Scripted transport verifies the explicit cost sentence; not model quality evidence.",
+                }
+                for issue in (inputs.get("review") or {}).get("issues", [])
+            ],
+        }
     if stage == "canon_support":
         return {
-            "coverage": "COMPLETE", "no_change_supported": not inputs.get("claims"),
-            "claims": [{"claim_id": item["claim"]["grounded_claim_id"],
-                        "assessment": "SUPPORTED", "observed_kind": item["claim"]["claim_kind"],
-                        "reason": "Scripted transport evidence only; no model entailment proof."}
-                       for item in inputs.get("claims", [])],
+            "coverage": "COMPLETE",
+            "no_change_supported": not inputs.get("claims"),
+            "claims": [
+                {
+                    "claim_id": item["claim"]["grounded_claim_id"],
+                    "assessment": "SUPPORTED",
+                    "observed_kind": item["claim"]["claim_kind"],
+                    "reason": "Scripted transport evidence only; no model entailment proof.",
+                }
+                for item in inputs.get("claims", [])
+            ],
         }
     if stage == "canon_extraction":
         revision = (
@@ -2581,7 +2678,6 @@ def default_chapter_fixture_response(
             "location_state_changes": [],
             "consequence_changes": [],
             "conflict_state_changes": [],
-
             "power_state_changes": [],
             "plot_thread_changes": [],
             "resource_state_changes": [],
@@ -2656,10 +2752,16 @@ def default_chapter_fixture_response(
                     if claim.get("observation_status") != "OBSERVED":
                         continue
                     claim.update({"evidence_start": 0, "evidence_end": evidence_end})
-                claim["evidence_quote"] = text[int(claim["evidence_start"]):int(claim["evidence_end"])]
-                claim["claim_kind"] = {"arc_evidence": "NARRATIVE_OBSERVATION", "realization_evidence": "NARRATIVE_OBSERVATION", "disclosure_events": "READER_DISCLOSURE",
-                                       "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
-                                       "character_belief_changes": "BELIEF"}.get(field, "OBJECTIVE_EVENT")
+                claim["evidence_quote"] = text[
+                    int(claim["evidence_start"]) : int(claim["evidence_end"])
+                ]
+                claim["claim_kind"] = {
+                    "arc_evidence": "NARRATIVE_OBSERVATION",
+                    "realization_evidence": "NARRATIVE_OBSERVATION",
+                    "disclosure_events": "READER_DISCLOSURE",
+                    "character_knowledge_changes": "KNOWLEDGE_ACQUISITION",
+                    "character_belief_changes": "BELIEF",
+                }.get(field, "OBJECTIVE_EVENT")
         return result
     if stage.startswith("quality_"):
         dimensions = inputs.get("dimensions")
@@ -3035,7 +3137,7 @@ class PostgresProductionExecutionPayloadResolver:
                 **dict(stored_inputs),
                 "classification_samples": resolved_samples,
             }
-        if kind == "deconstruction":
+        if kind in {"deconstruction", "deconstruction_compound"}:
             if self.source_object_reader is None:
                 raise KernelError(
                     "SOURCE_ANALYSIS_OBJECT_READER_REQUIRED",
@@ -3280,6 +3382,7 @@ def _stage_semantic_contract(
             "Authority decides them."
         )
     realization_instruction = (
+        (
             "Produce candidate prose within the frozen Scene realization contract. "
             "Each selected specialist slot must appear exactly once in contract order. "
             "Use only its accessible fact references; report used_fact_ids explicitly. "
@@ -3289,7 +3392,10 @@ def _stage_semantic_contract(
             "slots and amend only slots needed by the frozen review issues; Quality and Actual "
             "reconciliation will run again. If no Scene slots exist, return scene_artifacts=[]. "
             "Candidate generation never changes Canon or accepted Narrative Reality."
-    ) if stage in {"draft", "revision"} else ""
+        )
+        if stage in {"draft", "revision"}
+        else ""
+    )
     if stage == "narrative_semantic_evaluation":
         return (
             "Independently evaluate the immutable candidate against every frozen "
@@ -3413,7 +3519,8 @@ def _stage_semantic_contract(
             )
         )
         return _bind_language_contract(
-            realization_instruction + "Return text as final reader-facing revised chapter prose only. "
+            realization_instruction
+            + "Return text as final reader-facing revised chapter prose only. "
             "Resolve every supplied review issue in the prose, prioritizing blocking and "
             "major issues; list a code in resolved_issue_codes only after the edit is "
             "actually present. For a governed Quality revision task, make the smallest "
@@ -3640,7 +3747,8 @@ def _stage_semantic_contract(
             )
         return _bind_language_contract(contract, required_language)
     return _bind_language_contract(
-        realization_instruction + "Return only the stage result defined by the frozen output schema.",
+        realization_instruction
+        + "Return only the stage result defined by the frozen output schema.",
         required_language,
     )
 
@@ -3722,7 +3830,10 @@ def _materialize_production_codex_prompt(
         frozen_provider_view = context_manifest.get("provider_context_view")
         if isinstance(frozen_provider_view, Mapping):
             expected_view_hash = str(frozen_provider_view.get("content_hash") or "")
-            if not expected_view_hash or canonical_hash(context_view) != expected_view_hash:
+            if (
+                not expected_view_hash
+                or canonical_hash(context_view) != expected_view_hash
+            ):
                 raise KernelError(
                     "PROVIDER_CONTEXT_VIEW_IDENTITY_MISMATCH",
                     "materialized Provider Context differs from its frozen Manifest",
@@ -4054,6 +4165,22 @@ class _RecoveryAuthorizedGatewayAdapter:
     def capability_profile(self) -> ProviderCapabilityProfile:
         return self.adapter.capability_profile
 
+    @property
+    def cost_accounting_basis(self) -> str:
+        return self.adapter.cost_accounting_basis
+
+    @property
+    def account_authorization_ref(self) -> str:
+        return self.adapter.account_authorization_ref
+
+    @property
+    def provider_call_caps(self) -> dict[str, int]:
+        return dict(self.adapter.provider_call_caps)
+
+    @property
+    def provider_token_caps(self) -> dict[str, int]:
+        return dict(self.adapter.provider_token_caps)
+
     def execute(
         self,
         *,
@@ -4116,6 +4243,10 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         routes: Mapping[str, ChapterExecutionRoute],
         session_factory: Callable[[str], ChapterExecutionGatewaySession],
         provider_adapters: Mapping[str, Any] | None = None,
+        cost_accounting_basis: str = "PRICED",
+        account_authorization_ref: str = "",
+        provider_call_caps: Mapping[str, int] | None = None,
+        provider_token_caps: Mapping[str, int] | None = None,
     ) -> None:
         route_names = set(routes)
         if not _STAGES.issubset(route_names) or not route_names.issubset(
@@ -4129,6 +4260,27 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         )
         self.session_factory = session_factory
         self.provider_adapters = dict(provider_adapters or {})
+        self.cost_accounting_basis = cost_accounting_basis.strip().upper()
+        self.account_authorization_ref = account_authorization_ref.strip()
+        self.provider_call_caps = {
+            str(key): int(value) for key, value in (provider_call_caps or {}).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value) for key, value in (provider_token_caps or {}).items()
+        }
+        if self.cost_accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
+            raise ValueError("unsupported Production Gateway cost accounting basis")
+        if (
+            self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+            and not self.account_authorization_ref
+        ):
+            raise ValueError("account entitlement requires an authorization reference")
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+            not self.provider_call_caps or not self.provider_token_caps
+        ):
+            raise ValueError(
+                "account entitlement requires aggregate Provider call and token caps"
+            )
         self.execution_binders: dict[str, Any] = {}
         self._sessions: dict[str, ChapterExecutionGatewaySession] = {}
         self._lock = Lock()

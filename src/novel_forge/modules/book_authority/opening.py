@@ -250,7 +250,6 @@ class BookOpeningAdmission:
 
 @dataclass(frozen=True, slots=True)
 class BookOpeningBudgetReconciliationRequest:
-
     expected_opening_version: int
     expected_frozen_request_digest: str
     idempotency_key: str
@@ -465,7 +464,6 @@ class BookOpeningNodeExecutionResult:
 
 
 class PostgresBookOpeningApplication:
-
     def __init__(
         self,
         database_url: str,
@@ -494,6 +492,14 @@ class PostgresBookOpeningApplication:
         )
         self.provider_budget_policy = dict(budget_policy["policy_snapshot"])
         self.provider_budget_policy_hash = str(budget_policy["policy_hash"])
+        self.provider_budget_currency = (
+            "UNKNOWN"
+            if str(
+                self.provider_budget_policy.get("accounting_basis") or "PRICED"
+            ).upper()
+            == "ACCOUNT_ENTITLEMENT"
+            else "USD"
+        )
         self.provider_budget_window_seconds = provider_budget_window_seconds
         self.fault_injector = fault_injector
         self.runtime_jobs = RuntimeJobAuthority(database_url)
@@ -604,7 +610,7 @@ class PostgresBookOpeningApplication:
                         "policy_contract_version": (BOOK_OPENING_BUDGET_POLICY_VERSION),
                         "policy_snapshot": dict(self.provider_budget_policy),
                         "policy_hash": self.provider_budget_policy_hash,
-                        "currency": "USD",
+                        "currency": self.provider_budget_currency,
                         "budget_timezone": "UTC",
                         "window_seconds": self.provider_budget_window_seconds,
                         "opening_topology_budget": topology_budget.to_dict(),
@@ -681,7 +687,9 @@ class PostgresBookOpeningApplication:
             ),
         )
 
-    def find_by_key(self, *, project_id: str, book_id: str, idempotency_key: str) -> dict[str, Any] | None:
+    def find_by_key(
+        self, *, project_id: str, book_id: str, idempotency_key: str
+    ) -> dict[str, Any] | None:
         identity = "\x00".join((project_id, book_id, idempotency_key)).encode("utf-8")
         try:
             return self.require("book-opening:" + hashlib.sha256(identity).hexdigest())
@@ -2737,7 +2745,8 @@ class PostgresBookOpeningApplication:
                     int(budget_scope["revision"]) != int(binding[13])
                     or str(budget_scope["owner_kind"]) != "BOOK_OPENING"
                     or str(budget_scope["owner_id"]) != opening_run_id
-                    or str(budget_scope["currency"]).upper() != "USD"
+                    or str(budget_scope["currency"]).upper()
+                    != self.provider_budget_currency
                 ):
                     raise KernelError(
                         "BOOK_OPENING_BUDGET_SCOPE_DRIFT",

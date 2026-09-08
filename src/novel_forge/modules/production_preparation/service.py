@@ -4,7 +4,7 @@ import hashlib
 import json
 from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import Protocol
+from typing import Any, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import (
@@ -18,6 +18,11 @@ from novel_forge.modules.chapter_authority.chapter_plan_views import (
 from novel_forge.modules.chapter_authority.provider_views import (
     build_task_narrative_projection,
     project_narrative_state_facts,
+)
+from novel_forge.modules.mkaos_authority.domain import (
+    assert_abstract_content_safe,
+    resolve_book_knowledge_access_policy,
+    validate_book_knowledge_access_policy,
 )
 
 from .contracts import (
@@ -70,6 +75,7 @@ class ProductionPreparationService:
         self, request: ProductionPreparationRequest
     ) -> ProductionPreparationResult:
         self._validate(request)
+        knowledge_access = self._knowledge_access_policy(request)
         profile = STAGE_PROFILES[request.stage]
         requirements = requirements_for(
             request.stage,
@@ -82,10 +88,29 @@ class ProductionPreparationService:
         blocked: list[dict[str, str]] = []
 
         for requirement in requirements:
-            candidates = self._candidates(request, requirement.asset_type)
+            candidates = self._candidates(
+                request,
+                requirement.asset_type,
+                knowledge_access=knowledge_access,
+            )
             accepted: list[ResolvedProductionAsset] = []
             fit_issues: list[str] = []
             for candidate in candidates:
+                knowledge_issue = self._knowledge_access_issue(
+                    candidate, knowledge_access=knowledge_access
+                )
+                if knowledge_issue:
+                    rejections.append(
+                        ProductionInputRejection(
+                            asset_version_id=candidate.asset_version_id,
+                            asset_type=candidate.asset_type,
+                            code=knowledge_issue,
+                            reason=(
+                                "candidate is outside the frozen Book Knowledge access policy"
+                            ),
+                        )
+                    )
+                    continue
                 issue = self._asset_fit_issue(
                     asset_type=requirement.asset_type,
                     asset=candidate,
@@ -314,10 +339,39 @@ class ProductionPreparationService:
         )
 
     def _candidates(
-        self, request: ProductionPreparationRequest, asset_type: str
+        self,
+        request: ProductionPreparationRequest,
+        asset_type: str,
+        *,
+        knowledge_access: dict[str, Any],
     ) -> tuple[ResolvedProductionAsset, ...]:
         override = request.explicit_asset_version_overrides.get(asset_type)
-        if override:
+        if (
+            asset_type in {"knowledge_card", "knowledge_pack"}
+            and knowledge_access["mode"] == "DENY_ALL"
+        ):
+            assets: tuple[ResolvedProductionAsset, ...] = ()
+        elif (
+            asset_type == "knowledge_card"
+            and knowledge_access["mode"] == "ALLOW_ONLY"
+            and not override
+        ):
+            assets = tuple(
+                self.resolver.resolve_override(
+                    project_id=request.project_id,
+                    asset_version_id=asset_version_id,
+                )
+                for asset_version_id in knowledge_access[
+                    "allowed_knowledge_card_asset_version_ids"
+                ]
+            )
+        elif (
+            asset_type == "knowledge_pack"
+            and knowledge_access["mode"] == "ALLOW_ONLY"
+            and not override
+        ):
+            assets = ()
+        elif override:
             ids = [override] if isinstance(override, str) else list(override)
             assets = tuple(
                 (
@@ -370,6 +424,57 @@ class ProductionPreparationService:
                     "production override has the wrong asset type",
                 )
         return assets
+
+    @staticmethod
+    def _knowledge_access_policy(
+        request: ProductionPreparationRequest,
+    ) -> dict[str, Any]:
+        scoped_book_id = request.book_id or f"book:{request.project_id}"
+        if request.knowledge_access_policy:
+            return validate_book_knowledge_access_policy(
+                request.knowledge_access_policy,
+                project_id=request.project_id,
+                book_id=scoped_book_id,
+            )
+        return resolve_book_knowledge_access_policy(
+            production_profile={},
+            project_id=request.project_id,
+            book_id=scoped_book_id,
+        )
+
+    @staticmethod
+    def _knowledge_access_issue(
+        asset: ResolvedProductionAsset,
+        *,
+        knowledge_access: dict[str, Any],
+    ) -> str:
+        if asset.asset_type not in {"knowledge_card", "knowledge_pack"}:
+            return ""
+        mode = str(knowledge_access["mode"])
+        allowed = set(
+            knowledge_access["allowed_knowledge_card_asset_version_ids"]
+        )
+        if mode == "DENY_ALL":
+            return "BOOK_KNOWLEDGE_ACCESS_DENIED"
+        if mode == "PROJECT_DEFAULT":
+            return ""
+        if asset.asset_type == "knowledge_card":
+            return (
+                ""
+                if asset.asset_version_id in allowed
+                else "BOOK_KNOWLEDGE_CARD_OUTSIDE_ALLOWLIST"
+            )
+        items = asset.content.get("items")
+        if not isinstance(items, list) or not items:
+            return "BOOK_KNOWLEDGE_PACK_LINEAGE_INVALID"
+        card_ids = {
+            str(item.get("knowledge_card_asset_version_id") or "")
+            for item in items
+            if isinstance(item, dict)
+        }
+        if len(card_ids) != len(items) or not card_ids or not card_ids.issubset(allowed):
+            return "BOOK_KNOWLEDGE_PACK_OUTSIDE_ALLOWLIST"
+        return ""
 
     @staticmethod
     def _matches_requested_profile(
@@ -454,6 +559,48 @@ class ProductionPreparationService:
                 "Compact authoritative Canon truth through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."
             )
+        elif item.asset_type == "knowledge_card":
+            abstract_content = item.content.get("abstract_content")
+            if not isinstance(abstract_content, dict):
+                raise KernelError(
+                    "PREPARATION_KNOWLEDGE_CARD_INVALID",
+                    "KnowledgeCard lacks governed abstract content",
+                )
+            assert_abstract_content_safe(abstract_content)
+            projected = {
+                key: abstract_content.get(key)
+                for key in (
+                    "concept_name",
+                    "mechanism",
+                    "applicability",
+                    "failure_conditions",
+                    "constraints",
+                    "conflict_generators",
+                    "review_checks",
+                    "semantic_family",
+                    "selection_tags",
+                    "repetition_key",
+                )
+                if abstract_content.get(key) not in (None, "", [])
+            }
+            safe_summary = json.dumps(
+                projected,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            structured_facts = [
+                {
+                    "kind": "narrative_intelligence",
+                    "knowledge_card_asset_version_id": item.asset_version_id,
+                    "semantic_family": str(
+                        abstract_content.get("semantic_family") or ""
+                    ),
+                    "repetition_key": str(
+                        abstract_content.get("repetition_key") or ""
+                    ),
+                }
+            ]
         projection: dict[str, object] = {}
         if item.asset_type in {"character_cast", "character_card"}:
             projection = project_character_foundation_context(
@@ -469,6 +616,15 @@ class ProductionPreparationService:
         if projection:
             safe_summary = str(projection["safe_summary"])
             structured_facts = list(projection["structured_facts"])
+        knowledge_card_ids: list[str] = []
+        if item.asset_type == "knowledge_card":
+            knowledge_card_ids = [item.asset_version_id]
+        elif item.asset_type == "knowledge_pack":
+            knowledge_card_ids = [
+                str(entry.get("knowledge_card_asset_version_id") or "")
+                for entry in item.content.get("items") or ()
+                if isinstance(entry, dict)
+            ]
         return {
             "asset_version_id": item.asset_version_id,
             "content_hash": item.content_hash,
@@ -525,6 +681,16 @@ class ProductionPreparationService:
             ),
             "semantic_projection": bool(
                 projection.get("semantic_projection", True)
+            ),
+            **(
+                {
+                    "provenance": {
+                        "authority": "MKAOS",
+                        "knowledge_card_asset_version_ids": knowledge_card_ids,
+                    }
+                }
+                if item.asset_type in {"knowledge_card", "knowledge_pack"}
+                else {}
             ),
         }
 
@@ -651,6 +817,9 @@ class ProductionPreparationService:
             "copyright_mode": STAGE_PROFILES[request.stage].copyright_mode,
             "assets": source_rows,
         }
+        knowledge_access = ProductionPreparationService._knowledge_access_policy(
+            request
+        )
         digest_payload = {
             "project_id": request.project_id,
             "book_id": request.book_id,
@@ -667,6 +836,7 @@ class ProductionPreparationService:
             },
             "approval_requirements": [asdict(item) for item in unmet_risks],
             "risk_summary": [asdict(item) for item in risks],
+            "knowledge_access_policy": knowledge_access,
         }
         digest = (
             "sha256:"
@@ -723,6 +893,7 @@ class ProductionPreparationService:
             },
             approval_requirements=tuple(asdict(item) for item in unmet_risks),
             risk_summary=tuple(asdict(item) for item in risks),
+            knowledge_access_policy=knowledge_access,
             manifest_digest=digest,
             created_by_operation_id="pending:chapter-plan-operation",
         )

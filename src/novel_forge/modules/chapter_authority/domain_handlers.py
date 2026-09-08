@@ -5,6 +5,10 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.longform_narrative import normalize_frozen_arc_plan
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+    validate_book_knowledge_access_policy,
+)
 from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
@@ -116,8 +120,23 @@ def build_context_bundle(
     retrieval_result: dict[str, Any] | None = None,
     retrieval_result_asset_version_id: str = "",
     frozen_arc_plans: dict[str, dict[str, Any]] | None = None,
+    knowledge_access_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
+    scoped_book_id = book_id or f"book:{project_id}"
+    access = (
+        validate_book_knowledge_access_policy(
+            knowledge_access_policy,
+            project_id=project_id,
+            book_id=scoped_book_id,
+        )
+        if knowledge_access_policy
+        else resolve_book_knowledge_access_policy(
+            production_profile={},
+            project_id=project_id,
+            book_id=scoped_book_id,
+        )
+    )
     objective = str(
         plan.get("chapter_objective") or plan.get("objective") or ""
     ).strip()
@@ -370,6 +389,7 @@ def build_context_bundle(
             for item in plan.get("required_long_distance_fact_ids") or ()
             if str(item)
         ),
+        knowledge_access_policy=access,
     )
     task_narrative_projection = build_task_narrative_projection(plan)
     mission = dict((execution_intent or {}).get("chapter_mission") or {})

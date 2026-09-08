@@ -30,6 +30,9 @@ from novel_forge.modules.chapter_quality_authority.calibration_v2 import (
 )
 from novel_forge.modules.chapter_quality_authority.domain import QUALITY_DIMENSIONS
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+)
 from novel_forge.modules.content_intelligence import (
     build_world_consequence_candidate,
     verify_claim,
@@ -776,6 +779,11 @@ def _author_book_bootstrap_input(
             raise ValueError("production profile target_chapter_count must be positive")
         if not isinstance(content.get("language_contract"), dict):
             raise ValueError("production profile language_contract must be an object")
+        resolve_book_knowledge_access_policy(
+            production_profile=content,
+            project_id=request.project_id,
+            book_id=str(content["book_id"]),
+        )
     return {
         **content,
         "provider_generated": False,

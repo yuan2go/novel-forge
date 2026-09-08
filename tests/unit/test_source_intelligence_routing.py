@@ -11,6 +11,7 @@ from novel_forge.modules.source_import.analysis_profiles import (
     analysis_strategy_from_dict,
     plan_analysis_tasks,
     resolve_analysis_strategy,
+    resolve_corpus_analysis_strategy,
 )
 from novel_forge.modules.source_import.domain import SourceImportPolicy
 from novel_forge.modules.source_import.methodologies import SourceMethodologyRegistry
@@ -19,6 +20,7 @@ from novel_forge.modules.source_import.profiling import (
     LogicalDocumentScope,
     SourceAnalysisOverride,
     SourceContentType,
+    SOURCE_WORK_AGGREGATE_BOUNDARY,
     SourceIntelligencePolicy,
     build_classification_evidence,
     resolve_profile,
@@ -120,6 +122,43 @@ def test_classification_evidence_is_bounded_and_contains_no_source_text() -> Non
     assert "Distributed Systems" not in str(payload)
 
 
+def test_classification_signal_boundary_may_end_before_a_chinese_character() -> None:
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:project:utf8",
+        source_transform_id="source-transform:project:utf8",
+        source_chunk_asset_version_ids=(
+            "source-chunk:project:utf8:0:v1",
+            "source-chunk:project:utf8:1:v1",
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed UTF-8 boundary fixture",
+    )
+    contents = ("a", "中文正文")
+    segments = tuple(
+        {
+            "source_chunk_asset_version_id": chunk_id,
+            "content": content,
+            "content_hash": "sha256:"
+            + hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            "byte_size": len(content.encode("utf-8")),
+        }
+        for chunk_id, content in zip(
+            scope.source_chunk_asset_version_ids, contents, strict=True
+        )
+    )
+
+    evidence = build_classification_evidence(
+        scope=scope,
+        path_hints=("中文/作品.json",),
+        source_segments=segments,
+        policy=SourceIntelligencePolicy(max_signal_bytes=2),
+    )
+
+    assert evidence.signals["total_bytes"] == 13
+    assert len(evidence.samples) == 2
+
+
 def test_low_confidence_unknown_and_boundary_review_fail_closed() -> None:
     policy = SourceIntelligencePolicy(min_confidence=0.75, min_margin=0.2)
     low = resolve_profile(
@@ -187,6 +226,39 @@ def test_content_override_cannot_bypass_unresolved_document_boundary() -> None:
     assert resolution.resolved_content_type == SourceContentType.UNKNOWN
     assert resolution.resolution_mode == "GOVERNANCE_OVERRIDE"
     assert resolution.manual_review_required
+
+
+def test_exact_source_work_aggregate_boundary_decision_can_route() -> None:
+    output = _classification("CLASSIC_LITERATURE", 0.99, 0.01)
+    output["boundary_assessment"]["review_required"] = True  # type: ignore[index]
+    output["boundary_assessment"]["suspected_document_count"] = 40  # type: ignore[index]
+    override = SourceAnalysisOverride(
+        logical_document_scope_hash="sha256:" + "c" * 64,
+        content_type=SourceContentType.CLASSIC_LITERATURE,
+        reason="the governed SourceWork manifest confirms forty chapter units",
+        decision_ref="experimental-policy:source-work-boundary:40",
+        boundary_resolution=SOURCE_WORK_AGGREGATE_BOUNDARY,
+        expected_document_count=40,
+    )
+
+    resolution = resolve_profile(
+        classifier_output=output,
+        policy=SourceIntelligencePolicy(),
+        override=override,
+    )
+    mismatched = resolve_profile(
+        classifier_output=output,
+        policy=SourceIntelligencePolicy(),
+        override=replace(override, expected_document_count=39),
+    )
+
+    assert resolution.status == "ROUTABLE"
+    assert resolution.resolved_content_type == SourceContentType.CLASSIC_LITERATURE
+    assert resolution.reasons == (
+        "SOURCE_WORK_AGGREGATE_BOUNDARY_CONFIRMED_BY_GOVERNANCE",
+    )
+    assert mismatched.status == "NEEDS_REVIEW"
+    assert "LOGICAL_DOCUMENT_BOUNDARY_REVIEW_REQUIRED" in mismatched.reasons
 
 
 def test_heterogeneous_content_routes_to_exact_different_skill_methodologies() -> None:
@@ -310,6 +382,135 @@ def test_methodology_digest_changes_analyzer_and_task_identity() -> None:
         chunks=chunks,
     )
     assert first[0].stable_key != second[0].stable_key
+
+
+def test_classical_long_novel_uses_one_compound_stratified_task() -> None:
+    chunks = tuple(
+        {
+            "asset_version_id": f"source-chunk:classical:{index}:v1",
+            "chunk_index": index,
+            "byte_size": 100,
+            "content_hash": "sha256:" + f"{index:064x}",
+            "source_byte_start": index * 100,
+            "source_byte_end": (index + 1) * 100,
+        }
+        for index in range(12)
+    )
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:classical:novel",
+        source_transform_id="source-transform:classical:novel",
+        source_chunk_asset_version_ids=tuple(
+            str(item["asset_version_id"]) for item in chunks
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed classical novel",
+    )
+    units = tuple(
+        {
+            "ordinal": index + 1,
+            "kind": "CHAPTER",
+            "title": f"Chapter {index + 1}",
+            "normalized_byte_start": index * 100,
+            "normalized_byte_end": (index + 1) * 100,
+            "status": "AVAILABLE",
+        }
+        for index in range(12)
+    )
+    strategy = resolve_corpus_analysis_strategy(
+        SourceContentType.CLASSIC_LITERATURE,
+        collection_kind="LONG_NOVEL",
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-analysis-routing.v2",
+        sample_byte_limit=107_504,
+    )
+
+    tasks = plan_analysis_tasks(
+        strategy=strategy,
+        logical_document_scope=scope,
+        analysis_plan_asset_version_id="source-analysis-plan:classical:v1",
+        chunks=chunks,
+        source_units=units,
+        collection_kind="LONG_NOVEL",
+    )
+
+    assert len(tasks) == 1
+    assert len(tasks[0].compound_analyzers) == 7
+    assert {item.dimension for item in tasks[0].compound_analyzers} >= {
+        "structure",
+        "character_choice_cost",
+        "foreshadowing_payoff",
+    }
+    assert [
+        sample["role"] for sample in tasks[0].sampling_manifest["samples"]
+    ] == [
+        "OPENING_CONTINUOUS_WINDOW",
+        "MIDDLE_CONTINUOUS_WINDOW",
+        "ENDING_CONTINUOUS_WINDOW",
+        "COMPLETE_CONFLICT_UNIT",
+    ]
+    assert tasks[0].sampling_manifest["whole_work_analyzed"] is False
+    assert tasks[0].sampling_manifest["coverage_claim"] == (
+        "BOUNDED_STRATIFIED_SAMPLE"
+    )
+
+
+def test_short_story_sampling_keeps_complete_units_within_provider_budget() -> None:
+    sizes = (62_579, 50_653, 56_384)
+    starts = (0, sizes[0], sizes[0] + sizes[1])
+    chunks = tuple(
+        {
+            "asset_version_id": f"source-chunk:stories:{index}:v1",
+            "chunk_index": index,
+            "byte_size": size,
+            "content_hash": "sha256:" + f"{index:064x}",
+            "source_byte_start": starts[index],
+            "source_byte_end": starts[index] + size,
+        }
+        for index, size in enumerate(sizes)
+    )
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:classical:stories",
+        source_transform_id="source-transform:classical:stories",
+        source_chunk_asset_version_ids=tuple(
+            str(item["asset_version_id"]) for item in chunks
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed classical story collection",
+    )
+    units = tuple(
+        {
+            "ordinal": index + 1,
+            "kind": "STORY",
+            "title": f"Story {index + 1}",
+            "normalized_byte_start": starts[index],
+            "normalized_byte_end": starts[index] + size,
+            "status": "AVAILABLE",
+        }
+        for index, size in enumerate(sizes)
+    )
+    strategy = resolve_corpus_analysis_strategy(
+        SourceContentType.CLASSIC_LITERATURE,
+        collection_kind="SHORT_STORY_COLLECTION",
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-analysis-routing.v2",
+        sample_byte_limit=107_504,
+    )
+
+    task = plan_analysis_tasks(
+        strategy=strategy,
+        logical_document_scope=scope,
+        analysis_plan_asset_version_id="source-analysis-plan:stories:v1",
+        chunks=chunks,
+        source_units=units,
+        collection_kind="SHORT_STORY_COLLECTION",
+    )[0]
+
+    assert task.sampling_manifest["sampled_source_unit_ordinals"] == [2, 3]
+    assert task.sampling_manifest["sampled_byte_count"] == 107_037
+    assert task.sampling_manifest["sample_byte_limit"] == 107_504
+    assert all(item["complete_unit"] for item in task.sampling_manifest["samples"])
 
 
 def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() -> None:

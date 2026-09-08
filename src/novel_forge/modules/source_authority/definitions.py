@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from novel_forge.modules.source_authority.corpus_application import CORPUS_OPERATION, corpus_definition
+
 
 SOURCE_AUTHORITY_DEFINITION_VERSION = "1.0.2"
 SOURCE_AUTHORITY_HANDLER_KEY = "novel_forge.source_authority.document_register"
@@ -19,16 +21,17 @@ SOURCE_REPROCESSING_HANDLER_KEY = (
     "novel_forge.source_authority.reprocessing_plan_commit"
 )
 SOURCE_REPROCESSING_OPERATION = "source.deconstruction.reprocessing.plan"
-SOURCE_CONTENT_PROFILE_DEFINITION_VERSION = "1.0.0"
+SOURCE_CONTENT_PROFILE_DEFINITION_VERSION = "1.1.0"
 SOURCE_CONTENT_PROFILE_HANDLER_KEY = (
     "novel_forge.source_authority.content_profile_commit"
 )
 SOURCE_CONTENT_PROFILE_OPERATION = "source.content.profile.commit"
-SOURCE_ANALYSIS_PLAN_DEFINITION_VERSION = "1.0.0"
+SOURCE_ANALYSIS_PLAN_DEFINITION_VERSION = "1.1.0"
 SOURCE_ANALYSIS_PLAN_HANDLER_KEY = "novel_forge.source_authority.analysis_plan_commit"
 SOURCE_ANALYSIS_PLAN_OPERATION = "source.analysis.plan.commit"
 SOURCE_AUTHORITY_OPERATIONS = frozenset(
     {
+        CORPUS_OPERATION,
         SOURCE_AUTHORITY_OPERATION,
         SOURCE_TRANSFORM_OPERATION,
         SOURCE_OBSERVATION_OPERATION,
@@ -44,6 +47,7 @@ def source_authority_definitions(
 ) -> tuple[dict[str, Any], ...]:
     event = "authority.source.document.registered"
     return (
+        corpus_definition(application_build_id=application_build_id, commit_sha=commit_sha),
         {
             "name": SOURCE_AUTHORITY_OPERATION,
             "definition_version": SOURCE_AUTHORITY_DEFINITION_VERSION,
@@ -359,6 +363,7 @@ def source_authority_definitions(
             event="authority.source.content.profile.committed",
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            handler_contract_version="source-intelligence-authority-v2",
         ),
         _source_intelligence_definition(
             name=SOURCE_ANALYSIS_PLAN_OPERATION,
@@ -370,6 +375,7 @@ def source_authority_definitions(
             event="authority.source.analysis.plan.committed",
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            handler_contract_version="source-intelligence-authority-v2",
         ),
     )
 
@@ -385,6 +391,7 @@ def _source_intelligence_definition(
     event: str,
     application_build_id: str,
     commit_sha: str,
+    handler_contract_version: str = "source-intelligence-authority-v1",
 ) -> dict[str, Any]:
     return {
         "name": name,
@@ -408,7 +415,7 @@ def _source_intelligence_definition(
             "additionalProperties": True,
         },
         "handler_key": handler,
-        "handler_contract_version": "source-intelligence-authority-v1",
+        "handler_contract_version": handler_contract_version,
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "worker",

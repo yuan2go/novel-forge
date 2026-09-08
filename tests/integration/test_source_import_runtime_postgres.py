@@ -17,7 +17,10 @@ from fastapi.testclient import TestClient
 
 from novel_forge.api.authority_app import create_authority_app
 from novel_forge.modules.authority_security import Principal, PrincipalType
-from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+    ProviderResult,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority import (
     ApproveKnowledgeCandidateCommand,
@@ -44,6 +47,7 @@ from novel_forge.modules.source_import import (
     SourceImportScheduler,
     SourceMethodologyRegistry,
 )
+from novel_forge.modules.source_import.classical_corpus import resolve_work_spec
 from novel_forge.modules.source_import.methodologies import METHODOLOGY_VERSIONS
 from novel_forge.modules.source_import import analysis_profiles
 from novel_forge.modules.source_import.profiling import SourceContentType
@@ -89,6 +93,33 @@ class _RetryOnceGitAdapter:
 
     def query(self, **kwargs: object) -> ProviderResult:
         return self.delegate.query(**kwargs)  # type: ignore[arg-type]
+
+    def cancel(self, **kwargs: object) -> ProviderResult:
+        return self.delegate.cancel(**kwargs)  # type: ignore[arg-type]
+
+    def read_blob(self, repository_identity: str, object_id: str) -> bytes:
+        return self.delegate.read_blob(repository_identity, object_id)
+
+
+class _UnknownOnceGitAdapter:
+    def __init__(self, delegate: GitRepositoryExternalEffectAdapter) -> None:
+        self.delegate = delegate
+        self.provider = delegate.provider
+        self.reconciliation_mode = delegate.reconciliation_mode
+        self.capability_profile = delegate.capability_profile
+        self.execute_count = 0
+        self.query_count = 0
+
+    def execute(self, **kwargs: object) -> ProviderResult:
+        self.execute_count += 1
+        raise ExternalEffectAdapterError(
+            "injected transport loss after request send",
+            request_sent=True,
+        )
+
+    def query(self, **kwargs: object) -> ProviderResult:
+        self.query_count += 1
+        return self.delegate.execute(**kwargs)  # type: ignore[arg-type]
 
     def cancel(self, **kwargs: object) -> ProviderResult:
         return self.delegate.cancel(**kwargs)  # type: ignore[arg-type]
@@ -164,6 +195,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             worker_id="source-import-integration-worker",
             lease_seconds=30,
             source_object_reader=LocalObjectStoreReader(self.object_root),
+            provider_timeout_seconds=900,
         )
         self.execution_port = execution_port
         self.application = SourceImportApplication(
@@ -275,6 +307,333 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             item["skill_id"] for item in routes["theory.md"]["methodologies"]
         }
         self.assertEqual(methodology_ids, {"multidisciplinary-knowledge"})
+
+    def test_work_import_materializes_native_manifest_and_exact_replay(self) -> None:
+        spec = resolve_work_spec("chinese-novel.sanguoyanyi")
+        root = self.repository / spec.root_path
+        root.mkdir(parents=True)
+        info = {
+            "catalogueTotal": 3,
+            "catalogues": ["序言", "第一回", "附录"],
+            "author": {
+                "name": "测试作者",
+                "dynasty": "测试朝代",
+                "intro": "这段作者介绍不得混入正文。",
+            },
+        }
+        (root / "info.json").write_text(
+            json.dumps(info, ensure_ascii=False), encoding="utf-8"
+        )
+        (root / "0.html").write_text("序文<br>第二行", encoding="utf-8")
+        (root / "1.html").write_text(
+            "古典命运象征礼教正文第一段<br><br>古典命运象征礼教正文第二段",
+            encoding="utf-8",
+        )
+        (root / "2.html").write_text("附录文本", encoding="utf-8")
+        self._git("add", ".")
+        self._git("commit", "-m", "add governed work fixture")
+        commit = self._git("rev-parse", "HEAD").strip()
+        fixture_spec = replace(
+            spec,
+            repository_url=self.repository.as_uri(),
+            repository_commit_sha=commit,
+            registry_id="fixture-classical-corpus",
+            registry_hash="sha256:" + "a" * 64,
+        )
+        policy = SourceImportPolicy(
+            include_globs=fixture_spec.include_globs,
+            extension_allowlist=(".html", ".json"),
+            max_file_bytes=1_000_000,
+            max_repository_bytes=5_000_000,
+            max_files=10,
+            max_chunk_bytes=256,
+            parser_profile=fixture_spec.parser_profile,
+            source_work_key=fixture_spec.work_key,
+            corpus_registry_id=fixture_spec.registry_id,
+            corpus_registry_hash=fixture_spec.registry_hash,
+        )
+
+        def create(
+            suffix: str,
+            *,
+            pinned_commit: str = commit,
+            pinned_policy: SourceImportPolicy = policy,
+        ) -> dict[str, object]:
+            return self.application.create_import(
+                CreateSourceImportCommand(
+                    project_id=self.project_id,
+                    workspace_id=self.workspace_id,
+                    source_type="github_repository",
+                    repository_url=self.repository.as_uri(),
+                    requested_ref=pinned_commit,
+                    policy=pinned_policy,
+                    intelligence_policy=SourceIntelligencePolicy(),
+                    analysis_override=None,
+                    mode="IMPORT",
+                    rights_authorization="licensed",
+                    license_name="MIT",
+                    copyright_boundary="local analysis and abstraction only",
+                    actor_id="source-import-operator",
+                    idempotency_key=f"work-import:{self.project_id}:{suffix}",
+                    trace_id=f"trace:{self.project_id}:work:{suffix}",
+                    correlation_id=f"correlation:{self.project_id}",
+                )
+            )
+
+        with patch(
+            "novel_forge.modules.source_import.application.resolve_work_spec",
+            return_value=fixture_spec,
+        ):
+            first = create("first")
+            self.scheduler.run_or_recover(
+                operation_id=str(first["operation_id"]), project_id=self.project_id
+            )
+            work_operations = self._operations("source.import.work.process")
+            self.assertEqual(len(work_operations), 1)
+            self.scheduler.run_or_recover(
+                operation_id=work_operations[0], project_id=self.project_id
+            )
+            manifest = self.query.source_work_manifest(
+                project_id=self.project_id,
+                import_job_id=str(first["import_job_id"]),
+            )
+            self.assertEqual(manifest["unit_count"], 3)
+            self.assertEqual(manifest["body_unit_count"], 3)
+            self.assertEqual(manifest["chunk_count"], 3)
+            self.assertEqual(
+                [unit["kind"] for unit in manifest["units"]],
+                ["PREFACE", "CHAPTER", "APPENDIX"],
+            )
+            self.assertEqual(
+                manifest["manifest"]["normalized_projection"]
+                ["traditional_simplified_conversion"],
+                "NOT_APPLIED",
+            )
+            serialized = json.dumps(manifest, ensure_ascii=False, default=str)
+            self.assertNotIn("古典命运象征礼教正文第一段", serialized)
+            self.assertNotIn("这段作者介绍不得混入正文", serialized)
+
+            self._run_ready_source_operations()
+            deconstruction_operations = self._operations(
+                "source.import.deconstruction.execute"
+            )
+            self.assertEqual(len(deconstruction_operations), 1)
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT observation.dimension
+                    FROM authority_source_deconstruction_observation AS observation
+                    WHERE observation.project_id=%s
+                    ORDER BY observation.dimension
+                    """,
+                    [self.project_id],
+                )
+                dimensions = {str(row[0]) for row in cursor.fetchall()}
+                cursor.execute(
+                    """
+                    SELECT version.content
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset
+                      ON asset.asset_id=version.asset_id
+                    WHERE asset.project_id=%s
+                      AND asset.asset_type='model_call_log'
+                      AND version.content ?
+                          'source_compound_deconstruction_binding'
+                    """,
+                    [self.project_id],
+                )
+                compound_logs = [dict(row[0]) for row in cursor.fetchall()]
+            self.assertEqual(
+                dimensions,
+                {
+                    "chapter_hook",
+                    "character_choice_cost",
+                    "conflict",
+                    "foreshadowing_payoff",
+                    "information_gap",
+                    "pacing",
+                    "structure",
+                },
+            )
+            self.assertEqual(len(compound_logs), 1)
+            self.assertEqual(
+                len(compound_logs[0]["source_deconstruction_bindings"]), 7
+            )
+            self.assertEqual(
+                self._source_intelligence_counts()["knowledge_candidates"], 7
+            )
+
+            profiling_operations_before_replay = len(
+                self._operations("source.import.document.profile")
+            )
+            second = create("second")
+            self.scheduler.run_or_recover(
+                operation_id=str(second["operation_id"]), project_id=self.project_id
+            )
+            work_operations = self._operations("source.import.work.process")
+            self.assertEqual(len(work_operations), 2)
+            self.scheduler.run_or_recover(
+                operation_id=work_operations[-1], project_id=self.project_id
+            )
+            self.assertEqual(
+                len(self._operations("source.import.document.profile")),
+                profiling_operations_before_replay + 1,
+            )
+            replay = self.query.import_job(
+                project_id=self.project_id,
+                import_job_id=str(second["import_job_id"]),
+            )
+
+        self.assertEqual(replay["effective_status"], "PROCESSING")
+        self.assertEqual(replay["counters"]["files_to_fetch"], 0)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_work_version "
+                "WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_transform WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+
+        (root / "1.html").write_text(
+            "原生作品正文改版第一段<br><br>原生作品正文改版第二段",
+            encoding="utf-8",
+        )
+        self._git("add", ".")
+        self._git("commit", "-m", "update governed work fixture")
+        updated_commit = self._git("rev-parse", "HEAD").strip()
+        updated_spec = replace(
+            fixture_spec,
+            repository_commit_sha=updated_commit,
+            registry_hash="sha256:" + "b" * 64,
+        )
+        updated_policy = replace(
+            policy,
+            corpus_registry_hash=updated_spec.registry_hash,
+        )
+        with patch(
+            "novel_forge.modules.source_import.application.resolve_work_spec",
+            return_value=updated_spec,
+        ):
+            updated = create(
+                "updated",
+                pinned_commit=updated_commit,
+                pinned_policy=updated_policy,
+            )
+            self.scheduler.run_or_recover(
+                operation_id=str(updated["operation_id"]), project_id=self.project_id
+            )
+            updated_work_operation = self._operations(
+                "source.import.work.process"
+            )[-1]
+            updated_result = self.scheduler.run_or_recover(
+                operation_id=updated_work_operation, project_id=self.project_id
+            )
+            updated_manifest = self.query.source_work_manifest(
+                project_id=self.project_id,
+                import_job_id=str(updated["import_job_id"]),
+            )
+
+        self.assertFalse(updated_result["result"]["source_work_version_reused"])
+        self.assertGreater(
+            updated_result["result"]["invalidated_descendant_count"], 0
+        )
+        self.assertEqual(updated_manifest["repository_commit_sha"], updated_commit)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT work_version.status, version.lifecycle
+                FROM authority_source_work_version AS work_version
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=work_version.asset_version_id
+                WHERE work_version.project_id=%s
+                ORDER BY work_version.created_at
+                """,
+                [self.project_id],
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [("SUPERSEDED", "SUPERSEDED"), ("ACTIVE", "ACTIVE")],
+            )
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_content_invalidation
+                WHERE project_id=%s AND cause_type='UPSTREAM_REPLACED'
+                """,
+                [self.project_id],
+            )
+            self.assertGreater(cursor.fetchone()[0], 0)
+
+    def test_unknown_effect_checkpoints_and_reconciles_without_redispatch(self) -> None:
+        adapter = _UnknownOnceGitAdapter(self.git_adapter)
+        self.application.git_adapter = adapter
+        imported = self._create_import("unknown-effect", self.commit_a, mode="PREVIEW")
+
+        with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+            self.scheduler.run_or_recover(
+                operation_id=str(imported["operation_id"]),
+                project_id=self.project_id,
+            )
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, attempt.status, effect.status
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                """,
+                [imported["operation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("WAITING_EXTERNAL_RESULT", "CHECKPOINTED", "UNKNOWN"),
+            )
+        self.assertIn(
+            (str(imported["operation_id"]), self.project_id),
+            self.scheduler.pending_operations(),
+        )
+
+        recovered = self.scheduler.run_or_recover(
+            operation_id=str(imported["operation_id"]),
+            project_id=self.project_id,
+        )
+
+        self.assertEqual(recovered["status"], "SUCCEEDED")
+        self.assertEqual(recovered["recovery_mode"], "external_effect_reconciled:success")
+        self.assertEqual((adapter.execute_count, adapter.query_count), (1, 1))
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT effect.status, COUNT(dispatch.dispatch_id),
+                       COUNT(reconciliation.reconciliation_id)
+                FROM authority_external_effect AS effect
+                LEFT JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
+                LEFT JOIN authority_effect_reconciliation_evidence AS reconciliation
+                  ON reconciliation.external_effect_id=effect.external_effect_id
+                WHERE effect.operation_id=%s
+                GROUP BY effect.status
+                """,
+                [imported["operation_id"]],
+            )
+            self.assertEqual(cursor.fetchone(), ("SUCCEEDED", 1, 1))
+
+    def test_source_provider_timeout_is_independent_from_worker_lease(self) -> None:
+        self.assertEqual(self.execution_port.lease_seconds, 30)
+        self.assertEqual(self.execution_port.provider_timeout_seconds, 900)
 
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,

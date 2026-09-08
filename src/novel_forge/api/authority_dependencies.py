@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from novel_forge.modules.book_design_authority.formation_generation import FormationGeneration
-from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+from novel_forge.modules.book_design_authority.formation_generation import (
+    FormationGeneration,
+)
+from novel_forge.modules.story_planning_runtime.foundation_generation import (
+    FOUNDATION_GENERATORS,
+)
 
 import hashlib
 import os
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.infrastructure.production_execution_composition import (
@@ -162,6 +166,7 @@ from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.production_execution import (
     AdmissionController,
     AuthorityExecutionRecoveryStore,
+    CodexAccountEntitlementSnapshot,
     CodexCliExecutionBackend,
     CodexPricingSnapshot,
     CodexProcessSupervisor,
@@ -181,6 +186,7 @@ from novel_forge.modules.production_execution import (
     RoutePolicy,
     ScriptedFixtureExecutionBackend,
     default_capability_registry,
+    observe_codex_cli_version,
 )
 
 
@@ -369,7 +375,11 @@ def build_production_execution_composition(
     )
     stage_routes = [
         ("memo", "NOVEL_FORGE_MEMO_PROVIDER", "NOVEL_FORGE_MEMO_MODEL"),
-        ("canon_support", "NOVEL_FORGE_CANON_SUPPORT_PROVIDER", "NOVEL_FORGE_CANON_SUPPORT_MODEL"),
+        (
+            "canon_support",
+            "NOVEL_FORGE_CANON_SUPPORT_PROVIDER",
+            "NOVEL_FORGE_CANON_SUPPORT_MODEL",
+        ),
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
@@ -748,23 +758,17 @@ def build_production_execution_composition(
             real_provider_validation_eligible=real_provider_eligible,
             embedding_dimensions=(embedding_dimensions if stage == "retrieval" else 0),
             model_context_limit=int(
-                values.get(
-                    f"NOVEL_FORGE_{stage.upper()}_MODEL_CONTEXT_LIMIT"
-                )
+                values.get(f"NOVEL_FORGE_{stage.upper()}_MODEL_CONTEXT_LIMIT")
                 or values.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT")
                 or 0
             ),
             token_accounting_method=str(
-                values.get(
-                    f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_METHOD"
-                )
+                values.get(f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_METHOD")
                 or values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD")
                 or ""
             ).strip(),
             token_accounting_evidence_ref=str(
-                values.get(
-                    f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_EVIDENCE_REF"
-                )
+                values.get(f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_EVIDENCE_REF")
                 or values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF")
                 or ""
             ).strip(),
@@ -807,6 +811,15 @@ def build_production_execution_composition(
             raise RuntimeError(
                 "mixed Codex and alternate Provider routing is not supported in this phase"
             )
+    cost_accounting_basis = (
+        str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
+    )
+    if cost_accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
+        raise RuntimeError("unsupported Codex cost accounting mode")
+    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and not codex_models:
+        raise RuntimeError(
+            "account entitlement is supported only by the Codex CLI route"
+        )
     object_root_value = str(
         values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
     ).strip()
@@ -815,7 +828,7 @@ def build_production_execution_composition(
     max_cost_per_call = str(
         values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or ""
     ).strip()
-    if controlled:
+    if controlled and cost_accounting_basis == "PRICED":
         if not max_cost_per_call:
             raise RuntimeError(
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL is required for production providers"
@@ -850,6 +863,7 @@ def build_production_execution_composition(
     codex_workspace: Path | None = None
     codex_execution_root: Path | None = None
     codex_pricing: CodexPricingSnapshot | None = None
+    codex_entitlement: CodexAccountEntitlementSnapshot | None = None
     codex_model = next(iter(codex_models), "")
     if codex_models:
         codex_executable = str(values.get("NOVEL_FORGE_CODEX_EXECUTABLE") or "").strip()
@@ -873,31 +887,72 @@ def build_production_execution_composition(
                 "controlled Codex requires an absolute executable, empty isolated "
                 "workspace, and absolute persistent execution root"
             )
-        required_pricing = {
-            "pricing_ref": str(
-                values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
-            ).strip(),
-            "currency": str(
-                values.get("NOVEL_FORGE_CODEX_PRICING_CURRENCY") or ""
-            ).strip(),
-            "input_per_million": str(
-                values.get("NOVEL_FORGE_CODEX_INPUT_PER_MILLION") or ""
-            ).strip(),
-            "cached_input_per_million": str(
-                values.get("NOVEL_FORGE_CODEX_CACHED_INPUT_PER_MILLION") or ""
-            ).strip(),
-            "output_per_million": str(
-                values.get("NOVEL_FORGE_CODEX_OUTPUT_PER_MILLION") or ""
-            ).strip(),
-        }
-        if any(not value for value in required_pricing.values()):
-            raise RuntimeError(
-                "controlled Codex requires an explicit immutable pricing snapshot"
+        if cost_accounting_basis == "PRICED":
+            required_pricing = {
+                "pricing_ref": str(
+                    values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
+                ).strip(),
+                "currency": str(
+                    values.get("NOVEL_FORGE_CODEX_PRICING_CURRENCY") or ""
+                ).strip(),
+                "input_per_million": str(
+                    values.get("NOVEL_FORGE_CODEX_INPUT_PER_MILLION") or ""
+                ).strip(),
+                "cached_input_per_million": str(
+                    values.get("NOVEL_FORGE_CODEX_CACHED_INPUT_PER_MILLION") or ""
+                ).strip(),
+                "output_per_million": str(
+                    values.get("NOVEL_FORGE_CODEX_OUTPUT_PER_MILLION") or ""
+                ).strip(),
+            }
+            if any(not value for value in required_pricing.values()):
+                raise RuntimeError(
+                    "controlled Codex requires an explicit immutable pricing snapshot"
+                )
+            codex_pricing = CodexPricingSnapshot(
+                model_id=codex_model,
+                **required_pricing,
             )
-        codex_pricing = CodexPricingSnapshot(
-            model_id=codex_model,
-            **required_pricing,
-        )
+        else:
+            entitlement_values = {
+                "authorization_ref": str(
+                    values.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF") or ""
+                ).strip(),
+                "account_identity_ref": str(
+                    values.get("NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF") or ""
+                ).strip(),
+                "cli_version": str(
+                    values.get("NOVEL_FORGE_CODEX_CLI_VERSION") or ""
+                ).strip(),
+                "executable_sha256": str(
+                    values.get("NOVEL_FORGE_CODEX_EXECUTABLE_SHA256") or ""
+                ).strip(),
+                "configuration_ref": str(
+                    values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or ""
+                ).strip(),
+            }
+            if any(not value for value in entitlement_values.values()):
+                raise RuntimeError(
+                    "controlled Codex account entitlement requires frozen authorization, account, CLI and configuration identity"
+                )
+            with executable_path.open("rb") as executable_stream:
+                executable_digest = (
+                    "sha256:"
+                    + hashlib.file_digest(executable_stream, "sha256").hexdigest()
+                )
+            if executable_digest != entitlement_values["executable_sha256"]:
+                raise RuntimeError(
+                    "controlled Codex executable differs from its frozen digest"
+                )
+            observed_cli_version = observe_codex_cli_version(
+                executable_path,
+                working_directory=codex_workspace,
+            )
+            if observed_cli_version != entitlement_values["cli_version"]:
+                raise RuntimeError(
+                    "controlled Codex CLI version differs from its frozen identity"
+                )
+            codex_entitlement = CodexAccountEntitlementSnapshot(**entitlement_values)
 
     def validate_codex_result(
         stage: str,
@@ -949,7 +1004,9 @@ def build_production_execution_composition(
             return fixture(stage, inputs)
         if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
             if planning_fixture_factory is None:
-                raise ValueError("world preparation requires an explicit fixture transport")
+                raise ValueError(
+                    "world preparation requires an explicit fixture transport"
+                )
             return planning_fixture_factory(stage, inputs)
         fixture = chapter_fixture_factory or default_chapter_fixture_response
         return fixture(stage, inputs)
@@ -987,7 +1044,7 @@ def build_production_execution_composition(
         if codex_models:
             assert codex_workspace is not None
             assert codex_execution_root is not None
-            assert codex_pricing is not None
+            assert (codex_pricing is None) != (codex_entitlement is None)
             backends.register(
                 CodexCliExecutionBackend(
                     admission=admission,
@@ -1010,6 +1067,7 @@ def build_production_execution_composition(
                     ),
                     codex_executable=codex_executable,
                     pricing=codex_pricing,
+                    account_entitlement=codex_entitlement,
                     structured_result_validator=validate_codex_result,
                     qualification_ref="capability-probe:codex-cli:real-runtime-v1",
                 )
@@ -1032,6 +1090,39 @@ def build_production_execution_composition(
         gateway = ProductionExecutionGateway(backends, admission)
         return ChapterExecutionGatewaySession(gateway, store)
 
+    call_cap_environment = {
+        "project_total": "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
+        "operation_total": "NOVEL_FORGE_OPERATION_PROVIDER_CALL_LIMIT",
+        "provider_project_total": "NOVEL_FORGE_PROVIDER_PROJECT_CALL_LIMIT",
+        "project_daily": "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CALL_LIMIT",
+        "provider_project_daily": "NOVEL_FORGE_PROVIDER_DAILY_CALL_LIMIT",
+        "global_daily": "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_CALL_LIMIT",
+    }
+    token_cap_environment = {
+        "project_total": "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
+        "operation_total": "NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT",
+        "provider_project_total": "NOVEL_FORGE_PROVIDER_PROJECT_TOKEN_LIMIT",
+        "project_daily": "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_TOKEN_LIMIT",
+        "provider_project_daily": "NOVEL_FORGE_PROVIDER_DAILY_TOKEN_LIMIT",
+        "global_daily": "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_TOKEN_LIMIT",
+    }
+    provider_call_caps = {
+        dimension: int(str(values[environment_name]))
+        for dimension, environment_name in call_cap_environment.items()
+        if str(values.get(environment_name) or "").strip()
+    }
+    provider_token_caps = {
+        dimension: int(str(values[environment_name]))
+        for dimension, environment_name in token_cap_environment.items()
+        if str(values.get(environment_name) or "").strip()
+    }
+    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+        provider_call_caps.get("project_total", 0) <= 0
+        or provider_token_caps.get("project_total", 0) <= 0
+    ):
+        raise RuntimeError(
+            "account entitlement requires positive project Provider call and token limits"
+        )
     model_gateway = ProductionExecutionGatewayExternalEffectAdapter(
         database_url=settings.database_url,
         routes=routes,
@@ -1039,6 +1130,12 @@ def build_production_execution_composition(
         provider_adapters={
             adapter.provider: adapter for adapter in provider_adapters.values()
         },
+        cost_accounting_basis=cost_accounting_basis,
+        account_authorization_ref=(
+            codex_entitlement.authorization_ref if codex_entitlement else ""
+        ),
+        provider_call_caps=provider_call_caps,
+        provider_token_caps=provider_token_caps,
     )
     shared_budget_caps = {
         key: str(values[value])
@@ -1051,6 +1148,17 @@ def build_production_execution_composition(
         )
         if str(values.get(value) or "").strip()
     }
+    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and shared_budget_caps:
+        raise RuntimeError(
+            "account entitlement cannot use monetary Provider cap configuration"
+        )
+    chapter_total_budget_cap = str(
+        values.get("NOVEL_FORGE_CHAPTER_PROVIDER_CAP") or ""
+    ).strip()
+    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and chapter_total_budget_cap:
+        raise RuntimeError(
+            "account entitlement cannot use a monetary Chapter Provider cap"
+        )
     return ProductionExecutionComposition(
         gateway=model_gateway,
         object_store=object_store_adapter,
@@ -1058,9 +1166,13 @@ def build_production_execution_composition(
         runtime_environment=runtime_environment,
         max_cost_per_call=max_cost_per_call or "0",
         shared_budget_caps=shared_budget_caps,
-        chapter_total_budget_cap=str(
-            values.get("NOVEL_FORGE_CHAPTER_PROVIDER_CAP") or ""
-        ).strip(),
+        chapter_total_budget_cap=chapter_total_budget_cap,
+        cost_accounting_basis=cost_accounting_basis,
+        account_authorization_ref=(
+            codex_entitlement.authorization_ref if codex_entitlement else ""
+        ),
+        provider_call_caps=provider_call_caps,
+        provider_token_caps=provider_token_caps,
     )
 
 
@@ -1448,6 +1560,9 @@ def build_source_import_application(
         provider_output_token_reserve=int(
             values.get("NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE") or 4_096
         ),
+        provider_timeout_seconds=int(
+            values.get("NOVEL_FORGE_SOURCE_PROVIDER_TIMEOUT_SECONDS") or 300
+        ),
     )
     return SourceImportApplication(
         settings.database_url,
@@ -1578,8 +1693,6 @@ def build_book_followup_authority_application(
     )
 
 
-
-
 def build_book_production_composition(
     settings: IndustrialSettings,
     *,
@@ -1683,6 +1796,48 @@ def build_book_production_composition(
     )
     from novel_forge.modules.book_design_authority import StoryFormationApplication
 
+    opening_budget_policy: dict[str, Any] = {
+        "execution_mode": "PROVIDER_ALLOWED",
+        "provider_call_limit": int(
+            values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT") or 48
+        ),
+        "token_limit": int(
+            values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT") or 4_800_000
+        ),
+        "per_call_token_limit": int(
+            values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT")
+            or 100_000
+        ),
+    }
+    if execution.cost_accounting_basis == "ACCOUNT_ENTITLEMENT":
+        opening_budget_policy.update(
+            {
+                "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                "authorization_ref": execution.account_authorization_ref,
+                "cost_observability": "UNKNOWN",
+            }
+        )
+        forbidden_cost_settings = (
+            "NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT",
+            "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT",
+        )
+        if any(str(values.get(name) or "").strip() for name in forbidden_cost_settings):
+            raise RuntimeError(
+                "account entitlement Book Opening cannot declare monetary limits"
+            )
+    else:
+        opening_budget_policy.update(
+            {
+                "cost_limit_usd": str(
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT") or "96"
+                ),
+                "per_call_cost_limit_usd": str(
+                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT")
+                    or "2"
+                ),
+            }
+        )
+
     return BookProductionComposition(
         authority=authority,
         query=query,
@@ -1711,27 +1866,7 @@ def build_book_production_composition(
             input_resolver=input_resolver,
             application_build_id=authority.application_build_id,
             commit_sha=authority.commit_sha,
-            provider_budget_policy={
-                "execution_mode": "PROVIDER_ALLOWED",
-                "provider_call_limit": int(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT") or 48
-                ),
-                "token_limit": int(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT")
-                    or 4_800_000
-                ),
-                "cost_limit_usd": str(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT") or "96"
-                ),
-                "per_call_token_limit": int(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT")
-                    or 100_000
-                ),
-                "per_call_cost_limit_usd": str(
-                    values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT")
-                    or "2"
-                ),
-            },
+            provider_budget_policy=opening_budget_policy,
             provider_budget_window_seconds=int(
                 values.get("NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS") or 3_600
             ),
@@ -1740,7 +1875,12 @@ def build_book_production_composition(
             settings.database_url,
             application_build_id=authority.application_build_id,
             commit_sha=authority.commit_sha,
-            generation=FormationGeneration(planning, book_design=build_book_design_authority_application(settings, execution=execution, env=values)),
+            generation=FormationGeneration(
+                planning,
+                book_design=build_book_design_authority_application(
+                    settings, execution=execution, env=values
+                ),
+            ),
         ),
     )
 

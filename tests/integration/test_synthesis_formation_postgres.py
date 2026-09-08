@@ -17,7 +17,9 @@ from novel_forge.modules.book_design_authority.formation import (
 )
 from novel_forge.modules.book_design_authority.formation_domain import (
     StoryFormationInput,
+    deterministic_story_formation_run_id,
 )
+from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.capability_packs.longform_profiles import (
     build_story_planning_pack_profile,
 )
@@ -181,6 +183,16 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         )
         formation = composition.formation
         assert formation is not None
+        formation_worker = TrustedPrincipalResolver(
+            environment="test",
+            configured_project_scope=frozenset({harness.project_id}),
+        ).resolve_book_formation_worker_principal("synthesis-worker")
+        formation_key = "synthesis:formation"
+        formation_run_id = deterministic_story_formation_run_id(
+            project_id=harness.project_id,
+            book_id=harness.book_ids[0],
+            stable_idempotency_key=formation_key,
+        )
         admitted = formation.admit(
             StartStoryFormationCommand(
                 project_id=harness.project_id,
@@ -188,18 +200,34 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
                 book_id=harness.book_ids[0],
                 actor_id=principal.principal_id,
                 expected_book_version=1,
-                stable_idempotency_key="synthesis:formation",
+                stable_idempotency_key=formation_key,
                 trace_id="trace:synthesis-formation",
                 correlation_id=harness.project_id,
                 frozen_input=StoryFormationInput(
                     creative_brief_asset_version_id=brief.asset_version_id,
                     creative_brief_content_hash=brief.content_hash,
                     generation_policy={
-                        "contract_version": "formation-generation.v1",
+                        "contract_version": "formation-generation.v2",
                         "approval_mode": "AUTO",
                         "creative_candidates": 2,
                         "target_chapters": 3,
                         "title": "Witness Map",
+                        "auto_authorization": {
+                            "contract_version": "formation-auto-authorization.v1",
+                            "policy_version": "formation-auto-policy.v1",
+                            "authorization_ref": "test:synthesis-formation",
+                            "authorized_by_principal_id": principal.principal_id,
+                            "project_id": harness.project_id,
+                            "workspace_id": harness.workspace_id,
+                            "book_id": harness.book_ids[0],
+                            "formation_run_id": formation_run_id,
+                            "allowed_actions": [
+                                "book_design.candidate.activate",
+                                "book_design.candidate.decide",
+                                "story_planning.candidate.activate",
+                                "story_planning.candidate.approve",
+                            ],
+                        },
                     },
                 ),
             ),
@@ -234,7 +262,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
                 execute_story_formation_claim(
                     formation.runtime_jobs,
                     formation,
-                    principal,
+                    formation_worker,
                     claim,
                     lease_seconds=60,
                 )

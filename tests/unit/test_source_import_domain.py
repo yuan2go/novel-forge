@@ -148,3 +148,27 @@ def test_binary_and_lfs_are_blocked_and_manifest_requires_exact_commit() -> None
             policy_hash=policy.policy_hash,
             files=(row,),
         )
+
+
+def test_html_requires_a_frozen_work_parser_contract() -> None:
+    with pytest.raises(ValueError, match="HTML requires"):
+        SourceImportPolicy(extension_allowlist=(".html",))
+    with pytest.raises(ValueError, match="frozen work and registry"):
+        SourceImportPolicy(
+            parser_profile="chinese-novel-html.v1",
+            extension_allowlist=(".html", ".json"),
+        )
+
+    policy = SourceImportPolicy(
+        parser_profile="chinese-novel-html.v1",
+        source_work_key="chinese-novel.sanguoyanyi",
+        corpus_registry_id="classical-corpus-20260908",
+        corpus_registry_hash="sha256:" + "a" * 64,
+        include_globs=("book/info.json", "book/*.html"),
+        extension_allowlist=(".html", ".json"),
+    )
+
+    assert policy.path_decision(
+        "book/1.html", mode="100644", object_type="blob", size=100
+    ) == ("ELIGIBLE", "eligible_text_candidate")
+    assert policy.chunking_policy_hash.startswith("sha256:")

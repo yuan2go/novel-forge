@@ -60,6 +60,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     ),
                     reason=request.analysis_override.reason,
                     decision_ref=request.analysis_override.decision_ref,
+                    boundary_resolution=request.analysis_override.boundary_resolution,
+                    expected_document_count=(
+                        request.analysis_override.expected_document_count
+                    ),
                 )
                 if request.analysis_override is not None
                 else None
@@ -149,6 +153,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         principal = _authorize("source.authority.query", project_id)
         try:
             return query.work(
+                project_id=project_id,
+                import_job_id=import_job_id,
+                principal=principal,
+            )
+        except KernelError as exc:
+            raise _http_error(exc, not_found=True) from exc
+
+    @router.get("/{import_job_id}/source-work")
+    def source_work_manifest(
+        import_job_id: str, project_id: str
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.source_work_manifest(
                 project_id=project_id,
                 import_job_id=import_job_id,
                 principal=principal,

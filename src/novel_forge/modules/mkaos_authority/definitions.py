@@ -7,7 +7,7 @@ MKAOS_CANDIDATE_OPERATION = "mkaos.knowledge_candidate.commit"
 MKAOS_CANDIDATE_DEFINITION_VERSION = "1.0.2"
 MKAOS_CANDIDATE_HANDLER_KEY = "novel_forge.mkaos_authority.candidate_commit"
 MKAOS_APPROVE_OPERATION = "mkaos.knowledge.approve"
-MKAOS_APPROVE_DEFINITION_VERSION = "1.0.1"
+MKAOS_APPROVE_DEFINITION_VERSION = "1.1.0"
 MKAOS_APPROVE_HANDLER_KEY = "novel_forge.mkaos_authority.knowledge_approve"
 MKAOS_PACK_OPERATION = "mkaos.knowledge_pack.build"
 MKAOS_PACK_DEFINITION_VERSION = "1.0.1"
@@ -99,7 +99,7 @@ def mkaos_authority_definitions(
                 "governance_decision_asset_version_id",
             ),
             "handler_key": MKAOS_APPROVE_HANDLER_KEY,
-            "handler_contract_version": "mkaos-approve-handler-v1",
+            "handler_contract_version": "mkaos-approve-handler-v2",
             "permissions": ["mkaos.authority.approve"],
             "approval_policy": {
                 "required": False,
@@ -116,7 +116,7 @@ def mkaos_authority_definitions(
                 "raw_source_expression_forbidden": True,
             },
             "completion_contract": {
-                "version": "mkaos.knowledge.approve.completion.v1",
+                "version": "mkaos.knowledge.approve.completion.v2",
                 "required_asset_selectors": [
                     {
                         "selector": "knowledge_governance_decision",

@@ -406,6 +406,140 @@ class StoryFormationRepository:
             )
         return self.require(formation_run_id)
 
+    def wait_for_approval(
+        self,
+        formation_run_id: str,
+        *,
+        operation_id: str,
+        expected_stage: str,
+        expected_version: int,
+        authority: str,
+        candidate_asset_version_id: str,
+        candidate_content_hash: str,
+        candidate_asset_version_ids: tuple[str, ...],
+        runtime_attempt_id: str,
+    ) -> dict[str, Any]:
+        try:
+            stage = StoryFormationStage(expected_stage)
+        except ValueError as exc:
+            raise KernelError(
+                "STORY_FORMATION_APPROVAL_TARGET_INVALID",
+                "approval wait has an unknown Formation stage",
+            ) from exc
+        if (
+            authority not in {"STORY_PLANNING_AUTHORITY", "BOOK_DESIGN_AUTHORITY"}
+            or not candidate_asset_version_id.strip()
+            or len(candidate_content_hash) != 71
+            or not candidate_content_hash.startswith("sha256:")
+            or not candidate_asset_version_ids
+            or candidate_asset_version_id not in candidate_asset_version_ids
+            or len(set(candidate_asset_version_ids)) != len(candidate_asset_version_ids)
+            or not runtime_attempt_id.strip()
+        ):
+            raise KernelError(
+                "STORY_FORMATION_APPROVAL_TARGET_INVALID",
+                "approval wait is not bound to an exact candidate and runtime attempt",
+            )
+        self.cursor.execute(
+            """
+            SELECT project_id,lifecycle,current_stage,version,recovery_instruction
+            FROM authority_story_formation_run
+            WHERE formation_run_id=%s
+            FOR UPDATE
+            """,
+            [formation_run_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("STORY_FORMATION_NOT_FOUND", "Formation run is missing")
+        approval = {
+            "action": "APPROVE_EXACT_CANDIDATE_AND_RESUME",
+            "formation_run_id": formation_run_id,
+            "stage": stage.value,
+            "authority": authority,
+            "candidate_asset_version_id": candidate_asset_version_id,
+            "candidate_content_hash": candidate_content_hash,
+            "candidate_asset_version_ids": list(candidate_asset_version_ids),
+            "wait_operation_id": operation_id,
+            "runtime_attempt_id": runtime_attempt_id,
+        }
+        if str(row[1]) == "WAITING_APPROVAL":
+            existing = dict(row[4] or {})
+            comparable = {
+                key: value
+                for key, value in approval.items()
+                if key not in {"wait_operation_id", "runtime_attempt_id"}
+            }
+            current = {
+                key: existing.get(key)
+                for key in comparable
+            }
+            if current != comparable:
+                raise KernelError(
+                    "STORY_FORMATION_APPROVAL_TARGET_DRIFT",
+                    "Formation is already waiting on a different exact candidate",
+                )
+            return self.require(formation_run_id)
+        if (
+            str(row[1]) not in {"ADMITTED", "RUNNING"}
+            or str(row[2]) != stage.value
+            or int(row[3]) != expected_version
+        ):
+            raise KernelError(
+                "STORY_FORMATION_APPROVAL_WAIT_CONFLICT",
+                "Formation changed before its approval wait was committed",
+            )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_story_formation_stage(
+                formation_stage_id,formation_run_id,stage,attempt_ordinal,status,
+                candidate_asset_version_id,candidate_content_hash,binding,checkpoint
+            ) VALUES (%s,%s,%s,1,'WAITING_APPROVAL',%s,%s,%s,%s)
+            ON CONFLICT (formation_run_id,stage,attempt_ordinal) DO UPDATE
+            SET status='WAITING_APPROVAL',
+                candidate_asset_version_id=EXCLUDED.candidate_asset_version_id,
+                candidate_content_hash=EXCLUDED.candidate_content_hash,
+                checkpoint=authority_story_formation_stage.checkpoint || EXCLUDED.checkpoint,
+                updated_at=NOW()
+            WHERE authority_story_formation_stage.status IN ('PENDING','RUNNING')
+              AND (
+                authority_story_formation_stage.candidate_asset_version_id IS NULL
+                OR authority_story_formation_stage.candidate_asset_version_id=
+                   EXCLUDED.candidate_asset_version_id
+              )
+            """,
+            [
+                str(uuid4()),
+                formation_run_id,
+                stage.value,
+                candidate_asset_version_id,
+                candidate_content_hash,
+                Jsonb({"authority": authority}),
+                Jsonb({"approval_wait": approval}),
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_APPROVAL_TARGET_DRIFT",
+                "Formation stage already contains a different approval target",
+            )
+        self.cursor.execute(
+            """
+            UPDATE authority_story_formation_run
+            SET lifecycle='WAITING_APPROVAL',failure='{}'::jsonb,
+                recovery_instruction=%s,version=version+1,updated_at=NOW()
+            WHERE formation_run_id=%s AND version=%s
+              AND lifecycle IN ('ADMITTED','RUNNING') AND current_stage=%s
+            """,
+            [Jsonb(approval), formation_run_id, expected_version, stage.value],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "STORY_FORMATION_APPROVAL_WAIT_CONFLICT",
+                "Formation changed before its approval wait was committed",
+            )
+        return self.require(formation_run_id)
+
     def fail(
         self, formation_run_id: str, *, error: dict[str, Any], operation_id: str
     ) -> None:
@@ -432,18 +566,85 @@ class StoryFormationRepository:
     def resume(self, formation_run_id: str, expected_version: int) -> dict[str, Any]:
         self.cursor.execute(
             """
+            SELECT project_id,book_id,lifecycle,current_stage,version,
+                   recovery_instruction
+            FROM authority_story_formation_run
+            WHERE formation_run_id=%s
+            FOR UPDATE
+            """,
+            [formation_run_id],
+        )
+        waiting = self.cursor.fetchone()
+        if (
+            waiting is not None
+            and str(waiting[2]) == "WAITING_APPROVAL"
+            and int(waiting[4]) == expected_version
+        ):
+            approval = dict(waiting[5] or {})
+            candidate_id = str(approval.get("candidate_asset_version_id") or "")
+            candidate_hash = str(approval.get("candidate_content_hash") or "")
+            authority = str(approval.get("authority") or "")
+            if authority == "STORY_PLANNING_AUTHORITY":
+                self.cursor.execute(
+                    """
+                    SELECT version.content_hash,state.approval,
+                           state.updated_by_operation_id
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                    JOIN authority_story_design_version_state AS state
+                      ON state.project_id=asset.project_id
+                     AND state.asset_version_id=version.asset_version_id
+                    WHERE asset.project_id=%s AND version.asset_version_id=%s
+                    """,
+                    [str(waiting[0]), candidate_id],
+                )
+                decision = self.cursor.fetchone()
+                satisfied = bool(
+                    decision is not None
+                    and str(decision[0]) == candidate_hash
+                    and str(decision[1]) == "APPROVED"
+                    and str(decision[2] or "")
+                )
+            elif authority == "BOOK_DESIGN_AUTHORITY":
+                self.cursor.execute(
+                    """
+                    SELECT version.content_hash,book.last_operation_id
+                    FROM authority_book AS book
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=book.current_book_design_asset_version_id
+                    WHERE book.project_id=%s AND book.book_id=%s
+                      AND book.current_book_design_asset_version_id=%s
+                    """,
+                    [str(waiting[0]), str(waiting[1]), candidate_id],
+                )
+                decision = self.cursor.fetchone()
+                satisfied = bool(
+                    decision is not None
+                    and str(decision[0]) == candidate_hash
+                    and str(decision[1] or "")
+                )
+            else:
+                satisfied = False
+            if not satisfied:
+                raise KernelError(
+                    "STORY_FORMATION_APPROVAL_PENDING",
+                    "the exact frozen Formation candidate is not approved yet",
+                )
+        self.cursor.execute(
+            """
             UPDATE authority_story_formation_run
             SET lifecycle='RUNNING', failure='{}'::jsonb,
                 recovery_instruction='{}'::jsonb,
                 version=version+1, updated_at=NOW()
-            WHERE formation_run_id=%s AND lifecycle='FAILED' AND version=%s
+            WHERE formation_run_id=%s
+              AND lifecycle IN ('FAILED','WAITING_APPROVAL') AND version=%s
             """,
             [formation_run_id, expected_version],
         )
         if self.cursor.rowcount != 1:
             raise KernelError(
                 "STORY_FORMATION_RESUME_CONFLICT",
-                "Formation is not failed at the expected version",
+                "Formation is not failed or approved at the expected version",
             )
         return self.require(formation_run_id)
 
@@ -522,7 +723,21 @@ class StoryFormationRepository:
                 qualification_evidence_asset_version_id, qualification_hash,
                 activation_operation_id, binding, checkpoint
             ) VALUES (%s,%s,%s,1,'PENDING',%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO NOTHING
+            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO UPDATE
+            SET status='PENDING',
+                generation_operation_id=EXCLUDED.generation_operation_id,
+                candidate_asset_version_id=EXCLUDED.candidate_asset_version_id,
+                candidate_content_hash=EXCLUDED.candidate_content_hash,
+                qualification_evidence_asset_version_id=
+                    EXCLUDED.qualification_evidence_asset_version_id,
+                qualification_hash=EXCLUDED.qualification_hash,
+                activation_operation_id=EXCLUDED.activation_operation_id,
+                checkpoint=authority_story_formation_stage.checkpoint ||
+                    EXCLUDED.checkpoint,
+                updated_at=NOW()
+            WHERE authority_story_formation_stage.status='WAITING_APPROVAL'
+              AND authority_story_formation_stage.candidate_asset_version_id=
+                  EXCLUDED.candidate_asset_version_id
             """,
             [str(uuid4()), formation_run_id, layer.role.value, layer.generation_operation_id,
              layer.asset_version_id, layer.content_hash, layer.qualification_evidence_asset_version_id,
@@ -612,7 +827,22 @@ class StoryFormationRepository:
                 candidate_content_hash, qualification_evidence_asset_version_id,
                 qualification_hash, activation_operation_id, binding, checkpoint
             ) VALUES (%s,%s,'CREATIVE_SEARCH',1,'ACTIVE',%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO NOTHING
+            ON CONFLICT (formation_run_id, stage, attempt_ordinal) DO UPDATE
+            SET status='ACTIVE',
+                generation_operation_id=EXCLUDED.generation_operation_id,
+                candidate_asset_version_id=EXCLUDED.candidate_asset_version_id,
+                candidate_content_hash=EXCLUDED.candidate_content_hash,
+                qualification_evidence_asset_version_id=
+                    EXCLUDED.qualification_evidence_asset_version_id,
+                qualification_hash=EXCLUDED.qualification_hash,
+                activation_operation_id=EXCLUDED.activation_operation_id,
+                binding=EXCLUDED.binding,
+                checkpoint=authority_story_formation_stage.checkpoint ||
+                    EXCLUDED.checkpoint,
+                updated_at=NOW()
+            WHERE authority_story_formation_stage.status='WAITING_APPROVAL'
+              AND authority_story_formation_stage.candidate_asset_version_id=
+                  EXCLUDED.candidate_asset_version_id
             """,
             [
                 str(uuid4()),

@@ -94,6 +94,7 @@ class ApproveKnowledgeCandidateCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    approval_class: str = "PRODUCTION"
 
     def __post_init__(self) -> None:
         _require_strings(
@@ -109,6 +110,26 @@ class ApproveKnowledgeCandidateCommand:
         )
         if len(self.rationale) > 4_000:
             raise ValueError("MKAOS governance rationale is too long")
+        approval_class = self.approval_class.strip().upper()
+        if approval_class not in {"PRODUCTION", "EXPERIMENTAL_VALIDATION"}:
+            raise ValueError("MKAOS approval class is unsupported")
+        object.__setattr__(self, "approval_class", approval_class)
+
+
+@dataclass(frozen=True, slots=True)
+class ExperimentalKnowledgeApprovalPolicy:
+    project_id: str
+    workspace_id: str
+    policy_version: str
+    reviewer_id: str
+
+    def __post_init__(self) -> None:
+        _require_strings(
+            self.project_id,
+            self.workspace_id,
+            self.policy_version,
+            self.reviewer_id,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +172,7 @@ class MkaosAuthorityApplication:
         commit_sha: str,
         worker_id: str = "mkaos-authority-worker",
         allow_fixture_activation: bool = False,
+        experimental_approval_policy: ExperimentalKnowledgeApprovalPolicy | None = None,
     ) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
@@ -159,6 +181,7 @@ class MkaosAuthorityApplication:
         self.commit_sha = commit_sha
         self.worker_id = worker_id
         self.allow_fixture_activation = bool(allow_fixture_activation)
+        self.experimental_approval_policy = experimental_approval_policy
 
     def execute_candidate(
         self,
@@ -318,12 +341,20 @@ class MkaosAuthorityApplication:
                 project_id=command.project_id,
                 asset_version_id=command.candidate_asset_version_id,
             )
-        self._require_approvable(candidate, command.workspace_id)
+        approval_contract = self._require_approvable(
+            candidate,
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            policy_version=command.policy_version,
+            reviewer_id=actor_id,
+            approval_class=command.approval_class,
+        )
         assert_abstract_content_safe(candidate["content"])
         payload = {
             "policy_version": command.policy_version,
             "rationale": command.rationale,
             "reviewer_id": actor_id,
+            "approval_contract": approval_contract,
             "candidate_content_hash": candidate["content_hash"],
             "client_idempotency_key": command.idempotency_key,
         }
@@ -1086,7 +1117,24 @@ class MkaosAuthorityApplication:
                 project_id=worker.project_id,
                 asset_version_id=str(command["candidate_asset_version_id"]),
             )
-            self._require_approvable(candidate, str(command["workspace_id"]))
+            approval_contract = self._require_approvable(
+                candidate,
+                project_id=worker.project_id,
+                workspace_id=str(command["workspace_id"]),
+                policy_version=str(payload["policy_version"]),
+                reviewer_id=str(payload["reviewer_id"]),
+                approval_class=str(
+                    dict(payload.get("approval_contract") or {}).get(
+                        "approval_class"
+                    )
+                    or "PRODUCTION"
+                ),
+            )
+            if approval_contract != dict(payload.get("approval_contract") or {}):
+                raise KernelError(
+                    "MKAOS_APPROVAL_POLICY_DRIFT",
+                    "MKAOS approval scope changed after admission",
+                )
             if candidate["content_hash"] != payload["candidate_content_hash"]:
                 raise KernelError(
                     "MKAOS_CANDIDATE_INPUT_DRIFT",
@@ -1105,6 +1153,7 @@ class MkaosAuthorityApplication:
                 "decision": "APPROVE",
                 "reviewer_id": payload["reviewer_id"],
                 "policy_version": payload["policy_version"],
+                "approval_contract": approval_contract,
                 "rationale": payload["rationale"],
                 "candidate_content_hash": candidate["content_hash"],
                 "created_by_operation_id": worker.causation_id,
@@ -1127,6 +1176,8 @@ class MkaosAuthorityApplication:
                     "candidate_asset_version_id": candidate["asset_version_id"],
                     "decision": "APPROVE",
                     "reviewer_id": payload["reviewer_id"],
+                    "approval_class": approval_contract["approval_class"],
+                    "review_class": approval_contract["review_class"],
                 },
                 lifecycle="ACTIVE",
                 eligibility="ELIGIBLE",
@@ -1145,6 +1196,16 @@ class MkaosAuthorityApplication:
                     "raw_source_expression_included": False,
                     "source_chunks_direct_context_eligible": False,
                     "knowledge_card_context_eligible": True,
+                    "production_context_eligible": approval_contract[
+                        "production_context_eligible"
+                    ],
+                    "experimental_context_eligible": approval_contract[
+                        "experimental_context_eligible"
+                    ],
+                    "approval_class": approval_contract["approval_class"],
+                    "review_class": approval_contract["review_class"],
+                    "activation_scope": approval_contract["activation_scope"],
+                    "approval_policy_version": approval_contract["policy_version"],
                     "fixture_protocol_only": candidate["content"][
                         "execution_evidence"
                     ]["proof"]["fixture_protocol_only"],
@@ -1181,7 +1242,12 @@ class MkaosAuthorityApplication:
                 role="primary",
                 content=card_content,
                 content_hash=card_hash,
-                qualification_policy="mkaos-knowledge-activation-v1",
+                qualification_policy=(
+                    "mkaos-knowledge-experimental-activation-v1"
+                    if approval_contract["approval_class"]
+                    == "EXPERIMENTAL_VALIDATION"
+                    else "mkaos-knowledge-activation-v1"
+                ),
                 qualification_evidence={
                     "operation_id": worker.causation_id,
                     "attempt_id": worker.attempt_id,
@@ -1195,6 +1261,7 @@ class MkaosAuthorityApplication:
                     "production_verified": candidate["content"][
                         "execution_evidence"
                     ]["proof"]["production_verified"],
+                    "approval_contract": approval_contract,
                 },
                 lifecycle="ACTIVE",
                 eligibility="ELIGIBLE",
@@ -1269,6 +1336,8 @@ class MkaosAuthorityApplication:
                         "asset_version_id": card_asset_version_id,
                         "candidate_asset_version_id": candidate["asset_version_id"],
                         "governance_decision_asset_version_id": decision_asset_version_id,
+                        "approval_class": approval_contract["approval_class"],
+                        "review_class": approval_contract["review_class"],
                     },
                 )
             uow.commit()
@@ -1276,6 +1345,8 @@ class MkaosAuthorityApplication:
             "knowledge_card_id": card_id,
             "asset_version_id": card_asset_version_id,
             "governance_decision_asset_version_id": decision_asset_version_id,
+            "approval_class": approval_contract["approval_class"],
+            "review_class": approval_contract["review_class"],
         }
 
     def _execute_pack_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
@@ -1621,7 +1692,16 @@ class MkaosAuthorityApplication:
         principal.require(permission, project_id)
         return principal.principal_id
 
-    def _require_approvable(self, candidate: dict[str, Any], workspace_id: str) -> None:
+    def _require_approvable(
+        self,
+        candidate: dict[str, Any],
+        *,
+        project_id: str,
+        workspace_id: str,
+        policy_version: str,
+        reviewer_id: str,
+        approval_class: str,
+    ) -> dict[str, Any]:
         if candidate["workspace_id"] != workspace_id:
             raise KernelError(
                 "MKAOS_PROJECT_SCOPE_INVALID",
@@ -1645,13 +1725,76 @@ class MkaosAuthorityApplication:
                 "MKAOS_FIXTURE_CANDIDATE_NOT_ACTIVATABLE",
                 "fixture execution can prove the protocol but cannot activate a production KnowledgeCard",
             )
-        if not proof.get("fixture_protocol_only") and not (
-            proof.get("real_provider_proven") and proof.get("production_verified")
+        if approval_class == "PRODUCTION":
+            if not proof.get("fixture_protocol_only") and not (
+                proof.get("real_provider_proven")
+                and proof.get("production_verified")
+            ):
+                raise KernelError(
+                    "MKAOS_EXECUTION_NOT_PRODUCTION_VERIFIED",
+                    "production activation requires verified real-provider execution evidence",
+                )
+            return {
+                "schema_version": "mkaos-approval-contract.v1",
+                "approval_class": "PRODUCTION",
+                "review_class": "GOVERNANCE_REVIEW",
+                "activation_scope": {
+                    "kind": "PROJECT",
+                    "project_id": project_id,
+                    "workspace_id": workspace_id,
+                },
+                "project_id": project_id,
+                "workspace_id": workspace_id,
+                "policy_version": policy_version,
+                "reviewer_id": reviewer_id,
+                "production_context_eligible": True,
+                "experimental_context_eligible": False,
+            }
+        experimental = self.experimental_approval_policy
+        if (
+            approval_class != "EXPERIMENTAL_VALIDATION"
+            or experimental is None
+            or (
+                project_id,
+                workspace_id,
+                policy_version,
+                reviewer_id,
+            )
+            != (
+                experimental.project_id,
+                experimental.workspace_id,
+                experimental.policy_version,
+                experimental.reviewer_id,
+            )
+            or candidate["project_id"] != project_id
         ):
             raise KernelError(
-                "MKAOS_EXECUTION_NOT_PRODUCTION_VERIFIED",
-                "production activation requires verified real-provider execution evidence",
+                "MKAOS_EXPERIMENTAL_APPROVAL_SCOPE_INVALID",
+                "experimental approval is not bound to the configured validation scope",
             )
+        if proof.get("fixture_protocol_only") or not proof.get(
+            "real_provider_proven"
+        ):
+            raise KernelError(
+                "MKAOS_EXPERIMENTAL_REAL_PROVIDER_REQUIRED",
+                "experimental validation approval requires real-provider evidence",
+            )
+        return {
+            "schema_version": "mkaos-approval-contract.v1",
+            "approval_class": "EXPERIMENTAL_VALIDATION",
+            "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN",
+            "activation_scope": {
+                "kind": "ISOLATED_PROJECT_AND_WORKSPACE",
+                "project_id": project_id,
+                "workspace_id": workspace_id,
+            },
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "policy_version": policy_version,
+            "reviewer_id": reviewer_id,
+            "production_context_eligible": False,
+            "experimental_context_eligible": True,
+        }
 
     @staticmethod
     def _content_dependency(
@@ -1831,5 +1974,6 @@ __all__ = [
     "ApproveKnowledgeCandidateCommand",
     "BuildKnowledgePackCommand",
     "CommitKnowledgeCandidateCommand",
+    "ExperimentalKnowledgeApprovalPolicy",
     "MkaosAuthorityApplication",
 ]

@@ -163,21 +163,37 @@ def assess_book_opening_topology_budget(
     call_limit = positive_int("provider_call_limit")
     token_limit = positive_int("token_limit")
     per_call_token_limit = positive_int("per_call_token_limit")
-    try:
-        cost_limit = Decimal(str(policy.get("cost_limit_usd") or ""))
-        per_call_cost_limit = Decimal(str(policy.get("per_call_cost_limit_usd") or ""))
-    except InvalidOperation as exc:
-        raise ValueError("Opening budget cost limits must be decimal values") from exc
-    if cost_limit <= 0 or per_call_cost_limit <= 0:
-        raise ValueError("Opening budget cost limits must be positive")
-    cost_call_capacity = int(
-        (cost_limit / per_call_cost_limit).to_integral_value(rounding=ROUND_FLOOR)
-    )
-    provider_call_capacity = min(
-        call_limit,
-        token_limit // per_call_token_limit,
-        cost_call_capacity,
-    )
+    accounting_basis = str(policy.get("accounting_basis") or "PRICED").upper()
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        if (
+            not str(policy.get("authorization_ref") or "")
+            or str(policy.get("cost_observability") or "").upper() != "UNKNOWN"
+        ):
+            raise ValueError("Opening account entitlement is not authorized")
+        provider_call_capacity = min(
+            call_limit,
+            token_limit // per_call_token_limit,
+        )
+    else:
+        try:
+            cost_limit = Decimal(str(policy.get("cost_limit_usd") or ""))
+            per_call_cost_limit = Decimal(
+                str(policy.get("per_call_cost_limit_usd") or "")
+            )
+        except InvalidOperation as exc:
+            raise ValueError(
+                "Opening budget cost limits must be decimal values"
+            ) from exc
+        if cost_limit <= 0 or per_call_cost_limit <= 0:
+            raise ValueError("Opening budget cost limits must be positive")
+        cost_call_capacity = int(
+            (cost_limit / per_call_cost_limit).to_integral_value(rounding=ROUND_FLOOR)
+        )
+        provider_call_capacity = min(
+            call_limit,
+            token_limit // per_call_token_limit,
+            cost_call_capacity,
+        )
     search_capacity = provider_call_capacity // BOOK_OPENING_PROVIDER_CALLS_PER_SEARCH
     max_volume_count = (
         search_capacity - 1 - arc_count - BOOK_OPENING_RESERVED_SEARCH_COUNT

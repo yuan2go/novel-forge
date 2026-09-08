@@ -66,7 +66,11 @@ from novel_forge.modules.hierarchical_planning.domain import (
     RealizationLevel,
 )
 from novel_forge.modules.mkaos_authority import MkaosAuthorityQuery
-from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed
+from novel_forge.modules.mkaos_authority.domain import (
+    NarrativeIntelligenceNeed,
+    resolve_book_knowledge_access_policy,
+    validate_book_knowledge_access_policy,
+)
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     ExecutionOutcome,
@@ -126,7 +130,11 @@ from .narrative_search import (
 )
 
 
-from .foundation_generation import FOUNDATION_GENERATORS, foundation_output_schema, foundation_task
+from .foundation_generation import (
+    FOUNDATION_GENERATORS,
+    foundation_output_schema,
+    foundation_task,
+)
 
 
 _PLANNING_STAGES = frozenset(
@@ -171,7 +179,15 @@ def _planning_narrative_intelligence_need(
         "chapter_plan.generate": "SCENE",
     }[stage]
     families = {
-        **{name: ("NARRATIVE_MECHANISM", "CHARACTER_TRANSFORMATION", "WORLD_CONSEQUENCE", "THEME_MORAL_DILEMMA") for name in FOUNDATION_GENERATORS},
+        **{
+            name: (
+                "NARRATIVE_MECHANISM",
+                "CHARACTER_TRANSFORMATION",
+                "WORLD_CONSEQUENCE",
+                "THEME_MORAL_DILEMMA",
+            )
+            for name in FOUNDATION_GENERATORS
+        },
         "book_plan.generate": (
             "NARRATIVE_MECHANISM",
             "CHARACTER_TRANSFORMATION",
@@ -1110,7 +1126,12 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 {
                     "scene_id": f"chapter:{chapter_number}:scene:1",
                     "scene_version": 1,
-                    "realization_capabilities": ["SKELETON", "ACTION", "INTERIOR", "INTEGRATION"],
+                    "realization_capabilities": [
+                        "SKELETON",
+                        "ACTION",
+                        "INTERIOR",
+                        "INTEGRATION",
+                    ],
                     "scene_group_id": f"chapter:{chapter_number}:group:1",
                     "goal": "make the choice unavoidable",
                     "conflict": "resistance turns private risk into public cost",
@@ -1131,7 +1152,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "obligation_refs": ["promise:choice"],
                     "realization_event_ids": [
                         str(event["event_id"])
-                        for event in (command.get("narrative_realization") or {}).get("events") or ()
+                        for event in (command.get("narrative_realization") or {}).get(
+                            "events"
+                        )
+                        or ()
                     ],
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
@@ -1589,7 +1613,8 @@ def _canonical_narrative_provider_properties(
             "description": "Chapter Mission: the semantic purpose the Scene Architecture must realize.",
         },
         "chapter_contract_schema_version": {
-            "type": "string", "const": "chapter-mission-scene.v2",
+            "type": "string",
+            "const": "chapter-mission-scene.v2",
         },
         "arc_schedule": {
             "type": "array",
@@ -1770,7 +1795,22 @@ def _canonical_narrative_provider_properties(
                 {
                     "scene_id": string,
                     "scene_version": {"type": "integer", "minimum": 1},
-                    "realization_capabilities": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": ["SKELETON", "DIALOGUE", "ACTION", "INTERIOR", "DESCRIPTION", "TRANSITION", "INTEGRATION"]}},
+                    "realization_capabilities": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "SKELETON",
+                                "DIALOGUE",
+                                "ACTION",
+                                "INTERIOR",
+                                "DESCRIPTION",
+                                "TRANSITION",
+                                "INTEGRATION",
+                            ],
+                        },
+                    },
                     "scene_group_id": string,
                     "goal": string,
                     "conflict": string,
@@ -2193,7 +2233,11 @@ def planning_provider_output_schema(
             properties[field] = {
                 "type": "array",
                 "minItems": len(exact_group_chapters) or 1,
-                **({"maxItems": len(exact_group_chapters)} if exact_group_chapters else {}),
+                **(
+                    {"maxItems": len(exact_group_chapters)}
+                    if exact_group_chapters
+                    else {}
+                ),
                 "items": _strict_object(
                     {
                         "chapter_number": (
@@ -2371,12 +2415,16 @@ def planning_provider_output_schema(
         scene_properties = properties["scene_plan"]["items"]["properties"]
         event_ids = [str(event["event_id"]) for event in realization["events"]]
         scene_properties["realization_event_ids"]["items"] = {
-            "type": "string", "enum": event_ids,
+            "type": "string",
+            "enum": event_ids,
         }
-        obligation_ids = [str(item["obligation_id"]) for item in schedule_row["obligation_actions"]]
+        obligation_ids = [
+            str(item["obligation_id"]) for item in schedule_row["obligation_actions"]
+        ]
         if obligation_ids:
             scene_properties["obligation_refs"]["items"] = {
-                "type": "string", "enum": obligation_ids,
+                "type": "string",
+                "enum": obligation_ids,
             }
         else:
             scene_properties["obligation_refs"]["maxItems"] = 0
@@ -2598,14 +2646,49 @@ def _planning_budget_settlement(
     fixture: bool,
     supports_usage_receipt: bool,
     supports_cost_receipt: bool,
-    reserved_amount: str,
+    reserved_amount: str | None,
     reserved_tokens: int,
 ) -> dict[str, Any]:
     input_tokens, input_valid = _nonnegative_usage_value(usage.get("input_tokens"))
     output_tokens, output_valid = _nonnegative_usage_value(usage.get("output_tokens"))
     declared_total, total_valid = _nonnegative_usage_value(usage.get("total_tokens"))
     measured_total = max(declared_total, input_tokens + output_tokens)
-    reported_amount = str(cost.get("amount") or "0")
+    account_entitlement = reserved_amount is None
+    reported_amount = None if account_entitlement else str(cost.get("amount") or "0")
+    if account_entitlement:
+        usage_authoritative = bool(
+            supports_usage_receipt
+            and input_valid
+            and output_valid
+            and total_valid
+            and measured_total > 0
+        )
+        total_tokens = measured_total if usage_authoritative else reserved_tokens
+        usage_basis = (
+            "PROVIDER_USAGE_RECEIPT" if usage_authoritative else "RESERVATION_CEILING"
+        )
+        return {
+            "amount": None,
+            "total_tokens": total_tokens,
+            "reported_amount": None,
+            "usage_basis": usage_basis,
+            "cost_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "cost_status": "UNKNOWN",
+            "usage": {
+                **dict(usage),
+                "total_tokens": total_tokens,
+                "budget_settlement_basis": usage_basis,
+            },
+            "cost": {
+                **dict(cost),
+                "amount": None,
+                "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                "cost_status": "UNKNOWN",
+                "budget_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            },
+        }
+    assert reported_amount is not None
     if fixture:
         if (
             not input_valid
@@ -2761,7 +2844,7 @@ def _planning_failed_provider_budget_decision(
     *,
     dispatched: Mapping[str, Any],
     capability_profile: ProviderCapabilityProfile,
-    reserved_amount: str,
+    reserved_amount: str | None,
     reserved_tokens: int,
 ) -> dict[str, Any]:
     submission_state = _planning_failed_provider_submission_state(dispatched)
@@ -2831,7 +2914,7 @@ class _PlanningPepPort:
     effect_id: str
     stable_key: str
     reservation_id: str
-    reserved_amount: str
+    reserved_amount: str | None
     reserved_tokens: int
     binding: _PlanningExecutionBinding
     adapter: _PlanningGatewayEffectAdapter
@@ -2896,7 +2979,8 @@ class _PlanningPepPort:
                 )
             elif disposition == "SETTLE":
                 settlement = dict(budget_decision["settlement"])
-                amount = str(settlement["amount"])
+                amount_value = settlement["amount"]
+                amount = str(amount_value) if amount_value is not None else None
                 total_tokens = int(settlement["total_tokens"])
                 usage = dict(settlement["usage"])
                 cost = dict(settlement["cost"])
@@ -2923,6 +3007,10 @@ class _PlanningPepPort:
                         ),
                         "usage_settlement_basis": str(settlement["usage_basis"]),
                         "cost_settlement_basis": str(settlement["cost_basis"]),
+                        "accounting_basis": str(
+                            settlement.get("accounting_basis") or "PRICED"
+                        ),
+                        "cost_status": str(settlement.get("cost_status") or "KNOWN"),
                     },
                 )
                 self._record_model_evidence(
@@ -2987,11 +3075,13 @@ class _PlanningPepPort:
             reserved_amount=self.reserved_amount,
             reserved_tokens=self.reserved_tokens,
         )
-        amount = str(settlement["amount"])
+        amount_value = settlement["amount"]
+        amount = str(amount_value) if amount_value is not None else None
         total_tokens = int(settlement["total_tokens"])
         usage_settlement_basis = str(settlement["usage_basis"])
         cost_settlement_basis = str(settlement["cost_basis"])
-        reported_amount = str(settlement["reported_amount"])
+        reported_value = settlement["reported_amount"]
+        reported_amount = str(reported_value) if reported_value is not None else None
         normalized_usage = dict(settlement["usage"])
         normalized_cost = dict(settlement["cost"])
         settle_provider_budget(
@@ -3008,6 +3098,8 @@ class _PlanningPepPort:
                 "usage_settlement_basis": usage_settlement_basis,
                 "cost_settlement_basis": cost_settlement_basis,
                 "provider_reported_cost_amount": reported_amount,
+                "accounting_basis": str(settlement.get("accounting_basis") or "PRICED"),
+                "cost_status": str(settlement.get("cost_status") or "KNOWN"),
             },
         )
         try:
@@ -3088,7 +3180,7 @@ class _PlanningPepPort:
         evidence: Mapping[str, Any],
         usage: Mapping[str, Any],
         cost: Mapping[str, Any],
-        amount: str,
+        amount: str | None,
         total_tokens: int,
         accepted_candidate: bool,
         recovered_completion: bool,
@@ -3109,9 +3201,16 @@ class _PlanningPepPort:
         self._record_evidence(
             "cost_ledger",
             {
-                "availability": "AVAILABLE",
+                "availability": "UNAVAILABLE" if amount is None else "AVAILABLE",
+                "measurement": "UNKNOWN" if amount is None else "MEASURED",
                 "amount": amount,
-                "currency": str(cost.get("currency") or "USD"),
+                "currency": (
+                    "UNKNOWN" if amount is None else str(cost.get("currency") or "USD")
+                ),
+                "accounting_basis": (
+                    "ACCOUNT_ENTITLEMENT" if amount is None else "PRICED"
+                ),
+                "cost_status": "UNKNOWN" if amount is None else "KNOWN",
                 "total_tokens": total_tokens,
                 "usage": dict(usage),
                 "cost": dict(cost),
@@ -3134,7 +3233,11 @@ class _PlanningPepPort:
                 project_id=request.project_id,
                 asset_id=(
                     f"{asset_type}:{request.operation_id}:{request.attempt_id}"
-                    + (f":{request.stage}" if request.stage.startswith("world_candidates.") else "")
+                    + (
+                        f":{request.stage}"
+                        if request.stage.startswith("world_candidates.")
+                        else ""
+                    )
                 ),
                 asset_type=asset_type,
                 schema_version=f"{asset_type}.v1",
@@ -3187,6 +3290,30 @@ class PostgresPlanningExecutionPreparer:
         self.worker_id = worker_id
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.cost_accounting_basis = str(
+            getattr(execution_transport, "cost_accounting_basis", "PRICED") or "PRICED"
+        ).upper()
+        self.account_authorization_ref = str(
+            getattr(execution_transport, "account_authorization_ref", "") or ""
+        )
+        self.provider_call_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(execution_transport, "provider_call_caps", {}) or {}
+            ).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(execution_transport, "provider_token_caps", {}) or {}
+            ).items()
+        }
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+            not self.account_authorization_ref or self.budget_caps
+        ):
+            raise ValueError(
+                "Planning account-entitlement execution requires authorization and no monetary caps"
+            )
         self.lease_seconds = lease_seconds
         self.post_provider_fault_injector = post_provider_fault_injector or (
             lambda _checkpoint: None
@@ -3209,18 +3336,38 @@ class PostgresPlanningExecutionPreparer:
         attempt_snapshot: CapabilityPackAttemptSnapshot,
     ) -> PreparedPlanningExecution:
         from .world_preparation import PlanningWorldPreparation
-        from novel_forge.modules.production_execution.domain_execution import DomainModelOperation
+        from novel_forge.modules.production_execution.domain_execution import (
+            DomainModelOperation,
+        )
 
-        arguments = dict(operation_id=operation_id, attempt_id=attempt_id, fencing_token=fencing_token, worker_id=worker_id, command=command, inputs=inputs, definition=definition, attempt_snapshot=attempt_snapshot)
+        arguments = dict(
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            worker_id=worker_id,
+            command=command,
+            inputs=inputs,
+            definition=definition,
+            attempt_snapshot=attempt_snapshot,
+        )
         action = None
         if command.world_preparation_request:
+
             def execute_stage(stage):
                 prepared = self._prepare_stage(**arguments, provider_stage=stage)
-                return prepared.execution_port.execute(DomainExecutionCommand(
-                    capability=definition.capability, operation=DomainModelOperation.GENERATE,
-                    candidate_kind=CandidateKind.GENERATION, prompt=stage.name, context=stage.task,
-                ))
-            action = PlanningWorldPreparation(self).prepare(operation_id=operation_id, command=command, execute_stage=execute_stage)
+                return prepared.execution_port.execute(
+                    DomainExecutionCommand(
+                        capability=definition.capability,
+                        operation=DomainModelOperation.GENERATE,
+                        candidate_kind=CandidateKind.GENERATION,
+                        prompt=stage.name,
+                        context=stage.task,
+                    )
+                )
+
+            action = PlanningWorldPreparation(self).prepare(
+                operation_id=operation_id, command=command, execute_stage=execute_stage
+            )
         return self._prepare_stage(**arguments, world_action=action)
 
     def _prepare_stage(
@@ -3311,22 +3458,26 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Planning Codex execution permits only model.provider.invoke",
             )
-        output_schema = foundation_output_schema(command.generator_operation_name) if command.generator_operation_name in FOUNDATION_GENERATORS else planning_provider_output_schema(
-            PlanContractType(command.planning_scope.value),
-            logical_key=command.logical_key,
-            parent_version_id=command.parent_version_id,
-            arc_plan_version_id=str(command.input_versions.get("arc_plans") or ""),
-            related_arc_plan_version_ids=command.related_arc_plan_version_ids,
-            dependent_arc_plan_version_ids=command.dependent_arc_plan_version_ids,
-            dependency_version_ids=(
-                *tuple(command.input_versions.values()),
-                *command.related_arc_plan_version_ids,
-                *command.dependent_arc_plan_version_ids,
-            ),
-            narrative_search=bool(command.narrative_search_id),
-            narrative_search_horizon=(command.narrative_search_planning_horizon),
-            narrative_realization=command.narrative_realization,
-            chapter_schedule_row=chapter_schedule_row,
+        output_schema = (
+            foundation_output_schema(command.generator_operation_name)
+            if command.generator_operation_name in FOUNDATION_GENERATORS
+            else planning_provider_output_schema(
+                PlanContractType(command.planning_scope.value),
+                logical_key=command.logical_key,
+                parent_version_id=command.parent_version_id,
+                arc_plan_version_id=str(command.input_versions.get("arc_plans") or ""),
+                related_arc_plan_version_ids=command.related_arc_plan_version_ids,
+                dependent_arc_plan_version_ids=command.dependent_arc_plan_version_ids,
+                dependency_version_ids=(
+                    *tuple(command.input_versions.values()),
+                    *command.related_arc_plan_version_ids,
+                    *command.dependent_arc_plan_version_ids,
+                ),
+                narrative_search=bool(command.narrative_search_id),
+                narrative_search_horizon=(command.narrative_search_planning_horizon),
+                narrative_realization=command.narrative_realization,
+                chapter_schedule_row=chapter_schedule_row,
+            )
         )
         if (
             world_action is not None
@@ -3490,11 +3641,20 @@ class PostgresPlanningExecutionPreparer:
             self.database_url,
             operation_id=operation_id,
             project_id=command.project_id,
-            currency="USD",
+            currency=(
+                "UNKNOWN"
+                if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else "USD"
+            ),
             frozen_request_token_ceiling=frozen_request_token_ceiling,
+            accounting_basis=self.cost_accounting_basis,
+            cost_authorization_ref=self.account_authorization_ref,
         )
-        provider_reservation_amount = str(
-            provider_token_contract["estimated_cost_amount"] or self.max_cost_per_call
+        contract_amount = provider_token_contract["estimated_cost_amount"]
+        provider_reservation_amount = (
+            None
+            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+            else str(contract_amount or self.max_cost_per_call)
         )
         provider_reservation_tokens = int(
             provider_token_contract["estimated_total_tokens"]
@@ -3504,7 +3664,15 @@ class PostgresPlanningExecutionPreparer:
             "max_output_tokens": provider_token_contract["max_output_tokens"],
             "provider_token_contract": provider_token_contract,
             "input": {
-                **({"foundation_task": foundation_task(command.generator_operation_name)} if command.generator_operation_name in FOUNDATION_GENERATORS else {}),
+                **(
+                    {
+                        "foundation_task": foundation_task(
+                            command.generator_operation_name
+                        )
+                    }
+                    if command.generator_operation_name in FOUNDATION_GENERATORS
+                    else {}
+                ),
                 "planning_command": {
                     "project_id": command.project_id,
                     "book_id": command.book_id,
@@ -3564,17 +3732,23 @@ class PostgresPlanningExecutionPreparer:
                     }
                     for item in inputs
                 ],
-                **({"authoritative_narrative_load": {
-                    "narrative_load_policy": authoritative_envelope[
-                        "narrative_load_policy"
-                    ],
-                    "narrative_load_policy_lineage": authoritative_envelope[
-                        "narrative_load_policy_lineage"
-                    ],
-                    "narrative_load_projection": authoritative_envelope[
-                        "narrative_load_projection"
-                    ],
-                }} if command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
+                **(
+                    {
+                        "authoritative_narrative_load": {
+                            "narrative_load_policy": authoritative_envelope[
+                                "narrative_load_policy"
+                            ],
+                            "narrative_load_policy_lineage": authoritative_envelope[
+                                "narrative_load_policy_lineage"
+                            ],
+                            "narrative_load_projection": authoritative_envelope[
+                                "narrative_load_projection"
+                            ],
+                        }
+                    }
+                    if command.generator_operation_name not in FOUNDATION_GENERATORS
+                    else {}
+                ),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
                 "narrative_intelligence": context_document.content.get(
@@ -3864,16 +4038,24 @@ class PostgresPlanningExecutionPreparer:
                         f"budget:{stable_key}:attempt:{attempt_id}"
                     ),
                     provider=self.execution_transport.provider,
-                    currency="USD",
+                    currency=(
+                        "UNKNOWN"
+                        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                        else "USD"
+                    ),
                     estimated_amount=provider_reservation_amount,
                     estimated_tokens=provider_reservation_tokens,
                     caps=self.budget_caps,
+                    call_caps=self.provider_call_caps,
+                    token_caps=self.provider_token_caps,
                     budget_scope_id=str(provider_token_contract["budget_scope_id"]),
                     expected_budget_scope_revision=(
                         int(provider_token_contract["budget_scope_revision"])
                         if provider_token_contract["budget_scope_revision"] is not None
                         else None
                     ),
+                    accounting_basis=self.cost_accounting_basis,
+                    cost_authorization_ref=self.account_authorization_ref,
                 ),
             )
             if not bool(reservation.get("execution_authorized")):
@@ -3889,8 +4071,9 @@ class PostgresPlanningExecutionPreparer:
             # Budget Authority contract.  Runtime configuration may have
             # changed since the first send, but it cannot rewrite the frozen
             # reservation ceiling on replay.
-            provider_reservation_amount = str(
-                recovered_completion["budget_reserved_amount"]
+            recovered_amount = recovered_completion["budget_reserved_amount"]
+            provider_reservation_amount = (
+                str(recovered_amount) if recovered_amount is not None else None
             )
             provider_reservation_tokens = int(
                 recovered_completion["budget_estimated_tokens"]
@@ -4317,6 +4500,11 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
+        knowledge_access_policy = resolve_book_knowledge_access_policy(
+            production_profile=production_profile,
+            project_id=command.project_id,
+            book_id=command.book_id,
+        )
         # INVARIANT: A technical retry may create a new Operation Attempt, but it must not
         # become a semantic replanning event. Freeze selection at the Planning
         # Operation identity so every retry reuses the exact same Authority
@@ -4341,10 +4529,21 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_BUNDLE_INVALID",
                     "Frozen Planning Context lacks Narrative Intelligence selection",
                 )
+            if (
+                frozen_context.content.get("knowledge_access_policy")
+                != knowledge_access_policy
+                or selection.get("knowledge_access_policy")
+                != knowledge_access_policy
+            ):
+                raise KernelError(
+                    "PLANNING_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+                    "frozen Planning Knowledge access differs from Book Authority",
+                )
             self._append_narrative_intelligence_documents(
                 command=command,
                 selection=selection,
                 documents=documents,
+                knowledge_access_policy=knowledge_access_policy,
             )
             return frozen_context, tuple(documents)
         need = _planning_narrative_intelligence_need(
@@ -4361,14 +4560,17 @@ class PostgresPlanningExecutionPreparer:
         )
         narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
             project_id=command.project_id,
+            book_id=command.book_id,
             need=need,
             limit=_narrative_intelligence_limit(command.generator_operation_name),
+            knowledge_access_policy=knowledge_access_policy,
         )
         self._append_narrative_intelligence_documents(
             command=command,
             selection=narrative_intelligence,
             documents=documents,
             selected_inputs=selected,
+            knowledge_access_policy=knowledge_access_policy,
         )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
@@ -4381,12 +4583,19 @@ class PostgresPlanningExecutionPreparer:
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             "narrative_intelligence": narrative_intelligence,
-            **({"foundation_task": foundation_task(command.generator_operation_name)} if command.generator_operation_name in FOUNDATION_GENERATORS else {"realization_reference_contract": _realization_reference_contract(
-                project_id=command.project_id,
-                book_id=command.book_id,
-                frozen_by_operation_id=operation_id,
-                inputs=inputs,
-            )}),
+            "knowledge_access_policy": knowledge_access_policy,
+            **(
+                {"foundation_task": foundation_task(command.generator_operation_name)}
+                if command.generator_operation_name in FOUNDATION_GENERATORS
+                else {
+                    "realization_reference_contract": _realization_reference_contract(
+                        project_id=command.project_id,
+                        book_id=command.book_id,
+                        frozen_by_operation_id=operation_id,
+                        inputs=inputs,
+                    )
+                }
+            ),
             **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
@@ -4440,33 +4649,69 @@ class PostgresPlanningExecutionPreparer:
         return context, tuple(documents)
 
     def _world_context_bundle(self, *, operation_id, command, base, stage):
-        source = self.query.require(project_id=command.project_id, asset_version_id=stage.task["source_ref"]["asset_version_id"])
+        source = self.query.require(
+            project_id=command.project_id,
+            asset_version_id=stage.task["source_ref"]["asset_version_id"],
+        )
         if source.content_hash != stage.task["source_ref"]["content_hash"]:
-            raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "world role projection must retain its exact source version")
+            raise KernelError(
+                "WORLD_CONTEXT_SOURCE_DRIFT",
+                "world role projection must retain its exact source version",
+            )
         content = {**base.content, "world_preparation": dict(stage.task)}
         content["token_budget"] = stage.task["policy"]["context_token_budget"]
-        selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id, "asset_type": source.asset_type, "content_hash": source.content_hash, "content": source.content}]
+        selected = [
+            {
+                "role": stage.task["role"],
+                "asset_version_id": source.asset_version_id,
+                "asset_type": source.asset_type,
+                "content_hash": source.content_hash,
+                "content": source.content,
+            }
+        ]
         content["input_versions"] = selected
-        content["context_manifest"] = self._planning_context_manifest(command=command, selected_inputs=selected, content=content, provider_stage=stage)
-        content["estimated_tokens"] = content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        content["context_manifest"] = self._planning_context_manifest(
+            command=command,
+            selected_inputs=selected,
+            content=content,
+            provider_stage=stage,
+        )
+        content["estimated_tokens"] = content["context_manifest"]["token_accounting"][
+            "accepted_tokens"
+        ]
         logical_ref = f"world_preparation/context/{operation_id}/{stage.name}"
         try:
-            frozen = self.query.require(project_id=command.project_id, logical_ref=logical_ref)
+            frozen = self.query.require(
+                project_id=command.project_id, logical_ref=logical_ref
+            )
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
         else:
             if frozen.content != content:
-                raise KernelError("WORLD_CONTEXT_FROZEN_CONFLICT", "retry cannot replace the confirmed world stage Context")
+                raise KernelError(
+                    "WORLD_CONTEXT_FROZEN_CONFLICT",
+                    "retry cannot replace the confirmed world stage Context",
+                )
             return frozen, source
-        document = self.writer.materialize_output(AuthorityAssetWriteCommand(
-            operation_id=operation_id, project_id=command.project_id,
-            asset_id=f"world-context:{operation_id}:{stage.name}", asset_type="context_bundle",
-            schema_version="novelos.planning_context_bundle.v1", logical_ref=logical_ref,
-            category="planning_context", output_key=f"planning.context_bundle.{stage.name}", role="context_bundle",
-            content=content, qualification_policy="world-role-context-v1", trace_id=command.trace_id,
-            correlation_id=command.correlation_id, reference_asset_ids=(source.asset_id,),
-        ))
+        document = self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                asset_id=f"world-context:{operation_id}:{stage.name}",
+                asset_type="context_bundle",
+                schema_version="novelos.planning_context_bundle.v1",
+                logical_ref=logical_ref,
+                category="planning_context",
+                output_key=f"planning.context_bundle.{stage.name}",
+                role="context_bundle",
+                content=content,
+                qualification_policy="world-role-context-v1",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                reference_asset_ids=(source.asset_id,),
+            )
+        )
         return document, source
 
     @staticmethod
@@ -4477,12 +4722,18 @@ class PostgresPlanningExecutionPreparer:
         content: Mapping[str, Any],
         provider_stage: Any = None,
     ) -> dict[str, Any]:
-        stage_name = provider_stage.name if provider_stage is not None else command.generator_operation_name
+        stage_name = (
+            provider_stage.name
+            if provider_stage is not None
+            else command.generator_operation_name
+        )
         token_budget = int(content.get("token_budget") or 0)
         provider_view = build_provider_context_view(
             stage_name,
             content,
-            {"world_preparation": dict(provider_stage.task)} if provider_stage is not None else {},
+            {"world_preparation": dict(provider_stage.task)}
+            if provider_stage is not None
+            else {},
         )
         accepted_state_boundary = provider_view.get("accepted_state_boundary")
         if not isinstance(accepted_state_boundary, Mapping):
@@ -4607,8 +4858,7 @@ class PostgresPlanningExecutionPreparer:
             value=envelope,
             source_revision=envelope_hash,
             source_identity=(
-                f"planning-context-envelope:{stage_name}:"
-                f"{command.logical_key}"
+                f"planning-context-envelope:{stage_name}:{command.logical_key}"
             ),
             provenance={
                 "authority": "StoryPlanningRuntime",
@@ -4642,7 +4892,9 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=repair_version_id or f"{key}:{digest}",
                 logical_kind=f"planning_{key}",
                 physical_asset_type=(
-                    str(repair_source.get("asset_type") or "planning_context_projection")
+                    str(
+                        repair_source.get("asset_type") or "planning_context_projection"
+                    )
                     if isinstance(repair_source, Mapping)
                     else "planning_context_projection"
                 ),
@@ -4665,7 +4917,21 @@ class PostgresPlanningExecutionPreparer:
         allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
         if provider_stage is not None:
             source_ref = provider_stage.task["source_ref"]
-            append_candidate(asset_version_id=source_ref["asset_version_id"], logical_kind="world_role_task", physical_asset_type="world_preparation_source", value=provider_stage.task, source_revision=source_ref["content_hash"], source_identity=f"world-task:{stage_name}:{source_ref['asset_version_id']}", provenance={"authority_asset_version_id": source_ref["asset_version_id"], "source_content_hash": source_ref["content_hash"], "projection_contract": "world-provider-task.v1"}, section="WORLD_TASK", bucket=provider_stage.task["role"])
+            append_candidate(
+                asset_version_id=source_ref["asset_version_id"],
+                logical_kind="world_role_task",
+                physical_asset_type="world_preparation_source",
+                value=provider_stage.task,
+                source_revision=source_ref["content_hash"],
+                source_identity=f"world-task:{stage_name}:{source_ref['asset_version_id']}",
+                provenance={
+                    "authority_asset_version_id": source_ref["asset_version_id"],
+                    "source_content_hash": source_ref["content_hash"],
+                    "projection_contract": "world-provider-task.v1",
+                },
+                section="WORLD_TASK",
+                bucket=provider_stage.task["role"],
+            )
             allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
         required = tuple(sorted({item.logical_context_kind for item in candidates}))
         common = {
@@ -4689,14 +4955,10 @@ class PostgresPlanningExecutionPreparer:
             ),
             ContextPolicySnapshot(
                 identity=PolicyIdentity(
-                    policy_id="planning-typed-stage:"
-                    + stage_name,
+                    policy_id="planning-typed-stage:" + stage_name,
                     version="planning-context-contract-v1",
-                    content_hash=canonical_hash(
-                        {**common, "stage": stage_name}
-                    ),
-                    snapshot_ref="planning-context-contract:"
-                    + stage_name,
+                    content_hash=canonical_hash({**common, "stage": stage_name}),
+                    snapshot_ref="planning-context-contract:" + stage_name,
                 ),
                 allowed_logical_kinds=allowed,
                 required_logical_kinds=required,
@@ -4795,7 +5057,18 @@ class PostgresPlanningExecutionPreparer:
         selection: Mapping[str, Any],
         documents: list[AuthorityAssetDocument],
         selected_inputs: list[dict[str, Any]] | None = None,
+        knowledge_access_policy: Mapping[str, Any],
     ) -> None:
+        access = validate_book_knowledge_access_policy(
+            knowledge_access_policy,
+            project_id=command.project_id,
+            book_id=command.book_id,
+        )
+        if selection.get("knowledge_access_policy") != access:
+            raise KernelError(
+                "PLANNING_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+                "Narrative Intelligence selection differs from Book access policy",
+            )
         selected = selection.get("selected")
         if not isinstance(selected, list):
             raise KernelError(
@@ -4806,6 +5079,20 @@ class PostgresPlanningExecutionPreparer:
             raise KernelError(
                 "PLANNING_NARRATIVE_INTELLIGENCE_INVALID",
                 "Narrative Intelligence selection exceeds Planning bandwidth",
+            )
+        selected_ids = {
+            str(item.get("knowledge_card_asset_version_id") or "")
+            for item in selected
+            if isinstance(item, Mapping)
+        }
+        allowed_ids = set(access["allowed_knowledge_card_asset_version_ids"])
+        if (
+            (access["mode"] == "DENY_ALL" and selected_ids)
+            or (access["mode"] == "ALLOW_ONLY" and not selected_ids.issubset(allowed_ids))
+        ):
+            raise KernelError(
+                "PLANNING_KNOWLEDGE_ACCESS_SCOPE_VIOLATION",
+                "selected Narrative Intelligence is outside the exact Book allow set",
             )
         for ordinal, item in enumerate(selected, start=1):
             if not isinstance(item, Mapping):
@@ -4819,6 +5106,8 @@ class PostgresPlanningExecutionPreparer:
                 project_id=command.project_id,
                 asset_version_id=asset_version_id,
                 content_hash=content_hash,
+                book_id=command.book_id,
+                knowledge_access_policy=dict(access),
             )
             document = self.query.require(
                 project_id=command.project_id,

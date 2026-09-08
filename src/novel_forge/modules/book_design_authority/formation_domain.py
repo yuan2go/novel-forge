@@ -8,10 +8,27 @@ from typing import Any, Mapping
 from types import MappingProxyType
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.authority_security import (
+    FORMATION_AUTO_ACTIONS,
+    Principal,
+    PrincipalType,
+    build_scoped_auto_decision_evidence,
+    canonical_formation_auto_authorization,
+    require_worker_scoped_auto_decision,
+)
 from .foundation import FoundationRole
 
 
 STORY_FORMATION_POLICY_VERSION = "story-formation-policy.v1"
+
+
+def deterministic_story_formation_run_id(
+    *, project_id: str, book_id: str, stable_idempotency_key: str
+) -> str:
+    identity = "\x00".join(
+        (project_id, book_id, stable_idempotency_key)
+    ).encode("utf-8")
+    return "story-formation:" + hashlib.sha256(identity).hexdigest()
 
 
 def _canonical_hash(value: Any) -> str:
@@ -141,8 +158,38 @@ class StoryFormationInput:
             policy = dict(self.generation_policy or {})
             if self.layers or self.book_design_asset_version_id or len(self.creative_brief_content_hash) != 71 or not self.creative_brief_content_hash.startswith("sha256:"):
                 raise ValueError("Generated Formation requires one hash-bound brief and no prequalified layers")
-            if set(policy) != {"contract_version", "approval_mode", "creative_candidates", "target_chapters", "title"} or policy["contract_version"] != "formation-generation.v1" or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"} or not isinstance(policy["creative_candidates"], int) or isinstance(policy["creative_candidates"], bool) or not 2 <= policy["creative_candidates"] <= 4 or not isinstance(policy["target_chapters"], int) or isinstance(policy["target_chapters"], bool) or not 1 <= policy["target_chapters"] <= 10000 or not str(policy["title"]).strip():
+            base_fields = {
+                "contract_version",
+                "approval_mode",
+                "creative_candidates",
+                "target_chapters",
+                "title",
+            }
+            contract_version = str(policy.get("contract_version") or "")
+            expected_fields = (
+                base_fields | {"auto_authorization"}
+                if contract_version == "formation-generation.v2"
+                and policy.get("approval_mode") == "AUTO"
+                else base_fields
+            )
+            if (
+                set(policy) != expected_fields
+                or contract_version
+                not in {"formation-generation.v1", "formation-generation.v2"}
+                or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"}
+                or not isinstance(policy["creative_candidates"], int)
+                or isinstance(policy["creative_candidates"], bool)
+                or not 2 <= policy["creative_candidates"] <= 4
+                or not isinstance(policy["target_chapters"], int)
+                or isinstance(policy["target_chapters"], bool)
+                or not 1 <= policy["target_chapters"] <= 10000
+                or not str(policy["title"]).strip()
+            ):
                 raise ValueError("Formation generation policy requires bounded search, scope and explicit approval mode")
+            if "auto_authorization" in policy:
+                policy["auto_authorization"] = canonical_formation_auto_authorization(
+                    policy["auto_authorization"]
+                )
             object.__setattr__(self, "generation_policy", MappingProxyType(policy))
         elif self.creative_brief_content_hash or self.generation_policy:
             raise ValueError("Formation generation policy requires a frozen creative brief")
@@ -195,15 +242,105 @@ class StoryFormationInput:
             **({"creative_brief_asset_version_id": self.creative_brief_asset_version_id, "creative_brief_content_hash": self.creative_brief_content_hash, "generation_policy": dict(self.generation_policy or {})} if self.creative_brief_asset_version_id else {}),
         }
 
+    def require_admission_scope(
+        self,
+        *,
+        project_id: str,
+        workspace_id: str,
+        book_id: str,
+        formation_run_id: str,
+        admitted_by_principal_id: str,
+        admitted_by_principal_type: PrincipalType,
+    ) -> None:
+        policy = dict(self.generation_policy or {})
+        if policy.get("approval_mode") != "AUTO":
+            return
+        if policy.get("contract_version") != "formation-generation.v2":
+            raise ValueError(
+                "AUTO Formation requires a frozen scoped authorization contract"
+            )
+        authorization = canonical_formation_auto_authorization(
+            policy.get("auto_authorization")
+        )
+        expected_scope = (
+            project_id,
+            workspace_id,
+            book_id,
+            formation_run_id,
+            admitted_by_principal_id,
+        )
+        actual_scope = (
+            authorization["project_id"],
+            authorization["workspace_id"],
+            authorization["book_id"],
+            authorization["formation_run_id"],
+            authorization["authorized_by_principal_id"],
+        )
+        if actual_scope != expected_scope:
+            raise ValueError("AUTO Formation authorization differs from Formation scope")
+        if admitted_by_principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise ValueError("AUTO Formation must be authorized by a trusted operator")
+
+    @property
+    def auto_authorization(self) -> dict[str, Any]:
+        policy = dict(self.generation_policy or {})
+        value = policy.get("auto_authorization")
+        return canonical_formation_auto_authorization(value) if value else {}
+
     @property
     def digest(self) -> str:
         return _canonical_hash(self.to_dict())
 
 
+def build_formation_auto_decision_evidence(
+    *,
+    frozen: StoryFormationInput,
+    action: str,
+    candidate_asset_version_id: str,
+    candidate_content_hash: str,
+    executed_by_principal_id: str,
+) -> dict[str, Any]:
+    return build_scoped_auto_decision_evidence(
+        authorization=frozen.auto_authorization,
+        formation_input_digest=frozen.digest,
+        action=action,
+        candidate_asset_version_id=candidate_asset_version_id,
+        candidate_content_hash=candidate_content_hash,
+        executed_by_principal_id=executed_by_principal_id,
+    )
+
+
+def require_worker_formation_auto_decision(
+    *,
+    principal: Principal,
+    evidence: Mapping[str, Any] | None,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    action: str,
+    candidate_asset_version_id: str,
+    candidate_content_hash: str,
+) -> None:
+    require_worker_scoped_auto_decision(
+        principal=principal,
+        evidence=evidence,
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        action=action,
+        candidate_asset_version_id=candidate_asset_version_id,
+        candidate_content_hash=candidate_content_hash,
+    )
+
+
 __all__ = [
     "FORMATION_SEQUENCE",
+    "FORMATION_AUTO_ACTIONS",
     "FormationLayerInput",
     "STORY_FORMATION_POLICY_VERSION",
     "StoryFormationInput",
     "StoryFormationStage",
+    "build_formation_auto_decision_evidence",
+    "deterministic_story_formation_run_id",
+    "require_worker_formation_auto_decision",
 ]

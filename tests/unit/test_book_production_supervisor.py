@@ -263,6 +263,14 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
     supervisor = object.__new__(PostgresBookProductionSupervisor)
     supervisor.context_token_budget = 16_000
     supervisor.quality_context_token_budget = 28_000
+    supervisor.production_preparation = SimpleNamespace(
+        resolver=SimpleNamespace(
+            resolve_override=lambda **_values: SimpleNamespace(
+                asset_type="production_profile",
+                content={},
+            )
+        )
+    )
 
     request = supervisor._chapter_preparation_request(
         book={
@@ -270,6 +278,7 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
             "workspace_id": "workspace:1",
             "book_id": "book:1",
             "stable_idempotency_key": "book:1",
+            "production_profile_version": "production-profile:v1",
         },
         next_chapter=3,
         explicit_overrides={
@@ -286,6 +295,8 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
         "chapter_plan": "chapter-plan:v3",
         "story_state_snapshot": "story-state:v2",
     }
+    assert request.knowledge_access_policy["mode"] == "PROJECT_DEFAULT"
+    assert request.knowledge_access_policy["configured_explicitly"] is False
 
     report = supervisor._stage_budgeted_preparation_report(
         SimpleNamespace(

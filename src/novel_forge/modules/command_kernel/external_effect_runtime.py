@@ -929,11 +929,9 @@ def _validated_frozen_provider_capability_profile(
             "EFFECT_PROVIDER_CAPABILITY_INVALID",
             "succeeded Provider Effect capability profile is invalid",
         ) from exc
-    if (
-        profile.provider != str(effect.get("provider") or "")
-        or profile.reconciliation_mode
-        != str(effect.get("reconciliation_mode") or "")
-    ):
+    if profile.provider != str(
+        effect.get("provider") or ""
+    ) or profile.reconciliation_mode != str(effect.get("reconciliation_mode") or ""):
         raise KernelError(
             "EFFECT_PROVIDER_CAPABILITY_CONFLICT",
             "succeeded Provider Effect capability profile differs from its frozen intent",
@@ -1182,9 +1180,7 @@ def reconcile_external_effect(
                 "successful reconciliation has no original Provider dispatch",
             )
         generation = int(dispatch[1])
-        reconciliation_receipt_id = (
-            f"reconciliation:{effect_id}:{generation}:success"
-        )
+        reconciliation_receipt_id = f"reconciliation:{effect_id}:{generation}:success"
         accept_external_effect_receipt(
             database_url,
             context,
@@ -1753,7 +1749,8 @@ def _resolve_reconciled_budget(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
-            SELECT reservation_id, reserved_amount, estimated_tokens
+            SELECT reservation_id, reserved_amount, estimated_tokens,
+                   accounting_basis
             FROM authority_budget_reservation
             WHERE external_effect_id=%s AND project_id=%s
               AND status IN ('RESERVED','HELD_UNKNOWN')
@@ -1775,18 +1772,27 @@ def _resolve_reconciled_budget(
                 or int(usage.get("input_tokens") or 0)
                 + int(usage.get("output_tokens") or 0),
             )
-        if isinstance(cost, dict):
+        accounting_basis = str(row[3] or "PRICED").upper()
+        if isinstance(cost, dict) and accounting_basis != "ACCOUNT_ENTITLEMENT":
             normalized.setdefault("actual_cost", str(cost.get("amount") or "0"))
         settle_provider_budget(
             database_url,
             reservation_id=str(row[0]),
             project_id=project_id,
-            actual_amount=str(normalized.get("actual_cost") or row[1]),
+            actual_amount=(
+                None
+                if accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else str(normalized.get("actual_cost") or row[1])
+            ),
             actual_tokens=int(normalized.get("actual_tokens") or row[2]),
             evidence={
                 **normalized,
                 "reconciled": True,
                 "cost_fallback_to_reservation": "actual_cost" not in normalized,
+                "accounting_basis": accounting_basis,
+                "cost_status": (
+                    "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
+                ),
             },
         )
     elif outcome in {"not_found", "failed_final", "cancelled"}:

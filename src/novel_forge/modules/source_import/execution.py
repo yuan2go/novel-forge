@@ -40,6 +40,8 @@ from novel_forge.modules.mkaos_authority.domain import (
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     ExecutionOutcome,
+    ExecutionRecoveryAction,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     ExecutionRuntimeClass,
     FallbackPolicy,
@@ -74,6 +76,7 @@ from .execution_contracts import (
     CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
     MKAOS_STAGE,
+    compound_deconstruction_output_schema,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
 )
@@ -82,6 +85,7 @@ from .profiling import (
     SOURCE_CLASSIFIER_METHODOLOGY,
     SOURCE_CLASSIFIER_METHODOLOGY_HASH,
 )
+from .analysis_profiles import derive_corpus_sample_byte_limit
 
 
 _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -124,7 +128,6 @@ class _ExecutionSpec:
 
 
 class _SourceGatewayEffectAdapter:
-
     production_execution_gateway_backed = True
 
     def __init__(
@@ -164,9 +167,7 @@ class _SourceGatewayEffectAdapter:
             request_sent = True
             result = self.session.gateway.reconcile(handle)
         except Exception as exc:
-            recovered = self.session.evidence_store.find_record(
-                request.execution_id
-            )
+            recovered = self.session.evidence_store.find_record(request.execution_id)
             submission_phase = (
                 str(recovered.raw_evidence.get("submission_phase") or "")
                 if recovered is not None
@@ -184,58 +185,11 @@ class _SourceGatewayEffectAdapter:
                 f"Source PEP execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,
             ) from exc
-        record = self.session.evidence_store.get_record(request.execution_id)
-        evidence: dict[str, Any] = {
-            "provider_id": self.binding.route_snapshot.model_provider,
-            "model_id": self.binding.route_snapshot.model_id,
-            "prompt_version": self.binding.input_manifest.prompt_bundle_version,
-            "skill_version": self.binding.input_manifest.skill_bundle_version,
-            "real_model_call": handle.transport
-            in {
-                ExecutionRuntimeClass.REMOTE_PROVIDER_API,
-                ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-            },
-            "fixture_protocol_only": (
-                handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
-            ),
-            "production_verified": False,
-            "production_execution": {
-                "execution_request": request.to_dict(),
-                "execution_handle": handle.to_dict(),
-                "execution_result": result.to_dict(),
-                "route_snapshot": self.binding.route_snapshot.to_dict(),
-                "input_manifest": self.binding.input_manifest.to_dict(),
-                "process_evidence": dict(record.raw_evidence),
-            },
-        }
-        capability_evidence = record.raw_evidence.get("capability_evidence")
-        if isinstance(capability_evidence, Mapping):
-            evidence["capability_runtime"] = dict(capability_evidence)
-        if result.normalized_output_ref:
-            evidence["result"] = self.session.evidence_store.read_evidence(
-                str(result.normalized_output_ref)
-            )
-        if result.usage_receipt_ref:
-            evidence["usage"] = self.session.evidence_store.read_evidence(
-                str(result.usage_receipt_ref)
-            )
-        if result.cost_receipt_ref:
-            evidence["cost"] = self.session.evidence_store.read_evidence(
-                str(result.cost_receipt_ref)
-            )
-        outcome = {
-            ExecutionOutcome.SUCCEEDED: "success",
-            ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
-            ExecutionOutcome.TIMED_OUT: "retryable_failure",
-            ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
-            ExecutionOutcome.FINAL_FAILURE: "final_failure",
-            ExecutionOutcome.CANCELLED: "cancelled",
-        }.get(result.outcome, "unknown")
-        return ProviderResult(
-            outcome,
-            handle.backend_execution_id,
-            evidence,
-            handle.provider_request_id or "",
+        return _source_gateway_provider_result(
+            binding=self.binding,
+            session=self.session,
+            handle=handle,
+            result=result,
         )
 
     def query(self, **kwargs: Any) -> ProviderResult:
@@ -260,8 +214,175 @@ class _SourceGatewayEffectAdapter:
         )
 
 
-class PostgresContentIntelligenceExecutionPort:
+def _source_gateway_provider_result(
+    *,
+    binding: ChapterExecutionBinding,
+    session: Any,
+    handle: Any,
+    result: Any,
+) -> ProviderResult:
+    record = session.evidence_store.get_record(binding.request.execution_id)
+    evidence: dict[str, Any] = {
+        "provider_id": binding.route_snapshot.model_provider,
+        "model_id": binding.route_snapshot.model_id,
+        "prompt_version": binding.input_manifest.prompt_bundle_version,
+        "skill_version": binding.input_manifest.skill_bundle_version,
+        "real_model_call": handle.transport
+        in {
+            ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+            ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        },
+        "fixture_protocol_only": (
+            handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+        ),
+        "production_verified": False,
+        "production_execution": {
+            "execution_request": binding.request.to_dict(),
+            "execution_handle": handle.to_dict(),
+            "execution_result": result.to_dict(),
+            "route_snapshot": binding.route_snapshot.to_dict(),
+            "input_manifest": binding.input_manifest.to_dict(),
+            "process_evidence": dict(record.raw_evidence),
+        },
+    }
+    capability_evidence = record.raw_evidence.get("capability_evidence")
+    if isinstance(capability_evidence, Mapping):
+        evidence["capability_runtime"] = dict(capability_evidence)
+    if result.normalized_output_ref:
+        evidence["result"] = session.evidence_store.read_evidence(
+            str(result.normalized_output_ref)
+        )
+    if result.usage_receipt_ref:
+        evidence["usage"] = session.evidence_store.read_evidence(
+            str(result.usage_receipt_ref)
+        )
+    if result.cost_receipt_ref:
+        evidence["cost"] = session.evidence_store.read_evidence(
+            str(result.cost_receipt_ref)
+        )
+    outcome = {
+        ExecutionOutcome.SUCCEEDED: "success",
+        ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
+        ExecutionOutcome.TIMED_OUT: "retryable_failure",
+        ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
+        ExecutionOutcome.FINAL_FAILURE: "final_failure",
+        ExecutionOutcome.CANCELLED: "cancelled",
+    }.get(result.outcome, "unknown")
+    return ProviderResult(
+        outcome,
+        handle.backend_execution_id,
+        evidence,
+        handle.provider_request_id or "",
+    )
 
+
+class _SourceGatewayRecoveryEffectAdapter:
+    production_execution_gateway_backed = True
+
+    def __init__(
+        self,
+        *,
+        transport: ProductionExecutionGatewayExternalEffectAdapter,
+        worker: WorkerLeaseCommand,
+        effect: Mapping[str, Any],
+    ) -> None:
+        self.transport = transport
+        self.worker = worker
+        self.effect = dict(effect)
+        self.provider = transport.provider
+        self.reconciliation_mode = transport.reconciliation_mode
+        self.capability_profile = transport.capability_profile
+
+    def execute(self, **_kwargs: Any) -> ProviderResult:
+        raise ExternalEffectAdapterError(
+            "Source recovery adapter cannot dispatch a new execution",
+            request_sent=False,
+        )
+
+    def query(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        effect_id = str(self.effect["external_effect_id"])
+        if (
+            stable_idempotency_key != self.effect["stable_idempotency_key"]
+            or capability != self.effect["capability"]
+            or str(request_payload.get("external_effect_id") or "") != effect_id
+        ):
+            raise ExternalEffectAdapterError(
+                "Source recovery differs from its frozen ExternalEffect",
+                request_sent=False,
+            )
+        metadata = self.effect.get("request_payload", {}).get("_production_execution")
+        if not isinstance(metadata, Mapping):
+            raise ExternalEffectAdapterError(
+                "Source recovery has no frozen execution identity",
+                request_sent=False,
+            )
+        execution_id = f"source-intelligence-execution:{effect_id}"
+        session = self.transport.session_for_project(self.worker.project_id)
+        record = session.evidence_store.find_record(execution_id)
+        if record is None:
+            return ProviderResult("not_found", "", {"execution_id": execution_id})
+        request = record.request
+        execution_fence = int(metadata.get("fencing_token") or 0)
+        if (
+            request.external_effect_id != effect_id
+            or request.operation_id != self.worker.causation_id
+            or request.attempt_id != self.worker.attempt_id
+            or request.fencing_token != execution_fence
+        ):
+            raise ExternalEffectAdapterError(
+                "persisted Source execution differs from frozen recovery identity",
+                request_sent=True,
+            )
+        authorization = ExecutionRecoveryAuthorization(
+            authorization_id=(
+                "execution-recovery:"
+                + _token(
+                    f"{execution_id}:{self.worker.fencing_token}:"
+                    f"{ExecutionRecoveryAction.QUERY.value}"
+                )
+            ),
+            execution_id=execution_id,
+            external_effect_id=effect_id,
+            operation_id=self.worker.causation_id,
+            attempt_id=self.worker.attempt_id,
+            execution_fencing_token=execution_fence,
+            recovery_fencing_token=self.worker.fencing_token,
+            recovery_worker_id=self.worker.worker_id,
+            action=ExecutionRecoveryAction.QUERY,
+            trace_id=self.worker.trace_id,
+            correlation_id=self.worker.correlation_id,
+        )
+        self.transport.recovery_authorizations.record(authorization)
+        result = session.gateway.recover_existing_execution(
+            request,
+            record.handle,
+            authorization,
+        )
+        route = session.gateway.admission.resolve_route(request)
+        manifest = session.gateway.admission.contracts.input_manifest(
+            request.input_manifest_ref
+        )
+        return _source_gateway_provider_result(
+            binding=ChapterExecutionBinding(request, route, manifest),
+            session=session,
+            handle=record.handle,
+            result=result,
+        )
+
+    def cancel(self, **_kwargs: Any) -> ProviderResult:
+        raise ExternalEffectAdapterError(
+            "Source recovery cancellation requires an explicit cancellation command",
+            request_sent=False,
+        )
+
+
+class PostgresContentIntelligenceExecutionPort:
     external_effect_backed = True
     production_execution_gateway_backed = True
 
@@ -277,14 +398,18 @@ class PostgresContentIntelligenceExecutionPort:
         methodology_registry: SourceMethodologyRegistry | None = None,
         source_object_reader: Any | None = None,
         provider_output_token_reserve: int = 4_096,
+        provider_timeout_seconds: int = 300,
     ) -> None:
         if (
             not database_url
             or not worker_id
             or lease_seconds <= 0
             or provider_output_token_reserve <= 0
+            or provider_timeout_seconds <= 0
         ):
-            raise ValueError("Source PEP port requires database, worker, and lease")
+            raise ValueError(
+                "Source PEP port requires database, worker, lease, and Provider limits"
+            )
         if not getattr(transport, "production_execution_gateway_backed", False):
             raise ValueError("Source execution requires ProductionExecutionGateway")
         self.database_url = database_url
@@ -293,6 +418,30 @@ class PostgresContentIntelligenceExecutionPort:
         self.lease_seconds = lease_seconds
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.cost_accounting_basis = str(
+            getattr(transport, "cost_accounting_basis", "PRICED") or "PRICED"
+        ).upper()
+        self.account_authorization_ref = str(
+            getattr(transport, "account_authorization_ref", "") or ""
+        )
+        self.provider_call_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(transport, "provider_call_caps", {}) or {}
+            ).items()
+        }
+        self.provider_token_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(transport, "provider_token_caps", {}) or {}
+            ).items()
+        }
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+            not self.account_authorization_ref or self.budget_caps
+        ):
+            raise ValueError(
+                "Source account-entitlement execution requires authorization and no monetary caps"
+            )
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
         self.methodology_registry = methodology_registry or SourceMethodologyRegistry(
@@ -300,6 +449,28 @@ class PostgresContentIntelligenceExecutionPort:
         )
         self.source_object_reader = source_object_reader
         self.provider_output_token_reserve = provider_output_token_reserve
+        self.provider_timeout_seconds = provider_timeout_seconds
+        source_route = self.transport.routes["quality_source_originality"]
+        self.source_sample_byte_limit = derive_corpus_sample_byte_limit(
+            model_context_limit=source_route.model_context_limit,
+            output_token_reserve=provider_output_token_reserve,
+            token_safety_margin=source_route.token_safety_margin,
+            token_framing_overhead=source_route.token_framing_overhead,
+        )
+
+    def recovery_adapter(
+        self, *, worker: WorkerLeaseCommand, effect: Mapping[str, Any]
+    ) -> _SourceGatewayRecoveryEffectAdapter:
+        if str(effect.get("provider") or "") != self.transport.provider:
+            raise KernelError(
+                "SOURCE_PEP_RECOVERY_PROVIDER_CONFLICT",
+                "uncertain Source execution belongs to another Provider",
+            )
+        return _SourceGatewayRecoveryEffectAdapter(
+            transport=self.transport,
+            worker=worker,
+            effect=effect,
+        )
 
     def execute_classification(
         self,
@@ -432,7 +603,55 @@ class PostgresContentIntelligenceExecutionPort:
         source_segments: tuple[dict[str, Any], ...],
         input_observations: tuple[dict[str, Any], ...] = (),
         analysis_plan_asset_version_id: str = "",
+        compound_analyzers: tuple[AnalyzerContract, ...] = (),
+        sampling_manifest: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
+        analyzers = compound_analyzers or (analyzer,)
+        compound = bool(compound_analyzers)
+        if compound and (
+            input_observations
+            or not evidence_spans
+            or analyzer != analyzers[0]
+            or not isinstance(sampling_manifest, Mapping)
+            or not sampling_manifest
+        ):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYSIS_INPUT_INVALID",
+                "compound deconstruction requires frozen Source evidence, analyzers, and sampling",
+            )
+        if len({item.dimension for item in analyzers}) != len(analyzers):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYZER_DUPLICATE",
+                "compound deconstruction analyzer dimensions must be unique",
+            )
+        shared_contract = (
+            analyzer.prompt_id,
+            analyzer.prompt_version,
+            analyzer.skill_id,
+            analyzer.skill_version,
+            analyzer.capability_id,
+            analyzer.capability_version,
+            analyzer.provider_policy_version,
+            analyzer.methodology_content_hash,
+        )
+        if any(
+            (
+                item.prompt_id,
+                item.prompt_version,
+                item.skill_id,
+                item.skill_version,
+                item.capability_id,
+                item.capability_version,
+                item.provider_policy_version,
+                item.methodology_content_hash,
+            )
+            != shared_contract
+            for item in analyzers
+        ):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYZER_CONTRACT_CONFLICT",
+                "compound analyzers must share one frozen capability and methodology",
+            )
         if bool(evidence_spans) == bool(input_observations):
             raise KernelError(
                 "SOURCE_PEP_INPUT_MODE_INVALID",
@@ -481,9 +700,38 @@ class PostgresContentIntelligenceExecutionPort:
                 "SOURCE_ANALYZER_SKILL_VERSION_MISMATCH",
                 "Analyzer Skill version differs from canonical methodology",
             )
+        analyzer_contract_hashes = [item.fingerprint for item in analyzers]
+        frozen_sampling_manifest = dict(sampling_manifest or {})
+        sampling_manifest_hash = (
+            _hash(frozen_sampling_manifest) if compound else ""
+        )
+        input_payload = {
+            "analyzer": analyzer.to_dict(),
+            "scope": scope.to_dict(),
+            "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
+            "source_segments": segment_manifest,
+            "input_observation_asset_version_ids": list(lower_ids),
+            "input_observations": observation_manifest,
+            "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
+        }
+        if compound:
+            input_payload.update(
+                {
+                    "analyzers": [item.to_dict() for item in analyzers],
+                    "requested_dimensions": [item.dimension for item in analyzers],
+                    "sampling_manifest": frozen_sampling_manifest,
+                    "sampling_manifest_hash": sampling_manifest_hash,
+                }
+            )
         spec = _ExecutionSpec(
             kind=(
-                "deconstruction_aggregate" if input_observations else "deconstruction"
+                "deconstruction_compound"
+                if compound
+                else (
+                    "deconstruction_aggregate"
+                    if input_observations
+                    else "deconstruction"
+                )
             ),
             stage=DECONSTRUCTION_STAGE,
             capability=analyzer.capability_id,
@@ -499,15 +747,7 @@ class PostgresContentIntelligenceExecutionPort:
                 project_id=worker.project_id,
                 book_id=f"source-corpus:{worker.project_id}",
             ),
-            input_payload={
-                "analyzer": analyzer.to_dict(),
-                "scope": scope.to_dict(),
-                "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
-                "source_segments": segment_manifest,
-                "input_observation_asset_version_ids": list(lower_ids),
-                "input_observations": observation_manifest,
-                "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
-            },
+            input_payload=input_payload,
             artifact_version_ids=(
                 lower_ids
                 if input_observations
@@ -517,20 +757,143 @@ class PostgresContentIntelligenceExecutionPort:
             ),
             context_contract={
                 "analyzer_contract_hash": analyzer.fingerprint,
+                "analyzer_contract_hashes": analyzer_contract_hashes,
                 "scope_hash": scope.fingerprint,
                 "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
                 "input_observation_asset_version_ids": list(lower_ids),
                 "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
+                "sampling_manifest_hash": sampling_manifest_hash,
                 "aggregation_uses_source_text": False,
                 "raw_source_text_in_postgresql": False,
                 "generation_context_allowed": False,
             },
-            output_schema=content_intelligence_output_schema(DECONSTRUCTION_STAGE),
+            output_schema=(
+                compound_deconstruction_output_schema()
+                if compound
+                else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+            ),
         )
         execution = self._execute(worker=worker, spec=spec)
-        observation = validate_content_intelligence_output(
+        provider_output = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
+        if compound:
+            requested_dimensions = tuple(item.dimension for item in analyzers)
+            ordered_observations = _order_compound_observations(
+                provider_output["observations"],
+                requested_dimensions=requested_dimensions,
+            )
+            whole_work = frozen_sampling_manifest.get("whole_work_analyzed") is True
+            expected_coverage = {
+                "scope_claim": (
+                    "FULL_WORK" if whole_work else "BOUNDED_STRATIFIED_SAMPLE"
+                ),
+                "uncovered_material_acknowledged": not whole_work,
+            }
+            if dict(provider_output["coverage_acknowledgement"]) != expected_coverage:
+                raise KernelError(
+                    "SOURCE_COMPOUND_ANALYSIS_COVERAGE_OVERCLAIM",
+                    "Provider coverage acknowledgement differs from frozen sampling",
+                )
+            dimension_results: list[dict[str, Any]] = []
+            bindings: list[dict[str, Any]] = []
+            for result, item_analyzer in zip(
+                ordered_observations, analyzers, strict=True
+            ):
+                normalized = {
+                    "dimension": item_analyzer.dimension,
+                    "provider_status": str(result["status"]),
+                    "status": str(result["status"]),
+                    "applicability_note": str(result["applicability_note"]),
+                    "validation_errors": list(result["validation_errors"]),
+                    "analyzer_contract_hash": item_analyzer.fingerprint,
+                }
+                if result["status"] == "SUCCEEDED":
+                    candidate_observation = {
+                        "findings": [dict(item) for item in result["findings"]],
+                        "confidence": result["confidence"],
+                        "knowledge_status": result["knowledge_status"],
+                    }
+                    try:
+                        valid_observation = validate_observation_payload(
+                            candidate_observation,
+                            evidence_spans=evidence_spans,
+                        )
+                    except (KernelError, ValueError) as exc:
+                        normalized["status"] = "FAILED_VALIDATION"
+                        normalized["validation_errors"] = [
+                            exc.code if isinstance(exc, KernelError) else type(exc).__name__
+                        ]
+                    else:
+                        observation_hash = stable_hash(valid_observation)
+                        normalized.update(
+                            {
+                                "observation": valid_observation,
+                                "observation_hash": observation_hash,
+                            }
+                        )
+                        bindings.append(
+                            {
+                                "schema_version": (
+                                    "source-deconstruction-execution-binding.v1"
+                                ),
+                                "analyzer_contract_hash": item_analyzer.fingerprint,
+                                "scope_hash": scope.fingerprint,
+                                "observation_hash": observation_hash,
+                                "evidence_span_ids": sorted(
+                                    {
+                                        item.evidence_span_id
+                                        for item in evidence_spans
+                                    }
+                                ),
+                                "input_observation_asset_version_ids": [],
+                                **(
+                                    {
+                                        "analysis_plan_asset_version_id": (
+                                            analysis_plan_asset_version_id
+                                        )
+                                    }
+                                    if analysis_plan_asset_version_id
+                                    else {}
+                                ),
+                            }
+                        )
+                dimension_results.append(normalized)
+            compound_binding = {
+                "schema_version": "source-compound-deconstruction-execution.v1",
+                "scope_hash": scope.fingerprint,
+                "analyzer_contract_hashes": analyzer_contract_hashes,
+                "sampling_manifest_hash": sampling_manifest_hash,
+                "coverage_acknowledgement": expected_coverage,
+                "dimension_results": [
+                    {
+                        key: value
+                        for key, value in result.items()
+                        if key != "observation"
+                    }
+                    for result in dimension_results
+                ],
+            }
+            log = self._execution_log(
+                worker=worker,
+                spec=spec,
+                execution=execution,
+                domain_binding={
+                    "source_deconstruction_bindings": bindings,
+                    "source_compound_deconstruction_binding": compound_binding,
+                },
+            )
+            return {
+                "dimension_results": dimension_results,
+                "coverage_acknowledgement": expected_coverage,
+                "sampling_manifest_hash": sampling_manifest_hash,
+                "execution_asset_version_id": log.asset_version_id,
+                "evidence_class": self._evidence_class(execution),
+                "provider_execution_reused": bool(
+                    execution.get("provider_execution_reused")
+                ),
+            }
+        observation = provider_output
         observation = validate_observation_payload(
             observation,
             evidence_spans=evidence_spans,
@@ -565,7 +928,6 @@ class PostgresContentIntelligenceExecutionPort:
                 execution.get("provider_execution_reused")
             ),
         }
-
     def execute_mkaos_extraction(
         self,
         *,
@@ -703,13 +1065,11 @@ class PostgresContentIntelligenceExecutionPort:
             inputs=transient_inputs,
             materialization=materialization,
         )
-        provider_timeout = self.lease_seconds * 5
+        provider_timeout = self.provider_timeout_seconds
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
             model=base_route.model_profile.model_id,
-            protocol=provider_request_protocol(
-                base_route.model_profile.model_provider
-            ),
+            protocol=provider_request_protocol(base_route.model_profile.model_provider),
             input_text=prompt,
             max_output_tokens=self.provider_output_token_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
@@ -739,9 +1099,7 @@ class PostgresContentIntelligenceExecutionPort:
         provider_admission = prepare_provider_admission(
             envelope,
             token_contract,
-            input_component_hashes=dict(
-                prompt_evidence.get("component_hashes") or {}
-            ),
+            input_component_hashes=dict(prompt_evidence.get("component_hashes") or {}),
             complete_request_coverage=(
                 "system_runtime_instructions",
                 "prompt_template",
@@ -854,10 +1212,22 @@ class PostgresContentIntelligenceExecutionPort:
                 project_id=worker.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.transport.provider,
-                currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=0,
+                currency=(
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
+                estimated_amount=(
+                    None
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else self.max_cost_per_call
+                ),
+                estimated_tokens=int(provider_admission.total_reserved),
                 caps=self.budget_caps,
+                call_caps=self.provider_call_caps,
+                token_caps=self.provider_token_caps,
+                accounting_basis=self.cost_accounting_basis,
+                cost_authorization_ref=self.account_authorization_ref,
             ),
         )
         binding = self._binding(
@@ -917,7 +1287,11 @@ class PostgresContentIntelligenceExecutionPort:
             or int(usage.get("input_tokens") or 0)
             + int(usage.get("output_tokens") or 0)
         )
-        amount = str(cost.get("amount") or cost.get("amount_usd") or "0")
+        amount = (
+            None
+            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+            else str(cost.get("amount") or cost.get("amount_usd") or "0")
+        )
         settle_provider_budget(
             self.database_url,
             reservation_id=str(reservation["reservation_id"]),
@@ -929,6 +1303,14 @@ class PostgresContentIntelligenceExecutionPort:
                 "model_id": str(evidence.get("model_id") or ""),
                 "real_model_call": bool(evidence.get("real_model_call")),
                 "fixture": bool(evidence.get("fixture_protocol_only")),
+                "accounting_basis": self.cost_accounting_basis,
+                "cost_status": (
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "KNOWN"
+                ),
+                "token_accounting_precision": token_contract.precision,
+                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
             },
         )
         return evidence
@@ -948,7 +1330,8 @@ class PostgresContentIntelligenceExecutionPort:
                              ELSE dispatch.evidence
                            END,
                            reservation.reservation_id,
-                           reservation.status
+                           reservation.status,
+                           effect.request_payload
                     FROM authority_external_effect AS effect
                     JOIN LATERAL (
                         SELECT evidence
@@ -994,15 +1377,35 @@ class PostgresContentIntelligenceExecutionPort:
                 or int(usage.get("input_tokens") or 0)
                 + int(usage.get("output_tokens") or 0)
             )
+            request_payload = row[4] if isinstance(row[4], Mapping) else {}
+            production = request_payload.get("_production_execution", {})
+            runtime = (
+                production.get("capability_runtime", {})
+                if isinstance(production, Mapping)
+                else {}
+            )
+            token_contract = (
+                runtime.get("token_accounting_contract", {})
+                if isinstance(runtime, Mapping)
+                else {}
+            )
             settle_provider_budget(
                 self.database_url,
                 reservation_id=str(row[2]),
                 project_id=worker.project_id,
-                actual_amount=str(cost.get("amount") or cost.get("amount_usd") or "0"),
+                actual_amount=(
+                    None
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else str(cost.get("amount") or cost.get("amount_usd") or "0")
+                ),
                 actual_tokens=total_tokens,
                 evidence={
                     "replayed_after_worker_failure": True,
                     "external_effect_id": str(row[0]),
+                    "token_accounting_precision": str(
+                        token_contract.get("precision") or ""
+                    ),
+                    "actual_token_source": "PROVIDER_USAGE_RECEIPT",
                 },
             )
         return {
@@ -1415,6 +1818,26 @@ class PostgresContentIntelligenceExecutionPort:
         ):
             return "PROVIDER_QUALIFIED"
         return "PROVIDER_UNCALIBRATED"
+
+
+def _order_compound_observations(
+    observations: list[dict[str, Any]],
+    *,
+    requested_dimensions: tuple[str, ...],
+) -> tuple[dict[str, Any], ...]:
+    by_dimension = {
+        str(observation.get("dimension") or ""): observation
+        for observation in observations
+    }
+    if (
+        len(by_dimension) != len(observations)
+        or set(by_dimension) != set(requested_dimensions)
+    ):
+        raise KernelError(
+            "SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH",
+            "Provider dimensions differ from the frozen analyzer set",
+        )
+    return tuple(by_dimension[dimension] for dimension in requested_dimensions)
 
 
 def _evidence_manifest_hash(

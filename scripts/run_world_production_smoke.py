@@ -41,12 +41,68 @@ CAPS = (
     "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL",
 )
 
+ACCOUNT_ENTITLEMENT_IDENTITY = (
+    "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF",
+    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF",
+    "NOVEL_FORGE_CODEX_CLI_VERSION",
+    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256",
+    "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
+)
+
+ACCOUNT_ENTITLEMENT_LIMITS = (
+    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
+    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
+)
+
 
 def validate_configuration(values: dict[str, str]) -> None:
-    for key in CAPS:
-        amount = Decimal(values.get(key) or "0")
-        if not amount.is_finite() or amount <= 0:
-            raise ValueError(f"explicit positive authorized budget required: {key}")
+    accounting_basis = (
+        str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
+    )
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        configured_monetary_caps = [
+            key
+            for key in (
+                *CAPS,
+                "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP",
+                "NOVEL_FORGE_CHAPTER_PROVIDER_CAP",
+            )
+            if str(values.get(key) or "").strip()
+        ]
+        if configured_monetary_caps:
+            raise ValueError(
+                "account entitlement cannot use monetary Provider caps: "
+                + ", ".join(configured_monetary_caps)
+            )
+        missing_identity = [
+            key
+            for key in ACCOUNT_ENTITLEMENT_IDENTITY
+            if not str(values.get(key) or "").strip()
+        ]
+        if missing_identity:
+            raise ValueError(
+                "account entitlement identity is incomplete: "
+                + ", ".join(missing_identity)
+            )
+        for key in ACCOUNT_ENTITLEMENT_LIMITS:
+            raw = str(values.get(key) or "").strip()
+            try:
+                limit = int(raw)
+            except ValueError as exc:
+                raise ValueError(
+                    f"explicit positive account-entitlement limit required: {key}"
+                ) from exc
+            if not raw or str(limit) != raw or limit <= 0:
+                raise ValueError(
+                    f"explicit positive account-entitlement limit required: {key}"
+                )
+    elif accounting_basis == "PRICED":
+        for key in CAPS:
+            amount = Decimal(values.get(key) or "0")
+            if not amount.is_finite() or amount <= 0:
+                raise ValueError(f"explicit positive authorized budget required: {key}")
+    else:
+        raise ValueError("unsupported Provider accounting basis")
     if values.get("NOVEL_FORGE_ENVIRONMENT") not in {"validation", "production"}:
         raise ValueError("real smoke requires a controlled runtime environment")
     if not values.get("NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"):
@@ -123,8 +179,16 @@ def drive(
         tick = execute_book_coordination_claim(jobs, composition, claim)
         events({"kind": "BOOK_TICK", "result": tick})
         progress = composition.query.progress(book_run_id=book_run_id)
-        active_root = str(tick.get("operation_id") or "") if tick["action"] == "DISPATCH_CHAPTER" else progress.active_operation_id
-        if active_root and progress.active_operation_status not in {"SUCCEEDED", "FAILED_TERMINAL", "CANCELLED"}:
+        active_root = (
+            str(tick.get("operation_id") or "")
+            if tick["action"] == "DISPATCH_CHAPTER"
+            else progress.active_operation_id
+        )
+        if active_root and progress.active_operation_status not in {
+            "SUCCEEDED",
+            "FAILED_TERMINAL",
+            "CANCELLED",
+        }:
             scheduler = chapter.scheduler(principal=worker)
             for _ in range(80):
                 if time.monotonic() >= deadline:
@@ -141,7 +205,13 @@ def drive(
     return "BOUNDED_TICKS_EXHAUSTED"
 
 
-def export_artifacts(*, database_url: str, project_id: str, destination: Path, extra_kinds: tuple[str, ...] = ()):
+def export_artifacts(
+    *,
+    database_url: str,
+    project_id: str,
+    destination: Path,
+    extra_kinds: tuple[str, ...] = (),
+):
     query = AuthorityAssetQuery(database_url)
     kinds = (
         "world_preparation_source",
@@ -156,7 +226,9 @@ def export_artifacts(*, database_url: str, project_id: str, destination: Path, e
     errors = []
     for kind in dict.fromkeys((*kinds, *extra_kinds)):
         try:
-            rows = query.list_versions(project_id=project_id, asset_type=kind, limit=500)
+            rows = query.list_versions(
+                project_id=project_id, asset_type=kind, limit=500
+            )
             if len(rows) == 500:
                 raise RuntimeError(
                     f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"
@@ -179,51 +251,115 @@ def export_artifacts(*, database_url: str, project_id: str, destination: Path, e
             )
         except Exception as error:
             errors.append({"asset_type": kind, "error": redact_secret_text(str(error))})
-    (destination / "asset-export-status.json").write_text(json.dumps({"status": "PARTIAL" if errors else "COMPLETE", "errors": errors}, ensure_ascii=False, indent=2))
+    (destination / "asset-export-status.json").write_text(
+        json.dumps(
+            {"status": "PARTIAL" if errors else "COMPLETE", "errors": errors},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     if errors:
         raise RuntimeError("Partial artifact export; inspect asset-export-status.json")
 
 
-def export(*, composition, book_run_id: str, destination: Path, include_artifacts: bool = True):
+def export(
+    *, composition, book_run_id: str, destination: Path, include_artifacts: bool = True
+):
     from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
-    from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
+    from novel_forge.modules.chapter_outcome.acceptance_contract import (
+        resolve_accepted_manuscript,
+    )
 
     book = composition.authority.require(book_run_id)
-    (destination / "book.json").write_text(json.dumps(book, default=str, indent=2) + "\n")
+    (destination / "book.json").write_text(
+        json.dumps(book, default=str, indent=2) + "\n"
+    )
     errors = []
     if include_artifacts:
         try:
-            export_artifacts(database_url=composition.authority.database_url, project_id=book["project_id"], destination=destination)
+            export_artifacts(
+                database_url=composition.authority.database_url,
+                project_id=book["project_id"],
+                destination=destination,
+            )
         except Exception as error:
-            errors.append({"stage": "artifacts", "error": redact_secret_text(str(error))})
+            errors.append(
+                {"stage": "artifacts", "error": redact_secret_text(str(error))}
+            )
     chapters = ChapterAuthorityQuery(composition.authority.database_url)
-    runs = chapters.list_runs(project_id=book["project_id"], book_run_id=book_run_id, limit=500)
+    runs = chapters.list_runs(
+        project_id=book["project_id"], book_run_id=book_run_id, limit=500
+    )
     if len(runs) == 500:
-        errors.append({"stage": "chapters", "error": "500 chapter bound reached; PostgreSQL retained"})
+        errors.append(
+            {
+                "stage": "chapters",
+                "error": "500 chapter bound reached; PostgreSQL retained",
+            }
+        )
     workspaces = []
     for run in runs:
         try:
-            workspace = chapters.require_workspace(project_id=book["project_id"], root_operation_id=run["root_operation_id"])
+            workspace = chapters.require_workspace(
+                project_id=book["project_id"],
+                root_operation_id=run["root_operation_id"],
+            )
             workspaces.append(workspace)
             accepted = workspace.get("acceptance") or {}
             if accepted.get("status") == "COMMITTED":
                 selected = resolve_accepted_manuscript(workspace)
-                (destination / f"accepted-chapter-{accepted['accepted_through_chapter']}.txt").write_text(selected["candidate"]["content"]["text"], encoding="utf-8")
+                (
+                    destination
+                    / f"accepted-chapter-{accepted['accepted_through_chapter']}.txt"
+                ).write_text(selected["candidate"]["content"]["text"], encoding="utf-8")
         except Exception as error:
-            errors.append({"stage": "workspace", "root_operation_id": run["root_operation_id"], "error": redact_secret_text(str(error))})
-    (destination / "chapter-workspaces.json").write_text(json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n")
+            errors.append(
+                {
+                    "stage": "workspace",
+                    "root_operation_id": run["root_operation_id"],
+                    "error": redact_secret_text(str(error)),
+                }
+            )
+    (destination / "chapter-workspaces.json").write_text(
+        json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n"
+    )
     realities = []
     for number in range(1, min(500, book["accepted_through_chapter"]) + 1):
         try:
-            realities.append(composition.query.narrative_reality(book_run_id=book_run_id, chapter_number=number))
+            realities.append(
+                composition.query.narrative_reality(
+                    book_run_id=book_run_id, chapter_number=number
+                )
+            )
         except Exception as error:
-            errors.append({"stage": "reality", "chapter": number, "error": redact_secret_text(str(error))})
+            errors.append(
+                {
+                    "stage": "reality",
+                    "chapter": number,
+                    "error": redact_secret_text(str(error)),
+                }
+            )
     if book["accepted_through_chapter"] > 500:
-        errors.append({"stage": "reality", "error": "500 revision bound reached; PostgreSQL retained"})
-    (destination / "realities.json").write_text(json.dumps(realities, default=str, indent=2) + "\n")
-    (destination / "workspace-export-status.json").write_text(json.dumps({"status": "PARTIAL" if errors else "COMPLETE", "errors": errors}, ensure_ascii=False, indent=2))
+        errors.append(
+            {
+                "stage": "reality",
+                "error": "500 revision bound reached; PostgreSQL retained",
+            }
+        )
+    (destination / "realities.json").write_text(
+        json.dumps(realities, default=str, indent=2) + "\n"
+    )
+    (destination / "workspace-export-status.json").write_text(
+        json.dumps(
+            {"status": "PARTIAL" if errors else "COMPLETE", "errors": errors},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     if errors:
-        raise RuntimeError("Partial workspace export; inspect workspace-export-status.json")
+        raise RuntimeError(
+            "Partial workspace export; inspect workspace-export-status.json"
+        )
 
 
 def main(argv=None):
@@ -399,7 +535,9 @@ def main(argv=None):
                     destination=args.evidence_dir,
                 )
         except Exception as exc:
-            report.update(status="EVIDENCE_EXPORT_FAILED", export_error=redact_secret_text(exc))
+            report.update(
+                status="EVIDENCE_EXPORT_FAILED", export_error=redact_secret_text(exc)
+            )
             events({"kind": "EXPORT_FAILURE", "error": redact_secret_text(exc)})
         finally:
             if execution is not None:

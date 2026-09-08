@@ -892,6 +892,14 @@ class _ContextHandler:
                 )
             )
         )
+        frozen_knowledge_access = manifest.get("knowledge_access_policy")
+        if frozen_knowledge_access is not None and not isinstance(
+            frozen_knowledge_access, dict
+        ):
+            raise KernelError(
+                "CONTEXT_KNOWLEDGE_ACCESS_POLICY_INVALID",
+                "Production Input Manifest Knowledge access policy is malformed",
+            )
         candidate_metadata = {
             str(item.get("asset_version_id")): dict(item)
             for item in request.command.get("context_candidates", [])
@@ -1154,6 +1162,11 @@ class _ContextHandler:
             retrieval_result=retrieval.content,
             retrieval_result_asset_version_id=retrieval.asset_version_id,
             frozen_arc_plans=frozen_arc_plans,
+            knowledge_access_policy=(
+                dict(frozen_knowledge_access)
+                if isinstance(frozen_knowledge_access, dict)
+                else None
+            ),
         )
         bundle["production_input_manifest"] = manifest
         bundle["production_input_manifest_asset_version_id"] = (

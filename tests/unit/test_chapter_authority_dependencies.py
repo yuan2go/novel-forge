@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -329,6 +331,84 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertEqual(
             backend.capability_profile.qualification_ref,
             next(iter(routes.values())).model_profile.capability_probe_ref,
+        )
+
+    def test_codex_account_entitlement_composes_without_fake_pricing(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
+        if not executable.is_file():
+            self.skipTest("application Codex CLI is not installed")
+        with executable.open("rb") as executable_stream:
+            executable_sha256 = (
+                "sha256:" + hashlib.file_digest(executable_stream, "sha256").hexdigest()
+            )
+        cli_version = subprocess.run(
+            (str(executable), "--version"),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        ).stdout.strip()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = root / "isolated-workspace"
+            workspace.mkdir()
+            environment = {
+                "NOVEL_FORGE_ENVIRONMENT": "validation",
+                "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+                "NOVEL_FORGE_DRAFT_MODEL": "gpt-5.6-sol",
+                "NOVEL_FORGE_REVIEW_MODEL": "gpt-5.6-sol",
+                "NOVEL_FORGE_REVISION_MODEL": "gpt-5.6-sol",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-5.6-sol",
+                "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": ("high"),
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(root / "objects"),
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "codex-entitlement-test",
+                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+                "NOVEL_FORGE_RUNTIME_HOST_ID": "host:codex-test",
+                "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:chatgpt-account",
+                "NOVEL_FORGE_CODEX_EXECUTABLE": str(executable),
+                "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
+                "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(root / "executions"),
+                "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+                "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": (
+                    "task-authorization:classical-corpus-20260908"
+                ),
+                "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": "chatgpt-login:local",
+                "NOVEL_FORGE_CODEX_CLI_VERSION": cli_version,
+                "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": executable_sha256,
+                "NOVEL_FORGE_CODEX_CONFIGURATION_REF": ("sha256:" + "4" * 64),
+                "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "420",
+                "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "42000000",
+            }
+            with patch(
+                "novel_forge.storage.object_store.MinioObjectStore",
+                return_value=SimpleNamespace(client=object()),
+            ):
+                execution = build_production_execution_composition(
+                    IndustrialSettings(
+                        root=repository_root, database_url="postgresql://authority"
+                    ),
+                    provider_registry=ProviderAdapterRegistry(),
+                    env=environment,
+                )
+
+        self.assertEqual(execution.cost_accounting_basis, "ACCOUNT_ENTITLEMENT")
+        self.assertEqual(
+            execution.account_authorization_ref,
+            "task-authorization:classical-corpus-20260908",
+        )
+        self.assertEqual(execution.max_cost_per_call, "0")
+        self.assertEqual(execution.shared_budget_caps, {})
+        self.assertEqual(execution.provider_call_caps, {"project_total": 420})
+        self.assertEqual(execution.provider_token_caps, {"project_total": 42_000_000})
+        session = execution.gateway.session_factory("project:codex-entitlement")
+        backend = session.gateway.backends.resolve("codex-cli")
+        self.assertIsNone(backend.pricing)
+        self.assertEqual(
+            backend.account_entitlement.authorization_ref,
+            "task-authorization:classical-corpus-20260908",
         )
 
 

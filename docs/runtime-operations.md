@@ -144,6 +144,71 @@ passing exact-revision run proves the listed current backend capabilities at
 `LONGITUDINAL_NARRATIVE_STABILITY`, or `PRODUCTION_OPERATION`. These are evidence
 boundaries, not a product or narrative development sequence.
 
+## Corpus metadata commands
+
+The existing Authority API accepts `POST /product/source-governance/corpus/commands`.
+The envelope requires `project_id`, `workspace_id`, `idempotency_key` and a typed `action`;
+the trusted Principal supplies the actor. The existing Project/Workspace must be active.
+`source.authority.execute` permits writes and `source.authority.query` permits reads.
+Run migrations, the Authority API and the existing Source worker using the same database
+and release identity. No Provider or download adapter is invoked by these commands.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m novel_forge.workers.source_authority
+```
+
+Actions, in dependency order:
+
+| Action | Frozen input | Result |
+| --- | --- | --- |
+| `register_source` | `source_kind`, `external_identity`, immutable `purpose` | `source_id` |
+| `declare_rights` | `source_id`, `previous_rights_id`, dataset/underlying-work rights, purposes, restrictions, evidence and scope | `rights_id` |
+| `freeze_snapshot` | source, rights, previous snapshot, DatasetManifest and acquisition identity | `snapshot_id` |
+| `import_batch` | snapshot, stable `batch_key`, 1–100 book/edition metadata entries | existing import job, Edition IDs, admission decisions and allowed memberships |
+| `evaluate_admission` | exact Edition ID and requested purpose | immutable ALLOW/DENY evidence |
+| `retire_source` | source and reason | preserved lineage plus retirement |
+
+For example, after setting the existing project/workspace IDs and API origin:
+
+```bash
+export NF_CORPUS_API=http://127.0.0.1:8000
+curl --fail-with-body "$NF_CORPUS_API/product/source-governance/corpus/commands" \
+  -H 'Content-Type: application/json' \
+  --data "{\"project_id\":\"$NF_PROJECT_ID\",\"workspace_id\":\"$NF_WORKSPACE_ID\",\"idempotency_key\":\"catalog-register-1\",\"action\":{\"action\":\"register_source\",\"source_kind\":\"operator_manifest\",\"external_identity\":\"catalog:research-1\",\"purpose\":\"RESEARCH\"}}"
+```
+
+Poll `GET /product/source-governance/corpus/operations/{operation_id}?project_id=...`;
+only `SUCCEEDED` establishes a complete result. The OpenAPI discriminated action schema
+defines required fields. A rights declaration needs independent `dataset_license`,
+`underlying_rights`, `underlying_license` when LICENSED, `allowed_purposes`,
+`denied_purposes`, `restrictions`, `evidence_refs`, `copyright_boundary`, and
+`scope=ALL_WORKS_IN_SNAPSHOT`. Use UNKNOWN rather than invent underlying rights.
+`previous_rights_id`/`previous_snapshot_id` is null only for the first revision.
+
+The manifest supplies `origin_uri`, `external_version`, `format`, `checksum`,
+`adapter_profile`, `adapter_contract_version` and optional metadata. Acquisition supplies
+`locator`, a timezone-aware `acquired_at`, `receipt_ref` and matching `checksum`;
+an existing Git acquisition may also bind `repository_snapshot_asset_version_id`.
+Each edition entry supplies `external_work_id`, `external_edition_id`, `title`, `checksum`,
+`locator` and optional metadata. These are metadata declarations, not uploaded novel text.
+
+Inspect `GET /product/source-governance/corpus/imports/{import_job_id}` for the frozen
+input, exact definition, attempt/failure history, effective status and result. The existing
+`GET /product/source-imports/{import_job_id}` also resolves foundation jobs.
+`POST /product/source-imports/{import_job_id}/resume?project_id=...` identifies resumable
+work without creating new Provider work; the Source worker resumes it. Restarting the
+worker reuses committed output or acquires an expired lease. Terminal failures/cancellation
+are not reopened: corrected input uses a new batch key and reuses unchanged Editions.
+An import can finish its Operation successfully while its membership outcome is BLOCKED;
+inspect the per-Edition admission reasons, not just Operation status.
+
+`GET /product/source-governance/corpus/lineage/{edition_id}` returns exact source,
+snapshot, rights, work identity, Edition and admission/membership evidence. Lists use
+`GET /product/source-governance/corpus/records/{kind}` with `project_id`, `parent_id`,
+`after` and `limit` (1–100). Parent is source for rights/snapshots/book identities, snapshot
+for Editions and Edition for admissions/memberships. `after` is the last record's stable
+ID. Continue paging admission history when a lineage response reaches its 100-record cap.
+
 ## Credentialed Provider qualification
 
 Credentialed Provider qualification is intentionally separate from P0. The only live
@@ -162,10 +227,12 @@ make real-provider-qualification
 ```
 
 The runner first records exact-identity credential and complete-request admission
-preflight. A missing API key, an unsupported qualification transport and unproven Codex
-request accounting are distinct blockers; a ChatGPT login is not a token-admission
+preflight. A missing API key, an unsupported qualification transport and unproven request
+accounting are distinct blockers; a ChatGPT login alone is not a token-admission
 contract. Blocked preflight writes evidence without creating runtime or database state.
-It cannot confer current Provider or real-Chapter qualification.
+It cannot confer current Provider or real-Chapter qualification. The dedicated
+qualification runner remains a priced API-key path; account-entitlement Codex validation
+uses the ordinary production Gateway and records its narrower proof scope.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider
@@ -182,12 +249,22 @@ ExternalEffect can be created. Configure the actual model context limit, account
 method, immutable evidence reference, framing allowance, safety margin and Source output
 reserve through the corresponding `NOVEL_FORGE_PROVIDER_*` and
 `NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE` settings in `.env.example`. The
-currently implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
+implemented OpenAI method is `OPENAI_UTF8_BYTES_UPPER_BOUND_V1`: UTF-8 input
 bytes are treated as a conservative provider/model-bound input-token upper bound, and the
 frozen evidence reference must justify the route's framing and limit assumptions. Generic
 character estimates are never used for admission. Missing or unproven accounting fails
-before Provider effect creation; Codex CLI remains fail-closed because its hidden request
-framing cannot currently satisfy the complete-request identity contract.
+before Provider effect creation.
+
+The controlled Codex account-entitlement route may instead use
+`CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1`. This is explicitly an
+`APPLICATION_VISIBLE_UPPER_BOUND`: it bounds the serialized stdin Novel Forge passes to
+the CLI, including visible instruction, schema and context, plus the configured reserve
+and margin. It does not prove or precisely limit hidden CLI framing, injected provider
+context, or the final remote request. The route therefore freezes the absolute executable,
+binary hash, observed CLI version, account/configuration references, model and reasoning
+setting, and reconciles observable terminal usage after execution. Reports must preserve
+that proof ceiling rather than describing the post-call usage as a precise pre-call hard
+limit.
 
 The ContextBundle estimate is only an assembly limit. Admission separately counts the
 serialized system instruction, template, Skill, tool/schema material, Context projection,

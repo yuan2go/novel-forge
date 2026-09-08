@@ -39,6 +39,7 @@ from .contracts import (
     ValidationManifest,
 )
 from .backends import (
+    CodexAccountEntitlementSnapshot,
     CodexCliExecutionBackend,
     CodexPricingSnapshot,
     CodexStructuredResultValidator,
@@ -51,6 +52,7 @@ from .backends import (
     ResultValidator,
     ScriptedFixtureExecutionBackend,
     StaticExecutionPayloadResolver,
+    observe_codex_cli_version,
     parse_codex_jsonl_evidence,
 )
 from .agent_workspace_backend import (
@@ -173,6 +175,7 @@ __all__ = [
     "CapabilityRegistry",
     "CapabilityProbe",
     "CancellationOutcome",
+    "CodexAccountEntitlementSnapshot",
     "CodexCliExecutionBackend",
     "CodexPricingSnapshot",
     "CodexStructuredResultValidator",
@@ -241,6 +244,7 @@ __all__ = [
     "assert_legacy_execution_allowed",
     "ModelProfile",
     "ModelProfileStatus",
+    "observe_codex_cli_version",
     "ModelProfileRegistry",
     "OutputManifest",
     "PromptBundle",

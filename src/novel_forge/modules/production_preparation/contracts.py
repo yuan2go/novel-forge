@@ -36,6 +36,7 @@ class ProductionPreparationRequest:
     context_token_budget: int = 6000
     stage: str = "draft"
     capability_required_asset_types: tuple[str, ...] = ()
+    knowledge_access_policy: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +129,7 @@ class ProductionInputManifest:
     provider_budget: dict[str, Any]
     approval_requirements: tuple[dict[str, Any], ...]
     risk_summary: tuple[dict[str, Any], ...]
+    knowledge_access_policy: dict[str, Any]
     manifest_digest: str
     created_by_operation_id: str
     contract_version: str = "production-input-manifest-v2"

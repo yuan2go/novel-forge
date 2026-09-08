@@ -48,6 +48,26 @@ def test_default_v2_budget_fits_v4_a2_and_one_complete_search_reserve() -> None:
     assert assessment.provider_calls_for(volume_count=4) + 6 == 48
 
 
+def test_account_entitlement_topology_is_bounded_by_calls_and_tokens() -> None:
+    assessment = assess_book_opening_topology_budget(
+        policy_contract_version="book-opening-provider-budget.v2",
+        policy_hash="sha256:" + "e" * 64,
+        policy={
+            "execution_mode": "PROVIDER_ALLOWED",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "task-authorization:classical-corpus-20260908",
+            "cost_observability": "UNKNOWN",
+            "provider_call_limit": 48,
+            "token_limit": 4_800_000,
+            "per_call_token_limit": 100_000,
+        },
+        arc_count=2,
+    )
+
+    assert assessment.max_volume_count == 4
+    assert assessment.provider_calls_for(volume_count=4) + 6 == 48
+
+
 def test_topology_admission_rejects_policy_that_cannot_fund_v1_a1() -> None:
     for insufficient in (
         {**DEFAULT_V2_POLICY, "provider_call_limit": 17},
