@@ -16,6 +16,9 @@ from novel_forge.modules.production_preparation.service import (
 )
 from novel_forge.modules.production_preparation.policies import STAGE_PROFILES
 from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+)
 
 
 class _Resolver:
@@ -144,6 +147,85 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_book_allowlist_selects_exact_knowledge_card_versions(self) -> None:
+        required = {
+            kind: [_asset(kind)]
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+            )
+        }
+        cards = []
+        for name in ("allowed", "outside"):
+            base = _asset("knowledge_card")
+            cards.append(
+                replace(
+                    base,
+                    asset_id=f"asset:knowledge:{name}",
+                    asset_version_id=f"knowledge-card:{name}:v1",
+                    content_hash=f"sha256:knowledge:{name}",
+                    content={
+                        "abstract_content": {
+                            "concept_name": name,
+                            "mechanism": "A choice changes later options.",
+                            "applicability": ["A plan needs a causal choice."],
+                            "failure_conditions": ["No option changes."],
+                            "constraints": ["Preserve the consequence."],
+                            "conflict_generators": ["Benefits conflict."],
+                            "review_checks": ["Check the later state."],
+                            "semantic_family": "NARRATIVE_MECHANISM",
+                            "selection_tags": {},
+                            "repetition_key": name,
+                        }
+                    },
+                )
+            )
+        collections = {**required, "knowledge_card": cards}
+        access = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "mode": "ALLOW_ONLY",
+                    "allowed_knowledge_card_asset_version_ids": [
+                        "knowledge-card:allowed:v1"
+                    ],
+                }
+            },
+            project_id="project-1",
+            book_id="book-1",
+        )
+
+        result = ProductionPreparationService(_MultiResolver(collections)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                book_id="book-1",
+                chapter=1,
+                idempotency_key="exact-book-knowledge",
+                knowledge_access_policy=access,
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        assert result.command is not None
+        selected_cards = [
+            item["asset_version_id"]
+            for item in result.command.context_candidates
+            if item["asset_type"] == "knowledge_card"
+        ]
+        self.assertEqual(selected_cards, ["knowledge-card:allowed:v1"])
+        self.assertEqual(
+            result.report.production_input_manifest["knowledge_access_policy"],
+            access,
+        )
+        projected = next(
+            item
+            for item in result.command.context_candidates
+            if item["asset_type"] == "knowledge_card"
+        )
+        self.assertIn("A choice changes later options", projected["safe_summary"])
+
     def test_canonical_chapter_freezes_protected_foundation_contracts(self) -> None:
         assets = {
             kind: _asset(kind)

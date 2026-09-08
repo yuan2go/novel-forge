@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 from novel_forge.modules.production_execution import default_capability_registry
@@ -40,6 +40,19 @@ class ResolvedAnalysisStrategy:
     max_analyzer_calls: int
     mkaos_capability: str
     abstraction_policy_version: str
+    execution_mode: str = "WINDOWED_SINGLE_DIMENSION"
+    sampling_policy_version: str = "source-analysis-windowing.v2"
+
+    def __post_init__(self) -> None:
+        if self.execution_mode not in {
+            "WINDOWED_SINGLE_DIMENSION",
+            "CORPUS_COMPOUND_SAMPLE",
+        }:
+            raise ValueError("Source analysis execution mode is invalid")
+        if not self.sampling_policy_version.strip():
+            raise ValueError("Source analysis sampling policy is required")
+        if self.window_chunks <= 0 or self.max_analyzer_calls <= 0:
+            raise ValueError("Source analysis bounds must be positive")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -52,6 +65,8 @@ class ResolvedAnalysisStrategy:
             "max_analyzer_calls": self.max_analyzer_calls,
             "mkaos_capability": self.mkaos_capability,
             "abstraction_policy_version": self.abstraction_policy_version,
+            "execution_mode": self.execution_mode,
+            "sampling_policy_version": self.sampling_policy_version,
         }
 
     @property
@@ -82,6 +97,13 @@ def analysis_strategy_from_dict(
             max_analyzer_calls=int(payload["max_analyzer_calls"]),
             mkaos_capability=str(payload["mkaos_capability"]),
             abstraction_policy_version=str(payload["abstraction_policy_version"]),
+            execution_mode=str(
+                payload.get("execution_mode") or "WINDOWED_SINGLE_DIMENSION"
+            ),
+            sampling_policy_version=str(
+                payload.get("sampling_policy_version")
+                or "source-analysis-windowing.v2"
+            ),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("frozen Source analysis strategy is invalid") from exc
@@ -101,6 +123,12 @@ class AnalysisTask:
     range_end: int
     label: str
     source_chunk_asset_version_ids: tuple[str, ...]
+    compound_analyzers: tuple[AnalyzerContract, ...] = ()
+    sampling_manifest: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def requested_analyzers(self) -> tuple[AnalyzerContract, ...]:
+        return self.compound_analyzers or (self.analyzer,)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -113,6 +141,10 @@ class AnalysisTask:
             "range_end": self.range_end,
             "label": self.label,
             "source_chunk_asset_version_ids": list(self.source_chunk_asset_version_ids),
+            "compound_analyzers": [
+                item.to_dict() for item in self.compound_analyzers
+            ],
+            "sampling_manifest": dict(self.sampling_manifest),
         }
 
 
@@ -361,12 +393,151 @@ def resolve_analysis_strategy(
     )
 
 
+_CORPUS_ANALYSIS_CONTRACTS: dict[
+    str, tuple[str, str, tuple[tuple[str, str], ...], str]
+] = {
+    "LONG_NOVEL": (
+        "classical_novel_craft",
+        "published-fiction-craft-analysis",
+        (
+            ("structure", "multi-scale structure and conflict-unit progression"),
+            ("conflict", "conflict escalation and reversal"),
+            ("character_choice_cost", "character choice, consequence, and cost"),
+            ("information_gap", "information asymmetry between actors and reader"),
+            ("foreshadowing_payoff", "setup, delayed consequence, and payoff"),
+            ("pacing", "rhythm across the sampled beginning, middle, and ending"),
+            ("chapter_hook", "chapter ending pressure and forward question"),
+        ),
+        "mkaos.knowledge.extract",
+    ),
+    "SHORT_STORY_COLLECTION": (
+        "classical_short_story_craft",
+        "published-fiction-craft-analysis",
+        (
+            ("structure", "complete-story structure"),
+            ("conflict", "conflict escalation and reversal"),
+            ("character_choice_cost", "choice, consequence, and cost"),
+            ("information_gap", "information asymmetry and reveal"),
+            ("foreshadowing_payoff", "setup and payoff inside a complete story"),
+            ("pacing", "compression and scene rhythm"),
+            ("chapter_hook", "opening and closing narrative pressure"),
+        ),
+        "mkaos.knowledge.extract",
+    ),
+    "POETRY_COLLECTION": (
+        "classical_poetry_craft",
+        "classic-literary-depth-analysis",
+        (
+            ("imagery", "image system and sensory anchoring"),
+            ("emotion_turn", "emotional transition rather than invented plot"),
+            ("point_of_view", "speaker and narrative point of view"),
+            ("rhythm", "line, cadence, repetition, and pause"),
+            ("concise_expression", "compression and implication"),
+            ("scene_atmosphere", "scene atmosphere and tonal construction"),
+        ),
+        "mkaos.knowledge.extract",
+    ),
+    "APHORISM_COLLECTION": (
+        "classical_aphorism_reasoning",
+        "multidisciplinary-knowledge",
+        (
+            ("concept_definition", "conceptual distinction"),
+            ("value_conflict", "bounded value tension"),
+            ("argument_structure", "implicit reasoning structure"),
+            ("historical_context", "historically situated applicability"),
+            ("misuse_risk", "risk of universalizing a literary judgment"),
+        ),
+        "mkaos.rule.extract",
+    ),
+    "PHILOSOPHY_CLASSIC": (
+        "classical_philosophy_reasoning",
+        "multidisciplinary-knowledge",
+        (
+            ("concept_definition", "conceptual distinction"),
+            ("value_conflict", "value and duty conflict"),
+            ("argument_structure", "argument and counter-position"),
+            ("historical_context", "historically situated applicability"),
+        ),
+        "mkaos.rule.extract",
+    ),
+    "DIDACTIC_COLLECTION": (
+        "classical_didactic_craft",
+        "classic-literary-depth-analysis",
+        (
+            ("structure", "didactic sequence structure"),
+            ("rhythm", "cadence, parallelism, and sonic pattern"),
+            ("imagery", "image pairing and contrast"),
+            ("concise_expression", "compression and mnemonic expression"),
+            ("historical_context", "historically situated learning use"),
+        ),
+        "mkaos.rule.extract",
+    ),
+}
+
+
+def resolve_corpus_analysis_strategy(
+    content_type: SourceContentType,
+    *,
+    collection_kind: str,
+    registry: SourceMethodologyRegistry,
+    routing_policy_version: str,
+) -> ResolvedAnalysisStrategy:
+    """Resolve one bounded compound call while retaining typed Observations."""
+
+    try:
+        profile_id, skill_id, dimensions, mkaos_capability = (
+            _CORPUS_ANALYSIS_CONTRACTS[collection_kind]
+        )
+    except KeyError as exc:
+        raise ValueError(
+            f"unsupported governed corpus collection kind: {collection_kind}"
+        ) from exc
+    methodology = registry.require(skill_id)
+    capabilities = default_capability_registry()
+    capabilities.resolve("deconstruction.observe")
+    capabilities.resolve(mkaos_capability)
+    analyzers = tuple(
+        AnalyzerContract(
+            analyzer_id=f"novel-forge.{profile_id}.{dimension}",
+            analyzer_version="1.0",
+            dimension=dimension,
+            schema_version="source-deconstruction-observation.v1",
+            prompt_id=f"source.{profile_id}.compound",
+            prompt_version="1.0",
+            skill_id=methodology.skill_id,
+            skill_version=methodology.skill_version,
+            capability_id="deconstruction.observe",
+            capability_version="1.0",
+            provider_policy_version="1.0",
+            aggregation_policy_version="3.0",
+            recommended_scales=("BOOK",),
+            methodology_content_hash=methodology.content_digest,
+        )
+        for dimension, _focus in dimensions
+    )
+    return ResolvedAnalysisStrategy(
+        profile_id=profile_id,
+        profile_version="1.0",
+        content_type=SourceContentType(content_type),
+        routing_policy_version=routing_policy_version,
+        analyzers=analyzers,
+        window_chunks=1,
+        max_analyzer_calls=1,
+        mkaos_capability=mkaos_capability,
+        abstraction_policy_version="classical-corpus-anti-copy.1.0",
+        execution_mode="CORPUS_COMPOUND_SAMPLE",
+        sampling_policy_version="classical-corpus-stratified-sampling.v1",
+    )
+
+
 def plan_analysis_tasks(
     *,
     strategy: ResolvedAnalysisStrategy,
     logical_document_scope: LogicalDocumentScope,
     analysis_plan_asset_version_id: str,
     chunks: Iterable[dict[str, Any]],
+    source_units: Iterable[dict[str, Any]] = (),
+    collection_kind: str = "",
 ) -> tuple[AnalysisTask, ...]:
     if not analysis_plan_asset_version_id.strip():
         raise ValueError("analysis plan AssetVersion is required")
@@ -375,6 +546,15 @@ def plan_analysis_tasks(
         logical_document_scope.source_chunk_asset_version_ids
     ):
         raise ValueError("analysis chunks differ from LogicalDocument scope")
+    if strategy.execution_mode == "CORPUS_COMPOUND_SAMPLE":
+        return _plan_corpus_compound_task(
+            strategy=strategy,
+            logical_document_scope=logical_document_scope,
+            analysis_plan_asset_version_id=analysis_plan_asset_version_id,
+            chunks=ordered,
+            source_units=tuple(source_units),
+            collection_kind=collection_kind,
+        )
     tasks: list[AnalysisTask] = []
     for window_start in range(0, len(ordered), strategy.window_chunks):
         window = ordered[window_start : window_start + strategy.window_chunks]
@@ -410,6 +590,182 @@ def plan_analysis_tasks(
     return tuple(tasks)
 
 
+def _plan_corpus_compound_task(
+    *,
+    strategy: ResolvedAnalysisStrategy,
+    logical_document_scope: LogicalDocumentScope,
+    analysis_plan_asset_version_id: str,
+    chunks: tuple[dict[str, Any], ...],
+    source_units: tuple[dict[str, Any], ...],
+    collection_kind: str,
+) -> tuple[AnalysisTask, ...]:
+    if collection_kind not in _CORPUS_ANALYSIS_CONTRACTS or not source_units:
+        raise ValueError("compound corpus analysis requires governed SourceUnit input")
+    ordered_units = tuple(sorted(source_units, key=lambda row: int(row["ordinal"])))
+    if any(str(item.get("status") or "") != "AVAILABLE" for item in ordered_units):
+        raise ValueError("compound corpus analysis cannot sample unavailable SourceUnits")
+
+    def unit_chunks(unit: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+        start = int(unit["normalized_byte_start"])
+        end = int(unit["normalized_byte_end"])
+        return tuple(
+            chunk
+            for chunk in chunks
+            if int(chunk["source_byte_start"]) < end
+            and int(chunk["source_byte_end"]) > start
+        )
+
+    sampled: list[dict[str, Any]] = []
+    if collection_kind == "LONG_NOVEL":
+        window_width = min(2, len(chunks))
+        middle_start = max(0, (len(chunks) - window_width) // 2)
+        for role, window in (
+            ("OPENING_CONTINUOUS_WINDOW", chunks[:window_width]),
+            (
+                "MIDDLE_CONTINUOUS_WINDOW",
+                chunks[middle_start : middle_start + window_width],
+            ),
+            ("ENDING_CONTINUOUS_WINDOW", chunks[-window_width:]),
+        ):
+            sampled.append(
+                {
+                    "role": role,
+                    "complete_unit": False,
+                    "source_unit_ordinals": [],
+                    "source_chunk_asset_version_ids": [
+                        str(item["asset_version_id"]) for item in window
+                    ],
+                }
+            )
+        chapter_units = tuple(
+            item for item in ordered_units if str(item.get("kind")) == "CHAPTER"
+        ) or ordered_units
+        conflict_unit = chapter_units[max(0, (len(chapter_units) - 1) // 3)]
+        conflict_chunks = unit_chunks(conflict_unit)
+        if not conflict_chunks:
+            raise ValueError("complete conflict-unit sample has no SourceChunk")
+        sampled.append(
+            {
+                "role": "COMPLETE_CONFLICT_UNIT",
+                "complete_unit": True,
+                "source_unit_ordinals": [int(conflict_unit["ordinal"])],
+                "source_chunk_asset_version_ids": [
+                    str(item["asset_version_id"]) for item in conflict_chunks
+                ],
+            }
+        )
+    else:
+        target_count = {
+            "SHORT_STORY_COLLECTION": 3,
+            "POETRY_COLLECTION": 8,
+            "APHORISM_COLLECTION": 8,
+            "PHILOSOPHY_CLASSIC": 12,
+            "DIDACTIC_COLLECTION": 6,
+        }[collection_kind]
+        indexes = _stratified_indexes(len(ordered_units), target_count)
+        role = (
+            "COMPLETE_STORY"
+            if collection_kind == "SHORT_STORY_COLLECTION"
+            else "COMPLETE_PIECE"
+        )
+        for position, index in enumerate(indexes, start=1):
+            unit = ordered_units[index]
+            selected_chunks = unit_chunks(unit)
+            if not selected_chunks:
+                raise ValueError("complete SourceUnit sample has no SourceChunk")
+            sampled.append(
+                {
+                    "role": f"{role}_{position}",
+                    "complete_unit": True,
+                    "source_unit_ordinals": [int(unit["ordinal"])],
+                    "source_chunk_asset_version_ids": [
+                        str(item["asset_version_id"]) for item in selected_chunks
+                    ],
+                }
+            )
+    selected_ids = {
+        chunk_id
+        for sample in sampled
+        for chunk_id in sample["source_chunk_asset_version_ids"]
+    }
+    selected_chunks = tuple(
+        item for item in chunks if str(item["asset_version_id"]) in selected_ids
+    )
+    if not selected_chunks:
+        raise ValueError("compound corpus sampling produced no SourceChunk evidence")
+    _, _, dimension_specs, _ = _CORPUS_ANALYSIS_CONTRACTS[collection_kind]
+    whole_work_analyzed = len(selected_chunks) == len(chunks)
+    sampling_manifest = {
+        "schema_version": "classical-corpus-analysis-sample.v1",
+        "sampling_policy_version": strategy.sampling_policy_version,
+        "collection_kind": collection_kind,
+        "source_unit_count": len(ordered_units),
+        "sampled_source_unit_ordinals": sorted(
+            {
+                ordinal
+                for sample in sampled
+                for ordinal in sample["source_unit_ordinals"]
+            }
+        ),
+        "sampled_chunk_count": len(selected_chunks),
+        "sampled_byte_count": sum(int(item["byte_size"]) for item in selected_chunks),
+        "whole_work_analyzed": whole_work_analyzed,
+        "uncovered_chunk_count": len(chunks) - len(selected_chunks),
+        "samples": sampled,
+        "dimension_guidance": {
+            dimension: focus for dimension, focus in dimension_specs
+        },
+        "coverage_claim": (
+            "FULL_WORK" if whole_work_analyzed else "BOUNDED_STRATIFIED_SAMPLE"
+        ),
+    }
+    identity = {
+        "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
+        "logical_document_scope_hash": logical_document_scope.scope_hash,
+        "analyzer_contract_hashes": [
+            item.fingerprint for item in strategy.analyzers
+        ],
+        "source_chunk_asset_version_ids": [
+            str(item["asset_version_id"]) for item in selected_chunks
+        ],
+        "sampling_manifest": sampling_manifest,
+    }
+    task = AnalysisTask(
+        stable_key=canonical_hash(identity),
+        analysis_plan_asset_version_id=analysis_plan_asset_version_id,
+        logical_document_scope_hash=logical_document_scope.scope_hash,
+        analyzer=strategy.analyzers[0],
+        scale="BOOK",
+        range_start=int(selected_chunks[0]["chunk_index"]) + 1,
+        range_end=int(selected_chunks[-1]["chunk_index"]) + 1,
+        label=(
+            f"{collection_kind} bounded stratified sample; "
+            f"{len(selected_chunks)}/{len(chunks)} chunks"
+        ),
+        source_chunk_asset_version_ids=tuple(
+            str(item["asset_version_id"]) for item in selected_chunks
+        ),
+        compound_analyzers=strategy.analyzers,
+        sampling_manifest=sampling_manifest,
+    )
+    return (task,)
+
+
+def _stratified_indexes(size: int, target_count: int) -> tuple[int, ...]:
+    if size <= 0 or target_count <= 0:
+        raise ValueError("stratified sampling bounds must be positive")
+    if size <= target_count:
+        return tuple(range(size))
+    return tuple(
+        sorted(
+            {
+                round(index * (size - 1) / (target_count - 1))
+                for index in range(target_count)
+            }
+        )
+    )
+
+
 __all__ = [
     "AnalysisTask",
     "AnalyzerMethodologySpec",
@@ -418,4 +774,5 @@ __all__ = [
     "analysis_strategy_from_dict",
     "plan_analysis_tasks",
     "resolve_analysis_strategy",
+    "resolve_corpus_analysis_strategy",
 ]

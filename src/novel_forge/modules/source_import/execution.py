@@ -74,6 +74,7 @@ from .execution_contracts import (
     CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
     MKAOS_STAGE,
+    compound_deconstruction_output_schema,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
 )
@@ -452,7 +453,55 @@ class PostgresContentIntelligenceExecutionPort:
         source_segments: tuple[dict[str, Any], ...],
         input_observations: tuple[dict[str, Any], ...] = (),
         analysis_plan_asset_version_id: str = "",
+        compound_analyzers: tuple[AnalyzerContract, ...] = (),
+        sampling_manifest: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
+        analyzers = compound_analyzers or (analyzer,)
+        compound = bool(compound_analyzers)
+        if compound and (
+            input_observations
+            or not evidence_spans
+            or analyzer != analyzers[0]
+            or not isinstance(sampling_manifest, Mapping)
+            or not sampling_manifest
+        ):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYSIS_INPUT_INVALID",
+                "compound deconstruction requires frozen Source evidence, analyzers, and sampling",
+            )
+        if len({item.dimension for item in analyzers}) != len(analyzers):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYZER_DUPLICATE",
+                "compound deconstruction analyzer dimensions must be unique",
+            )
+        shared_contract = (
+            analyzer.prompt_id,
+            analyzer.prompt_version,
+            analyzer.skill_id,
+            analyzer.skill_version,
+            analyzer.capability_id,
+            analyzer.capability_version,
+            analyzer.provider_policy_version,
+            analyzer.methodology_content_hash,
+        )
+        if any(
+            (
+                item.prompt_id,
+                item.prompt_version,
+                item.skill_id,
+                item.skill_version,
+                item.capability_id,
+                item.capability_version,
+                item.provider_policy_version,
+                item.methodology_content_hash,
+            )
+            != shared_contract
+            for item in analyzers
+        ):
+            raise KernelError(
+                "SOURCE_COMPOUND_ANALYZER_CONTRACT_CONFLICT",
+                "compound analyzers must share one frozen capability and methodology",
+            )
         if bool(evidence_spans) == bool(input_observations):
             raise KernelError(
                 "SOURCE_PEP_INPUT_MODE_INVALID",
@@ -501,9 +550,38 @@ class PostgresContentIntelligenceExecutionPort:
                 "SOURCE_ANALYZER_SKILL_VERSION_MISMATCH",
                 "Analyzer Skill version differs from canonical methodology",
             )
+        analyzer_contract_hashes = [item.fingerprint for item in analyzers]
+        frozen_sampling_manifest = dict(sampling_manifest or {})
+        sampling_manifest_hash = (
+            _hash(frozen_sampling_manifest) if compound else ""
+        )
+        input_payload = {
+            "analyzer": analyzer.to_dict(),
+            "scope": scope.to_dict(),
+            "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
+            "source_segments": segment_manifest,
+            "input_observation_asset_version_ids": list(lower_ids),
+            "input_observations": observation_manifest,
+            "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
+        }
+        if compound:
+            input_payload.update(
+                {
+                    "analyzers": [item.to_dict() for item in analyzers],
+                    "requested_dimensions": [item.dimension for item in analyzers],
+                    "sampling_manifest": frozen_sampling_manifest,
+                    "sampling_manifest_hash": sampling_manifest_hash,
+                }
+            )
         spec = _ExecutionSpec(
             kind=(
-                "deconstruction_aggregate" if input_observations else "deconstruction"
+                "deconstruction_compound"
+                if compound
+                else (
+                    "deconstruction_aggregate"
+                    if input_observations
+                    else "deconstruction"
+                )
             ),
             stage=DECONSTRUCTION_STAGE,
             capability=analyzer.capability_id,
@@ -519,15 +597,7 @@ class PostgresContentIntelligenceExecutionPort:
                 project_id=worker.project_id,
                 book_id=f"source-corpus:{worker.project_id}",
             ),
-            input_payload={
-                "analyzer": analyzer.to_dict(),
-                "scope": scope.to_dict(),
-                "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
-                "source_segments": segment_manifest,
-                "input_observation_asset_version_ids": list(lower_ids),
-                "input_observations": observation_manifest,
-                "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
-            },
+            input_payload=input_payload,
             artifact_version_ids=(
                 lower_ids
                 if input_observations
@@ -537,20 +607,147 @@ class PostgresContentIntelligenceExecutionPort:
             ),
             context_contract={
                 "analyzer_contract_hash": analyzer.fingerprint,
+                "analyzer_contract_hashes": analyzer_contract_hashes,
                 "scope_hash": scope.fingerprint,
                 "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
                 "input_observation_asset_version_ids": list(lower_ids),
                 "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
+                "sampling_manifest_hash": sampling_manifest_hash,
                 "aggregation_uses_source_text": False,
                 "raw_source_text_in_postgresql": False,
                 "generation_context_allowed": False,
             },
-            output_schema=content_intelligence_output_schema(DECONSTRUCTION_STAGE),
+            output_schema=(
+                compound_deconstruction_output_schema()
+                if compound
+                else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+            ),
         )
         execution = self._execute(worker=worker, spec=spec)
-        observation = validate_content_intelligence_output(
+        provider_output = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
+        if compound:
+            requested_dimensions = tuple(item.dimension for item in analyzers)
+            returned_dimensions = tuple(
+                str(item["dimension"]) for item in provider_output["observations"]
+            )
+            if returned_dimensions != requested_dimensions:
+                raise KernelError(
+                    "SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH",
+                    "Provider dimensions differ from the frozen analyzer order",
+                )
+            whole_work = frozen_sampling_manifest.get("whole_work_analyzed") is True
+            expected_coverage = {
+                "scope_claim": (
+                    "FULL_WORK" if whole_work else "BOUNDED_STRATIFIED_SAMPLE"
+                ),
+                "uncovered_material_acknowledged": not whole_work,
+            }
+            if dict(provider_output["coverage_acknowledgement"]) != expected_coverage:
+                raise KernelError(
+                    "SOURCE_COMPOUND_ANALYSIS_COVERAGE_OVERCLAIM",
+                    "Provider coverage acknowledgement differs from frozen sampling",
+                )
+            dimension_results: list[dict[str, Any]] = []
+            bindings: list[dict[str, Any]] = []
+            for result, item_analyzer in zip(
+                provider_output["observations"], analyzers, strict=True
+            ):
+                normalized = {
+                    "dimension": item_analyzer.dimension,
+                    "provider_status": str(result["status"]),
+                    "status": str(result["status"]),
+                    "applicability_note": str(result["applicability_note"]),
+                    "validation_errors": list(result["validation_errors"]),
+                    "analyzer_contract_hash": item_analyzer.fingerprint,
+                }
+                if result["status"] == "SUCCEEDED":
+                    candidate_observation = {
+                        "findings": [dict(item) for item in result["findings"]],
+                        "confidence": result["confidence"],
+                        "knowledge_status": result["knowledge_status"],
+                    }
+                    try:
+                        valid_observation = validate_observation_payload(
+                            candidate_observation,
+                            evidence_spans=evidence_spans,
+                        )
+                    except (KernelError, ValueError) as exc:
+                        normalized["status"] = "FAILED_VALIDATION"
+                        normalized["validation_errors"] = [
+                            exc.code if isinstance(exc, KernelError) else type(exc).__name__
+                        ]
+                    else:
+                        observation_hash = stable_hash(valid_observation)
+                        normalized.update(
+                            {
+                                "observation": valid_observation,
+                                "observation_hash": observation_hash,
+                            }
+                        )
+                        bindings.append(
+                            {
+                                "schema_version": (
+                                    "source-deconstruction-execution-binding.v1"
+                                ),
+                                "analyzer_contract_hash": item_analyzer.fingerprint,
+                                "scope_hash": scope.fingerprint,
+                                "observation_hash": observation_hash,
+                                "evidence_span_ids": sorted(
+                                    {
+                                        item.evidence_span_id
+                                        for item in evidence_spans
+                                    }
+                                ),
+                                "input_observation_asset_version_ids": [],
+                                **(
+                                    {
+                                        "analysis_plan_asset_version_id": (
+                                            analysis_plan_asset_version_id
+                                        )
+                                    }
+                                    if analysis_plan_asset_version_id
+                                    else {}
+                                ),
+                            }
+                        )
+                dimension_results.append(normalized)
+            compound_binding = {
+                "schema_version": "source-compound-deconstruction-execution.v1",
+                "scope_hash": scope.fingerprint,
+                "analyzer_contract_hashes": analyzer_contract_hashes,
+                "sampling_manifest_hash": sampling_manifest_hash,
+                "coverage_acknowledgement": expected_coverage,
+                "dimension_results": [
+                    {
+                        key: value
+                        for key, value in result.items()
+                        if key != "observation"
+                    }
+                    for result in dimension_results
+                ],
+            }
+            log = self._execution_log(
+                worker=worker,
+                spec=spec,
+                execution=execution,
+                domain_binding={
+                    "source_deconstruction_bindings": bindings,
+                    "source_compound_deconstruction_binding": compound_binding,
+                },
+            )
+            return {
+                "dimension_results": dimension_results,
+                "coverage_acknowledgement": expected_coverage,
+                "sampling_manifest_hash": sampling_manifest_hash,
+                "execution_asset_version_id": log.asset_version_id,
+                "evidence_class": self._evidence_class(execution),
+                "provider_execution_reused": bool(
+                    execution.get("provider_execution_reused")
+                ),
+            }
+        observation = provider_output
         observation = validate_observation_payload(
             observation,
             evidence_spans=evidence_spans,

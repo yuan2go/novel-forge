@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from novel_forge.modules.source_authority.deconstruction import (
+    SUPPORTED_DECONSTRUCTION_DIMENSIONS,
+)
+
 
 DECONSTRUCTION_STAGE = "source.deconstruction.observe"
 MKAOS_STAGE = "source.mkaos.extract"
@@ -21,6 +25,97 @@ _CONTENT_TYPES = (
     "UNKNOWN",
     "MIXED",
 )
+
+
+def compound_deconstruction_output_schema() -> dict[str, Any]:
+    finding = {
+        "type": "object",
+        "properties": {
+            "finding_code": {"type": "string", "minLength": 1},
+            "statement": {"type": "string", "minLength": 1},
+            "evidence_span_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1},
+            },
+        },
+        "required": ["finding_code", "statement", "evidence_span_ids"],
+        "additionalProperties": False,
+    }
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+            "observations": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "dimension": {
+                            "type": "string",
+                            "enum": list(SUPPORTED_DECONSTRUCTION_DIMENSIONS),
+                        },
+                        "status": {
+                            "enum": [
+                                "SUCCEEDED",
+                                "NOT_APPLICABLE",
+                                "FAILED_VALIDATION",
+                            ]
+                        },
+                        "findings": {
+                            "type": "array",
+                            "minItems": 0,
+                            "maxItems": 8,
+                            "items": finding,
+                        },
+                        "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                        },
+                        "knowledge_status": {"const": "NOT_ABSTRACTED"},
+                        "applicability_note": {
+                            "type": "string",
+                            "maxLength": 2_000,
+                        },
+                        "validation_errors": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500,
+                            },
+                        },
+                    },
+                    "required": [
+                        "dimension",
+                        "status",
+                        "findings",
+                        "confidence",
+                        "knowledge_status",
+                        "applicability_note",
+                        "validation_errors",
+                    ],
+                    "additionalProperties": False,
+                },
+            },
+            "coverage_acknowledgement": {
+                "type": "object",
+                "properties": {
+                    "scope_claim": {
+                        "enum": ["FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"]
+                    },
+                    "uncovered_material_acknowledged": {"type": "boolean"},
+                },
+                "required": ["scope_claim", "uncovered_material_acknowledged"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["observations", "coverage_acknowledgement"],
+        "additionalProperties": False,
+    }
 
 
 def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
@@ -246,6 +341,54 @@ def content_intelligence_fixture_response(
         evidence_ids = [
             str(item) for item in inputs.get("evidence_span_ids") or () if str(item)
         ]
+        compound = inputs.get("analyzers")
+        if isinstance(compound, list) and compound:
+            if not evidence_ids:
+                raise ValueError(
+                    "compound deconstruction fixture requires governed Source evidence"
+                )
+            observations = []
+            for item in compound:
+                if not isinstance(item, Mapping):
+                    raise ValueError("compound analyzer fixture input is invalid")
+                dimension = str(item.get("dimension") or "")
+                if dimension not in SUPPORTED_DECONSTRUCTION_DIMENSIONS:
+                    raise ValueError("compound analyzer dimension is invalid")
+                observations.append(
+                    {
+                        "dimension": dimension,
+                        "status": "SUCCEEDED",
+                        "findings": [
+                            {
+                                "finding_code": f"{dimension.upper()}_MECHANISM",
+                                "statement": (
+                                    "The evidence demonstrates an abstract "
+                                    f"{dimension} mechanism without retaining source "
+                                    "expression."
+                                ),
+                                "evidence_span_ids": evidence_ids,
+                            }
+                        ],
+                        "confidence": 0.8,
+                        "knowledge_status": "NOT_ABSTRACTED",
+                        "applicability_note": "Applicable to the bounded sample.",
+                        "validation_errors": [],
+                    }
+                )
+            sampling = inputs.get("sampling_manifest")
+            whole_work = bool(
+                isinstance(sampling, Mapping)
+                and sampling.get("whole_work_analyzed") is True
+            )
+            return {
+                "observations": observations,
+                "coverage_acknowledgement": {
+                    "scope_claim": (
+                        "FULL_WORK" if whole_work else "BOUNDED_STRATIFIED_SAMPLE"
+                    ),
+                    "uncovered_material_acknowledged": not whole_work,
+                },
+            }
         analyzer = inputs.get("analyzer")
         dimension = (
             str(analyzer.get("dimension") or "structure")
@@ -337,7 +480,11 @@ def validate_content_intelligence_output(
     value: Mapping[str, Any],
 ) -> Mapping[str, Any]:
 
-    expected = content_intelligence_output_schema(stage)
+    compound_schema = compound_deconstruction_output_schema()
+    is_compound = stage == DECONSTRUCTION_STAGE and dict(output_schema) == compound_schema
+    expected = (
+        compound_schema if is_compound else content_intelligence_output_schema(stage)
+    )
     if dict(output_schema) != expected:
         raise ValueError("content-intelligence output schema differs from Authority")
     payload = dict(value)
@@ -399,6 +546,8 @@ def validate_content_intelligence_output(
             raise ValueError("classification top alternative is inconsistent")
         return payload
     if stage == DECONSTRUCTION_STAGE:
+        if is_compound:
+            return _validate_compound_deconstruction(payload)
         findings = payload.get("findings")
         confidence = payload.get("confidence")
         if (
@@ -494,6 +643,87 @@ def validate_content_intelligence_output(
         or any(value is not False for value in boundary.values())
     ):
         raise ValueError("invalid MKAOS originality_boundary")
+    return payload
+
+
+def _validate_compound_deconstruction(payload: dict[str, Any]) -> dict[str, Any]:
+    observations = payload.get("observations")
+    coverage = payload.get("coverage_acknowledgement")
+    if (
+        not isinstance(observations, list)
+        or not 1 <= len(observations) <= 12
+        or not isinstance(coverage, Mapping)
+        or set(coverage)
+        != {"scope_claim", "uncovered_material_acknowledged"}
+        or coverage.get("scope_claim")
+        not in {"FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"}
+        or not isinstance(coverage.get("uncovered_material_acknowledged"), bool)
+    ):
+        raise ValueError("invalid compound deconstruction Provider output")
+    dimensions: set[str] = set()
+    for item in observations:
+        if not isinstance(item, Mapping) or set(item) != {
+            "dimension",
+            "status",
+            "findings",
+            "confidence",
+            "knowledge_status",
+            "applicability_note",
+            "validation_errors",
+        }:
+            raise ValueError("invalid compound deconstruction dimension result")
+        dimension = str(item.get("dimension") or "")
+        status = str(item.get("status") or "")
+        findings = item.get("findings")
+        confidence = item.get("confidence")
+        applicability_note = item.get("applicability_note")
+        validation_errors = item.get("validation_errors")
+        if (
+            dimension not in SUPPORTED_DECONSTRUCTION_DIMENSIONS
+            or dimension in dimensions
+            or status not in {"SUCCEEDED", "NOT_APPLICABLE", "FAILED_VALIDATION"}
+            or not isinstance(findings, list)
+            or len(findings) > 8
+            or not isinstance(confidence, (int, float))
+            or isinstance(confidence, bool)
+            or not 0 <= float(confidence) <= 1
+            or item.get("knowledge_status") != "NOT_ABSTRACTED"
+            or not isinstance(applicability_note, str)
+            or len(applicability_note) > 2_000
+            or not isinstance(validation_errors, list)
+            or len(validation_errors) > 10
+            or any(
+                not isinstance(error, str)
+                or not error.strip()
+                or len(error) > 500
+                for error in validation_errors
+            )
+        ):
+            raise ValueError("invalid compound deconstruction dimension result")
+        dimensions.add(dimension)
+        if status == "SUCCEEDED" and (not findings or validation_errors):
+            raise ValueError("successful compound dimension lacks valid findings")
+        if status == "NOT_APPLICABLE" and (
+            findings or not applicability_note.strip() or validation_errors
+        ):
+            raise ValueError("NOT_APPLICABLE compound dimension is inconsistent")
+        if status == "FAILED_VALIDATION" and not validation_errors:
+            raise ValueError("failed compound dimension lacks validation errors")
+        for finding in findings:
+            if (
+                not isinstance(finding, Mapping)
+                or set(finding)
+                != {"finding_code", "statement", "evidence_span_ids"}
+                or not str(finding.get("finding_code") or "").strip()
+                or not str(finding.get("statement") or "").strip()
+                or not isinstance(finding.get("evidence_span_ids"), list)
+                or not finding["evidence_span_ids"]
+                or any(
+                    not isinstance(identity, str) or not identity.strip()
+                    for identity in finding["evidence_span_ids"]
+                )
+            ):
+                raise ValueError("invalid compound deconstruction finding")
     return payload
 
 
@@ -712,5 +942,6 @@ __all__ = [
     "MKAOS_STAGE",
     "content_intelligence_fixture_response",
     "content_intelligence_output_schema",
+    "compound_deconstruction_output_schema",
     "validate_content_intelligence_output",
 ]

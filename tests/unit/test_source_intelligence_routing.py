@@ -11,6 +11,7 @@ from novel_forge.modules.source_import.analysis_profiles import (
     analysis_strategy_from_dict,
     plan_analysis_tasks,
     resolve_analysis_strategy,
+    resolve_corpus_analysis_strategy,
 )
 from novel_forge.modules.source_import.domain import SourceImportPolicy
 from novel_forge.modules.source_import.methodologies import SourceMethodologyRegistry
@@ -310,6 +311,76 @@ def test_methodology_digest_changes_analyzer_and_task_identity() -> None:
         chunks=chunks,
     )
     assert first[0].stable_key != second[0].stable_key
+
+
+def test_classical_long_novel_uses_one_compound_stratified_task() -> None:
+    chunks = tuple(
+        {
+            "asset_version_id": f"source-chunk:classical:{index}:v1",
+            "chunk_index": index,
+            "byte_size": 100,
+            "content_hash": "sha256:" + f"{index:064x}",
+            "source_byte_start": index * 100,
+            "source_byte_end": (index + 1) * 100,
+        }
+        for index in range(12)
+    )
+    scope = LogicalDocumentScope(
+        scope_kind="FILE_DOCUMENT",
+        source_document_id="source-document:classical:novel",
+        source_transform_id="source-transform:classical:novel",
+        source_chunk_asset_version_ids=tuple(
+            str(item["asset_version_id"]) for item in chunks
+        ),
+        boundary_policy_version="file-logical-document.v1",
+        label="governed classical novel",
+    )
+    units = tuple(
+        {
+            "ordinal": index + 1,
+            "kind": "CHAPTER",
+            "title": f"Chapter {index + 1}",
+            "normalized_byte_start": index * 100,
+            "normalized_byte_end": (index + 1) * 100,
+            "status": "AVAILABLE",
+        }
+        for index in range(12)
+    )
+    strategy = resolve_corpus_analysis_strategy(
+        SourceContentType.CLASSIC_LITERATURE,
+        collection_kind="LONG_NOVEL",
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-analysis-routing.v2",
+    )
+
+    tasks = plan_analysis_tasks(
+        strategy=strategy,
+        logical_document_scope=scope,
+        analysis_plan_asset_version_id="source-analysis-plan:classical:v1",
+        chunks=chunks,
+        source_units=units,
+        collection_kind="LONG_NOVEL",
+    )
+
+    assert len(tasks) == 1
+    assert len(tasks[0].compound_analyzers) == 7
+    assert {item.dimension for item in tasks[0].compound_analyzers} >= {
+        "structure",
+        "character_choice_cost",
+        "foreshadowing_payoff",
+    }
+    assert [
+        sample["role"] for sample in tasks[0].sampling_manifest["samples"]
+    ] == [
+        "OPENING_CONTINUOUS_WINDOW",
+        "MIDDLE_CONTINUOUS_WINDOW",
+        "ENDING_CONTINUOUS_WINDOW",
+        "COMPLETE_CONFLICT_UNIT",
+    ]
+    assert tasks[0].sampling_manifest["whole_work_analyzed"] is False
+    assert tasks[0].sampling_manifest["coverage_claim"] == (
+        "BOUNDED_STRATIFIED_SAMPLE"
+    )
 
 
 def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() -> None:

@@ -59,6 +59,10 @@ NARRATIVE_INTELLIGENCE_KINDS = frozenset(
 )
 NARRATIVE_INTELLIGENCE_SCOPES = frozenset({"STORY", "ARC", "CHAPTER", "SCENE"})
 NARRATIVE_INTELLIGENCE_POLICY_VERSION = "structured-narrative-intelligence-v1"
+BOOK_KNOWLEDGE_ACCESS_MODES = frozenset(
+    {"PROJECT_DEFAULT", "ALLOW_ONLY", "DENY_ALL"}
+)
+BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION = "book-knowledge-access-policy.v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +158,139 @@ class NarrativeIntelligenceNeed:
         if include_digest:
             payload["need_digest"] = self.need_digest
         return payload
+
+
+def resolve_book_knowledge_access_policy(
+    *,
+    production_profile: Mapping[str, Any],
+    project_id: str,
+    book_id: str,
+) -> dict[str, Any]:
+    """Freeze a Book-scoped exact KnowledgeCard access boundary."""
+
+    if not project_id.strip() or not book_id.strip():
+        raise ValueError("Book Knowledge access requires project and Book identity")
+    configured = production_profile.get("knowledge_access_policy")
+    explicit = configured is not None
+    if configured is None:
+        value: dict[str, Any] = {}
+    elif isinstance(configured, Mapping):
+        value = dict(configured)
+    else:
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
+            "production profile Knowledge access policy must be an object",
+        )
+    allowed_fields = {
+        "policy_id",
+        "policy_version",
+        "mode",
+        "allowed_knowledge_card_asset_version_ids",
+    }
+    if set(value) - allowed_fields:
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
+            "Book Knowledge access policy contains unsupported fields",
+        )
+    mode = str(value.get("mode") or "PROJECT_DEFAULT").strip().upper()
+    policy_id = str(
+        value.get("policy_id") or "book-production-knowledge-access"
+    ).strip()
+    policy_version = value.get("policy_version", 1)
+    raw_allowed = value.get("allowed_knowledge_card_asset_version_ids") or ()
+    if (
+        mode not in BOOK_KNOWLEDGE_ACCESS_MODES
+        or not policy_id
+        or len(policy_id) > 128
+        or not isinstance(policy_version, int)
+        or isinstance(policy_version, bool)
+        or policy_version <= 0
+        or not isinstance(raw_allowed, (list, tuple))
+    ):
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
+            "Book Knowledge access policy has invalid identity, version, mode, or set",
+        )
+    allowed = tuple(str(item).strip() for item in raw_allowed)
+    if (
+        len(allowed) > 5_000
+        or any(not item or len(item) > 500 for item in allowed)
+        or len(set(allowed)) != len(allowed)
+        or (mode == "ALLOW_ONLY" and not allowed)
+        or (mode != "ALLOW_ONLY" and bool(allowed))
+    ):
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID",
+            "ALLOW_ONLY requires a unique non-empty set; other modes require an empty set",
+        )
+    body = {
+        "schema_version": BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION,
+        "policy_id": policy_id,
+        "policy_version": policy_version,
+        "project_id": project_id,
+        "book_id": book_id,
+        "mode": mode,
+        "allowed_knowledge_card_asset_version_ids": sorted(allowed),
+        "configured_explicitly": explicit,
+    }
+    return {**body, "policy_hash": _canonical_hash(body)}
+
+
+def validate_book_knowledge_access_policy(
+    policy: Mapping[str, Any], *, project_id: str, book_id: str
+) -> dict[str, Any]:
+    required = {
+        "schema_version",
+        "policy_id",
+        "policy_version",
+        "project_id",
+        "book_id",
+        "mode",
+        "allowed_knowledge_card_asset_version_ids",
+        "configured_explicitly",
+        "policy_hash",
+    }
+    frozen = dict(policy)
+    if (
+        set(frozen) != required
+        or frozen.get("schema_version") != BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION
+        or frozen.get("project_id") != project_id
+        or frozen.get("book_id") != book_id
+        or not isinstance(frozen.get("configured_explicitly"), bool)
+    ):
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+            "frozen Book Knowledge access policy has invalid scope or shape",
+        )
+    rebuilt = resolve_book_knowledge_access_policy(
+        production_profile={
+            "knowledge_access_policy": {
+                "policy_id": frozen["policy_id"],
+                "policy_version": frozen["policy_version"],
+                "mode": frozen["mode"],
+                "allowed_knowledge_card_asset_version_ids": frozen[
+                    "allowed_knowledge_card_asset_version_ids"
+                ],
+            }
+        },
+        project_id=project_id,
+        book_id=book_id,
+    )
+    expected_body = {key: value for key, value in frozen.items() if key != "policy_hash"}
+    if frozen["configured_explicitly"] is False:
+        expected_body["configured_explicitly"] = False
+    expected_hash = _canonical_hash(expected_body)
+    if (
+        rebuilt["mode"] != frozen["mode"]
+        or rebuilt["allowed_knowledge_card_asset_version_ids"]
+        != frozen["allowed_knowledge_card_asset_version_ids"]
+        or frozen.get("policy_hash") != expected_hash
+    ):
+        raise KernelError(
+            "BOOK_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+            "frozen Book Knowledge access policy identity has drifted",
+        )
+    return frozen
 
 
 def validate_knowledge_candidate(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -628,14 +765,18 @@ def _require_sha256(value: str, label: str) -> None:
 
 
 __all__ = [
+    "BOOK_KNOWLEDGE_ACCESS_MODES",
+    "BOOK_KNOWLEDGE_ACCESS_SCHEMA_VERSION",
     "KnowledgeEvidenceSpan",
     "KnowledgePackSelection",
     "NARRATIVE_INTELLIGENCE_FAMILIES",
     "NARRATIVE_INTELLIGENCE_POLICY_VERSION",
     "NarrativeIntelligenceNeed",
     "assert_abstract_content_safe",
+    "resolve_book_knowledge_access_policy",
     "select_narrative_intelligence",
     "validate_evidence_spans",
+    "validate_book_knowledge_access_policy",
     "validate_knowledge_candidate",
     "validate_pack_selections",
 ]

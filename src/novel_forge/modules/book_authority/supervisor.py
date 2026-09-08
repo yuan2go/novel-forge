@@ -23,6 +23,9 @@ from novel_forge.modules.production_preparation import (
     ProductionPreparationRequest,
     ProductionPreparationService,
 )
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+)
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     NarrativeSearchRequest,
@@ -650,6 +653,20 @@ class PostgresBookProductionSupervisor:
         next_chapter: int,
         explicit_overrides: dict[str, str | list[str]],
     ) -> ProductionPreparationRequest:
+        profile = self.production_preparation.resolver.resolve_override(
+            project_id=str(book["project_id"]),
+            asset_version_id=str(book["production_profile_version"]),
+        )
+        if profile.asset_type != "production_profile":
+            raise KernelError(
+                "BOOK_PRODUCTION_PROFILE_TYPE_INVALID",
+                "Book production profile version resolves to the wrong Authority type",
+            )
+        knowledge_access_policy = resolve_book_knowledge_access_policy(
+            production_profile=profile.content,
+            project_id=str(book["project_id"]),
+            book_id=str(book["book_id"]),
+        )
         return ProductionPreparationRequest(
             project_id=str(book["project_id"]),
             workspace_id=str(book["workspace_id"]),
@@ -661,6 +678,7 @@ class PostgresBookProductionSupervisor:
             explicit_asset_version_overrides=explicit_overrides,
             capability_required_asset_types=("character_cast", "reader_promise"),
             context_token_budget=self.context_token_budget,
+            knowledge_access_policy=knowledge_access_policy,
         )
 
     @staticmethod

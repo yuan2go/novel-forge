@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-from .domain import NarrativeIntelligenceNeed, select_narrative_intelligence
+from .domain import (
+    NarrativeIntelligenceNeed,
+    select_narrative_intelligence,
+    validate_book_knowledge_access_policy,
+)
 
 
 class MkaosAuthorityQuery:
@@ -20,11 +26,44 @@ class MkaosAuthorityQuery:
         project_id: str,
         need: NarrativeIntelligenceNeed,
         limit: int = 6,
+        book_id: str = "",
+        knowledge_access_policy: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
 
         if limit < 1 or limit > 12:
             raise ValueError("Narrative Intelligence limit must be within 1..12")
-        cards = self.list_cards(project_id=project_id, status="ACTIVE", limit=500)
+        if knowledge_access_policy is None:
+            access = {
+                "mode": "PROJECT_DEFAULT",
+                "allowed_knowledge_card_asset_version_ids": [],
+                "policy_hash": "",
+                "configured_explicitly": False,
+            }
+        else:
+            if not book_id:
+                raise ValueError("Book identity is required for Knowledge access policy")
+            access = validate_book_knowledge_access_policy(
+                knowledge_access_policy,
+                project_id=project_id,
+                book_id=book_id,
+            )
+        mode = str(access["mode"])
+        allowed_ids = tuple(access["allowed_knowledge_card_asset_version_ids"])
+        if mode == "DENY_ALL":
+            cards: list[dict[str, Any]] = []
+            pool_query_mode = "DENY_ALL_NO_QUERY"
+        else:
+            cards = self._planning_cards(
+                project_id=project_id,
+                allowed_asset_version_ids=(
+                    allowed_ids if mode == "ALLOW_ONLY" else None
+                ),
+            )
+            pool_query_mode = (
+                "EXACT_ALLOWLIST"
+                if mode == "ALLOW_ONLY"
+                else "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION"
+            )
         eligible = tuple(
             card
             for card in cards
@@ -34,10 +73,85 @@ class MkaosAuthorityQuery:
             and card["operation_status"] == "SUCCEEDED"
             and _production_context_eligible_card(card)
         )
+        if mode == "ALLOW_ONLY" and {
+            str(card["asset_version_id"]) for card in eligible
+        } != set(allowed_ids):
+            raise KernelError(
+                "PLANNING_KNOWLEDGE_ALLOWLIST_INELIGIBLE",
+                "one or more exact KnowledgeCard versions are missing or ineligible",
+            )
         selection = select_narrative_intelligence(need, eligible, limit=limit)
         selection["project_id"] = project_id
         selection["eligible_card_count"] = len(eligible)
+        selection["examined_card_count"] = len(cards)
+        selection["pool_query_mode"] = pool_query_mode
+        selection["pool_truncated"] = False
+        selection["knowledge_access_policy"] = dict(access)
+        selection["selection_digest"] = _canonical_hash(
+            {key: value for key, value in selection.items() if key != "selection_digest"}
+        )
         return selection
+
+    def _planning_cards(
+        self,
+        *,
+        project_id: str,
+        allowed_asset_version_ids: tuple[str, ...] | None,
+    ) -> list[dict[str, Any]]:
+        if not project_id:
+            raise ValueError("project_id is required")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT card.knowledge_card_id, card.project_id,
+                       card.workspace_id, card.asset_version_id,
+                       card.candidate_asset_version_id,
+                       card.governance_decision_asset_version_id,
+                       card.created_by_operation_id, card.content_hash,
+                       card.status, version.lifecycle, version.eligibility,
+                       version.governance, version.content,
+                       operation.status, card.created_at
+                FROM authority_mkaos_knowledge_card AS card
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=card.asset_version_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=card.created_by_operation_id
+                WHERE card.project_id=%s
+                  AND card.status='ACTIVE'
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility IN ('ELIGIBLE', 'PRODUCTION_ELIGIBLE')
+                  AND version.governance='CLEAR'
+                  AND operation.status='SUCCEEDED'
+                  AND (
+                    %s OR card.asset_version_id=ANY(%s::text[])
+                  )
+                ORDER BY card.created_at DESC, card.knowledge_card_id
+                """,
+                [
+                    project_id,
+                    allowed_asset_version_ids is None,
+                    list(allowed_asset_version_ids or ()),
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "knowledge_card_id",
+            "project_id",
+            "workspace_id",
+            "asset_version_id",
+            "candidate_asset_version_id",
+            "governance_decision_asset_version_id",
+            "created_by_operation_id",
+            "content_hash",
+            "card_status",
+            "lifecycle",
+            "eligibility",
+            "governance",
+            "content",
+            "operation_status",
+            "created_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
 
     def list_candidates(
         self, *, project_id: str, status: str = "", limit: int = 100
@@ -593,6 +707,17 @@ class MkaosAuthorityQuery:
             "selected_at",
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
+
+
+def _canonical_hash(value: dict[str, Any]) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 def _validate(project_id: str, limit: int) -> None:

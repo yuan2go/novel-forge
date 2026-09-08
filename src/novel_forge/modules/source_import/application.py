@@ -65,6 +65,7 @@ from novel_forge.storage.source_profile_repositories import SourceProfileReposit
 from .analysis_profiles import (
     analysis_strategy_from_dict,
     plan_analysis_tasks,
+    resolve_corpus_analysis_strategy,
     resolve_analysis_strategy,
 )
 from .definitions import (
@@ -130,6 +131,8 @@ class ContentIntelligenceExecutionPort(Protocol):
         source_segments: tuple[dict[str, Any], ...],
         input_observations: tuple[dict[str, Any], ...] = (),
         analysis_plan_asset_version_id: str = "",
+        compound_analyzers: tuple[AnalyzerContract, ...] = (),
+        sampling_manifest: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
     def execute_mkaos_extraction(
@@ -3183,11 +3186,29 @@ class SourceImportApplication:
         resolved_content_type: str,
     ) -> None:
         policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
-        strategy = resolve_analysis_strategy(
-            SourceContentType(resolved_content_type),
-            registry=self.methodology_registry,
-            routing_policy_version=policy.routing_policy_version,
-        )
+        import_policy = SourceImportPolicy(**dict(job["import_policy"]))
+        if import_policy.parser_profile != "generic-text.v1":
+            corpus_spec = resolve_work_spec(import_policy.source_work_key)
+            if (
+                corpus_spec.registry_id != import_policy.corpus_registry_id
+                or corpus_spec.registry_hash != import_policy.corpus_registry_hash
+            ):
+                raise KernelError(
+                    "SOURCE_CORPUS_ANALYSIS_REGISTRY_DRIFT",
+                    "corpus analysis registry differs from the frozen import policy",
+                )
+            strategy = resolve_corpus_analysis_strategy(
+                SourceContentType(resolved_content_type),
+                collection_kind=corpus_spec.collection_kind,
+                registry=self.methodology_registry,
+                routing_policy_version=policy.routing_policy_version,
+            )
+        else:
+            strategy = resolve_analysis_strategy(
+                SourceContentType(resolved_content_type),
+                registry=self.methodology_registry,
+                routing_policy_version=policy.routing_policy_version,
+            )
         stable_key = _hash(
             {
                 "profile_asset_version_id": profile_asset_version_id,
@@ -3369,7 +3390,8 @@ class SourceImportApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT asset_version_id, chunk_index, byte_size, content_hash
+                SELECT asset_version_id, chunk_index, byte_size, content_hash,
+                       source_byte_start, source_byte_end
                 FROM authority_source_chunk
                 WHERE project_id=%s AND source_transform_id=%s
                 ORDER BY chunk_index
@@ -3382,14 +3404,54 @@ class SourceImportApplication:
                     "chunk_index": row[1],
                     "byte_size": row[2],
                     "content_hash": row[3],
+                    "source_byte_start": row[4],
+                    "source_byte_end": row[5],
                 }
                 for row in uow.cursor.fetchall()
+            ]
+            uow.cursor.execute(
+                """
+                SELECT work.collection_kind, unit_version.ordinal,
+                       unit_version.kind, unit_version.title,
+                       unit_version.normalized_byte_start,
+                       unit_version.normalized_byte_end,
+                       unit_version.status
+                FROM authority_source_work_version AS work_version
+                JOIN authority_source_work AS work
+                  ON work.source_work_id=work_version.source_work_id
+                JOIN authority_source_unit_version AS unit_version
+                  ON unit_version.source_work_asset_version_id=
+                     work_version.asset_version_id
+                WHERE work_version.project_id=%s
+                  AND work_version.source_transform_id=%s
+                  AND work_version.status='ACTIVE'
+                ORDER BY unit_version.ordinal
+                """,
+                [worker.project_id, logical_document_scope.source_transform_id],
+            )
+            unit_rows = uow.cursor.fetchall()
+            collection_kinds = {str(row[0]) for row in unit_rows}
+            collection_kind = (
+                next(iter(collection_kinds)) if len(collection_kinds) == 1 else ""
+            )
+            source_units = [
+                {
+                    "ordinal": int(row[1]),
+                    "kind": str(row[2]),
+                    "title": str(row[3]),
+                    "normalized_byte_start": int(row[4]),
+                    "normalized_byte_end": int(row[5]),
+                    "status": str(row[6]),
+                }
+                for row in unit_rows
             ]
         tasks = plan_analysis_tasks(
             strategy=strategy,
             logical_document_scope=logical_document_scope,
             analysis_plan_asset_version_id=analysis_plan_asset_version_id,
             chunks=chunks,
+            source_units=source_units,
+            collection_kind=collection_kind,
         )
         for task in tasks:
             child = self._admit_child(
@@ -3508,13 +3570,21 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
-        analyzer = AnalyzerContract(
-            **{
-                key: value
-                for key, value in dict(task["analyzer"]).items()
-                if key != "fingerprint"
-            }
+        def restore_analyzer(value: Mapping[str, Any]) -> AnalyzerContract:
+            return AnalyzerContract(
+                **{
+                    key: item
+                    for key, item in dict(value).items()
+                    if key != "fingerprint"
+                }
+            )
+
+        analyzer = restore_analyzer(dict(task["analyzer"]))
+        compound_analyzers = tuple(
+            restore_analyzer(dict(item))
+            for item in task.get("compound_analyzers") or ()
         )
+        analyzers = compound_analyzers or (analyzer,)
         scope = ObservationScope(
             scale=str(task["scale"]),
             range_start=int(task["range_start"]),
@@ -3524,35 +3594,97 @@ class SourceImportApplication:
         )
         analysis_plan_asset_version_id = str(payload["analysis_plan_asset_version_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
-            current = SourceIntelligenceRepository(uow.cursor).current_observation(
-                project_id=worker.project_id,
-                scope_hash=scope.fingerprint,
-                analyzer_id=analyzer.analyzer_id,
-            )
-        if (
-            current is not None
-            and current["operation_status"] == "SUCCEEDED"
-            and current["analyzer_contract_hash"] == analyzer.fingerprint
-            and current["analysis_plan_asset_version_id"]
-            == analysis_plan_asset_version_id
-            and current["methodology_content_hash"] == analyzer.methodology_content_hash
-        ):
-            current_content = dict(current["content"])
-            reused_result = {
-                "observation_id": current["observation_id"],
-                "observation_asset_version_id": current["asset_version_id"],
-                "execution_asset_version_id": current_content["execution_evidence"][
-                    "asset_version_id"
-                ],
-                "evidence_class": current_content["execution_evidence"][
-                    "evidence_class"
-                ],
-                "provider_execution_reused": True,
-                "observation_reused": True,
-                "analyzer_id": analyzer.analyzer_id,
-                "analyzer_contract_hash": analyzer.fingerprint,
-                "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
+            repository = SourceIntelligenceRepository(uow.cursor)
+            current_by_analyzer = {
+                item.analyzer_id: repository.current_observation(
+                    project_id=worker.project_id,
+                    scope_hash=scope.fingerprint,
+                    analyzer_id=item.analyzer_id,
+                )
+                for item in analyzers
             }
+
+        def reusable_current(
+            item: AnalyzerContract, current: dict[str, Any] | None
+        ) -> bool:
+            return bool(
+                current is not None
+                and current["operation_status"] == "SUCCEEDED"
+                and current["analyzer_contract_hash"] == item.fingerprint
+                and current["analysis_plan_asset_version_id"]
+                == analysis_plan_asset_version_id
+                and current["methodology_content_hash"]
+                == item.methodology_content_hash
+            )
+
+        if all(
+            reusable_current(item, current_by_analyzer[item.analyzer_id])
+            for item in analyzers
+        ):
+            reused_observations = []
+            for item in analyzers:
+                current = current_by_analyzer[item.analyzer_id]
+                assert current is not None
+                current_content = dict(current["content"])
+                reused_observations.append(
+                    {
+                        "observation_id": current["observation_id"],
+                        "observation_asset_version_id": current["asset_version_id"],
+                        "execution_asset_version_id": current_content[
+                            "execution_evidence"
+                        ]["asset_version_id"],
+                        "evidence_class": current_content["execution_evidence"][
+                            "evidence_class"
+                        ],
+                        "observation_reused": True,
+                        "dimension": item.dimension,
+                        "analyzer_id": item.analyzer_id,
+                        "analyzer_contract_hash": item.fingerprint,
+                    }
+                )
+            if compound_analyzers:
+                sampling_manifest = dict(task.get("sampling_manifest") or {})
+                whole_work = sampling_manifest.get("whole_work_analyzed") is True
+                reused_result = {
+                    "observations": reused_observations,
+                    "dimension_results": [
+                        {
+                            "dimension": item["dimension"],
+                            "status": "SUCCEEDED",
+                            "provider_status": "SUCCEEDED",
+                            "analyzer_contract_hash": item[
+                                "analyzer_contract_hash"
+                            ],
+                            "observation_reused": True,
+                            "validation_errors": [],
+                        }
+                        for item in reused_observations
+                    ],
+                    "coverage_acknowledgement": {
+                        "scope_claim": (
+                            "FULL_WORK"
+                            if whole_work
+                            else "BOUNDED_STRATIFIED_SAMPLE"
+                        ),
+                        "uncovered_material_acknowledged": not whole_work,
+                    },
+                    "sampling_manifest_hash": corpus_canonical_hash(
+                        sampling_manifest
+                    ),
+                    "provider_execution_reused": True,
+                    "successful_dimension_count": len(reused_observations),
+                    "analysis_plan_asset_version_id": (
+                        analysis_plan_asset_version_id
+                    ),
+                }
+            else:
+                reused_result = {
+                    **reused_observations[0],
+                    "provider_execution_reused": True,
+                    "analysis_plan_asset_version_id": (
+                        analysis_plan_asset_version_id
+                    ),
+                }
             with AuthorityUnitOfWork(self.database_url) as uow:
                 SourceImportRepository(uow.cursor).update_work(
                     project_id=worker.project_id,
@@ -3562,7 +3694,8 @@ class SourceImportApplication:
                     result=reused_result,
                 )
                 uow.commit()
-            self._admit_mkaos_child(worker, job, reused_result, payload=payload)
+            for observation in reused_observations:
+                self._admit_mkaos_child(worker, job, observation, payload=payload)
             return reused_result
         if self.object_store_reader is None:
             raise KernelError(
@@ -3605,37 +3738,128 @@ class SourceImportApplication:
             evidence_spans=tuple(spans),
             source_segments=tuple(segments),
             analysis_plan_asset_version_id=analysis_plan_asset_version_id,
+            compound_analyzers=compound_analyzers,
+            sampling_manifest=dict(task.get("sampling_manifest") or {}),
         )
-        observation = self.source_authority.execute_observation(
-            CommitDeconstructionObservationCommand(
-                project_id=worker.project_id,
-                workspace_id=str(job["workspace_id"]),
-                execution_asset_version_id=str(executed["execution_asset_version_id"]),
-                scope=scope,
-                analyzer=analyzer,
-                observation=dict(executed["observation"]),
-                evidence_spans=tuple(spans),
-                input_observation_asset_version_ids=(),
-                evidence_class=str(executed["evidence_class"]),
-                actor_id=self.worker_id,
-                idempotency_key=f"import-observation:{task['stable_key']}",
-                trace_id=worker.trace_id,
-                correlation_id=worker.correlation_id,
-                analysis_plan_asset_version_id=analysis_plan_asset_version_id,
+        if compound_analyzers:
+            analyzer_by_dimension = {item.dimension: item for item in analyzers}
+            observation_results = []
+            for dimension_result in executed["dimension_results"]:
+                if dimension_result["status"] != "SUCCEEDED":
+                    continue
+                item_analyzer = analyzer_by_dimension[str(dimension_result["dimension"])]
+                observation = self.source_authority.execute_observation(
+                    CommitDeconstructionObservationCommand(
+                        project_id=worker.project_id,
+                        workspace_id=str(job["workspace_id"]),
+                        execution_asset_version_id=str(
+                            executed["execution_asset_version_id"]
+                        ),
+                        scope=scope,
+                        analyzer=item_analyzer,
+                        observation=dict(dimension_result["observation"]),
+                        evidence_spans=tuple(spans),
+                        input_observation_asset_version_ids=(),
+                        evidence_class=str(executed["evidence_class"]),
+                        actor_id=self.worker_id,
+                        idempotency_key=(
+                            f"import-observation:{task['stable_key']}:"
+                            f"{item_analyzer.dimension}"
+                        ),
+                        trace_id=worker.trace_id,
+                        correlation_id=worker.correlation_id,
+                        analysis_plan_asset_version_id=(
+                            analysis_plan_asset_version_id
+                        ),
+                    )
+                )
+                observation_results.append(
+                    {
+                        "observation_id": observation["observation_id"],
+                        "observation_asset_version_id": observation[
+                            "asset_version_id"
+                        ],
+                        "execution_asset_version_id": executed[
+                            "execution_asset_version_id"
+                        ],
+                        "evidence_class": executed["evidence_class"],
+                        "observation_reused": bool(observation.get("duplicate")),
+                        "dimension": item_analyzer.dimension,
+                        "analyzer_id": item_analyzer.analyzer_id,
+                        "analyzer_contract_hash": item_analyzer.fingerprint,
+                    }
+                )
+            dimension_results = [
+                {
+                    key: value
+                    for key, value in dict(item).items()
+                    if key != "observation"
+                }
+                for item in executed["dimension_results"]
+            ]
+            result = {
+                "observations": observation_results,
+                "dimension_results": dimension_results,
+                "execution_asset_version_id": executed["execution_asset_version_id"],
+                "evidence_class": executed["evidence_class"],
+                "provider_execution_reused": bool(
+                    executed.get("provider_execution_reused")
+                ),
+                "coverage_acknowledgement": executed[
+                    "coverage_acknowledgement"
+                ],
+                "sampling_manifest_hash": executed["sampling_manifest_hash"],
+                "successful_dimension_count": len(observation_results),
+                "failed_dimension_count": sum(
+                    item["status"] == "FAILED_VALIDATION"
+                    for item in dimension_results
+                ),
+                "not_applicable_dimension_count": sum(
+                    item["status"] == "NOT_APPLICABLE"
+                    for item in dimension_results
+                ),
+                "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
+            }
+        else:
+            observation = self.source_authority.execute_observation(
+                CommitDeconstructionObservationCommand(
+                    project_id=worker.project_id,
+                    workspace_id=str(job["workspace_id"]),
+                    execution_asset_version_id=str(
+                        executed["execution_asset_version_id"]
+                    ),
+                    scope=scope,
+                    analyzer=analyzer,
+                    observation=dict(executed["observation"]),
+                    evidence_spans=tuple(spans),
+                    input_observation_asset_version_ids=(),
+                    evidence_class=str(executed["evidence_class"]),
+                    actor_id=self.worker_id,
+                    idempotency_key=f"import-observation:{task['stable_key']}",
+                    trace_id=worker.trace_id,
+                    correlation_id=worker.correlation_id,
+                    analysis_plan_asset_version_id=(analysis_plan_asset_version_id),
+                )
             )
-        )
-        result = {
-            "observation_id": observation["observation_id"],
-            "observation_asset_version_id": observation["asset_version_id"],
-            "execution_asset_version_id": executed["execution_asset_version_id"],
-            "evidence_class": executed["evidence_class"],
-            "provider_execution_reused": bool(
-                executed.get("provider_execution_reused")
-            ),
-            "analyzer_id": analyzer.analyzer_id,
-            "analyzer_contract_hash": analyzer.fingerprint,
-            "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
-        }
+            observation_results = [
+                {
+                    "observation_id": observation["observation_id"],
+                    "observation_asset_version_id": observation["asset_version_id"],
+                    "execution_asset_version_id": executed[
+                        "execution_asset_version_id"
+                    ],
+                    "evidence_class": executed["evidence_class"],
+                    "provider_execution_reused": bool(
+                        executed.get("provider_execution_reused")
+                    ),
+                    "analyzer_id": analyzer.analyzer_id,
+                    "analyzer_contract_hash": analyzer.fingerprint,
+                    "analysis_plan_asset_version_id": (
+                        analysis_plan_asset_version_id
+                    ),
+                }
+            ]
+            result = observation_results[0]
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
             SourceImportRepository(uow.cursor).update_work(
@@ -3646,7 +3870,10 @@ class SourceImportApplication:
                 result=result,
             )
             uow.commit()
-        self._admit_mkaos_child(worker, job, result, payload=payload)
+        for observation_result in observation_results:
+            self._admit_mkaos_child(
+                worker, job, observation_result, payload=payload
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             SourceImportRepository(uow.cursor).update_work(
                 project_id=worker.project_id,

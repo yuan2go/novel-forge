@@ -13,9 +13,38 @@ from novel_forge.modules.context_builder.domain import (
     select_context_candidates,
 )
 from novel_forge.modules.context_contracts import ContextClass
+from novel_forge.modules.mkaos_authority.domain import (
+    resolve_book_knowledge_access_policy,
+)
 
 
 class ContextAuthorityDomainTests(unittest.TestCase):
+    def test_deny_all_rejects_knowledge_before_context_selection(self) -> None:
+        access = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "mode": "DENY_ALL",
+                    "allowed_knowledge_card_asset_version_ids": [],
+                }
+            },
+            project_id="project-a",
+            book_id="book-a",
+        )
+        with self.assertRaisesRegex(ValueError, "DENY_ALL"):
+            build_authority_context_bundle(
+                project_id="project-a",
+                book_id="book-a",
+                stage="draft",
+                created_by_operation_id="operation-deny-all",
+                context_profile_version="draft-v1",
+                candidates=(
+                    self.candidate("plan-v1", "chapter_plan"),
+                    self.candidate("card-v1", "knowledge_card"),
+                ),
+                token_budget=500,
+                knowledge_access_policy=access,
+            )
+
     def test_dynamic_required_assets_are_preserved_before_optional_context(
         self,
     ) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority.application import (
@@ -12,14 +13,186 @@ from novel_forge.modules.mkaos_authority.domain import (
     KnowledgeEvidenceSpan,
     KnowledgePackSelection,
     NarrativeIntelligenceNeed,
+    resolve_book_knowledge_access_policy,
     select_narrative_intelligence,
+    validate_book_knowledge_access_policy,
     validate_evidence_spans,
     validate_knowledge_candidate,
     validate_pack_selections,
 )
+from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
+
+
+def _planning_card(index: int) -> dict[str, object]:
+    return {
+        "knowledge_card_id": f"card:{index}",
+        "asset_version_id": f"card:{index}:v1",
+        "content_hash": "sha256:" + f"{index + 1:064x}",
+        "candidate_asset_version_id": f"candidate:{index}:v1",
+        "governance_decision_asset_version_id": f"decision:{index}:v1",
+        "card_status": "ACTIVE",
+        "lifecycle": "ACTIVE",
+        "eligibility": "PRODUCTION_ELIGIBLE",
+        "governance": "CLEAR",
+        "operation_status": "SUCCEEDED",
+        "content": {
+            "abstract_content": {
+                "concept_name": f"Bounded mechanism {index}",
+                "discipline": "narrative_design",
+                "abstract_principle": "A choice changes later options.",
+                "constraints": ["The consequence must remain visible."],
+                "conflict_generators": ["Two benefits cannot both be retained."],
+                "review_checks": ["Verify the later state change."],
+                "copyright_boundaries": ["Mechanism only."],
+                "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+                "semantic_family": "NARRATIVE_MECHANISM",
+                "mechanism": "Bind a choice to a later constraint.",
+                "applicability": ["A plan needs a causal choice."],
+                "failure_conditions": ["No later option changes."],
+                "selection_tags": {
+                    "genre": [],
+                    "conflict": [],
+                    "reader_effect": [],
+                    "theme": [],
+                },
+                "repetition_key": f"bounded-mechanism-{index}",
+                "originality_boundary": {
+                    "source_specific_sequence_reusable": False,
+                    "named_entity_substitution_allowed": False,
+                    "expression_reuse_allowed": False,
+                },
+            },
+            "lineage": {},
+            "source_policy": {
+                "knowledge_card_context_eligible": True,
+                "raw_source_expression_included": False,
+                "source_chunks_direct_context_eligible": False,
+                "fixture_protocol_only": False,
+            },
+        },
+    }
 
 
 class MkaosAuthorityDomainTests(unittest.TestCase):
+    def test_book_knowledge_access_policy_distinguishes_empty_deny_from_default(
+        self,
+    ) -> None:
+        denied = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "policy_id": "comparison-a",
+                    "policy_version": 1,
+                    "mode": "DENY_ALL",
+                    "allowed_knowledge_card_asset_version_ids": [],
+                }
+            },
+            project_id="project:comparison",
+            book_id="book:a",
+        )
+        default = resolve_book_knowledge_access_policy(
+            production_profile={},
+            project_id="project:comparison",
+            book_id="book:legacy",
+        )
+
+        self.assertEqual(denied["mode"], "DENY_ALL")
+        self.assertTrue(denied["configured_explicitly"])
+        self.assertEqual(default["mode"], "PROJECT_DEFAULT")
+        self.assertFalse(default["configured_explicitly"])
+        self.assertNotEqual(denied["policy_hash"], default["policy_hash"])
+        self.assertEqual(
+            validate_book_knowledge_access_policy(
+                denied,
+                project_id="project:comparison",
+                book_id="book:a",
+            ),
+            denied,
+        )
+
+    def test_narrative_selection_does_not_truncate_project_pool_at_500(self) -> None:
+        cards = [_planning_card(index) for index in range(501)]
+        query = MkaosAuthorityQuery("postgresql://not-used")
+        need = NarrativeIntelligenceNeed(
+            scope="STORY",
+            target_stage="book_plan.generate",
+        )
+        with patch.object(query, "_planning_cards", return_value=cards) as load:
+            selection = query.resolve_narrative_intelligence(
+                project_id="project:large-pool",
+                need=need,
+                limit=6,
+            )
+
+        load.assert_called_once_with(
+            project_id="project:large-pool",
+            allowed_asset_version_ids=None,
+        )
+        self.assertEqual(selection["examined_card_count"], 501)
+        self.assertEqual(selection["eligible_card_count"], 501)
+        self.assertFalse(selection["pool_truncated"])
+        self.assertEqual(
+            selection["pool_query_mode"], "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION"
+        )
+
+    def test_explicit_deny_all_never_queries_or_falls_back_to_project_cards(
+        self,
+    ) -> None:
+        query = MkaosAuthorityQuery("postgresql://not-used")
+        policy = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "mode": "DENY_ALL",
+                    "allowed_knowledge_card_asset_version_ids": [],
+                }
+            },
+            project_id="project:comparison",
+            book_id="book:a",
+        )
+        with patch.object(query, "_planning_cards") as load:
+            selection = query.resolve_narrative_intelligence(
+                project_id="project:comparison",
+                book_id="book:a",
+                need=NarrativeIntelligenceNeed(
+                    scope="STORY", target_stage="book_plan.generate"
+                ),
+                knowledge_access_policy=policy,
+            )
+
+        load.assert_not_called()
+        self.assertEqual(selection["selection_status"], "NO_ELIGIBLE_MATCH")
+        self.assertEqual(selection["selected"], [])
+        self.assertEqual(selection["pool_query_mode"], "DENY_ALL_NO_QUERY")
+
+    def test_exact_allowlist_fails_closed_when_one_card_is_ineligible(self) -> None:
+        query = MkaosAuthorityQuery("postgresql://not-used")
+        policy = resolve_book_knowledge_access_policy(
+            production_profile={
+                "knowledge_access_policy": {
+                    "mode": "ALLOW_ONLY",
+                    "allowed_knowledge_card_asset_version_ids": [
+                        "card:0:v1",
+                        "card:500:v1",
+                    ],
+                }
+            },
+            project_id="project:comparison",
+            book_id="book:b",
+        )
+        with (
+            patch.object(query, "_planning_cards", return_value=[_planning_card(0)]),
+            self.assertRaisesRegex(
+                KernelError, "PLANNING_KNOWLEDGE_ALLOWLIST_INELIGIBLE"
+            ),
+        ):
+            query.resolve_narrative_intelligence(
+                project_id="project:comparison",
+                book_id="book:b",
+                need=NarrativeIntelligenceNeed(
+                    scope="STORY", target_stage="book_plan.generate"
+                ),
+                knowledge_access_policy=policy,
+            )
+
     def test_non_fixture_candidate_execution_must_bind_output_and_inputs(self) -> None:
         span = KnowledgeEvidenceSpan("chunk:v1", 0, 20, "sha256:" + "a" * 64)
         arguments = {

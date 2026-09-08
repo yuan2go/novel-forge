@@ -3137,7 +3137,7 @@ class PostgresProductionExecutionPayloadResolver:
                 **dict(stored_inputs),
                 "classification_samples": resolved_samples,
             }
-        if kind == "deconstruction":
+        if kind in {"deconstruction", "deconstruction_compound"}:
             if self.source_object_reader is None:
                 raise KernelError(
                     "SOURCE_ANALYSIS_OBJECT_READER_REQUIRED",

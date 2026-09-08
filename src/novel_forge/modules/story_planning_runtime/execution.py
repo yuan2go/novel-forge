@@ -66,7 +66,11 @@ from novel_forge.modules.hierarchical_planning.domain import (
     RealizationLevel,
 )
 from novel_forge.modules.mkaos_authority import MkaosAuthorityQuery
-from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed
+from novel_forge.modules.mkaos_authority.domain import (
+    NarrativeIntelligenceNeed,
+    resolve_book_knowledge_access_policy,
+    validate_book_knowledge_access_policy,
+)
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     ExecutionOutcome,
@@ -4496,6 +4500,11 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
+        knowledge_access_policy = resolve_book_knowledge_access_policy(
+            production_profile=production_profile,
+            project_id=command.project_id,
+            book_id=command.book_id,
+        )
         # INVARIANT: A technical retry may create a new Operation Attempt, but it must not
         # become a semantic replanning event. Freeze selection at the Planning
         # Operation identity so every retry reuses the exact same Authority
@@ -4520,10 +4529,21 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_BUNDLE_INVALID",
                     "Frozen Planning Context lacks Narrative Intelligence selection",
                 )
+            if (
+                frozen_context.content.get("knowledge_access_policy")
+                != knowledge_access_policy
+                or selection.get("knowledge_access_policy")
+                != knowledge_access_policy
+            ):
+                raise KernelError(
+                    "PLANNING_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+                    "frozen Planning Knowledge access differs from Book Authority",
+                )
             self._append_narrative_intelligence_documents(
                 command=command,
                 selection=selection,
                 documents=documents,
+                knowledge_access_policy=knowledge_access_policy,
             )
             return frozen_context, tuple(documents)
         need = _planning_narrative_intelligence_need(
@@ -4540,14 +4560,17 @@ class PostgresPlanningExecutionPreparer:
         )
         narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
             project_id=command.project_id,
+            book_id=command.book_id,
             need=need,
             limit=_narrative_intelligence_limit(command.generator_operation_name),
+            knowledge_access_policy=knowledge_access_policy,
         )
         self._append_narrative_intelligence_documents(
             command=command,
             selection=narrative_intelligence,
             documents=documents,
             selected_inputs=selected,
+            knowledge_access_policy=knowledge_access_policy,
         )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
@@ -4560,6 +4583,7 @@ class PostgresPlanningExecutionPreparer:
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             "narrative_intelligence": narrative_intelligence,
+            "knowledge_access_policy": knowledge_access_policy,
             **(
                 {"foundation_task": foundation_task(command.generator_operation_name)}
                 if command.generator_operation_name in FOUNDATION_GENERATORS
@@ -5033,7 +5057,18 @@ class PostgresPlanningExecutionPreparer:
         selection: Mapping[str, Any],
         documents: list[AuthorityAssetDocument],
         selected_inputs: list[dict[str, Any]] | None = None,
+        knowledge_access_policy: Mapping[str, Any],
     ) -> None:
+        access = validate_book_knowledge_access_policy(
+            knowledge_access_policy,
+            project_id=command.project_id,
+            book_id=command.book_id,
+        )
+        if selection.get("knowledge_access_policy") != access:
+            raise KernelError(
+                "PLANNING_KNOWLEDGE_ACCESS_POLICY_DRIFT",
+                "Narrative Intelligence selection differs from Book access policy",
+            )
         selected = selection.get("selected")
         if not isinstance(selected, list):
             raise KernelError(
@@ -5044,6 +5079,20 @@ class PostgresPlanningExecutionPreparer:
             raise KernelError(
                 "PLANNING_NARRATIVE_INTELLIGENCE_INVALID",
                 "Narrative Intelligence selection exceeds Planning bandwidth",
+            )
+        selected_ids = {
+            str(item.get("knowledge_card_asset_version_id") or "")
+            for item in selected
+            if isinstance(item, Mapping)
+        }
+        allowed_ids = set(access["allowed_knowledge_card_asset_version_ids"])
+        if (
+            (access["mode"] == "DENY_ALL" and selected_ids)
+            or (access["mode"] == "ALLOW_ONLY" and not selected_ids.issubset(allowed_ids))
+        ):
+            raise KernelError(
+                "PLANNING_KNOWLEDGE_ACCESS_SCOPE_VIOLATION",
+                "selected Narrative Intelligence is outside the exact Book allow set",
             )
         for ordinal, item in enumerate(selected, start=1):
             if not isinstance(item, Mapping):

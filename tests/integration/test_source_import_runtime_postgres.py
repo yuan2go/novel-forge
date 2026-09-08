@@ -295,7 +295,8 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         )
         (root / "0.html").write_text("序文<br>第二行", encoding="utf-8")
         (root / "1.html").write_text(
-            "原生作品正文第一段<br><br>原生作品正文第二段", encoding="utf-8"
+            "古典命运象征礼教正文第一段<br><br>古典命运象征礼教正文第二段",
+            encoding="utf-8",
         )
         (root / "2.html").write_text("附录文本", encoding="utf-8")
         self._git("add", ".")
@@ -377,8 +378,58 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 "NOT_APPLIED",
             )
             serialized = json.dumps(manifest, ensure_ascii=False, default=str)
-            self.assertNotIn("原生作品正文第一段", serialized)
+            self.assertNotIn("古典命运象征礼教正文第一段", serialized)
             self.assertNotIn("这段作者介绍不得混入正文", serialized)
+
+            self._run_ready_source_operations()
+            deconstruction_operations = self._operations(
+                "source.import.deconstruction.execute"
+            )
+            self.assertEqual(len(deconstruction_operations), 1)
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT observation.dimension
+                    FROM authority_source_deconstruction_observation AS observation
+                    WHERE observation.project_id=%s
+                    ORDER BY observation.dimension
+                    """,
+                    [self.project_id],
+                )
+                dimensions = {str(row[0]) for row in cursor.fetchall()}
+                cursor.execute(
+                    """
+                    SELECT version.content
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset
+                      ON asset.asset_id=version.asset_id
+                    WHERE asset.project_id=%s
+                      AND asset.asset_type='model_call_log'
+                      AND version.content ?
+                          'source_compound_deconstruction_binding'
+                    """,
+                    [self.project_id],
+                )
+                compound_logs = [dict(row[0]) for row in cursor.fetchall()]
+            self.assertEqual(
+                dimensions,
+                {
+                    "chapter_hook",
+                    "character_choice_cost",
+                    "conflict",
+                    "foreshadowing_payoff",
+                    "information_gap",
+                    "pacing",
+                    "structure",
+                },
+            )
+            self.assertEqual(len(compound_logs), 1)
+            self.assertEqual(
+                len(compound_logs[0]["source_deconstruction_bindings"]), 7
+            )
+            self.assertEqual(
+                self._source_intelligence_counts()["knowledge_candidates"], 7
+            )
 
             second = create("second")
             self.scheduler.run_or_recover(
