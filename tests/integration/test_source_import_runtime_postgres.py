@@ -180,6 +180,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         settings = IndustrialSettings(root=self.root, database_url=DATABASE_URL)
         env = {
             "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "131072",
             "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
             "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
             "NOVEL_FORGE_REVISION_PROVIDER": "mock",
@@ -463,6 +464,8 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 self._source_intelligence_counts()["knowledge_candidates"], 7
             )
 
+            self._assert_corpus_boundary_on_work_candidates(first, commit)
+
             profiling_operations_before_replay = len(
                 self._operations("source.import.document.profile")
             )
@@ -630,6 +633,76 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 [imported["operation_id"]],
             )
             self.assertEqual(cursor.fetchone(), ("SUCCEEDED", 1, 1))
+
+    def _assert_corpus_boundary_on_work_candidates(self, imported, commit):
+        from novel_forge.modules.source_authority import SourceAuthorityApplication, SourceAuthorityScheduler
+        from tests.integration.test_corpus_foundation_postgres import CorpusFixture, DIGEST
+
+        settings = IndustrialSettings(root=self.root, environment="test", database_url=DATABASE_URL)
+        environment = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+            "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "source-corpus-coexistence",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(self.object_root),
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": self.project_id,
+        }
+        with patch.dict(os.environ, environment), TestClient(create_authority_app(settings)) as client:
+            foundation = CorpusFixture(client, self.project_id, self.workspace_id,
+                SourceAuthorityScheduler(SourceAuthorityApplication(DATABASE_URL,
+                    application_build_id="source-corpus-coexistence", commit_sha="e" * 40)))
+            source = foundation.source("BENCHMARK", "work-benchmark")
+            rights = foundation.rights(source, "LICENSED")
+            snapshot = self.query.import_job(project_id=self.project_id,
+                import_job_id=imported["import_job_id"])["repository_snapshot_asset_version_id"]
+            candidate = self._candidate_for_dimension("conflict")
+            approval = self.mkaos_application.execute_approval(
+                ApproveKnowledgeCandidateCommand(
+                    project_id=self.project_id, workspace_id=self.workspace_id,
+                    candidate_asset_version_id=candidate, policy_version="pre-corpus:v1",
+                    rationale="Historical isolated fixture approval before Corpus classification",
+                    actor_id="untrusted-actor", idempotency_key="pre-corpus",
+                    trace_id="pre-corpus", correlation_id=self.project_id), principal=self.principal)
+            pack = self.mkaos_application.execute_pack(BuildKnowledgePackCommand(
+                project_id=self.project_id, workspace_id=self.workspace_id,
+                target_asset_version_id=snapshot, selector_policy_version="corpus-test:v1",
+                selector_policy_hash=DIGEST,
+                selections=(KnowledgePackSelection(approval["asset_version_id"], "CONSTRAINT", Decimal("1")),),
+                actor_id="untrusted-actor", idempotency_key="pre-corpus-pack",
+                trace_id="pre-corpus-pack", correlation_id=self.project_id), principal=self.principal)
+            assert self.mkaos_query.require_pack(project_id=self.project_id,
+                knowledge_pack_id=pack["knowledge_pack_id"])["item_count"] == 1
+            foundation.run({
+                "action": "freeze_snapshot", "source_id": source, "rights_id": rights,
+                "manifest": {"origin_uri": self.repository.as_uri(), "external_version": commit,
+                    "format": "source-work", "checksum": DIGEST,
+                    "adapter_profile": "metadata-only", "adapter_contract_version": "1"},
+                "acquisition": {"locator": self.repository.as_uri(),
+                    "acquired_at": "2026-09-08T00:00:00Z", "receipt_ref": "test-acquisition",
+                    "checksum": DIGEST, "repository_snapshot_asset_version_id": snapshot},
+            })
+            candidate = self._candidate_for_dimension("pacing")
+            with self.assertRaises(KernelError) as blocked:
+                self.mkaos_application.execute_approval(
+                    ApproveKnowledgeCandidateCommand(
+                        project_id=self.project_id, workspace_id=self.workspace_id,
+                        candidate_asset_version_id=candidate, policy_version="corpus-isolation:v1",
+                        rationale="Corpus catalog purpose must not be laundered through SourceWork",
+                        actor_id="untrusted-actor", idempotency_key="corpus-bypass",
+                        trace_id="corpus-bypass", correlation_id=self.project_id), principal=self.principal)
+            self.assertEqual(blocked.exception.code, "MKAOS_CORPUS_BRIDGE_REQUIRED")
+            with self.assertRaises(KernelError) as blocked_pack:
+                self.mkaos_query.require_pack(project_id=self.project_id, knowledge_pack_id=pack["knowledge_pack_id"])
+            self.assertEqual(blocked_pack.exception.code, "MKAOS_CORPUS_BRIDGE_REQUIRED")
+            if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+                Path(directory, "sourcework-corpus-coexistence.json").write_text(json.dumps({
+                    "repository_snapshot_asset_version_id": snapshot,
+                    "source_work_import_job": imported["import_job_id"],
+                    "corpus_source_id": source, "rights_id": rights,
+                    "historical_approval": approval, "historical_pack": pack,
+                    "new_approval_blocked": blocked.exception.code,
+                    "historical_pack_consumption_blocked": blocked_pack.exception.code,
+                    "provider_evidence": "SCRIPTED_TRANSPORT_ONLY"}, indent=2, default=str))
 
     def test_source_provider_timeout_is_independent_from_worker_lease(self) -> None:
         self.assertEqual(self.execution_port.lease_seconds, 30)

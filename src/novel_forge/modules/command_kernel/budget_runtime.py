@@ -359,6 +359,24 @@ def _decimal_text(value: Decimal) -> str:
     return "0" if normalized in {"-0", ""} else normalized
 
 
+def _has_budget_cost_observability_schema(uow: AuthorityUnitOfWork) -> bool:
+    uow.cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.columns
+        WHERE table_schema=current_schema()
+          AND (table_name,column_name) IN (
+              ('authority_budget_reservation','accounting_basis'),
+              ('authority_budget_reservation','estimated_cost_status'),
+              ('authority_budget_reservation','settled_cost_status'),
+              ('authority_operation_cost_evidence','accounting_basis'),
+              ('authority_operation_cost_evidence','cost_status')
+          )
+        """
+    )
+    return int(uow.cursor.fetchone()[0]) == 5
+
+
 def deterministic_budget_scope_id(
     *, project_id: str, owner_kind: str, owner_id: str
 ) -> str:
@@ -1726,12 +1744,28 @@ def assess_budget_scope_in_uow(
     window_state = "EXPIRED" if database_now >= scope["deadline_at"] else "ACTIVE"
     uow.cursor.execute(
         """
-        SELECT reservation_id,operation_id,external_effect_id,provider,chapter,
-               currency,estimated_amount,reserved_amount,settled_amount,
-               estimated_tokens,actual_tokens,status,budget_breach,
-               budget_scope_revision,version,accounting_basis,
-               estimated_cost_status,settled_cost_status
-        FROM authority_budget_reservation
+        SELECT reservation.reservation_id,reservation.operation_id,
+               reservation.external_effect_id,reservation.provider,
+               reservation.chapter,reservation.currency,
+               reservation.estimated_amount,reservation.reserved_amount,
+               reservation.settled_amount,reservation.estimated_tokens,
+               reservation.actual_tokens,reservation.status,
+               reservation.budget_breach,reservation.budget_scope_revision,
+               reservation.version,
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                   'PRICED'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'estimated_cost_status',''),
+                   'KNOWN'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
+                   CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
+                        ELSE 'PENDING' END
+               )
+        FROM authority_budget_reservation AS reservation
         WHERE budget_scope_id=%s AND project_id=%s
         ORDER BY reservation_id
         """,
@@ -1784,8 +1818,19 @@ def assess_budget_scope_in_uow(
                reservation.evidence,reservation.budget_timezone,
                reservation.budget_scope_id,reservation.budget_scope_revision,
                reservation.budget_breach,reservation.version,
-               reservation.accounting_basis,reservation.estimated_cost_status,
-               reservation.settled_cost_status
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                   'PRICED'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'estimated_cost_status',''),
+                   'KNOWN'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
+                   CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
+                        ELSE 'PENDING' END
+               )
         FROM authority_book_opening_legacy_budget_reservation_attribution
              AS attribution
         JOIN authority_budget_reservation AS reservation
@@ -2235,6 +2280,78 @@ def append_budget_evidence_link_in_uow(
     }
 
 
+def _operation_cost_authority_payload(
+    *,
+    cost_evidence_id: str,
+    operation_id: str,
+    provider: str,
+    model: str,
+    amount: Decimal | None,
+    currency: str,
+    evidence: Mapping[str, Any],
+    accounting_basis: str,
+    cost_status: str,
+) -> dict[str, Any]:
+    basis = accounting_basis.strip().upper() or "PRICED"
+    payload: dict[str, Any] = {
+        "cost_evidence_id": cost_evidence_id,
+        "operation_id": operation_id,
+        "provider": provider,
+        "model": model,
+        "amount": _decimal_text(amount) if amount is not None else None,
+        "currency": currency,
+        "evidence": dict(evidence),
+    }
+    if basis == "ACCOUNT_ENTITLEMENT":
+        payload.update(
+            {
+                "accounting_basis": basis,
+                "cost_status": cost_status.strip().upper() or "UNKNOWN",
+            }
+        )
+    return payload
+
+
+def _read_operation_cost_authority_payload(
+    uow: AuthorityUnitOfWork,
+    *,
+    cost_evidence_id: str,
+    operation_id: str,
+) -> dict[str, Any] | None:
+    uow.cursor.execute(
+        """
+        SELECT cost.cost_evidence_id,cost.operation_id,cost.provider,cost.model,
+               cost.amount,cost.currency,cost.evidence,
+               COALESCE(
+                   NULLIF(to_jsonb(cost)->>'accounting_basis',''),
+                   'PRICED'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(cost)->>'cost_status',''),
+                   'KNOWN'
+               )
+        FROM authority_operation_cost_evidence AS cost
+        WHERE cost.cost_evidence_id=%s AND cost.operation_id=%s
+        FOR KEY SHARE
+        """,
+        [cost_evidence_id, operation_id],
+    )
+    row = uow.cursor.fetchone()
+    if row is None:
+        return None
+    return _operation_cost_authority_payload(
+        cost_evidence_id=str(row[0]),
+        operation_id=str(row[1]),
+        provider=str(row[2]),
+        model=str(row[3]),
+        amount=Decimal(row[4]) if row[4] is not None else None,
+        currency=str(row[5]),
+        evidence=dict(row[6] or {}),
+        accounting_basis=str(row[7]),
+        cost_status=str(row[8]),
+    )
+
+
 def _validate_budget_evidence_authority(
     uow: AuthorityUnitOfWork,
     request: BudgetEvidenceLinkRequest,
@@ -2242,38 +2359,15 @@ def _validate_budget_evidence_authority(
     operation_id: str,
 ) -> None:
     if request.evidence_kind == "OPERATION_COST":
-        uow.cursor.execute(
-            """
-            SELECT cost_evidence_id,operation_id,provider,model,amount,currency,
-                   evidence,accounting_basis,cost_status
-            FROM authority_operation_cost_evidence
-            WHERE cost_evidence_id=%s AND operation_id=%s
-            FOR KEY SHARE
-            """,
-            [request.evidence_id, operation_id],
+        evidence = _read_operation_cost_authority_payload(
+            uow,
+            cost_evidence_id=request.evidence_id,
+            operation_id=operation_id,
         )
-        row = uow.cursor.fetchone()
-        if row is None or request.evidence_version != 0:
+        if evidence is None or request.evidence_version != 0:
             raise KernelError(
                 "BUDGET_EVIDENCE_AUTHORITY_MISSING",
                 "operation cost evidence is missing",
-            )
-        accounting_basis = str(row[7] or "PRICED").upper()
-        evidence: dict[str, Any] = {
-            "cost_evidence_id": str(row[0]),
-            "operation_id": str(row[1]),
-            "provider": str(row[2]),
-            "model": str(row[3]),
-            "amount": _decimal_text(Decimal(row[4])) if row[4] is not None else None,
-            "currency": str(row[5]),
-            "evidence": dict(row[6] or {}),
-        }
-        if accounting_basis == "ACCOUNT_ENTITLEMENT":
-            evidence.update(
-                {
-                    "accounting_basis": accounting_basis,
-                    "cost_status": str(row[8] or "UNKNOWN"),
-                }
             )
         if _canonical_hash(evidence) != request.evidence_hash:
             raise KernelError(
@@ -2511,6 +2605,12 @@ def reserve_provider_budget_in_uow(
         raise KernelError(
             "BUDGET_RESERVATION_INVALID", "budget accounting basis is invalid"
         )
+    cost_observability_schema = _has_budget_cost_observability_schema(uow)
+    if accounting_basis == "ACCOUNT_ENTITLEMENT" and not cost_observability_schema:
+        raise KernelError(
+            "BUDGET_SCHEMA_UPGRADE_REQUIRED",
+            "account entitlement requires the budget cost-observability migration",
+        )
     if accounting_basis == "ACCOUNT_ENTITLEMENT":
         if request.estimated_amount is not None or not request.cost_authorization_ref:
             raise KernelError(
@@ -2674,11 +2774,27 @@ def reserve_provider_budget_in_uow(
         revalidate_book_opening_budget_scope_in_uow(uow, locked_budget_scope)
     uow.cursor.execute(
         """
-        SELECT reservation_id,operation_id,external_effect_id,provider,currency,
-               estimated_amount,estimated_tokens,status,budget_scope_id,
-               budget_scope_revision,version,accounting_basis,
-               estimated_cost_status,settled_cost_status,evidence
-        FROM authority_budget_reservation
+        SELECT reservation.reservation_id,reservation.operation_id,
+               reservation.external_effect_id,reservation.provider,
+               reservation.currency,reservation.estimated_amount,
+               reservation.estimated_tokens,reservation.status,
+               reservation.budget_scope_id,reservation.budget_scope_revision,
+               reservation.version,
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                   'PRICED'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'estimated_cost_status',''),
+                   'KNOWN'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
+                   CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
+                        ELSE 'PENDING' END
+               ),
+               reservation.evidence
+        FROM authority_budget_reservation AS reservation
         WHERE project_id=%s AND stable_idempotency_key=%s
         FOR UPDATE
         """,
@@ -2789,73 +2905,118 @@ def reserve_provider_budget_in_uow(
             "account entitlement cannot use monetary reservation caps",
         )
     reservation_id = str(uuid4())
-    uow.cursor.execute(
-        """
-        INSERT INTO authority_budget_reservation (
-            reservation_id, operation_id, external_effect_id, project_id,
-            stable_idempotency_key, provider, chapter, currency,
-            estimated_amount, reserved_amount, settled_amount,
-            estimated_tokens, status, caps,
-            evidence, budget_timezone, budget_scope_id,
-            budget_scope_revision, version, accounting_basis,
-            estimated_cost_status,settled_cost_status
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, 'RESERVED', %s, %s, %s, %s, %s, 0,
-            %s,%s,'PENDING'
-        )
-        ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
-        RETURNING reservation_id
-        """,
-        [
-            reservation_id,
-            request.operation_id,
-            request.external_effect_id,
-            request.project_id,
-            request.stable_idempotency_key,
-            request.provider,
-            request.chapter,
-            request.currency,
-            amount,
-            amount,
-            Decimal("0") if amount is not None else None,
-            request.estimated_tokens,
-            Jsonb({key: str(value) for key, value in caps.items()}),
-            Jsonb(
-                {
-                    "phase": "pre_dispatch",
-                    "fixture": amount == 0,
-                    "accounting_basis": accounting_basis,
-                    "estimated_cost_status": (
-                        "UNKNOWN"
-                        if accounting_basis == "ACCOUNT_ENTITLEMENT"
-                        else "KNOWN"
-                    ),
-                    "cost_authorization_ref": request.cost_authorization_ref,
-                    "call_caps": call_caps,
-                    "token_caps": token_caps,
-                    "budget_scope_id": effective_budget_scope_id,
-                    "budget_scope_revision": budget_scope_revision,
-                }
+    reservation_evidence = Jsonb(
+        {
+            "phase": "pre_dispatch",
+            "fixture": amount == 0,
+            "accounting_basis": accounting_basis,
+            "estimated_cost_status": (
+                "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
-            request.budget_timezone,
-            effective_budget_scope_id or None,
-            budget_scope_revision,
-            accounting_basis,
-            ("UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"),
-        ],
+            "cost_authorization_ref": request.cost_authorization_ref,
+            "call_caps": call_caps,
+            "token_caps": token_caps,
+            "budget_scope_id": effective_budget_scope_id,
+            "budget_scope_revision": budget_scope_revision,
+        }
     )
+    insert_values: list[Any] = [
+        reservation_id,
+        request.operation_id,
+        request.external_effect_id,
+        request.project_id,
+        request.stable_idempotency_key,
+        request.provider,
+        request.chapter,
+        request.currency,
+        amount,
+        amount,
+        Decimal("0") if amount is not None else None,
+        request.estimated_tokens,
+        Jsonb({key: str(value) for key, value in caps.items()}),
+        reservation_evidence,
+        request.budget_timezone,
+        effective_budget_scope_id or None,
+        budget_scope_revision,
+    ]
+    if cost_observability_schema:
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_budget_reservation (
+                reservation_id, operation_id, external_effect_id, project_id,
+                stable_idempotency_key, provider, chapter, currency,
+                estimated_amount, reserved_amount, settled_amount,
+                estimated_tokens, status, caps,
+                evidence, budget_timezone, budget_scope_id,
+                budget_scope_revision, version, accounting_basis,
+                estimated_cost_status,settled_cost_status
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, 'RESERVED', %s, %s, %s, %s, %s, 0,
+                %s,%s,'PENDING'
+            )
+            ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
+            RETURNING reservation_id
+            """,
+            [
+                *insert_values,
+                accounting_basis,
+                (
+                    "UNKNOWN"
+                    if accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "KNOWN"
+                ),
+            ],
+        )
+    else:
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_budget_reservation (
+                reservation_id, operation_id, external_effect_id, project_id,
+                stable_idempotency_key, provider, chapter, currency,
+                estimated_amount, reserved_amount, settled_amount,
+                estimated_tokens, status, caps,
+                evidence, budget_timezone, budget_scope_id,
+                budget_scope_revision, version
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, 'RESERVED', %s, %s, %s, %s, %s, 0
+            )
+            ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
+            RETURNING reservation_id
+            """,
+            insert_values,
+        )
     inserted = uow.cursor.fetchone()
     replayed = inserted is None
     if replayed:
         uow.cursor.execute(
             """
-            SELECT reservation_id, operation_id, external_effect_id, provider,
-                   currency, estimated_amount, estimated_tokens, status,
-                   budget_scope_id,budget_scope_revision,version,
-                   accounting_basis,estimated_cost_status,settled_cost_status,
-                   evidence
-            FROM authority_budget_reservation
+            SELECT reservation.reservation_id,reservation.operation_id,
+                   reservation.external_effect_id,reservation.provider,
+                   reservation.currency,reservation.estimated_amount,
+                   reservation.estimated_tokens,reservation.status,
+                   reservation.budget_scope_id,
+                   reservation.budget_scope_revision,reservation.version,
+                   COALESCE(
+                       NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                       'PRICED'
+                   ),
+                   COALESCE(
+                       NULLIF(
+                           to_jsonb(reservation)->>'estimated_cost_status',''
+                       ),
+                       'KNOWN'
+                   ),
+                   COALESCE(
+                       NULLIF(
+                           to_jsonb(reservation)->>'settled_cost_status',''
+                       ),
+                       CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
+                            ELSE 'PENDING' END
+                   ),
+                   reservation.evidence
+            FROM authority_budget_reservation AS reservation
             WHERE project_id = %s AND stable_idempotency_key = %s
             """,
             [
@@ -3087,6 +3248,12 @@ def settle_provider_budget_in_uow(
         acquire_budget_locks_in_uow(uow, currencies=(str(identity["currency"]),))
     row = _reservation(uow, reservation_id, project_id, lock=True)
     accounting_basis = str(row.get("accounting_basis") or "PRICED").upper()
+    cost_observability_schema = _has_budget_cost_observability_schema(uow)
+    if accounting_basis == "ACCOUNT_ENTITLEMENT" and not cost_observability_schema:
+        raise KernelError(
+            "BUDGET_SCHEMA_UPGRADE_REQUIRED",
+            "account entitlement requires the budget cost-observability migration",
+        )
     if accounting_basis == "ACCOUNT_ENTITLEMENT":
         if actual_amount is not None:
             raise KernelError(
@@ -3239,49 +3406,78 @@ def settle_provider_budget_in_uow(
             dict(row.get("evidence") or {}).get("cost_authorization_ref") or ""
         ),
     }
-    uow.cursor.execute(
-        """
-        UPDATE authority_budget_reservation
-        SET status='SETTLED',settled_amount=%s,actual_tokens=%s,
-            evidence=evidence || %s,settled_at=NOW(),version=version+1,
-            updated_at=NOW(),settled_cost_status=%s,budget_breach=FALSE
-        WHERE reservation_id=%s AND project_id=%s
-        """,
-        [
-            amount,
-            actual_tokens,
-            Jsonb(cost_payload),
-            cost_status,
-            reservation_id,
-            project_id,
-        ],
-    )
-    uow.cursor.execute(
-        """
-        INSERT INTO authority_operation_cost_evidence(
-            cost_evidence_id,operation_id,provider,model,amount,currency,evidence,
-            accounting_basis,cost_status
-        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT (cost_evidence_id) DO NOTHING
-        """,
-        [
-            cost_evidence_id,
-            row["operation_id"],
-            row["provider"],
-            str(evidence.get("model_id") or ""),
-            amount,
-            row["currency"],
-            Jsonb(cost_payload),
-            accounting_basis,
-            cost_status,
-        ],
-    )
+    settlement_values = [
+        amount,
+        actual_tokens,
+        Jsonb(cost_payload),
+        reservation_id,
+        project_id,
+    ]
+    cost_evidence_values = [
+        cost_evidence_id,
+        row["operation_id"],
+        row["provider"],
+        str(evidence.get("model_id") or ""),
+        amount,
+        row["currency"],
+        Jsonb(cost_payload),
+    ]
+    if cost_observability_schema:
+        uow.cursor.execute(
+            """
+            UPDATE authority_budget_reservation
+            SET status='SETTLED',settled_amount=%s,actual_tokens=%s,
+                evidence=evidence || %s,settled_at=NOW(),version=version+1,
+                updated_at=NOW(),settled_cost_status=%s,budget_breach=FALSE
+            WHERE reservation_id=%s AND project_id=%s
+            """,
+            [
+                amount,
+                actual_tokens,
+                Jsonb(cost_payload),
+                cost_status,
+                reservation_id,
+                project_id,
+            ],
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_operation_cost_evidence(
+                cost_evidence_id,operation_id,provider,model,amount,currency,
+                evidence,accounting_basis,cost_status
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (cost_evidence_id) DO NOTHING
+            """,
+            [*cost_evidence_values, accounting_basis, cost_status],
+        )
+    else:
+        uow.cursor.execute(
+            """
+            UPDATE authority_budget_reservation
+            SET status='SETTLED',settled_amount=%s,actual_tokens=%s,
+                evidence=evidence || %s,settled_at=NOW(),version=version+1,
+                updated_at=NOW(),budget_breach=FALSE
+            WHERE reservation_id=%s AND project_id=%s
+            """,
+            settlement_values,
+        )
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_operation_cost_evidence(
+                cost_evidence_id,operation_id,provider,model,amount,currency,
+                evidence
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (cost_evidence_id) DO NOTHING
+            """,
+            cost_evidence_values,
+        )
     if locked_scope is not None:
         _link_operation_cost_evidence_in_uow(
             uow,
             row={**row, "settled_amount": amount, "actual_tokens": actual_tokens},
             evidence=evidence,
             locked_scope=locked_scope,
+            cost_payload=cost_payload,
         )
     _record(
         uow,
@@ -3320,36 +3516,38 @@ def _link_operation_cost_evidence_in_uow(
     row: Mapping[str, Any],
     evidence: Mapping[str, Any],
     locked_scope: Mapping[str, Any],
+    cost_payload: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     reservation_id = str(row["reservation_id"])
     cost_evidence_id = f"budget-cost:{reservation_id}"
-    cost_payload = {**dict(evidence), "reservation_id": reservation_id}
     accounting_basis = str(row.get("accounting_basis") or "PRICED").upper()
     cost_status = "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
-    cost_payload = {
-        **cost_payload,
-        "accounting_basis": accounting_basis,
-        "cost_status": cost_status,
-        "cost_authorization_ref": str(
-            dict(row.get("evidence") or {}).get("cost_authorization_ref") or ""
-        ),
-    }
-    authoritative: dict[str, Any] = {
-        "cost_evidence_id": cost_evidence_id,
-        "operation_id": str(row["operation_id"]),
-        "provider": str(row["provider"]),
-        "model": str(evidence.get("model_id") or ""),
-        "amount": (
-            _decimal_text(Decimal(row["settled_amount"]))
-            if row["settled_amount"] is not None
-            else None
-        ),
-        "currency": str(row["currency"]),
-        "evidence": cost_payload,
-    }
-    if accounting_basis == "ACCOUNT_ENTITLEMENT":
-        authoritative.update(
-            {"accounting_basis": accounting_basis, "cost_status": cost_status}
+    if cost_payload is None:
+        authoritative = _read_operation_cost_authority_payload(
+            uow,
+            cost_evidence_id=cost_evidence_id,
+            operation_id=str(row["operation_id"]),
+        )
+        if authoritative is None:
+            raise KernelError(
+                "BUDGET_EVIDENCE_AUTHORITY_MISSING",
+                "operation cost evidence is missing",
+            )
+    else:
+        authoritative = _operation_cost_authority_payload(
+            cost_evidence_id=cost_evidence_id,
+            operation_id=str(row["operation_id"]),
+            provider=str(row["provider"]),
+            model=str(evidence.get("model_id") or ""),
+            amount=(
+                Decimal(row["settled_amount"])
+                if row["settled_amount"] is not None
+                else None
+            ),
+            currency=str(row["currency"]),
+            evidence=cost_payload,
+            accounting_basis=accounting_basis,
+            cost_status=cost_status,
         )
     return append_budget_evidence_link_in_uow(
         uow,
@@ -3856,14 +4054,30 @@ def _reservation(
     suffix = " FOR UPDATE" if lock else ""
     uow.cursor.execute(
         f"""
-        SELECT reservation_id, operation_id, external_effect_id, project_id,
-               stable_idempotency_key, provider, chapter, currency,
-               estimated_amount, reserved_amount, settled_amount,
-               estimated_tokens, actual_tokens, status, caps, evidence
-               , budget_timezone, budget_breach, budget_scope_id,
-               budget_scope_revision, version, accounting_basis,
-               estimated_cost_status,settled_cost_status
-        FROM authority_budget_reservation
+        SELECT reservation.reservation_id,reservation.operation_id,
+               reservation.external_effect_id,reservation.project_id,
+               reservation.stable_idempotency_key,reservation.provider,
+               reservation.chapter,reservation.currency,
+               reservation.estimated_amount,reservation.reserved_amount,
+               reservation.settled_amount,reservation.estimated_tokens,
+               reservation.actual_tokens,reservation.status,reservation.caps,
+               reservation.evidence,reservation.budget_timezone,
+               reservation.budget_breach,reservation.budget_scope_id,
+               reservation.budget_scope_revision,reservation.version,
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                   'PRICED'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'estimated_cost_status',''),
+                   'KNOWN'
+               ),
+               COALESCE(
+                   NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
+                   CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
+                        ELSE 'PENDING' END
+               )
+        FROM authority_budget_reservation AS reservation
         WHERE reservation_id = %s AND project_id = %s{suffix}
         """,
         [reservation_id, project_id],

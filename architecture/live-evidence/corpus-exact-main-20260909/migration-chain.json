@@ -1,0 +1,627 @@
+{
+  "head": "20260908_0123_source_analysis_dimensions",
+  "applied_count": 124,
+  "chain": [
+    {
+      "id": "20260625_0001_initial_industrial_schema",
+      "parent": null,
+      "sql_sha256": "3a4b36c3bf4e63731ef1d6d52d8995c75cd8d1cb55e720853f1db7aad8812acf"
+    },
+    {
+      "id": "20260628_0002_query_and_release_indexes",
+      "parent": "20260625_0001_initial_industrial_schema",
+      "sql_sha256": "f21c9f4a9b195eae06c85ed054aa511af9cbcd98fcb009afc0f1ce28a92c0135"
+    },
+    {
+      "id": "20260702_0003_mkaos_p0",
+      "parent": "20260628_0002_query_and_release_indexes",
+      "sql_sha256": "2faee4af58ad1db6c3e9d054beb1ccad71c55c6fe7874b23330546e7677c333c"
+    },
+    {
+      "id": "20260703_0004_review_issue",
+      "parent": "20260702_0003_mkaos_p0",
+      "sql_sha256": "2744e5deec45f0090ef0bdaa8b3d6af49b8b11509c87d7dd2c20c5a9545a543a"
+    },
+    {
+      "id": "20260712_0005_core_os_runtime",
+      "parent": "20260703_0004_review_issue",
+      "sql_sha256": "6c328fc7b4ff7605b6548e2832e47a18994a0126dd3d6aa9287fdfa91073dd56"
+    },
+    {
+      "id": "20260712_0006_core_os_outbox_delivery",
+      "parent": "20260712_0005_core_os_runtime",
+      "sql_sha256": "85077513e089c362b20496dd8d6af187d323a87bfdac44dd5a576b0d4b81f114"
+    },
+    {
+      "id": "20260712_0007_postgres_command_kernel_authority",
+      "parent": "20260712_0006_core_os_outbox_delivery",
+      "sql_sha256": "568271aad81fa4f73fd8d3336bf838155870a87d5e821a18b1d08cd63198ba2e"
+    },
+    {
+      "id": "20260713_0008_authority_schema_recovery",
+      "parent": "20260712_0007_postgres_command_kernel_authority",
+      "sql_sha256": "2b51ec5cf499de641f030abbe41c1d03b4fd1cefe419876a65ff553269466bcf"
+    },
+    {
+      "id": "20260713_0009_attempt_lease_invariants",
+      "parent": "20260713_0008_authority_schema_recovery",
+      "sql_sha256": "262a9c637c1ce1270de50464732990ee6244b2e1b781c52f279ba3e9c407a063"
+    },
+    {
+      "id": "20260713_0010_asset_blob_invariants",
+      "parent": "20260713_0009_attempt_lease_invariants",
+      "sql_sha256": "a65b72e5aff1fbc5e88f269611988518dfddcd2456af3912923ada48784ee372"
+    },
+    {
+      "id": "20260713_0011_effect_inbox_invariants",
+      "parent": "20260713_0010_asset_blob_invariants",
+      "sql_sha256": "240f408af17ab55dfcae3c791ef1f9683a574c3e97a45e51b76f6872eff5ec0e"
+    },
+    {
+      "id": "20260713_0012_admission_contract",
+      "parent": "20260713_0011_effect_inbox_invariants",
+      "sql_sha256": "773bc3c9a5278a0a8bcb9c96a21f4ca7037d362a3f55737b464f45927a67d2bc"
+    },
+    {
+      "id": "20260713_0013_attempt_runtime",
+      "parent": "20260713_0012_admission_contract",
+      "sql_sha256": "b4ed6b7f3bf69d73e8692a0785299caf95ddc546e60c2ea6d33606fc8abe438b"
+    },
+    {
+      "id": "20260713_0014_cancellation_compensation",
+      "parent": "20260713_0013_attempt_runtime",
+      "sql_sha256": "641dc18cadf223fda3715e21f45edad45319ae276a6afbe9af359687897b7b8a"
+    },
+    {
+      "id": "20260713_0015_stale_command_evidence",
+      "parent": "20260713_0014_cancellation_compensation",
+      "sql_sha256": "3c5380319623cbefe80bafe0c70cba80d8f94de2941ed293a92bd6128335b942"
+    },
+    {
+      "id": "20260713_0016_asset_blob_protocol",
+      "parent": "20260713_0015_stale_command_evidence",
+      "sql_sha256": "1b9874b90da3fc2123999c715cc77ddac604bc40cce58a2db10ddad839fb6a6b"
+    },
+    {
+      "id": "20260713_0017_external_effect_runtime",
+      "parent": "20260713_0016_asset_blob_protocol",
+      "sql_sha256": "2261c4efc86d21b03212fa87a7663487531516a94d06daf0bddd104ce3b2dfd1"
+    },
+    {
+      "id": "20260713_0018_operation_graph_completion",
+      "parent": "20260713_0017_external_effect_runtime",
+      "sql_sha256": "f0b452212b95c7d365020b6efd87e1843c22c58824ffad244a613fb6eacdf931"
+    },
+    {
+      "id": "20260716_0019_external_effect_protocol",
+      "parent": "20260713_0018_operation_graph_completion",
+      "sql_sha256": "8a5baea7ac0b0bb3e52018d9a5efced57a6597fa104815b9d1276990b8274ffb"
+    },
+    {
+      "id": "20260716_0020_operation_output_evidence",
+      "parent": "20260716_0019_external_effect_protocol",
+      "sql_sha256": "e2dce40688f639d93486ad2c039a41e207e94fedd955708647241e9444c085c5"
+    },
+    {
+      "id": "20260716_0021_saga_coordination",
+      "parent": "20260716_0020_operation_output_evidence",
+      "sql_sha256": "07966687168de10f860bafc155fb95d2377e9b6decdaa413a85f714c79d44d19"
+    },
+    {
+      "id": "20260716_0022_authority_asset_locator",
+      "parent": "20260716_0021_saga_coordination",
+      "sql_sha256": "e75220d72e5ec3924014be4acced9ffb4440b8886fde7b04885e4c851b13bd67"
+    },
+    {
+      "id": "20260718_0023_provider_budget_lifecycle",
+      "parent": "20260716_0022_authority_asset_locator",
+      "sql_sha256": "e50064761e13075d78bcfc03b592f00b7b06553fb491a4cf01bc5a394bacd1e5"
+    },
+    {
+      "id": "20260718_0024_pre_provider_runtime_hardening",
+      "parent": "20260718_0023_provider_budget_lifecycle",
+      "sql_sha256": "6fd05cc16e13aabdbb0d7f3410f844c6bf845e3d66d8a61e5c206ef976805689"
+    },
+    {
+      "id": "20260718_0025_canon_approval_authority",
+      "parent": "20260718_0024_pre_provider_runtime_hardening",
+      "sql_sha256": "d3f5bf49d9c97df43b5d88092b5f0340dbf369a6c0644c3b9f0b666534f0d0ee"
+    },
+    {
+      "id": "20260718_0026_canon_saga_gate",
+      "parent": "20260718_0025_canon_approval_authority",
+      "sql_sha256": "dfedec0192965ee9294c83a4fe97af12f31a2f3a11e6318864a8b987920325fb"
+    },
+    {
+      "id": "20260718_0027_canon_approval_operation",
+      "parent": "20260718_0026_canon_saga_gate",
+      "sql_sha256": "5c89e7e32bb7412b29b1cf9ac8bfc37e43c1b55ab934b86359b6736c01ff3f1e"
+    },
+    {
+      "id": "20260718_0028_provider_adapter_v2",
+      "parent": "20260718_0027_canon_approval_operation",
+      "sql_sha256": "714e593e1adb19321d1a0b13e63f6f5f9ae58d0ef7bb8eb3af9fdd2f35b9bfe2"
+    },
+    {
+      "id": "20260718_0029_canon_reextraction_authority",
+      "parent": "20260718_0028_provider_adapter_v2",
+      "sql_sha256": "cadcacb757dd27152790a3b4d9e97bf877b4304a481bd18fb3362bafd37dbcfd"
+    },
+    {
+      "id": "20260718_0030_provider_callback_authority",
+      "parent": "20260718_0029_canon_reextraction_authority",
+      "sql_sha256": "5ce3d66162d88c5003ec7a30229a9214576f8edd120fc459baa2ad64280c1100"
+    },
+    {
+      "id": "20260718_0031_canon_reextraction_governance",
+      "parent": "20260718_0030_provider_callback_authority",
+      "sql_sha256": "0e665bd12c6132e5242f027e78247265c4b453fc02f7a2b1a9173d2a370e5196"
+    },
+    {
+      "id": "20260718_0032_provider_callback_dispatch_index",
+      "parent": "20260718_0031_canon_reextraction_governance",
+      "sql_sha256": "39806b4cd86f1e81c8a3affb383d46992c3a5f8702a072469e0359f03558e8f4"
+    },
+    {
+      "id": "20260728_0033_agent_collaboration_v1",
+      "parent": "20260718_0032_provider_callback_dispatch_index",
+      "sql_sha256": "789184d15009e601a8df712be7242c2e9bcef0d9b09c346d5c789fb033285173"
+    },
+    {
+      "id": "20260729_0034_unified_business_authority",
+      "parent": "20260728_0033_agent_collaboration_v1",
+      "sql_sha256": "4b32291bf58999dc93d9d34bc5c296fb465211846b60efa2f2480204408bd002"
+    },
+    {
+      "id": "20260730_0035_book_child_delegation",
+      "parent": "20260729_0034_unified_business_authority",
+      "sql_sha256": "26d4e14ca6e81e79aae8d4bf7757114faa35093c2c63514c0e93f0d0f9e64d4a"
+    },
+    {
+      "id": "20260730_0036_book_canon_checkpoint",
+      "parent": "20260730_0035_book_child_delegation",
+      "sql_sha256": "4db772a01172fc05402cc0b58756e1774afbf8e3bd36c18682bc67ea636fbbad"
+    },
+    {
+      "id": "20260730_0037_story_state_reducer_registry",
+      "parent": "20260730_0036_book_canon_checkpoint",
+      "sql_sha256": "d1af4cb49d3b50ea80c5a96820ef9e51dd8438c7e47e2acf2c768e50a4468341"
+    },
+    {
+      "id": "20260730_0038_story_design_authority",
+      "parent": "20260730_0037_story_state_reducer_registry",
+      "sql_sha256": "e81e17a39d9c42cf2dd64b449f6ee09ef433406d14fb63ee73550f82e7c7e98e"
+    },
+    {
+      "id": "20260730_0039_hierarchical_planning",
+      "parent": "20260730_0038_story_design_authority",
+      "sql_sha256": "1168d59e5f9f76048c7cf5655c3096aff9ba3c44dd652e56ec7e7dbe004af5f6"
+    },
+    {
+      "id": "20260730_0040_chapter_group_authority",
+      "parent": "20260730_0039_hierarchical_planning",
+      "sql_sha256": "9995bbac6a0e3a3158ec16ecb545de82d64bb79275e513841d3af7e21d93fe05"
+    },
+    {
+      "id": "20260730_0041_plan_change_authority",
+      "parent": "20260730_0040_chapter_group_authority",
+      "sql_sha256": "a86152aebd195fcc493d6196e24bbf7af8b8178cd131b4c81d136c4173735213"
+    },
+    {
+      "id": "20260730_0042_reader_calibration",
+      "parent": "20260730_0041_plan_change_authority",
+      "sql_sha256": "520fdb206473305535cacb2de6874587db80fe4bf954d8ed8dc41f1f00a12d56"
+    },
+    {
+      "id": "20260801_0043_project_workspace_and_legacy_migration_authority",
+      "parent": "20260730_0042_reader_calibration",
+      "sql_sha256": "f92739de0f340d6a6518ae7602244ef898279282b2d7302c0e7022fc625dbb1f"
+    },
+    {
+      "id": "20260801_0044_project_binding_authority",
+      "parent": "20260801_0043_project_workspace_and_legacy_migration_authority",
+      "sql_sha256": "3f664058ec77e4c7f70330fa755195a0cf3d59b931b84264665e664d393ce6c7"
+    },
+    {
+      "id": "20260801_0045_task_recovery_authority",
+      "parent": "20260801_0044_project_binding_authority",
+      "sql_sha256": "f6a620efda5a46fa11e37f0a048884c2d2235d151185936be6b6e3cbac71bbfe"
+    },
+    {
+      "id": "20260801_0046_source_document_authority",
+      "parent": "20260801_0045_task_recovery_authority",
+      "sql_sha256": "36951581262c4831be6ecf61eec6078cad83212e54c65e95cca818f685702727"
+    },
+    {
+      "id": "20260801_0047_candidate_asset_lifecycle",
+      "parent": "20260801_0046_source_document_authority",
+      "sql_sha256": "6189dd37521f5cb69cc27a90350174cc78c9328f0c1dfbb894c328962c76e8f6"
+    },
+    {
+      "id": "20260801_0048_source_transform_authority",
+      "parent": "20260801_0047_candidate_asset_lifecycle",
+      "sql_sha256": "096323786df6c207b4bd600b93751052732a1cffda0146a8d2e2b1cf34e3fbaa"
+    },
+    {
+      "id": "20260801_0049_source_transform_fk_indexes",
+      "parent": "20260801_0048_source_transform_authority",
+      "sql_sha256": "f2e6ea8d4190ca2ee3587f536b7ca11c6083531c518cb5159469ca86a9846de8"
+    },
+    {
+      "id": "20260801_0050_mkaos_authority",
+      "parent": "20260801_0049_source_transform_fk_indexes",
+      "sql_sha256": "4206f0b4a40cc214269ca26504834c4146f8fcf22d30824b91e1c7f4c2a4ef69"
+    },
+    {
+      "id": "20260803_0051_book_design_authority_slice",
+      "parent": "20260801_0050_mkaos_authority",
+      "sql_sha256": "26a39c0912ecb4a7f3aa29f92e8f2a30a1233611c260e49a9d88c6c2f709c1a9"
+    },
+    {
+      "id": "20260804_0052_asset_schema_and_scope_integrity",
+      "parent": "20260803_0051_book_design_authority_slice",
+      "sql_sha256": "bcd3e06be440119dadc917ae2d0372d5759b3dda39fe92d091c29b1ded7d10d9"
+    },
+    {
+      "id": "20260804_0053_d0_provider_qualification_authority",
+      "parent": "20260804_0052_asset_schema_and_scope_integrity",
+      "sql_sha256": "4a414f2891def807fa9ab44919d5b75beabad87f7ce1da829187a13c19fbe855"
+    },
+    {
+      "id": "20260804_0054_scope_foreign_key_indexes",
+      "parent": "20260804_0053_d0_provider_qualification_authority",
+      "sql_sha256": "3db1ff2f699eb4d8d46ab389bd9f6f9222e05221f615c14f7d3a2d26e94efba9"
+    },
+    {
+      "id": "20260804_0055_legacy_native_conversion",
+      "parent": "20260804_0054_scope_foreign_key_indexes",
+      "sql_sha256": "14edd47031198796145d653d456f3c35b30274954ee3f399666616efba3259d4"
+    },
+    {
+      "id": "20260804_0056_database_runtime_governance",
+      "parent": "20260804_0055_legacy_native_conversion",
+      "sql_sha256": "12715f5929f20358c41dfc32deb827768bef4ef286420b2014b168bf00a07551"
+    },
+    {
+      "id": "20260804_0057_hot_query_governance",
+      "parent": "20260804_0056_database_runtime_governance",
+      "sql_sha256": "90e2a0db2f4e9ca5c37d91d67a8eab14cbbf4831d673706672cc28f9393b6831"
+    },
+    {
+      "id": "20260804_0058_authority_cutover_release_qualification",
+      "parent": "20260804_0057_hot_query_governance",
+      "sql_sha256": "50af0d251e160241ab9b0832e873c9ad055d4d9fb5d6064ad71f359114fd54c5"
+    },
+    {
+      "id": "20260804_0059_migration_validation_authority",
+      "parent": "20260804_0058_authority_cutover_release_qualification",
+      "sql_sha256": "fea6ca63c8cb1221f982b2b76a8e0cec8422ef124ecad79da6b0fec3d31a9c50"
+    },
+    {
+      "id": "20260804_0060_migration_completion_semantics",
+      "parent": "20260804_0059_migration_validation_authority",
+      "sql_sha256": "0b404a7e88cd8c94da82fa16f0eeaf7ad5ae49b543a6a1d517ad7499558ef238"
+    },
+    {
+      "id": "20260804_0061_structured_migration_references",
+      "parent": "20260804_0060_migration_completion_semantics",
+      "sql_sha256": "6a500fe1b1f65714ab6fdf85cda94fe3957b8263eed28c2cd278aa6ca77f0956"
+    },
+    {
+      "id": "20260804_0062_runtime_job_execution_plane",
+      "parent": "20260804_0061_structured_migration_references",
+      "sql_sha256": "e80a70364dd8fc5f8350079757c91418f2e470325ed1c1f2e2f5947c6790e7db"
+    },
+    {
+      "id": "20260804_0063_worker_fleet_operational_governance",
+      "parent": "20260804_0062_runtime_job_execution_plane",
+      "sql_sha256": "fdc3f767d177998acb2f2041d4f6ae2805bc4ada3e67d2854785ce05af1eae56"
+    },
+    {
+      "id": "20260804_0064_runtime_job_integrity_hardening",
+      "parent": "20260804_0063_worker_fleet_operational_governance",
+      "sql_sha256": "9039a7b3d3037e997e802e571d9e401a277e1e6b624fda137a39c980550c77c0"
+    },
+    {
+      "id": "20260804_0065_runtime_job_lease_identity",
+      "parent": "20260804_0064_runtime_job_integrity_hardening",
+      "sql_sha256": "82544a2316ca838933b92dfc3e305f0f6a4db275a448e632b0125db98c29afbf"
+    },
+    {
+      "id": "20260804_0066_runtime_job_attempt_lease_existence",
+      "parent": "20260804_0065_runtime_job_lease_identity",
+      "sql_sha256": "eddd917bc965b00c8e723a3129b92f4a81dd7623e651d6dfd741790e1d2da7e6"
+    },
+    {
+      "id": "20260804_0067_activated_migration_archival_binding",
+      "parent": "20260804_0066_runtime_job_attempt_lease_existence",
+      "sql_sha256": "78b8e4032a32888bae7176b7ed21648a661921e11d0fbe556060039bb51ca110"
+    },
+    {
+      "id": "20260805_0068_unified_agent_runtime",
+      "parent": "20260804_0067_activated_migration_archival_binding",
+      "sql_sha256": "3caea9b0a28888701a023725434090281adfc13773476c4708131578f2ea8c76"
+    },
+    {
+      "id": "20260805_0069_agent_runtime_domain_commit_closure",
+      "parent": "20260805_0068_unified_agent_runtime",
+      "sql_sha256": "c97269e3c4d152f93a2105ef48e97ff9a6f856addb5067aaeb99899b01421c7b"
+    },
+    {
+      "id": "20260805_0070_agent_runtime_recovery_protocol",
+      "parent": "20260805_0069_agent_runtime_domain_commit_closure",
+      "sql_sha256": "1793d565530f4d72b242290c1f9a526bdcf34ab94af26f09b1ac1e72f5f85dcd"
+    },
+    {
+      "id": "20260805_0071_capability_pack_authority",
+      "parent": "20260805_0070_agent_runtime_recovery_protocol",
+      "sql_sha256": "0c213b2b25fc9807181794b92a435da54691633b6bc2a2d0e7531098278e979e"
+    },
+    {
+      "id": "20260806_0072_capability_pack_integrity_hardening",
+      "parent": "20260805_0071_capability_pack_authority",
+      "sql_sha256": "78aaaaf23e159652613951c4200948e890fc6f64357cccc91bc1d20d2e595539"
+    },
+    {
+      "id": "20260806_0073_core_functional_loops",
+      "parent": "20260806_0072_capability_pack_integrity_hardening",
+      "sql_sha256": "9bbc1edeed58b47d1115bd80ce4eb269af9c3a49a9eccf26bba8297d82bcde49"
+    },
+    {
+      "id": "20260811_0074_longform_native_intelligence",
+      "parent": "20260806_0073_core_functional_loops",
+      "sql_sha256": "3138eed85c9e5f7b190daa8b46d6af8a4276cd8bdba4ca3473e6b79247b4be36"
+    },
+    {
+      "id": "20260811_0075_source_deconstruction_intelligence",
+      "parent": "20260811_0074_longform_native_intelligence",
+      "sql_sha256": "27af6c731b7f8a4515caa46e3583b4daeb6d022cdd696584a534e3c7eb129304"
+    },
+    {
+      "id": "20260811_0076_source_import_runtime",
+      "parent": "20260811_0075_source_deconstruction_intelligence",
+      "sql_sha256": "f1b87f156bd0da64d6bd6b2a4822d11fd73be0e8a078cec439314af50d943d69"
+    },
+    {
+      "id": "20260811_0077_source_reprocessing_execution",
+      "parent": "20260811_0076_source_import_runtime",
+      "sql_sha256": "727e4136194e25fd3c22a958494e98d7def504c0faacd3dfb3446087431693d6"
+    },
+    {
+      "id": "20260811_0078_reprocessing_action_expansion",
+      "parent": "20260811_0077_source_reprocessing_execution",
+      "sql_sha256": "7c64f7f1c8f4781b8733683a180e71c26ffec41919f1d93f8a02bd44a1e3ac23"
+    },
+    {
+      "id": "20260811_0079_source_import_scope_closure",
+      "parent": "20260811_0078_reprocessing_action_expansion",
+      "sql_sha256": "4086f51cbc1dfffc1649a320fbc4261e13bc30d0d6866bba8c93153491ac309a"
+    },
+    {
+      "id": "20260811_0080_source_snapshot_governance_identity",
+      "parent": "20260811_0079_source_import_scope_closure",
+      "sql_sha256": "39af2f63b6485eccb1fcf3ec0c0dc183ddd91d8af1e462b1454b26c35d8af314"
+    },
+    {
+      "id": "20260811_0081_source_intelligence_router",
+      "parent": "20260811_0080_source_snapshot_governance_identity",
+      "sql_sha256": "6b5b9feaf6bc0a53ee6bc6afce3dbefb7b9bda4ecc7d536e76ec0367935f478a"
+    },
+    {
+      "id": "20260812_0082_narrative_state_contract_v2",
+      "parent": "20260811_0081_source_intelligence_router",
+      "sql_sha256": "83ed2bdc8b0bf21eade5ab73261feb9e1aff549c31a5339dfbe3df6dff87af46"
+    },
+    {
+      "id": "20260812_0083_narrative_runtime_convergence",
+      "parent": "20260812_0082_narrative_state_contract_v2",
+      "sql_sha256": "4e227c94e6ccef58e8b05d3b2dfb236391f8343d057be1fca33f9919e9978d10"
+    },
+    {
+      "id": "20260812_0084_development_gap_final_convergence",
+      "parent": "20260812_0083_narrative_runtime_convergence",
+      "sql_sha256": "f18e6b70d3fc55e58c81890ca53a98c153b16fe5a44094feac3224b4938db4e0"
+    },
+    {
+      "id": "20260812_0085_corrective_action_terminal_lineage",
+      "parent": "20260812_0084_development_gap_final_convergence",
+      "sql_sha256": "49d366bea467b9f4eae1bee8786304030e1e68c4c73138adc10e83438d461a0e"
+    },
+    {
+      "id": "20260812_0086_corrective_generation_terminal_lineage",
+      "parent": "20260812_0085_corrective_action_terminal_lineage",
+      "sql_sha256": "3bf1bcf70e86f378f238c62ccf14ecd5a70dc4ffb679a4d4ef0b17a42b373795"
+    },
+    {
+      "id": "20260813_0087_book_initial_narrative_state_binding",
+      "parent": "20260812_0086_corrective_generation_terminal_lineage",
+      "sql_sha256": "cdb183ea3bff16a509d46c096897d123546e2cf75fcc5d38e83b172af7285d37"
+    },
+    {
+      "id": "20260814_0088_canonical_narrative_architecture",
+      "parent": "20260813_0087_book_initial_narrative_state_binding",
+      "sql_sha256": "d372063b7a4cd25e63a53ba1ca2e6cceaf908035671c7ace6ad03edf62608f89"
+    },
+    {
+      "id": "20260814_0089_progressive_narrative_design",
+      "parent": "20260814_0088_canonical_narrative_architecture",
+      "sql_sha256": "0e9657c45c7f6393bd304f2cfebf9f717b48ba628f5e27c26eb34e4caff59123"
+    },
+    {
+      "id": "20260814_0090_progressive_replan_scopes",
+      "parent": "20260814_0089_progressive_narrative_design",
+      "sql_sha256": "2d474a75e5e4dac59b03f29769d2960433cd45a2b82f961abd91b2dac28e13be"
+    },
+    {
+      "id": "20260814_0091_canonical_longform_runtime_completion",
+      "parent": "20260814_0090_progressive_replan_scopes",
+      "sql_sha256": "976d3e5f16dbcdea81bf3597b3fd6b32d0ea3510156c6a09699d16369ca35c94"
+    },
+    {
+      "id": "20260814_0092_longform_correctness_closure",
+      "parent": "20260814_0091_canonical_longform_runtime_completion",
+      "sql_sha256": "484f860ac9d054eda66904d3a1887e5bdcb779e4688d010d1a40ed2a4a5b4733"
+    },
+    {
+      "id": "20260820_0093_book_liveness_critical_path_closure",
+      "parent": "20260814_0092_longform_correctness_closure",
+      "sql_sha256": "c8ccb0e3d8e48fbf95d1d7796ed92e6040c400a27139631483b4c65eae82ccb7"
+    },
+    {
+      "id": "20260820_0094_industrial_autonomous_novel_os",
+      "parent": "20260820_0093_book_liveness_critical_path_closure",
+      "sql_sha256": "66cdf38b2299219480f3ea9921af093258d11933b9a5a880b3f6f0f47fd2f632"
+    },
+    {
+      "id": "20260821_0095_post_merge_correctness_repair",
+      "parent": "20260820_0094_industrial_autonomous_novel_os",
+      "sql_sha256": "7fb7f2d356d2486e10c9b2964dd96e36504c3b4503b1e8f02a31e04254fa5334"
+    },
+    {
+      "id": "20260821_0096_runtime_hardening",
+      "parent": "20260821_0095_post_merge_correctness_repair",
+      "sql_sha256": "783bccc257ffe158b0affea4bc2a37c555b4c2bd400d2b72d402fa54b99db41a"
+    },
+    {
+      "id": "20260824_0097_narrative_evaluator_codex_lineage",
+      "parent": "20260821_0096_runtime_hardening",
+      "sql_sha256": "2320fe320b2c17e9e68987bb56504d1bc6a1d8c193ec391c5c9e0f8597798365"
+    },
+    {
+      "id": "20260825_0098_narrative_evolution_engine",
+      "parent": "20260824_0097_narrative_evaluator_codex_lineage",
+      "sql_sha256": "465c09301028db4fcaad2abdde9b9b51e0b2aadd54470c886811c8abdccc3239"
+    },
+    {
+      "id": "20260825_0099_creative_engineering_convergence",
+      "parent": "20260825_0098_narrative_evolution_engine",
+      "sql_sha256": "b5ce5c672a3ba88270a4a4c7658cb5c513ed9ba3db6d9c3f38b2c0b6a1963791"
+    },
+    {
+      "id": "20260825_0100_hierarchy_closure",
+      "parent": "20260825_0099_creative_engineering_convergence",
+      "sql_sha256": "d0bd83a6fa676bd784c29049d0ffdfb49dde8d5f76fc7905a53692073241d0ae"
+    },
+    {
+      "id": "20260826_0101_quality_qualification",
+      "parent": "20260825_0100_hierarchy_closure",
+      "sql_sha256": "be5b4016b914dc58224233de716e8a64368a9c2a9677c95f16cb56ffad0bd93b"
+    },
+    {
+      "id": "20260828_0102_book_opening_recovery_closure",
+      "parent": "20260826_0101_quality_qualification",
+      "sql_sha256": "a25e5b3d99e2790c52ba88854c61e213b57c6c971531cc6b3688d8db97d54ace"
+    },
+    {
+      "id": "20260829_0103_book_opening_semantic_runtime_hardening",
+      "parent": "20260828_0102_book_opening_recovery_closure",
+      "sql_sha256": "5ac3643ed09c81fbf08075a3b68a5b840d61bc9490edbb71d5ea36eb7834f0d6"
+    },
+    {
+      "id": "20260829_0104_book_opening_workflow_nodes",
+      "parent": "20260829_0103_book_opening_semantic_runtime_hardening",
+      "sql_sha256": "ccef7106509422d8af9be549b80fde9107213a40f046c38df9b09b3cad43a8c8"
+    },
+    {
+      "id": "20260830_0105_p0_backend_qualification_repairs",
+      "parent": "20260829_0104_book_opening_workflow_nodes",
+      "sql_sha256": "d3a8134da97b0c9d550399f984b076e82a9bfbbeb4fd2bda1d61dca738dca4a0"
+    },
+    {
+      "id": "20260902_0106_quality_qualification_scope_generalization",
+      "parent": "20260830_0105_p0_backend_qualification_repairs",
+      "sql_sha256": "ff8fcd25a46d9bc1796c928f2510d97f4814ccb2e16c8e750f717687a2a89f79"
+    },
+    {
+      "id": "20260903_0107_retrieval_campaign_runtime",
+      "parent": "20260902_0106_quality_qualification_scope_generalization",
+      "sql_sha256": "b83a97f7d4ab5fed2ef7426c533da5e7119783a539d7bb368919e2ca0cda42d8"
+    },
+    {
+      "id": "20260903_0108_context_governance_projection",
+      "parent": "20260903_0107_retrieval_campaign_runtime",
+      "sql_sha256": "4bd78687b93b1df2b29bbe1030a12fe7431cd6077a5dbf68c97708d66d34f188"
+    },
+    {
+      "id": "20260905_0109_industrial_execution_policies",
+      "parent": "20260903_0108_context_governance_projection",
+      "sql_sha256": "c02962596cf7cbb1d105c8e9922e08702f4ad81b31754e44d91a64ce7f4582b6"
+    },
+    {
+      "id": "20260905_0110_chapter_mission_scene_contract",
+      "parent": "20260905_0109_industrial_execution_policies",
+      "sql_sha256": "863e761ce68b4a380d4ee07b3a00944f13c8345e1ec6c8522111805ba9ad2f0f"
+    },
+    {
+      "id": "20260905_0111_whole_book_completion",
+      "parent": "20260905_0110_chapter_mission_scene_contract",
+      "sql_sha256": "3358bfb80cce792be326437bac83daf7d78fc42a6e1d6a1776f21b31610c94e1"
+    },
+    {
+      "id": "20260905_0112_realization_execution_policy",
+      "parent": "20260905_0111_whole_book_completion",
+      "sql_sha256": "4fcf4ca9e9ff51ab841b84ae554f84b0132311959750864814a8450db504ed77"
+    },
+    {
+      "id": "20260905_0113_policy_completion_fk_indexes",
+      "parent": "20260905_0112_realization_execution_policy",
+      "sql_sha256": "bdb4eec6d381eb171fab848273246e2ec9ab451e8bc979e4aecf00b6c0723528"
+    },
+    {
+      "id": "20260906_0114_narrative_reality",
+      "parent": "20260905_0113_policy_completion_fk_indexes",
+      "sql_sha256": "08f0e781552e97cb4a8f4a39066f60d17516c158ef9fade6f8a3147bca5b0e41"
+    },
+    {
+      "id": "20260906_0115_reality_event_index",
+      "parent": "20260906_0114_narrative_reality",
+      "sql_sha256": "8b69f7fb988b3dc5eed1d234e6515ca21736a68893122ac43c207303d6fc38d0"
+    },
+    {
+      "id": "20260906_0116_book_control_policy",
+      "parent": "20260906_0115_reality_event_index",
+      "sql_sha256": "da4bfd7efa786320843781701b7a3b0fab80194022c9ef88d4603fec5262ebbb"
+    },
+    {
+      "id": "20260906_0117_world_causal_event_locators",
+      "parent": "20260906_0116_book_control_policy",
+      "sql_sha256": "cd6910a74b94d9c301c7979c42757b728e64068d48a1b9c9e0e35be48efae51a"
+    },
+    {
+      "id": "20260907_0118_preparation_event_lineage",
+      "parent": "20260906_0117_world_causal_event_locators",
+      "sql_sha256": "a10cde357e215cfd637c7cad31ad33aac019afc8d3ac255dcdccf951527e02a1"
+    },
+    {
+      "id": "20260907_0119_grounded_chapter_acceptance",
+      "parent": "20260907_0118_preparation_event_lineage",
+      "sql_sha256": "cb13bfbe0507af3bd4df124dd901f1e27d1e66b9eb973ceb8386f6ae3ea00987"
+    },
+    {
+      "id": "20260907_0120_foundation_generation",
+      "parent": "20260907_0119_grounded_chapter_acceptance",
+      "sql_sha256": "731c701bf7c5706bb78aa9b064284b59dc5e364bcb963f541f788b0757326b97"
+    },
+    {
+      "id": "20260908_0121_account_entitlement_budget",
+      "parent": "20260907_0120_foundation_generation",
+      "sql_sha256": "13c20f36f7aee6ece2d3d66c4a71334955b826a66d766378f043ec9fd5032519"
+    },
+    {
+      "id": "20260908_0121_corpus_foundation",
+      "parent": "20260908_0121_account_entitlement_budget",
+      "sql_sha256": "6b3d52358f4369aebc9429d52e2badab400099712a1177dc81783d9534f82c30"
+    },
+    {
+      "id": "20260908_0122_source_work_manifest",
+      "parent": "20260908_0121_corpus_foundation",
+      "sql_sha256": "3111d7aa43944259db1fb438412660f233b374cf6e17a8bde72092dcb372ec8c"
+    },
+    {
+      "id": "20260908_0123_source_analysis_dimensions",
+      "parent": "20260908_0122_source_work_manifest",
+      "sql_sha256": "c497d99b0d548739fc1c48ea7ebcd3ce4ddda4e46611593b0906b4520529952e"
+    }
+  ],
+  "published_migrations_changed": false
+}

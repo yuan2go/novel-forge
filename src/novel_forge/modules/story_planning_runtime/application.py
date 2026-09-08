@@ -323,6 +323,10 @@ class StoryPlanningGenerationHandlerRegistry:
         return replace(item, definition_version=definition_version)
 
 
+def _requires_formation_decision_evidence(logical_key: str) -> bool:
+    return logical_key.startswith("story-formation:")
+
+
 class StoryPlanningGenerationApplication:
     def __init__(
         self,
@@ -737,16 +741,17 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.approve", generation["project_id"])
-        require_worker_scoped_auto_decision(
-            principal=principal,
-            evidence=decision_evidence,
-            project_id=generation["project_id"],
-            workspace_id=generation["workspace_id"],
-            book_id=generation["book_id"],
-            action="story_planning.candidate.approve",
-            candidate_asset_version_id=candidate_asset_version_id,
-            candidate_content_hash=generation["content_hash"],
-        )
+        if _requires_formation_decision_evidence(str(generation["logical_key"])):
+            require_worker_scoped_auto_decision(
+                principal=principal,
+                evidence=decision_evidence,
+                project_id=generation["project_id"],
+                workspace_id=generation["workspace_id"],
+                book_id=generation["book_id"],
+                action="story_planning.candidate.approve",
+                candidate_asset_version_id=candidate_asset_version_id,
+                candidate_content_hash=generation["content_hash"],
+            )
         state = self.story_design.require(
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
@@ -804,16 +809,17 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
-        require_worker_scoped_auto_decision(
-            principal=principal,
-            evidence=decision_evidence,
-            project_id=generation["project_id"],
-            workspace_id=generation["workspace_id"],
-            book_id=generation["book_id"],
-            action="story_planning.candidate.activate",
-            candidate_asset_version_id=candidate_asset_version_id,
-            candidate_content_hash=generation["content_hash"],
-        )
+        if _requires_formation_decision_evidence(str(generation["logical_key"])):
+            require_worker_scoped_auto_decision(
+                principal=principal,
+                evidence=decision_evidence,
+                project_id=generation["project_id"],
+                workspace_id=generation["workspace_id"],
+                book_id=generation["book_id"],
+                action="story_planning.candidate.activate",
+                candidate_asset_version_id=candidate_asset_version_id,
+                candidate_content_hash=generation["content_hash"],
+            )
         generation_record = self.require_generation(
             generation["generation_operation_id"]
         )

@@ -1749,9 +1749,13 @@ def _resolve_reconciled_budget(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
-            SELECT reservation_id, reserved_amount, estimated_tokens,
-                   accounting_basis
-            FROM authority_budget_reservation
+            SELECT reservation.reservation_id,reservation.reserved_amount,
+                   reservation.estimated_tokens,
+                   COALESCE(
+                       NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
+                       'PRICED'
+                   )
+            FROM authority_budget_reservation AS reservation
             WHERE external_effect_id=%s AND project_id=%s
               AND status IN ('RESERVED','HELD_UNKNOWN')
             ORDER BY created_at DESC LIMIT 1

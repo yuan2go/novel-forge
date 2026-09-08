@@ -1,0 +1,32 @@
+{
+  "repository_snapshot_asset_version_id": "source-repository-snapshot:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:de6c70ea0f24d64ff248c87c52072b7dff45e61b52e174e1afb1d463f37cf2e2:v1",
+  "source_work_import_job": "source-import:8067ad11-ced7-4f12-9c66-2be802a2a8ad",
+  "corpus_source_id": "corpus-source:85c9ebf3c8b25aea38998ac2f9174109cce645d7b96c68f96203a126972f49ec",
+  "rights_id": "corpus-rights:26abbdd8e605353c947ef6c94d1413fdbc7385736b3608009574da26b4f6bdb7",
+  "historical_approval": {
+    "operation_id": "40c79af9-c9f9-4452-8174-0e8def735c2c",
+    "project_id": "source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744",
+    "knowledge_card_id": "knowledge-card:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:cef0d452a675793c92e38fd5978d366d83e1460fcdca8ca11f23d65f004a1239",
+    "asset_version_id": "knowledge-card:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:cef0d452a675793c92e38fd5978d366d83e1460fcdca8ca11f23d65f004a1239:v1",
+    "governance_decision_asset_version_id": "knowledge-decision:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:cef0d452a675793c92e38fd5978d366d83e1460fcdca8ca11f23d65f004a1239:v1",
+    "card_status": "ACTIVE",
+    "status": "SUCCEEDED",
+    "replayed": false,
+    "duplicate": false
+  },
+  "historical_pack": {
+    "operation_id": "c0c43be1-655e-4830-985e-8f0a9c9bc49a",
+    "project_id": "source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744",
+    "knowledge_pack_id": "knowledge-pack:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:ebe1d1299712275fe21a8315a13fb64f45414e6e2b771cf3111ecbd0fd51ff2f",
+    "asset_version_id": "knowledge-pack:source-import-project-6ae3fd10-361b-4659-ae4c-3f0ecc25d744:ebe1d1299712275fe21a8315a13fb64f45414e6e2b771cf3111ecbd0fd51ff2f:v1",
+    "selection_hash": "sha256:ebe1d1299712275fe21a8315a13fb64f45414e6e2b771cf3111ecbd0fd51ff2f",
+    "item_count": 1,
+    "pack_status": "ACTIVE",
+    "status": "SUCCEEDED",
+    "replayed": false,
+    "duplicate": false
+  },
+  "new_approval_blocked": "MKAOS_CORPUS_BRIDGE_REQUIRED",
+  "historical_pack_consumption_blocked": "MKAOS_CORPUS_BRIDGE_REQUIRED",
+  "provider_evidence": "SCRIPTED_TRANSPORT_ONLY"
+}

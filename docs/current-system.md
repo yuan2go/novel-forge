@@ -611,6 +611,16 @@ mandatory. Rights changes neither rewrite historical decisions nor upgrade old E
 new use requires an explicit declaration/snapshot and a new admission. Retirement is an
 append-only record, preserving every historical identity and decision.
 
+SourceWork is a parsed-content manifest, not a second Corpus work identity or import
+Authority. It is also excluded by physical type from generation Context. When a Corpus
+snapshot explicitly binds a repository acquisition, MKAOS follows exact chunk/document
+lineage through repository files or SourceWork versions. Catalog-purpose admission does
+not authorize those derivatives for generation: new approval, Pack consumption and
+planning-card selection fail closed until a governed Corpus adapter bridge exists.
+Existing approval records remain immutable; new consumption cannot launder Benchmark or
+research material through classical SourceWork. Unrelated Source acquisitions retain
+their existing Source/MKAOS governance path; no cross-source equivalence is inferred.
+
 Each import freezes one snapshot and at most 100 metadata entries within 256 KiB. Identical
 snapshot/batch keys resolve the same Operation; changed payloads conflict. Source-scoped
 locking and natural-key constraints serialize competing revisions and duplicate entries.
