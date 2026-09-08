@@ -1,0 +1,1564 @@
+{
+  "application_build_id": "classical-corpus-c7bec7c1",
+  "budget": {
+    "application_visible_input_upper_bound_per_call": 160000,
+    "maximum_application_calls": 180,
+    "maximum_concurrency": 2,
+    "normal_application_calls": 166,
+    "project_token_limit": 28800000,
+    "provider_output_token_reserve_per_call": 4096,
+    "repair_application_call_reserve": 14,
+    "runner_concurrency": 1,
+    "schema_version": "classical-corpus-analysis-budget.v1",
+    "selected_normal_application_calls": 166,
+    "token_control_scope": "APPLICATION_VISIBLE_UTF8_BYTE_UPPER_BOUND; terminal measured usage is post-call and does not prove an exact pre-call remote token limit",
+    "works": [
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "三国演义",
+        "work_key": "chinese-novel.sanguoyanyi"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "水浒传",
+        "work_key": "chinese-novel.shuihuzhuan"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "西游记",
+        "work_key": "chinese-novel.xiyouji"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "红楼梦",
+        "work_key": "chinese-novel.hongloumeng"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "封神演义",
+        "work_key": "chinese-novel.fengshenyanyi"
+      },
+      {
+        "collection_kind": "SHORT_STORY_COLLECTION",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "聊斋志异",
+        "work_key": "chinese-novel.liaozhaizhiyi"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "儒林外史",
+        "work_key": "chinese-novel.rulinwaishi"
+      },
+      {
+        "collection_kind": "LONG_NOVEL",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "三侠五义",
+        "work_key": "chinese-novel.sanxiawuyi"
+      },
+      {
+        "collection_kind": "SHORT_STORY_COLLECTION",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "喻世明言",
+        "work_key": "chinese-novel.yushimingyan"
+      },
+      {
+        "collection_kind": "SHORT_STORY_COLLECTION",
+        "dimension_count": 7,
+        "normal_application_calls": 9,
+        "selected_for_this_run": true,
+        "title": "初刻拍案惊奇",
+        "work_key": "chinese-novel.chukepaianjingqi"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "诗经",
+        "work_key": "chinese-poetry.shijing"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "楚辞",
+        "work_key": "chinese-poetry.chuci"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "曹操诗集",
+        "work_key": "chinese-poetry.caocao"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "纳兰性德诗集",
+        "work_key": "chinese-poetry.nalanxingde"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "花间集",
+        "work_key": "chinese-poetry.huajianji"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "南唐二主词",
+        "work_key": "chinese-poetry.nantang"
+      },
+      {
+        "collection_kind": "APHORISM_COLLECTION",
+        "dimension_count": 5,
+        "normal_application_calls": 7,
+        "selected_for_this_run": true,
+        "title": "幽梦影",
+        "work_key": "chinese-poetry.youmengying"
+      },
+      {
+        "collection_kind": "PHILOSOPHY_CLASSIC",
+        "dimension_count": 4,
+        "normal_application_calls": 6,
+        "selected_for_this_run": true,
+        "title": "论语",
+        "work_key": "chinese-poetry.lunyu"
+      },
+      {
+        "collection_kind": "DIDACTIC_COLLECTION",
+        "dimension_count": 5,
+        "normal_application_calls": 7,
+        "selected_for_this_run": true,
+        "title": "声律启蒙",
+        "work_key": "chinese-poetry.shenglvqimeng"
+      },
+      {
+        "collection_kind": "POETRY_COLLECTION",
+        "dimension_count": 6,
+        "normal_application_calls": 8,
+        "selected_for_this_run": true,
+        "title": "唐诗三百首",
+        "work_key": "chinese-poetry.tangshisanbaishou"
+      }
+    ]
+  },
+  "commit_sha": "c7bec7c19844306f330667b9de5d31ef088f8d23",
+  "failure": {
+    "error": "source analysis stopped with incomplete work for chinese-novel.yushimingyan",
+    "error_type": "RuntimeError"
+  },
+  "governance": {
+    "human_editorial": "NOT_RUN",
+    "mode": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+  },
+  "model_effects_after": {
+    "application_effect_count": 85,
+    "budget_reservation_count": 85,
+    "by_capability_and_status": [
+      {
+        "capability": "deconstruction.observe",
+        "count": 1,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "deconstruction.observe",
+        "count": 9,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "mkaos.knowledge.extract",
+        "count": 62,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 2,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 10,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 1,
+        "status": "UNKNOWN"
+      }
+    ],
+    "measured_actual_tokens": 2017494,
+    "unknown_monetary_cost_reservation_count": 81
+  },
+  "model_effects_before": {
+    "application_effect_count": 48,
+    "budget_reservation_count": 48,
+    "by_capability_and_status": [
+      {
+        "capability": "deconstruction.observe",
+        "count": 1,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "deconstruction.observe",
+        "count": 5,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "mkaos.knowledge.extract",
+        "count": 34,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 2,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 5,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 1,
+        "status": "UNKNOWN"
+      }
+    ],
+    "measured_actual_tokens": 1107049,
+    "unknown_monetary_cost_reservation_count": 44
+  },
+  "model_effects_current": {
+    "application_effect_count": 85,
+    "budget_reservation_count": 85,
+    "by_capability_and_status": [
+      {
+        "capability": "deconstruction.observe",
+        "count": 1,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "deconstruction.observe",
+        "count": 9,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "mkaos.knowledge.extract",
+        "count": 62,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 2,
+        "status": "FAILED_RETRYABLE"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 10,
+        "status": "SUCCEEDED"
+      },
+      {
+        "capability": "source.content.classify",
+        "count": 1,
+        "status": "UNKNOWN"
+      }
+    ],
+    "measured_actual_tokens": 2017494,
+    "unknown_monetary_cost_reservation_count": 81
+  },
+  "native_import_run_hash": "sha256:5818b7295d0fa1ead15cc584a3431818e335015dcf56b21edaa9e0322b9c706b",
+  "project_id": "project:classical-corpus-validation-20260908",
+  "registry_hash": "sha256:ba60f7154beeefc047fe723f4832f94a7350f762988fdc494e656346888b79cb",
+  "registry_id": "classical-corpus-20260908",
+  "run_hash": "sha256:8fa73cd02fa7fd650e1818d3384297e0d5af14ff113554b1ae8812949445f061",
+  "schema_version": "classical-corpus-analysis-run.v1",
+  "selected_work_keys": [
+    "chinese-novel.sanguoyanyi",
+    "chinese-novel.shuihuzhuan",
+    "chinese-novel.xiyouji",
+    "chinese-novel.hongloumeng",
+    "chinese-novel.fengshenyanyi",
+    "chinese-novel.liaozhaizhiyi",
+    "chinese-novel.rulinwaishi",
+    "chinese-novel.sanxiawuyi",
+    "chinese-novel.yushimingyan",
+    "chinese-novel.chukepaianjingqi",
+    "chinese-poetry.shijing",
+    "chinese-poetry.chuci",
+    "chinese-poetry.caocao",
+    "chinese-poetry.nalanxingde",
+    "chinese-poetry.huajianji",
+    "chinese-poetry.nantang",
+    "chinese-poetry.youmengying",
+    "chinese-poetry.lunyu",
+    "chinese-poetry.shenglvqimeng",
+    "chinese-poetry.tangshisanbaishou"
+  ],
+  "status": "BLOCKED",
+  "works": [
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "b31c1aad-d70d-4d30-842f-9725d719e7b1",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:006c7672fc309350cf5e8fffcbeb9bc387770cf5fb2e236a2b5d9084d7dea8cd:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:19a52bc99bbe530ea0359714e1ff8d999e054e0ed3815ea60d5841cfacb273d8:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "5afb6197-e338-404e-aeb2-cdf1bfd32099",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:13443ff037cdd408c0de52a7c9779898452f2c60cb9710352b0bbdfc41437ff3:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:f9e76c22583279638671c0bd4cb2dc544c8abe5ba4ca5b299d704de4aca60f23:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "97168fc3-c20a-4e3c-8a70-77d7a7c4fdf0",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:2944d9e6cff12581f24e218dfe02e27d23c45f174ae8ef791b29d4eec2edfdcc:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:a420c921697ae548d837cd649a8a0a168402d08ef7834e6a0190913aa3675168:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "8e989f07-62bf-410a-8ac6-0cc3155223e4",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:7c345c9ee58e8fab65dd6578200ac4eff5e5cb193b777a8ada2e918c12c540ab:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:2cdee72887761f8876df06ea3515e5bd05cc020609f3fc2a532a7d27ed56fd51:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "7b340cdc-b4ec-4496-9d9b-27007a74cbf0",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:7c7f05e301d07da850f430904b6ed7e2e067b7caa24228e0b60d3de22267f229:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:8e49e5b2f6e002a1793a493b0e82fedfde6e3bddf08121dfda259c9184e310ea:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "b222a93f-8863-4da9-9642-9a5566ab8f20",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:932a3a502cd9a94e6c42b2cf16c3cf3acc18e8e2597e143d1c49f92746e192e4:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:b504289e1e5c85cf6d0db9f13c45d142ca26ecbf466f04ebd1e1b02b2b4723dd:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "1f201d72-74c9-4d0d-95df-729a1c070423",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:cc3479faa8c4df4ec9d886eca00f9698197bd4bcea0cad56e2ea4e96f46af7d9:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:9c798c5baf0d06f758a31942185980278f38c3ffd697a6ab4cc7e611c1e083b0:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "b7ca6f24-212f-470c-bff3-41a000e7e6b7",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "4ebf3220-a21a-4047-aa6d-93098847b4d7",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "c3b5c847-ecf6-4e9c-8e80-448a6e5e07cd",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "c0253711-d95e-49ed-84e8-989ec9fe8ac5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "778f7c56-425f-40c1-8333-63c11ed1188b",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "e7089577-45e2-43fc-9185-e73efe500a72",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "8aeb76c6-9854-484f-a34e-2ed2152575be",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "66df471c-b05f-422d-ae66-86db806eceb4",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "48703dc6-97ab-463f-be3e-7107a587db16",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "e335620b-f9af-4c9b-802d-f0d6c90bd121",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "3cfc4503-ddee-4e58-a3cc-ce4e34308e31",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "7931e6f7-d9de-4bcd-addf-b9d0096a35d4",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "6dbddbb5-6ccb-4e52-9cb7-4170fdfc8264",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "7ffc1ce1-4e56-4622-ae56-9bf35a4d3647",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "52b4ca78-4147-4e6b-9aa1-83232f2bf8d4",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "a2ecbf56-1715-42e3-aa87-850887cd5c3d",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "2c80a180-f8d4-479f-a422-96ac5e2fe2a0",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "1fd95d83-97f0-4b7a-9cf7-4b02425179c4",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "e55d515d-1f9a-4a7b-824d-4390b0cf7683",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "ccb7bae9-c3bd-47d3-9999-5a6733eee6a5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:17c5138c-8c86-4ec9-9bd0-5651257b031b",
+      "title": "三国演义",
+      "work_key": "chinese-novel.sanguoyanyi"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "27f0fb67-2edc-4f3a-92de-db741c2a008b",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:196ab1dcf324fc5e936c36adf90be96b90f5590f4050963f67d83bf3a97f9fc6:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:bc8a06245f5ccc5c31154580dfddaaec0341c4cb29da6da4f9f9b64d16356622:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "e1b491ed-ad39-4eea-b296-0325e1eb4fb5",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:75cca0c793785aabdb10796ac4545626212125dd1d0c19461892c51cfed41e9c:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:30c0c970b958c8b266b333af123b945c0bc2c3fc0e271770ae0fe9bbbe02d46a:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "d3d53dfe-0d52-484a-8853-f46fff709a84",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:79720eb341ec86742666480bd89a70ddcfc1a3a60d0c06bec36633051acf5b01:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:9208946553f29ba50a2a393702e7ad08b8819957e29ad096ff1f13160998212a:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "79f9047c-f78f-47a2-a334-d80cdf86d191",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:8566a5c1f99e39be749bfacb0308569347d6a22169c0ff77974f5721b4e797f9:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:52e651aed8d9bac297f6b8ea9728edcd53ebd32b31ac4e19d6749334b4343fac:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "93dd3ae3-baad-4403-ad32-2cb050f90f07",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:d5f1a298225feea22e14f88c15d5850d0775986dac6c9a174206df336eec799f:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:a0acdfbc55624e6d57900d4bae47ab346e90f4f8e3123c9120aea27bf4908eab:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "0626e210-6254-4e8a-9918-7b9c61b0d0bc",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:e50eb1869159845fa9c3a7510470d93336fff9b852a234629d3586a13315cb19:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:be3328cdd86eb56da066fc1840daa8a0369c03bef51768ea6a924dcd95b792cb:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "55dc382d-5683-4bd1-a736-a03485527ca7",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:fff04a5e0a0db4da2a08a1a30c3ed85513828d5f0c52fde7f1c044fefe30ca77:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:cdd60b91a0e81890c524f89429aca43cc2e5ddb855d11f196f1c665f55fd8562:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "22ea4fb3-8917-4262-8acf-7767ac0ab88b",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "dc6c2605-9fe8-4c00-aa88-1b0ab6369ac2",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "f7a402e4-d076-4583-9825-54e08aa4cc29",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "09b4cec7-c390-430e-95d0-c30bdf3163ca",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "afb11a89-4dcd-4483-bd69-17b2abe3a24a",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "3b562fa9-cd63-4ea0-9b45-15b5578e0a32",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "506197b8-5581-4514-b152-d6e616726a17",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "bc71b2bf-6625-47af-8b8e-4b4543b51a39",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "34cc5751-4ea0-450b-8da8-82a2a431fde7",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "a6c30118-11e8-492e-97fb-071d28c00990",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "5a3ed2dd-94bd-4ab6-85d2-dd2913f77811",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "8b0bee00-09a9-41cc-a83a-615c58f5eda5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "f1bc3363-5b01-431a-a63f-ad0993dd862c",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "875da805-0888-4389-8170-79229b525455",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "f000d8c1-0600-456f-a943-cb01464870bc",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "2e68e709-a9af-4266-a8a7-8b1799171c04",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "f311d957-35a3-4c5c-add4-988c7cdb0b9a",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "4ca60144-9f2b-4413-ba10-ee2cf5d81f48",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "c056f307-4cd5-4e64-830d-d2c6023ba509",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "0638cd7b-a1b2-45a5-b199-e53346b29a08",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:3d4950cc-5afc-4490-870b-4fd829f613a4",
+      "title": "水浒传",
+      "work_key": "chinese-novel.shuihuzhuan"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "7ac16778-3b0c-430f-9020-b73b2e6a6195",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:1ae92aba1466f2ba2a8ae909006cf4441d6e40389fb48addd6b5fe2d3e9c8423:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:3cdb3a84c09fa4213eb16adb15768255a170563729483a2218d5a20ea854b220:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "4c0b2cbb-7c50-4e29-a40c-870ce307ad29",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:6128fbbb3a2b9f13ddd6f44f2acfcd61bc04ad46d3615657bd30c3dce66b2fd8:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:be84bcec3228f12137aa4ea30b4e38345deb74c56f997c6c6e8fe2e01a35f116:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "ab4c78b4-cabf-456d-a4d4-7519ca3c6946",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:87372368e598ea0f6afa9a3d08283604d50bc686ae3120d4d197f6bdaaaf007a:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:9fc24df47bc2dd204fa05a194d684a8eb533bed48815369c5f0c273eae2323e2:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "2eddd251-260b-4b9f-8b94-f3aeb3d55462",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:8c4eae40e1801aaa380146a53dc2f8b87cbfbea119eaab3a6f27eb6018678a40:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:d18f2812316909f184b2b94eb185bcc0899831982b5c644f64cbcfdcdfb051ee:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "913e2b28-b49b-4884-8a96-77b682724d91",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:8fee751b0b746083008b096184f14f1ecff62e508b988f44ae78d5ee162f40b8:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:d97a2c1540cc47aec78d882ca38d75915279fc667b5662e3a8449cdd061721fb:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "1b7a885f-4519-4db3-9a51-4fb626f377c3",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:e3a7a24cf26556b5d95ce4fb87db2859e04e36cc27925b8a8060aae8b5976127:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:4ced60a678e0e63a55593c752084c4052dbb1d6eac35f0f01d9975269cf6bff2:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "95a6840f-f8ff-4073-a4d6-d00a7bf37f56",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:f16847998c0ba3b8ae5f7939e01375eb2824db2c67e1d63211a77fd36beeed9f:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:682e6bd7355f1a7d1241263289fdd007b4700d5fd5c33197a7295de91e0033f8:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "75f3c370-0018-4df4-b544-7240c555455a",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "788ffdd8-1322-463b-b8fb-40db0f6dcdc4",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "38d097ff-4bda-4a2a-8c37-e47c6d086568",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "4f35fb37-f1f8-4291-9c3a-d1ac928d157f",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "3b262c07-dd19-4bbf-8178-039649fe5447",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "52c02808-e8c5-4780-baeb-daddbf7b458c",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "2a8421e9-0458-4331-ae44-895dedaf6cea",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "24c71835-d682-4c5e-99c0-3bdbe90e8b65",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "d7910a62-1942-461d-8e18-6da21ef82591",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "d9c92616-3707-4f63-aee4-72b16a528499",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "576706ea-f6fb-4369-a689-5be3dd9426ce",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "9d5f4cc4-3b52-4eba-9e87-1c33ce3af99e",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "beb192b2-bb98-436d-b187-456f3f8ea39f",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "d11c8d13-abdd-4bee-a67e-37cad23505a0",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "24928305-f625-4893-a7bd-7f95f5c0025f",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "97dddad3-9c7b-4a68-a1fb-0179e7b2144f",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "f083924f-605f-44dc-8486-c11119fed11c",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "b946a760-5668-4e72-8a0f-14b45eb1da20",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "cf682dc1-ba73-4e32-a1d9-bd36ff5209e5",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "3ea467db-b69e-4ef8-aaf7-59005fb11ae5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:c88aa229-3c2e-4cd9-88d8-8ffc1ac27508",
+      "title": "西游记",
+      "work_key": "chinese-novel.xiyouji"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "d15b72c4-0bfc-47dc-8359-7d1bb435c177",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:4fb5394b1200874a60b796fe6a2606c88fbb64456702433340f68140cfbba65b:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:c72268f3a997b2d6cd5b0bb2d39a2f683475f91e181fd8d847815bc59665e488:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "4cc27a50-2acd-4278-bd32-0b12117efff6",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:5b18bc1755bba592a18ea41639058672e5a1fa456f244845a7ca4a5f5c5e5fea:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:0832a8a7dd6b329f219e1d08d207b2c6b058a1a5dbf0cdbeeb504adf888ee7e7:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "5ef6a3a5-2d69-47c2-96cd-921254826b82",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:76eed3b529804ca9e8260143568b6e939e168531899fdc429820b207a255cf6c:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:5f1aa505cf6fb2b971de392eadc1d69e821a1ab3c6e0af2a8bde89201de78b4b:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "5b366981-e199-475d-8524-3133de63cb49",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:81e568c05020bfdaa187a6919a3b9b9a049bfbcf0865ca13bbbfb75dd621a7dc:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:ac25e583196abb135daf0a282d9ef2515f810defee26b91b08cfb2a478d4dcb9:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "f18d2add-5993-4805-b4ed-341abe066e6d",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:dc452e40d05f22b70d916dbdf02683429c3297463106e537be76140999dd07a0:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:ab07f4721fc2e69bf0742e105bd0ffab87868e7130a5f3f235dd0e6daea6f52e:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "ebba26aa-28e4-463f-988f-de13d6150497",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:dea7e5b4ad2d274e0b6ad373bd2d429726d4d9907e8f7f28ce323f25a35a9cbc:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:95a003f5e7ed10a5f00bd0117eb5b33de951d1b34774341fac262b8d519366d0:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "69bf8518-2700-4342-bba9-1f0d1376620a",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:f55100c6b8b65efafcd4b10608096a156763456e5bde2feef15f2bf150613207:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:4176d13f7eee69d3e696abca42515a8d0662c1b3352c20c4e37152a3edc2016e:v1",
+          "replayed": true,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:8d293d53-d0e7-440a-b5b3-52dce68a1ace",
+      "title": "红楼梦",
+      "work_key": "chinese-novel.hongloumeng"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "a4a82fd3-1112-445d-8597-6b29ba4e192c",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:1a627131b5577e98c5b4f95d592ea548a841fae1bdaa797271efacfa0c2560d4:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:b527002d52bae1bba9829229709fc5f9c205fd0f0783a8cbabcc3b770e885d79:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "4495373e-3d72-4ee4-9088-5329fc64c751",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:31a04f6f1f7ed0925aee1171d8fc22cb8baf95d85ec442e0d0b8386a3c745f64:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:9ee8e034837095402d3ed18468d4d678af5fdeb75742fb99f27ebabf3edf115e:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "f41f8bf9-934e-475a-8b53-edac68203f63",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:6f26b6db0fe88cf5cad8575af6efbbc601ca5f1af35cec09b6a121d2440384ea:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:ca661cdccb60902b4c23d186bf3917b63f79ca0a995686fa423abb8314880c17:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "d440d23b-4c52-4f37-9738-3449696fbaef",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:97afea786454f848953d173264f18abf589b1f4bbffeaabf5436e4c18beb9534:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:89756ac7135f953fafe5c11a35b4d8629e7f17027c73cdcb4acf2768dec5ecf6:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "d90d98ae-aca4-4d28-a047-42f6754b7f54",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:a2579b2e6551ede4cfa875738dc70087101057faaa34950c9767a1050f66f890:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:bd5f59be55b584fa7469c5bf5b0999fd491968599fd4ec08bef0b802b502975d:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "df5fe2e6-ffbd-4a9a-bf14-0f87c4ad2e6e",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:a947f26a87ba15c23674f94e74f55a46155ad60d8829e0fc07f9ac792673012b:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:900d2d7b45f9322d56f069a777aaf2a00f694fa6f4160ffacd7a4aa7a954c17d:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "45adff0e-4406-42c9-82eb-369971735459",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:af2fab5e9fd0c26e9ce4b72cb716c6ae87425a63d4590422f157044997ce934c:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:40843dbe969302b2121824c13eb57d5b90ecba57644cb37cd7b9e57ce8aaa78d:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "bd1b9765-3e5a-48db-a385-a124319a189c",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "d54c930a-5207-4b08-b8e7-8100b8c76f09",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "8f0bbd37-36c0-4178-a8e2-6ab03d43f64a",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "04351816-8e96-4013-a121-74d3aafac494",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "6ca094c3-894b-49e0-bf60-586935a65b96",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "d21f7db9-abd5-419d-9ae8-0f61c15066f6",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "4abb76fa-51fe-4454-ac66-15e7474331dd",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "aeb8be86-c0a4-457c-ab14-0de895b114c8",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "a82d6f33-2930-47a5-8c18-dc9d0ac11d5f",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "5f75f950-eecb-4f13-bb2c-1a8133a4b94d",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "6b481828-fca6-4585-a8d1-2f6833fc1e2f",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "b9c61818-f8bc-4c1c-a5bb-aeaa29b3fce8",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "393052df-6f15-496c-9ea9-0da3a3deb32d",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "62dca8f7-3dea-45e0-9cf7-6b1dd3aea990",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "cde85ecf-ccff-408e-bcfc-7c273ecd5091",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "c00c021a-52ba-4ee7-b232-429be117d927",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "cc8664ad-aaa7-4e03-a25e-b3d3f00040ba",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "1f615776-5083-4d42-b045-6da4d5687035",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "fd624ccb-2fe4-4b9c-8571-ebe5fa103750",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "ff19167d-5aed-466f-a28a-4761d3410612",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:caabfc1a-7bdd-4e15-9dce-85ad0185da41",
+      "title": "封神演义",
+      "work_key": "chinese-novel.fengshenyanyi"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "265a13d6-de39-4af1-a5d4-a3290eda0d5d",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:3dc663261ef09de285e455d32f3fba74174ccc9fc5360e01907cb0d149ef8570:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:600caadf418373fd739e6a8ecc2a8d9a31165c34c6b08da01e196a9a2ff3000b:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "6019cf35-8c4f-4bd0-bacc-50a712f313bd",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:7cea7db94ec4b83cec8cad8e34b79d9abdae09b9fb881180c07e79ce38a75b57:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:8d96b1fc8d2341f2efd4947b138b857b11c89ed57e25d26a3352f66956578158:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "7f65a32d-5578-43bc-9e38-2449e3d0640c",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:88c157f38933bbd941506dc836c29a42bff73a8cfdf955d0b29baa364e1d018b:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:ee0a1d50837113ba57fc2807dd5592f756110ba63113eaa0c78092a7fdd140b9:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "31a6445b-e333-47aa-ae05-653d2b1e7d08",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:965d31a9fca0a4eb878e8f43d944c829b1d1629d01a9f6ff4c023fc241e72d2d:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:deb5cead33894d1605771136c96635f1c016fd845129c5d616878bdee393abde:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "3d2b2307-947a-408b-85ba-4879dd9b0fdf",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:a80cd5961816635c4e3afbfcce1bf51e6f1eb2f8835e2cd73eb2a0f1b4ba459c:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:24755aeb0e3e5f87fd622f4f34579b50f815e5355f7b88d109d4ae5e73c9eeaf:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "8408fc72-abbd-458c-8468-c93f8ebbe163",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:caaf76e8d54dbd0aa91195845f0158508c236ff00311bb4297c0af4f24477273:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:afb9d35dca20e19c5e9f99817b71b869c5f0ef5994bfd73ee8fa23234dbb7583:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "875bad9c-207d-44bf-a914-639133c17350",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:cc73a8e98992ffb5cd26a4d09786d39c7b1713ff601dd6c1cac7d66f5b29fc74:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:229957914b5893ed2315b883454b018824ebeaa41a08d80c74ed3b1c890b7e40:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "48be10da-1a93-4f5c-aefb-10b6a4f4c5e7",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "ad8073bf-a3b5-47b3-b698-cf306b0965c8",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "df8199c9-fcc9-4dff-b553-14d480a3cb3a",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "ad423de3-4c0e-4905-8ae3-e741a3eff34b",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "6a143ad0-4528-45c9-91bf-5df954dcbb36",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "61fed337-1440-42dd-b9c8-716409e49346",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "1d42a17f-c6a6-47be-b961-89cea4d431b8",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "f2b23408-b073-4ed9-a2c9-b249d56d9463",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "7b93b799-a80e-44b6-8893-fb9cad7053b0",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "62fa9414-d82e-4fc3-922f-8ee024842b78",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "b110ef12-e8c6-44d0-b41a-c9377355f920",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "6dba97ff-54e7-4ac8-80c2-e8de2adbc389",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "cce92f37-ea7b-4bfe-b692-45e67b2a8fd9",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "49e6c4dd-3dbf-4bd4-bbdc-c9854a275657",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "ab2ac68b-bd5a-470a-91ad-5d1ce3343a8d",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "72ae142c-351f-4919-846b-e395213d00e9",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "f07eaa6b-bc75-4d8f-a5c7-f17f1fcab641",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "2b272937-228b-44c8-a616-ab92284fb9aa",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "9ea085b6-f64a-4425-bfbb-c8afe5df9e4a",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "5714f23a-d4c8-46c8-991e-9227d89a48c8",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:0cbe0f2e-f3d5-424b-b64f-753b9f26d001",
+      "title": "聊斋志异",
+      "work_key": "chinese-novel.liaozhaizhiyi"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "da126b26-ee69-46fe-a9c1-84040ed3a943",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:5b8491fd842be21102edfd71be9c374bc7266b4b57d8d4e9fd052f0114ec9e0a:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:197a1e5738f2ec30f5523c58d1c93ac2ac0de91376584ce397a1b79fb196201b:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "20060aa1-1f59-41e5-b19e-32b0d73479fe",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:61ef51c5047baab88bd876f56f30e084eff26e13d5712466ea5e4366fdaa225f:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:679183db205a518b2ee73852de23b15d4f15c0001372a7c8627b600c496a6ac3:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "e70d5591-0104-4d7e-8989-68a8231c5ae5",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:74eb4e41cec1b1652b7d4fe334c0037f42774f5ac229cc79268508c482e77575:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:0d3664244a0de21d19061d7819d6cb9ec776e6320a674b25098b64abae0417c2:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "c862498c-9a50-4c0e-8891-3140fed2134f",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:9d7aed21f505728abdd4195cbe45c3fcf4718c413646d17a82e34b6d41aae82b:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:8fbc5ccfe2fbab46a6074129302f0e999a5e6d3cbe5a818d340a8add7a8fb55f:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "0bc830e8-8a37-4ff2-9f65-87810b68b4d9",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:aa3615002308bee597a4e7fb50e70109e5c314dfa55c75132715420c3b185e53:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:ed85d0688e80ccfd7f6a31f4bbd95d5f1d31a79864c0d9ff5e8ef6260057fa85:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "c5860cfd-2348-4a60-b67a-0cbf5e18b83b",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:b6fda3f12b9d57351f1594fc7abbdb44fded3729ed1f24d6befbeb3e18e7ce0f:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:5f93d5294e17535de6b4568dff0341bf4e17a0459d3a1eb20cfd73365ccb79d4:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "5bf0ccac-a88c-4f90-85ec-2678fe0a9dc8",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:fc0ec7d150e52d42b6f6fc9312c3eed88f4bcd27c11a1af20329fa5862efb67e:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:db822b6b6bedc6dc0a1f6ea153f6e3900713afe5855d3d3826cdd14f011214e2:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "95a262f8-7244-4dd9-8a88-13cce687228a",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "deb4cf13-c418-46e2-b802-0e9bfbe1ccf4",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "65d12ff1-f840-4b97-82b6-735573fbb73f",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "88ae95a4-6f29-4010-a12c-980f47ddf8c9",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "3cfb4e2a-1e90-4a4a-8c05-e2f31a826e9c",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "9fbe2c2a-e32f-4f21-9371-52b7bdbd68dd",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "c2cf8515-6266-453a-b4ed-a023958a6aad",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "8f64c691-cbc8-4c11-bf17-c8053abfaa1b",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "30c5f449-447d-4977-854c-c2936e469530",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "a945a888-cc5b-49c9-bcee-a23df889d44a",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "318d511d-420f-4a14-a97e-25b6bdcb5412",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "cc60e012-c68e-4cb2-a84b-8f7b53a6ac84",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "0b2616de-a09d-436b-abba-63a1f97c5b96",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "36146730-a71d-4174-9ffc-fd40efad4030",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "98ee64b2-a546-4b8c-9ab4-53587953f267",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "0147388b-08c3-4f7c-9822-5593770cc999",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "2d061bdf-0feb-4c38-93b9-5d86f71fd4b5",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "432504cf-fb86-46f3-b118-46d5cc6713a2",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "bb5756bc-39bc-4a63-80e0-ac6eacc52916",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "5f6ff9a0-d88c-48ff-95bb-ebe5743850ee",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:5272d309-54ff-4627-917f-75a0b3c54238",
+      "title": "儒林外史",
+      "work_key": "chinese-novel.rulinwaishi"
+    },
+    {
+      "approvals": [
+        {
+          "approval_operation_id": "aadb8132-5816-4e2c-a14a-c54792a6b5ab",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:09fe228484ddecc791f91e4e4d5766d6350fd0a3b3e6b109b138bc6b05366008:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:09b0a0ab1cd7930b40272c79adca8b84aedaebca6acfad8fcc719c3a99cc8d8d:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "b7b7b117-5600-4ef2-ae7c-c7933f3a2cb3",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:31a4f91b5ce0ee8ae5449c7b0fdc08d0e4540bad4f8cc9bd243c053729c1bab0:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:21d732abf24e519c2f919e4003090a6529c178cc85801b37158ec5b6754626f3:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "42d5d9c3-e298-4b4c-8184-75e59caab01e",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:639211c3da475d292449f981a990a41b7abc5bf46c5aafb9493c7b7a807cc26a:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:f2e3e807d21891806bce265a501386aa64e98c60a8a24436c322be9422dcb0db:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "ae7da2eb-1253-4df8-8061-d53ae035cf71",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:7f46c9358fa8e5a1e79bdc7cb713584fb92a37a1c6d4717c143e30530382ae42:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:4a15bd13ffdb000b7e4f9f4a52c33ae3833314ad2b21cc7bd498c6a1563ebac2:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "0f6d63d0-44ac-48f4-95f4-7cda0686e3d9",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:8f9fe7b1038425a372358d3beb1a8241fbf7d322edc4089be949f61a9df9a80b:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:5b43d89c5080dfd30b7a3462de993e0677c1a41006b188a87873f46f0c6bc203:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "6e111bb0-ea3b-4cf6-9a9b-9c92a792f344",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:9574b018d3d3d11ede9a83c90990b54dd122ccada6264a0170de099f18e8f2b7:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:07b85d7bc881b2b2788f1952d452ee014b62cf2001c49831e1152bfa66272ca7:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        },
+        {
+          "approval_operation_id": "d7c20048-1b6d-4aec-87c7-372e5aafcd54",
+          "candidate_asset_version_id": "knowledge-candidate:project:classical-corpus-validation-20260908:9c580c50d10de3d29a93fb1649167590cc71f39058ca5dfab5c30b885e2e0c43:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project:classical-corpus-validation-20260908:b0fac5179b203fa947053611a89b09fd7bd7e028fcc57bbc4f2e906384ab30f9:v1",
+          "replayed": false,
+          "review_class": "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+        }
+      ],
+      "downstream": {
+        "analysis_plans": 1,
+        "content_profiles": 1,
+        "knowledge_candidates": 7,
+        "knowledge_cards": 7,
+        "knowledge_packs": 0,
+        "observations": 7,
+        "review_required": 0,
+        "source_documents": 1,
+        "transforms": 1
+      },
+      "executions": [
+        {
+          "attempt_id": "f44d1e43-c9d9-432d-99d1-6a4c94b376c4",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "a816f36a-3975-4609-979f-d0baa0c68728",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        },
+        {
+          "attempt_id": "a95ec879-6fd1-429b-a77c-1482cb7963c3",
+          "attempt_number": 1,
+          "definition_name": "source.import.analysis.plan",
+          "operation_id": "23c534e6-51ed-4df4-87be-b3125ce323f5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "ANALYSIS_PLANNING"
+        },
+        {
+          "attempt_id": "533369a6-36f9-4c90-ba28-cbd751bceae0",
+          "attempt_number": 1,
+          "definition_name": "source.import.deconstruction.execute",
+          "operation_id": "d7c9191f-69a8-4224-b82b-be0e8f2993bd",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "DECONSTRUCTION"
+        },
+        {
+          "attempt_id": "1a7e9522-b298-4f42-97a5-fc57d7f5850a",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "478edb6f-3bca-4215-8060-2b138faaeb65",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "a4130def-b859-490c-8b70-9795badea784",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "0c41c731-8f4d-4e29-b6d3-2a1ea5a7d363",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "05e31cff-ded2-473b-bf90-ed8521567fbd",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "e0290cd7-c9b4-4905-9c10-a57a3dc5e4aa",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "fd77bb71-72b9-4b0d-8f45-b2104e5060e7",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "09c3fc8f-1276-4954-8dc8-ac1501267fdc",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "20900bf1-4fd4-446d-b2a2-0c7cc9ade1ed",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "16e9b80f-f0cf-46da-8ae7-f103a052cbb5",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "38b4d449-1d07-4265-8bd9-491087fb5d7b",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "d1a2db47-af6a-42dd-80e9-36c7bd4f2102",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        },
+        {
+          "attempt_id": "a0750f0a-c064-4b40-bdf9-98641394f864",
+          "attempt_number": 1,
+          "definition_name": "source.import.mkaos.extract",
+          "operation_id": "32bd8d6e-8bc4-4937-9aaa-cfd735ac6e28",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "MKAOS_EXTRACTION"
+        }
+      ],
+      "final_job_status": "AWAITING_GOVERNANCE",
+      "import_job_id": "source-import:bfff7011-4366-4a3b-a594-7a41738bc460",
+      "title": "三侠五义",
+      "work_key": "chinese-novel.sanxiawuyi"
+    },
+    {
+      "approvals": [],
+      "executions": [
+        {
+          "attempt_id": "895246bd-a2f9-46ab-b6be-5c2e4e721eb7",
+          "attempt_number": 1,
+          "definition_name": "source.import.document.profile",
+          "operation_id": "047bdfb7-2b86-4990-ba48-bbcbbedf9b47",
+          "recovery_mode": "fresh_attempt",
+          "status": "SUCCEEDED",
+          "work_kind": "PROFILING"
+        }
+      ],
+      "import_job_id": "source-import:ec6e7db5-624a-4ed8-b357-54492a533cbc",
+      "incomplete_operations": [
+        {
+          "created_at": "2026-09-08T11:08:49.812290+00:00",
+          "definition_name": "source.import.document.profile",
+          "failure": {
+            "code": "SOURCE_PROFILE_REVIEW_REQUIRED",
+            "resolved_content_type": "UNKNOWN"
+          },
+          "operation_id": "047bdfb7-2b86-4990-ba48-bbcbbedf9b47",
+          "operation_status": "SUCCEEDED",
+          "result": {
+            "classification_input_hash": "sha256:b3571f1427489424c9553ca73ed24c757ddbd926f1e4414835e1eec4b895a7cf",
+            "classifier_contract_hash": "sha256:1d51d069fa8ea53c915bd859ab4af7066722699e3ab7afbe4b4fd28cbc97bccc",
+            "classifier_execution_reused": false,
+            "logical_document_scope_hash": "sha256:dbef4084aff8b0d9e36dab47cc9fcfcee7de218bdeedb3b9ca5935fcc8543276",
+            "profile_asset_version_id": "e9dfccaf-4de5-4403-8aab-b0fffc409f3a",
+            "profile_reused": false,
+            "profile_status": "NEEDS_REVIEW",
+            "resolved_content_type": "UNKNOWN",
+            "source_content_profile_id": "source-content-profile:project:classical-corpus-validation-20260908:dbef4084aff8b0d9e36dab47cc9fcfcee7de218bdeedb3b9ca5935fcc8543276"
+          },
+          "work_kind": "PROFILING",
+          "work_status": "BLOCKED"
+        }
+      ],
+      "title": "喻世明言",
+      "work_key": "chinese-novel.yushimingyan"
+    }
+  ],
+  "workspace_id": "workspace:classical-corpus-validation-20260908"
+}
