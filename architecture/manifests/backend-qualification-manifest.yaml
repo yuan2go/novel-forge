@@ -57,6 +57,7 @@
       "tests/integration/test_book_completion_postgres.py"
     ],
     "migration_matrix": [
+      "tests/integration/test_account_entitlement_budget_upgrade_postgres.py",
       "tests/integration/test_authority_migrations_postgres.py",
       "tests/integration/test_authority_schema_postgres.py",
       "tests/integration/test_authority_legacy_migration_postgres.py",
@@ -66,6 +67,7 @@
       "tests/integration/test_book_opening_runtime_hardening_postgres.py",
       "tests/integration/test_book_opening_workflow_upgrade_postgres.py",
       "tests/integration/test_book_projection_repair_upgrade_postgres.py",
+      "tests/integration/test_source_analysis_dimension_upgrade_postgres.py",
       "tests/integration/test_world_causal_migrations_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
