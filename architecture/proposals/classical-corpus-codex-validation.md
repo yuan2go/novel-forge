@@ -2,27 +2,27 @@
 
 > **PROPOSAL**
 >
-> **ACTIVE — APPROVED IMPLEMENTATION IN PROGRESS**
+> **PARTIALLY_IMPLEMENTED — G1/G2 IMPLEMENTED; G3/G4 IN PROGRESS**
 >
 > **NOT_RUNTIME_AUTHORITY**
 
-Status: `ACTIVE`
+Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `dd97911944a92aca9f511f3b4913beb2f7816956`
+Reality baseline: `2361f2da4eaf93ddc55dab6da3726c578e21ecd2`
 Baseline implementation identity:
-`sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e`
+`sha256:1cbe956240b9e0c77bc536d816f63cbb62029f2ccb72901d8f0b861545a78163`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
-  "status": "ACTIVE",
+  "status": "PARTIALLY_IMPLEMENTED",
   "reviewed_on": "2026-09-08",
   "review_due": "2026-10-07",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "dd97911944a92aca9f511f3b4913beb2f7816956",
-    "implementation_tree_sha": "sha256:97a54768ec65b543e3d1ac515953cd900303321050692b8eaaac6dc7d505802e"
+    "sha": "2361f2da4eaf93ddc55dab6da3726c578e21ecd2",
+    "implementation_tree_sha": "sha256:1cbe956240b9e0c77bc536d816f63cbb62029f2ccb72901d8f0b861545a78163"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -38,27 +38,27 @@ Baseline implementation identity:
     "src/novel_forge/workers/book_authority.py",
     "config"
   ],
-  "implemented_refs": [],
+  "implemented_refs": [
+    {
+      "path": "src/novel_forge/modules/authority_security/service.py",
+      "symbol": "TrustedPrincipalResolver.resolve_book_formation_worker_principal"
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/backends.py",
+      "symbol": "CodexCliExecutionBackend"
+    },
+    {
+      "path": "src/novel_forge/modules/source_import/classical_corpus.py",
+      "symbol": "CorpusWorkSpec"
+    },
+    {
+      "path": "src/novel_forge/modules/source_import/classical_corpus.py",
+      "symbol": "parse_classical_work"
+    }
+  ],
   "superseding_refs": [],
   "remaining_decisions": [],
   "remaining_work": [
-    {
-      "id": "g1-identity-codex-entitlement",
-      "description": "Bind claim and execution identity, durable Foundation approval waits, exact AUTO authorization, and measured-usage Codex account-entitlement execution without invented monetary cost.",
-      "evidence_refs": [
-        {"path": "src/novel_forge/modules/authority_security/service.py", "symbol": "TrustedPrincipalResolver"},
-        {"path": "src/novel_forge/modules/book_design_authority/formation_generation.py", "symbol": "FormationGeneration"},
-        {"path": "src/novel_forge/modules/production_execution/backends.py", "symbol": "CodexCliExecutionBackend"}
-      ]
-    },
-    {
-      "id": "g2-native-corpus-ingestion",
-      "description": "Parse and reconcile the fixed twenty-work corpus through governed HTML and JSON work profiles while retaining immutable raw objects, unit boundaries, locators, versions, and reprocessing lineage.",
-      "evidence_refs": [
-        {"path": "src/novel_forge/modules/source_import/domain.py", "symbol": "SourceImportPolicy"},
-        {"path": "src/novel_forge/modules/source_import/application.py", "symbol": "SourceImportApplication"}
-      ]
-    },
     {
       "id": "g3-bounded-analysis-and-consumption",
       "description": "Replace dimension Cartesian expansion with bounded composite observations, govern variable candidate sets, close Chinese and applicability selection gaps, and prove exact-context consumption for all twenty works.",

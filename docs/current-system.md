@@ -46,6 +46,40 @@ voice inputs; targeted revision consumes evidenced diagnoses. Slot concatenation
 serialization only, not evidence of narrative integration or voice quality. Frozen
 styles without the new policy retain the v1 contract.
 
+## Scoped worker approval and local Codex execution
+
+Formation claim and execution resolve the same configured Book worker Principal while
+retaining the initiating operator and decision actor. The worker role has only the
+execution permissions it needs. `AUTO` approval is a separate authorization bound to
+the project, Book, Formation, action, policy and exact candidate; it is not a worker-wide
+approval grant. Manual Foundation stages persist `WAITING_APPROVAL` and resume the same
+frozen task after an explicit decision without consuming a technical retry or generating
+a replacement candidate.
+
+The production Provider registry includes the local Codex CLI as an ExternalEffect
+backend. Its frozen route records the executable, model, reasoning setting, configuration
+identity, structured output contract and isolated process/receipt directory. The process
+uses an environment allowlist and has no cross-Book resume state. `ACCOUNT_ENTITLEMENT`
+uses the existing budget lifecycle with finite call and token ceilings; observed terminal
+usage settles after execution while unavailable monetary cost remains `UNKNOWN`. These
+controls do not turn post-call usage into an exact pre-call remote token hard limit and do
+not permit silent rerouting to another model, account or billing method.
+
+## Governed corpus works and Book knowledge isolation
+
+Source Import represents a collection as versioned `SourceWork` and ordered `SourceUnit`
+identities over existing AssetVersion, Source and object-store boundaries. Governed
+classical-corpus profiles parse catalogue-ordered HTML and explicitly shaped JSON,
+preserve source locators and original-to-normalized hashes, and keep raw text outside
+generation Context. Repository availability and parser reconciliation do not establish
+authoritative-edition completeness or publication rights.
+
+Every Book freezes one Knowledge access policy. `PROJECT_DEFAULT` retains legacy project
+selection, `ALLOW_ONLY` admits only the exact listed KnowledgeCard AssetVersions, and an
+explicit empty `DENY_ALL` never falls back to project-wide cards. The same policy identity
+is carried through Planning, Context selection, Draft, Review and Revision, preventing
+comparison groups from sharing cards through cache, summary or an upstream plan.
+
 ## Production mechanism choices
 
 The comparison reads executable workflows, enabled prompt sections and postprocessors
