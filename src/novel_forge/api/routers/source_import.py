@@ -58,10 +58,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise _http_error(exc) from exc
 
     @router.get("/corpus/processing/{identity}")
-    def corpus_processing(identity: str, project_id: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = Query(default=20,ge=1,le=100)) -> dict[str, Any]:
+    def corpus_processing(identity: str, project_id: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = Query(default=20,ge=1,le=100), after: str = "", historical: bool = False) -> dict[str, Any]:
         principal = _authorize("source.authority.query",project_id)
         try:
-            return query.corpus_processing(project_id=project_id,identity=identity,edition=edition,compare_to=compare_to,discover=discover,limit=limit,principal=principal)
+            return query.corpus_processing(project_id=project_id,identity=identity,edition=edition,compare_to=compare_to,discover=discover,limit=limit,after=after,historical=historical,principal=principal)
         except (KernelError,ValueError) as exc:
             raise _http_error(exc) from exc
 

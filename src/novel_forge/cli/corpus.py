@@ -57,6 +57,7 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--decision", type=Path)
     parser.add_argument("--job-id", default="")
     parser.add_argument("--after", default="")
+    parser.add_argument("--historical", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--max-stages", type=int, default=100)
     parser.add_argument("--reason", default="operator Corpus import control")
@@ -74,7 +75,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     build, sha = authority_release_identity()
     query = SourceImportQuery(settings.database_url)
     if args.action in {"inspect", "compare", "discover"}:
-        return query.corpus_processing(project_id=project,identity=args.processing_id or args.edition_id,edition=not bool(args.processing_id),compare_to=args.compare_to,discover=args.action=="discover",limit=args.limit,principal=principal)
+        return query.corpus_processing(project_id=project,identity=args.processing_id or args.edition_id,edition=not bool(args.processing_id),compare_to=args.compare_to,discover=args.action=="discover",limit=args.limit,after=args.after,historical=getattr(args,"historical",False),principal=principal)
     if args.action == "reprocess":
         from novel_forge.modules.source_import.corpus_ingestion.contracts import ParserProfile
         from novel_forge.modules.source_import.corpus_ingestion.runtime import CorpusIngestionRuntime

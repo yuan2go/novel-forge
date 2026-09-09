@@ -14,7 +14,7 @@ class SourceImportQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
-    def corpus_processing(self, *, project_id: str, identity: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = 20, principal: Principal | None = None) -> dict[str, Any]:
+    def corpus_processing(self, *, project_id: str, identity: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = 20, after: str = "", historical: bool = False, principal: Principal | None = None) -> dict[str, Any]:
         from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
         from novel_forge.modules.source_import.corpus_ingestion.similarity import compare
         self._require(principal, project_id)
@@ -26,15 +26,15 @@ class SourceImportQuery:
                 return {"left":source["processing_id"], "right":other["processing_id"], "comparison":compare(source,other),
                     "decision":repository.corpus_equivalence_current(project_id,*sorted((source["processing_id"],other["processing_id"]))) }
             if discover:
-                candidates = repository.corpus_similar(project_id,source,limit)
+                candidates = repository.corpus_similar(project_id,source,limit,after=after,historical=historical)
                 threshold = (source["profile"].get("normalization") or {}).get("candidate_threshold",0.8)
                 scored = []
-                for candidate in candidates:
+                for candidate in candidates["rows"]:
                     comparison = compare(source,candidate)
                     metadata_match = any(key.startswith(("title-author:","external:")) for key in set(source["buckets"]) & set(candidate["buckets"]))
                     if comparison["exact_text"] or comparison["similarity_estimate"] >= threshold or metadata_match:
                         scored.append({"processing_id":candidate["processing_id"],"edition_id":candidate["edition_id"],"metadata_match":metadata_match,**comparison})
-                return {"processing_id":source["processing_id"],"candidates":scored,"threshold":threshold,"candidate_limit":limit,"truncated_possible":len(candidates)==limit}
+                return {**{k:v for k,v in candidates.items() if k != "rows"},"processing_id":source["processing_id"],"candidates":scored,"threshold":threshold,"candidate_limit":limit,"evaluated_on_page":len(candidates["rows"]),"truncated_possible":bool(candidates["next_cursor"])}
             return source
 
     def corpus_lineage(self, *, project_id: str, import_job_id: str, after: str = "", limit: int = 100, principal: Principal | None = None) -> dict[str, Any]:

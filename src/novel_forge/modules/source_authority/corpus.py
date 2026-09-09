@@ -5,7 +5,7 @@ import json
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
+from pydantic import model_serializer, BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.domain import decide_source_governance
@@ -189,8 +189,20 @@ class ControlCorpusImport(CorpusContract):
 
 class IntegrityResolution(CorpusContract):
     issue_id: Text
-    resolution: Literal["CONFIRM_EXCERPT", "MARK_NON_BODY", "CONFIRM_BOUNDARY", "REJECT_CORRUPT"]
+    resolution: Literal["CONFIRM_EXCERPT", "MARK_NON_BODY", "CONFIRM_BOUNDARY", "REJECT_CORRUPT", "CONFIRM_LEGITIMATE_REPETITION", "CONFIRM_TOC_VARIANT", "ANNOTATE_TOC_DIFFERENCE"]
     reason: Text
+
+    evidence_refs: tuple[Text, ...] = Field(default=(), max_length=16)
+    classification: Literal["DISPLAY", "TRANSCRIPTION_SUSPECTED", "VERSION_WORDING", "PARSER_ERROR", "INSUFFICIENT", "LEGITIMATE_REPETITION"] | None = None
+
+    @model_serializer(mode="wrap")
+    def frozen_resolution(self, handler: Any) -> dict[str, Any]:
+        value = handler(self)
+        if not self.evidence_refs:
+            value.pop("evidence_refs", None)
+        if self.classification is None:
+            value.pop("classification", None)
+        return value
 
 
 class ReviewCorpusProcessing(CorpusContract):

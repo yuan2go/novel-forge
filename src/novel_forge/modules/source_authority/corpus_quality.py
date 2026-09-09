@@ -38,6 +38,7 @@ def apply_quality_decision(
                 "CONFIRM_EXCERPT": {
                     "MISSING_OR_UNORDERED_CHAPTER",
                     "TOC_BODY_MISMATCH",
+                    "TOC_ENTRY_MISMATCH",
                 },
                 "MARK_NON_BODY": {
                     "NON_BODY_UNIT",
@@ -46,6 +47,9 @@ def apply_quality_decision(
                     "NUMBER_CONFLICT",
                 },
                 "CONFIRM_BOUNDARY": {"SHORT_OR_TOC_UNIT"},
+                "CONFIRM_LEGITIMATE_REPETITION": {"DUPLICATE_BODY", "REPEATED_SHORT_BODY"},
+                "CONFIRM_TOC_VARIANT": {"TOC_ENTRY_MISMATCH"},
+                "ANNOTATE_TOC_DIFFERENCE": {"TOC_ENTRY_MISMATCH"},
                 "REJECT_CORRUPT": set(issues[i]["code"] for i in issues),
             }
             if finding["code"] not in allowed[decision.resolution]:
@@ -53,6 +57,19 @@ def apply_quality_decision(
                     "CORPUS_REVIEW_CANNOT_WAIVE",
                     "this issue requires new source evidence or a new parser contract",
                 )
+            if decision.resolution in {"CONFIRM_LEGITIMATE_REPETITION", "CONFIRM_TOC_VARIANT", "ANNOTATE_TOC_DIFFERENCE"}:
+                if not decision.evidence_refs or not decision.classification:
+                    raise KernelError("CORPUS_SCOPED_EVIDENCE_REQUIRED", "classification and exact source evidence required")
+                if decision.resolution == "CONFIRM_TOC_VARIANT" and (
+                    not finding.get("expected_title") or not finding.get("observed_title")
+                    or decision.classification not in {"DISPLAY", "TRANSCRIPTION_SUSPECTED", "VERSION_WORDING"}
+                ):
+                    raise KernelError("CORPUS_MISSING_CONTENT_CANNOT_BE_WAIVED", "only a located title variant can be accepted")
+                if decision.resolution == "CONFIRM_LEGITIMATE_REPETITION" and decision.classification != "LEGITIMATE_REPETITION":
+                    raise KernelError("CORPUS_DUPLICATE_EVIDENCE_REQUIRED", "explicit per-occurrence legitimate repetition evidence required")
+                if decision.resolution == "ANNOTATE_TOC_DIFFERENCE":
+                    finding.setdefault("annotations", []).append(decision.model_dump(mode="json"))
+                    continue
             resolution = {
                 **decision.model_dump(mode="json"),
                 "evidence": finding["evidence"],

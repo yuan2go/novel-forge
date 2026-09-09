@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+from functools import lru_cache
 import hashlib
 import heapq
 import unicodedata
 from typing import Any, Iterable
 
 
-def fingerprint(texts: Iterable[str], *, size: int = 128) -> dict[str, Any]:
+@lru_cache(maxsize=1)
+def _converter() -> Any:
     from opencc import OpenCC
+    return OpenCC("t2s")
 
-    converter = OpenCC("t2s")
+
+def fingerprint(texts: Iterable[str], *, size: int = 128) -> dict[str, Any]:
+    converter = _converter()
     heap: list[int] = []
     retained: set[int] = set()
     for text in texts:
@@ -43,24 +48,5 @@ def fingerprint(texts: Iterable[str], *, size: int = 128) -> dict[str, Any]:
 
 
 def compare(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
-    a, b = set(left["fingerprint"]["hashes"]), set(right["fingerprint"]["hashes"])
-    union = sorted(a | b)[:128]
-    score = sum(v in a and v in b for v in union) / len(union) if union else 0.0
-    lu, ru = left["assessment"]["units"], right["assessment"]["units"]
-    ah, bh = {r["hash"] for r in lu}, {r["hash"] for r in ru}
-    at, bt = {r["title"]: r["hash"] for r in lu}, {r["title"]: r["hash"] for r in ru}
-    return {
-        "policy": "bottom-k-t2s-alnum-5.v1",
-        "similarity_estimate": score,
-        "exact_text": left["normalized_hash"] == right["normalized_hash"],
-        "exact_structure": [(r["title"], r["hash"]) for r in lu]
-        == [(r["title"], r["hash"]) for r in ru],
-        "exact_unit_hashes": sorted(ah & bh),
-        "left_only_hashes": sorted(ah - bh),
-        "right_only_hashes": sorted(bh - ah),
-        "changed_titles": sorted(t for t in at.keys() & bt.keys() if at[t] != bt[t]),
-        "ordered_titles_equal": [r["title"] for r in lu] == [r["title"] for r in ru],
-        "equivalence": "CANDIDATE_ONLY",
-        "rights_transfer": False,
-        "transitive_merge": False,
-    }
+    from .comparison import compare_versions
+    return compare_versions(left, right)

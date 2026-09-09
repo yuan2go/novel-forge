@@ -485,3 +485,64 @@ def test_multifile_chapters_preserve_physical_order_and_explicit_mode(tmp_path):
     document = json.loads(Path(output["works"][0]["cache_path"]).read_text())
     assert not document["integrity"]["structure_usable"]
     assert document["integrity"]["chapter_count"] == 0
+
+
+@pytest.mark.parametrize("format", ["txt", "html"])
+def test_v3_duplicate_body_and_multifile_identity_preserve_occurrences(tmp_path, format):
+    text = "她把钥匙还给守门人，决定独自绕行，并承担迟到的代价。" * 12
+    files = []
+    for number in (1, 2):
+        path = tmp_path / f"{number}.{format}"
+        content = f"第{number}章 标题{number}\n{text}"
+        if format == "html":
+            content = f"<body><h1>第{number}章 标题{number}</h1><p>{text}</p></body>"
+        path.write_text(content)
+        digest, size = file_identity(path)
+        files.append({"path": path.name, "container_path": "volume.zip", "checksum": digest, "size_bytes": size, "cache_path": str(path)})
+    parser = ParserProfile(version="corpus-parser.v3", format=format, constants={"work_id": "same-work"}, normalization={"version": "chinese-longform.v2", "expected_toc": ["第1章 标题1", "第2章 标题2"], "toc_evidence": "original-fixture:titles"})
+    def parse(inputs, name):
+        r = compile_work_index(inputs, parser, IngestionBudget(), tmp_path / name)
+        return json.loads(Path(r["works"][0]["cache_path"]).read_text())
+    document = parse(files, "first")
+    assert document == parse(list(reversed(files)) + files, "repeat")
+    units = document["units"]
+    assert len({u["chapter_id"] for u in units}) == 2
+    assert len({u["normalized_content_hash"] for u in units}) == 2
+    assert len({u["body_content_hash"] for u in units}) == 1
+    finding = next(i for i in document["integrity"]["issues"] if i["code"] == "DUPLICATE_BODY")
+    assert len(finding["evidence"]) == 2 and finding["blocking"]
+    assert document["integrity"]["coverage"] == "REVIEW_REQUIRED"
+    assert all(u["text"].endswith(text) for u in units)
+    duplicate_scope = [{**files[0], "container_path": "other.zip"}]
+    joined = parse(files + duplicate_scope, "container")
+    assert len(joined["units"]) == 3
+
+
+def test_v3_plain_first_line_is_not_discarded_as_heading(tmp_path):
+    path = tmp_path / "chapters.jsonl"
+    body = "这是正文，不是标题。\n结尾。"
+    path.write_text(json.dumps({"id": "x", "text": body, "title": "这是正文，不是标题。", "n": 1}, ensure_ascii=False))
+    digest, size = file_identity(path)
+    parser = ParserProfile(version="corpus-parser.v3", format="jsonl", layout="CHAPTER_ROWS", fields={"chapter_id":"id", "text":"text", "title":"title", "order":"n"}, constants={"work_id":"one"}, normalization={"version":"chinese-longform.v2"})
+    output = compile_work_index([{"path": path.name, "cache_path": str(path), "checksum": digest, "size_bytes": size}],parser,IngestionBudget(),tmp_path/'index')
+    unit = json.loads(Path(output['works'][0]['cache_path']).read_text())["units"][0]
+    assert unit['confirmed_heading_chars'] == 0
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+    assert unit['body_content_hash'] == corpus_hash(body)
+
+
+def test_version_comparison_retains_duplicate_multiplicity_volume_and_pages():
+    from novel_forge.modules.source_import.corpus_ingestion.comparison import compare_versions
+    def unit(identity, volume, digest):
+        return {"unit_id":identity,"volume":volume,"title":"同名章节","hash":digest,"body_hash":digest}
+    left = {"edition_id":"e1","normalized_hash":"left","fingerprint":{"hashes":["a"]},"assessment":{"units":[unit("a","第一卷","one"),unit("b","第二卷","one"),unit("c","第二卷","two")]}}
+    right = {"edition_id":"e2","normalized_hash":"right","fingerprint":{"hashes":["a"]},"assessment":{"units":[unit("c2","第二卷","two"),unit("a2","第一卷","one")]}}
+    result = compare_versions(left,right,limit=1)
+    assert result['total_correspondences'] == 3 and result['next_after'] == 1
+    assert {"hash":"one","left":2,"right":1} in result['unit_multiplicity_differences']
+    assert result['change_counts']['MISSING_OR_UNALIGNED'] == 1
+    assert result['change_counts']['MOVED'] == 2
+    assert not result['exact_structure'] and not result['same_edition']
+    assert not result['rights_transfer']
+    page2 = compare_versions(left,right,after=1,limit=2)
+    assert len(page2['correspondence']) == 2 and page2['next_after'] is None
