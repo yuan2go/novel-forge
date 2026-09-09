@@ -26,6 +26,9 @@ def apply_corpus_action(
     workspace_id: str,
     operation_id: str,
 ) -> dict[str, Any]:
+    if action.action in {"review_processing", "decide_equivalence"}:
+        from .corpus_quality import apply_quality_decision
+        return apply_quality_decision(repository, action, project_id=project_id, operation_id=operation_id)
     repository.corpus_authorization_lock(project_id, write=True)
     scope = {"project_id": project_id, "created_by_operation_id": operation_id}
     if isinstance(action, RegisterCorpusSource):

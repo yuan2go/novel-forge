@@ -620,3 +620,50 @@ evidence say otherwise. Keep these claims distinct:
 
 The release-evidence builder in `src/novel_forge/tools/release_run_evidence.py` records
 the current ceiling instead of upgrading one evidence class into another.
+
+## Corpus structure, review and reprocessing
+
+Install the `ingestion` extra and use the same local object store, cache root, local-root
+allowlist and Source principal described above. Deterministic processing requires no model.
+Start with `config/corpus/chinese-longform-local.json`; its supplied small original fixture
+is only a control-flow example. Replace the source with a lawfully acquired local book:
+
+```bash
+novel-forge corpus import --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+  --manifest config/corpus/chinese-longform-local.json --source "$LOCAL_BOOK" --run-key first-parse
+novel-forge corpus run --project-id "$PROJECT" --job-id "$JOB"
+novel-forge corpus lineage --project-id "$PROJECT" --job-id "$JOB"
+novel-forge corpus inspect --project-id "$PROJECT" --edition-id "$EDITION"
+novel-forge corpus discover --project-id "$PROJECT" --processing-id "$PROCESSING" --limit 20
+novel-forge corpus compare --project-id "$PROJECT" --processing-id "$PROCESSING" --compare-to "$OTHER_PROCESSING"
+```
+
+The import response supplies JOB; lineage supplies Edition and Bridge identities; inspect
+supplies processing/issue/review identities. `review` accepts `--decision review.json`,
+`--workspace-id` and a stable `--run-key`. For example, a scoped decision document is:
+
+```json
+{"action":"review_processing","processing_id":"<inspect.processing_id>","previous_id":null,
+ "decisions":[{"issue_id":"<inspect.assessment.issues[0].issue_id>","resolution":"MARK_NON_BODY",
+ "reason":"Exact source framing inspected"}],"reason":"Preserve source; exclude framing from analysis"}
+```
+
+CONFIRM_EXCERPT handles missing selected coverage; CONFIRM_BOUNDARY handles a short unit;
+REJECT_CORRUPT keeps analysis blocked. Missing raw evidence and rights cannot be waived.
+A parser profile may supply `normalization.boundaries` with exact path, checksum, start/end
+raw byte offsets, title, kind and evidence. It must cover the entire selected input.
+Export the `profile` object from inspect, edit its versioned normalization rules, and run:
+
+```bash
+novel-forge corpus reprocess --project-id "$PROJECT" --edition-id "$EDITION" \
+  --manifest parser.json --run-key reviewed-parser
+novel-forge corpus run --project-id "$PROJECT" --job-id "$REPROCESS_JOB"
+```
+
+No downloader runs on this path. Pause/resume/cancel/status use the same job commands.
+Same-key requests preserve frozen input; changed profiles need a new key. A stale parent
+fails explicitly and requires inspecting/replanning against the current processing revision.
+`equivalence --decision pair.json` accepts action `decide_equivalence`, exact left_id/right_id,
+previous_id, decision ACCEPT/REJECT/REVOKE, evidence_refs and reason. Querying a pair returns
+its latest decision; it does not select a generation-authorized canonical representative.
+All responses are JSON; retain these and source receipts outside Git for audit.

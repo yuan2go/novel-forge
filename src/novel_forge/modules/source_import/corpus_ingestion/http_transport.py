@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import http.client
 import ipaddress
 import json
+import os
 import socket
 import ssl
 from typing import Any, Iterator
@@ -53,7 +54,32 @@ class CorpusHttpTransport:
                 if not addresses or any(
                     not ipaddress.ip_address(address).is_global for address in addresses
                 ):
-                    raise IngestionFailure("REMOTE_ADDRESS_FORBIDDEN")
+                    raise IngestionFailure(
+                        "REMOTE_ADDRESS_FORBIDDEN",
+                        json.dumps(
+                            {
+                                "host": host,
+                                "stage": "DNS_ADMISSION",
+                                "address_count": len(addresses),
+                                "non_global_addresses": [
+                                    a
+                                    for a in addresses
+                                    if not ipaddress.ip_address(a).is_global
+                                ],
+                                "proxy_environment_present": any(
+                                    os.environ.get(k)
+                                    for k in (
+                                        "HTTPS_PROXY",
+                                        "https_proxy",
+                                        "ALL_PROXY",
+                                        "all_proxy",
+                                    )
+                                ),
+                                "recovery": "repair DNS/proxy routing; private-address admission remains forbidden",
+                            },
+                            sort_keys=True,
+                        ),
+                    )
                 connection = http.client.HTTPSConnection(
                     host, timeout=timeout, context=ssl.create_default_context()
                 )
@@ -98,6 +124,26 @@ class CorpusHttpTransport:
                 yield response
                 return
             raise IngestionFailure("REDIRECT_LIMIT")
+        except socket.gaierror as exc:
+            raise IngestionFailure(
+                "REMOTE_DNS_FAILURE",
+                json.dumps(
+                    {
+                        "host": urlsplit(current).hostname,
+                        "errno": exc.errno,
+                        "stage": "DNS",
+                    }
+                ),
+            ) from exc
+        except ssl.SSLError as exc:
+            raise IngestionFailure(
+                "REMOTE_TLS_FAILURE",
+                "certificate/TLS negotiation failed; verification remains required",
+            ) from exc
+        except TimeoutError as exc:
+            raise IngestionFailure(
+                "REMOTE_TIMEOUT", "bounded connection/read deadline exceeded"
+            ) from exc
         except (OSError, http.client.HTTPException) as exc:
             raise IngestionFailure(
                 "REMOTE_TRANSPORT_FAILURE", type(exc).__name__

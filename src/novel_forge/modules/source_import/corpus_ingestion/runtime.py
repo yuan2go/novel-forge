@@ -678,12 +678,22 @@ class CorpusIngestionRuntime:
         work, job, payload = self._load(worker)
         if work["status"] in {"SUCCEEDED", "REUSED"}:
             return work["result"]
+        if payload.get("reprocess"):
+            from .reprocessing import prepare_reprocessing
+
+            payload = prepare_reprocessing(self, worker, payload)
+            if payload.get("reuse_result"):
+                return self._finish(worker, job, payload["reuse_result"])
         manifest = IngestionManifest.model_validate(payload["manifest"])
+        processing_key = corpus_identity(
+            "processing", payload["edition_id"], payload["parsed_hash"]
+        )
         edition_id, snapshot_id, effect_id = (
             payload["edition_id"],
             payload["snapshot_id"],
             payload["acquisition_effect_id"],
         )
+        binding_key = processing_key if manifest.parser.normalization else edition_id
         with AuthorityUnitOfWork(self.app.database_url) as uow:
             permission = SourceAuthorityRepository(
                 uow.cursor
@@ -696,7 +706,7 @@ class CorpusIngestionRuntime:
             blob = uow.repositories.asset_blobs.blob_for_update(
                 payload["parsed_blob_id"]
             )
-        if int(blob["actual_size"]) > manifest.budget.max_work_bytes:
+        if int(blob["actual_size"]) > manifest.budget.memory_bytes // 4:
             raise KernelError(
                 "CORPUS_WORK_SIZE_LIMIT", "parsed work exceeds frozen memory allowance"
             )
@@ -762,7 +772,7 @@ class CorpusIngestionRuntime:
                 license_name=declaration.dataset_license,
                 copyright_boundary="Corpus rights and per-use admission required; no raw generation",
                 actor_id=self.app.worker_id,
-                idempotency_key=f"corpus-source:{edition_id}",
+                idempotency_key=f"corpus-source:{binding_key}",
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
                 corpus_edition_id=edition_id,
@@ -774,7 +784,7 @@ class CorpusIngestionRuntime:
             content_hash=parsed.normalized.content_hash,
             media_type="text/plain",
             purpose="corpus-normalized-"
-            + hashlib.sha256(edition_id.encode()).hexdigest(),
+            + hashlib.sha256(binding_key.encode()).hexdigest(),
         )
         self._content(
             worker,
@@ -798,7 +808,7 @@ class CorpusIngestionRuntime:
                 content_hash=chunk.content_hash,
                 media_type="text/plain",
                 purpose="corpus-chunk-"
-                + hashlib.sha256(edition_id.encode()).hexdigest()
+                + hashlib.sha256(binding_key.encode()).hexdigest()
                 + f"-{chunk.chunk_index}",
             )
             self._content(
@@ -838,7 +848,7 @@ class CorpusIngestionRuntime:
                 chunking_policy_hash=policy.chunking_policy_hash,
                 chunks=tuple(candidates),
                 actor_id=self.app.worker_id,
-                idempotency_key=f"corpus-transform:{edition_id}:{policy.chunking_policy_hash}",
+                idempotency_key=f"corpus-transform:{binding_key}:{policy.chunking_policy_hash}",
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
                 normalized_blob_id=normalized_blob,
@@ -846,24 +856,60 @@ class CorpusIngestionRuntime:
                 normalized_byte_size=parsed.normalized.byte_size,
             )
         )
-        materialized = self.app._materialize_source_work(
-            worker=worker,
-            job=job,
-            snapshot={
-                "corpus_edition_id": edition_id,
-                "repository_identity": f"corpus:{permission['source_id']}",
-                "repository_url": manifest.source.location,
-            },
-            parsed=parsed,
-            source_result=source,
-            transform=transform,
-            raw_blob_id=raw_blob,
-            raw_bundle_hash=raw_hash,
-            raw_bundle_size=len(raw),
-            normalized_blob_id=normalized_blob,
+        from .similarity import fingerprint
+        from .integrity import assess_integrity
+        from .contracts import NormalizationProfile
+
+        assessment = document.get("integrity")
+        if assessment is None:
+            assessment = assess_integrity(
+                document["units"],
+                manifest.parser.model_copy(
+                    update={
+                        "normalization": NormalizationProfile(
+                            segmentation="EXPLICIT", min_body_chars=1
+                        )
+                    }
+                ),
+            )
+            assessment["coverage"] = document["completeness"]
+            assessment["structure_usable"] = (
+                document["completeness"] != "REVIEW_REQUIRED"
+            )
+            assessment["evidence_ceiling"] = "FROZEN_V1_STRUCTURE_CONTRACT"
+        signature = fingerprint(
+            r["text"] for r in document["units"] if not r.get("excluded_from_analysis")
         )
-        with AuthorityUnitOfWork(self.app.database_url) as uow:
+        metadata = assessment.get("metadata", {})
+        if metadata.get("title") and metadata.get("author"):
+            signature["buckets"].append(
+                "title-author:"
+                + corpus_hash(
+                    {"title": metadata["title"], "author": metadata["author"]}
+                )
+            )
+        signature["buckets"].extend(
+            "external:" + corpus_hash(value)
+            for value in metadata.get("external_work_ids", [])
+        )
+        with AuthorityUnitOfWork(self.app.database_url, coordinate_nested=True) as uow:
             require_current_fence(uow, worker)
+            materialized = self.app._materialize_source_work(
+                worker=worker,
+                job=job,
+                snapshot={
+                    "corpus_edition_id": edition_id,
+                    "repository_identity": f"corpus:{permission['source_id']}",
+                    "repository_url": manifest.source.location,
+                },
+                parsed=parsed,
+                source_result=source,
+                transform=transform,
+                raw_blob_id=raw_blob,
+                raw_bundle_hash=raw_hash,
+                raw_bundle_size=len(raw),
+                normalized_blob_id=normalized_blob,
+            )
             repository = SourceAuthorityRepository(uow.cursor)
             repository.require_corpus_edition_use(
                 worker.project_id,
@@ -895,31 +941,54 @@ class CorpusIngestionRuntime:
                     "created_by_operation_id": worker.causation_id,
                 }
             )
-            uow.commit()
-        result = {
-            **materialized,
-            "stage": "CONTENT_IMPORTED",
-            "edition_id": edition_id,
-            "snapshot_id": snapshot_id,
-            "source_document_id": source["source_document_id"],
-            "source_asset_version_id": source["asset_version_id"],
-            "source_transform_id": transform["source_transform_id"],
-            "source_transform_asset_version_id": transform["asset_version_id"],
-            "chunk_count": transform["chunk_count"],
-            "unit_count": len(parsed.units),
-            "completeness": document["completeness"],
-            "normalized_hash": parsed.normalized.content_hash,
-            "analysis_scheduled": False,
-            "knowledge_approved": False,
-            "provider_model_calls": 0,
-        }
-        if manifest.analyze:
-            with AuthorityUnitOfWork(self.app.database_url) as uow:
+            repository.corpus_insert_processing(
+                {
+                    "processing_id": processing_key,
+                    "project_id": worker.project_id,
+                    "edition_id": edition_id,
+                    "parent_id": document.get("processing_parent"),
+                    "source_work_asset_version_id": materialized[
+                        "source_work_asset_version_id"
+                    ],
+                    "source_document_id": source["source_document_id"],
+                    "parsed_blob_id": payload["parsed_blob_id"],
+                    "input_hash": payload["parsed_hash"],
+                    "parser_hash": document["parser_hash"],
+                    "normalized_hash": parsed.normalized.content_hash,
+                    "profile": manifest.parser.model_dump(mode="json"),
+                    "assessment": assessment,
+                    "fingerprint": signature,
+                    "buckets": signature["buckets"],
+                    "created_by_operation_id": worker.causation_id,
+                }
+            )
+            result = {
+                **materialized,
+                "stage": "CONTENT_IMPORTED",
+                "processing_id": processing_key,
+                "structure_usable": assessment["structure_usable"],
+                "edition_id": edition_id,
+                "snapshot_id": snapshot_id,
+                "source_document_id": source["source_document_id"],
+                "source_asset_version_id": source["asset_version_id"],
+                "source_transform_id": transform["source_transform_id"],
+                "source_transform_asset_version_id": transform["asset_version_id"],
+                "chunk_count": transform["chunk_count"],
+                "unit_count": len(parsed.units),
+                "completeness": document["completeness"],
+                "normalized_hash": parsed.normalized.content_hash,
+                "analysis_scheduled": False,
+                "knowledge_approved": False,
+                "provider_model_calls": 0,
+            }
+            if manifest.analyze:
                 SourceAuthorityRepository(uow.cursor).require_corpus_documents(
                     worker.project_id,
                     (source["source_document_id"],),
                     CorpusUse.SOURCE_ANALYSIS,
                 )
-            self.app._admit_profiling_child(worker, job, result, source_paths=())
-            result["analysis_scheduled"] = True
-        return self._finish(worker, job, result)
+                self.app._admit_profiling_child(worker, job, result, source_paths=())
+                result["analysis_scheduled"] = True
+            finished = self._finish(worker, job, result)
+            uow.commit()
+            return finished

@@ -34,6 +34,7 @@ object = [
     "minio>=7.2",
 ]
 ingestion = [
+  "opencc-python-reimplemented==0.1.7",
     "pypdf>=4.0",
     "python-docx>=1.1",
     "ebooklib>=0.18",

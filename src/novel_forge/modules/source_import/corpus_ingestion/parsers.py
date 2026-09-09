@@ -18,6 +18,7 @@ from .contracts import (
     safe_relative_path,
 )
 from .safety import require_space, spool_json
+from .text_records import decoded_lines
 
 
 def _field(row: dict[str, Any], path: str) -> Any:
@@ -163,10 +164,47 @@ def _epub_records(
         yield row
 
 
-def parse_records(
+def _format_records(
     file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
 ) -> Iterator[dict[str, Any]]:
     path = Path(file["cache_path"])
+    if profile.format == "txt" and profile.normalization is not None:
+        from .segmentation import txt_segments, explicit_segments
+
+        for segment in (
+            explicit_segments(file, profile.encoding, profile.normalization)
+            if profile.normalization.boundaries
+            else txt_segments(path, profile.encoding, profile.normalization)
+        ):
+            row = _mapped(
+                {"text": segment["text"]},
+                profile.model_copy(update={"fields": {"text": "text"}}),
+                segment["order"],
+                file,
+            )
+            assert row is not None
+            row.update(
+                {
+                    key: value
+                    for key, value in segment.items()
+                    if key not in {"raw_start", "raw_end"}
+                }
+            )
+            row["chapter_id"] = (
+                "unit:"
+                + hashlib.sha256(
+                    f"{file['path']}:{segment['raw_start']}".encode()
+                ).hexdigest()
+            )
+            row["source_locator"].update(
+                offset_kind="RAW_DECODED_UNIT",
+                original_byte_offset=segment["raw_start"],
+                original_byte_end=segment["raw_end"],
+                precision="UNIT_BYTES",
+                encoding=profile.encoding,
+            )
+            yield row
+        return
     if profile.format == "epub":
         yield from _epub_records(path, file, profile, budget)
         return
@@ -197,25 +235,21 @@ def parse_records(
         yield row
         return
     if profile.format == "jsonl":
-        with path.open("rb") as source:
-            ordinal, offset = 0, 0
-            while line := source.readline(budget.max_record_bytes + 1):
-                ordinal += 1
-                if len(line) > budget.max_record_bytes:
-                    raise IngestionFailure("RECORD_BYTE_LIMIT")
-                if line.strip():
-                    parsed = json.loads(line.decode(profile.encoding, errors="strict"))
-                    if not isinstance(parsed, dict):
-                        raise IngestionFailure("RECORD_NOT_OBJECT")
-                    row = _mapped(parsed, profile, ordinal, file)
-                    if row is not None:
-                        row["source_locator"].update(
-                            offset_kind="JSONL_RECORD_BYTES",
-                            original_byte_offset=offset,
-                            original_byte_end=offset + len(line),
-                        )
-                        yield row
-                offset += len(line)
+        for ordinal, (line, offset, end) in enumerate(
+            decoded_lines(path, profile.encoding, budget.max_record_bytes), 1
+        ):
+            if line.strip():
+                parsed = json.loads(line)
+                if not isinstance(parsed, dict):
+                    raise IngestionFailure("RECORD_NOT_OBJECT")
+                row = _mapped(parsed, profile, ordinal, file)
+                if row is not None:
+                    row["source_locator"].update(
+                        offset_kind="JSONL_RECORD_BYTES",
+                        original_byte_offset=offset,
+                        original_byte_end=end,
+                    )
+                    yield row
         return
     if profile.format == "json":
         import ijson
@@ -274,6 +308,47 @@ def parse_records(
                     yield row
 
 
+def parse_records(
+    file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
+) -> Iterator[dict[str, Any]]:
+    for record in _format_records(file, profile, budget):
+        if (
+            profile.normalization
+            and profile.normalization.segmentation == "CHINESE_HEADINGS"
+            and profile.format != "txt"
+            and profile.layout != "CHAPTER_ROWS"
+        ):
+            from .segmentation import segment_lines
+
+            def lines() -> Iterator[tuple[str, int, int]]:
+                offset = 0
+                for line in record["text"].splitlines(keepends=True):
+                    yield line, offset, offset + len(line)
+                    offset += len(line)
+
+            for part in segment_lines(lines(), profile.normalization):
+                locator = {
+                    **record["source_locator"],
+                    "precision": "EXTRACTED_TEXT_UNIT",
+                    "extracted_unicode_start": part["raw_start"],
+                    "extracted_unicode_end": part["raw_end"],
+                    "original_byte_offset": None,
+                }
+                yield {
+                    **record,
+                    **{
+                        k: v
+                        for k, v in part.items()
+                        if k not in {"raw_start", "raw_end"}
+                    },
+                    "chapter_id": record["chapter_id"] + ":" + str(part["raw_start"]),
+                    "order": record["order"] * 100000 + part["order"],
+                    "source_locator": locator,
+                }
+        else:
+            yield record
+
+
 def compile_work_index(
     files: list[dict[str, Any]],
     profile: ParserProfile,
@@ -287,8 +362,9 @@ def compile_work_index(
     with sqlite3.connect(database) as index:
         index.execute("PRAGMA cache_size=-4096")
         index.execute(
-            "CREATE TABLE units(work TEXT,edition TEXT,unit TEXT,ordinal INTEGER,body_bytes INTEGER,payload TEXT,PRIMARY KEY(work,edition,unit),UNIQUE(work,edition,ordinal))"
+            "CREATE TABLE units(work TEXT,edition TEXT,unit TEXT,ordinal INTEGER,body_bytes INTEGER,payload TEXT,volume_rank INTEGER,PRIMARY KEY(work,edition,unit),UNIQUE(work,edition,volume_rank,ordinal))"
         )
+        volumes: dict[tuple[str, str, str], int] = {}
         for file in sorted(
             files, key=lambda item: (item.get("container_path", ""), item["path"])
         ):
@@ -304,11 +380,18 @@ def compile_work_index(
                 body = record["text"]
                 if not body.strip():
                     raise IngestionFailure("EMPTY_TEXT_REVIEW_REQUIRED")
-                normalized = unicodedata.normalize(
-                    "NFC", body.replace("\r\n", "\n").replace("\r", "\n")
-                )
+                normalized = body.replace("\r\n", "\n").replace("\r", "\n")
+                if (
+                    selected.normalization is None
+                    or selected.normalization.unicode_form == "NFC"
+                ):
+                    normalized = unicodedata.normalize("NFC", normalized)
                 encoded = normalized.encode("utf-8")
-                if len(encoded) > budget.max_record_bytes:
+                if len(encoded) > (
+                    selected.normalization.max_unit_bytes
+                    if selected.normalization
+                    else budget.max_record_bytes
+                ):
                     raise IngestionFailure("RECORD_BYTE_LIMIT")
                 record.update(
                     text=normalized,
@@ -320,11 +403,31 @@ def compile_work_index(
                     + hashlib.sha256(encoded).hexdigest(),
                     parser=selected.model_dump(mode="json"),
                 )
+                volume_key = (
+                    record["work_id"],
+                    record["edition_id"],
+                    record["volume"] if selected.normalization else "",
+                )
+                volume_rank = volumes.setdefault(volume_key, len(volumes))
+                if selected.normalization and record["volume"]:
+                    record["source_chapter_id"] = record["chapter_id"]
+                    record["chapter_id"] = record["volume"] + ":" + record["chapter_id"]
+                record["normalization_evidence"] = {
+                    "steps": ["STRICT_DECODE", "NEWLINE_LF", "NFC"],
+                    "precision": "UNIT_BYTES"
+                    if record["source_locator"].get("original_byte_offset") is not None
+                    else "STRUCTURED_LOCATOR",
+                    "raw_text_changed": body != normalized,
+                    "normalized_unicode_length": len(normalized),
+                    "normalized_utf8_bytes": len(encoded),
+                }
                 identity = (
                     record["work_id"],
                     record["edition_id"],
                     record["chapter_id"],
                 )
+                if selected.normalization is None:
+                    record.pop("normalization_evidence", None)
                 payload = json.dumps(record, ensure_ascii=False, sort_keys=True)
                 existing = index.execute(
                     "SELECT payload FROM units WHERE work=? AND edition=? AND unit=?",
@@ -336,8 +439,14 @@ def compile_work_index(
                     continue
                 try:
                     index.execute(
-                        "INSERT INTO units VALUES (?,?,?,?,?,?)",
-                        (*identity, record["order"], len(encoded), payload),
+                        "INSERT INTO units VALUES (?,?,?,?,?,?,?)",
+                        (
+                            *identity,
+                            record["order"],
+                            len(encoded),
+                            payload,
+                            volume_rank,
+                        ),
                     )
                 except sqlite3.IntegrityError as exc:
                     raise IngestionFailure("CHAPTER_ORDER_CONFLICT") from exc
@@ -361,7 +470,7 @@ def compile_work_index(
             records = [
                 json.loads(row[0])
                 for row in index.execute(
-                    "SELECT payload FROM units WHERE work=? AND edition=? ORDER BY ordinal,unit",
+                    "SELECT payload FROM units WHERE work=? AND edition=? ORDER BY volume_rank,ordinal,unit",
                     (work_id, edition),
                 )
             ]
@@ -380,10 +489,16 @@ def compile_work_index(
             )
             if parser.completeness == "COMPLETE" and not complete:
                 status = "REVIEW_REQUIRED"
-            if parser.layout == "CHAPTER_ROWS" and ordinals != list(
-                range(min(ordinals), max(ordinals) + 1)
+            if parser.layout == "CHAPTER_ROWS" and any(
+                b != a + 1 for a, b in zip(ordinals, ordinals[1:])
             ):
                 status = "REVIEW_REQUIRED"
+            integrity = None
+            if parser.normalization:
+                from .integrity import assess_integrity
+
+                integrity = assess_integrity(records, parser)
+                status = integrity["coverage"]
             content = {
                 "schema_version": "corpus-parsed-work.v1",
                 "work_id": work_id,
@@ -396,6 +511,8 @@ def compile_work_index(
                 "body_bytes": body_bytes,
                 "parser_hash": corpus_hash(parser.model_dump(mode="json")),
             }
+            if integrity is not None:
+                content["integrity"] = integrity
             pointer = spool_json(content, root / "works", budget)
             outputs.append(
                 {
