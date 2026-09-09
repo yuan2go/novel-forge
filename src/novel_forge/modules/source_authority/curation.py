@@ -63,18 +63,7 @@ def apply_catalog_action(
             }
             else "REVOKE"
         )
-        if decision == "REJECT":
-            conflicts = repository.catalog_conflicts(
-                project_id, [r["edition_id"] for r in rows.values()], []
-            )
-            assigned = {}
-            for group, edition in conflicts["existing_groups"]:
-                assigned.setdefault(group, set()).add(edition)
-            if any(len(editions) > 1 for editions in assigned.values()):
-                raise KernelError(
-                    "CORPUS_SPLIT_REQUIRED",
-                    "remove conflicting members atomically before declaring different works",
-                )
+        validate_relation_write(repository, project_id, workspace_id, rows, decision)
         identity = corpus_identity("relation", operation_id)
         repository.corpus_quality_insert(
             "equivalence",
@@ -109,6 +98,26 @@ def apply_catalog_action(
             repository, action, project_id, workspace_id, operation_id
         )
     return _revise_curated(repository, action, project_id, workspace_id, operation_id)
+
+
+def validate_relation_write(repository, project, workspace, rows, decision):
+    if len(rows) != 2 or any(r["workspace_id"] != workspace for r in rows.values()):
+        raise KernelError(
+            "CORPUS_RELATION_SCOPE", "two scoped processing revisions required"
+        )
+    if decision != "REJECT":
+        return
+    editions = [r["edition_id"] for r in rows.values()]
+    groups = {}
+    for group, edition in repository.catalog_conflicts(project, editions, [])[
+        "existing_groups"
+    ]:
+        groups.setdefault(group, set()).add(edition)
+    if len(set(editions)) < 2 or any(len(members) > 1 for members in groups.values()):
+        raise KernelError(
+            "CORPUS_SPLIT_REQUIRED",
+            "split conflicting canonical members before declaring different works",
+        )
 
 
 def _resolve_works(
@@ -201,11 +210,20 @@ def curated_availability(
         if m["evidence"].get("canonical_revision_id")
     ]
     active_canonical = repository.catalog_active_work_revisions(project, canonical_ids)
+    relation_versions = repository.catalog_relation_versions(
+        project, [m["edition_id"] for m in members]
+    )
     outcomes = []
     for member in members:
         p = rows.get(member["processing_id"])
         permission = permissions.get(member["edition_id"])
         reasons = []
+        frozen_relations = member["evidence"].get("relation_versions")
+        current_relations = relation_versions.get(member["edition_id"], [])
+        if frozen_relations is not None and frozen_relations != current_relations:
+            reasons.append("RELATION_EVIDENCE_CHANGED")
+        elif frozen_relations is None and current_relations:
+            reasons.append("RELATION_BASELINE_NOT_FROZEN")
         if not p or not p["current"]:
             reasons.append("PROCESSING_SUPERSEDED_OR_MISSING")
         if not permission or permission["decision"] != "ALLOW":
@@ -267,6 +285,9 @@ def _revise_curated(
     processing = repository.catalog_processings(
         project, [m["processing_id"] for m in members]
     )
+    relation_versions = repository.catalog_relation_versions(
+        project, [m["edition_id"] for m in members]
+    )
     for member in members:
         p = processing[member["processing_id"]]
         if p["workspace_id"] != workspace:
@@ -274,6 +295,9 @@ def _revise_curated(
                 "CORPUS_WORKSPACE_INVALID", "candidate belongs to another workspace"
             )
         if action.state != "FROZEN":
+            member["evidence"]["relation_versions"] = relation_versions.get(
+                member["edition_id"], []
+            )
             member["evidence"]["review_id"] = p["review_id"]
             member["evidence"]["assessment_hash"] = corpus_hash(p["assessment"])
     choices = {c.processing_id: c for c in action.choices}

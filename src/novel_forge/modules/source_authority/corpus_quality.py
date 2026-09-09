@@ -9,7 +9,12 @@ from novel_forge.modules.source_import.corpus_ingestion.similarity import compar
 
 
 def apply_quality_decision(
-    repository: Any, action: Any, *, project_id: str, operation_id: str
+    repository: Any,
+    action: Any,
+    *,
+    project_id: str,
+    workspace_id: str,
+    operation_id: str,
 ) -> dict[str, Any]:
     repository.corpus_authorization_lock(project_id, write=True)
     if action.action == "review_processing":
@@ -47,7 +52,10 @@ def apply_quality_decision(
                     "NUMBER_CONFLICT",
                 },
                 "CONFIRM_BOUNDARY": {"SHORT_OR_TOC_UNIT"},
-                "CONFIRM_LEGITIMATE_REPETITION": {"DUPLICATE_BODY", "REPEATED_SHORT_BODY"},
+                "CONFIRM_LEGITIMATE_REPETITION": {
+                    "DUPLICATE_BODY",
+                    "REPEATED_SHORT_BODY",
+                },
                 "CONFIRM_TOC_VARIANT": {"TOC_ENTRY_MISMATCH"},
                 "ANNOTATE_TOC_DIFFERENCE": {"TOC_ENTRY_MISMATCH"},
                 "REJECT_CORRUPT": set(issues[i]["code"] for i in issues),
@@ -57,18 +65,38 @@ def apply_quality_decision(
                     "CORPUS_REVIEW_CANNOT_WAIVE",
                     "this issue requires new source evidence or a new parser contract",
                 )
-            if decision.resolution in {"CONFIRM_LEGITIMATE_REPETITION", "CONFIRM_TOC_VARIANT", "ANNOTATE_TOC_DIFFERENCE"}:
+            if decision.resolution in {
+                "CONFIRM_LEGITIMATE_REPETITION",
+                "CONFIRM_TOC_VARIANT",
+                "ANNOTATE_TOC_DIFFERENCE",
+            }:
                 if not decision.evidence_refs or not decision.classification:
-                    raise KernelError("CORPUS_SCOPED_EVIDENCE_REQUIRED", "classification and exact source evidence required")
+                    raise KernelError(
+                        "CORPUS_SCOPED_EVIDENCE_REQUIRED",
+                        "classification and exact source evidence required",
+                    )
                 if decision.resolution == "CONFIRM_TOC_VARIANT" and (
-                    not finding.get("expected_title") or not finding.get("observed_title")
-                    or decision.classification not in {"DISPLAY", "TRANSCRIPTION_SUSPECTED", "VERSION_WORDING"}
+                    not finding.get("expected_title")
+                    or not finding.get("observed_title")
+                    or decision.classification
+                    not in {"DISPLAY", "TRANSCRIPTION_SUSPECTED", "VERSION_WORDING"}
                 ):
-                    raise KernelError("CORPUS_MISSING_CONTENT_CANNOT_BE_WAIVED", "only a located title variant can be accepted")
-                if decision.resolution == "CONFIRM_LEGITIMATE_REPETITION" and decision.classification != "LEGITIMATE_REPETITION":
-                    raise KernelError("CORPUS_DUPLICATE_EVIDENCE_REQUIRED", "explicit per-occurrence legitimate repetition evidence required")
+                    raise KernelError(
+                        "CORPUS_MISSING_CONTENT_CANNOT_BE_WAIVED",
+                        "only a located title variant can be accepted",
+                    )
+                if (
+                    decision.resolution == "CONFIRM_LEGITIMATE_REPETITION"
+                    and decision.classification != "LEGITIMATE_REPETITION"
+                ):
+                    raise KernelError(
+                        "CORPUS_DUPLICATE_EVIDENCE_REQUIRED",
+                        "explicit per-occurrence legitimate repetition evidence required",
+                    )
                 if decision.resolution == "ANNOTATE_TOC_DIFFERENCE":
-                    finding.setdefault("annotations", []).append(decision.model_dump(mode="json"))
+                    finding.setdefault("annotations", []).append(
+                        decision.model_dump(mode="json")
+                    )
                     continue
             resolution = {
                 **decision.model_dump(mode="json"),
@@ -117,6 +145,10 @@ def apply_quality_decision(
         repository.corpus_processing(project_id, left_id),
         repository.corpus_processing(project_id, right_id),
     )
+    from .curation import validate_relation_write
+
+    rows = repository.catalog_processings(project_id, [left_id, right_id])
+    validate_relation_write(repository, project_id, workspace_id, rows, action.decision)
     previous = repository.corpus_equivalence_current(project_id, left_id, right_id)
     if action.previous_id != (previous["decision_id"] if previous else None):
         raise KernelError("CORPUS_EQUIVALENCE_STALE", "pair decision changed")

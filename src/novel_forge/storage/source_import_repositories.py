@@ -7,7 +7,10 @@ from psycopg.types.json import Jsonb
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-class SourceImportRepository:
+from .source_import_operations_records import SourceImportOperationsRecords
+
+
+class SourceImportRepository(SourceImportOperationsRecords):
     def corpus_frozen_request(self, project_id: str, key: str) -> dict[str, Any] | None:
         self.cursor.execute("""SELECT command_payload->'payload' FROM authority_operation
             WHERE project_id=%s AND idempotency_scope='project:source-import' AND idempotency_key=%s
