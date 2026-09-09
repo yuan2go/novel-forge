@@ -661,8 +661,8 @@ novel-forge corpus run --project-id "$PROJECT" --job-id "$REPROCESS_JOB"
 ```
 
 No downloader runs on this path. Pause/resume/cancel/status use the same job commands.
-Same-key requests preserve frozen input; changed profiles need a new key. A stale parent
-fails explicitly and requires inspecting/replanning against the current processing revision.
+Same-key requests preserve frozen input; changed profiles need a new key. A stale parent or changed review
+fails explicitly at both preparation and atomic publication and requires inspecting/replanning against the current processing revision.
 `equivalence --decision pair.json` accepts action `decide_equivalence`, exact left_id/right_id,
 previous_id, decision ACCEPT/REJECT/REVOKE, evidence_refs and reason. Querying a pair returns
 its latest decision; it does not select a generation-authorized canonical representative.
