@@ -1,0 +1,14 @@
+[
+  {
+    "source": "huggingface-fixed",
+    "status": "BLOCKED",
+    "reason": "KernelError:SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+    "content_acquisition": "NOT_REQUESTED"
+  },
+  {
+    "source": "internet-archive",
+    "status": "BLOCKED",
+    "reason": "KernelError:SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+    "content_acquisition": "NOT_REQUESTED"
+  }
+]

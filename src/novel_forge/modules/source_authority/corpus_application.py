@@ -32,7 +32,7 @@ from novel_forge.storage.source_import_repositories import SourceImportRepositor
 
 
 CORPUS_OPERATION = "source.corpus.commit"
-CORPUS_VERSION = "1.0.0"
+CORPUS_VERSION = "1.1.0"
 CORPUS_HANDLER = "novel_forge.source_authority.corpus_commit"
 
 
@@ -139,7 +139,11 @@ class SourceCorpusApplication:
         self.commit_sha = commit_sha
 
     def admit(
-        self, command: CorpusCommand, *, principal: Principal | None = None, parent_worker: WorkerLeaseCommand | None = None
+        self,
+        command: CorpusCommand,
+        *,
+        principal: Principal | None = None,
+        parent_worker: WorkerLeaseCommand | None = None,
     ) -> dict[str, Any]:
         actor = command.actor_id
         if principal is not None:
@@ -159,12 +163,16 @@ class SourceCorpusApplication:
             if parent_worker is not None:
                 require_current_fence(uow, parent_worker)
                 if parent_worker.project_id != command.project_id:
-                    raise KernelError("CROSS_PROJECT_REFERENCE", "Corpus delegation changed project")
+                    raise KernelError(
+                        "CROSS_PROJECT_REFERENCE", "Corpus delegation changed project"
+                    )
             repository = SourceAuthorityRepository(uow.cursor)
             repository.require_scope(
                 project_id=command.project_id, workspace_id=command.workspace_id
             )
-            key = repository.corpus_command_key(command.project_id, command.workspace_id, key)
+            key = repository.corpus_command_key(
+                command.project_id, command.workspace_id, key
+            )
             if isinstance(action, ImportCorpusBatch):
                 snapshot = repository.corpus_record(
                     "snapshot", command.project_id, action.snapshot_id
@@ -292,12 +300,22 @@ class SourceCorpusApplication:
             action = validate_corpus_action(command["payload"])
             if isinstance(action, ControlCorpusImport):
                 from .corpus_import_control import control_corpus_import
-                result = control_corpus_import(repository, action, project_id=worker.project_id,
-                    workspace_id=command["workspace_id"], operation_id=worker.causation_id, database_url=self.database_url)
+
+                result = control_corpus_import(
+                    repository,
+                    action,
+                    project_id=worker.project_id,
+                    workspace_id=command["workspace_id"],
+                    operation_id=worker.causation_id,
+                    database_url=self.database_url,
+                )
             else:
                 result = apply_corpus_action(
-                    repository, action, project_id=worker.project_id,
-                    workspace_id=command["workspace_id"], operation_id=worker.causation_id,
+                    repository,
+                    action,
+                    project_id=worker.project_id,
+                    workspace_id=command["workspace_id"],
+                    operation_id=worker.causation_id,
                 )
             if isinstance(action, ImportCorpusBatch):
                 job_id = f"source-import:{worker.causation_id}"

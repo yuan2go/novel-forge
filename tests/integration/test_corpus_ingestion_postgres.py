@@ -1027,7 +1027,14 @@ def test_native_integrity_review_reprocessing_and_equivalence(
         "project_id": corpus.project,
         "edition_id": first["edition_id"],
         "run_key": "apply-review",
-        "parser": parser,
+        "parser": {
+            **parser,
+            "version": "corpus-parser.v3",
+            "normalization": {
+                **parser["normalization"],
+                "version": "chinese-longform.v2",
+            },
+        },
     }
     admitted2 = corpus.client.post(
         "/product/source-imports/corpus/reprocess", json=reprocess_request
@@ -1317,3 +1324,742 @@ def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
         and current["parent_id"] == original["processing_id"]
     )
     assert current["downstream_impact"]["operation_id"] == repair.json()["operation_id"]
+
+
+def test_native_curated_corpus_freeze_analysis_and_stale_members(
+    corpus, tmp_path, monkeypatch
+):
+    from novel_forge.api import authority_dependencies
+    from novel_forge.modules.source_import.execution_contracts import (
+        CLASSIFICATION_STAGE,
+        content_intelligence_fixture_response,
+    )
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    def transport(stage, inputs):
+        if stage == CLASSIFICATION_STAGE:
+            return {
+                "content_type": "PUBLISHED_FICTION",
+                "confidence": 0.97,
+                "alternatives": [
+                    {"content_type": "PUBLISHED_FICTION", "confidence": 0.97},
+                    {"content_type": "UNKNOWN", "confidence": 0.03},
+                ],
+                "evidence_codes": ["BOUNDED_SEMANTIC_SAMPLE"],
+                "boundary_assessment": {
+                    "scope_kind": "FILE_DOCUMENT",
+                    "suspected_document_count": 1,
+                    "review_required": False,
+                },
+            }
+        return content_intelligence_fixture_response(stage, inputs)
+
+    monkeypatch.setattr(
+        authority_dependencies, "content_intelligence_fixture_response", transport
+    )
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    path = tmp_path / "novel.txt"
+    path.write_text(
+        "第一章 选择\n"
+        + "阿青交还钥匙，为弟弟承担迟到的代价。" * 15
+        + "\n第二章 消息\n"
+        + "守门人履行承诺，将信交还她，但拒绝暴露送信人的姓名。" * 15
+    )
+    parser = {
+        "version": "corpus-parser.v3",
+        "format": "txt",
+        "constants": {"work_id": "original"},
+        "normalization": {
+            "version": "chinese-longform.v2",
+            "expected_toc": ["第一章 选择", "第二章 消息"],
+            "toc_evidence": "original:test-two-chapters",
+        },
+    }
+    admitted = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={
+            "project_id": corpus.project,
+            "workspace_id": corpus.workspace,
+            "run_key": "curated-input",
+            "manifest": {**_manifest(path), "parser": parser},
+        },
+    )
+    assert admitted.status_code == 202, admitted.text
+    acquisition = scheduler.run_or_recover(
+        operation_id=admitted.json()["operation_id"], project_id=corpus.project
+    )
+    completed = scheduler.run_or_recover(
+        operation_id=acquisition["result"]["children"][0]["operation_id"],
+        project_id=corpus.project,
+    )["result"]
+    processing = completed["processing_id"]
+    work = corpus.run(
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                {
+                    "work_key": "key-story",
+                    "title": "钥匙与来信",
+                    "language": "zh",
+                    "genre_tags": ["原创测试"],
+                    "metadata_evidence": ["operator:original-authorship"],
+                    "members": [
+                        {
+                            "processing_id": processing,
+                            "relation": "SAME_WORK",
+                            "evidence_refs": ["operator:original-authorship"],
+                        }
+                    ],
+                }
+            ],
+            "reason": "explicit original work identity",
+        }
+    )
+    assert work["status"] == "SUCCEEDED", work
+    candidate_action = {
+        "action": "revise_curated_corpus",
+        "corpus_key": "reading-set",
+        "title": "中文精选",
+        "purpose": "RESEARCH",
+        "filters": {"language": "zh"},
+        "reason": "inspect original research sources",
+    }
+    candidate = corpus.run(candidate_action)
+    assert (
+        len(candidate["availability"]) == 1
+        and candidate["availability"][0]["available"]
+    ), candidate
+    frozen = corpus.run(
+        {
+            **candidate_action,
+            "previous_id": candidate["revision_id"],
+            "state": "FROZEN",
+            "choices": [
+                {
+                    "processing_id": processing,
+                    "selected": True,
+                    "reason": "scoped complete chapter catalogue",
+                    "evidence_refs": ["operator:review-two-original-chapters"],
+                }
+            ],
+        }
+    )
+    assert frozen["selected_count"] == 1
+    query = corpus.client.get(
+        "/product/source-imports/corpus/catalog/curated/" + frozen["corpus_id"],
+        params={"project_id": corpus.project},
+    )
+    assert query.status_code == 200, query.text
+    assert query.json()["current_availability"][0]["available"]
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(
+            psycopg.errors.CheckViolation, match="curated member must retain"
+        ):
+            with connection.transaction():
+                connection.execute(
+                    "INSERT INTO authority_corpus_curated_member SELECT revision_id,project_id,processing_id,edition_id,jsonb_set(evidence,'{rights_id}','\"wrong-rights\"'::jsonb) FROM authority_corpus_curated_member WHERE revision_id=%s",
+                    [frozen["revision_id"]],
+                )
+        with pytest.raises(psycopg.errors.CheckViolation):
+            with connection.transaction():
+                connection.execute(
+                    "UPDATE authority_corpus_work_revision SET manifest=manifest WHERE revision_id=%s",
+                    [work["revisions"][0]["revision_id"]],
+                )
+        connection.execute(
+            """INSERT INTO authority_corpus_work_revision(revision_id,work_id,project_id,workspace_id,manifest,created_by_operation_id)
+            SELECT 'query-only-'||n,'query-work-'||n,project_id,workspace_id,'{"state":"RETIRED","evidence_class":"QUERY_PLAN_FIXTURE"}'::jsonb,created_by_operation_id
+            FROM authority_corpus_work_revision CROSS JOIN generate_series(1,5000) n WHERE revision_id=%s""",
+            [work["revisions"][0]["revision_id"]],
+        )
+        connection.execute("ANALYZE authority_corpus_work_revision")
+        plan = connection.execute(
+            """EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON) SELECT to_jsonb(r) FROM authority_corpus_work_revision r
+            WHERE r.project_id=%s AND r.work_id=%s AND NOT EXISTS(SELECT 1 FROM authority_corpus_work_revision n WHERE n.previous_id=r.revision_id)""",
+            [corpus.project, work["revisions"][0]["work_id"]],
+        ).fetchone()[0]
+
+        def nodes(node):
+            yield node
+            for child in node.get("Plans", []):
+                yield from nodes(child)
+
+        scans = [n for n in nodes(plan[0]["Plan"]) if "Scan" in n["Node Type"]]
+        assert scans and all("Index" in n["Node Type"] for n in scans), plan
+        connection.rollback()
+    import os
+    from pathlib import Path
+
+    if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+        Path(directory, "canonical-work-query-plan.json").write_text(
+            json.dumps(
+                {
+                    "plan": plan,
+                    "fixture_rows": 5000,
+                    "fixture_rolled_back": True,
+                    "planner_settings_changed": False,
+                },
+                indent=2,
+            )
+        )
+    request = {
+        "project_id": corpus.project,
+        "revision_id": frozen["revision_id"],
+        "run_key": "analysis-first",
+        "max_members": 1,
+        "max_calls": 20,
+        "max_tokens": 200000,
+        "authorization_ref": "scripted-engineering-only",
+    }
+    analysis = corpus.client.post(
+        "/product/source-imports/corpus/analyze", json=request
+    )
+    assert analysis.status_code == 202, analysis.text
+    repeated = corpus.client.post(
+        "/product/source-imports/corpus/analyze", json=request
+    )
+    assert repeated.status_code == 202 and repeated.json()["replayed"], repeated.text
+    assert repeated.json()["operation_id"] == analysis.json()["operation_id"]
+    import os
+    import subprocess
+    import sys
+    import time
+
+    script = """
+import json,os,sys
+from pathlib import Path
+from novel_forge.api.authority_dependencies import build_production_execution_composition,build_source_import_application
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.source_import import SourceImportScheduler
+settings=IndustrialSettings(root=Path(sys.argv[3]),environment='test',database_url=os.environ['NOVEL_FORGE_DATABASE_URL'])
+app=build_source_import_application(settings,execution=build_production_execution_composition(settings))
+if sys.argv[4]=='crash':
+ original=app.execute_fenced
+ def crash(worker):
+  original(worker)
+  os._exit(74)
+ app.execute_fenced=crash
+print(json.dumps(SourceImportScheduler(app,worker_id='curated-'+sys.argv[4],lease_seconds=1).run_or_recover(operation_id=sys.argv[1],project_id=sys.argv[2]),default=str))
+"""
+    args = [
+        sys.executable,
+        "-c",
+        script,
+        analysis.json()["operation_id"],
+        corpus.project,
+        str(tmp_path),
+    ]
+    died = subprocess.run(
+        [*args, "crash"],
+        env=dict(os.environ),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert died.returncode == 74, died.stderr
+    time.sleep(2)
+    recovered = subprocess.run(
+        [*args, "recover"],
+        env=dict(os.environ),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert recovered.returncode == 0, recovered.stderr
+    queued = json.loads(recovered.stdout)
+    assert queued["status"] == "SUCCEEDED", queued
+    member = scheduler.run_or_recover(
+        operation_id=queued["result"]["children"][0]["operation_id"],
+        project_id=corpus.project,
+    )
+    assert member["result"]["stage"] == "SOURCE_ANALYSIS_SCHEDULED"
+    job = analysis.json()["import_job_id"]
+    for _ in range(30):
+        rows = corpus.client.get(
+            f"/product/source-imports/{job}/work", params={"project_id": corpus.project}
+        ).json()
+        pending = {
+            o
+            for o, p in scheduler.pending_operations(limit=1000)
+            if p == corpus.project
+        }
+        row = next((r for r in rows if r["operation_id"] in pending), None)
+        if row is None:
+            break
+        scheduler.run_or_recover(
+            operation_id=row["operation_id"], project_id=corpus.project
+        )
+    assert any(
+        r["work_kind"] == "PROFILING" and r["status"] == "SUCCEEDED" for r in rows
+    ), rows
+    assert any(r["work_kind"] == "MKAOS_EXTRACTION" for r in rows), rows
+    assert all(r["status"] in {"SUCCEEDED", "REUSED", "BLOCKED"} for r in rows), rows
+    with psycopg.connect(DATABASE_URL) as connection:
+        count = connection.execute(
+            "SELECT count(*) FROM authority_budget_reservation WHERE project_id=%s",
+            (corpus.project,),
+        ).fetchone()[0]
+    assert count > 0
+    work_revision = work["revisions"][0]
+    corpus.run(
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                {
+                    "work_key": "key-story",
+                    "previous_id": work_revision["revision_id"],
+                    "title": "钥匙与来信",
+                    "state": "RETIRED",
+                    "metadata_evidence": ["operator:withdraw-selection"],
+                    "members": [],
+                }
+            ],
+            "reason": "withdraw current identity assignment, preserve history",
+        }
+    )
+    blocked = corpus.client.post(
+        "/product/source-imports/corpus/analyze",
+        json={**request, "run_key": "after-revision"},
+    )
+    assert blocked.status_code == 409 and "CURATED_MEMBERS_UNAVAILABLE" in blocked.text
+    state = corpus.client.get(
+        "/product/source-imports/corpus/catalog/curated/" + frozen["corpus_id"],
+        params={"project_id": corpus.project},
+    ).json()
+    assert state["current_availability"][0]["reasons"] == [
+        "CANONICAL_MEMBERSHIP_REVISED"
+    ]
+    replay = scheduler.run_or_recover(
+        operation_id=analysis.json()["operation_id"], project_id=corpus.project
+    )
+    assert replay["status"] == "SUCCEEDED"
+    with psycopg.connect(DATABASE_URL) as connection:
+        assert (
+            connection.execute(
+                "SELECT count(*) FROM authority_budget_reservation WHERE project_id=%s",
+                (corpus.project,),
+            ).fetchone()[0]
+            == count
+        )
+    with pytest.raises(KernelError, match="CORPUS_CATALOG_STALE"):
+        corpus.run({**candidate_action, "previous_id": candidate["revision_id"]})
+
+
+def test_native_multifile_duplicate_review_relations_and_discovery(
+    corpus, tmp_path, monkeypatch
+):
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    text = "她将钥匙还给守门人，决定承担迟到的代价。这段誓词在不同场合被完整复述。" * 12
+    parser = {
+        "version": "corpus-parser.v3",
+        "format": "html",
+        "constants": {"work_id": "one-work"},
+        "normalization": {
+            "version": "chinese-longform.v2",
+            "external_work_ids": ["original:comparison-test"],
+        },
+    }
+
+    def ingest(name, variant=""):
+        directory = tmp_path / name
+        directory.mkdir()
+        for n in (1, 2):
+            (directory / f"{n}.html").write_text(
+                f"<body><h1>第{n}章 场合{n}</h1><p>{text}{variant}</p></body>"
+            )
+        manifest = {**_manifest(directory), "parser": parser}
+        admitted = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": name,
+                "manifest": manifest,
+            },
+        )
+        assert admitted.status_code == 202, admitted.text
+        acquired = scheduler.run_or_recover(
+            operation_id=admitted.json()["operation_id"], project_id=corpus.project
+        )
+        result = scheduler.run_or_recover(
+            operation_id=acquired["result"]["children"][0]["operation_id"],
+            project_id=corpus.project,
+        )
+        assert result["status"] == "SUCCEEDED", result
+        return result["result"]
+
+    def inspect(identity, **params):
+        response = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + identity,
+            params={"project_id": corpus.project, **params},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    first = ingest("first")
+    assessment = inspect(first["processing_id"])["assessment"]
+    finding = next(i for i in assessment["issues"] if i["code"] == "DUPLICATE_BODY")
+    assert len(finding["evidence"]) == 2 and not assessment["structure_usable"]
+    action = {
+        "action": "review_processing",
+        "processing_id": first["processing_id"],
+        "decisions": [
+            {
+                "issue_id": finding["issue_id"],
+                "resolution": "CONFIRM_LEGITIMATE_REPETITION",
+                "reason": "original test explicitly repeats its oath",
+            }
+        ],
+        "reason": "scoped repeated event",
+    }
+    with pytest.raises(KernelError, match="CORPUS_SCOPED_EVIDENCE_REQUIRED"):
+        corpus.run(action)
+    reviewed = corpus.run(
+        {
+            **action,
+            "decisions": [
+                {
+                    **action["decisions"][0],
+                    "evidence_refs": ["operator:two-original-oath-occurrences"],
+                    "classification": "LEGITIMATE_REPETITION",
+                }
+            ],
+        }
+    )
+    assert reviewed["status"] == "SUCCEEDED"
+    reprocess = corpus.client.post(
+        "/product/source-imports/corpus/reprocess",
+        json={
+            "project_id": corpus.project,
+            "edition_id": first["edition_id"],
+            "run_key": "reviewed",
+            "parser": parser,
+        },
+    )
+    assert reprocess.status_code == 202, reprocess.text
+    processed = scheduler.run_or_recover(
+        operation_id=reprocess.json()["operation_id"], project_id=corpus.project
+    )["result"]
+    assert processed["structure_usable"]
+    newest = inspect(processed["processing_id"])
+    assert any(
+        i.get("resolution")
+        for i in newest["assessment"]["issues"]
+        if i["code"] == "DUPLICATE_BODY"
+    )
+    second = ingest("copy")
+    third = ingest("other", "这段后续内容改变了场景，并表明不同的叙事后果。" * 5)
+    page = inspect(processed["processing_id"], discover=True, limit=1)
+    assert (
+        page["evaluated_on_page"] == 1
+        and page["candidates"][0]["processing_id"] == second["processing_id"]
+    )
+    assert page["candidates"][0]["exact_text"] and page["next_cursor"]
+    page2 = inspect(
+        processed["processing_id"], discover=True, limit=1, after=page["next_cursor"]
+    )
+    assert (
+        page2["evaluated_total"] == 2
+        and page2["candidates"][0]["processing_id"] == third["processing_id"]
+    )
+    wrong = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + second["processing_id"],
+        params={
+            "project_id": corpus.project,
+            "discover": True,
+            "after": page["next_cursor"],
+        },
+    )
+    assert wrong.status_code == 409 and "CURSOR_STALE" in wrong.text
+    different = corpus.run(
+        {
+            "action": "declare_relation",
+            "left_id": processed["processing_id"],
+            "right_id": second["processing_id"],
+            "relation": "DIFFERENT_WORK",
+            "evidence_refs": ["operator:synthetic-counterfactual-identity"],
+            "reason": "identical bytes do not determine work identity",
+        }
+    )
+
+    def member(identity):
+        return {
+            "processing_id": identity,
+            "relation": "SAME_WORK",
+            "evidence_refs": ["operator:explicit-membership"],
+        }
+
+    def group(key, members, **extra):
+        return {
+            "work_key": key,
+            "title": key,
+            "metadata_evidence": ["operator:group-decision"],
+            "members": members,
+            **extra,
+        }
+
+    with pytest.raises(KernelError, match="CORPUS_CANONICAL_CONFLICT"):
+        corpus.run(
+            {
+                "action": "resolve_canonical_works",
+                "changes": [
+                    group(
+                        "merged",
+                        [
+                            member(processed["processing_id"]),
+                            member(second["processing_id"]),
+                        ],
+                    )
+                ],
+                "reason": "negative relation must prevent merge",
+            }
+        )
+    corpus.run(
+        {
+            "action": "declare_relation",
+            "left_id": processed["processing_id"],
+            "right_id": second["processing_id"],
+            "previous_id": different["decision_id"],
+            "relation": "SAME_EDITION_COPY",
+            "evidence_refs": ["operator:corrected-source-identity"],
+            "reason": "explicitly supersede mistaken negative evidence",
+        }
+    )
+    groups = corpus.run(
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                group("a", [member(processed["processing_id"])]),
+                group("b", [member(second["processing_id"])]),
+            ],
+            "reason": "initial explicit groups",
+        }
+    )["revisions"]
+    merged = corpus.run(
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                group(
+                    "a",
+                    [
+                        member(processed["processing_id"]),
+                        member(second["processing_id"]),
+                    ],
+                    previous_id=groups[0]["revision_id"],
+                ),
+                group("b", [], previous_id=groups[1]["revision_id"], state="RETIRED"),
+            ],
+            "reason": "atomic explicit merge retains both source editions",
+        }
+    )["revisions"]
+    split = corpus.run(
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                group(
+                    "a",
+                    [member(processed["processing_id"])],
+                    previous_id=merged[0]["revision_id"],
+                ),
+                group(
+                    "b",
+                    [member(second["processing_id"])],
+                    previous_id=merged[1]["revision_id"],
+                ),
+            ],
+            "reason": "atomic correction splits membership without rewriting history",
+        }
+    )
+    assert len(split["revisions"]) == 2
+    historical = corpus.client.get(
+        "/product/source-imports/corpus/catalog/work/" + merged[0]["revision_id"],
+        params={"project_id": corpus.project, "revision": True},
+    )
+    assert historical.status_code == 200 and len(historical.json()["members"]) == 2
+
+
+def test_native_catalogue_resolution_preserves_input_scope(
+    corpus, tmp_path, monkeypatch
+):
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    path = tmp_path / "toc.txt"
+    path.write_text(
+        "第一章 交付\n"
+        + "甲把钥匙交给乙，留下口信。" * 15
+        + "\n第二章 回报\n"
+        + "乙准时赶到桥边，答谢船夫。" * 15
+    )
+    parser = {
+        "version": "corpus-parser.v3",
+        "format": "txt",
+        "constants": {"work_id": "toc-original"},
+        "normalization": {
+            "version": "chinese-longform.v2",
+            "expected_toc": ["第01章：交付", "第二章 报答"],
+            "toc_evidence": "sha256:catalogue-A",
+        },
+    }
+    response = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={
+            "project_id": corpus.project,
+            "workspace_id": corpus.workspace,
+            "run_key": "toc-import",
+            "manifest": {**_manifest(path), "parser": parser},
+        },
+    )
+    assert response.status_code == 202, response.text
+    root = scheduler.run_or_recover(
+        operation_id=response.json()["operation_id"], project_id=corpus.project
+    )
+    result = scheduler.run_or_recover(
+        operation_id=root["result"]["children"][0]["operation_id"],
+        project_id=corpus.project,
+    )["result"]
+
+    def inspect(identity):
+        response = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + identity,
+            params={"project_id": corpus.project},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    first = inspect(result["processing_id"])
+    findings = [
+        i for i in first["assessment"]["issues"] if i["code"] == "TOC_ENTRY_MISMATCH"
+    ]
+    assert len(findings) == 1 and findings[0]["toc_index"] == 1
+    review = corpus.run(
+        {
+            "action": "review_processing",
+            "processing_id": first["processing_id"],
+            "decisions": [
+                {
+                    "issue_id": findings[0]["issue_id"],
+                    "resolution": "CONFIRM_TOC_VARIANT",
+                    "classification": "VERSION_WORDING",
+                    "evidence_refs": ["sha256:catalogue-A", "original:chapter-two"],
+                    "reason": "Both located titles denote the same bounded chapter; wording retained.",
+                }
+            ],
+            "reason": "scope title variant to this exact catalogue",
+        }
+    )
+    assert review["assessment"]["structure_usable"]
+
+    def reprocess(profile, key):
+        response = corpus.client.post(
+            "/product/source-imports/corpus/reprocess",
+            json={
+                "project_id": corpus.project,
+                "edition_id": result["edition_id"],
+                "run_key": key,
+                "parser": profile,
+            },
+        )
+        assert response.status_code == 202, response.text
+        outcome = scheduler.run_or_recover(
+            operation_id=response.json()["operation_id"], project_id=corpus.project
+        )
+        return inspect(outcome["result"]["processing_id"])
+
+    second = reprocess(parser, "same-catalogue")
+    assert second["assessment"]["structure_usable"]
+    assert any(
+        i.get("resolution", {}).get("resolution") == "CONFIRM_TOC_VARIANT"
+        for i in second["assessment"]["issues"]
+    )
+    different = {
+        **parser,
+        "normalization": {
+            **parser["normalization"],
+            "expected_toc": ["第一章 交付", "第二章 大火", "第三章 归来"],
+            "toc_evidence": "sha256:catalogue-B",
+        },
+    }
+    third = reprocess(different, "new-catalogue")
+    assert not third["assessment"]["structure_usable"]
+    unresolved = [
+        i
+        for i in third["assessment"]["issues"]
+        if i["code"] == "TOC_ENTRY_MISMATCH" and i["blocking"]
+    ]
+    assert len(unresolved) == 2
+    missing = next(i for i in unresolved if i["observed_title"] is None)
+    with pytest.raises(KernelError, match="CORPUS_MISSING_CONTENT_CANNOT_BE_WAIVED"):
+        corpus.run(
+            {
+                "action": "review_processing",
+                "processing_id": third["processing_id"],
+                "decisions": [
+                    {
+                        "issue_id": missing["issue_id"],
+                        "resolution": "CONFIRM_TOC_VARIANT",
+                        "classification": "VERSION_WORDING",
+                        "evidence_refs": ["sha256:catalogue-B"],
+                        "reason": "missing content is not a title variation",
+                    }
+                ],
+                "reason": "must fail closed",
+            }
+        )
+    page = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + second["processing_id"],
+        params={
+            "project_id": corpus.project,
+            "compare_to": third["processing_id"],
+            "limit": 1,
+        },
+    ).json()["comparison"]
+    assert page["next_cursor"] and len(page["correspondence"]) == 1
+    rest = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + second["processing_id"],
+        params={
+            "project_id": corpus.project,
+            "compare_to": third["processing_id"],
+            "limit": 1,
+            "after": page["next_cursor"],
+        },
+    ).json()["comparison"]
+    assert (
+        rest["query_identity"] == page["query_identity"]
+        and rest["correspondence"][0]["left"] == 1
+    )
+    wrong = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + first["processing_id"],
+        params={
+            "project_id": corpus.project,
+            "compare_to": third["processing_id"],
+            "after": page["next_cursor"],
+        },
+    )
+    assert wrong.status_code == 409 and "CURSOR_INVALID" in wrong.text
+
+    review = corpus.run(
+        {
+            "action": "review_processing",
+            "processing_id": third["processing_id"],
+            "decisions": [
+                {
+                    "issue_id": missing["issue_id"],
+                    "resolution": "ANNOTATE_TOC_DIFFERENCE",
+                    "classification": "INSUFFICIENT",
+                    "evidence_refs": ["sha256:catalogue-B"],
+                    "reason": "Directory claims an absent chapter, retain blocking uncertainty",
+                }
+            ],
+            "reason": "annotation changes review evidence, not prose",
+        }
+    )
+    fourth = reprocess(different, "annotation-only-new-processing")
+    assert fourth["normalized_hash"] == third["normalized_hash"]
+    assert (
+        fourth["source_work_asset_version_id"] != third["source_work_asset_version_id"]
+    )
+    assert not fourth["assessment"]["structure_usable"]
+    assert any(i.get("annotations") for i in fourth["assessment"]["issues"])

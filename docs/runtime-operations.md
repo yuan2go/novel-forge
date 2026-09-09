@@ -667,3 +667,73 @@ fails explicitly at both preparation and atomic publication and requires inspect
 previous_id, decision ACCEPT/REJECT/REVOKE, evidence_refs and reason. Querying a pair returns
 its latest decision; it does not select a generation-authorized canonical representative.
 All responses are JSON; retain these and source receipts outside Git for audit.
+
+
+## Canonical works and curated analysis
+
+New imports use parser v3 (`config/corpus/chinese-longform-local.json`). For an old Edition,
+inspect its frozen `profile`, change parser version to `corpus-parser.v3` and normalization
+version to `chinese-longform.v2`, then use `reprocess`. Acquisition bytes are reused; do not
+invent another source. Failed terminal jobs remain terminal: a corrected input requires a
+new run key. Store operator exports outside Git.
+
+`compare` and `discover` return bounded JSON pages. Pass their `next_cursor` to `--after`;
+comparison cursors are inside `comparison`. A changed target/review/catalog returns a stale
+cursor error. `discover --historical` explicitly includes historical processing. Scores
+and a page of candidates are not global Top K or an automatic equivalence decision.
+
+Scoped review adds `CONFIRM_LEGITIMATE_REPETITION`, `CONFIRM_TOC_VARIANT` and
+`ANNOTATE_TOC_DIFFERENCE`; each requires `classification`, `evidence_refs` and a reason.
+The first two apply only to their specific located issues. Missing chapter content cannot
+be accepted as a title variant. Annotation retains blocking uncertainty. Excluding a
+verified title-only duplicate with `MARK_NON_BODY` requires reprocessing and retains raw
+bytes; do not exclude a spine-leading prose continuation as publisher framing.
+
+This native CLI sequence derives internal identities from command results. It assumes an
+already imported, inspected Edition whose current rights explicitly permit SOURCE_ANALYSIS;
+the default local-processing example intentionally does not grant that use. `jq` is used
+only to construct typed operator requests. Set the title/evidence to the actual inspected
+source; these are operator identity decisions, not model inferences.
+
+```bash
+novel-forge corpus inspect --project-id "$PROJECT" --edition-id "$EDITION" > /tmp/processing.json
+jq --arg title "$TITLE" --arg evidence "$SOURCE_EVIDENCE" '
+ {action:"resolve_canonical_works", reason:"Explicit source identity resolution",
+  changes:[{work_key:.edition_id,title:$title,language:"zh",metadata_evidence:[$evidence],
+  members:[{processing_id:.processing_id,relation:"SAME_WORK",evidence_refs:[$evidence]}]}]}'  /tmp/processing.json > /tmp/work-decision.json
+novel-forge corpus resolve-work --project-id "$PROJECT" --workspace-id "$WORKSPACE"  --decision /tmp/work-decision.json --run-key "$RUN-work" > /tmp/work-result.json
+jq -n --slurpfile work /tmp/work-result.json '{action:"revise_curated_corpus",
+ corpus_key:"selected-research",title:"Inspected research subset",purpose:"RESEARCH",
+ filters:{work_ids:[$work[0].revisions[0].work_id]},reason:"Inspect exact members"}' > /tmp/curate.json
+novel-forge corpus curate --project-id "$PROJECT" --workspace-id "$WORKSPACE"  --decision /tmp/curate.json --run-key "$RUN-candidates" > /tmp/candidates.json
+novel-forge corpus curated --project-id "$PROJECT"  --corpus-id "$(jq -r .corpus_id /tmp/candidates.json)"
+```
+
+After examining availability, explicitly choose a member; a blocked member fails freeze.
+Keep unselected members in the candidate manifest rather than silently skipping them.
+
+```bash
+jq --slurpfile c /tmp/candidates.json --slurpfile p /tmp/processing.json  --arg evidence "$SELECTION_EVIDENCE" '. + {previous_id:$c[0].revision_id,state:"FROZEN",
+ choices:[{processing_id:$p[0].processing_id,selected:true,reason:"Scoped selection reviewed",
+ evidence_refs:[$evidence]}]}' /tmp/curate.json > /tmp/freeze.json
+novel-forge corpus curate --project-id "$PROJECT" --workspace-id "$WORKSPACE"  --decision /tmp/freeze.json --run-key "$RUN-freeze" > /tmp/frozen.json
+novel-forge corpus analyze --project-id "$PROJECT"  --revision-id "$(jq -r .revision_id /tmp/frozen.json)" --run-key "$RUN-analysis"  --limit 1 --max-calls "$AUTHORIZED_CALLS" --max-tokens "$AUTHORIZED_TOKENS"  --authorization-ref "$AUTHORIZATION_REF" > /tmp/analysis-job.json
+novel-forge corpus run --project-id "$PROJECT"  --job-id "$(jq -r .import_job_id /tmp/analysis-job.json)" --max-stages 50
+```
+
+The analysis commands require explicitly authorized model execution and current Provider
+configuration; credentials/subscriptions alone are insufficient. Mock transport proves
+engineering only. Inspect `status`, `/work` and receipts for each stage and failure;
+`SOURCE_ANALYSIS_SCHEDULED` does not mean analysis or MKAOS approval succeeded. Curated runs
+retain per-member terminal failures while attempting other eligible members. Same-key
+requests replay the original job; changing budget/policy/members under that key is rejected.
+Current selection changes stop new worker/Provider execution; committed results remain
+replayable. Use `pause`, `resume`, `cancel` and `run --job-id` on the original job.
+
+HTTP equivalents are Source corpus commands (`resolve_canonical_works`, `declare_relation`,
+`revise_curated_corpus`), GET `/product/source-imports/corpus/catalog/{work|curated}/{identity}`
+with project and optional `revision=true`, and POST `/product/source-imports/corpus/analyze`.
+Work and curated corrections use exact `previous_id`; inspect before submitting another
+revision. To split/merge groups, submit all affected complete memberships in one command.
+Retired groups keep their historical revisions. Rights, Benchmark labels, processing issues
+and knowledge approvals remain independent for every source Edition.

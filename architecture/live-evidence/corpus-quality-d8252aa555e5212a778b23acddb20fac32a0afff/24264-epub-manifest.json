@@ -1,0 +1,47 @@
+{
+  "source": {
+    "kind": "LOCAL",
+    "location": "/tmp/nf-corpus-wp3c-20260909/public/24264.epub"
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "epub",
+    "encoding": "utf-8",
+    "constants": {
+      "work_id": "gutenberg:24264",
+      "work_title": "紅樓夢",
+      "author": "曹雪芹"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "min_body_chars": 80,
+      "work_completion": "UNKNOWN",
+      "external_work_ids": [
+        "gutenberg:24264"
+      ]
+    },
+    "completeness": "UNKNOWN"
+  },
+  "budget": {
+    "max_files": 400
+  },
+  "purpose": "RESEARCH",
+  "rights": {
+    "dataset_license": "Project Gutenberg License",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "underlying_rights": "PUBLIC_DOMAIN",
+    "allowed_purposes": [
+      "RESEARCH"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING",
+      "SOURCE_ANALYSIS"
+    ],
+    "evidence_refs": [
+      "https://www.gutenberg.org/ebooks/24264#bibrec",
+      "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1"
+    ],
+    "copyright_boundary": "Historical Chinese work; Gutenberg catalogue declares US public domain. Isolated research; no prose generation permission inferred."
+  },
+  "analyze": false
+}

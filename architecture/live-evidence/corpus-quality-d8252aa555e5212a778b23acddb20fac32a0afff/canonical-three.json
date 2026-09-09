@@ -1,0 +1,77 @@
+{
+  "action": "resolve_canonical_works",
+  "changes": [
+    {
+      "work_key": "gutenberg-23950",
+      "title": "三國志演義",
+      "language": "zh",
+      "external_ids": {
+        "gutenberg": "23950"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/ebooks/23950"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:767f0bd4f46e073584c7f1058432acccc698d9c2d8737bfd9a34c9d02d981504",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/ebooks/23950",
+            "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d"
+          ]
+        }
+      ]
+    },
+    {
+      "work_key": "gutenberg-23962",
+      "title": "西遊記",
+      "language": "zh",
+      "external_ids": {
+        "gutenberg": "23962"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/ebooks/23962"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:7dfb333341bf6c839e3cc2fc1996f0955695f92282b0089926e44f7f29a8dc61",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/ebooks/23962",
+            "sha256:af3c9e408c0c58595b666ed9981b6fa1e9343f4bbc78309b1cb0818c32fc1f58"
+          ]
+        }
+      ]
+    },
+    {
+      "work_key": "gutenberg-24264",
+      "title": "紅樓夢",
+      "language": "zh",
+      "external_ids": {
+        "gutenberg": "24264"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/ebooks/24264"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:667fa473bd20c8b27b5ebce5166f1d37de9fe1e0cf7a0180860808a817188f0c",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/ebooks/24264",
+            "sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:6555f94c8ebd5da50e96198139bdf59a5ad71745d65080306e22135a91d78629",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/ebooks/24264",
+            "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1"
+          ]
+        }
+      ]
+    }
+  ],
+  "reason": "Explicit same publisher work identifiers; format variants do not claim independent sites or rights"
+}

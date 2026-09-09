@@ -1,0 +1,62 @@
+{
+  "action": "revise_curated_corpus",
+  "corpus_key": "chinese-classics-research",
+  "title": "中文长篇研究子集",
+  "purpose": "RESEARCH",
+  "previous_id": "corpus-curated-revision:39fc53fd19b814b62d8e9adc8bb6a94faf99fac1b8be113c9f30b487c91dea13",
+  "filters": {
+    "language": "zh"
+  },
+  "reason": "Refresh exact group revisions; retain unselected independent excerpts and blocked sources",
+  "state": "FROZEN",
+  "choices": [
+    {
+      "processing_id": "corpus-processing:6555f94c8ebd5da50e96198139bdf59a5ad71745d65080306e22135a91d78629",
+      "selected": false,
+      "reason": "Explicitly exclude unresolved structure or excerpt-only acquisition",
+      "evidence_refs": [
+        "processing:corpus-processing:6555f94c8ebd5da50e96198139bdf59a5ad71745d65080306e22135a91d78629"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:b5dda7a1b02e07a5dacc24b6969a959feeed59b8690a5b62e134b4119f96f89b",
+      "selected": false,
+      "reason": "Explicitly exclude unresolved structure or excerpt-only acquisition",
+      "evidence_refs": [
+        "processing:corpus-processing:b5dda7a1b02e07a5dacc24b6969a959feeed59b8690a5b62e134b4119f96f89b"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:7dfb333341bf6c839e3cc2fc1996f0955695f92282b0089926e44f7f29a8dc61",
+      "selected": true,
+      "reason": "Retain scoped full-source research sample",
+      "evidence_refs": [
+        "processing:corpus-processing:7dfb333341bf6c839e3cc2fc1996f0955695f92282b0089926e44f7f29a8dc61"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:767f0bd4f46e073584c7f1058432acccc698d9c2d8737bfd9a34c9d02d981504",
+      "selected": false,
+      "reason": "Explicitly exclude unresolved structure or excerpt-only acquisition",
+      "evidence_refs": [
+        "processing:corpus-processing:767f0bd4f46e073584c7f1058432acccc698d9c2d8737bfd9a34c9d02d981504"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:667fa473bd20c8b27b5ebce5166f1d37de9fe1e0cf7a0180860808a817188f0c",
+      "selected": true,
+      "reason": "Retain scoped full-source research sample",
+      "evidence_refs": [
+        "processing:corpus-processing:667fa473bd20c8b27b5ebce5166f1d37de9fe1e0cf7a0180860808a817188f0c"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:76b147f8d01aa15c0d216336463cb4711d4d29fba6f2e89ce1c02cc292a12e6d",
+      "selected": false,
+      "reason": "Explicitly exclude unresolved structure or excerpt-only acquisition",
+      "evidence_refs": [
+        "processing:corpus-processing:76b147f8d01aa15c0d216336463cb4711d4d29fba6f2e89ce1c02cc292a12e6d"
+      ]
+    }
+  ]
+}

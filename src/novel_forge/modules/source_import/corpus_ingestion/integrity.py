@@ -42,7 +42,12 @@ def assess_integrity(
         issues.append(issue("RELIABLE_BOUNDARIES_MISSING", rows[:1]))
     previous: dict[str, int] = {}
     seen: set[tuple[str, int]] = set()
-    titles = Counter(r["title"] for r in chapters)
+    titles = Counter(
+        (r["volume"], r["title"])
+        if parser.version == "corpus-parser.v3"
+        else r["title"]
+        for r in chapters
+    )
     metadata_rows = {(r["work_title"], r["author"]): r for r in rows}
     if len(metadata_rows) > 1:
         issues.append(issue("WORK_METADATA_CONFLICT", list(metadata_rows.values())[:2]))
@@ -64,6 +69,8 @@ def assess_integrity(
             if separator and first_line.strip() == row["title"]
             else row["text"]
         )
+        if "confirmed_heading_chars" in row:
+            body = row["text"][row["confirmed_heading_chars"] :]
         if len(body.strip()) < profile.min_body_chars:
             issues.append(issue("SHORT_OR_TOC_UNIT", [row]))
         n = row.get("declared_number", row["order"])
@@ -75,7 +82,14 @@ def assess_integrity(
                 issues.append(issue("MISSING_OR_UNORDERED_CHAPTER", [row]))
             seen.add((volume, n))
             previous[volume] = n
-        if titles[row["title"]] > 1:
+        if (
+            titles[
+                (row["volume"], row["title"])
+                if parser.version == "corpus-parser.v3"
+                else row["title"]
+            ]
+            > 1
+        ):
             issues.append(issue("DUPLICATE_TITLE", [row]))
     expected = list(profile.expected_toc)
     actual = [r["title"] for r in chapters]

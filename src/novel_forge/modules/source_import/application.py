@@ -241,7 +241,6 @@ class ApplyReprocessingPlanCommand:
 
 
 class SourceImportApplication:
-
     def __init__(
         self,
         database_url: str,
@@ -299,6 +298,7 @@ class SourceImportApplication:
 
     def create_corpus_import(self, **kwargs: Any) -> dict[str, Any]:
         from .corpus_ingestion.runtime import CorpusIngestionRuntime
+
         return CorpusIngestionRuntime(self).create(**kwargs)
 
     def create_import(
@@ -544,7 +544,8 @@ class SourceImportApplication:
                 project_id=project_id, import_job_id=import_job_id
             )
             operation_ids = (
-                [str(job["discovery_operation_id"])] if job["mode"] == "FOUNDATION"
+                [str(job["discovery_operation_id"])]
+                if job["mode"] == "FOUNDATION"
                 else [str(item["operation_id"]) for item in work]
             )
             uow.cursor.execute(
@@ -579,11 +580,16 @@ class SourceImportApplication:
                     "terminal Source import work cannot be mutated; create a new import "
                     "request so completed assets are reused",
                 )
-            if resumable and job["mode"] != "FOUNDATION" and job["status"] in {
-                "FAILED_RETRYABLE",
-                "PARTIALLY_COMPLETED",
-                "PROCESSING",
-            }:
+            if (
+                resumable
+                and job["mode"] != "FOUNDATION"
+                and job["status"]
+                in {
+                    "FAILED_RETRYABLE",
+                    "PARTIALLY_COMPLETED",
+                    "PROCESSING",
+                }
+            ):
                 repository.transition_job(
                     project_id=project_id,
                     import_job_id=import_job_id,
@@ -605,12 +611,10 @@ class SourceImportApplication:
             attempt = uow.repositories.attempt_runtime.get_for_update(
                 worker.attempt_id, worker.project_id
             )
-            valid, _current_token = (
-                uow.repositories.attempt_runtime.current_fence(
-                    worker.attempt_id,
-                    worker.worker_id,
-                    worker.fencing_token,
-                )
+            valid, _current_token = uow.repositories.attempt_runtime.current_fence(
+                worker.attempt_id,
+                worker.worker_id,
+                worker.fencing_token,
             )
             if not valid:
                 raise KernelError(
@@ -649,7 +653,11 @@ class SourceImportApplication:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 effect = uow.repositories.external_effects.get_for_update(effect_id)
             adapter: Any | None = None
-            for candidate in (self.git_adapter, self.object_store_adapter, self.corpus_adapter):
+            for candidate in (
+                self.git_adapter,
+                self.object_store_adapter,
+                self.corpus_adapter,
+            ):
                 if candidate is not None and str(candidate.provider) == str(
                     effect["provider"]
                 ):
@@ -786,12 +794,23 @@ class SourceImportApplication:
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         definition = self._operation_definition(worker.causation_id, worker.project_id)
+        if definition == "source.import.corpus.analysis":
+            from .corpus_ingestion.curated_analysis import execute_curated_analysis
+            from .corpus_ingestion.runtime import CorpusIngestionRuntime
+
+            return execute_curated_analysis(CorpusIngestionRuntime(self), worker)
         if definition in {"source.import.corpus.acquire", "source.import.corpus.work"}:
             from .corpus_ingestion.runtime import CorpusIngestionRuntime
+
             runtime = CorpusIngestionRuntime(self)
             from .corpus_ingestion.contracts import IngestionFailure
+
             try:
-                return runtime.acquire(worker) if definition.endswith("acquire") else runtime.process_work(worker)
+                return (
+                    runtime.acquire(worker)
+                    if definition.endswith("acquire")
+                    else runtime.process_work(worker)
+                )
             except IngestionFailure as exc:
                 raise KernelError(exc.reason, str(exc)) from exc
             except (UnicodeError, json.JSONDecodeError) as exc:
@@ -1756,9 +1775,7 @@ class SourceImportApplication:
                 project_id=worker.project_id,
                 snapshot_asset_version_id=snapshot_id,
             )
-        selected = tuple(
-            row for row in rows if str(row["status"]) != "REMOVED"
-        )
+        selected = tuple(row for row in rows if str(row["status"]) != "REMOVED")
         if not selected:
             raise KernelError(
                 "SOURCE_WORK_INPUT_MISSING",
@@ -1797,9 +1814,7 @@ class SourceImportApplication:
             project_id=worker.project_id,
             workspace_id=str(job["workspace_id"]),
             actor_id=self.worker_id,
-            idempotency_key=(
-                f"source.import.work:{job['import_job_id']}:{stable_key}"
-            ),
+            idempotency_key=(f"source.import.work:{job['import_job_id']}:{stable_key}"),
             trace_id=worker.trace_id,
             correlation_id=worker.correlation_id,
             causation_id=worker.causation_id,
@@ -1989,9 +2004,7 @@ class SourceImportApplication:
             scope_kind="FILE_DOCUMENT",
             source_document_id=source_document_id,
             source_transform_id=transform_id,
-            source_chunk_asset_version_ids=tuple(
-                str(row[2]) for row in rows
-            ),
+            source_chunk_asset_version_ids=tuple(str(row[2]) for row in rows),
             boundary_policy_version=policy.logical_document_policy_version,
             label=f"governed file document {source_document_id}",
         )
@@ -2140,9 +2153,7 @@ class SourceImportApplication:
                 project_id=worker.project_id,
                 snapshot_asset_version_id=str(snapshot["asset_version_id"]),
             )
-            selected = tuple(
-                row for row in files if str(row["status"]) != "REMOVED"
-            )
+            selected = tuple(row for row in files if str(row["status"]) != "REMOVED")
             selected_manifest_hash = corpus_canonical_hash(
                 [
                     {
@@ -2308,9 +2319,7 @@ class SourceImportApplication:
                     f"{snapshot['repository_url']}@"
                     f"{snapshot['resolved_commit_sha']}#{spec.work_key}"
                 ),
-                rights_authorization=str(
-                    job["source_locator"]["rights_authorization"]
-                ),
+                rights_authorization=str(job["source_locator"]["rights_authorization"]),
                 license_name=str(job["source_locator"].get("license_name") or ""),
                 copyright_boundary=str(
                     job["source_locator"].get("copyright_boundary") or ""
@@ -2406,9 +2415,7 @@ class SourceImportApplication:
             "normalized_blob_id": normalized_blob_id,
             "manifest_hash": parsed.manifest_hash,
             "unit_count": len(parsed.units),
-            "body_unit_count": sum(
-                item.status == "AVAILABLE" for item in parsed.units
-            ),
+            "body_unit_count": sum(item.status == "AVAILABLE" for item in parsed.units),
             "character_count": parsed.normalized.character_count,
             "diagnostics": parsed.diagnostics,
             "provider_tokens": 0,
@@ -2513,8 +2520,14 @@ class SourceImportApplication:
                 "format": "source-work-raw-bundle.v1",
             },
             "lineage": {
-                "repository_snapshot_asset_version_id": snapshot.get("asset_version_id"),
-                **({"corpus_edition_id": snapshot["corpus_edition_id"]} if snapshot.get("corpus_edition_id") else {}),
+                "repository_snapshot_asset_version_id": snapshot.get(
+                    "asset_version_id"
+                ),
+                **(
+                    {"corpus_edition_id": snapshot["corpus_edition_id"]}
+                    if snapshot.get("corpus_edition_id")
+                    else {}
+                ),
                 "source_document_id": str(source_result["source_document_id"]),
                 "source_document_asset_version_id": str(
                     source_result["asset_version_id"]
@@ -2529,7 +2542,8 @@ class SourceImportApplication:
             uow.cursor.execute(
                 """
                 SELECT work.source_work_id, version.asset_version_id,
-                       work_version.manifest_hash
+                       work_version.manifest_hash, work_version.source_document_id,
+                       work_version.source_transform_id
                 FROM authority_source_work AS work
                 JOIN authority_source_work_version AS work_version
                   ON work_version.source_work_id=work.source_work_id
@@ -2543,18 +2557,27 @@ class SourceImportApplication:
                 [worker.project_id, spec.work_key],
             )
             current = uow.cursor.fetchone()
-            if current is not None and str(current[2]) == parsed.manifest_hash:
+            if (
+                current is not None
+                and str(current[2]) == parsed.manifest_hash
+                and str(current[3]) == str(source_result["source_document_id"])
+                and str(current[4]) == str(transform["source_transform_id"])
+            ):
                 return {
                     "source_work_id": str(current[0]),
                     "source_work_asset_version_id": str(current[1]),
                     "source_work_version_reused": True,
                     "invalidated_descendant_count": 0,
                 }
-            reference_version_ids = tuple(value for value in (
-                snapshot.get("asset_version_id"),
-                str(source_result["asset_version_id"]),
-                str(transform["asset_version_id"]),
-            ) if value)
+            reference_version_ids = tuple(
+                value
+                for value in (
+                    snapshot.get("asset_version_id"),
+                    str(source_result["asset_version_id"]),
+                    str(transform["asset_version_id"]),
+                )
+                if value
+            )
             uow.cursor.execute(
                 """
                 SELECT asset_id FROM authority_asset_version
@@ -2767,7 +2790,10 @@ class SourceImportApplication:
                 ("source.normalized_work_projection", 0, normalized_blob_id),
             ):
                 blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
-                if blob["project_id"] != worker.project_id or blob["status"] != "AVAILABLE":
+                if (
+                    blob["project_id"] != worker.project_id
+                    or blob["status"] != "AVAILABLE"
+                ):
                     raise KernelError(
                         "SOURCE_WORK_BLOB_UNAVAILABLE",
                         "SourceWork can only bind an AVAILABLE project Blob",
@@ -3756,6 +3782,7 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
+
         def restore_analyzer(value: Mapping[str, Any]) -> AnalyzerContract:
             return AnalyzerContract(
                 **{
@@ -3799,8 +3826,7 @@ class SourceImportApplication:
                 and current["analyzer_contract_hash"] == item.fingerprint
                 and current["analysis_plan_asset_version_id"]
                 == analysis_plan_asset_version_id
-                and current["methodology_content_hash"]
-                == item.methodology_content_hash
+                and current["methodology_content_hash"] == item.methodology_content_hash
             )
 
         if all(
@@ -3838,9 +3864,7 @@ class SourceImportApplication:
                             "dimension": item["dimension"],
                             "status": "SUCCEEDED",
                             "provider_status": "SUCCEEDED",
-                            "analyzer_contract_hash": item[
-                                "analyzer_contract_hash"
-                            ],
+                            "analyzer_contract_hash": item["analyzer_contract_hash"],
                             "observation_reused": True,
                             "validation_errors": [],
                         }
@@ -3848,28 +3872,20 @@ class SourceImportApplication:
                     ],
                     "coverage_acknowledgement": {
                         "scope_claim": (
-                            "FULL_WORK"
-                            if whole_work
-                            else "BOUNDED_STRATIFIED_SAMPLE"
+                            "FULL_WORK" if whole_work else "BOUNDED_STRATIFIED_SAMPLE"
                         ),
                         "uncovered_material_acknowledged": not whole_work,
                     },
-                    "sampling_manifest_hash": corpus_canonical_hash(
-                        sampling_manifest
-                    ),
+                    "sampling_manifest_hash": corpus_canonical_hash(sampling_manifest),
                     "provider_execution_reused": True,
                     "successful_dimension_count": len(reused_observations),
-                    "analysis_plan_asset_version_id": (
-                        analysis_plan_asset_version_id
-                    ),
+                    "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
                 }
             else:
                 reused_result = {
                     **reused_observations[0],
                     "provider_execution_reused": True,
-                    "analysis_plan_asset_version_id": (
-                        analysis_plan_asset_version_id
-                    ),
+                    "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
                 }
             with AuthorityUnitOfWork(self.database_url) as uow:
                 SourceImportRepository(uow.cursor).update_work(
@@ -3933,7 +3949,9 @@ class SourceImportApplication:
             for dimension_result in executed["dimension_results"]:
                 if dimension_result["status"] != "SUCCEEDED":
                     continue
-                item_analyzer = analyzer_by_dimension[str(dimension_result["dimension"])]
+                item_analyzer = analyzer_by_dimension[
+                    str(dimension_result["dimension"])
+                ]
                 observation = self.source_authority.execute_observation(
                     CommitDeconstructionObservationCommand(
                         project_id=worker.project_id,
@@ -3954,17 +3972,13 @@ class SourceImportApplication:
                         ),
                         trace_id=worker.trace_id,
                         correlation_id=worker.correlation_id,
-                        analysis_plan_asset_version_id=(
-                            analysis_plan_asset_version_id
-                        ),
+                        analysis_plan_asset_version_id=(analysis_plan_asset_version_id),
                     )
                 )
                 observation_results.append(
                     {
                         "observation_id": observation["observation_id"],
-                        "observation_asset_version_id": observation[
-                            "asset_version_id"
-                        ],
+                        "observation_asset_version_id": observation["asset_version_id"],
                         "execution_asset_version_id": executed[
                             "execution_asset_version_id"
                         ],
@@ -3991,18 +4005,14 @@ class SourceImportApplication:
                 "provider_execution_reused": bool(
                     executed.get("provider_execution_reused")
                 ),
-                "coverage_acknowledgement": executed[
-                    "coverage_acknowledgement"
-                ],
+                "coverage_acknowledgement": executed["coverage_acknowledgement"],
                 "sampling_manifest_hash": executed["sampling_manifest_hash"],
                 "successful_dimension_count": len(observation_results),
                 "failed_dimension_count": sum(
-                    item["status"] == "FAILED_VALIDATION"
-                    for item in dimension_results
+                    item["status"] == "FAILED_VALIDATION" for item in dimension_results
                 ),
                 "not_applicable_dimension_count": sum(
-                    item["status"] == "NOT_APPLICABLE"
-                    for item in dimension_results
+                    item["status"] == "NOT_APPLICABLE" for item in dimension_results
                 ),
                 "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
             }
@@ -4040,9 +4050,7 @@ class SourceImportApplication:
                     ),
                     "analyzer_id": analyzer.analyzer_id,
                     "analyzer_contract_hash": analyzer.fingerprint,
-                    "analysis_plan_asset_version_id": (
-                        analysis_plan_asset_version_id
-                    ),
+                    "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
                 }
             ]
             result = observation_results[0]
@@ -4057,9 +4065,7 @@ class SourceImportApplication:
             )
             uow.commit()
         for observation_result in observation_results:
-            self._admit_mkaos_child(
-                worker, job, observation_result, payload=payload
-            )
+            self._admit_mkaos_child(worker, job, observation_result, payload=payload)
         with AuthorityUnitOfWork(self.database_url) as uow:
             SourceImportRepository(uow.cursor).update_work(
                 project_id=worker.project_id,
@@ -4840,7 +4846,9 @@ class SourceImportApplication:
         adapter = SourceImportObjectStoreAdapter(
             self.object_store_adapter, content=content
         )
-        content_size = content.stat().st_size if isinstance(content, Path) else len(content)
+        content_size = (
+            content.stat().st_size if isinstance(content, Path) else len(content)
+        )
         digest = content_hash.removeprefix("sha256:")
         object_key = f"source-import/{worker.project_id}/{purpose}/{digest}"
         context = AssetCommandContext(
@@ -4866,7 +4874,10 @@ class SourceImportApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
         if blob["status"] == "AVAILABLE":
-            if blob["actual_hash"] != content_hash or int(blob["actual_size"]) != content_size:
+            if (
+                blob["actual_hash"] != content_hash
+                or int(blob["actual_size"]) != content_size
+            ):
                 raise KernelError(
                     "SOURCE_IMPORT_BLOB_REUSE_CONFLICT",
                     "content-addressed Blob has a different verified identity",
@@ -5153,7 +5164,9 @@ class SourceImportApplication:
         reason: str,
     ) -> None:
         with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, project_id
+            )
             if state["status"] == "ADMITTED":
                 transition_operation(
                     self.database_url,
@@ -5336,10 +5349,11 @@ class SourceImportApplication:
         estimated_bytes = sum(int(row["size_bytes"]) for row in fetch_rows)
         estimated_chunks = max(
             int(bool(fetch_rows)),
-            (estimated_bytes + policy.max_chunk_bytes - 1)
-            // policy.max_chunk_bytes,
+            (estimated_bytes + policy.max_chunk_bytes - 1) // policy.max_chunk_bytes,
         )
-        estimated_tokens = sum(max(1, int(row["size_bytes"]) // 3) for row in fetch_rows)
+        estimated_tokens = sum(
+            max(1, int(row["size_bytes"]) // 3) for row in fetch_rows
+        )
         return {
             "files_discovered": len(rows),
             "repository_tree_entries": (

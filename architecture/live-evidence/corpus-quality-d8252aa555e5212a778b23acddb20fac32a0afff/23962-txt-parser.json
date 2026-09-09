@@ -1,0 +1,19 @@
+{
+  "version": "corpus-parser.v3",
+  "format": "txt",
+  "encoding": "utf-8-sig",
+  "constants": {
+    "work_id": "gutenberg:23962",
+    "work_title": "西遊記",
+    "author": "吳承恩"
+  },
+  "normalization": {
+    "version": "chinese-longform.v2",
+    "min_body_chars": 80,
+    "work_completion": "UNKNOWN",
+    "external_work_ids": [
+      "gutenberg:23962"
+    ]
+  },
+  "completeness": "UNKNOWN"
+}

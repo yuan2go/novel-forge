@@ -4,7 +4,7 @@
     "location": "examples/sample_inputs/corpus-chinese-structure.txt"
   },
   "parser": {
-    "version": "corpus-parser.v2",
+    "version": "corpus-parser.v3",
     "format": "txt",
     "encoding": "utf-8-sig",
     "constants": {
@@ -13,7 +13,7 @@
     },
     "completeness": "UNKNOWN",
     "normalization": {
-      "version": "chinese-longform.v1",
+      "version": "chinese-longform.v2",
       "segmentation": "CHINESE_HEADINGS",
       "min_body_chars": 80
     }

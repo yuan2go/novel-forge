@@ -1,0 +1,54 @@
+{
+  "source": {
+    "kind": "LOCAL",
+    "location": "/tmp/nf-corpus-wp3c-20260909/public/sanguo-wikisource-excerpt.html"
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "html",
+    "layout": "SINGLE_WORK",
+    "html_body_selector": ".mw-parser-output",
+    "html_remove_selectors": [
+      "script",
+      "style",
+      "nav",
+      "table.ws-header",
+      "#headerContainer",
+      ".ws-noexport",
+      ".licenseContainer",
+      ".printfooter"
+    ],
+    "constants": {
+      "work_id": "wikisource:三國演義",
+      "work_title": "三國演義",
+      "author": "羅貫中",
+      "chapter_id": "1",
+      "order": 1,
+      "title": "第一回 宴桃園豪傑三結義 斬黃巾英雄首立功"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "EXPLICIT",
+      "min_body_chars": 80
+    },
+    "completeness": "EXCERPT"
+  },
+  "purpose": "RESEARCH",
+  "rights": {
+    "dataset_license": "Wikisource CC BY-SA / underlying public-domain text; annotations not automatically cleared",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "underlying_rights": "PUBLIC_DOMAIN",
+    "allowed_purposes": [
+      "RESEARCH"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING"
+    ],
+    "evidence_refs": [
+      "https://zh.wikisource.org/w/index.php?title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9/%E7%AC%AC001%E5%9B%9E&oldid=2583915",
+      "sha256:dcb622bf5aee90cdad173714c2c33a0d219b2efa313bc86ee68a8a0aee42b0fd"
+    ],
+    "copyright_boundary": "Historical prose excerpt only; no model-analysis or generation authorization from this acquisition."
+  },
+  "analyze": false
+}

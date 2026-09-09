@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 from typing import Any
+from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
+    CuratedAnalysisRequest,
+    admit_curated_analysis,
+)
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
-from novel_forge.modules.source_import.corpus_ingestion.contracts import IngestionManifest, ParserProfile
+from novel_forge.modules.source_import.corpus_ingestion.contracts import (
+    IngestionManifest,
+    ParserProfile,
+)
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.models import (
@@ -47,22 +54,75 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
 
+    @router.post("/corpus/analyze", status_code=202)
+    def analyze_curated(request: CuratedAnalysisRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return admit_curated_analysis(application, request, principal)
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/corpus/catalog/{kind}/{identity}")
+    def inspect_catalog(
+        kind: str, identity: str, project_id: str, revision: bool = False
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_catalog(
+                project_id=project_id,
+                kind=kind,
+                identity=identity,
+                revision=revision,
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
     @router.post("/corpus/reprocess", status_code=202)
     def reprocess_corpus(request: CorpusReprocessRequest) -> dict[str, Any]:
-        from novel_forge.modules.source_import.corpus_ingestion.runtime import CorpusIngestionRuntime
-        from novel_forge.modules.source_import.corpus_ingestion.reprocessing import admit_reprocessing
-        principal = _authorize("source.authority.execute",request.project_id)
+        from novel_forge.modules.source_import.corpus_ingestion.runtime import (
+            CorpusIngestionRuntime,
+        )
+        from novel_forge.modules.source_import.corpus_ingestion.reprocessing import (
+            admit_reprocessing,
+        )
+
+        principal = _authorize("source.authority.execute", request.project_id)
         try:
-            return admit_reprocessing(CorpusIngestionRuntime(application), **request.model_dump(exclude={"parser"}), parser=request.parser, principal=principal)
+            return admit_reprocessing(
+                CorpusIngestionRuntime(application),
+                **request.model_dump(exclude={"parser"}),
+                parser=request.parser,
+                principal=principal,
+            )
         except (KernelError, ValueError) as exc:
             raise _http_error(exc) from exc
 
     @router.get("/corpus/processing/{identity}")
-    def corpus_processing(identity: str, project_id: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = Query(default=20,ge=1,le=100)) -> dict[str, Any]:
-        principal = _authorize("source.authority.query",project_id)
+    def corpus_processing(
+        identity: str,
+        project_id: str,
+        edition: bool = False,
+        compare_to: str = "",
+        discover: bool = False,
+        limit: int = Query(default=20, ge=1, le=100),
+        after: str = "",
+        historical: bool = False,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
         try:
-            return query.corpus_processing(project_id=project_id,identity=identity,edition=edition,compare_to=compare_to,discover=discover,limit=limit,principal=principal)
-        except (KernelError,ValueError) as exc:
+            return query.corpus_processing(
+                project_id=project_id,
+                identity=identity,
+                edition=edition,
+                compare_to=compare_to,
+                discover=discover,
+                limit=limit,
+                after=after,
+                historical=historical,
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
             raise _http_error(exc) from exc
 
     @router.post("/corpus", status_code=202)
@@ -76,9 +136,18 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def _corpus(request: CorpusIngestionRequest, mode: str) -> dict[str, Any]:
         principal = _authorize("source.authority.execute", request.project_id)
         try:
-            return application.create_corpus_import(project_id=request.project_id, workspace_id=request.workspace_id,
-                manifest=request.manifest, mode=mode, run_key=request.run_key, actor_id=principal.principal_id,
-                principal=principal, intelligence_policy=SourceIntelligencePolicy(**request.intelligence_policy))
+            return application.create_corpus_import(
+                project_id=request.project_id,
+                workspace_id=request.workspace_id,
+                manifest=request.manifest,
+                mode=mode,
+                run_key=request.run_key,
+                actor_id=principal.principal_id,
+                principal=principal,
+                intelligence_policy=SourceIntelligencePolicy(
+                    **request.intelligence_policy
+                ),
+            )
         except (KernelError, ValueError) as exc:
             raise _http_error(exc) from exc
 
@@ -179,10 +248,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise _http_error(exc, not_found=True) from exc
 
     @router.get("/{import_job_id}/corpus-lineage")
-    def corpus_lineage(import_job_id: str, project_id: str, after: str = "", limit: int = Query(default=100, ge=1, le=100)) -> dict[str, Any]:
+    def corpus_lineage(
+        import_job_id: str,
+        project_id: str,
+        after: str = "",
+        limit: int = Query(default=100, ge=1, le=100),
+    ) -> dict[str, Any]:
         principal = _authorize("source.authority.query", project_id)
         try:
-            return query.corpus_lineage(project_id=project_id, import_job_id=import_job_id, after=after, limit=limit, principal=principal)
+            return query.corpus_lineage(
+                project_id=project_id,
+                import_job_id=import_job_id,
+                after=after,
+                limit=limit,
+                principal=principal,
+            )
         except KernelError as exc:
             raise _http_error(exc, not_found=True) from exc
 
@@ -223,9 +303,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise _http_error(exc, not_found=True) from exc
 
     @router.get("/{import_job_id}/source-work")
-    def source_work_manifest(
-        import_job_id: str, project_id: str
-    ) -> dict[str, Any]:
+    def source_work_manifest(import_job_id: str, project_id: str) -> dict[str, Any]:
         principal = _authorize("source.authority.query", project_id)
         try:
             return query.source_work_manifest(

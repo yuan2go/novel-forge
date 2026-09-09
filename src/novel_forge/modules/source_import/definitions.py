@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-SOURCE_IMPORT_DEFINITION_VERSION = "1.3.4"
+SOURCE_IMPORT_DEFINITION_VERSION = "1.4.0"
 SOURCE_IMPORT_OPERATION_TIMEOUT_SECONDS = 900
 SOURCE_IMPORT_PROFILING_QUEUE_TIMEOUT_SECONDS = 14_400
 SOURCE_IMPORT_DISCOVERY_OPERATION = "source.import.repository.discover"
@@ -30,6 +30,7 @@ SOURCE_IMPORT_OPERATIONS = frozenset(
         SOURCE_IMPORT_DISCOVERY_OPERATION,
         "source.import.corpus.acquire",
         "source.import.corpus.work",
+        "source.import.corpus.analysis",
         SOURCE_IMPORT_FILE_OPERATION,
         SOURCE_IMPORT_WORK_OPERATION,
         SOURCE_IMPORT_PROFILING_OPERATION,
@@ -95,8 +96,24 @@ def source_import_definitions(
         },
     }
     rows = (
-        ("source.import.corpus.acquire", "novel_forge.source_import.corpus_acquire", "corpus-acquire:{project_id}", ["source.remote.fetch", "object_store.put"]),
-        ("source.import.corpus.work", "novel_forge.source_import.corpus_work", "corpus-work:{project_id}", ["object_store.put"]),
+        (
+            "source.import.corpus.analysis",
+            "novel_forge.source_import.corpus_analysis",
+            "corpus-analysis:{project_id}",
+            [],
+        ),
+        (
+            "source.import.corpus.acquire",
+            "novel_forge.source_import.corpus_acquire",
+            "corpus-acquire:{project_id}",
+            ["source.remote.fetch", "object_store.put"],
+        ),
+        (
+            "source.import.corpus.work",
+            "novel_forge.source_import.corpus_work",
+            "corpus-work:{project_id}",
+            ["object_store.put"],
+        ),
         (
             SOURCE_IMPORT_DISCOVERY_OPERATION,
             SOURCE_IMPORT_DISCOVERY_HANDLER,

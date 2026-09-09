@@ -91,7 +91,15 @@ class SourceBoundary(CorpusContract):
 
 
 class NormalizationProfile(CorpusContract):
-    version: Literal["chinese-longform.v1"] = "chinese-longform.v1"
+    version: Literal["chinese-longform.v1", "chinese-longform.v2"] = "chinese-longform.v1"
+    duplicate_body_min_chars: int = Field(default=128, ge=32, le=10000)
+
+    @model_serializer(mode="wrap")
+    def frozen_profile(self, handler: Any) -> dict[str, Any]:
+        result = handler(self)
+        if self.version == "chinese-longform.v1":
+            result.pop("duplicate_body_min_chars", None)
+        return result
     unicode_form: Literal["NFC", "NONE"] = "NFC"
     segmentation: Literal["EXPLICIT", "CHINESE_HEADINGS"] = "CHINESE_HEADINGS"
     heading_max_chars: int = Field(default=100, ge=8, le=200)
@@ -112,7 +120,7 @@ class NormalizationProfile(CorpusContract):
 
 
 class ParserProfile(CorpusContract):
-    version: Literal["corpus-parser.v1", "corpus-parser.v2"] = "corpus-parser.v1"
+    version: Literal["corpus-parser.v1", "corpus-parser.v2", "corpus-parser.v3"] = "corpus-parser.v1"
     normalization: NormalizationProfile | None = None
 
     @model_serializer(mode="wrap")
@@ -148,10 +156,16 @@ class ParserProfile(CorpusContract):
 
     @model_validator(mode="after")
     def mapping_contract(self) -> ParserProfile:
-        if self.normalization is not None and self.version != "corpus-parser.v2":
+        if self.normalization is not None and self.version not in {"corpus-parser.v2", "corpus-parser.v3"}:
             raise ValueError(
                 "normalization requires corpus-parser.v2; frozen v1 is not reinterpreted"
             )
+        if self.version == "corpus-parser.v3" and (
+            self.normalization is None or self.normalization.version != "chinese-longform.v2"
+        ):
+            raise ValueError("parser v3 requires chinese-longform.v2")
+        if self.normalization and self.normalization.version == "chinese-longform.v2" and self.version != "corpus-parser.v3":
+            raise ValueError("new integrity semantics require parser v3")
         if self.format in {"epub", "parquet"} and self.encoding != "utf-8":
             raise ValueError(
                 "container-defined encoding: EPUB/Parquet do not accept a text encoding override"

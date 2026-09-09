@@ -237,7 +237,18 @@ def prepare_reprocessing(
     pointer = candidates[0]
     document = json.loads(Path(pointer["cache_path"]).read_text())
     review = revision.get("assessment")
-    if review:
+    if review and parser.version == "corpus-parser.v3":
+        from .review_replay import carry_review
+
+        carry_review(
+            document,
+            review,
+            parser=parser,
+            boundary_repair=lambda finding: _boundary_repair(
+                finding, parser, identities
+            ),
+        )
+    elif review:
         excluded = {
             e["unit_id"]: r
             for r in review.get("resolutions", [])

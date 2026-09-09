@@ -35,7 +35,18 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument(
         "action",
         choices=(
-            "inspect", "compare", "discover", "review", "equivalence", "reprocess",
+            "work",
+            "curated",
+            "resolve-work",
+            "relate",
+            "curate",
+            "analyze",
+            "inspect",
+            "compare",
+            "discover",
+            "review",
+            "equivalence",
+            "reprocess",
             "preview",
             "import",
             "run",
@@ -49,6 +60,12 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--work-id", default="")
+    parser.add_argument("--corpus-id", default="")
+    parser.add_argument("--revision-id", default="")
+    parser.add_argument("--max-calls", type=int, default=0)
+    parser.add_argument("--max-tokens", type=int, default=0)
+    parser.add_argument("--authorization-ref", default="")
     parser.add_argument("--source", default="")
     parser.add_argument("--run-key", default="")
     parser.add_argument("--edition-id", default="")
@@ -57,6 +74,7 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--decision", type=Path)
     parser.add_argument("--job-id", default="")
     parser.add_argument("--after", default="")
+    parser.add_argument("--historical", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--max-stages", type=int, default=100)
     parser.add_argument("--reason", default="operator Corpus import control")
@@ -67,31 +85,117 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     project = args.project_id
     principal.require(
         "source.authority.query"
-        if args.action in {"status", "lineage", "inspect", "compare", "discover"}
+        if args.action
+        in {"status", "lineage", "inspect", "compare", "discover", "work", "curated"}
         else "source.authority.execute",
         project,
     )
     build, sha = authority_release_identity()
     query = SourceImportQuery(settings.database_url)
+    if args.action in {"work", "curated"}:
+        return query.corpus_catalog(
+            project_id=project,
+            kind=args.action,
+            identity=args.revision_id
+            or (args.work_id if args.action == "work" else args.corpus_id),
+            revision=bool(args.revision_id),
+            principal=principal,
+        )
+    if args.action == "analyze":
+        from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
+            CuratedAnalysisRequest,
+            admit_curated_analysis,
+        )
+
+        request = CuratedAnalysisRequest(
+            project_id=project,
+            revision_id=args.revision_id,
+            run_key=args.run_key,
+            max_members=args.limit,
+            max_calls=args.max_calls,
+            max_tokens=args.max_tokens,
+            authorization_ref=args.authorization_ref,
+        )
+        app = SourceImportApplication(
+            settings.database_url, application_build_id=build, commit_sha=sha
+        )
+        return admit_curated_analysis(app, request, principal)
     if args.action in {"inspect", "compare", "discover"}:
-        return query.corpus_processing(project_id=project,identity=args.processing_id or args.edition_id,edition=not bool(args.processing_id),compare_to=args.compare_to,discover=args.action=="discover",limit=args.limit,principal=principal)
+        return query.corpus_processing(
+            project_id=project,
+            identity=args.processing_id or args.edition_id,
+            edition=not bool(args.processing_id),
+            compare_to=args.compare_to,
+            discover=args.action == "discover",
+            limit=args.limit,
+            after=args.after,
+            historical=getattr(args, "historical", False),
+            principal=principal,
+        )
     if args.action == "reprocess":
-        from novel_forge.modules.source_import.corpus_ingestion.contracts import ParserProfile
-        from novel_forge.modules.source_import.corpus_ingestion.runtime import CorpusIngestionRuntime
-        from novel_forge.modules.source_import.corpus_ingestion.reprocessing import admit_reprocessing
+        from novel_forge.modules.source_import.corpus_ingestion.contracts import (
+            ParserProfile,
+        )
+        from novel_forge.modules.source_import.corpus_ingestion.runtime import (
+            CorpusIngestionRuntime,
+        )
+        from novel_forge.modules.source_import.corpus_ingestion.reprocessing import (
+            admit_reprocessing,
+        )
+
         if not args.manifest or args.manifest.stat().st_size > 262144:
-            raise ValueError("reprocess requires a bounded parser profile JSON in --manifest")
-        app = SourceImportApplication(settings.database_url,application_build_id=build,commit_sha=sha)
-        return admit_reprocessing(CorpusIngestionRuntime(app),project_id=project,edition_id=args.edition_id,parser=ParserProfile.model_validate(json.loads(args.manifest.read_text())),run_key=args.run_key,principal=principal)
-    if args.action in {"review", "equivalence"}:
-        if not args.decision or args.decision.stat().st_size > 262144 or not args.workspace_id or not args.run_key:
+            raise ValueError(
+                "reprocess requires a bounded parser profile JSON in --manifest"
+            )
+        app = SourceImportApplication(
+            settings.database_url, application_build_id=build, commit_sha=sha
+        )
+        return admit_reprocessing(
+            CorpusIngestionRuntime(app),
+            project_id=project,
+            edition_id=args.edition_id,
+            parser=ParserProfile.model_validate(json.loads(args.manifest.read_text())),
+            run_key=args.run_key,
+            principal=principal,
+        )
+    if args.action in {"review", "equivalence", "resolve-work", "relate", "curate"}:
+        if (
+            not args.decision
+            or args.decision.stat().st_size > 262144
+            or not args.workspace_id
+            or not args.run_key
+        ):
             raise ValueError("decision, workspace and stable run key are required")
         action = validate_corpus_action(json.loads(args.decision.read_text()))
-        if action.action != {"review":"review_processing", "equivalence":"decide_equivalence"}[args.action]:
+        if (
+            action.action
+            != {
+                "review": "review_processing",
+                "equivalence": "decide_equivalence",
+                "resolve-work": "resolve_canonical_works",
+                "relate": "declare_relation",
+                "curate": "revise_curated_corpus",
+            }[args.action]
+        ):
             raise ValueError("wrong decision action")
-        authority = SourceAuthorityApplication(settings.database_url,application_build_id=build,commit_sha=sha)
-        admitted = authority.admit_corpus(CorpusCommand(project_id=project,workspace_id=args.workspace_id,actor_id=principal.principal_id,idempotency_key=args.run_key,trace_id=args.run_key,correlation_id=args.run_key,action=action),principal=principal)
-        return SourceAuthorityScheduler(authority).run_or_recover(operation_id=admitted["operation_id"],project_id=project)
+        authority = SourceAuthorityApplication(
+            settings.database_url, application_build_id=build, commit_sha=sha
+        )
+        admitted = authority.admit_corpus(
+            CorpusCommand(
+                project_id=project,
+                workspace_id=args.workspace_id,
+                actor_id=principal.principal_id,
+                idempotency_key=args.run_key,
+                trace_id=args.run_key,
+                correlation_id=args.run_key,
+                action=action,
+            ),
+            principal=principal,
+        )
+        return SourceAuthorityScheduler(authority).run_or_recover(
+            operation_id=admitted["operation_id"], project_id=project
+        )
     if args.action in {"preview", "import"}:
         if not args.workspace_id or args.manifest is None or not args.run_key:
             raise ValueError(
@@ -102,7 +206,9 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         manifest_data = json.loads(args.manifest.read_text(encoding="utf-8"))
         if getattr(args, "source", ""):
             if manifest_data["source"]["kind"] != "LOCAL":
-                raise ValueError("--source override is only for local files/directories")
+                raise ValueError(
+                    "--source override is only for local files/directories"
+                )
             manifest_data["source"]["location"] = args.source
         manifest = IngestionManifest.model_validate(manifest_data)
         app = SourceImportApplication(
@@ -193,14 +299,37 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         selected = next((row for row in rows if row["operation_id"] in eligible), None)
         if selected is None:
             break
-        result = scheduler.run_or_recover(
-            operation_id=selected["operation_id"], project_id=project
-        )
+        try:
+            result = scheduler.run_or_recover(
+                operation_id=selected["operation_id"], project_id=project
+            )
+        except Exception as exc:
+            if not job["source_locator"].get("manifest", {}).get("curated_revision_id"):
+                raise
+            refreshed = query.work(
+                project_id=project, import_job_id=args.job_id, principal=principal
+            )
+            failed = next(
+                (r for r in refreshed if r["operation_id"] == selected["operation_id"]),
+                None,
+            )
+            if not failed or failed["status"] not in {"FAILED", "BLOCKED"}:
+                raise
+            outcomes.append(
+                {
+                    "operation_id": selected["operation_id"],
+                    "status": failed["status"],
+                    "failure": failed["failure"],
+                    "error": str(exc),
+                }
+            )
+            continue
         outcomes.append(
             {"operation_id": selected["operation_id"], "status": result["status"]}
         )
     return {
         "stages": outcomes,
+        "failed_stages": sum(r["status"] in {"FAILED", "BLOCKED"} for r in outcomes),
         "stage_limit": args.max_stages,
         "job": query.import_job(
             project_id=project, import_job_id=args.job_id, principal=principal

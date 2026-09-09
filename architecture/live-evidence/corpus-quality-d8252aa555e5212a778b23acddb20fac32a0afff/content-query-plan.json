@@ -1,0 +1,82 @@
+{
+  "query_plan": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.28,
+        "Total Cost": 6.6,
+        "Plan Rows": 20,
+        "Plan Width": 47,
+        "Actual Startup Time": 0.046,
+        "Actual Total Time": 0.104,
+        "Actual Rows": 20,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 6,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "authority_corpus_content_pkey",
+            "Relation Name": "authority_corpus_content",
+            "Alias": "c",
+            "Startup Cost": 0.28,
+            "Total Cost": 1218.05,
+            "Plan Rows": 3855,
+            "Plan Width": 47,
+            "Actual Startup Time": 0.046,
+            "Actual Total Time": 0.103,
+            "Actual Rows": 20,
+            "Actual Loops": 1,
+            "Index Cond": "(content_id > 'query-only-2000'::text)",
+            "Rows Removed by Index Recheck": 0,
+            "Filter": "((project_id = 'corpus-9fbcde41-0d44-4a9d-855c-d23937f6b76e'::text) AND (snapshot_id = 'corpus-snapshot:c6e2fd28493c6512d7f379414e127320c24b97bc7d606737d2a33e0fe95354a6'::text))",
+            "Rows Removed by Filter": 0,
+            "Shared Hit Blocks": 6,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 103,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.135,
+      "Triggers": [],
+      "Execution Time": 0.118
+    }
+  ],
+  "representative_rows": 5000,
+  "evidence_class": "QUERY_PLAN_FIXTURE",
+  "fixture_rolled_back": true,
+  "planner_settings_changed": false
+}

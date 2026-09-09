@@ -674,7 +674,7 @@ structure-contract ceiling; it is not backfilled as a verified full-book assessm
 Parser v2 stores one frozen profile per parsed work; units reference its digest, avoiding
 repeating a full ToC for every chapter.
 
-`corpus-parser.v2` separates source completion, selected-edition coverage, verified bytes
+`corpus-parser.v2` and v3 separate source completion, selected-edition coverage, verified bytes
 and structural usability. Counts/continuous numbering alone never establish completeness.
 A supplied exact ToC is checked against actual titles; unverified coverage stays UNKNOWN.
 Findings retain raw locators and hashes. Source Corpus commands append scoped review
@@ -691,6 +691,42 @@ Equivalence requires an explicit decision; pair decisions never imply a transiti
 change source rights, or authorize knowledge reuse. Revoke appends to the same pair's
 history. Candidate discovery is bounded and may be incomplete; scores are estimates,
 not probabilities or proof of literary/work identity.
+
+Parser v3 freezes `chinese-longform.v2`. Its unit identity includes the stable file/member,
+record/spine and local span; earlier frozen v1/v2 tasks retain their contracts. Confirmed
+headings alone are excluded from exact body hashes. Repeated bodies become grouped findings
+under a versioned minimum-length policy; short repeated formulae remain notices. No unit is
+automatically deleted. Number/title conflicts are scoped to volumes. Catalogue comparison
+normalizes number notation, whitespace and punctuation only; raw titles and acquisition
+locators remain unchanged. Entry-level decisions distinguish confirmed display/wording
+variants from annotations that keep an issue blocked. A new catalogue cannot inherit a
+prior title waiver. Reprocessing re-evaluates conflicts caused by exact reviewed exclusions
+and records which decision resolved each finding. Annotation-only revisions also receive
+an exact SourceWork/Bridge binding, even when prose and parser hashes are unchanged.
+
+`resolve_canonical_works` appends explicit work/member revisions; one Source transaction can
+split, move, merge or retire up to eight groups. Negative pair decisions prevent grouping.
+Typed `declare_relation` evidence distinguishes same work, same Edition/copy, revision,
+abridgement, expansion, excerpt, similarity, difference and uncertainty. Directional evidence
+retains subject/reference identities. Old untyped ACCEPT decisions keep their original
+pair-only meaning. Neither grouping nor cached similarity transfers source permissions.
+
+Comparison retains occurrences, volume and order, aligns exact units/bodies before bounded
+similarity candidates, and pages correspondence with an input/review-bound cursor.
+Discovery enumerates exact hashes first, then indexed fingerprint/metadata candidates, with
+stable pagination and an explicit incomplete-recall ceiling. New processing invalidates an
+old discovery cursor; historical targets require explicit selection.
+
+`revise_curated_corpus` creates an inspected candidate manifest and freezes an explicitly
+selected subset (at most 100 members). Edition, Processing, canonical revision, review,
+rights and purpose membership remain exact; omitted/blocked candidates remain visible.
+Current Source admission, Processing/Review and canonical membership are checked at freeze,
+analysis admission, worker dispatch and Provider send. Curated analysis reuses
+`source.import.corpus.analysis` coordination and the existing profiling/deconstruction/MKAOS
+children. Call/token ceilings use the existing project ledger conservatively; concurrent
+project usage consumes the same ceiling. No knowledge is automatically approved. Pause,
+cancel, fence recovery and terminal result replay remain SourceImport/Kernel operations.
+Raw SourceWork/Corpus bodies still cannot enter Writer context.
 
 ## Qualification ceiling
 

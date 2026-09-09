@@ -1,0 +1,19 @@
+{
+  "version": "corpus-parser.v3",
+  "format": "txt",
+  "encoding": "utf-8-sig",
+  "constants": {
+    "work_id": "gutenberg:24264",
+    "work_title": "紅樓夢",
+    "author": "曹雪芹"
+  },
+  "normalization": {
+    "version": "chinese-longform.v2",
+    "min_body_chars": 80,
+    "work_completion": "UNKNOWN",
+    "external_work_ids": [
+      "gutenberg:24264"
+    ]
+  },
+  "completeness": "UNKNOWN"
+}

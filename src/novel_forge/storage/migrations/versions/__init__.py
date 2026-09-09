@@ -128,6 +128,7 @@ from . import (
     v20260909_0124_corpus_fk_indexes,
     v20260909_0125_corpus_ingestion_bridge,
     v20260909_0126_corpus_processing,
+    v20260909_0127_corpus_curation,
 )
 
 VERSION_MODULES = [
@@ -258,6 +259,7 @@ VERSION_MODULES = [
     v20260909_0124_corpus_fk_indexes,
     v20260909_0125_corpus_ingestion_bridge,
     v20260909_0126_corpus_processing,
+    v20260909_0127_corpus_curation,
 ]
 
 __all__ = ["VERSION_MODULES"]

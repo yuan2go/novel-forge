@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/tmp/nf-corpus-wp3c-20260909/import_independent_excerpts.py", line 27, in <module>
+    admitted=run('import',manifest=file('independent-'+number,manifest),run_key='independent-'+number);run('run',job_id=admitted['import_job_id']);lineage=run('lineage',job_id=admitted['import_job_id']);edition=lineage['editions'][0]['edition_id'];processing=run('inspect',edition_id=edition);assert processing['assessment']['coverage']=='EXCERPT'
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/nf-corpus-wp3c-20260909/import_independent_excerpts.py", line 15, in run
+    result=run_corpus_command(settings,SimpleNamespace(**{**base,'action':action,**kw}));records.append({'action':action,'seconds':time.monotonic()-start,'result':result});return result
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/cli/corpus.py", line 213, in run_corpus_command
+    manifest = IngestionManifest.model_validate(manifest_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/.venv/lib/python3.12/site-packages/pydantic/main.py", line 732, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestionManifest
+parser
+  Value error, text/container documents use SINGLE_WORK with explicit structural units [type=value_error, input_value={'version': 'corpus-parse...ompleteness': 'EXCERPT'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
