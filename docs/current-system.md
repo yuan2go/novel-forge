@@ -673,7 +673,8 @@ Findings retain raw locators and hashes. Source Corpus commands append scoped re
 and pairwise equivalence decisions. Non-body exclusions require reprocessing; the raw
 units remain in the immutable source bundle. A changed parser cannot silently erase an
 unresolved prior issue. Explicit boundary overrides require checksum-bound, complete,
-non-overlapping raw byte coverage.
+non-overlapping raw byte coverage. They can close only matching boundary findings; unrelated
+issues remain open. Processing inspection also returns bounded downstream invalidation evidence.
 
 Exact text/structure/unit hashes and a versioned bottom-k shingle signature support
 bounded indexed candidate discovery and version comparison. Traditional-to-simplified
