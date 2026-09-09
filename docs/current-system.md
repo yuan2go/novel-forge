@@ -659,7 +659,8 @@ for the native entry and bounded examples.
 
 Acquisition receipt v2 separates immutable byte identity from the idempotent operation
 receipt; independent imports of identical bytes cannot reuse a timestamp-bearing receipt.
-Frozen v1 receipt queries retain their original identity.
+Frozen v1 receipt queries retain their original identity. Ingestion subcommands use
+project/workspace-scoped keys; only an existing exact-scope legacy key can be reused.
 
 Corpus processing revisions append to the acquired Edition without a new acquisition.
 `source.import.corpus.work` also executes reprocessing admitted through the existing
