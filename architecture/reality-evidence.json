@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260909_0127_corpus_curation",
+  "migration_head": "20260910_0128_corpus_operations",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4894,6 +4894,14 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py",
           "symbol": "admit_curated_analysis"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/query.py",
+          "symbol": "SourceImportQuery.analysis_results"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/analysis_query.py",
+          "symbol": "analysis_job"
         }
       ],
       "domain_symbols": [
@@ -4948,6 +4956,18 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus.py",
           "symbol": "DeclareCorpusRelation"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/epub_chapters.py",
+          "symbol": "logical_records"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/curation.py",
+          "symbol": "validate_relation_write"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/curation.py",
+          "symbol": "require_curated_evidence_current"
         }
       ],
       "commands_operations": [
@@ -5042,6 +5062,10 @@
         {
           "path": "src/novel_forge/storage/corpus_catalog_records.py",
           "symbol": "CorpusCatalogRecords"
+        },
+        {
+          "path": "src/novel_forge/storage/source_import_operations_records.py",
+          "symbol": "SourceImportOperationsRecords"
         }
       ],
       "migrations": [
@@ -5089,6 +5113,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260909_0127_corpus_curation.py",
           "id": "20260909_0127_corpus_curation",
           "locator": "MIGRATION_ID = \"20260909_0127_corpus_curation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260910_0128_corpus_operations.py",
+          "id": "20260910_0128_corpus_operations",
+          "locator": "MIGRATION_ID = '20260910_0128_corpus_operations'"
         }
       ],
       "external_effects": {
@@ -5185,6 +5214,14 @@
         {
           "path": "tests/integration/test_corpus_ingestion_postgres.py",
           "symbol": "test_native_catalogue_resolution_preserves_input_scope"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_cli_curated_analysis_controls_results_and_relation_guards"
+        },
+        {
+          "path": "tests/unit/test_corpus_ingestion_formats.py",
+          "symbol": "test_epub_logical_chapters_span_resources_and_retain_exact_fragments"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7666,7 +7703,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:adcbd85f250f76ffac4e07cc5ac02eaa639ab98894d4e2e611112ca71418b751"
+    "implementation_tree_sha": "sha256:28dde45e88a6b26a3c3996e691e9a2d678d4f0e697aab7b3ec80dd51a8b6bfbd"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
