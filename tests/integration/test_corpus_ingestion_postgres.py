@@ -155,6 +155,49 @@ def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypat
             )
         )
 
+    from uuid import uuid4
+    from novel_forge.modules.project_authority import (
+        ProjectAuthorityApplication,
+        ProjectAuthorityCommand,
+    )
+
+    other_project, other_workspace = "corpus-" + uuid4().hex, "workspace-" + uuid4().hex
+    ProjectAuthorityApplication(
+        DATABASE_URL,
+        application_build_id="corpus-test",
+        commit_sha=os.environ.get("CORPUS_TESTED_SHA", "e" * 40),
+    ).execute(
+        ProjectAuthorityCommand(
+            definition_name="project_lifecycle.create",
+            project_id=other_project,
+            workspace_id=other_workspace,
+            actor_id="corpus-operator",
+            idempotency_key=other_project,
+            trace_id=other_project,
+            correlation_id=other_project,
+            payload={"title": "Independent source scope"},
+        )
+    )
+    monkeypatch.setenv(
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE", corpus.project + "," + other_project
+    )
+    _, other_scheduler = _runtime(tmp_path, monkeypatch)
+    another = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={**request, "project_id": other_project, "workspace_id": other_workspace},
+    )
+    assert another.status_code == 202, another.text
+    next_root = other_scheduler.run_or_recover(
+        operation_id=another.json()["operation_id"], project_id=other_project
+    )
+    next_result = other_scheduler.run_or_recover(
+        operation_id=next_root["result"]["children"][0]["operation_id"],
+        project_id=other_project,
+    )
+    assert next_result["status"] == "SUCCEEDED", next_result
+    assert next_result["result"]["edition_id"] != result["edition_id"]
+    assert next_result["result"]["normalized_hash"] == result["normalized_hash"]
+
 
 def test_authorized_bridge_reaches_existing_analysis_and_governance(
     corpus, tmp_path, monkeypatch
