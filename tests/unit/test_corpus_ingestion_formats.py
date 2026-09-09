@@ -439,3 +439,47 @@ def test_exact_boundary_override_cannot_drop_raw_bytes_or_change_source(tmp_path
                 IngestionBudget(),
             )
         )
+
+
+def test_multifile_chapters_preserve_physical_order_and_explicit_mode(tmp_path):
+    files = []
+    for index, heading in enumerate(("第一章 起因", "第二章 后果"), 1):
+        path = tmp_path / f"{index}.txt"
+        path.write_text(heading + "\n" + "甲承担代价，乙因而得救。e\u0301" * 20)
+        digest, size = file_identity(path)
+        files.append(
+            {
+                "path": path.name,
+                "cache_path": str(path),
+                "checksum": digest,
+                "size_bytes": size,
+            }
+        )
+    parser = ParserProfile(
+        version="corpus-parser.v2",
+        format="txt",
+        constants={"work_id": "original"},
+        normalization={"unicode_form": "NONE"},
+    )
+    output = compile_work_index(
+        list(reversed(files)), parser, IngestionBudget(), tmp_path / "multi-index"
+    )
+    document = json.loads(Path(output["works"][0]["cache_path"]).read_text())
+    assert [r["order"] for r in document["units"]] == [1, 2]
+    assert [r["physical_order"] for r in document["units"]] == [1, 1]
+    assert document["integrity"]["structure_usable"]
+    assert all(
+        "NFC" not in r["normalization_evidence"]["steps"] for r in document["units"]
+    )
+    assert "e\u0301" in document["units"][0]["text"]
+    explicit = ParserProfile(
+        version="corpus-parser.v2",
+        format="txt",
+        normalization={"segmentation": "EXPLICIT"},
+    )
+    output = compile_work_index(
+        files[:1], explicit, IngestionBudget(), tmp_path / "explicit-index"
+    )
+    document = json.loads(Path(output["works"][0]["cache_path"]).read_text())
+    assert not document["integrity"]["structure_usable"]
+    assert document["integrity"]["chapter_count"] == 0

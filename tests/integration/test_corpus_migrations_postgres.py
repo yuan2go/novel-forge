@@ -131,7 +131,8 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
             if baseline != "20260625_0001_initial_industrial_schema":
                 after = _authority_facts(connection, project)
                 for row in after["authority_source_document"]:
-                    assert row.pop("corpus_edition_id") is None
+                    if baseline != "20260909_0125_corpus_ingestion_bridge":
+                        assert row.pop("corpus_edition_id") is None
                 assert {key: after[key] for key in historical_facts} == historical_facts
                 assert all(
                     not value

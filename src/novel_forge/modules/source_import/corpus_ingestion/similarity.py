@@ -58,7 +58,7 @@ def compare(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
         "exact_unit_hashes": sorted(ah & bh),
         "left_only_hashes": sorted(ah - bh),
         "right_only_hashes": sorted(bh - ah),
-        "changed_titles": [t for t in at.keys() & bt.keys() if at[t] != bt[t]],
+        "changed_titles": sorted(t for t in at.keys() & bt.keys() if at[t] != bt[t]),
         "ordered_titles_equal": [r["title"] for r in lu] == [r["title"] for r in ru],
         "equivalence": "CANDIDATE_ONLY",
         "rights_transfer": False,

@@ -342,7 +342,7 @@ def parse_records(
                         if k not in {"raw_start", "raw_end"}
                     },
                     "chapter_id": record["chapter_id"] + ":" + str(part["raw_start"]),
-                    "order": record["order"] * 100000 + part["order"],
+                    "order": part["order"],
                     "source_locator": locator,
                 }
         else:
@@ -365,6 +365,7 @@ def compile_work_index(
             "CREATE TABLE units(work TEXT,edition TEXT,unit TEXT,ordinal INTEGER,body_bytes INTEGER,payload TEXT,volume_rank INTEGER,PRIMARY KEY(work,edition,unit),UNIQUE(work,edition,volume_rank,ordinal))"
         )
         volumes: dict[tuple[str, str, str], int] = {}
+        sequences: dict[tuple[str, str], int] = {}
         for file in sorted(
             files, key=lambda item: (item.get("container_path", ""), item["path"])
         ):
@@ -409,11 +410,22 @@ def compile_work_index(
                     record["volume"] if selected.normalization else "",
                 )
                 volume_rank = volumes.setdefault(volume_key, len(volumes))
+                if selected.normalization and selected.layout != "CHAPTER_ROWS":
+                    sequence_key = (record["work_id"], record["edition_id"])
+                    record["physical_order"] = record["order"]
+                    record["order"] = sequences.get(sequence_key, 0) + 1
+                    sequences[sequence_key] = record["order"]
                 if selected.normalization and record["volume"]:
                     record["source_chapter_id"] = record["chapter_id"]
                     record["chapter_id"] = record["volume"] + ":" + record["chapter_id"]
                 record["normalization_evidence"] = {
-                    "steps": ["STRICT_DECODE", "NEWLINE_LF", "NFC"],
+                    "steps": ["STRICT_DECODE", "NEWLINE_LF"]
+                    + (
+                        ["NFC"]
+                        if selected.normalization is None
+                        or selected.normalization.unicode_form == "NFC"
+                        else []
+                    ),
                     "precision": "UNIT_BYTES"
                     if record["source_locator"].get("original_byte_offset") is not None
                     else "STRUCTURED_LOCATOR",

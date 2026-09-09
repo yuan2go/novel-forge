@@ -36,6 +36,22 @@ class CorpusProcessingRecords:
         value["review"] = review[0] if review else None
         if review:
             value["assessment"] = review[0]["assessment"]
+        self.cursor.execute(
+            """SELECT target_asset_version_id,cause_type,status FROM authority_content_invalidation
+            WHERE project_id=%s AND created_by_operation_id=%s
+            ORDER BY target_asset_version_id LIMIT 101""",
+            [project, value["created_by_operation_id"]],
+        )
+        impacts = self.cursor.fetchall()
+        value["downstream_impact"] = {
+            "invalidated": [
+                dict(zip(("asset_version_id", "cause", "status"), r, strict=True))
+                for r in impacts[:100]
+            ],
+            "truncated": len(impacts) > 100,
+            "operation_id": value["created_by_operation_id"],
+            "full_query": "source intelligence invalidations by operation",
+        }
         return value
 
     def corpus_insert_processing(self, row: dict[str, Any]) -> None:

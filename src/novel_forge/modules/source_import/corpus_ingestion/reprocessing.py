@@ -62,7 +62,7 @@ def admit_reprocessing(
                 "replayed": True,
             }
         uow.cursor.execute(
-            """SELECT b.source_work_asset_version_id,o.command_payload,p.processing_id,r.review_id,r.assessment,o.operation_id
+            """SELECT b.source_work_asset_version_id,o.command_payload,p.processing_id,r.review_id,COALESCE(r.assessment,p.assessment),o.operation_id
             FROM authority_corpus_bridge b JOIN authority_source_work_version w ON w.asset_version_id=b.source_work_asset_version_id AND w.status='ACTIVE'
             JOIN authority_operation o ON o.operation_id=b.created_by_operation_id
             LEFT JOIN authority_corpus_processing p ON p.source_work_asset_version_id=b.source_work_asset_version_id
@@ -276,7 +276,17 @@ def prepare_reprocessing(
         known = {i["issue_id"] for i in document["integrity"]["issues"]}
         for finding in review["issues"]:
             if finding["blocking"] and finding["issue_id"] not in known:
-                document["integrity"]["issues"].append(finding)
+                if _boundary_repair(finding, parser, identities):
+                    document["integrity"]["resolutions"].append(
+                        {
+                            "issue_id": finding["issue_id"],
+                            "resolution": "RESEGMENTED_EXACT_SOURCE",
+                            "evidence": finding["evidence"],
+                            "profile_hash": corpus_hash(parser.model_dump(mode="json")),
+                        }
+                    )
+                else:
+                    document["integrity"]["issues"].append(finding)
         document["integrity"]["structure_usable"] = not any(
             i["blocking"] for i in document["integrity"]["issues"]
         )
@@ -325,3 +335,41 @@ def prepare_reprocessing(
             update={"parser": parser, "analyze": False}
         ).model_dump(mode="json"),
     }
+
+
+def _boundary_repair(
+    finding: dict[str, Any], parser: ParserProfile, identities: dict
+) -> bool:
+    if finding.get("resolution") or finding["code"] not in {
+        "RELIABLE_BOUNDARIES_MISSING",
+        "SHORT_OR_TOC_UNIT",
+        "NON_BODY_UNIT",
+    }:
+        return False
+    profile = parser.normalization
+    assert profile is not None
+    checksums = {locator["path"]: checksum for locator, checksum in identities.values()}
+    for evidence in finding["evidence"]:
+        locator = evidence["locator"]
+        start, end = (
+            locator.get("original_byte_offset"),
+            locator.get("original_byte_end"),
+        )
+        if start is None or end is None:
+            return False
+        spans = sorted(
+            (b.start, b.end)
+            for b in profile.boundaries
+            if b.path == locator["path"]
+            and b.checksum == checksums.get(b.path)
+            and start <= b.start < b.end <= end
+            and b.kind in {"CHAPTER", "EXTRA"}
+        )
+        if (
+            not spans
+            or spans[0][0] != start
+            or spans[-1][1] != end
+            or any(a[1] != b[0] for a, b in zip(spans, spans[1:]))
+        ):
+            return False
+    return bool(finding["evidence"])

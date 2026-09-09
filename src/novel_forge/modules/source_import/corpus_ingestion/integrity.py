@@ -43,6 +43,8 @@ def assess_integrity(
     previous: dict[str, int] = {}
     seen: set[tuple[str, int]] = set()
     titles = Counter(r["title"] for r in chapters)
+    if len({(r["work_title"], r["author"]) for r in rows}) > 1:
+        issues.append(issue("WORK_METADATA_CONFLICT", rows[:2]))
     for row in rows:
         kind = row.get("unit_kind", "CHAPTER")
         if kind in {"AUTHOR_NOTE", "UNSTRUCTURED", "VOLUME"}:
@@ -55,9 +57,10 @@ def assess_integrity(
             )
         if kind not in {"CHAPTER", "EXTRA"}:
             continue
+        first_line, separator, remainder = row["text"].partition("\n")
         body = (
-            row["text"].split("\n", 1)[-1]
-            if row.get("declared_number") is not None
+            remainder
+            if separator and first_line.strip() == row["title"]
             else row["text"]
         )
         if len(body.strip()) < profile.min_body_chars:
@@ -110,7 +113,8 @@ def assess_integrity(
                 "title": r["title"],
                 "volume": r["volume"],
                 "kind": r.get("unit_kind", "CHAPTER"),
-                "original_order": r["order"],
+                "original_order": r.get("physical_order", r["order"]),
+                "normalized_order": r["order"],
                 "number": r.get("declared_number"),
                 "hash": r["normalized_content_hash"],
                 "characters": len(r["text"]),

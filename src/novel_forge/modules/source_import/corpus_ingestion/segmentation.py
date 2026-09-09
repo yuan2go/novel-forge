@@ -82,7 +82,11 @@ def segment_lines(
         }
 
     for line, left, right in lines:
-        found = heading(line, profile.heading_max_chars)
+        found = (
+            heading(line, profile.heading_max_chars)
+            if profile.segmentation == "CHINESE_HEADINGS"
+            else None
+        )
         if found and parts:
             ordinal += 1
             yield record()
