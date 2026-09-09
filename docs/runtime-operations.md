@@ -737,3 +737,57 @@ Work and curated corrections use exact `previous_id`; inspect before submitting 
 revision. To split/merge groups, submit all affected complete memberships in one command.
 Retired groups keep their historical revisions. Rights, Benchmark labels, processing issues
 and knowledge approvals remain independent for every source Edition.
+
+
+## Curated analysis operations
+
+Use the same database, object store, local roots and trusted Source principal as ingestion.
+The analysis request freezes a selected curated revision and the existing project ledger
+ceiling. `--manifest` on `analyze` optionally supplies a bounded `SourceIntelligencePolicy`
+JSON; it does not authorize a model or change the given call/token allowance.
+
+```bash
+novel-forge corpus curated --project-id "$PROJECT" --revision-id "$CURATED_REVISION"
+novel-forge corpus analyze --project-id "$PROJECT" --revision-id "$CURATED_REVISION" \
+  --run-key "$ANALYSIS_KEY" --limit 2 --max-calls "$AUTHORIZED_CALLS" \
+  --max-tokens "$AUTHORIZED_TOKENS" --authorization-ref "$AUTHORIZATION_REF"
+novel-forge corpus status --project-id "$PROJECT" --job-id "$JOB"
+novel-forge corpus run --project-id "$PROJECT" --job-id "$JOB" --max-stages 10
+novel-forge corpus pause --project-id "$PROJECT" --job-id "$JOB" --reason 'inspect remaining members'
+novel-forge corpus resume --project-id "$PROJECT" --job-id "$JOB"
+novel-forge corpus results --project-id "$PROJECT" --job-id "$JOB" --limit 20
+novel-forge corpus results --project-id "$PROJECT" --job-id "$JOB" --format text
+novel-forge corpus lineage --project-id "$PROJECT" --job-id "$JOB" --limit 20
+novel-forge corpus cancel --project-id "$PROJECT" --job-id "$JOB" --reason 'stop remaining stages'
+```
+
+`run` exit 0 means execution completed, 2 means a bounded/in-progress/paused or leased
+stop, and 3 means partial, blocked, failed or cancelled work. CLI errors use exit 1.
+Inspect `stop_reason`, `remaining_stages` and `next_action`; completing model stages does
+not approve knowledge. A persisted failed stage is not retried repeatedly within one
+invocation. Subsequent recovery uses the same Kernel history and frozen budget.
+`results` supports `--processing-id`, `--after` and `--limit`; restart pagination from the
+beginning after new stages have been expanded. It excludes raw source/output bodies.
+HTTP queries are `GET /product/source-imports/{job}/analysis-results` with `project_id`,
+`processing_id`, `after`, `limit`; status and corpus-lineage retain their existing routes.
+Control uses the existing Source `control_import` command. Missing frozen lineage is an
+explicit query error, never an inferred Research grant.
+
+For acquired EPUB, start with `config/corpus/epub-logical-chapters.json`, retain the
+original parser's `constants` identifying the work, and append exact continuation evidence
+only when a TOC interval or title awaiting its body is insufficient. Each
+`epub_continuations` entry requires `left_href`, `right_href`, the EPUB `checksum` and an
+`evidence` locator; the resources must be adjacent in the frozen spine. No default
+concatenation of unheaded text is enabled.
+
+```bash
+novel-forge corpus reprocess --project-id "$PROJECT" --edition-id "$EDITION" \
+  --manifest "$EXACT_EPUB_PROFILE" --run-key "$REPROCESS_KEY"
+novel-forge corpus run --project-id "$PROJECT" --job-id "$REPROCESS_JOB"
+novel-forge corpus inspect --project-id "$PROJECT" --edition-id "$EDITION"
+```
+
+Inspect unresolved issues, use the existing scoped `review` command, and reprocess its exact
+input to apply exclusions. Updating a Processing, review, canonical membership or relation
+requires re-inspection and a new explicit curated freeze before new analysis. Neither
+rights nor MKAOS approval transfers through a work group or identical text.

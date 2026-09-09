@@ -355,3 +355,46 @@ def _revise_curated(
         "availability": availability,
         "candidate_pool_truncated": pool["truncated"],
     }
+
+
+def require_curated_operation_current(
+    repository: Any, project: str, operation: str
+) -> dict[str, Any]:
+    repository.corpus_authorization_lock(project)
+    binding = repository.catalog_execution_binding(project, operation)
+    if not binding:
+        return {}
+    frozen = repository.catalog_current(
+        "curated", project, binding["curated_revision_id"], revision=True
+    )
+    current = (
+        repository.catalog_current("curated", project, frozen["corpus_id"])
+        if frozen
+        else None
+    )
+    if (
+        not current
+        or current["revision_id"] != binding["curated_revision_id"]
+        or current["manifest"]["state"] != "FROZEN"
+    ):
+        raise KernelError(
+            "CURATED_SELECTION_CHANGED",
+            "frozen history remains readable; new execution requires current explicit selection",
+        )
+    selected = [
+        m
+        for m in binding["members"]
+        if m["processing_id"] == binding["member_processing_id"]
+    ]
+    availability = curated_availability(repository, project, selected)
+    if len(selected) != 1 or any(not r["available"] for r in availability):
+        raise KernelError("CURATED_PROVIDER_INPUT_STALE", str(availability))
+    return binding["budget"]
+
+
+def require_curated_evidence_current(
+    repository: Any, project: str, asset_version: str
+) -> None:
+    operation = repository.catalog_evidence_operation(project, asset_version)
+    if operation:
+        require_curated_operation_current(repository, project, operation)

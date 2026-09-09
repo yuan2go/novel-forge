@@ -311,6 +311,11 @@ def _format_records(
 def _segmented_records(
     file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
 ) -> Iterator[dict[str, Any]]:
+    if profile.version == "corpus-parser.v4" and profile.format == "epub":
+        from .epub_chapters import logical_records
+
+        yield from logical_records(Path(file["cache_path"]), file, profile, budget)
+        return
     for record in _format_records(file, profile, budget):
         if (
             profile.normalization
@@ -353,21 +358,29 @@ def parse_records(
     file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
 ) -> Iterator[dict[str, Any]]:
     for row in _segmented_records(file, profile, budget):
-        if profile.version == "corpus-parser.v3":
+        if profile.version in {"corpus-parser.v3", "corpus-parser.v4"}:
             locator = row["source_locator"]
             row["source_chapter_id"] = row["chapter_id"]
-            row["chapter_id"] = "unit:" + corpus_hash({
-                "path": locator["path"], "container": locator.get("container_path"),
-                "record": locator.get("record"), "href": locator.get("href"),
-                "position": locator.get("extracted_unicode_start", locator.get("original_byte_offset")),
-                "source_key": row["source_chapter_id"],
-            }).removeprefix("sha256:")
+            row["chapter_id"] = "unit:" + corpus_hash(
+                {
+                    "path": locator["path"],
+                    "container": locator.get("container_path"),
+                    "record": locator.get("record"),
+                    "href": locator.get("href"),
+                    "position": locator.get(
+                        "extracted_unicode_start", locator.get("original_byte_offset")
+                    ),
+                    "source_key": row["source_chapter_id"],
+                }
+            ).removeprefix("sha256:")
             first, newline, _ = row["text"].partition("\n")
             from .segmentation import heading
+
             declared = heading(first, profile.normalization.heading_max_chars)
             row["confirmed_heading_chars"] = (
                 len(first) + len(newline)
-                if declared and declared[2] == row["title"] and newline else 0
+                if declared and declared[2] == row["title"] and newline
+                else 0
             )
         yield row
 
@@ -397,7 +410,7 @@ def compile_work_index(
             selected = ParserProfile.model_validate(
                 file.get("parser") or profile.model_dump()
             )
-            if selected.version == "corpus-parser.v3":
+            if selected.version in {"corpus-parser.v3", "corpus-parser.v4"}:
                 file_key = (file.get("container_path") or "", file["path"])
                 if file_key in seen_files:
                     if seen_files[file_key] != file["checksum"]:
@@ -440,14 +453,20 @@ def compile_work_index(
                     if selected.normalization is None
                     else {"profile_hash": selected_hash},
                 )
-                if selected.version == "corpus-parser.v3":
+                if selected.version in {"corpus-parser.v3", "corpus-parser.v4"}:
                     count_heading = record["confirmed_heading_chars"]
                     original_heading = body[:count_heading]
-                    normalized_heading = original_heading.replace("\r\n", "\n").replace("\r", "\n")
+                    normalized_heading = original_heading.replace("\r\n", "\n").replace(
+                        "\r", "\n"
+                    )
                     if selected.normalization.unicode_form == "NFC":
-                        normalized_heading = unicodedata.normalize("NFC", normalized_heading)
+                        normalized_heading = unicodedata.normalize(
+                            "NFC", normalized_heading
+                        )
                     record["confirmed_heading_chars"] = len(normalized_heading)
-                    record["body_content_hash"] = corpus_hash(normalized[len(normalized_heading):])
+                    record["body_content_hash"] = corpus_hash(
+                        normalized[len(normalized_heading) :]
+                    )
                 volume_key = (
                     record["work_id"],
                     record["edition_id"],
@@ -459,7 +478,11 @@ def compile_work_index(
                     record["physical_order"] = record["order"]
                     record["order"] = sequences.get(sequence_key, 0) + 1
                     sequences[sequence_key] = record["order"]
-                if selected.normalization and record["volume"] and selected.version != "corpus-parser.v3":
+                if (
+                    selected.normalization
+                    and record["volume"]
+                    and selected.version not in {"corpus-parser.v3", "corpus-parser.v4"}
+                ):
                     record["source_chapter_id"] = record["chapter_id"]
                     record["chapter_id"] = record["volume"] + ":" + record["chapter_id"]
                 record["normalization_evidence"] = {
@@ -557,8 +580,9 @@ def compile_work_index(
                 from .integrity import assess_integrity
 
                 integrity = assess_integrity(records, parser)
-                if parser.version == "corpus-parser.v3":
+                if parser.version in {"corpus-parser.v3", "corpus-parser.v4"}:
                     from .integrity_v2 import enrich_integrity
+
                     integrity = enrich_integrity(records, parser, integrity)
                 status = integrity["coverage"]
             content = {

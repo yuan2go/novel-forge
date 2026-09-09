@@ -73,7 +73,9 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
     )
     succeeded = sum(r["count"] for r in counts if r["operation_status"] == "SUCCEEDED")
     blocked_members = [m for m in availability if m["selected"] and not m["available"]]
-    member_counts = repository.analysis_member_counts(job["project_id"], job["import_job_id"])
+    member_counts = repository.analysis_member_counts(
+        job["project_id"], job["import_job_id"]
+    )
     knowledge = repository.analysis_knowledge_counts(
         job["project_id"], job["import_job_id"]
     )
@@ -81,7 +83,7 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         state = job["status"]
     elif failed:
         state = "PARTIAL" if succeeded else "FAILED"
-    elif blocked_members:
+    elif blocked_members and pending:
         state = "BLOCKED"
     elif pending:
         state = (
@@ -101,9 +103,21 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         "frozen_budget": payload["budget"],
         "frozen_members": frozen["members"],
         "current_availability": availability,
-        "members": [{**m, "stages": member_counts.get(m["processing_id"], []),
-            "expansion": "EXPANDED" if member_counts.get(m["processing_id"]) else "NOT_STARTED" if m["evidence"]["selected"] else "NOT_SELECTED"} for m in frozen["members"]],
-        "leased_stages": repository.job_active_leases(job["project_id"], job["import_job_id"]),
+        "members": [
+            {
+                **m,
+                "stages": member_counts.get(m["processing_id"], []),
+                "expansion": "EXPANDED"
+                if member_counts.get(m["processing_id"])
+                else "NOT_STARTED"
+                if m["evidence"]["selected"]
+                else "NOT_SELECTED",
+            }
+            for m in frozen["members"]
+        ],
+        "leased_stages": repository.job_active_leases(
+            job["project_id"], job["import_job_id"]
+        ),
         "selected_members": len(selected),
         "unselected_members": len(frozen["members"]) - len(selected),
         "content_imported": 0,

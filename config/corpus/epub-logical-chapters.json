@@ -1,0 +1,10 @@
+{
+  "version": "corpus-parser.v4",
+  "format": "epub",
+  "normalization": {
+    "version": "chinese-longform.v2",
+    "segmentation": "CHINESE_HEADINGS",
+    "min_body_chars": 80
+  },
+  "epub_continuations": []
+}
