@@ -18,29 +18,6 @@ from .corpus_processing_records import CorpusProcessingRecords
 
 
 class CorpusIngestionRecords(CorpusProcessingRecords):
-    def corpus_ingestion_command_key(
-        self, project: str, workspace: str, action: dict[str, Any]
-    ) -> str:
-        from novel_forge.modules.source_authority.corpus import (
-            corpus_hash,
-            validate_corpus_action,
-        )
-
-        legacy = corpus_hash(action)
-        self.cursor.execute(
-            """SELECT command_payload FROM authority_operation WHERE project_id=%s
-            AND workspace_id=%s AND definition_name='source.corpus.commit' AND idempotency_key=%s""",
-            [project, workspace, legacy],
-        )
-        row = self.cursor.fetchone()
-        if row and row[0].get("payload") == validate_corpus_action(action).model_dump(
-            mode="json"
-        ):
-            return legacy
-        return corpus_hash(
-            {"project_id": project, "workspace_id": workspace, "action": action}
-        )
-
     cursor: Any
 
     def require_corpus_acquisition(

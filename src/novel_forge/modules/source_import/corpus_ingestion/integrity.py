@@ -43,8 +43,9 @@ def assess_integrity(
     previous: dict[str, int] = {}
     seen: set[tuple[str, int]] = set()
     titles = Counter(r["title"] for r in chapters)
-    if len({(r["work_title"], r["author"]) for r in rows}) > 1:
-        issues.append(issue("WORK_METADATA_CONFLICT", rows[:2]))
+    metadata_rows = {(r["work_title"], r["author"]): r for r in rows}
+    if len(metadata_rows) > 1:
+        issues.append(issue("WORK_METADATA_CONFLICT", list(metadata_rows.values())[:2]))
     for row in rows:
         kind = row.get("unit_kind", "CHAPTER")
         if kind in {"AUTHOR_NOTE", "UNSTRUCTURED", "VOLUME"}:

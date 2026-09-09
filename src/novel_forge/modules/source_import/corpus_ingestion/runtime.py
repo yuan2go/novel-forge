@@ -261,16 +261,11 @@ class CorpusIngestionRuntime:
     def _corpus(
         self, worker: Any, job: dict[str, Any], action: dict[str, Any]
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.app.database_url) as uow:
-            require_current_fence(uow, worker)
-            key = SourceAuthorityRepository(uow.cursor).corpus_ingestion_command_key(
-                worker.project_id, job["workspace_id"], action
-            )
         command = CorpusCommand(
             project_id=worker.project_id,
             workspace_id=job["workspace_id"],
             actor_id=self.app.worker_id,
-            idempotency_key=key,
+            idempotency_key=corpus_hash(action),
             trace_id=worker.trace_id,
             correlation_id=worker.correlation_id,
             action=validate_corpus_action(action),

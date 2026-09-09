@@ -198,6 +198,33 @@ def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypat
     assert next_result["result"]["edition_id"] != result["edition_id"]
     assert next_result["result"]["normalized_hash"] == result["normalized_hash"]
 
+    scoped_sources = []
+    for project, workspace in (
+        (corpus.project, corpus.workspace),
+        (other_project, other_workspace),
+    ):
+        metadata = corpus.client.post(
+            "/product/source-governance/corpus/commands",
+            json={
+                "project_id": project,
+                "workspace_id": workspace,
+                "idempotency_key": "reusable-operator-key",
+                "action": {
+                    "action": "register_source",
+                    "source_kind": "LOCAL",
+                    "external_identity": "urn:original-scoped-source",
+                    "purpose": "RESEARCH",
+                },
+            },
+        )
+        assert metadata.status_code == 202, metadata.text
+        committed = corpus.scheduler.run_or_recover(
+            operation_id=metadata.json()["operation_id"], project_id=project
+        )
+        assert committed["status"] == "SUCCEEDED", committed
+        scoped_sources.append(committed["source_id"])
+    assert scoped_sources[0] != scoped_sources[1]
+
 
 def test_authorized_bridge_reaches_existing_analysis_and_governance(
     corpus, tmp_path, monkeypatch

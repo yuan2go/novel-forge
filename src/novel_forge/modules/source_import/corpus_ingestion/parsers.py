@@ -366,12 +366,15 @@ def compile_work_index(
         )
         volumes: dict[tuple[str, str, str], int] = {}
         sequences: dict[tuple[str, str], int] = {}
+        profile_catalog: dict[str, ParserProfile] = {}
         for file in sorted(
             files, key=lambda item: (item.get("container_path", ""), item["path"])
         ):
             selected = ParserProfile.model_validate(
                 file.get("parser") or profile.model_dump()
             )
+            selected_hash = corpus_hash(selected.model_dump(mode="json"))
+            profile_catalog[selected_hash] = selected
             file_count = 0
             for record in parse_records(file, selected, budget):
                 count += 1
@@ -402,7 +405,9 @@ def compile_work_index(
                     + hashlib.sha256(body.encode()).hexdigest(),
                     normalized_content_hash="sha256:"
                     + hashlib.sha256(encoded).hexdigest(),
-                    parser=selected.model_dump(mode="json"),
+                    parser=selected.model_dump(mode="json")
+                    if selected.normalization is None
+                    else {"profile_hash": selected_hash},
                 )
                 volume_key = (
                     record["work_id"],
@@ -486,10 +491,13 @@ def compile_work_index(
                     (work_id, edition),
                 )
             ]
-            profiles = {corpus_hash(row["parser"]) for row in records}
+            profiles = {
+                row["parser"].get("profile_hash") or corpus_hash(row["parser"])
+                for row in records
+            }
             if len(profiles) != 1:
                 raise IngestionFailure("CROSS_SHARD_PARSER_CONFLICT")
-            parser = ParserProfile.model_validate(records[0]["parser"])
+            parser = profile_catalog[next(iter(profiles))]
             ordinals = [row["order"] for row in records]
             complete = parser.expected_units == units and ordinals == list(
                 range(1, units + 1)
@@ -524,6 +532,7 @@ def compile_work_index(
                 "parser_hash": corpus_hash(parser.model_dump(mode="json")),
             }
             if integrity is not None:
+                content["parser_profile"] = parser.model_dump(mode="json")
                 content["integrity"] = integrity
             pointer = spool_json(content, root / "works", budget)
             outputs.append(

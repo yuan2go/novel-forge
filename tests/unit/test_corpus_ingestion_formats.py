@@ -467,6 +467,8 @@ def test_multifile_chapters_preserve_physical_order_and_explicit_mode(tmp_path):
     document = json.loads(Path(output["works"][0]["cache_path"]).read_text())
     assert [r["order"] for r in document["units"]] == [1, 2]
     assert [r["physical_order"] for r in document["units"]] == [1, 1]
+    assert document["parser_profile"]["normalization"]["unicode_form"] == "NONE"
+    assert all(set(r["parser"]) == {"profile_hash"} for r in document["units"])
     assert document["integrity"]["structure_usable"]
     assert all(
         "NFC" not in r["normalization_evidence"]["steps"] for r in document["units"]
