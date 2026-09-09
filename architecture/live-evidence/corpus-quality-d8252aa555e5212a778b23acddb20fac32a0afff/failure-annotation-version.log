@@ -1,0 +1,244 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_native_catalogue_resolution_preserves_input_scope ____________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10e32c3b0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-721/test_native_catalogue_resoluti0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d851f40>
+
+    def test_native_catalogue_resolution_preserves_input_scope(
+        corpus, tmp_path, monkeypatch
+    ):
+        from novel_forge.modules.command_kernel.errors import KernelError
+    
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        path = tmp_path / "toc.txt"
+        path.write_text(
+            "第一章 交付\n"
+            + "甲把钥匙交给乙，留下口信。" * 15
+            + "\n第二章 回报\n"
+            + "乙准时赶到桥边，答谢船夫。" * 15
+        )
+        parser = {
+            "version": "corpus-parser.v3",
+            "format": "txt",
+            "constants": {"work_id": "toc-original"},
+            "normalization": {
+                "version": "chinese-longform.v2",
+                "expected_toc": ["第01章：交付", "第二章 报答"],
+                "toc_evidence": "sha256:catalogue-A",
+            },
+        }
+        response = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": "toc-import",
+                "manifest": {**_manifest(path), "parser": parser},
+            },
+        )
+        assert response.status_code == 202, response.text
+        root = scheduler.run_or_recover(
+            operation_id=response.json()["operation_id"], project_id=corpus.project
+        )
+        result = scheduler.run_or_recover(
+            operation_id=root["result"]["children"][0]["operation_id"],
+            project_id=corpus.project,
+        )["result"]
+    
+        def inspect(identity):
+            response = corpus.client.get(
+                "/product/source-imports/corpus/processing/" + identity,
+                params={"project_id": corpus.project},
+            )
+            assert response.status_code == 200, response.text
+            return response.json()
+    
+        first = inspect(result["processing_id"])
+        findings = [
+            i for i in first["assessment"]["issues"] if i["code"] == "TOC_ENTRY_MISMATCH"
+        ]
+        assert len(findings) == 1 and findings[0]["toc_index"] == 1
+        review = corpus.run(
+            {
+                "action": "review_processing",
+                "processing_id": first["processing_id"],
+                "decisions": [
+                    {
+                        "issue_id": findings[0]["issue_id"],
+                        "resolution": "CONFIRM_TOC_VARIANT",
+                        "classification": "VERSION_WORDING",
+                        "evidence_refs": ["sha256:catalogue-A", "original:chapter-two"],
+                        "reason": "Both located titles denote the same bounded chapter; wording retained.",
+                    }
+                ],
+                "reason": "scope title variant to this exact catalogue",
+            }
+        )
+        assert review["assessment"]["structure_usable"]
+    
+        def reprocess(profile, key):
+            response = corpus.client.post(
+                "/product/source-imports/corpus/reprocess",
+                json={
+                    "project_id": corpus.project,
+                    "edition_id": result["edition_id"],
+                    "run_key": key,
+                    "parser": profile,
+                },
+            )
+            assert response.status_code == 202, response.text
+            outcome = scheduler.run_or_recover(
+                operation_id=response.json()["operation_id"], project_id=corpus.project
+            )
+            return inspect(outcome["result"]["processing_id"])
+    
+        second = reprocess(parser, "same-catalogue")
+        assert second["assessment"]["structure_usable"]
+        assert any(
+            i.get("resolution", {}).get("resolution") == "CONFIRM_TOC_VARIANT"
+            for i in second["assessment"]["issues"]
+        )
+        different = {
+            **parser,
+            "normalization": {
+                **parser["normalization"],
+                "expected_toc": ["第一章 交付", "第二章 大火", "第三章 归来"],
+                "toc_evidence": "sha256:catalogue-B",
+            },
+        }
+        third = reprocess(different, "new-catalogue")
+        assert not third["assessment"]["structure_usable"]
+        unresolved = [
+            i
+            for i in third["assessment"]["issues"]
+            if i["code"] == "TOC_ENTRY_MISMATCH" and i["blocking"]
+        ]
+        assert len(unresolved) == 2
+        missing = next(i for i in unresolved if i["observed_title"] is None)
+        with pytest.raises(KernelError, match="CORPUS_MISSING_CONTENT_CANNOT_BE_WAIVED"):
+            corpus.run(
+                {
+                    "action": "review_processing",
+                    "processing_id": third["processing_id"],
+                    "decisions": [
+                        {
+                            "issue_id": missing["issue_id"],
+                            "resolution": "CONFIRM_TOC_VARIANT",
+                            "classification": "VERSION_WORDING",
+                            "evidence_refs": ["sha256:catalogue-B"],
+                            "reason": "missing content is not a title variation",
+                        }
+                    ],
+                    "reason": "must fail closed",
+                }
+            )
+        page = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + second["processing_id"],
+            params={
+                "project_id": corpus.project,
+                "compare_to": third["processing_id"],
+                "limit": 1,
+            },
+        ).json()["comparison"]
+        assert page["next_cursor"] and len(page["correspondence"]) == 1
+        rest = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + second["processing_id"],
+            params={
+                "project_id": corpus.project,
+                "compare_to": third["processing_id"],
+                "limit": 1,
+                "after": page["next_cursor"],
+            },
+        ).json()["comparison"]
+        assert (
+            rest["query_identity"] == page["query_identity"]
+            and rest["correspondence"][0]["left"] == 1
+        )
+        wrong = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + first["processing_id"],
+            params={
+                "project_id": corpus.project,
+                "compare_to": third["processing_id"],
+                "after": page["next_cursor"],
+            },
+        )
+        assert wrong.status_code == 409 and "CURSOR_INVALID" in wrong.text
+    
+        review=corpus.run({'action':'review_processing','processing_id':third['processing_id'],'decisions':[{'issue_id':missing['issue_id'],'resolution':'ANNOTATE_TOC_DIFFERENCE','classification':'INSUFFICIENT','evidence_refs':['sha256:catalogue-B'],'reason':'Directory claims an absent chapter, retain blocking uncertainty'}],'reason':'annotation changes review evidence, not prose'})
+>       fourth=reprocess(different,'annotation-only-new-processing')
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_corpus_ingestion_postgres.py:1993: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_corpus_ingestion_postgres.py:1915: in reprocess
+    outcome = scheduler.run_or_recover(
+src/novel_forge/modules/source_import/scheduler.py:45: in run_or_recover
+    return super().run_or_recover(
+src/novel_forge/modules/source_authority/scheduler.py:230: in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:812: in execute_fenced
+    else runtime.process_work(worker)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/corpus_ingestion/runtime.py:903: in process_work
+    materialized = self.app._materialize_source_work(
+src/novel_forge/modules/source_import/application.py:2677: in _materialize_source_work
+    uow.cursor.execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=55413 user=novel_forge database=nf_corpus_wp3c_test) at 0x10e233950>
+query = "\n                INSERT INTO authority_source_work_version (\n                    asset_version_id, source_work_id, ...%s, %s, %s, %s, %s, %s, %s, %s,\n                    %s, %s, %s, 'ACTIVE', %s, %s\n                )\n                "
+params = ['fc6e64e6-d3ff-4bb6-96af-80a2436a9a1a', 'source-work:ae852e271d8d1c3ada3cef951196a081da6d1036e4ee9edc20effcfd6075dff8...ent:corpus-19cced8c-2341-4636-824b-6e6a785b7dd7:e91c9fb00ab22896363b93cf8375620f2de9e18c8b65abe5cf652a015aa516a7', ...]
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "authority_source_work_version_source_work_id_manifest_hash_key"
+E           DETAIL:  Key (source_work_id, manifest_hash)=(source-work:ae852e271d8d1c3ada3cef951196a081da6d1036e4ee9edc20effcfd6075dff8, sha256:809261a0824e3e58212695cdc9168c3baa1c321f054ee5076774a0b03db88b92) already exists.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: UniqueViolation
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_catalogue_resolution_preserves_input_scope
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_catalogue_resolution_preserves_input_scope
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_catalogue_resolution_preserves_input_scope
+1 failed, 15 deselected, 3 warnings in 5.77s

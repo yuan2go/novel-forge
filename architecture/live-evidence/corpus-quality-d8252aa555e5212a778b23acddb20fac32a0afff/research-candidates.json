@@ -1,0 +1,10 @@
+{
+  "action": "revise_curated_corpus",
+  "corpus_key": "chinese-classics-research",
+  "title": "中文长篇研究子集",
+  "purpose": "RESEARCH",
+  "filters": {
+    "language": "zh"
+  },
+  "reason": "Retain all reviewed candidates and explicitly select usable subset"
+}

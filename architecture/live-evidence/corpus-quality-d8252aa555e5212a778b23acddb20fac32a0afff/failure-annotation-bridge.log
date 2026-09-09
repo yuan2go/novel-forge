@@ -1,0 +1,27 @@
+Traceback (most recent call last):
+  File "/tmp/nf-corpus-wp3c-20260909/review_real_corpus.py", line 32, in <module>
+    re=run('reprocess',edition_id=sg['edition_id'],manifest=root/'23950-txt-parser.json',run_key='sanguo-title-review-reprocess');run('run',job_id=re['import_job_id']);sg['processing_id']=run('inspect',edition_id=sg['edition_id'])['processing_id']
+                                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/nf-corpus-wp3c-20260909/review_real_corpus.py", line 14, in run
+    result=run_corpus_command(settings,SimpleNamespace(**{**base,'action':action,**kw}));records.append({'action':action,'seconds':time.monotonic()-start,'result':result});return result
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/cli/corpus.py", line 302, in run_corpus_command
+    result = scheduler.run_or_recover(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/modules/source_import/scheduler.py", line 45, in run_or_recover
+    return super().run_or_recover(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/modules/source_authority/scheduler.py", line 230, in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/modules/source_import/application.py", line 812, in execute_fenced
+    else runtime.process_work(worker)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/modules/source_import/corpus_ingestion/runtime.py", line 926, in process_work
+    repository.corpus_bind_bridge(
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/src/novel_forge/storage/corpus_ingestion_records.py", line 99, in corpus_bind_bridge
+    self.cursor.execute(
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.CheckViolation: Corpus bridge requires exact content/Edition/Source lineage
+CONTEXT:  PL/pgSQL function authority_corpus_bridge_guard() line 16 at RAISE

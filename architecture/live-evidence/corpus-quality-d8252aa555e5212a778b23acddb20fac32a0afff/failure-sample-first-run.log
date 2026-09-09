@@ -1,0 +1,8 @@
+23950-txt FAILED KernelError('OPERATION_NOT_FOUND: operation does not exist')
+23962-txt FAILED KernelError('SOURCE_IMPORT_SCOPE_INVALID: Source import workspace does not belong to the Authority project')
+24264-txt FAILED KernelError('SOURCE_IMPORT_SCOPE_INVALID: Source import workspace does not belong to the Authority project')
+24264-epub FAILED 1 validation error for IngestionManifest
+parser
+  Value error, container-defined encoding: EPUB/Parquet do not accept a text encoding override [type=value_error, input_value={'version': 'corpus-parse...ompleteness': 'UNKNOWN'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+saved /tmp/nf-corpus-wp3c-20260909/real-development-1

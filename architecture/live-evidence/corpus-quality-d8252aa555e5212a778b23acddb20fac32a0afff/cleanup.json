@@ -1,0 +1,25 @@
+{
+  "owned_container": "nf-corpus-wp3c-20260909",
+  "container_label_verified": true,
+  "owned_container_residue": 0,
+  "owned_volume_residue": 0,
+  "removed_volume_count": 1,
+  "backups": [
+    {
+      "database": "nf_corpus_wp3c_samples_test",
+      "path": "/tmp/nf-corpus-wp3c-20260909/nf_corpus_wp3c_samples_test.pgdump.gz",
+      "bytes": 25171162,
+      "sha256": "8face78300afcba791b0c16f50c33388a4e3caf1a5a572ff2ebfe6eb8e6047fb",
+      "retained_outside_git": true
+    },
+    {
+      "database": "nf_corpus_wp3c_test",
+      "path": "/tmp/nf-corpus-wp3c-20260909/nf_corpus_wp3c_test.pgdump.gz",
+      "bytes": 274668,
+      "sha256": "4831c01b9cd14a425435beb230596fadf05e73169a52835cb269b666e9a0ad29",
+      "retained_outside_git": true
+    }
+  ],
+  "objects": "Preserved outside Git with source snapshots; no referenced object files deleted.",
+  "unrelated_resources": "Not modified."
+}

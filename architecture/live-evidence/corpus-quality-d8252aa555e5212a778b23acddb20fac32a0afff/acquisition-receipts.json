@@ -1,0 +1,65 @@
+[
+  {
+    "name": "23950.txt",
+    "url": "https://www.gutenberg.org/ebooks/23950.txt.utf-8",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23950/pg23950.txt",
+    "bytes": 1863656,
+    "sha256": "ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+    "seconds": 4.561634207959287,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "23950.epub",
+    "url": "https://www.gutenberg.org/ebooks/23950.epub3.images",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23950/pg23950-images-3.epub",
+    "bytes": 928786,
+    "sha256": "6b79064bcbd2fef24bd92ea9407fdc5ca6271e1bb29a4b53c4eb595a3a8527cf",
+    "seconds": 3.655516250000801,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "23962.txt",
+    "url": "https://www.gutenberg.org/ebooks/23962.txt.utf-8",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23962/pg23962.txt",
+    "bytes": 2264069,
+    "sha256": "af3c9e408c0c58595b666ed9981b6fa1e9343f4bbc78309b1cb0818c32fc1f58",
+    "seconds": 4.665581333974842,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "23962.epub",
+    "url": "https://www.gutenberg.org/ebooks/23962.epub3.images",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23962/pg23962-images-3.epub",
+    "bytes": 1096308,
+    "sha256": "ce6f3184d0244a419447af413c551f9ae3358a8495affb93b01509c1340b1882",
+    "seconds": 3.580908875039313,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "24264.txt",
+    "url": "https://www.gutenberg.org/ebooks/24264.txt.utf-8",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/24264/pg24264.txt",
+    "bytes": 2663455,
+    "sha256": "ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011",
+    "seconds": 4.5999637500499375,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "24264.epub",
+    "url": "https://www.gutenberg.org/ebooks/24264.epub3.images",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/24264/pg24264-images-3.epub",
+    "bytes": 1228370,
+    "sha256": "b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+    "seconds": 3.5934619580511935,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  },
+  {
+    "name": "catalogue-5401635.html",
+    "url": "https://zh.wikisource.org/w/index.php?oldid=5401635&title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9",
+    "resolved_url": "https://zh.wikisource.org/w/index.php?oldid=5401635&title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9",
+    "bytes": 95261,
+    "sha256": "f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+    "seconds": 1.0359473749995232,
+    "status": "ACQUIRED_LOCAL_VALIDATION_RECEIPT"
+  }
+]
