@@ -657,6 +657,10 @@ New requests resolve the current snapshot/rights at admission; the same run key 
 original frozen identities. See [runtime operations](runtime-operations.md#corpus-content-ingestion)
 for the native entry and bounded examples.
 
+Acquisition receipt v2 separates immutable byte identity from the idempotent operation
+receipt; independent imports of identical bytes cannot reuse a timestamp-bearing receipt.
+Frozen v1 receipt queries retain their original identity.
+
 Corpus processing revisions append to the acquired Edition without a new acquisition.
 `source.import.corpus.work` also executes reprocessing admitted through the existing
 SourceImport application surface. SourceWork publication, exact Bridge, assessment,
