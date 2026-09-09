@@ -1,0 +1,16 @@
+{
+  "owned_containers_remaining": [],
+  "owned_volumes_remaining": [],
+  "owned_port_listening": false,
+  "resource_residue": 0,
+  "retained_backup": {
+    "path": "/tmp/nf-corpus-operations-20260910/samples-final.dump",
+    "bytes": 28126437,
+    "sha256": "5a575dc767582afa4ec641c483ba0c5f3ef5fcebf0d98936d0326cba4468cdfc",
+    "pg_restore_listing_entries": 3850,
+    "mode": "0600"
+  },
+  "referenced_object_store_retained": "/tmp/nf-corpus-operations-20260910/real-final/objects",
+  "raw_corpus_deleted": false,
+  "user_runtime_resources_modified": false
+}

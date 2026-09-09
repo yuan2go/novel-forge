@@ -1,0 +1,56 @@
+PYTHONPATH=src /tmp/nf-corpus-operations-20260910/venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .
+{
+  "canonical_document_count": 5,
+  "capability_count": 24,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "d58c5ba4b05c88e7f4985b82c74749c5aa42da57",
+    "base_source_comment_count": 505,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:9d99029faea7ff3ad53dcce4eebc4ae5a209d89ebb6ec6018e0d6ff7ee0ba236",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 505,
+  "source_docstring_count": 122,
+  "status": "PASS",
+  "tested_sha": "30490c37183d6f8ad5649713daacd16e37aa5f01",
+  "web_comment_count": 5
+}
+PYTHONPATH=src /tmp/nf-corpus-operations-20260910/venv/bin/python -m novel_forge.tools.historical_reality --repo-root .
+{
+  "authority_surface_file_count": 1136,
+  "eight_chapter_canonical_reference_count": 0,
+  "errors": [],
+  "fact_types": {
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
+  "forbidden_machine_field_count": 0,
+  "historical_roadmap_authority_count": 0,
+  "historical_test_authority_count": 0,
+  "retired_path_count": 0,
+  "schema_version": "novel-forge.historical-reality.v1",
+  "stale_wp_pr_adr_roadmap_authority_count": 0,
+  "status": "PASS",
+  "unmanaged_historical_instruction_count": 0
+}
+PYTHONPATH=src /tmp/nf-corpus-operations-20260910/venv/bin/python -m novel_forge.tools.head_integrity --repo-root .
+{
+  "failed_required_imports": [],
+  "missing_exports": [],
+  "missing_import_targets": [],
+  "missing_registry_targets": [],
+  "missing_test_collection": [],
+  "scanned_python_files": 658,
+  "status": "PASS",
+  "tracked_file_count": 1825,
+  "untracked_required_paths": []
+}

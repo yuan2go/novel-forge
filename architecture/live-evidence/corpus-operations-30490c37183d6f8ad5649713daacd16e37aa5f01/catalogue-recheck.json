@@ -1,0 +1,450 @@
+{
+  "tested_sha": "30490c37183d6f8ad5649713daacd16e37aa5f01",
+  "source_sha256": "ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+  "catalogue_sha256": "f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+  "catalogue_expected_titles_verified_against_acquired_html": 120,
+  "mechanical_mismatches": 14,
+  "scope": "acquired Gutenberg 23950 compared with acquired Wikisource oldid=5401635 catalogue; no new remote acquisition",
+  "previous_limited_glyph_decisions_rechecked": 2,
+  "remaining": 12,
+  "new_editorial_resolutions": 0,
+  "annotation_class": "AGENT_NOT_INDEPENDENT_HUMAN",
+  "unresolved_chapters": [
+    4,
+    9,
+    16,
+    18,
+    42,
+    47,
+    74,
+    80,
+    102,
+    111,
+    112,
+    115
+  ],
+  "differences": [
+    {
+      "chapter": 4,
+      "expected": "第四回 廢漢帝陳留踐位　　　謀董賊孟德獻刀",
+      "observed": "第四回：廢漢帝陳留為皇，謀董賊孟德獻刀",
+      "classification": "VERSION_WORDING",
+      "decision": "UNRESOLVED",
+      "reason": "为皇/践位: observed wording difference; edition authority insufficient",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 5,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 61546,
+            "original_byte_offset": 48767
+          },
+          "unit_id": "unit:02d25851b4b588cb67e76459449024b7eb560a675345a108558b5cd640a4ca1c",
+          "content_hash": "sha256:7fd5926603a20216b146bbacc0f3d67eededf3370a03de4fd766eadccd959eca"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:7fd5926603a20216b146bbacc0f3d67eededf3370a03de4fd766eadccd959eca"
+      ]
+    },
+    {
+      "chapter": 9,
+      "expected": "第九回 除暴徒呂布助司徒　　犯長安李傕聽賈詡",
+      "observed": "第九回：除暴兇呂布助司徒，犯長安李傕聽賈詡",
+      "classification": "VERSION_WORDING",
+      "decision": "UNRESOLVED",
+      "reason": "暴凶/暴徒: observed wording difference; no silent correction",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 10,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 135683,
+            "original_byte_offset": 119173
+          },
+          "unit_id": "unit:55fd0a156f017db865a939bf8c9b9767b4da1eebea70803a073c5fae66c84523",
+          "content_hash": "sha256:9c541cd0f78eb5ec4c68e415ac9bd0eaef078727a326ed34ec4c61f0156b98e5"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:9c541cd0f78eb5ec4c68e415ac9bd0eaef078727a326ed34ec4c61f0156b98e5"
+      ]
+    },
+    {
+      "chapter": 16,
+      "expected": "第十六回 呂奉先射戟轅門　　　曹孟德敗師淯水",
+      "observed": "第十六回：呂奉先射戟轅門，曹孟德拜師淯水",
+      "classification": "TRANSCRIPTION_SUSPECTED",
+      "decision": "UNRESOLVED",
+      "reason": "拜师/败师: suspected input error, unresolved without edition facsimile",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 17,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 261631,
+            "original_byte_offset": 240808
+          },
+          "unit_id": "unit:9a41bf54354d2a59cc3c5a11065b165ec56db20f7e0f64adc2cc64420b7ef48d",
+          "content_hash": "sha256:30d2a747feef97fa22db241f8857ad1a7f0577049f1cdefae0d2abc208b7e695"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:30d2a747feef97fa22db241f8857ad1a7f0577049f1cdefae0d2abc208b7e695"
+      ]
+    },
+    {
+      "chapter": 18,
+      "expected": "第十八回 賈文和料敵決勝　　　夏侯惇拔矢啖睛",
+      "observed": "第十八回：賈文和料敵決勝，夏侯惇拔失啖睛",
+      "classification": "TRANSCRIPTION_SUSPECTED",
+      "decision": "UNRESOLVED",
+      "reason": "失/矢: suspected wrong character; original preserved",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 19,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 286889,
+            "original_byte_offset": 275126
+          },
+          "unit_id": "unit:9024052f3557207afd1e2410931c7a5694024f7740af397e26ca66fbb9c9e284",
+          "content_hash": "sha256:0d20333c026261676bb4903404f4485f878c8a804969359a3f2e8fe30c692a98"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:0d20333c026261676bb4903404f4485f878c8a804969359a3f2e8fe30c692a98"
+      ]
+    },
+    {
+      "chapter": 26,
+      "expected": "第二十六回 袁本初敗兵折將　　　關雲長掛印封金",
+      "observed": "第二十六回：袁本初敗兵折將，關雲長挂印封金",
+      "classification": "DISPLAY",
+      "decision": "LIMITED_DISPLAY_ACCEPTANCE",
+      "reason": "挂/掛: glyph variant; both source headings explicitly located",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 27,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 407059,
+            "original_byte_offset": 394308
+          },
+          "unit_id": "unit:be5f47849e19b76a5e642933b68b92dfa4e0e60ce89678379f4617c0778cb1b1",
+          "content_hash": "sha256:b3c6c9c184ce3cc22a169fb6d21bb7e212f758c9b79a0fc71e11f5880de1ad77"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:b3c6c9c184ce3cc22a169fb6d21bb7e212f758c9b79a0fc71e11f5880de1ad77"
+      ]
+    },
+    {
+      "chapter": 42,
+      "expected": "第四十二回 張翼德大鬧長阪橋　　劉豫州敗走漢津口",
+      "observed": "第四十二回：張翼德大鬧長板橋，劉豫州敗走漢津",
+      "classification": "INSUFFICIENT",
+      "decision": "UNRESOLVED",
+      "reason": "板/阪 and absent 口: mixed glyph/wording evidence, retain unresolved",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 43,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 651122,
+            "original_byte_offset": 639507
+          },
+          "unit_id": "unit:6fe1dcd137046c0ce2333fe83c7b5b2fc590093cd523ea73ba0dbd8b1f057b25",
+          "content_hash": "sha256:d154e4e85739950f1a9df68c9b38d7e03f0880c9a9cf963207d263cca1267295"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:d154e4e85739950f1a9df68c9b38d7e03f0880c9a9cf963207d263cca1267295"
+      ]
+    },
+    {
+      "chapter": 47,
+      "expected": "第四十七回 闞澤密獻詐降書　　　龐統巧授連環計",
+      "observed": "第四十七回：闞澤密獻詐書，龐統巧授連環計",
+      "classification": "INSUFFICIENT",
+      "decision": "UNRESOLVED",
+      "reason": "missing 降: cannot distinguish abridgement from transcription",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 48,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 726932,
+            "original_byte_offset": 714409
+          },
+          "unit_id": "unit:8b4e611bed275dffe31f450b316a2e2d46cd5b77d6d5dc4da9739b537ddde8eb",
+          "content_hash": "sha256:a38c891835555ed8c5cfc6880a9acd7ba1d8beb04eeacf5ebab3d57cb8d294c6"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:a38c891835555ed8c5cfc6880a9acd7ba1d8beb04eeacf5ebab3d57cb8d294c6"
+      ]
+    },
+    {
+      "chapter": 60,
+      "expected": "第六十回 張永年反難楊修　　　龐士元議取西蜀",
+      "observed": "第六十回：張永年反難楊脩，龐士元議取西蜀",
+      "classification": "DISPLAY",
+      "decision": "LIMITED_DISPLAY_ACCEPTANCE",
+      "reason": "脩/修: name glyph variant; limited to this title comparison",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 61,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 924737,
+            "original_byte_offset": 902083
+          },
+          "unit_id": "unit:daeef8a8cfbda2696c400d3104c49880e2f496058e0aa8b10a534fcf11f668c6",
+          "content_hash": "sha256:e14fd7e1583ec7914a7b43006b59569771357ca5856c5135dad9c117841d0efa"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:e14fd7e1583ec7914a7b43006b59569771357ca5856c5135dad9c117841d0efa"
+      ]
+    },
+    {
+      "chapter": 74,
+      "expected": "第七十四回 龐令明擡櫬決死戰　　關雲長放水渰七軍",
+      "observed": "第七十四回：龐令明臺櫬決死戰，關雲長放水渰七軍",
+      "classification": "TRANSCRIPTION_SUSPECTED",
+      "decision": "UNRESOLVED",
+      "reason": "臺/擡: suspected input error, no global glyph cleaning",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 75,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1147769,
+            "original_byte_offset": 1133932
+          },
+          "unit_id": "unit:6ff061232c8b522be4cbfc2ee98174acb6ce463710c06a0ac9a5db4b57ae76e7",
+          "content_hash": "sha256:f825c75274a0382403c26fb6abd90cdfaba2ab8d617dc93b2e1fab2e856922c4"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:f825c75274a0382403c26fb6abd90cdfaba2ab8d617dc93b2e1fab2e856922c4"
+      ]
+    },
+    {
+      "chapter": 80,
+      "expected": "第八十回 曹丕廢帝篡炎劉　　　漢王正位繼大統",
+      "observed": "第八十回：曹丕廢帝篡炎劉，漢王正位續大統",
+      "classification": "VERSION_WORDING",
+      "decision": "UNRESOLVED",
+      "reason": "續/繼: equivalent action does not establish same edition",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 81,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1227002,
+            "original_byte_offset": 1213360
+          },
+          "unit_id": "unit:9eb5b11498db7d0c120455dc4e3bbc4c541f851b2e7e68a83bec55e6edc1285a",
+          "content_hash": "sha256:460d05e6c2bb11fb98b15162ab162d06d2217f5b375fe8452f761be27604363b"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:460d05e6c2bb11fb98b15162ab162d06d2217f5b375fe8452f761be27604363b"
+      ]
+    },
+    {
+      "chapter": 102,
+      "expected": "第一百二回 司馬懿占北原渭橋　　諸葛亮造木牛流馬",
+      "observed": "第一○二回：司馬懿戰北原渭橋，諸葛亮造木牛流馬",
+      "classification": "VERSION_WORDING",
+      "decision": "UNRESOLVED",
+      "reason": "戰/占: different wording; cannot resolve from directory alone",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 103,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1588649,
+            "original_byte_offset": 1568176
+          },
+          "unit_id": "unit:bea6fda3d61d87a667cb1e910cd8819f6f059d0dc9d6aa8e29c765080b78978e",
+          "content_hash": "sha256:2534fb85b230f0a6a36a48fbac1f2ee16ce996a76f219ebf11ec643eb2ded805"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:2534fb85b230f0a6a36a48fbac1f2ee16ce996a76f219ebf11ec643eb2ded805"
+      ]
+    },
+    {
+      "chapter": 111,
+      "expected": "第一百十一回 鄧士載智取姜伯約　　諸葛誕義討司馬昭",
+      "observed": "第一一一回：鄧士載智敗姜伯約，諸葛誕義討司馬昭",
+      "classification": "VERSION_WORDING",
+      "decision": "UNRESOLVED",
+      "reason": "敗/取: source titles differ, independent edition proof absent",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 112,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1718906,
+            "original_byte_offset": 1706815
+          },
+          "unit_id": "unit:de002c64f51b42f460bfad7e964dc0de515dde131100bcfc81ed58b2b1c1d87c",
+          "content_hash": "sha256:67eb559b7f9380b8869778d54faf360eba0660caeff5e9ac011f685a4b648639"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:67eb559b7f9380b8869778d54faf360eba0660caeff5e9ac011f685a4b648639"
+      ]
+    },
+    {
+      "chapter": 112,
+      "expected": "第一百十二回 救壽春于詮死節　　　取長城伯約鏖兵",
+      "observed": "第一一二回：救壽春于詮死節，取長城伯約鑿兵",
+      "classification": "TRANSCRIPTION_SUSPECTED",
+      "decision": "UNRESOLVED",
+      "reason": "鑿/鏖: suspected wrong word, evidence not sufficient for correction",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 113,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1731379,
+            "original_byte_offset": 1718906
+          },
+          "unit_id": "unit:71861c5151a1bab1d1de0e076ee3a998c27357310d06bfdb0f40056e6e41ce95",
+          "content_hash": "sha256:8054006778a9ebbb9cc4cc2a629a240311a8ef47437b49008f0d5363d740fb77"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:8054006778a9ebbb9cc4cc2a629a240311a8ef47437b49008f0d5363d740fb77"
+      ]
+    },
+    {
+      "chapter": 115,
+      "expected": "第一百十五回 詔班師後主信讒　　　託屯田姜維避禍",
+      "observed": "第一一五回：詔班師後主信纔，託屯田姜維避禍",
+      "classification": "TRANSCRIPTION_SUSPECTED",
+      "decision": "UNRESOLVED",
+      "reason": "纔/讒: suspected wrong character, no silent textual emendation",
+      "evidence": [
+        {
+          "locator": {
+            "path": "23950.txt",
+            "field": "text",
+            "record": 116,
+            "encoding": "utf-8-sig",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 1770210,
+            "original_byte_offset": 1757486
+          },
+          "unit_id": "unit:44a3e5371c5da1b352fb69be71eb5a4779154ce85a21256555b71e021e5dd2bd",
+          "content_hash": "sha256:7f98628af4582e81aea5dbcb69e1999df3e5b66e2f95fdae8f03ffb511994c53"
+        }
+      ],
+      "source_refs": [
+        "https://zh.wikisource.org/w/index.php?oldid=5401635;sha256:f3c0504ecd831f4abdee7ddf4eb141b8573e2c3795001c9e4ee9f18d3b120a2e",
+        "sha256:ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+        "normalized-unit:sha256:7f98628af4582e81aea5dbcb69e1999df3e5b66e2f95fdae8f03ffb511994c53"
+      ]
+    }
+  ],
+  "seconds": 1.1811206670245156,
+  "peak_rss_bytes": 91111424
+}

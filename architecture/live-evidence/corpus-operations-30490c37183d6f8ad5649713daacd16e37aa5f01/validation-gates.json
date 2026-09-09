@@ -1,0 +1,68 @@
+{
+  "command": "make validate",
+  "exit_code": 0,
+  "raw_log": {
+    "path": "/tmp/nf-corpus-operations-20260910/final-validate.log",
+    "sha256": "sha256:7052bac3744be816e7df00120f144d4895acbfb37a678c40293adba779523841"
+  },
+  "checks": [
+    {
+      "kind": "modules",
+      "status": "PASS",
+      "checked": 39
+    },
+    {
+      "kind": "migrations",
+      "status": "PASS",
+      "head": "20260910_0128_corpus_operations",
+      "checked": 129
+    },
+    {
+      "kind": "workers",
+      "status": "PASS",
+      "checked": 10
+    },
+    {
+      "kind": "tests",
+      "status": "PASS",
+      "checked": 4
+    },
+    {
+      "kind": "console_scripts",
+      "status": "PASS",
+      "checked": 11
+    },
+    {
+      "schema_version": "architecture-fitness-report.v1",
+      "status": "PASS",
+      "violations": []
+    },
+    {
+      "schema_version": "novel-forge.documentation-reality-check.v1",
+      "status": "PASS",
+      "errors": [],
+      "inventory_sha256": "sha256:9d99029faea7ff3ad53dcce4eebc4ae5a209d89ebb6ec6018e0d6ff7ee0ba236",
+      "tested_sha": "30490c37183d6f8ad5649713daacd16e37aa5f01"
+    },
+    {
+      "schema_version": "novel-forge.ai-instruction-reality.v1",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "schema_version": "novel-forge.test-reality.v1",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "schema_version": "novel-forge.historical-reality.v1",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "schema_version": "novel-forge.proposal-lifecycle.v1",
+      "status": "PASS",
+      "errors": []
+    }
+  ]
+}

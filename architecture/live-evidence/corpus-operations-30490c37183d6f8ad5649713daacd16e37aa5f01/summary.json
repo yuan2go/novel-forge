@@ -1,0 +1,284 @@
+{
+  "evidence_class": "FOCUSED_ENGINEERING_AND_LOCAL_ACQUISITION_OBSERVATION",
+  "baseline_sha": "d58c5ba4b05c88e7f4985b82c74749c5aa42da57",
+  "implementation_sha": "50482c59c47af35291c646361f0ddb936af456a0",
+  "tested_sha": "30490c37183d6f8ad5649713daacd16e37aa5f01",
+  "tested_source_tree": "9589d0d8720156bf562c8e5bc41fd5aaf936ff79",
+  "implementation_identity": "sha256:28dde45e88a6b26a3c3996e691e9a2d678d4f0e697aab7b3ec80dd51a8b6bfbd",
+  "evidence_commit_rule": "evidence-only descendant with identical implementation-tree identity; final HEAD is reported separately",
+  "environment": {
+    "tested_sha": "30490c37183d6f8ad5649713daacd16e37aa5f01",
+    "source_tree": "9589d0d8720156bf562c8e5bc41fd5aaf936ff79",
+    "implementation_identity": "sha256:28dde45e88a6b26a3c3996e691e9a2d678d4f0e697aab7b3ec80dd51a8b6bfbd",
+    "python": "3.12.2 (main, Feb  6 2024, 20:19:44) [Clang 15.0.0 (clang-1500.1.0.2.5)]",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "postgresql": "PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+    "migration_head": "20260910_0128_corpus_operations",
+    "registry_count": 129,
+    "applied_count": 129,
+    "dependencies_sha256": "1cf75dd06f477328461df42fafe7f69bf13d2fb2ad65b552b8c494b45f56d78a",
+    "config_identity": "included in implementation identity",
+    "data_separation": "task-owned test and samples databases; source workspace/user runtime untouched",
+    "paid_model_calls": 0
+  },
+  "commands": [
+    {
+      "command": "pytest tests/unit/test_corpus_ingestion_formats.py tests/unit/test_corpus_ingestion_transports.py tests/unit/test_corpus_admission.py tests/unit/test_source_deconstruction_domain.py tests/unit/test_mkaos_authority_domain.py tests/integration/test_corpus_foundation_postgres.py tests/integration/test_corpus_ingestion_postgres.py tests/integration/test_source_import_runtime_postgres.py tests/integration/test_source_deconstruction_authority_postgres.py tests/integration/test_mkaos_authority_postgres.py --junitxml=focused.xml -q",
+      "exit_code": 0
+    },
+    {
+      "command": "pytest tests/unit/test_source_import_domain.py tests/unit/test_source_import_worker_permissions.py tests/unit/test_source_import_git_adapter.py tests/unit/test_source_import_deadline_contract.py --junitxml=source-unit.xml -q",
+      "exit_code": 0
+    },
+    {
+      "command": "pytest 'tests/integration/test_corpus_migrations_postgres.py::test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260625_0001_initial_industrial_schema]' 'tests/integration/test_corpus_migrations_postgres.py::test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260909_0127_corpus_curation]' --junitxml=migrations.xml -q",
+      "exit_code": 0
+    },
+    {
+      "command": "make validate",
+      "exit_code": 0
+    },
+    {
+      "command": "make head-integrity-check",
+      "exit_code": 0
+    }
+  ],
+  "accounting": [
+    {
+      "collection": "focused",
+      "junit": "focused.xml",
+      "test_nodes": 97,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 309.257,
+      "subtests": "NOT_SEPARATELY_INSTRUMENTED",
+      "exit_code": 0
+    },
+    {
+      "collection": "source-unit",
+      "junit": "source-unit.xml",
+      "test_nodes": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.14,
+      "subtests": "NOT_SEPARATELY_INSTRUMENTED",
+      "exit_code": 0
+    },
+    {
+      "collection": "migrations",
+      "junit": "migrations.xml",
+      "test_nodes": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 9.29,
+      "subtests": "NOT_SEPARATELY_INSTRUMENTED",
+      "exit_code": 0
+    }
+  ],
+  "migration": {
+    "fresh": "PASS",
+    "existing_data_upgrade": "20260909_0127_corpus_curation -> 20260910_0128_corpus_operations",
+    "upgrade": "PASS",
+    "applied_count": 129,
+    "published_migrations_modified": false
+  },
+  "trace": [
+    [
+      "curated query/control",
+      "novel-forge corpus analyze/status/run/pause/resume/cancel/results",
+      "SourceImportQuery.analysis_results / SourceImportScheduler.pending_for_job",
+      "SourceImportJob + frozen curated revision + Kernel work/attempt/effect",
+      "test_native_cli_curated_analysis_controls_results_and_relation_guards"
+    ],
+    [
+      "relation governance",
+      "corpus equivalence / relate / resolve-work / curate",
+      "validate_relation_write / curated_availability",
+      "versioned relation and canonical membership; deferred database guard",
+      "test_native_multifile_duplicate_review_relations_and_discovery + native CLI test"
+    ],
+    [
+      "stale result publication",
+      "existing Source profiling/deconstruction / MKAOS commit",
+      "require_curated_evidence_current",
+      "Source owning UoW + shared authorization lock, retained effect receipt",
+      "test_native_curated_corpus_freeze_analysis_and_stale_members[True]"
+    ],
+    [
+      "EPUB logical chapter",
+      "corpus reprocess / inspect / review",
+      "corpus-parser.v4 logical_records + carry_review",
+      "same acquisition/Edition; new Processing/SourceWork/Bridge and exact fragments",
+      "test_epub_logical_chapters_span_resources_and_retain_exact_fragments + real-corpus.json"
+    ],
+    [
+      "analysis children/results",
+      "CLI run job scoped; GET /product/source-imports/{job}/analysis-results",
+      "existing profiling/deconstruction/MKAOS worker path",
+      "candidate, approved Card, Pack separately counted; no automatic approval",
+      "native-operations.json / real-analysis-dispatch.json"
+    ]
+  ],
+  "failure_originals": [
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/query-before.log",
+      "sha256": "sha256:8e6a0de507e536c30f79f30637e981733336b7fbdd18bb98274cb954b30f1039",
+      "bytes": 1765
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/query-before-pgvector.log",
+      "sha256": "sha256:410dee609136eccda5792b8d56ee5604daf3fcea7af10d531a0a3f9b815cec63",
+      "bytes": 9501
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/native-first.log",
+      "sha256": "sha256:de7a03df4a8a0561dd63eb51ab48e1cdf8cb227e176f5f90c3eb3511debce01f",
+      "bytes": 3049
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/native-second.log",
+      "sha256": "sha256:bea2d72ae0c9d6c6a1b4e0224466da7b63f6c62c65757c192e136d2f80daebb6",
+      "bytes": 2631
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/native-third.log",
+      "sha256": "sha256:16a379991421ae0a9442b61961dc529d925f818482f2260ebfe5a203ca91b5d6",
+      "bytes": 2668
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/native-fourth.log",
+      "sha256": "sha256:d8aec6026bb489c4326f40f2f19fbda64d478f47cae6b2ca6ae21eda61165c56",
+      "bytes": 2971
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/native-fifth.log",
+      "sha256": "sha256:3baa8be0364d61759544c95d53ef49fe9f964889339eb90ae898409a17d6a2a8",
+      "bytes": 2966
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/publication-gate-development.log",
+      "sha256": "sha256:4d5ea812ed0be94e14a9b3919715eece83d5ae85aa17afba8a85d71d6e4a8398",
+      "bytes": 43246
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/publication-gate-after.log",
+      "sha256": "sha256:9579a53a2b882d76c77b59bf31a61353d0a6042e4da5482c5906ac547e528ee2",
+      "bytes": 17103
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/upgrade-development.log",
+      "sha256": "sha256:56fe1d686f7839f5b6d1d4879d513f1b03f372077d5816416c128ec687bd9805",
+      "bytes": 1350
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/real-native-first.log",
+      "sha256": "sha256:74c14fdae9977a0c4a8225d5100c824b18c2332fece5faf015d0ae57767a8d48",
+      "bytes": 275
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/real-development/operations.json",
+      "sha256": "sha256:0c8d36978d36f31c53e3cef8ba042b0363a8d2c53584a7248f221acb3f603ace",
+      "bytes": 3305764
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/validate-development.log",
+      "sha256": "sha256:45ae31786b5a9de62b9da007a52c9fa8492d6d5bdb8c1b49fb7b18b3312c8122",
+      "bytes": 9929
+    }
+  ],
+  "failure_resolution": {
+    "missing-purpose": "resolve exact frozen Operation/curated revision; no default purpose/snapshot",
+    "receipt-query": "read existing dispatch receipt rather than nonexistent ExternalEffect column",
+    "knowledge-count": "count committed source extraction result assets, separately from approvals",
+    "retry-and-partial": "persisted retryable failures yield PARTIAL; one invocation does not spin on a failed operation",
+    "stale-publication": "Source/MKAOS commit-time admission; resume checks stale selection before artifact replay; confirmed receipts retained",
+    "epub-review": "map exact prior occurrences into logical fragments; scoped repair only",
+    "upgrade-test-assumption": "compare actual prior schema field presence; no migration rewrite",
+    "missing-resource-test": "assert existing typed EPUB_RESOURCE_MISSING error",
+    "stale-documentation": "refresh implemented projection and reviewed proposal metadata"
+  },
+  "not_run": {
+    "complete_P0": "task requires focused applicable matrix, not unrelated full backend/UI qualification",
+    "real_model_analysis": "no explicit paid/account-entitlement model call authorization; only scripted engineering transport",
+    "human_editorial": "no independent evaluator",
+    "remote_source_reacquisition": "reused verified local acquisition bytes; no fresh HF/IA claim",
+    "longform_generation_quality": "out of scope"
+  },
+  "proof_limits": [
+    "97 focused test nodes + 15 Source unit nodes + 2 migration nodes; fixture transport proves engineering only",
+    "3 acquired files represent 2 works, not three independent editions",
+    "120/100 logical chapters and structure usable do not establish full edition completeness; coverage UNKNOWN",
+    "Sanguo:14 exact catalogue differences,2 prior glyph-scoped decisions,12 unresolved",
+    "real acquired members have native profiling tasks queued and paused, no completed real-model analysis"
+  ],
+  "status": {
+    "CURATED_JOB_QUERY_AND_CONTROL": "PASS",
+    "NATIVE_ANALYSIS_OPERATION_LOOP": "PASS",
+    "ANALYSIS_RESULTS_AND_LINEAGE": "PASS",
+    "RELATION_GOVERNANCE_CONVERGENCE": "PASS",
+    "EPUB_LOGICAL_CHAPTER_CONTINUITY": "PASS",
+    "VERSIONED_REPROCESSING_COMPATIBILITY": "PASS",
+    "REAL_MODEL_ANALYSIS": "NOT_RUN",
+    "FOCUSED_ENGINEERING_QUALIFICATION": "PASS",
+    "REMOTE_MAIN_INCLUDES_DELIVERY": "NO"
+  },
+  "last_remote_sha": "d58c5ba4b05c88e7f4985b82c74749c5aa42da57",
+  "remote_drift": "NONE",
+  "resource_cleanup": {
+    "owned_containers_remaining": [],
+    "owned_volumes_remaining": [],
+    "owned_port_listening": false,
+    "resource_residue": 0,
+    "retained_backup": {
+      "path": "/tmp/nf-corpus-operations-20260910/samples-final.dump",
+      "bytes": 28126437,
+      "sha256": "5a575dc767582afa4ec641c483ba0c5f3ef5fcebf0d98936d0326cba4468cdfc",
+      "pg_restore_listing_entries": 3850,
+      "mode": "0600"
+    },
+    "referenced_object_store_retained": "/tmp/nf-corpus-operations-20260910/real-final/objects",
+    "raw_corpus_deleted": false,
+    "user_runtime_resources_modified": false
+  },
+  "raw_logs": [
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/final-validate.log",
+      "sha256": "sha256:7052bac3744be816e7df00120f144d4895acbfb37a678c40293adba779523841"
+    },
+    {
+      "path": "/tmp/nf-corpus-operations-20260910/final/native-operations.json",
+      "sha256": "sha256:cfe3af12585d858c40ec6201bfc2ca7f0cba6aa4eed62da031fd3240268473be"
+    }
+  ],
+  "artifact_digests": {
+    "dependencies.json": "sha256:1cf75dd06f477328461df42fafe7f69bf13d2fb2ad65b552b8c494b45f56d78a",
+    "final-evidence-check.log": "sha256:4191a1d45d5a63ca374ec12d5870d9d47a21ae37da8526e546bc2b944c368e7f",
+    "focused.xml": "sha256:fa2ea9d485ce1f6fd1d87eca26104ee017d7b3ba3a0bce4f51a042b86dac4876",
+    "real-corpus.json": "sha256:3aa814229712540512a1bcd4c77ca23102f83ea1a769ecee86526597bae46165",
+    "real-epub-profile.json": "sha256:49fad32b00206019db1483a3b2be90d21b9a5388241cca794f2fe5fb90187585",
+    "final-migrations.log": "sha256:2514a561fab80c79a83d95b7c5ed08e89bed76876b40d1273286083ed60aaffa",
+    "source-unit.xml": "sha256:2746b389cabef95b2c45c7d890e70417282c043cb389ae850f0baa610c888596",
+    "final-source-unit.log": "sha256:a3c5a19a49c07097aae859f5ab532a65fed8296c214056971cdc74be55ab6743",
+    "migrations.xml": "sha256:8b1decd9350cfde19adbd30e27562c9c998566c63425629c5256f2a3b3c8bb00",
+    "content-query-plan.json": "sha256:9ce6d69fe9b0c723605cd8c535e8931eb29bc6a741e7c54e42e0799953c03e9c",
+    "validation-gates.json": "sha256:96e430931c33aed83ebe1b446cbe229834dfb29b2ed8a5be498b79783af405c2",
+    "real-analysis-dispatch.json": "sha256:619ad40e3d4803059e4bb6de3b2e20e9f0b9e671bc25abb24d95a6a78b6d03cd",
+    "native-operations.json": "sha256:ec91b7104801183ad91adb1292e596ccb1a258fe2408094a96ecd893d82148e8",
+    "cleanup.json": "sha256:03ce1cc54e97d6ac56368aa74bc048bef893c320984d13a287e80f3c22dbd3d7",
+    "job-query-plan.json": "sha256:10ae6f4633941ef55b93b0175975946b84d0b3864ddc40761ac2aec770a00c9c",
+    "catalogue-recheck.json": "sha256:051446ed7023f94a6afef2774c1c647df116e1627ff4fff0220b57b67135e549",
+    "implementation-identity.json": "sha256:4cc51166dc66167c86b9e3f8e1929ed7f2000b5d2642a3c6012ed74257fda402",
+    "final-head-integrity.log": "sha256:c7da0e6ab6422825e52680919922d4f9cdbfe149f986df7a640677d2c564a70d",
+    "final-focused.log": "sha256:c6dbf5deaf8ae5ba778a92c7e1927b1de4f81fcc7ab87ee2e14abf94e726bc5e",
+    "canonical-work-query-plan.json": "sha256:882f4ab97aa1b19f2ed840de299ff93e7b05dd21d8f0b8707226e18af3ab3dd1"
+  },
+  "last_remote_check_utc": "2026-09-09T17:31:19.101704+00:00",
+  "final_evidence_checks": {
+    "command": "make documentation-reality-check historical-reality-check head-integrity-check",
+    "exit_code": 0,
+    "implementation_identity_match": true
+  }
+}

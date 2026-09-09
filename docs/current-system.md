@@ -736,7 +736,10 @@ runs job-scoped eligible work with existing lease/fence recovery and reports par
 paused, cancelled, stage-bound and leased outcomes separately. New and legacy pair
 commands share canonical-group conflict validation; a deferred PostgreSQL constraint
 checks the final membership state. A changed relation evidence set requires a new inspected
-curated revision for new execution; frozen results remain queryable.
+curated revision for new execution; frozen results remain queryable. Source profile,
+Observation and MKAOS candidate publication recheck the originating curated selection
+inside the owning transaction under the Source authorization lock. Confirmed Provider
+receipts remain evidence when a changed selection blocks publication.
 
 `corpus-parser.v4` adds EPUB logical chapters over ordered physical spine fragments.
 TOC/NCX/nav anchors define reading intervals; verified headings can split a spine item.
