@@ -1,0 +1,113 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues __
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10ece18e0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-685/test_native_exact_boundary_rep0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e21df40>
+
+    def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
+        corpus, tmp_path, monkeypatch
+    ):
+        import hashlib
+    
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        path = tmp_path / "unstructured.txt"
+        text = "甲交出钥匙并承诺回来。" * 20 + "\n" + "乙归还钥匙兑现约定。" * 20
+        raw = text.encode()
+        path.write_bytes(raw)
+        parser = {
+            "version": "corpus-parser.v2",
+            "format": "txt",
+            "constants": {"work_id": "boundary-original"},
+            "normalization": {"min_body_chars": 10},
+        }
+        manifest = {**_manifest(path), "parser": parser}
+        admitted = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": "boundaries",
+                "manifest": manifest,
+            },
+        )
+        assert admitted.status_code == 202, admitted.text
+        root = scheduler.run_or_recover(
+            operation_id=admitted.json()["operation_id"], project_id=corpus.project
+        )
+        first = scheduler.run_or_recover(
+            operation_id=root["result"]["children"][0]["operation_id"],
+            project_id=corpus.project,
+        )
+        assert first["status"] == "SUCCEEDED", first
+        original = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + first["result"]["processing_id"],
+            params={"project_id": corpus.project},
+        ).json()
+        assert not original["assessment"]["structure_usable"]
+        cut = len((text.split("\n")[0] + "\n").encode())
+        parser["normalization"]["boundaries"] = [
+            {
+                "path": path.name,
+                "checksum": "sha256:" + hashlib.sha256(raw).hexdigest(),
+                "start": start,
+                "end": end,
+                "title": title,
+                "number": i,
+                "evidence": "original synthetic fixture, exact authored boundary",
+            }
+            for i, (start, end, title) in enumerate(
+                ((0, cut, "第一章 承诺"), (cut, len(raw), "第二章 兑现")), 1
+            )
+        ]
+        repair = corpus.client.post(
+            "/product/source-imports/corpus/reprocess",
+            json={
+                "project_id": corpus.project,
+                "edition_id": first["result"]["edition_id"],
+                "run_key": "exact-boundaries",
+                "parser": parser,
+            },
+        )
+        assert repair.status_code == 202, repair.text
+        result = scheduler.run_or_recover(
+            operation_id=repair.json()["operation_id"], project_id=corpus.project
+        )
+        assert result["status"] == "SUCCEEDED", result
+        current = corpus.client.get(
+            "/product/source-imports/corpus/processing/"
+            + result["result"]["processing_id"],
+            params={"project_id": corpus.project},
+        ).json()
+>       assert current["assessment"]["structure_usable"]
+E       assert False
+
+tests/integration/test_corpus_ingestion_postgres.py:1186: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues
+1 failed, 11 deselected, 3 warnings in 4.92s

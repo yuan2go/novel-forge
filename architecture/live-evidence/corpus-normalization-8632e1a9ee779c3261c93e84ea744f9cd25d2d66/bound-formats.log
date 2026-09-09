@@ -1,0 +1,1 @@
+{'tested_sha': '8632e1a9ee779c3261c93e84ea744f9cd25d2d66', 'txt_chapters': 120, 'html_chapters': 120, 'native_candidate_found': True, 'distinct_editions': True, 'relation_status': 'SUCCEEDED', 'annotation': 'agent source evidence review; no independent human labels', 'provider_calls': 0, 'peak_rss_bytes': 118652928}

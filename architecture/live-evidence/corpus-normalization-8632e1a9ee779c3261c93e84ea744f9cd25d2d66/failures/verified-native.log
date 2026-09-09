@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/tmp/nf-corpus-wp3-20260909/run_public_verified.py", line 28, in <module>
+    review={'action':'review_processing','processing_id':processing['processing_id'],'decisions':decisions,'reason':'Preserve acquired text and exclude publisher framing from analysis projection.'};(root/'review.json').write_text(json.dumps(review,ensure_ascii=False,indent=2));run('review',decision=root/'review.json',run_key='framing-review')
+                                                                                                                                                                                                                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/nf-corpus-wp3-20260909/run_public_verified.py", line 18, in run
+    result=run_corpus_command(settings,SimpleNamespace(**{**base,'action':action,**kw}))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/cli/corpus.py", line 93, in run_corpus_command
+    admitted = authority.admit_corpus(CorpusCommand(project_id=project,workspace_id=args.workspace_id,actor_id=principal.principal_id,idempotency_key=args.run_key,trace_id=args.run_key,correlation_id=args.run_key,action=action),principal=principal)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/modules/source_authority/application.py", line 169, in admit_corpus
+    return self.corpus.admit(command, principal=principal, parent_worker=parent_worker)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/modules/source_authority/corpus_application.py", line 185, in admit
+    admitted = admit_command_in_uow(
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/modules/command_kernel/service.py", line 227, in admit_command_in_uow
+    raise IdempotencyConflictError(
+novel_forge.storage.authority_repositories.IdempotencyConflictError: IDEMPOTENCY_CONFLICT: idempotency key belongs to a different request digest

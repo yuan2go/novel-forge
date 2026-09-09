@@ -1,0 +1,172 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[True] _
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10f6bd220>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-691/test_native_exact_boundary_rep1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e55f740>
+review_changes_before_commit = True
+
+    @pytest.mark.parametrize("review_changes_before_commit", [False, True])
+    def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
+        corpus, tmp_path, monkeypatch, review_changes_before_commit
+    ):
+        import hashlib
+    
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        path = tmp_path / "unstructured.txt"
+        text = "甲交出钥匙并承诺回来。" * 20 + "\n" + "乙归还钥匙兑现约定。" * 20
+        raw = text.encode()
+        path.write_bytes(raw)
+        parser = {
+            "version": "corpus-parser.v2",
+            "format": "txt",
+            "constants": {"work_id": "boundary-original"},
+            "normalization": {"min_body_chars": 10},
+        }
+        manifest = {**_manifest(path), "parser": parser}
+        admitted = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": "boundaries",
+                "manifest": manifest,
+            },
+        )
+        assert admitted.status_code == 202, admitted.text
+        root = scheduler.run_or_recover(
+            operation_id=admitted.json()["operation_id"], project_id=corpus.project
+        )
+        first = scheduler.run_or_recover(
+            operation_id=root["result"]["children"][0]["operation_id"],
+            project_id=corpus.project,
+        )
+        assert first["status"] == "SUCCEEDED", first
+        original = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + first["result"]["processing_id"],
+            params={"project_id": corpus.project},
+        ).json()
+        assert not original["assessment"]["structure_usable"]
+        cut = len((text.split("\n")[0] + "\n").encode())
+        parser["normalization"]["boundaries"] = [
+            {
+                "path": path.name,
+                "checksum": "sha256:" + hashlib.sha256(raw).hexdigest(),
+                "start": start,
+                "end": end,
+                "title": title,
+                "number": i,
+                "evidence": "original synthetic fixture, exact authored boundary",
+            }
+            for i, (start, end, title) in enumerate(
+                ((0, cut, "第一章 承诺"), (cut, len(raw), "第二章 兑现")), 1
+            )
+        ]
+        repair = corpus.client.post(
+            "/product/source-imports/corpus/reprocess",
+            json={
+                "project_id": corpus.project,
+                "edition_id": first["result"]["edition_id"],
+                "run_key": "exact-boundaries",
+                "parser": parser,
+            },
+        )
+        assert repair.status_code == 202, repair.text
+        if review_changes_before_commit:
+            from novel_forge.modules.source_import.corpus_ingestion import similarity
+    
+            fingerprint = similarity.fingerprint
+    
+            def intervene(texts):
+                value = fingerprint(texts)
+                decision = corpus.run(
+                    {
+                        "action": "review_processing",
+                        "processing_id": original["processing_id"],
+                        "decisions": [
+                            {
+                                "issue_id": original["assessment"]["issues"][0]["issue_id"],
+                                "resolution": "REJECT_CORRUPT",
+                                "reason": "new source evidence found while processing was in flight",
+                            }
+                        ],
+                        "reason": "concurrent source review",
+                    }
+                )
+                assert decision["status"] == "SUCCEEDED", decision
+                return value
+    
+            monkeypatch.setattr(similarity, "fingerprint", intervene)
+>       result = scheduler.run_or_recover(
+            operation_id=repair.json()["operation_id"], project_id=corpus.project
+        )
+
+tests/integration/test_corpus_ingestion_postgres.py:1203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/source_import/scheduler.py:45: in run_or_recover
+    return super().run_or_recover(
+src/novel_forge/modules/source_authority/scheduler.py:230: in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:794: in execute_fenced
+    return runtime.acquire(worker) if definition.endswith("acquire") else runtime.process_work(worker)
+                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/corpus_ingestion/runtime.py:902: in process_work
+    require_reprocessing_baseline(repository, payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+repository = <novel_forge.storage.source_authority_repositories.SourceAuthorityRepository object at 0x10f7c9670>
+payload = {'manifest': {'schema_version': 'corpus-ingestion-manifest.v1', 'adapter_version': 'corpus-adapters.v1', 'source': {'k...7dcf6ad242df9af', 'edition_id': 'corpus-edition:23867829b8f08a6cc7190e88ca369b12a1101420bb3ba454b18e9520e65aa94e', ...}
+
+    def require_reprocessing_baseline(repository: Any, payload: dict[str, Any]) -> None:
+        revision = payload["reprocess"]
+        repository.cursor.execute(
+            """SELECT w.asset_version_id,r.review_id FROM authority_source_work_version w
+            LEFT JOIN authority_corpus_processing p ON p.source_work_asset_version_id=w.asset_version_id
+            LEFT JOIN authority_corpus_review r ON r.processing_id=p.processing_id
+              AND NOT EXISTS(SELECT 1 FROM authority_corpus_review n WHERE n.previous_id=r.review_id)
+            WHERE w.corpus_edition_id=%s AND w.status='ACTIVE'""",
+            [payload["edition_id"]],
+        )
+        active = repository.cursor.fetchone()
+        if active is None or tuple(active) != (
+            revision["parent_work"],
+            revision["review_id"],
+        ):
+>           raise KernelError(
+                "CORPUS_REPROCESS_STALE_FAILED_FINAL",
+                "processing or review changed; admit a new request against the current revision",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: CORPUS_REPROCESS_STALE_FAILED_FINAL: processing or review changed; admit a new request against the current revision
+
+src/novel_forge/modules/source_import/corpus_ingestion/reprocessing.py:346: KernelError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[False]
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[True]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[False]
+tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[True]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[True]
+1 failed, 1 passed, 11 deselected, 5 warnings in 10.16s

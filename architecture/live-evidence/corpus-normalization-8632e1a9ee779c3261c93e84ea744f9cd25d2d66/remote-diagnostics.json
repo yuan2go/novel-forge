@@ -1,0 +1,14 @@
+[
+  {
+    "source": "HF",
+    "status": "BLOCKED",
+    "error": "REMOTE_ADDRESS_FORBIDDEN: {\"address_count\": 2, \"host\": \"huggingface.co\", \"non_global_addresses\": [\"198.18.0.246\"], \"proxy_environment_present\": false, \"recovery\": \"repair DNS/proxy routing; private-address admission remains forbidden\", \"stage\": \"DNS_ADMISSION\"}",
+    "seconds": 0.009647042024880648
+  },
+  {
+    "source": "IA",
+    "status": "BLOCKED",
+    "error": "REMOTE_ADDRESS_FORBIDDEN: {\"address_count\": 2, \"host\": \"archive.org\", \"non_global_addresses\": [\"198.18.0.247\"], \"proxy_environment_present\": false, \"recovery\": \"repair DNS/proxy routing; private-address admission remains forbidden\", \"stage\": \"DNS_ADMISSION\"}",
+    "seconds": 0.0020470840390771627
+  }
+]

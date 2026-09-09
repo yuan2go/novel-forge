@@ -1,0 +1,118 @@
+F
+=================================== FAILURES ===================================
+_ test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260909_0125_corpus_ingestion_bridge] _
+
+baseline = '20260909_0125_corpus_ingestion_bridge'
+
+    @pytest.mark.parametrize(
+        "baseline",
+        [
+            "20260625_0001_initial_industrial_schema",
+            "20260907_0120_foundation_generation",
+            "20260908_0123_source_analysis_dimensions",
+            "20260909_0124_corpus_fk_indexes",
+            "20260909_0125_corpus_ingestion_bridge",
+        ],
+    )
+    def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
+        with disposable_database_at_migration(
+            DATABASE_URL, prefix="corpus_upgrade", target_migration_id=baseline
+        ) as url:
+            project, workspace = f"old-project-{uuid4()}", f"old-workspace-{uuid4()}"
+            if baseline != "20260625_0001_initial_industrial_schema":
+                created = ProjectAuthorityApplication(
+                    url, application_build_id="upgrade-test", commit_sha="e" * 40
+                ).execute(
+                    ProjectAuthorityCommand(
+                        definition_name="project_lifecycle.create",
+                        project_id=project,
+                        workspace_id=workspace,
+                        actor_id="upgrade-operator",
+                        idempotency_key=project,
+                        trace_id=project,
+                        correlation_id=project,
+                        payload={"title": "Existing project: 不可改写"},
+                    )
+                )
+                historical_facts = _seed_premerge_authority_facts(url, project, workspace)
+                with psycopg.connect(url) as connection:
+                    history_before = connection.execute(
+                        "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
+                        [created["operation_id"]],
+                    ).fetchone()[0]
+                    definition, operation = f"frozen-source-import-{uuid4()}", str(uuid4())
+                    with connection.cursor() as cursor:
+                        insert_definition(cursor, definition)
+                        insert_operation(
+                            cursor,
+                            operation_id=operation,
+                            definition_name=definition,
+                            project_id=project,
+                            workspace_id=workspace,
+                        )
+                        cursor.execute(
+                            """
+                            INSERT INTO authority_source_import_job (
+                                import_job_id,project_id,workspace_id,source_type,source_locator,requested_ref,
+                                import_policy,import_policy_hash,intelligence_policy,intelligence_policy_hash,
+                                mode,status,discovery_operation_id
+                            ) VALUES (%s,%s,%s,'github_repository','{"repository_url":"https://example.invalid/historical"}',
+                                'frozen-commit','{}',%s,'{}',%s,'PREVIEW','ADMITTED',%s)
+                        """,
+                            [
+                                operation,
+                                project,
+                                workspace,
+                                "sha256:" + "a" * 64,
+                                "sha256:" + "b" * 64,
+                                operation,
+                            ],
+                        )
+                    job_before = connection.execute(
+                        "SELECT to_jsonb(j) FROM authority_source_import_job j WHERE import_job_id=%s",
+                        [operation],
+                    ).fetchone()[0]
+            result = run_migrations(url)
+            assert result["ok"] and result["current"] == LATEST_MIGRATION_ID
+            with psycopg.connect(url) as connection:
+                assert connection.execute(
+                    "SELECT count(*) FROM nf_schema_migrations"
+                ).fetchone()[0] == len(MIGRATIONS)
+                tables = connection.execute(
+                    "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'authority_corpus_%'"
+                ).fetchall()
+                assert {row[0] for row in tables} == {
+                    "authority_corpus_" + name
+                    for name in (
+                        "source",
+                        "rights",
+                        "snapshot",
+                        "book_identity",
+                        "edition",
+                        "admission",
+                        "membership",
+                        "retirement",
+                        "content",
+                        "bridge",
+                        "processing",
+                        "review",
+                        "equivalence",
+                    )
+                }
+                if baseline != "20260625_0001_initial_industrial_schema":
+                    after = _authority_facts(connection, project)
+                    for row in after["authority_source_document"]:
+                        assert row.pop("corpus_edition_id") is None
+>                   assert {key: after[key] for key in historical_facts} == historical_facts
+E                   AssertionError: assert {'authority_s...}, ...}], ...} == {'authority_s...}, ...}], ...}
+E                     
+E                     Omitting 10 identical items, use -vv to show
+E                     Differing items:
+E                     {'authority_source_document': [{'title': '历史来源', 'blob_id': 'mkaos-blob-368c5526-93d1-4f0e-987a-f3eaf6fa15d3', 'created_at': '2026-09-09T01:45:45.41251+00:00', 'media_type': 'text/plain', ...}]} != {'authority_source_document': [{'title': '历史来源', 'blob_id': 'mkaos-blob-368c5526-93d1-4f0e-987a-f3eaf6fa15d3', 'created_at': '2026-09-09T01:45:45.41251+00:00', 'media_type': 'text/plain', ...}]}
+E                     Use -v to get more diff
+
+tests/integration/test_corpus_migrations_postgres.py:135: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_migrations_postgres.py::test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260909_0125_corpus_ingestion_bridge]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 5 deselected in 6.69s

@@ -1,0 +1,86 @@
+{
+  "tested_sha": "8632e1a9ee779c3261c93e84ea744f9cd25d2d66",
+  "results": [
+    {
+      "gate": "fresh",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-c",
+        "import os,json; from novel_forge.storage.migrations.runner import run_migrations; print(json.dumps(run_migrations(os.environ[\"NOVEL_FORGE_DATABASE_URL\"]),default=str))"
+      ],
+      "exit_code": 0,
+      "seconds": 4.938140916987322,
+      "log": "bound-fresh.log"
+    },
+    {
+      "gate": "validate",
+      "argv": [
+        "make",
+        "validate",
+        "RUFF=.venv/bin/ruff",
+        "PYTHON=.venv/bin/python"
+      ],
+      "exit_code": 0,
+      "seconds": 51.49731695803348,
+      "log": "bound-validate.log"
+    },
+    {
+      "gate": "units",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_corpus_ingestion_formats.py",
+        "tests/unit/test_corpus_ingestion_transports.py",
+        "tests/unit/test_corpus_admission.py",
+        "tests/unit/test_classical_corpus_parser.py",
+        "tests/unit/test_source_import_domain.py",
+        "tests/unit/test_source_import_worker_permissions.py",
+        "tests/unit/test_source_import_deadline_contract.py",
+        "tests/unit/test_source_authority_domain.py",
+        "tests/unit/test_mkaos_authority_domain.py",
+        "tests/unit/test_source_deconstruction_domain.py",
+        "tests/unit/test_source_import_git_adapter.py",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-units.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 2.0932876659790054,
+      "log": "bound-units.log"
+    },
+    {
+      "gate": "postgres",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_corpus_ingestion_postgres.py",
+        "tests/integration/test_corpus_foundation_postgres.py",
+        "tests/integration/test_source_import_runtime_postgres.py",
+        "tests/integration/test_mkaos_authority_postgres.py",
+        "tests/integration/test_source_deconstruction_authority_postgres.py",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-postgres.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 241.6740508749499,
+      "log": "bound-postgres.log"
+    },
+    {
+      "gate": "upgrade",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_corpus_migrations_postgres.py",
+        "-k",
+        "0125",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-upgrade.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 12.081342292018235,
+      "log": "bound-upgrade.log"
+    }
+  ]
+}

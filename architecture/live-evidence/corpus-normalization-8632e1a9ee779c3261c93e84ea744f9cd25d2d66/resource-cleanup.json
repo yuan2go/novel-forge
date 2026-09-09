@@ -1,0 +1,9 @@
+{
+  "owned_container_removed": "ca1c186f8cd80eeae2398aa12ac5b80d9ee5d11ee682fff76c8175a8d32c865e",
+  "owned_anonymous_volume_removed": "98d0bd323d5e6a33058ec9ea52da2e003e4530c2e6eeb54a291c0ad3e5823c3b",
+  "owned_runtime_residue": 0,
+  "user_resources_touched": false,
+  "retained_source_and_failure_evidence": "/tmp/nf-corpus-wp3-20260909",
+  "retention_reason": "verified originals and referenced test/export objects preserved outside Git; no production data used",
+  "no_active_owned_database_clients_before_cleanup": true
+}

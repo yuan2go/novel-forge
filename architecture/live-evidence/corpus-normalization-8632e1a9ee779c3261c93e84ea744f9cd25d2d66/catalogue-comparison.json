@@ -1,0 +1,82 @@
+{
+  "catalogue": "https://zh.wikisource.org/w/index.php?oldid=5401635&title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9",
+  "catalogue_mechanism": "web tool extracted primary page, not local verified acquisition",
+  "extracted_catalogue_hash": "60306ab3988a01164efa41b9bc679ee315a2fd47ca5b794e7de794aa9b010f9f",
+  "chapter_count": 120,
+  "catalogue_count": 120,
+  "differences": [
+    {
+      "chapter": 4,
+      "gutenberg": "第四回：廢漢帝陳留為皇，謀董賊孟德獻刀",
+      "wikisource": "第四回 廢漢帝陳留踐位　　　謀董賊孟德獻刀"
+    },
+    {
+      "chapter": 9,
+      "gutenberg": "第九回：除暴兇呂布助司徒，犯長安李傕聽賈詡",
+      "wikisource": "第九回 除暴徒呂布助司徒　　犯長安李傕聽賈詡"
+    },
+    {
+      "chapter": 16,
+      "gutenberg": "第十六回：呂奉先射戟轅門，曹孟德拜師淯水",
+      "wikisource": "第十六回 呂奉先射戟轅門　　　曹孟德敗師淯水"
+    },
+    {
+      "chapter": 18,
+      "gutenberg": "第十八回：賈文和料敵決勝，夏侯惇拔失啖睛",
+      "wikisource": "第十八回 賈文和料敵決勝　　　夏侯惇拔矢啖睛"
+    },
+    {
+      "chapter": 26,
+      "gutenberg": "第二十六回：袁本初敗兵折將，關雲長挂印封金",
+      "wikisource": "第二十六回 袁本初敗兵折將　　　關雲長掛印封金"
+    },
+    {
+      "chapter": 42,
+      "gutenberg": "第四十二回：張翼德大鬧長板橋，劉豫州敗走漢津",
+      "wikisource": "第四十二回 張翼德大鬧長阪橋　　劉豫州敗走漢津口"
+    },
+    {
+      "chapter": 47,
+      "gutenberg": "第四十七回：闞澤密獻詐書，龐統巧授連環計",
+      "wikisource": "第四十七回 闞澤密獻詐降書　　　龐統巧授連環計"
+    },
+    {
+      "chapter": 60,
+      "gutenberg": "第六十回：張永年反難楊脩，龐士元議取西蜀",
+      "wikisource": "第六十回 張永年反難楊修　　　龐士元議取西蜀"
+    },
+    {
+      "chapter": 74,
+      "gutenberg": "第七十四回：龐令明臺櫬決死戰，關雲長放水渰七軍",
+      "wikisource": "第七十四回 龐令明擡櫬決死戰　　關雲長放水渰七軍"
+    },
+    {
+      "chapter": 80,
+      "gutenberg": "第八十回：曹丕廢帝篡炎劉，漢王正位續大統",
+      "wikisource": "第八十回 曹丕廢帝篡炎劉　　　漢王正位繼大統"
+    },
+    {
+      "chapter": 102,
+      "gutenberg": "第一○二回：司馬懿戰北原渭橋，諸葛亮造木牛流馬",
+      "wikisource": "第一百二回 司馬懿占北原渭橋　　諸葛亮造木牛流馬"
+    },
+    {
+      "chapter": 111,
+      "gutenberg": "第一一一回：鄧士載智敗姜伯約，諸葛誕義討司馬昭",
+      "wikisource": "第一百十一回 鄧士載智取姜伯約　　諸葛誕義討司馬昭"
+    },
+    {
+      "chapter": 112,
+      "gutenberg": "第一一二回：救壽春于詮死節，取長城伯約鑿兵",
+      "wikisource": "第一百十二回 救壽春于詮死節　　　取長城伯約鏖兵"
+    },
+    {
+      "chapter": 115,
+      "gutenberg": "第一一五回：詔班師後主信纔，託屯田姜維避禍",
+      "wikisource": "第一百十五回 詔班師後主信讒　　　託屯田姜維避禍"
+    }
+  ],
+  "whole_edition_complete": "NOT_PROVEN (prefaces differ, catalogue not a content checksum)",
+  "annotation": "agent inspection, NOT human labels",
+  "title_matches_ignoring_number_style_space_punctuation": 106
+}

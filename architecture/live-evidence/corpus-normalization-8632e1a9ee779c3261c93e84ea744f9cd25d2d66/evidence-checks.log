@@ -1,0 +1,75 @@
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .
+{
+  "canonical_document_count": 5,
+  "capability_count": 24,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "3f21928b95a595506304199582178b00da300964",
+    "base_source_comment_count": 505,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:b0ff74c6b6b8a584501e242af3845bb978a0df25c4df53201a0f2edecc875a54",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 505,
+  "source_docstring_count": 122,
+  "status": "PASS",
+  "tested_sha": "8632e1a9ee779c3261c93e84ea744f9cd25d2d66",
+  "web_comment_count": 5
+}
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.historical_reality --repo-root .
+{
+  "authority_surface_file_count": 1159,
+  "eight_chapter_canonical_reference_count": 0,
+  "errors": [],
+  "fact_types": {
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
+  "forbidden_machine_field_count": 0,
+  "historical_roadmap_authority_count": 0,
+  "historical_test_authority_count": 0,
+  "retired_path_count": 0,
+  "schema_version": "novel-forge.historical-reality.v1",
+  "stale_wp_pr_adr_roadmap_authority_count": 0,
+  "status": "PASS",
+  "unmanaged_historical_instruction_count": 0
+}
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.proposal_lifecycle --repo-root .
+{
+  "errors": [],
+  "proposal_count": 3,
+  "proposals": [
+    {
+      "baseline_sha": "47cf86bf8e02e83a7a572f30dfaba7ab5d7b1013",
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "47cf86bf8e02e83a7a572f30dfaba7ab5d7b1013",
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "remaining_decisions": 7,
+      "remaining_work": 0,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "47cf86bf8e02e83a7a572f30dfaba7ab5d7b1013",
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "remaining_decisions": 3,
+      "remaining_work": 4,
+      "status": "PARTIALLY_IMPLEMENTED"
+    }
+  ],
+  "retained_terminal_count": 0,
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "PASS"
+}
