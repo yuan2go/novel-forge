@@ -137,6 +137,11 @@ class MkaosAuthorityRepository:
             str(row[0]): dict(zip(keys, row, strict=True))
             for row in self.cursor.fetchall()
         }
+        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+        from novel_forge.modules.source_authority.corpus import CorpusUse
+        SourceAuthorityRepository(self.cursor).require_corpus_documents(
+            project_id, tuple(sorted({str(row["source_document_id"]) for row in rows.values()})), CorpusUse.SOURCE_ANALYSIS
+        )
         for row in rows.values():
             if (
                 row["lifecycle"] != "ACTIVE"
@@ -197,34 +202,25 @@ class MkaosAuthorityRepository:
         return dict(zip(keys, row, strict=True))
 
     def corpus_candidate_origins(self, project_id: str, candidate_ids: tuple[str, ...]) -> dict[str, str]:
-        origins: dict[str, str] = {}
+        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+        from novel_forge.modules.source_authority.corpus import CorpusUse
+        repository = SourceAuthorityRepository(self.cursor)
+        repository.corpus_authorization_lock(project_id)
+        denied: dict[str, str] = {}
         for offset in range(0, len(candidate_ids), 100):
-            self.cursor.execute(
-                """
-                SELECT DISTINCT ON (e.candidate_asset_version_id)
-                    e.candidate_asset_version_id, corpus.snapshot_id
+            self.cursor.execute("""
+                SELECT DISTINCT e.candidate_asset_version_id,c.source_document_id
                 FROM authority_mkaos_evidence_span e
-                JOIN authority_source_chunk chunk
-                  ON chunk.source_chunk_id=e.source_chunk_id AND chunk.project_id=e.project_id
-                JOIN LATERAL (
-                    SELECT f.repository_snapshot_asset_version_id
-                    FROM authority_source_repository_file f
-                    WHERE f.source_document_id=chunk.source_document_id AND f.project_id=e.project_id
-                    UNION
-                    SELECT w.repository_snapshot_asset_version_id
-                    FROM authority_source_work_version w
-                    WHERE w.source_document_id=chunk.source_document_id AND w.project_id=e.project_id
-                ) acquisition ON TRUE
-                JOIN authority_corpus_snapshot corpus
-                  ON corpus.repository_snapshot_asset_version_id=acquisition.repository_snapshot_asset_version_id
-                 AND corpus.project_id=e.project_id
+                JOIN authority_source_chunk c ON c.source_chunk_id=e.source_chunk_id AND c.project_id=e.project_id
                 WHERE e.project_id=%s AND e.candidate_asset_version_id=ANY(%s)
-                ORDER BY e.candidate_asset_version_id, corpus.snapshot_id
-                """,
-                [project_id, list(candidate_ids[offset:offset + 100])],
-            )
-            origins.update((str(row[0]), str(row[1])) for row in self.cursor.fetchall())
-        return origins
+                ORDER BY e.candidate_asset_version_id,c.source_document_id
+            """, [project_id, list(candidate_ids[offset:offset+100])])
+            rows = self.cursor.fetchall()
+            blocked = repository.corpus_document_denials(project_id, tuple(sorted({str(r[1]) for r in rows})), CorpusUse.ABSTRACT_GENERATION)
+            for candidate, document in rows:
+                if str(document) in blocked:
+                    denied[str(candidate)] = blocked[str(document)]
+        return denied
 
     def require_corpus_bridge(self, project_id: str, candidate_ids: tuple[str, ...]) -> None:
         origins = self.corpus_candidate_origins(project_id, candidate_ids)

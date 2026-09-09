@@ -1036,6 +1036,9 @@ class PostgresContentIntelligenceExecutionPort:
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
         if replay is not None:
             return replay
+        from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
+        require_corpus_consumption(self.database_url, worker.project_id,
+            {"input": spec.input_payload, "asset_version_ids": list(spec.artifact_version_ids)}, source_analysis=True)
         definition = default_capability_registry().resolve(spec.capability)
         graph = self._operation_graph(worker.causation_id, worker.project_id)
         documents = tuple(
@@ -1272,6 +1275,8 @@ class PostgresContentIntelligenceExecutionPort:
                 worker_id=self.worker_id,
                 lease_seconds=self.lease_seconds,
                 adapter=adapter,
+                pre_send_assertion=lambda: require_corpus_consumption(self.database_url, worker.project_id,
+                    {"input": spec.input_payload, "asset_version_ids": list(spec.artifact_version_ids)}, source_analysis=True),
             )
         except Exception:
             resolve_provider_budget_failure(

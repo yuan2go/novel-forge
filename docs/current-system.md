@@ -579,65 +579,81 @@ current character/Arc contracts and accepted relationship projections do not est
 that capability. It requires explicit design review rather than promotion of generic
 plan fields into a second Authority.
 
-## Corpus Foundation
+## Corpus ingestion and governed knowledge bridge
 
-Source Authority owns Corpus metadata through `source.corpus.commit`, the Source worker,
-`SourceAuthorityRepository` and the existing Command Kernel/UoW. MKAOS remains the owner
-of downstream abstractions and knowledge decisions. Corpus does not create another
-import executor or knowledge policy engine: bounded metadata batches use the existing
-`authority_source_import_job` with `mode=FOUNDATION`; Attempts, leases, fences, failures
-and terminal replay remain Command Kernel records.
+Source Authority owns the Corpus catalog, immutable rights/snapshots, content bindings,
+and imports. MKAOS owns abstraction review, decisions, Cards and Packs; Context and
+Provider still enforce actual consumption. No parser or downloader acquires fact-write or
+knowledge-approval authority.
 
-The immutable lineage is Source → DatasetManifest/acquisition snapshot → source-local
-book identity → Edition → purpose membership. A source's external identity and purpose
-are fixed. Source metadata changes create snapshots; rights declarations and snapshots
-form explicit parent chains with monotonically ordered revisions. Edition identity is
-bound to the source snapshot, work key and edition key, independently of its checksum.
-Identical checksums do not deduplicate works or assert cross-source equivalence.
+| Existing mechanism | Content ingestion extension | Owning production entry |
+| --- | --- | --- |
+| `source.corpus.commit` and immutable Edition/admission | exact acquisition and per-work rights scopes | Source Authority |
+| SourceImportJob, Command Kernel Attempt/Lease/Fence | `corpus_content` jobs and acquire/work operations | Source Import worker; `novel-forge corpus` |
+| Git acquisition and ExternalEffect receipts | fixed GitHub commit/path, bounded local/HF/IA adapters | `CorpusAcquisitionAdapter` |
+| SourceDocument/Transform/SourceWork/Unit/Chunk | streamed format records and exact Edition bridge | `CorpusIngestionRuntime.process_work` |
+| Source analysis and MKAOS decisions/Packs | current authorization and physical-source checks | existing Source/MKAOS applications |
+| Planning Cards and governed Provider input | shared lineage admission at new consumption | MKAOS query and execution payload resolver |
 
-Rights declarations separate the dataset license from underlying-work authorization and
-its evidence, copyright boundary, allowed/denied purposes and unresolved restrictions.
-Declarations explicitly cover all works in the snapshot; heterogeneous or unverified
-work rights must remain unresolved rather than inherit the repository's software license.
-Production-reference admission denies UNKNOWN, CONFLICTING and RESTRICTED rights, any
-unresolved restriction, purpose mismatch, retirement and changed rights requiring review.
-BENCHMARK sources cannot acquire production-reference membership. PostgreSQL checks,
-composite foreign keys, immutable-row guards and admission guards enforce these boundaries.
+`source.import.corpus.acquire` freezes the requested/resolved manifest and analysis policy
+at admission. It obtains verified bytes through `source.remote.fetch`, stores verified
+Blobs through object-store Effects, freezes a snapshot and admits bounded Edition batches.
+`source.import.corpus.work` maps one bounded work into the existing Source content model.
+The bridge binds project, Edition, exact parsed bytes/parser hash, SourceDocument,
+Transform, SourceWork, normalized hash, rights, policy and Operation. PostgreSQL guards
+reject mismatched scope, acquisition receipts, blobs or immutable bindings. A metadata-only
+Corpus declaration is still not evidence of downloaded bytes.
 
-An ALLOW grants only the declared catalog/reference purpose; it never grants raw prose
-entry to a model. Corpus output assets are ineligible for generation Context even if a
-caller relabels their logical kind. Source abstraction, MKAOS and Context admission remain
-mandatory. Rights changes neither rewrite historical decisions nor upgrade old Editions;
-new use requires an explicit declaration/snapshot and a new admission. Retirement is an
-append-only record, preserving every historical identity and decision.
+Local acquisition detects inode/size/time changes during reading. GitHub fixes a full
+commit and explicit files; its existing Git adapter limits each selected blob to 8 MB and
+rejects LFS pointers, submodules and symlinks. Hugging Face fixes commit/files and verifies
+explicit config/split mappings when requested; it executes no dataset code. Internet
+Archive compares item/file metadata before and after acquisition, checks published MD5/SHA1
+when present and computes its own SHA-256. Item names and access times are not immutable
+content identities. Remote transport rejects private addresses, unapproved redirect hosts
+and credential URLs. Access-denied responses never trigger authentication bypass.
 
-SourceWork is a parsed-content manifest, not a second Corpus work identity or import
-Authority. It is also excluded by physical type from generation Context. When a Corpus
-snapshot explicitly binds a repository acquisition, MKAOS follows exact chunk/document
-lineage through repository files or SourceWork versions. Catalog-purpose admission does
-not authorize those derivatives for generation: new approval, Pack consumption and
-planning-card selection fail closed until a governed Corpus adapter bridge exists.
-Existing approval records remain immutable; new consumption cannot launder Benchmark or
-research material through classical SourceWork. Unrelated Source acquisitions retain
-their existing Source/MKAOS governance path; no cross-source equivalence is inferred.
+TXT uses an explicit strict encoding (including GB18030/GBK/Big5); EPUB follows the spine;
+HTML uses configured body/noise selectors. JSON, JSONL and Parquet map explicit work,
+Edition and chapter keys, with a bounded disk index joining chapters across shards.
+ZIP/TAR expansion rejects unsafe paths, links, special files and excess expansion.
+Per-file/work/record, total byte, memory, disk, timeout, retry and concurrency limits are
+frozen. Oversized unstructured books require bounded chapter records. Ambiguous or missing
+structure is `REVIEW_REQUIRED`; excerpts remain excerpts. Unicode positions, normalized
+UTF-8 offsets and raw record/member locators are distinct. Unknown original offsets remain
+null. Advanced chapter inference, near-duplicate/equivalence analysis, embeddings and
+classification are separate capabilities; a matching content hash never transfers rights.
 
-Each import freezes one snapshot and at most 100 metadata entries within 256 KiB. Identical
-snapshot/batch keys resolve the same Operation; changed payloads conflict. Source-scoped
-locking and natural-key constraints serialize competing revisions and duplicate entries.
-Edition records, admissions, allowed memberships, result asset, import outcome and outbox
-evidence commit together under the current fence. Recovered committed outputs are reused
-before rechecking mutable upstream state; failed transactions leave no partial catalog.
-New rights do not change the meaning of an already committed result. Queries use bounded
-keyset pages; current rights/snapshot lookup uses a revision index.
+Rights distinguish dataset license from underlying prose. `SELECTED_WORKS` declarations
+add exact work-key grants; root restrictions and purpose denials still apply. Corpus purpose
+and the explicit uses `LOCAL_PROCESSING`, `SOURCE_ANALYSIS`, `ABSTRACT_GENERATION` are
+independent gates. Missing use grants deny use. Unknown/conflicting/restricted underlying
+rights cannot authorize production-reference. Research cannot become production knowledge;
+Benchmark cannot enter the Source generation/analysis bridge. Production membership alone
+does not authorize model calls or abstract generation. Source analysis additionally needs
+its existing governed runtime, approved policy and bounded Provider budget.
 
-The manifest's format, external version, checksum and versioned adapter profile are the
-extension contract. Acquisition receipts are explicit operator declarations unless bound
-to an existing Source repository snapshot; registering metadata performs no download or
-content verification. Subsequent adapters must retain that exact acquisition and Edition
-identity when supplying bytes to the existing Source pipeline. Parsing/normalization,
-chapter segmentation, deduplication/equivalence, embeddings, Deconstruction and corpus-scale
-knowledge extraction are not implemented by this foundation. No Corpus metadata is a
-Provider, content-quality or production qualification claim.
+Known Corpus bytes and exact Git acquisition paths cannot be relabeled through legacy
+Source registration or a SourceWork wrapper to omit lineage. Unbound legacy sources keep
+their existing governance. New approvals, Packs, planning references and Provider input
+resolve bounded provenance and current rights. Retirement, new rights or a later Corpus
+binding deny affected new consumption; historical results stay replayable. Authorization
+checks share the Source project's PostgreSQL advisory lock with rights/binding mutations.
+Raw SourceDocument/Transform/Chunk/SourceWork remain prohibited generation inputs, even
+when their Corpus rights permit abstract knowledge use. Only governed knowledge can cross
+that boundary. Fixture-derived Cards retain their fixture ceiling and cannot pass a
+production Planning gate merely because a Pack can be inspected.
+
+Import results distinguish preview, verified acquisition, parsed content, scheduled
+analysis and knowledge approval. Pause stops new stages; the current stage may finish.
+Cancellation uses the Kernel and does not remove accepted content. Committed stage results
+replay without another acquisition; a restarted worker reconciles a known receipt before
+continuing. Unknown Effects are not blindly resent. Only known HTTP 502/503/504 responses
+allow bounded full re-fetch within the frozen retry limit; range continuation is not
+claimed. Terminal failures require a new run key and preserve old failure/byte evidence.
+New requests resolve the current snapshot/rights at admission; the same run key reuses its
+original frozen identities. See [runtime operations](runtime-operations.md#corpus-content-ingestion)
+for the native entry and bounded examples.
 
 ## Qualification ceiling
 

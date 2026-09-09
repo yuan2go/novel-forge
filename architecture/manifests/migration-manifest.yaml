@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260909_0124_corpus_fk_indexes",
+  "head": "20260909_0125_corpus_ingestion_bridge",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -127,6 +127,7 @@
     "20260908_0121_corpus_foundation",
     "20260908_0122_source_work_manifest",
     "20260908_0123_source_analysis_dimensions",
-    "20260909_0124_corpus_fk_indexes"
+    "20260909_0124_corpus_fk_indexes",
+    "20260909_0125_corpus_ingestion_bridge"
   ]
 }

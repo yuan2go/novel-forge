@@ -74,6 +74,7 @@ class RegisterSourceDocumentCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    corpus_edition_id: str | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -164,8 +165,8 @@ class SourceAuthorityApplication:
             allow_fixture_profiles=allow_fixture_observations,
         )
 
-    def admit_corpus(self, command: CorpusCommand, *, principal: Principal | None = None) -> dict[str, Any]:
-        return self.corpus.admit(command, principal=principal)
+    def admit_corpus(self, command: CorpusCommand, *, principal: Principal | None = None, parent_worker: WorkerLeaseCommand | None = None) -> dict[str, Any]:
+        return self.corpus.admit(command, principal=principal, parent_worker=parent_worker)
 
     def execute_content_profile(
         self,
@@ -303,6 +304,7 @@ class SourceAuthorityApplication:
                 "license_name": command.license_name,
                 "copyright_boundary": command.copyright_boundary,
                 "client_idempotency_key": command.idempotency_key,
+                "corpus_edition_id": command.corpus_edition_id,
                 "governance_status": decision.governance_status,
             },
         }
@@ -503,6 +505,9 @@ class SourceAuthorityApplication:
                 workspace_id=command.workspace_id,
             )
             blob = uow.repositories.asset_blobs.blob_for_update(command.blob_id)
+            SourceAuthorityRepository(uow.cursor).require_corpus_registration(
+                command.project_id, blob, command.corpus_edition_id
+            )
         if blob["project_id"] != command.project_id:
             raise KernelError(
                 "CROSS_PROJECT_REFERENCE", "Source Blob belongs to another project"
@@ -745,6 +750,14 @@ class SourceAuthorityApplication:
                 license_name=str(payload.get("license_name") or ""),
                 copyright_boundary=str(payload.get("copyright_boundary") or ""),
             )
+            corpus_permission = repository.require_corpus_registration(
+                worker.project_id, blob, payload.get("corpus_edition_id")
+            )
+            if corpus_permission is not None:
+                from novel_forge.modules.source_authority.domain import SourceGovernanceDecision
+                from novel_forge.modules.source_authority.corpus import CorpusUse
+                analysis = repository.corpus_edition_uses(worker.project_id, (payload["corpus_edition_id"],), CorpusUse.SOURCE_ANALYSIS, require_bridge=False)
+                decision = SourceGovernanceDecision("ACTIVE", "ELIGIBLE", "CLEAR", "ELIGIBLE", analysis[payload["corpus_edition_id"]]["decision"] == "ALLOW")
             source_hash = str(blob["actual_hash"])
             source_document_id = f"source-document:{worker.project_id}:{source_hash.removeprefix('sha256:')}"
             asset_version_id = f"{source_document_id}:v1"
@@ -778,6 +791,7 @@ class SourceAuthorityApplication:
                 "lineage": {
                     "created_by_operation_id": worker.causation_id,
                     "blob_receipt_required": True,
+                    "corpus_edition_id": payload.get("corpus_edition_id"),
                 },
             }
             content_hash = _hash(content)
@@ -835,6 +849,7 @@ class SourceAuthorityApplication:
                             payload.get("copyright_boundary") or ""
                         ),
                         "governance_status": decision.governance_status,
+                        "corpus_edition_id": payload.get("corpus_edition_id"),
                         "created_by_operation_id": worker.causation_id,
                     }
                 )

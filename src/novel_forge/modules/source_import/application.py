@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -250,6 +250,7 @@ class SourceImportApplication:
         commit_sha: str,
         worker_id: str = "source-import-worker",
         git_adapter: Any | None = None,
+        corpus_adapter: Any | None = None,
         object_store_adapter: Any | None = None,
         object_store_reader: Any | None = None,
         execution_port: ContentIntelligenceExecutionPort | None = None,
@@ -273,6 +274,7 @@ class SourceImportApplication:
         self.commit_sha = commit_sha
         self.worker_id = worker_id
         self.git_adapter = git_adapter
+        self.corpus_adapter = corpus_adapter
         self.object_store_adapter = object_store_adapter
         self.object_store_reader = object_store_reader
         self.execution_port = execution_port
@@ -294,6 +296,10 @@ class SourceImportApplication:
             worker_id=f"{worker_id}:mkaos-authority",
             allow_fixture_activation=allow_fixture_intelligence,
         )
+
+    def create_corpus_import(self, **kwargs: Any) -> dict[str, Any]:
+        from .corpus_ingestion.runtime import CorpusIngestionRuntime
+        return CorpusIngestionRuntime(self).create(**kwargs)
 
     def create_import(
         self,
@@ -643,7 +649,7 @@ class SourceImportApplication:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 effect = uow.repositories.external_effects.get_for_update(effect_id)
             adapter: Any | None = None
-            for candidate in (self.git_adapter, self.object_store_adapter):
+            for candidate in (self.git_adapter, self.object_store_adapter, self.corpus_adapter):
                 if candidate is not None and str(candidate.provider) == str(
                     effect["provider"]
                 ):
@@ -780,6 +786,16 @@ class SourceImportApplication:
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         definition = self._operation_definition(worker.causation_id, worker.project_id)
+        if definition in {"source.import.corpus.acquire", "source.import.corpus.work"}:
+            from .corpus_ingestion.runtime import CorpusIngestionRuntime
+            runtime = CorpusIngestionRuntime(self)
+            from .corpus_ingestion.contracts import IngestionFailure
+            try:
+                return runtime.acquire(worker) if definition.endswith("acquire") else runtime.process_work(worker)
+            except IngestionFailure as exc:
+                raise KernelError(exc.reason, str(exc)) from exc
+            except (UnicodeError, json.JSONDecodeError) as exc:
+                raise KernelError("CORPUS_PARSE_INVALID", type(exc).__name__) from exc
         if definition == SOURCE_IMPORT_DISCOVERY_OPERATION:
             return self._execute_discovery(worker)
         if definition == SOURCE_IMPORT_FILE_OPERATION:
@@ -2497,7 +2513,8 @@ class SourceImportApplication:
                 "format": "source-work-raw-bundle.v1",
             },
             "lineage": {
-                "repository_snapshot_asset_version_id": str(snapshot["asset_version_id"]),
+                "repository_snapshot_asset_version_id": snapshot.get("asset_version_id"),
+                **({"corpus_edition_id": snapshot["corpus_edition_id"]} if snapshot.get("corpus_edition_id") else {}),
                 "source_document_id": str(source_result["source_document_id"]),
                 "source_document_asset_version_id": str(
                     source_result["asset_version_id"]
@@ -2533,11 +2550,11 @@ class SourceImportApplication:
                     "source_work_version_reused": True,
                     "invalidated_descendant_count": 0,
                 }
-            reference_version_ids = (
-                str(snapshot["asset_version_id"]),
+            reference_version_ids = tuple(value for value in (
+                snapshot.get("asset_version_id"),
                 str(source_result["asset_version_id"]),
                 str(transform["asset_version_id"]),
-            )
+            ) if value)
             uow.cursor.execute(
                 """
                 SELECT asset_id FROM authority_asset_version
@@ -2642,10 +2659,10 @@ class SourceImportApplication:
                     source_transform_id, repository_commit_sha, parser_profile,
                     parser_version, registry_id, registry_hash, manifest_hash,
                     unit_count, body_unit_count, character_count, status,
-                    created_by_operation_id
+                    created_by_operation_id, corpus_edition_id
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, 'ACTIVE', %s
+                    %s, %s, %s, 'ACTIVE', %s, %s
                 )
                 """,
                 [
@@ -2653,7 +2670,7 @@ class SourceImportApplication:
                     source_work_id,
                     worker.project_id,
                     str(job["workspace_id"]),
-                    str(snapshot["asset_version_id"]),
+                    snapshot.get("asset_version_id"),
                     str(source_result["source_document_id"]),
                     str(transform["source_transform_id"]),
                     spec.repository_commit_sha,
@@ -2666,6 +2683,7 @@ class SourceImportApplication:
                     sum(item.status == "AVAILABLE" for item in parsed.units),
                     parsed.normalized.character_count,
                     worker.causation_id,
+                    snapshot.get("corpus_edition_id"),
                 ],
             )
             for unit in parsed.units:
@@ -4814,7 +4832,7 @@ class SourceImportApplication:
         self,
         worker: WorkerLeaseCommand,
         *,
-        content: bytes,
+        content: bytes | Path,
         content_hash: str,
         media_type: str,
         purpose: str,
@@ -4822,6 +4840,7 @@ class SourceImportApplication:
         adapter = SourceImportObjectStoreAdapter(
             self.object_store_adapter, content=content
         )
+        content_size = content.stat().st_size if isinstance(content, Path) else len(content)
         digest = content_hash.removeprefix("sha256:")
         object_key = f"source-import/{worker.project_id}/{purpose}/{digest}"
         context = AssetCommandContext(
@@ -4838,7 +4857,7 @@ class SourceImportApplication:
             provider=str(adapter.provider),
             object_key=object_key,
             expected_hash=content_hash,
-            expected_size=len(content),
+            expected_size=content_size,
             media_type=media_type,
             retention_class="LONG_TERM",
             encryption_metadata={"source_import": True},
@@ -4847,9 +4866,7 @@ class SourceImportApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
         if blob["status"] == "AVAILABLE":
-            if blob["actual_hash"] != content_hash or int(blob["actual_size"]) != len(
-                content
-            ):
+            if blob["actual_hash"] != content_hash or int(blob["actual_size"]) != content_size:
                 raise KernelError(
                     "SOURCE_IMPORT_BLOB_REUSE_CONFLICT",
                     "content-addressed Blob has a different verified identity",
@@ -4898,6 +4915,7 @@ class SourceImportApplication:
         adapter: Any,
         max_attempts: int,
         timeout_seconds: int,
+        pre_send_assertion: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         context = self._effect_context(worker)
         planned = plan_external_effect(
@@ -4919,6 +4937,7 @@ class SourceImportApplication:
             worker=worker,
             effect_id=str(planned["external_effect_id"]),
             adapter=adapter,
+            pre_send_assertion=pre_send_assertion,
         )
 
     def _execute_planned_effect(
@@ -4927,6 +4946,7 @@ class SourceImportApplication:
         worker: WorkerLeaseCommand,
         effect_id: str,
         adapter: Any,
+        pre_send_assertion: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         context = self._effect_context(worker)
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -4942,7 +4962,9 @@ class SourceImportApplication:
             )
             if reconciled["outcome"] != "success":
                 raise KernelError(
-                    "SOURCE_IMPORT_EFFECT_RECONCILIATION_FAILED",
+                    "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
+                    if reconciled["outcome"] in {"final_failure", "cancelled"}
+                    else "SOURCE_IMPORT_EFFECT_RECONCILIATION_FAILED",
                     f"ExternalEffect reconciliation returned {reconciled['outcome']}",
                 )
             return self._effect_evidence(effect_id)
@@ -4950,8 +4972,8 @@ class SourceImportApplication:
             return self._effect_evidence(effect_id)
         if disposition.value in {"TERMINAL_FAILURE", "TERMINAL_CANCELLED"}:
             raise KernelError(
-                "SOURCE_IMPORT_EFFECT_TERMINAL",
-                f"ExternalEffect is terminal: {effect['status']}",
+                "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+                f"ExternalEffect is terminal: {effect['status']}; {effect.get('last_error', '')}",
             )
         dispatched = dispatch_external_effect(
             self.database_url,
@@ -4960,11 +4982,15 @@ class SourceImportApplication:
             worker_id=self.worker_id,
             lease_seconds=30,
             adapter=adapter,
+            pre_send_assertion=pre_send_assertion,
         )
         if dispatched["outcome"] != "success":
             raise KernelError(
-                "SOURCE_IMPORT_EFFECT_FAILED",
-                f"ExternalEffect returned {dispatched['outcome']}",
+                "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
+                if dispatched["outcome"] in {"final_failure", "cancelled"}
+                else "SOURCE_IMPORT_EFFECT_FAILED",
+                f"ExternalEffect returned {dispatched['outcome']}; "
+                f"{(dispatched.get('provider_evidence') or {}).get('error_code', '')}",
             )
         evidence = dispatched.get("provider_evidence")
         if not isinstance(evidence, Mapping):
@@ -5126,23 +5152,25 @@ class SourceImportApplication:
         causation_id: str,
         reason: str,
     ) -> None:
-        state = self._operation_state(operation_id, project_id)
-        if state["status"] == "ADMITTED":
-            transition_operation(
-                self.database_url,
-                OperationTransitionCommand(
-                    operation_id=operation_id,
-                    project_id=project_id,
-                    expected_version=int(state["version"]),
-                    expected_status="ADMITTED",
-                    target_status="READY",
-                    actor_id=actor_id,
-                    reason=reason,
-                    trace_id=trace_id,
-                    correlation_id=correlation_id,
-                    causation_id=causation_id,
-                ),
-            )
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            if state["status"] == "ADMITTED":
+                transition_operation(
+                    self.database_url,
+                    OperationTransitionCommand(
+                        operation_id=operation_id,
+                        project_id=project_id,
+                        expected_version=int(state["version"]),
+                        expected_status="ADMITTED",
+                        target_status="READY",
+                        actor_id=actor_id,
+                        reason=reason,
+                        trace_id=trace_id,
+                        correlation_id=correlation_id,
+                        causation_id=causation_id,
+                    ),
+                )
+            uow.commit()
 
     def _operation_state(self, operation_id: str, project_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -5206,10 +5234,15 @@ class SourceImportApplication:
         job = repository.job_for_update(
             project_id=project_id, import_job_id=import_job_id
         )
+        if job["status"] == "CANCELLED" or (
+            job["status"] == "PAUSED"
+            and statuses & {"PLANNED", "QUEUED", "RUNNING", "FAILED_RETRYABLE"}
+        ):
+            return
         transition_failure: dict[str, Any] | None = None
         if statuses & {"FAILED_RETRYABLE", "FAILED_FINAL"}:
             target = "PARTIALLY_COMPLETED"
-        elif statuses & {"PLANNED", "RUNNING"}:
+        elif statuses & {"PLANNED", "QUEUED", "RUNNING"}:
             return
         else:
             requested_override = _source_analysis_override(job.get("analysis_override"))
@@ -5247,6 +5280,12 @@ class SourceImportApplication:
                         else ""
                     ),
                 }
+            elif job["source_type"] == "corpus_content" and any(
+                child.get("status") == "BLOCKED"
+                for item in work
+                for child in item.get("result", {}).get("children", [])
+            ):
+                target = "AWAITING_GOVERNANCE"
             elif statuses & {"BLOCKED"} or any(
                 item["work_kind"] == "MKAOS_EXTRACTION" for item in work
             ):
@@ -5260,6 +5299,7 @@ class SourceImportApplication:
             import_job_id=import_job_id,
             expected=(
                 "PROCESSING",
+                "PAUSED",
                 "PARTIALLY_COMPLETED",
                 "AWAITING_GOVERNANCE",
             ),

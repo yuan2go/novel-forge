@@ -85,6 +85,10 @@ class SourceAuthorityScheduler:
                       active_lease.expires_at IS NULL
                       OR active_lease.expires_at <= NOW()
                   )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM authority_source_import_work work JOIN authority_source_import_job job USING(import_job_id)
+                      WHERE work.operation_id=operation.operation_id AND job.status='PAUSED'
+                  )
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,

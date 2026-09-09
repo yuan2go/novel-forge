@@ -166,6 +166,7 @@ class GitRepositoryExternalEffectAdapter:
                 self._fetch_with_retry(
                     mirror=mirror,
                     requested_ref=requested_ref,
+                    partial=bool(payload.get("partial_fetch", False)),
                 )
                 commitish = "FETCH_HEAD^{commit}"
             else:
@@ -189,7 +190,7 @@ class GitRepositoryExternalEffectAdapter:
             for item in tree_files
             if item.block_reason not in {"not_included", "excluded_path"}
         )
-        files = self._inspect_text_candidates(
+        files = scoped_files if payload.get("metadata_only") else self._inspect_text_candidates(
             repository_identity,
             scoped_files,
             policy,
@@ -230,7 +231,7 @@ class GitRepositoryExternalEffectAdapter:
             ],
             "tree_entry_count": len(tree_files),
             "excluded_tree_entry_count": len(tree_files) - len(scoped_files),
-            "license_findings": self._license_findings(
+            "license_findings": [] if payload.get("metadata_only") else self._license_findings(
                 repository_identity, tree_files
             ),
             "network_access_used": repository_url.startswith("https://"),
@@ -321,7 +322,7 @@ class GitRepositoryExternalEffectAdapter:
             )
         return findings
 
-    def _fetch_with_retry(self, *, mirror: Path, requested_ref: str) -> None:
+    def _fetch_with_retry(self, *, mirror: Path, requested_ref: str, partial: bool = False) -> None:
         command = (
             "git",
             "--git-dir",
@@ -330,6 +331,7 @@ class GitRepositoryExternalEffectAdapter:
             "--force",
             "--prune",
             "--no-tags",
+            *(("--depth=1", "--filter=blob:none") if partial else ()),
             "origin",
             requested_ref,
         )

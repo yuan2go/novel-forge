@@ -1,0 +1,64 @@
+.....F.............                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_native_import_new_process_recovery_and_concurrent_admission _______
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10d1b0560>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-639/test_native_import_new_process0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cb15850>
+
+    def test_native_import_new_process_recovery_and_concurrent_admission(corpus, tmp_path, monkeypatch):
+        import os
+        import subprocess
+        import sys
+        import time
+        from concurrent.futures import ThreadPoolExecutor
+        source = tmp_path / "restart.jsonl"
+        source.write_text("\n".join(json.dumps({"book": "restart", "chapter": str(i), "order": i, "text": "恢复必须消费原有正式结果。"}, ensure_ascii=False) for i in (1, 2)))
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        request = {"project_id": corpus.project, "workspace_id": corpus.workspace, "run_key": "restart", "manifest": _manifest(source)}
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            admitted = list(executor.map(lambda _: corpus.client.post("/product/source-imports/corpus", json=request).json(), range(2)))
+>       assert admitted[0]["operation_id"] == admitted[1]["operation_id"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'operation_id'
+
+tests/integration/test_corpus_ingestion_postgres.py:200: KeyError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_native_research_and_benchmark_cannot_be_generation_input
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_current_rights_checked_before_external_acquisition
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission
+tests/integration/test_corpus_ingestion_postgres.py::test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_native_research_and_benchmark_cannot_be_generation_input
+tests/integration/test_corpus_ingestion_postgres.py::test_corpus_current_rights_checked_before_external_acquisition
+tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission
+tests/integration/test_corpus_ingestion_postgres.py::test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_import_new_process_recovery_and_concurrent_admission
+1 failed, 18 passed, 15 warnings in 21.24s

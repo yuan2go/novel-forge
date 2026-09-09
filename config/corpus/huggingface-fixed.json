@@ -1,0 +1,47 @@
+{
+  "schema_version": "corpus-ingestion-manifest.v1",
+  "purpose": "BENCHMARK",
+  "analyze": false,
+  "source": {
+    "kind": "HUGGING_FACE",
+    "location": "HuggingFaceH4/testing_self_instruct_small",
+    "revision": "dd2795125fbe7a57912147371b7d10fca55110d7",
+    "files": [
+      {
+        "path": "data/train-00000-of-00001-a61a142eaa61eaa0.parquet"
+      }
+    ]
+  },
+  "parser": {
+    "format": "parquet",
+    "layout": "WORK_ROWS",
+    "fields": {
+      "work_id": "prompt",
+      "text": "completion"
+    },
+    "completeness": "EXCERPT",
+    "work_key_encoding": "SHA256"
+  },
+  "rights": {
+    "dataset_license": "UNKNOWN",
+    "underlying_rights": "UNKNOWN",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "allowed_purposes": [
+      "BENCHMARK"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING"
+    ],
+    "evidence_refs": [
+      "operator:bounded-local-research-only; review-underlying-rights-before-analysis"
+    ],
+    "copyright_boundary": "No prose, derived knowledge, model call or production use authorized by this example."
+  },
+  "budget": {
+    "max_files": 1,
+    "max_file_bytes": 1000000,
+    "max_total_bytes": 1000000,
+    "max_records": 100,
+    "max_works": 100
+  }
+}

@@ -192,7 +192,7 @@ only `SUCCEEDED` establishes a complete result. The OpenAPI discriminated action
 defines required fields. A rights declaration needs independent `dataset_license`,
 `underlying_rights`, `underlying_license` when LICENSED, `allowed_purposes`,
 `denied_purposes`, `restrictions`, `evidence_refs`, `copyright_boundary`, and
-`scope=ALL_WORKS_IN_SNAPSHOT`. Use UNKNOWN rather than invent underlying rights.
+`scope=ALL_WORKS_IN_SNAPSHOT` or exact `SELECTED_WORKS` grants. Use UNKNOWN rather than invent underlying rights.
 `previous_rights_id`/`previous_snapshot_id` is null only for the first revision.
 
 The manifest supplies `origin_uri`, `external_version`, `format`, `checksum`,
@@ -218,6 +218,71 @@ snapshot, rights, work identity, Edition and admission/membership evidence. List
 `after` and `limit` (1–100). Parent is source for rights/snapshots/book identities, snapshot
 for Editions and Edition for admissions/memberships. `after` is the last record's stable
 ID. Continue paging admission history when a lineage response reaches its 100-record cap.
+
+## Corpus content ingestion
+
+Install `.[industrial,ingestion]` in the local virtual environment and migrate using
+`novel-forge authority-migrate`. Use the existing active Project/Workspace and trusted
+Principal (`source.authority.execute` and `source.authority.query`). The API and workers
+must share the database, release identity, object store and explicit local roots. Keep
+cache/object storage outside Git and production works out of test databases.
+
+```bash
+export NOVEL_FORGE_CORPUS_CACHE_ROOT="$HOME/Library/Caches/NovelForge/corpus"
+export NOVEL_FORGE_CORPUS_LOCAL_ROOTS="[\"$PWD/examples/sample_inputs\"]"
+# Use an existing isolated project/workspace; these are the only business IDs needed.
+novel-forge corpus preview --project-id "$NF_PROJECT_ID" --workspace-id "$NF_WORKSPACE_ID" \
+  --manifest config/corpus/local-original.json --run-key local-preview-1
+novel-forge corpus run --project-id "$NF_PROJECT_ID" --job-id "$NF_PREVIEW_JOB_ID"
+novel-forge corpus import --project-id "$NF_PROJECT_ID" --workspace-id "$NF_WORKSPACE_ID" \
+  --manifest config/corpus/local-original.json --run-key local-import-1
+# Copy import_job_id from the JSON response; run executes the same native worker handlers.
+novel-forge corpus run --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID" --max-stages 20
+novel-forge corpus status --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID"
+novel-forge corpus lineage --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID" --limit 20
+novel-forge corpus pause --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID" --reason 'operator review'
+novel-forge corpus resume --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID"
+# Cancellation is a separate irreversible execution decision; it preserves imported facts.
+novel-forge corpus cancel --project-id "$NF_PROJECT_ID" --job-id "$NF_IMPORT_JOB_ID" --reason 'stop remaining work'
+```
+
+The continuously running alternative is `python -m novel_forge.workers.source_import`.
+HTTP admission is `POST /product/source-imports/corpus` (or `/corpus/preview`) with
+`project_id`, `workspace_id`, `run_key`, `manifest` and optional frozen
+`intelligence_policy`. Existing job, work and resume queries apply;
+`GET /product/source-imports/{import_job_id}/corpus-lineage` pages Editions and exact
+bridges. Pause/resume/cancel use the existing Corpus `control_import` action with the
+observed `expected_status`, preventing an outdated control decision from overwriting one.
+
+Preview lists bounded local files or accesses remote metadata, without downloading selected
+content, calling analysis models or approving knowledge. Git metadata discovery may fetch
+Git objects needed to resolve the fixed tree. Import fetches actual bytes. Inspect
+`content_verified`, `actual_bytes`, per-work failures and `analysis_scheduled`; metadata
+or Operation success alone is not knowledge availability. An interruption is resumed with
+the same job; a changed manifest/parser/rights requires a new run key. Unknown Effects need
+receipt reconciliation, and final failures are not reopened. Local spool receipts and
+objects remain referenced evidence, not disposable caches while their snapshots are used.
+
+| Configuration | Source/format | Boundaries |
+| --- | --- | --- |
+| `config/corpus/local-original.json` | repository-authored Chinese JSONL excerpt | two explicit chapter records; no model call |
+| `config/corpus/github-fixed.json` | fixed char-rnn commit, TXT | verified byte digest; research only; no underlying rights inferred from repository license |
+| `config/corpus/huggingface-fixed.json` | fixed testing_self_instruct_small commit, Parquet | small transport/mapping example, not a novel corpus; Benchmark only; the mapped prompt hash is the explicit record identity |
+| `config/corpus/internet-archive.json` | explicit Alice item/file, TXT | preview must verify availability; checksum/metadata drift checked during import; no inferred production grant |
+
+Remote examples retain UNKNOWN underlying rights and permit only bounded local processing.
+They do not establish a license to analyze or generate. HF credentials may be supplied via
+`HF_TOKEN`; never put them in the manifest/URL. A gated or missing resource stays blocked.
+The HTTPS adapter only accepts public DNS addresses on its allowlist; proxy/synthetic DNS
+that maps a public service into private/reserved addresses must be corrected by the operator,
+not bypassed by disabling SSRF checks.
+
+To opt into analysis, declare the corresponding explicit underlying-work and use rights,
+set `analyze=true`, and configure the existing governed Source model route, Capability Pack,
+Principal and per-run call/token/cost policy. This can incur costs and is not authorized by
+an example file. MKAOS approval is a later explicit command, never an import side effect.
+A scripted engineering run may prove Candidate/Decision/Pack connectivity; its Cards cannot
+be promoted past the existing fixture ceiling into production Planning.
 
 ## Credentialed Provider qualification
 

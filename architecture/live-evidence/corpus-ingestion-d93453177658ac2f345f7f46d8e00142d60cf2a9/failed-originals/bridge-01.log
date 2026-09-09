@@ -1,0 +1,69 @@
+.F
+=================================== FAILURES ===================================
+_______ test_authorized_bridge_reaches_existing_analysis_and_governance ________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10f093b00>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-633/test_authorized_bridge_reaches0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e9cf8c0>
+
+    def test_authorized_bridge_reaches_existing_analysis_and_governance(corpus, tmp_path, monkeypatch):
+        from decimal import Decimal
+        from novel_forge.modules.authority_security import TrustedPrincipalResolver
+        from novel_forge.modules.mkaos_authority import MkaosAuthorityQuery, ApproveKnowledgeCandidateCommand, BuildKnowledgePackCommand, KnowledgePackSelection
+        from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
+        from novel_forge.modules.command_kernel.errors import KernelError
+        import pytest
+    
+        source = tmp_path / "original.jsonl"
+        source.write_text("\n".join(json.dumps({"book": "bridge-original", "chapter": str(i), "order": i,
+            "text": text}, ensure_ascii=False) for i, text in enumerate(("阿青要取回钥匙，却必须先答应替守门人送信。她明知会误船，仍接过信。", "信送到后，守门人才解释仓门后是谁。阿青用迟到的代价换回了弟弟的消息。"), 1)))
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        response = corpus.client.post("/product/source-imports/corpus", json={"project_id": corpus.project, "workspace_id": corpus.workspace,
+            "run_key": "authorized-bridge", "manifest": _manifest(source, "PRODUCTION_REFERENCE", analyze=True)})
+        assert response.status_code == 202, response.text
+        root = scheduler.run_or_recover(operation_id=response.json()["operation_id"], project_id=corpus.project)["result"]
+        child = root["children"][0]["operation_id"]
+        content = scheduler.run_or_recover(operation_id=child, project_id=corpus.project)["result"]
+        for _ in range(40):
+            pending = [(operation, project) for operation, project in scheduler.pending_operations(limit=100) if project == corpus.project]
+            if not pending:
+                break
+            for operation, project in pending:
+                scheduler.run_or_recover(operation_id=operation, project_id=project)
+        with psycopg.connect(DATABASE_URL) as connection:
+            candidates = connection.execute("SELECT asset_version_id FROM authority_mkaos_knowledge_candidate WHERE project_id=%s ORDER BY asset_version_id", [corpus.project]).fetchall()
+>       assert candidates, "native analysis must produce actual governed candidates"
+E       AssertionError: native analysis must produce actual governed candidates
+E       assert []
+
+tests/integration/test_corpus_ingestion_postgres.py:90: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed, 5 warnings in 7.21s

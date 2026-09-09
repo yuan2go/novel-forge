@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `7def8c0b65b41f4b99b801fad32b6146d20a76c9`
+Reality baseline: `2a37bc12456f25ec99b165b5fbbeef5cae8f5d8c`
 Baseline implementation identity:
-`sha256:fb58c2e1357322beeb394a469de52e654984acdfc3518bc5258cf973e83b1d80`
+`sha256:c45ebff46c0e203a40f48a052c5b7c80d327bd5fa34c9793b63f0e8b123ef4ed`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-08",
-  "review_due": "2026-10-07",
+  "reviewed_on": "2026-09-09",
+  "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "7def8c0b65b41f4b99b801fad32b6146d20a76c9",
-    "implementation_tree_sha": "sha256:fb58c2e1357322beeb394a469de52e654984acdfc3518bc5258cf973e83b1d80"
+    "sha": "2a37bc12456f25ec99b165b5fbbeef5cae8f5d8c",
+    "implementation_tree_sha": "sha256:c45ebff46c0e203a40f48a052c5b7c80d327bd5fa34c9793b63f0e8b123ef4ed"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -63,18 +63,35 @@ Baseline implementation identity:
       "id": "g3-bounded-analysis-and-consumption",
       "description": "Replace dimension Cartesian expansion with bounded composite observations, govern variable candidate sets, close Chinese and applicability selection gaps, and prove exact-context consumption for all twenty works.",
       "evidence_refs": [
-        {"path": "src/novel_forge/modules/source_import/analysis_profiles.py", "symbol": "plan_analysis_tasks"},
-        {"path": "src/novel_forge/modules/mkaos_authority/domain.py", "symbol": "select_narrative_intelligence"},
-        {"path": "src/novel_forge/modules/mkaos_authority/query.py", "symbol": "MkaosAuthorityQuery"}
+        {
+          "path": "src/novel_forge/modules/source_import/analysis_profiles.py",
+          "symbol": "plan_analysis_tasks"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/domain.py",
+          "symbol": "select_narrative_intelligence"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/query.py",
+          "symbol": "MkaosAuthorityQuery"
+        }
       ]
     },
     {
       "id": "g4-creative-comparison-and-recovery",
       "description": "Run four exactly isolated knowledge arms through the canonical Formation-to-Acceptance chain, continue arm D to twelve chapters, inject one receipt-to-business-commit interruption, resume without duplicate inference, and export bounded comparison evidence.",
       "evidence_refs": [
-        {"path": "src/novel_forge/modules/story_planning_runtime/execution.py", "symbol": "PostgresPlanningExecutionPreparer"},
-        {"path": "src/novel_forge/modules/context_builder/domain.py"},
-        {"path": "src/novel_forge/workers/book_authority.py", "symbol": "execute_story_formation_claim"}
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+          "symbol": "PostgresPlanningExecutionPreparer"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py"
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_story_formation_claim"
+        }
       ]
     }
   ]

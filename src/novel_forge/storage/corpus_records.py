@@ -6,6 +6,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.corpus_ingestion_records import CorpusIngestionRecords
 
 
 CORPUS_KEYS = {
@@ -20,8 +21,12 @@ CORPUS_KEYS = {
 }
 
 
-class CorpusRecords:
+class CorpusRecords(CorpusIngestionRecords):
     cursor: Any
+
+    def corpus_authorization_lock(self, project_id: str, *, write: bool = False) -> None:
+        function = "pg_advisory_xact_lock" if write else "pg_advisory_xact_lock_shared"
+        self.cursor.execute(sql.SQL("SELECT {}(hashtextextended(%s,0))").format(sql.Identifier(function)), ["source-corpus-authorization:" + project_id])
 
     def corpus_record(
         self, kind: str, project_id: str, identity: str, *, lock: bool = False

@@ -80,6 +80,8 @@ def _authority_parser() -> argparse.ArgumentParser:
     pack.add_argument("--correlation-id", default="")
     pack.add_argument("--environment", default="")
     pack.add_argument("--limit", type=int, default=100)
+    from novel_forge.cli.corpus import add_corpus_parser
+    add_corpus_parser(subparsers)
     return parser
 
 
@@ -89,6 +91,10 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     try:
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
+        if args.command == "corpus":
+            from novel_forge.cli.corpus import run_corpus_command
+            print(json.dumps(run_corpus_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
         if args.command == "serve-api":
             _serve_authority_api(settings, args.host, args.port, args.reload)
             return 0

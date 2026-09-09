@@ -1,0 +1,50 @@
+F
+=================================== FAILURES ===================================
+_______________ test_native_corpus_cross_shard_import_and_replay _______________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10c5b5a90>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-629/test_native_corpus_cross_shard0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bafd850>
+
+    def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypatch):
+        source = tmp_path / "input"
+        source.mkdir()
+        for index, text in ((1, "阿青把旧钥匙留给守门人。"), (2, "守门人用钥匙打开仓门。")):
+            (source / f"part-{index}.jsonl").write_text(json.dumps({"book": "original", "chapter": f"c{index}", "order": index, "text": text}, ensure_ascii=False) + "\n")
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        request = {"project_id": corpus.project, "workspace_id": corpus.workspace, "run_key": "local-cross-shard", "manifest": _manifest(source)}
+        response = corpus.client.post("/product/source-imports/corpus", json=request)
+>       assert response.status_code == 202, response.text
+E       AssertionError: {"detail":"1 validation error for RightsDeclaration\nscope\n  Field required [type=missing, input_value={'dataset_license': 'MIT'...695ade1b49a2d560ad1545'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"}
+E       assert 422 == 202
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/integration/test_corpus_ingestion_postgres.py:48: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_native_corpus_cross_shard_import_and_replay
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 3 warnings in 3.64s

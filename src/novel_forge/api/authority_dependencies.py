@@ -8,6 +8,7 @@ from novel_forge.modules.story_planning_runtime.foundation_generation import (
 )
 
 import hashlib
+import json
 import os
 from collections.abc import Callable
 from dataclasses import replace
@@ -1570,6 +1571,7 @@ def build_source_import_application(
         commit_sha=commit_sha,
         worker_id=worker_id,
         git_adapter=git_adapter,
+        corpus_adapter=_build_corpus_acquisition_adapter(git_adapter, values),
         object_store_adapter=execution.object_store,
         object_store_reader=execution.source_object_reader,
         execution_port=execution_port,
@@ -2154,3 +2156,21 @@ __all__ = [
     "build_capability_pack_authority_query",
     "build_quality_qualification_authority",
 ]
+
+
+def _build_corpus_acquisition_adapter(git_adapter: Any, values: Mapping[str, str]) -> Any:
+    from novel_forge.modules.source_import.corpus_ingestion.acquisition import CorpusAcquisitionAdapter
+    from novel_forge.modules.source_import.corpus_ingestion.http_transport import CorpusHttpTransport
+    root = str(values.get("NOVEL_FORGE_CORPUS_CACHE_ROOT") or "").strip()
+    if not root:
+        return None
+    path = Path(root).expanduser()
+    if not path.is_absolute():
+        raise ValueError("Corpus cache must be an explicit absolute directory outside the source checkout")
+    if any((parent / ".git").exists() for parent in (path.resolve(), *path.resolve().parents)):
+        raise ValueError("Corpus cache cannot be inside a Git checkout")
+    local_roots = json.loads(str(values.get("NOVEL_FORGE_CORPUS_LOCAL_ROOTS") or "[]"))
+    if not isinstance(local_roots, list) or any(not isinstance(item, str) or not Path(item).expanduser().is_absolute() for item in local_roots):
+        raise ValueError("Corpus local roots must be a JSON list of absolute paths")
+    return CorpusAcquisitionAdapter(path, local_roots=tuple(Path(item) for item in local_roots), git_adapter=git_adapter,
+        http=CorpusHttpTransport(token=str(values.get("HF_TOKEN") or "")))

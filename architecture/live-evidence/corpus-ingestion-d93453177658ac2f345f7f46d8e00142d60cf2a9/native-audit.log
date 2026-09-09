@@ -1,0 +1,326 @@
+[
+  {
+    "source": "local-original",
+    "status": "VERIFIED",
+    "scope": "Actual content through native CLI/worker/PostgreSQL",
+    "import_job_id": "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+    "job_status": "IMPORTED",
+    "failure": {},
+    "configuration_hash": "sha256:31f841c9f6c5f8ae1444d8ea6c3656c56d52fcc96753d5ab308718e878aaa7c6",
+    "command_results": [
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "import",
+          "--workspace-id",
+          "workspace-b82382a054ba4207b9556a51be94120e",
+          "--manifest",
+          "config/corpus/local-original.json",
+          "--run-key",
+          "local-original",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.6050789580331184
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "run",
+          "--job-id",
+          "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+          "--max-stages",
+          "10",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 1.3769622500403784
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "status",
+          "--job-id",
+          "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5404132920084521
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "lineage",
+          "--job-id",
+          "source-import:f0d0788e-08d2-4fa3-bc57-2561c3876a0f",
+          "--limit",
+          "5",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5368532079737633
+      }
+    ]
+  },
+  {
+    "source": "github-fixed",
+    "status": "VERIFIED",
+    "scope": "Actual content through native CLI/worker/PostgreSQL",
+    "import_job_id": "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+    "job_status": "IMPORTED",
+    "failure": {},
+    "configuration_hash": "sha256:ee474fbe8f980761f74decad31a97e2c216efc5ca21d32d5eb47effdbb2b77a3",
+    "command_results": [
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "import",
+          "--workspace-id",
+          "workspace-b82382a054ba4207b9556a51be94120e",
+          "--manifest",
+          "config/corpus/github-fixed.json",
+          "--run-key",
+          "github-fixed",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5907042080070823
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "run",
+          "--job-id",
+          "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+          "--max-stages",
+          "10",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 6.853280624956824
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "status",
+          "--job-id",
+          "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5381886250106618
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "lineage",
+          "--job-id",
+          "source-import:3eb3e2b6-9ab2-41a4-8c17-4a372c8c7831",
+          "--limit",
+          "5",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5285581250209361
+      }
+    ]
+  },
+  {
+    "source": "huggingface-fixed",
+    "status": "BLOCKED",
+    "scope": "Adapter implemented; controlled transport tests pass; actual network blocked",
+    "import_job_id": "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+    "job_status": "FAILED_FINAL",
+    "failure": {
+      "code": "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+      "message": "SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+      "operation_id": "df2109f7-c076-4d62-9708-de846f6842f3"
+    },
+    "configuration_hash": "sha256:be32386d04e957281c6bbc33d3a16fdfd352b92f557df5fb9ca19cd2b5e7aa88",
+    "command_results": [
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "import",
+          "--workspace-id",
+          "workspace-b82382a054ba4207b9556a51be94120e",
+          "--manifest",
+          "config/corpus/huggingface-fixed.json",
+          "--run-key",
+          "huggingface-fixed",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5631016659899615
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "run",
+          "--job-id",
+          "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+          "--max-stages",
+          "10",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.6417413749732077
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "status",
+          "--job-id",
+          "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5397578339907341
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "lineage",
+          "--job-id",
+          "source-import:df2109f7-c076-4d62-9708-de846f6842f3",
+          "--limit",
+          "5",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.5375154999783263
+      }
+    ]
+  },
+  {
+    "source": "internet-archive",
+    "status": "BLOCKED",
+    "scope": "Adapter implemented; controlled transport tests pass; actual network blocked",
+    "import_job_id": "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+    "job_status": "FAILED_FINAL",
+    "failure": {
+      "code": "SOURCE_IMPORT_EFFECT_FAILED_FINAL",
+      "message": "SOURCE_IMPORT_EFFECT_FAILED_FINAL: ExternalEffect returned final_failure; REMOTE_ADDRESS_FORBIDDEN",
+      "operation_id": "8054e268-4b0b-4d8a-8be9-08c1843fd1db"
+    },
+    "configuration_hash": "sha256:ac7f645486bc7cbe2dc1368a8edfadf00259bda0d881847f1b252c086e34d5c8",
+    "command_results": [
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "import",
+          "--workspace-id",
+          "workspace-b82382a054ba4207b9556a51be94120e",
+          "--manifest",
+          "config/corpus/internet-archive.json",
+          "--run-key",
+          "internet-archive",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5675927500124089
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "run",
+          "--job-id",
+          "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+          "--max-stages",
+          "10",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.6402563750161789
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "status",
+          "--job-id",
+          "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.5376645840005949
+      },
+      {
+        "command": [
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909/.venv/bin/python",
+          "-m",
+          "novel_forge.cli.authority",
+          "corpus",
+          "lineage",
+          "--job-id",
+          "source-import:8054e268-4b0b-4d8a-8be9-08c1843fd1db",
+          "--limit",
+          "5",
+          "--project-id",
+          "corpus-wp2-native-06addb69be744bff96cdc4f159137014"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.5286277920240536
+      }
+    ]
+  }
+]

@@ -2874,6 +2874,8 @@ class PostgresProductionExecutionPayloadResolver:
             raise ValueError("frozen Production ExternalEffect payload changed")
         source_metadata = payload.get("_source_intelligence")
         source_execution = isinstance(source_metadata, Mapping)
+        from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
+        require_corpus_consumption(self.database_url, request.project_id, stored_inputs, source_analysis=source_execution)
         inputs = (
             self.resolve_source_intelligence_inputs(
                 project_id=request.project_id,

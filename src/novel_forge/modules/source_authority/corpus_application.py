@@ -20,6 +20,7 @@ from novel_forge.modules.source_authority.corpus import (
     validate_corpus_action,
     CORPUS_POLICY_VERSION,
     CorpusAction,
+    ControlCorpusImport,
     ImportCorpusBatch,
     corpus_hash,
     corpus_identity,
@@ -138,7 +139,7 @@ class SourceCorpusApplication:
         self.commit_sha = commit_sha
 
     def admit(
-        self, command: CorpusCommand, *, principal: Principal | None = None
+        self, command: CorpusCommand, *, principal: Principal | None = None, parent_worker: WorkerLeaseCommand | None = None
     ) -> dict[str, Any]:
         actor = command.actor_id
         if principal is not None:
@@ -155,6 +156,10 @@ class SourceCorpusApplication:
                 action.batch_key,
             )
         with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
+            if parent_worker is not None:
+                require_current_fence(uow, parent_worker)
+                if parent_worker.project_id != command.project_id:
+                    raise KernelError("CROSS_PROJECT_REFERENCE", "Corpus delegation changed project")
             repository = SourceAuthorityRepository(uow.cursor)
             repository.require_scope(
                 project_id=command.project_id, workspace_id=command.workspace_id
@@ -270,7 +275,7 @@ class SourceCorpusApplication:
         }
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
             require_current_fence(uow, worker)
             repository = SourceAuthorityRepository(uow.cursor)
             output = repository.corpus_output(worker.project_id, worker.causation_id)
@@ -284,13 +289,15 @@ class SourceCorpusApplication:
                 project_id=worker.project_id, workspace_id=command["workspace_id"]
             )
             action = validate_corpus_action(command["payload"])
-            result = apply_corpus_action(
-                repository,
-                action,
-                project_id=worker.project_id,
-                workspace_id=command["workspace_id"],
-                operation_id=worker.causation_id,
-            )
+            if isinstance(action, ControlCorpusImport):
+                from .corpus_import_control import control_corpus_import
+                result = control_corpus_import(repository, action, project_id=worker.project_id,
+                    workspace_id=command["workspace_id"], operation_id=worker.causation_id, database_url=self.database_url)
+            else:
+                result = apply_corpus_action(
+                    repository, action, project_id=worker.project_id,
+                    workspace_id=command["workspace_id"], operation_id=worker.causation_id,
+                )
             if isinstance(action, ImportCorpusBatch):
                 job_id = f"source-import:{worker.causation_id}"
                 denied = sum(
@@ -368,7 +375,7 @@ class SourceCorpusApplication:
     def result(
         self, operation_id: str, project_id: str, *, replayed: bool
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
             output = SourceAuthorityRepository(uow.cursor).corpus_output(
                 project_id, operation_id
             )

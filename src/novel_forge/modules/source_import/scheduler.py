@@ -6,6 +6,8 @@ from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseComman
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.scheduler import SourceAuthorityScheduler
 
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
 from .application import SourceImportApplication
 from .definitions import SOURCE_IMPORT_OPERATIONS
 
@@ -32,6 +34,13 @@ class SourceImportScheduler(SourceAuthorityScheduler):
     def run_or_recover(
         self, *, operation_id: str, project_id: str
     ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT j.status FROM authority_source_import_work w
+                JOIN authority_source_import_job j USING(import_job_id,project_id)
+                WHERE w.operation_id=%s AND w.project_id=%s AND j.source_type='corpus_content'""", [operation_id, project_id])
+            job = uow.cursor.fetchone()
+        if job and job[0] == "PAUSED":
+            raise KernelError("CORPUS_IMPORT_PAUSED", "resume the frozen job before starting another stage")
         try:
             return super().run_or_recover(
                 operation_id=operation_id, project_id=project_id
