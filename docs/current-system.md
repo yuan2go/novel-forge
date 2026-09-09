@@ -659,8 +659,8 @@ for the native entry and bounded examples.
 
 Acquisition receipt v2 separates immutable byte identity from the idempotent operation
 receipt; independent imports of identical bytes cannot reuse a timestamp-bearing receipt.
-Frozen v1 receipt queries retain their original identity. Ingestion subcommands use
-project/workspace-scoped keys; only an existing exact-scope legacy key can be reused.
+Frozen v1 receipt queries retain their original identity. Source Authority scopes all
+Corpus command keys by project/workspace; only an existing exact-scope legacy key is reused.
 
 Corpus processing revisions append to the acquired Edition without a new acquisition.
 `source.import.corpus.work` also executes reprocessing admitted through the existing
@@ -670,6 +670,9 @@ SourceDocument/Transform candidates are unusable until their exact document Brid
 The bridge binds the consumed SourceWork version; new consumption rejects superseded
 processing. Historical outputs remain queryable. Frozen parser-v1 output preserves its
 structure-contract ceiling; it is not backfilled as a verified full-book assessment.
+
+Parser v2 stores one frozen profile per parsed work; units reference its digest, avoiding
+repeating a full ToC for every chapter.
 
 `corpus-parser.v2` separates source completion, selected-edition coverage, verified bytes
 and structural usability. Counts/continuous numbering alone never establish completeness.
