@@ -164,16 +164,7 @@ def prepare_reprocessing(
             CorpusUse.LOCAL_PROCESSING,
             require_bridge=False,
         )
-        uow.cursor.execute(
-            "SELECT asset_version_id FROM authority_source_work_version WHERE corpus_edition_id=%s AND status='ACTIVE'",
-            [payload["edition_id"]],
-        )
-        active = uow.cursor.fetchone()
-        if active is None or active[0] != revision["parent_work"]:
-            raise KernelError(
-                "CORPUS_REPROCESS_STALE_FAILED_FINAL",
-                "future processing changed; create a new run against the current revision",
-            )
+        require_reprocessing_baseline(repository, payload)
         if revision["parent_id"] and not revision["review_id"]:
             current = repository.corpus_processing(
                 worker.project_id, revision["parent_id"]
@@ -335,6 +326,27 @@ def prepare_reprocessing(
             update={"parser": parser, "analyze": False}
         ).model_dump(mode="json"),
     }
+
+
+def require_reprocessing_baseline(repository: Any, payload: dict[str, Any]) -> None:
+    revision = payload["reprocess"]
+    repository.cursor.execute(
+        """SELECT w.asset_version_id,r.review_id FROM authority_source_work_version w
+        LEFT JOIN authority_corpus_processing p ON p.source_work_asset_version_id=w.asset_version_id
+        LEFT JOIN authority_corpus_review r ON r.processing_id=p.processing_id
+          AND NOT EXISTS(SELECT 1 FROM authority_corpus_review n WHERE n.previous_id=r.review_id)
+        WHERE w.corpus_edition_id=%s AND w.status='ACTIVE'""",
+        [payload["edition_id"]],
+    )
+    active = repository.cursor.fetchone()
+    if active is None or tuple(active) != (
+        revision["parent_work"],
+        revision["review_id"],
+    ):
+        raise KernelError(
+            "CORPUS_REPROCESS_STALE_FAILED_FINAL",
+            "processing or review changed; admit a new request against the current revision",
+        )
 
 
 def _boundary_repair(

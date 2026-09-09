@@ -894,6 +894,12 @@ class CorpusIngestionRuntime:
         )
         with AuthorityUnitOfWork(self.app.database_url, coordinate_nested=True) as uow:
             require_current_fence(uow, worker)
+            repository = SourceAuthorityRepository(uow.cursor)
+            if payload.get("reprocess"):
+                from .reprocessing import require_reprocessing_baseline
+
+                repository.corpus_authorization_lock(worker.project_id, write=True)
+                require_reprocessing_baseline(repository, payload)
             materialized = self.app._materialize_source_work(
                 worker=worker,
                 job=job,

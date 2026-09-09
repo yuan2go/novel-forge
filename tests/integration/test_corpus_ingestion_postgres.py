@@ -1109,8 +1109,9 @@ print(json.dumps(SourceImportScheduler(app,worker_id='independent-'+sys.argv[4],
         )
 
 
+@pytest.mark.parametrize("review_changes_before_commit", [False, True])
 def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
-    corpus, tmp_path, monkeypatch
+    corpus, tmp_path, monkeypatch, review_changes_before_commit
 ):
     import hashlib
 
@@ -1174,6 +1175,58 @@ def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
         },
     )
     assert repair.status_code == 202, repair.text
+    if review_changes_before_commit:
+        from novel_forge.modules.source_import.corpus_ingestion import similarity
+
+        fingerprint = similarity.fingerprint
+
+        def intervene(texts):
+            value = fingerprint(texts)
+            decision = corpus.run(
+                {
+                    "action": "review_processing",
+                    "processing_id": original["processing_id"],
+                    "decisions": [
+                        {
+                            "issue_id": original["assessment"]["issues"][0]["issue_id"],
+                            "resolution": "REJECT_CORRUPT",
+                            "reason": "new source evidence found while processing was in flight",
+                        }
+                    ],
+                    "reason": "concurrent source review",
+                }
+            )
+            assert decision["status"] == "SUCCEEDED", decision
+            return value
+
+        monkeypatch.setattr(similarity, "fingerprint", intervene)
+    if review_changes_before_commit:
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        with pytest.raises(KernelError, match="CORPUS_REPROCESS_STALE_FAILED_FINAL"):
+            scheduler.run_or_recover(
+                operation_id=repair.json()["operation_id"], project_id=corpus.project
+            )
+        result = app.result(
+            repair.json()["operation_id"], corpus.project, replayed=False
+        )
+        assert result["status"] == "FAILED_FINAL", result
+        current = corpus.client.get(
+            "/product/source-imports/corpus/processing/"
+            + first["result"]["edition_id"],
+            params={"project_id": corpus.project, "edition": True},
+        ).json()
+        assert current["processing_id"] == original["processing_id"]
+        assert current["assessment"]["coverage"] == "CORRUPT"
+        with psycopg.connect(DATABASE_URL) as connection:
+            assert (
+                connection.execute(
+                    "SELECT count(*) FROM authority_corpus_bridge WHERE edition_id=%s",
+                    [first["result"]["edition_id"]],
+                ).fetchone()[0]
+                == 1
+            )
+        return
     result = scheduler.run_or_recover(
         operation_id=repair.json()["operation_id"], project_id=corpus.project
     )
