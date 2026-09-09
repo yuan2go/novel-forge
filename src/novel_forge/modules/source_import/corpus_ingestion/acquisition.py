@@ -128,7 +128,9 @@ class CorpusAcquisitionAdapter:
                         }
                     )
                     receipt = {
-                        "schema_version": "corpus-acquisition-receipt.v1",
+                        "schema_version": "corpus-acquisition-receipt.v2",
+                        "receipt_id": "corpus-effect:"
+                        + hashlib.sha256(stable_idempotency_key.encode()).hexdigest(),
                         "manifest_hash": manifest.identity,
                         "mode": mode,
                         "acquisition_identity": identity,
@@ -147,9 +149,7 @@ class CorpusAcquisitionAdapter:
                         "safe_retake": "FULL_VERIFIED_GET_AFTER_KNOWN_5XX_ONLY",
                     }
                     atomic_receipt(path, receipt)
-                    return ProviderResult(
-                        "success", "corpus:" + identity.removeprefix("sha256:"), receipt
-                    )
+                    return ProviderResult("success", receipt["receipt_id"], receipt)
                 except (ValueError, OSError) as exc:
                     failure = {
                         "schema_version": "corpus-acquisition-failure.v1",
@@ -213,7 +213,8 @@ class CorpusAcquisitionAdapter:
                 )
         return ProviderResult(
             "success",
-            "corpus:" + receipt["acquisition_identity"].removeprefix("sha256:"),
+            receipt.get("receipt_id")
+            or "corpus:" + receipt["acquisition_identity"].removeprefix("sha256:"),
             receipt,
         )
 

@@ -1,0 +1,59 @@
+{
+  "project": "corpus-public-97010a0f8c14456aa2e32f4fb0bbdc69",
+  "checks": [
+    {
+      "processing_id": "corpus-processing:c5cff2d4585bf19f66c1d5f5af2bc63360ca78a83d2b4f68b07ac2d8bb94b7d7",
+      "units": 122,
+      "chunks": 232,
+      "excluded_units": 0,
+      "normalized_bytes": 1842216,
+      "chunk_coverage": "PASS",
+      "raw_unit_coverage": "PASS",
+      "hash": "sha256:44b088651220288da9626c5139bf5878431e673e9c3620952a152f9adc0fe0d3"
+    },
+    {
+      "processing_id": "corpus-processing:27fa7294160d2f4b21a11c27fa63a16511bc82df068f33092765accf2a3bac95",
+      "units": 122,
+      "chunks": 229,
+      "excluded_units": 2,
+      "normalized_bytes": 1822844,
+      "chunk_coverage": "PASS",
+      "raw_unit_coverage": "PASS",
+      "hash": "sha256:897f49a8ae126b42001de14d879511d1fab971b09154ab0e540665e801d7628d"
+    },
+    {
+      "processing_id": "corpus-processing:96bf013656972983acd3416a78347812999c89d1dca443eabec30729487ef35b",
+      "units": 122,
+      "chunks": 229,
+      "excluded_units": 2,
+      "normalized_bytes": 1822844,
+      "chunk_coverage": "PASS",
+      "raw_unit_coverage": "PASS",
+      "hash": "sha256:897f49a8ae126b42001de14d879511d1fab971b09154ab0e540665e801d7628d"
+    },
+    {
+      "processing_id": "corpus-processing:664711d33d045fd347ff2eac4fc583b3ee98aebeed9c91e16755e4a41227571a",
+      "units": 121,
+      "chunks": 337,
+      "excluded_units": 0,
+      "normalized_bytes": 1797627,
+      "chunk_coverage": "PASS",
+      "raw_unit_coverage": "STRUCTURED_LOCATOR_NOT_BYTE_EXACT",
+      "hash": "sha256:b748b0e1c742aa14420be30c2df6721fe935bd4ac57eb7d2cadaa18b64619eba"
+    }
+  ],
+  "effects": [
+    {
+      "capability": "object_store.put",
+      "status": "SUCCEEDED",
+      "count": 1041
+    },
+    {
+      "capability": "source.remote.fetch",
+      "status": "SUCCEEDED",
+      "count": 2
+    }
+  ],
+  "edition_count": 2,
+  "processing_count": 4
+}

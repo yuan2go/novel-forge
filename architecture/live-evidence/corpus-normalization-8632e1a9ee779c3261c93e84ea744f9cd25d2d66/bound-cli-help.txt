@@ -1,0 +1,29 @@
+usage: novel-forge corpus [-h] --project-id PROJECT_ID
+                          [--workspace-id WORKSPACE_ID] [--manifest MANIFEST]
+                          [--source SOURCE] [--run-key RUN_KEY]
+                          [--edition-id EDITION_ID]
+                          [--processing-id PROCESSING_ID]
+                          [--compare-to COMPARE_TO] [--decision DECISION]
+                          [--job-id JOB_ID] [--after AFTER] [--limit LIMIT]
+                          [--max-stages MAX_STAGES] [--reason REASON]
+                          {inspect,compare,discover,review,equivalence,reprocess,preview,import,run,status,pause,resume,cancel,lineage}
+
+positional arguments:
+  {inspect,compare,discover,review,equivalence,reprocess,preview,import,run,status,pause,resume,cancel,lineage}
+
+options:
+  -h, --help            show this help message and exit
+  --project-id PROJECT_ID
+  --workspace-id WORKSPACE_ID
+  --manifest MANIFEST
+  --source SOURCE
+  --run-key RUN_KEY
+  --edition-id EDITION_ID
+  --processing-id PROCESSING_ID
+  --compare-to COMPARE_TO
+  --decision DECISION
+  --job-id JOB_ID
+  --after AFTER
+  --limit LIMIT
+  --max-stages MAX_STAGES
+  --reason REASON

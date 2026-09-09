@@ -5,7 +5,7 @@ import re
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, model_serializer
 
 from novel_forge.modules.source_authority.corpus import (
     CorpusContract,
@@ -69,8 +69,59 @@ class IngestionBudget(CorpusContract):
         return self
 
 
+class SourceBoundary(CorpusContract):
+    path: Text
+    checksum: Digest
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+    title: str = Field(default="", max_length=2048)
+    kind: Literal["CHAPTER", "EXTRA", "AUTHOR_NOTE", "VOLUME", "UNSTRUCTURED"] = (
+        "CHAPTER"
+    )
+    number: int | None = Field(default=None, ge=0)
+    volume: str = Field(default="", max_length=2048)
+    evidence: Text
+
+    @model_validator(mode="after")
+    def positive_span(self) -> SourceBoundary:
+        if self.end <= self.start:
+            raise ValueError("boundary must cover a positive exact raw span")
+        safe_relative_path(self.path)
+        return self
+
+
+class NormalizationProfile(CorpusContract):
+    version: Literal["chinese-longform.v1"] = "chinese-longform.v1"
+    unicode_form: Literal["NFC", "NONE"] = "NFC"
+    segmentation: Literal["EXPLICIT", "CHINESE_HEADINGS"] = "CHINESE_HEADINGS"
+    heading_max_chars: int = Field(default=100, ge=8, le=200)
+    min_body_chars: int = Field(default=80, ge=1, le=10000)
+    max_unit_bytes: int = Field(default=2_000_000, ge=1024, le=8_000_000)
+    expected_toc: tuple[str, ...] = Field(default=(), max_length=10000)
+    toc_evidence: str = Field(default="", max_length=2048)
+    candidate_threshold: float = Field(default=0.8, ge=0.0, le=1.0)
+    boundaries: tuple[SourceBoundary, ...] = Field(default=(), max_length=10000)
+    external_work_ids: tuple[str, ...] = Field(default=(), max_length=16)
+    work_completion: Literal["FINISHED", "ONGOING", "UNKNOWN"] = "UNKNOWN"
+
+    @model_validator(mode="after")
+    def require_toc_evidence(self) -> NormalizationProfile:
+        if self.expected_toc and not self.toc_evidence:
+            raise ValueError("expected ToC needs an exact evidence locator")
+        return self
+
+
 class ParserProfile(CorpusContract):
-    version: Literal["corpus-parser.v1"] = "corpus-parser.v1"
+    version: Literal["corpus-parser.v1", "corpus-parser.v2"] = "corpus-parser.v1"
+    normalization: NormalizationProfile | None = None
+
+    @model_serializer(mode="wrap")
+    def preserve_frozen_v1(self, handler: Any) -> dict[str, Any]:
+        result = handler(self)
+        if self.normalization is None:
+            result.pop("normalization", None)
+        return result
+
     format: Literal["txt", "epub", "html", "json", "jsonl", "parquet"]
     work_key_encoding: Literal["VALUE", "SHA256"] = "VALUE"
     encoding: Literal["utf-8", "utf-8-sig", "gb18030", "gbk", "big5", "utf-16"] = (
@@ -97,6 +148,14 @@ class ParserProfile(CorpusContract):
 
     @model_validator(mode="after")
     def mapping_contract(self) -> ParserProfile:
+        if self.normalization is not None and self.version != "corpus-parser.v2":
+            raise ValueError(
+                "normalization requires corpus-parser.v2; frozen v1 is not reinterpreted"
+            )
+        if self.format in {"epub", "parquet"} and self.encoding != "utf-8":
+            raise ValueError(
+                "container-defined encoding: EPUB/Parquet do not accept a text encoding override"
+            )
         allowed = {
             "work_id",
             "edition_id",

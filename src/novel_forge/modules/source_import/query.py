@@ -14,6 +14,29 @@ class SourceImportQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
+    def corpus_processing(self, *, project_id: str, identity: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = 20, principal: Principal | None = None) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+        from novel_forge.modules.source_import.corpus_ingestion.similarity import compare
+        self._require(principal, project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceAuthorityRepository(uow.cursor)
+            source = repository.corpus_processing(project_id, identity, edition=edition)
+            if compare_to:
+                other = repository.corpus_processing(project_id, compare_to)
+                return {"left":source["processing_id"], "right":other["processing_id"], "comparison":compare(source,other),
+                    "decision":repository.corpus_equivalence_current(project_id,*sorted((source["processing_id"],other["processing_id"]))) }
+            if discover:
+                candidates = repository.corpus_similar(project_id,source,limit)
+                threshold = (source["profile"].get("normalization") or {}).get("candidate_threshold",0.8)
+                scored = []
+                for candidate in candidates:
+                    comparison = compare(source,candidate)
+                    metadata_match = any(key.startswith(("title-author:","external:")) for key in set(source["buckets"]) & set(candidate["buckets"]))
+                    if comparison["exact_text"] or comparison["similarity_estimate"] >= threshold or metadata_match:
+                        scored.append({"processing_id":candidate["processing_id"],"edition_id":candidate["edition_id"],"metadata_match":metadata_match,**comparison})
+                return {"processing_id":source["processing_id"],"candidates":scored,"threshold":threshold,"candidate_limit":limit,"truncated_possible":len(candidates)==limit}
+            return source
+
     def corpus_lineage(self, *, project_id: str, import_job_id: str, after: str = "", limit: int = 100, principal: Principal | None = None) -> dict[str, Any]:
         from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
         self._require(principal, project_id)
@@ -24,7 +47,7 @@ class SourceImportQuery:
             repository = SourceAuthorityRepository(uow.cursor)
             snapshot = repository.corpus_record("snapshot", project_id, job["corpus_snapshot_id"])
             editions = repository.corpus_page("edition", project_id, parent_id=snapshot["snapshot_id"], after=after, limit=limit)
-            uow.cursor.execute("SELECT edition_id,to_jsonb(b) FROM authority_corpus_bridge b WHERE project_id=%s AND edition_id=ANY(%s)",
+            uow.cursor.execute("SELECT edition_id,to_jsonb(b) FROM authority_corpus_bridge b WHERE project_id=%s AND edition_id=ANY(%s) AND EXISTS(SELECT 1 FROM authority_source_work_version w WHERE w.asset_version_id=b.source_work_asset_version_id AND w.status='ACTIVE')",
                 [project_id, [edition["edition_id"] for edition in editions]])
             bridges = {row[0]: row[1] for row in uow.cursor.fetchall()}
             return {"import_job_id": import_job_id, "snapshot": snapshot,

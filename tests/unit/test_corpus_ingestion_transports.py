@@ -122,6 +122,24 @@ def test_exact_remote_acquisition_receipt_replay_and_fail_closed(tmp_path, kind)
         == acquired
     )
     assert transport.reads == 1
+    independent = adapter.execute(
+        stable_idempotency_key="another-project-operation",
+        capability="source.remote.fetch",
+        request_payload=request,
+    )
+    assert (
+        independent.evidence["acquisition_identity"]
+        == acquired.evidence["acquisition_identity"]
+    )
+    assert independent.provider_correlation_id != acquired.provider_correlation_id
+    assert (
+        adapter.query(
+            stable_idempotency_key="another-project-operation",
+            capability="source.remote.fetch",
+            request_payload=request,
+        )
+        == independent
+    )
     changed = {**request, "mode": "PREVIEW"}
     assert (
         adapter.execute(
@@ -153,7 +171,7 @@ def test_exact_remote_acquisition_receipt_replay_and_fail_closed(tmp_path, kind)
             failed.outcome == "final_failure"
             and failed.evidence["error_code"] == "REMOTE_ACCESS_NOT_AUTHORIZED"
         )
-        assert transport.reads == 2
+        assert transport.reads == 3
 
 
 def test_remote_private_dns_and_credential_url_are_rejected(monkeypatch):

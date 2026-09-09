@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/storage/source_authority_repositories.py", line 3, in <module>
+    from novel_forge.storage.corpus_records import CorpusRecords
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/storage/corpus_records.py", line 9, in <module>
+    from novel_forge.storage.corpus_ingestion_records import CorpusIngestionRecords
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/storage/corpus_ingestion_records.py", line 8, in <module>
+    from novel_forge.modules.source_authority.corpus import (
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/modules/source_authority/__init__.py", line 1, in <module>
+    from .application import (
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/modules/source_authority/application.py", line 27, in <module>
+    from novel_forge.modules.source_authority.definitions import (
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/modules/source_authority/definitions.py", line 5, in <module>
+    from novel_forge.modules.source_authority.corpus_application import CORPUS_OPERATION, corpus_definition
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/modules/source_authority/corpus_application.py", line 28, in <module>
+    from novel_forge.modules.source_authority.corpus_mutations import apply_corpus_action
+  File "/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/modules/source_authority/corpus_mutations.py", line 18, in <module>
+    from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+ImportError: cannot import name 'SourceAuthorityRepository' from partially initialized module 'novel_forge.storage.source_authority_repositories' (most likely due to a circular import) (/tmp/nf-corpus-wp3-20260909/baseline/src/novel_forge/storage/source_authority_repositories.py)

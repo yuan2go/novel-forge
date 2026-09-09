@@ -155,6 +155,76 @@ def test_native_corpus_cross_shard_import_and_replay(corpus, tmp_path, monkeypat
             )
         )
 
+    from uuid import uuid4
+    from novel_forge.modules.project_authority import (
+        ProjectAuthorityApplication,
+        ProjectAuthorityCommand,
+    )
+
+    other_project, other_workspace = "corpus-" + uuid4().hex, "workspace-" + uuid4().hex
+    ProjectAuthorityApplication(
+        DATABASE_URL,
+        application_build_id="corpus-test",
+        commit_sha=os.environ.get("CORPUS_TESTED_SHA", "e" * 40),
+    ).execute(
+        ProjectAuthorityCommand(
+            definition_name="project_lifecycle.create",
+            project_id=other_project,
+            workspace_id=other_workspace,
+            actor_id="corpus-operator",
+            idempotency_key=other_project,
+            trace_id=other_project,
+            correlation_id=other_project,
+            payload={"title": "Independent source scope"},
+        )
+    )
+    monkeypatch.setenv(
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE", corpus.project + "," + other_project
+    )
+    _, other_scheduler = _runtime(tmp_path, monkeypatch)
+    another = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={**request, "project_id": other_project, "workspace_id": other_workspace},
+    )
+    assert another.status_code == 202, another.text
+    next_root = other_scheduler.run_or_recover(
+        operation_id=another.json()["operation_id"], project_id=other_project
+    )
+    next_result = other_scheduler.run_or_recover(
+        operation_id=next_root["result"]["children"][0]["operation_id"],
+        project_id=other_project,
+    )
+    assert next_result["status"] == "SUCCEEDED", next_result
+    assert next_result["result"]["edition_id"] != result["edition_id"]
+    assert next_result["result"]["normalized_hash"] == result["normalized_hash"]
+
+    scoped_sources = []
+    for project, workspace in (
+        (corpus.project, corpus.workspace),
+        (other_project, other_workspace),
+    ):
+        metadata = corpus.client.post(
+            "/product/source-governance/corpus/commands",
+            json={
+                "project_id": project,
+                "workspace_id": workspace,
+                "idempotency_key": "reusable-operator-key",
+                "action": {
+                    "action": "register_source",
+                    "source_kind": "LOCAL",
+                    "external_identity": "urn:original-scoped-source",
+                    "purpose": "RESEARCH",
+                },
+            },
+        )
+        assert metadata.status_code == 202, metadata.text
+        committed = corpus.scheduler.run_or_recover(
+            operation_id=metadata.json()["operation_id"], project_id=project
+        )
+        assert committed["status"] == "SUCCEEDED", committed
+        scoped_sources.append(committed["source_id"])
+    assert scoped_sources[0] != scoped_sources[1]
+
 
 def test_authorized_bridge_reaches_existing_analysis_and_governance(
     corpus, tmp_path, monkeypatch
@@ -449,6 +519,7 @@ def test_corpus_native_research_and_benchmark_cannot_be_generation_input(
         )
     )
     app, scheduler = _runtime(tmp_path, monkeypatch)
+    imported = []
     for purpose in ("RESEARCH", "BENCHMARK"):
         location = tmp_path / (purpose + ".jsonl")
         location.write_bytes(source.read_bytes())
@@ -467,6 +538,7 @@ def test_corpus_native_research_and_benchmark_cannot_be_generation_input(
         result = scheduler.run_or_recover(
             operation_id=root["children"][0]["operation_id"], project_id=corpus.project
         )["result"]
+        imported.append(result)
         for key in ("source_work_asset_version_id", "source_asset_version_id"):
             with pytest.raises(KernelError, match="CORPUS"):
                 require_corpus_consumption(
@@ -493,6 +565,41 @@ def test_corpus_native_research_and_benchmark_cannot_be_generation_input(
         )
         assert lineage.status_code == 200, lineage.text
         assert result["edition_id"] in lineage.text
+
+    first, second = imported
+    assert first["edition_id"] != second["edition_id"]
+    found = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + first["processing_id"],
+        params={"project_id": corpus.project, "discover": True},
+    )
+    assert found.status_code == 200, found.text
+    assert any(
+        c["processing_id"] == second["processing_id"] and c["exact_text"]
+        for c in found.json()["candidates"]
+    )
+    accepted = corpus.run(
+        {
+            "action": "decide_equivalence",
+            "left_id": first["processing_id"],
+            "right_id": second["processing_id"],
+            "decision": "ACCEPT",
+            "evidence_refs": ["synthetic-independent-sources-identical-original-bytes"],
+            "reason": "exact content relationship does not transfer purpose",
+        }
+    )
+    assert accepted["status"] == "SUCCEEDED", accepted
+    for result in imported:
+        with pytest.raises(KernelError, match="CORPUS"):
+            require_corpus_consumption(
+                DATABASE_URL,
+                corpus.project,
+                {
+                    "source_work_asset_version_id": result[
+                        "source_work_asset_version_id"
+                    ]
+                },
+                source_analysis=False,
+            )
 
 
 def test_corpus_current_rights_checked_before_external_acquisition(
@@ -828,3 +935,385 @@ def test_final_acquisition_failure_cannot_reopen_import(corpus, tmp_path, monkey
             ).fetchone()[0]
             == 0
         )
+
+
+@pytest.mark.parametrize("crash_after_commit", [False, True])
+def test_native_integrity_review_reprocessing_and_equivalence(
+    corpus, tmp_path, monkeypatch, crash_after_commit
+):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_authority.corpus import CorpusUse
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    from novel_forge.storage.source_authority_repositories import (
+        SourceAuthorityRepository,
+    )
+
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    path = tmp_path / "chapters.txt"
+    path.write_text(
+        "版权与版本说明。\n第一章 起因\n"
+        + "甲冒险交出钥匙。" * 20
+        + "\n第二章 代价\n"
+        + "乙归还钥匙，承担后果。" * 20
+    )
+    manifest = _manifest(path)
+    parser = {
+        "version": "corpus-parser.v2",
+        "format": "txt",
+        "constants": {"work_id": "original"},
+        "completeness": "UNKNOWN",
+        "normalization": {
+            "min_body_chars": 10,
+            "expected_toc": ["第一章 起因", "第二章 代价"],
+            "toc_evidence": "original-test:catalogue-v1",
+        },
+    }
+    manifest["parser"] = parser
+    request = {
+        "project_id": corpus.project,
+        "workspace_id": corpus.workspace,
+        "run_key": "normalization",
+        "manifest": manifest,
+    }
+    admitted = corpus.client.post("/product/source-imports/corpus", json=request)
+    assert admitted.status_code == 202, admitted.text
+    acquired = scheduler.run_or_recover(
+        operation_id=admitted.json()["operation_id"], project_id=corpus.project
+    )
+    assert acquired["status"] == "SUCCEEDED", acquired
+    completed = scheduler.run_or_recover(
+        operation_id=acquired["result"]["children"][0]["operation_id"],
+        project_id=corpus.project,
+    )
+    assert completed["status"] == "SUCCEEDED", completed
+    first = completed["result"]
+
+    def inspect(identity, **params):
+        response = corpus.client.get(
+            "/product/source-imports/corpus/processing/" + identity,
+            params={"project_id": corpus.project, **params},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    processing = inspect(first["processing_id"])
+    assert not processing["assessment"]["structure_usable"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        with pytest.raises(KernelError, match="MKAOS_CORPUS_BRIDGE_REQUIRED"):
+            SourceAuthorityRepository(uow.cursor).require_corpus_documents(
+                corpus.project,
+                (first["source_document_id"],),
+                CorpusUse.SOURCE_ANALYSIS,
+            )
+    finding = next(
+        i for i in processing["assessment"]["issues"] if i["code"] == "NON_BODY_UNIT"
+    )
+    reviewed = corpus.run(
+        {
+            "action": "review_processing",
+            "processing_id": first["processing_id"],
+            "decisions": [
+                {
+                    "issue_id": finding["issue_id"],
+                    "resolution": "MARK_NON_BODY",
+                    "reason": "front matter identified in original fixture",
+                }
+            ],
+            "reason": "exclude front matter from analysis, preserve raw evidence",
+        }
+    )
+    assert reviewed["status"] == "SUCCEEDED", reviewed
+    reprocess_request = {
+        "project_id": corpus.project,
+        "edition_id": first["edition_id"],
+        "run_key": "apply-review",
+        "parser": parser,
+    }
+    admitted2 = corpus.client.post(
+        "/product/source-imports/corpus/reprocess", json=reprocess_request
+    )
+    assert admitted2.status_code == 202, admitted2.text
+    if crash_after_commit:
+        import os
+        import subprocess
+        import sys
+        import time
+
+        script = """
+import json,os,sys
+from pathlib import Path
+from novel_forge.api.authority_dependencies import build_production_execution_composition,build_source_import_application
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.source_import import SourceImportScheduler
+settings=IndustrialSettings(root=Path(sys.argv[3]),environment='test',database_url=os.environ['NOVEL_FORGE_DATABASE_URL'])
+app=build_source_import_application(settings,execution=build_production_execution_composition(settings))
+if sys.argv[4]=='crash':
+ original=app.execute_fenced
+ def crash(worker):
+  original(worker)
+  os._exit(73)
+ app.execute_fenced=crash
+print(json.dumps(SourceImportScheduler(app,worker_id='independent-'+sys.argv[4],lease_seconds=1).run_or_recover(operation_id=sys.argv[1],project_id=sys.argv[2]),default=str))
+"""
+        args = [
+            sys.executable,
+            "-c",
+            script,
+            admitted2.json()["operation_id"],
+            corpus.project,
+            str(tmp_path),
+        ]
+        died = subprocess.run(
+            [*args, "crash"],
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert died.returncode == 73, died.stderr
+        time.sleep(2)
+        resumed = subprocess.run(
+            [*args, "recover"],
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert resumed.returncode == 0, resumed.stderr
+        second = json.loads(resumed.stdout)
+    else:
+        second = scheduler.run_or_recover(
+            operation_id=admitted2.json()["operation_id"], project_id=corpus.project
+        )
+    assert second["status"] == "SUCCEEDED", second
+    current = inspect(second["result"]["processing_id"])
+    assert (
+        current["edition_id"] == processing["edition_id"]
+        and current["parent_id"] == processing["processing_id"]
+    )
+    assert current["assessment"]["structure_usable"]
+    assert second["result"]["source_document_id"] != first["source_document_id"]
+    replay = scheduler.run_or_recover(
+        operation_id=admitted2.json()["operation_id"], project_id=corpus.project
+    )
+    assert replay["replayed"] and replay["result"] == second["result"]
+    duplicate = corpus.client.post(
+        "/product/source-imports/corpus/reprocess", json=reprocess_request
+    )
+    assert duplicate.json()["operation_id"] == admitted2.json()["operation_id"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        repository = SourceAuthorityRepository(uow.cursor)
+        repository.require_corpus_documents(
+            corpus.project,
+            (second["result"]["source_document_id"],),
+            CorpusUse.SOURCE_ANALYSIS,
+        )
+        with pytest.raises(KernelError, match="MKAOS_CORPUS_BRIDGE_REQUIRED"):
+            repository.require_corpus_documents(
+                corpus.project,
+                (first["source_document_id"],),
+                CorpusUse.SOURCE_ANALYSIS,
+            )
+        uow.cursor.execute(
+            "SELECT count(*) FROM authority_corpus_edition WHERE project_id=%s",
+            [corpus.project],
+        )
+        assert uow.cursor.fetchone()[0] == 1
+        uow.cursor.execute(
+            "SELECT count(*) FROM authority_external_effect WHERE project_id=%s AND capability='source.remote.fetch'",
+            [corpus.project],
+        )
+        assert uow.cursor.fetchone()[0] == 1
+    compared = inspect(first["processing_id"], compare_to=current["processing_id"])
+    assert (
+        not compared["comparison"]["exact_text"]
+        and compared["comparison"]["rights_transfer"] is False
+    )
+    decision = corpus.run(
+        {
+            "action": "decide_equivalence",
+            "left_id": first["processing_id"],
+            "right_id": current["processing_id"],
+            "decision": "ACCEPT",
+            "evidence_refs": ["original-same-edition-two-parser-revisions"],
+            "reason": "same source edition with reviewed front matter",
+        }
+    )
+    assert decision["status"] == "SUCCEEDED", decision
+    revoke = corpus.run(
+        {
+            "action": "decide_equivalence",
+            "left_id": first["processing_id"],
+            "right_id": current["processing_id"],
+            "previous_id": decision["decision_id"],
+            "decision": "REVOKE",
+            "evidence_refs": ["test-pair-revocation"],
+            "reason": "demonstrate append-only correction",
+        }
+    )
+    assert revoke["status"] == "SUCCEEDED", revoke
+
+    unchanged = corpus.client.post(
+        "/product/source-imports/corpus/reprocess",
+        json={**reprocess_request, "run_key": "same-contract-reuse"},
+    )
+    assert unchanged.status_code == 202, unchanged.text
+    reused = scheduler.run_or_recover(
+        operation_id=unchanged.json()["operation_id"], project_id=corpus.project
+    )
+    assert reused["status"] == "SUCCEEDED", reused
+    assert reused["result"]["processing_id"] == current["processing_id"]
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(psycopg.errors.CheckViolation, match="immutable"):
+            connection.execute(
+                "UPDATE authority_corpus_processing SET assessment='{}' WHERE processing_id=%s",
+                [current["processing_id"]],
+            )
+        connection.rollback()
+        assert (
+            connection.execute(
+                "SELECT count(*) FROM authority_corpus_processing WHERE edition_id=%s",
+                [current["edition_id"]],
+            ).fetchone()[0]
+            == 2
+        )
+
+
+@pytest.mark.parametrize("review_changes_before_commit", [False, True])
+def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
+    corpus, tmp_path, monkeypatch, review_changes_before_commit
+):
+    import hashlib
+
+    app, scheduler = _runtime(tmp_path, monkeypatch)
+    path = tmp_path / "unstructured.txt"
+    text = "甲交出钥匙并承诺回来。" * 20 + "\n" + "乙归还钥匙兑现约定。" * 20
+    raw = text.encode()
+    path.write_bytes(raw)
+    parser = {
+        "version": "corpus-parser.v2",
+        "format": "txt",
+        "constants": {"work_id": "boundary-original"},
+        "normalization": {"min_body_chars": 10},
+    }
+    manifest = {**_manifest(path), "parser": parser}
+    admitted = corpus.client.post(
+        "/product/source-imports/corpus",
+        json={
+            "project_id": corpus.project,
+            "workspace_id": corpus.workspace,
+            "run_key": "boundaries",
+            "manifest": manifest,
+        },
+    )
+    assert admitted.status_code == 202, admitted.text
+    root = scheduler.run_or_recover(
+        operation_id=admitted.json()["operation_id"], project_id=corpus.project
+    )
+    first = scheduler.run_or_recover(
+        operation_id=root["result"]["children"][0]["operation_id"],
+        project_id=corpus.project,
+    )
+    assert first["status"] == "SUCCEEDED", first
+    original = corpus.client.get(
+        "/product/source-imports/corpus/processing/" + first["result"]["processing_id"],
+        params={"project_id": corpus.project},
+    ).json()
+    assert not original["assessment"]["structure_usable"]
+    cut = len((text.split("\n")[0] + "\n").encode())
+    parser["normalization"]["boundaries"] = [
+        {
+            "path": path.name,
+            "checksum": "sha256:" + hashlib.sha256(raw).hexdigest(),
+            "start": start,
+            "end": end,
+            "title": title,
+            "number": i,
+            "evidence": "original synthetic fixture, exact authored boundary",
+        }
+        for i, (start, end, title) in enumerate(
+            ((0, cut, "第一章 承诺"), (cut, len(raw), "第二章 兑现")), 1
+        )
+    ]
+    repair = corpus.client.post(
+        "/product/source-imports/corpus/reprocess",
+        json={
+            "project_id": corpus.project,
+            "edition_id": first["result"]["edition_id"],
+            "run_key": "exact-boundaries",
+            "parser": parser,
+        },
+    )
+    assert repair.status_code == 202, repair.text
+    if review_changes_before_commit:
+        from novel_forge.modules.source_import.corpus_ingestion import similarity
+
+        fingerprint = similarity.fingerprint
+
+        def intervene(texts):
+            value = fingerprint(texts)
+            decision = corpus.run(
+                {
+                    "action": "review_processing",
+                    "processing_id": original["processing_id"],
+                    "decisions": [
+                        {
+                            "issue_id": original["assessment"]["issues"][0]["issue_id"],
+                            "resolution": "REJECT_CORRUPT",
+                            "reason": "new source evidence found while processing was in flight",
+                        }
+                    ],
+                    "reason": "concurrent source review",
+                }
+            )
+            assert decision["status"] == "SUCCEEDED", decision
+            return value
+
+        monkeypatch.setattr(similarity, "fingerprint", intervene)
+    if review_changes_before_commit:
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        with pytest.raises(KernelError, match="CORPUS_REPROCESS_STALE_FAILED_FINAL"):
+            scheduler.run_or_recover(
+                operation_id=repair.json()["operation_id"], project_id=corpus.project
+            )
+        result = app.result(
+            repair.json()["operation_id"], corpus.project, replayed=False
+        )
+        assert result["status"] == "FAILED_FINAL", result
+        current = corpus.client.get(
+            "/product/source-imports/corpus/processing/"
+            + first["result"]["edition_id"],
+            params={"project_id": corpus.project, "edition": True},
+        ).json()
+        assert current["processing_id"] == original["processing_id"]
+        assert current["assessment"]["coverage"] == "CORRUPT"
+        with psycopg.connect(DATABASE_URL) as connection:
+            assert (
+                connection.execute(
+                    "SELECT count(*) FROM authority_corpus_bridge WHERE edition_id=%s",
+                    [first["result"]["edition_id"]],
+                ).fetchone()[0]
+                == 1
+            )
+        return
+    result = scheduler.run_or_recover(
+        operation_id=repair.json()["operation_id"], project_id=corpus.project
+    )
+    assert result["status"] == "SUCCEEDED", result
+    current = corpus.client.get(
+        "/product/source-imports/corpus/processing/"
+        + result["result"]["processing_id"],
+        params={"project_id": corpus.project},
+    ).json()
+    assert current["assessment"]["structure_usable"]
+    assert current["assessment"]["chapter_count"] == 2
+    assert current["assessment"]["coverage"] == "UNKNOWN"
+    assert {r["issue_id"] for r in current["assessment"]["resolutions"]} == {
+        i["issue_id"] for i in original["assessment"]["issues"]
+    }
+    assert (
+        current["edition_id"] == original["edition_id"]
+        and current["parent_id"] == original["processing_id"]
+    )
+    assert current["downstream_impact"]["operation_id"] == repair.json()["operation_id"]

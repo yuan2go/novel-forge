@@ -14,7 +14,10 @@ from novel_forge.modules.source_authority.corpus import (
 )
 
 
-class CorpusIngestionRecords:
+from .corpus_processing_records import CorpusProcessingRecords
+
+
+class CorpusIngestionRecords(CorpusProcessingRecords):
     cursor: Any
 
     def require_corpus_acquisition(
@@ -97,13 +100,13 @@ class CorpusIngestionRecords:
             """
             INSERT INTO authority_corpus_bridge(edition_id,project_id,source_document_id,source_transform_id,source_work_asset_version_id,rights_id,parser_hash,normalized_hash,policy_version,evidence,created_by_operation_id)
             VALUES (%(edition_id)s,%(project_id)s,%(source_document_id)s,%(source_transform_id)s,%(source_work_asset_version_id)s,%(rights_id)s,%(parser_hash)s,%(normalized_hash)s,%(policy_version)s,%(evidence)s,%(created_by_operation_id)s)
-            ON CONFLICT(edition_id) DO NOTHING
+            ON CONFLICT(edition_id,source_work_asset_version_id) DO NOTHING
         """,
             {**row, "evidence": Jsonb(row["evidence"])},
         )
         self.cursor.execute(
-            "SELECT to_jsonb(b) FROM authority_corpus_bridge b WHERE edition_id=%s",
-            [row["edition_id"]],
+            "SELECT to_jsonb(b) FROM authority_corpus_bridge b WHERE edition_id=%s AND source_work_asset_version_id=%s",
+            [row["edition_id"], row["source_work_asset_version_id"]],
         )
         stored = self.cursor.fetchone()[0]
         if any(
@@ -138,7 +141,9 @@ class CorpusIngestionRecords:
                 JOIN authority_corpus_source s ON s.source_id=e.source_id
                 JOIN authority_corpus_rights r ON r.rights_id=sn.rights_id
                 JOIN authority_corpus_book_identity b ON b.book_source_id=e.book_source_id
-                LEFT JOIN authority_corpus_bridge bridge ON bridge.edition_id=e.edition_id AND bridge.project_id=e.project_id
+                LEFT JOIN LATERAL (SELECT b.* FROM authority_corpus_bridge b
+                    JOIN authority_source_work_version w ON w.asset_version_id=b.source_work_asset_version_id AND w.status='ACTIVE'
+                    WHERE b.edition_id=e.edition_id AND b.project_id=e.project_id) bridge ON true
                 WHERE e.project_id=%s AND e.edition_id=ANY(%s)
                 ORDER BY e.edition_id
             """,
@@ -240,6 +245,9 @@ class CorpusIngestionRecords:
                         )
                 elif tainted or bound:
                     denied[str(document)] = "CORPUS_BRIDGE_MISSING"
+        denied.update(self.corpus_unbridged_documents(project_id, document_ids))
+        if use != CorpusUse.LOCAL_PROCESSING:
+            denied.update(self.corpus_processing_denials(project_id, document_ids))
         return denied
 
     def require_corpus_documents(

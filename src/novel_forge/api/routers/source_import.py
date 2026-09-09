@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
-from novel_forge.modules.source_import.corpus_ingestion.contracts import IngestionManifest
+from novel_forge.modules.source_import.corpus_ingestion.contracts import IngestionManifest, ParserProfile
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.models import (
@@ -34,10 +34,36 @@ class CorpusIngestionRequest(BaseModel):
     intelligence_policy: dict[str, Any] = Field(default_factory=dict)
 
 
+class CorpusReprocessRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1, max_length=200)
+    edition_id: str = Field(min_length=1, max_length=200)
+    run_key: str = Field(min_length=1, max_length=200)
+    parser: ParserProfile
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/source-imports", tags=["source-import"])
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
+
+    @router.post("/corpus/reprocess", status_code=202)
+    def reprocess_corpus(request: CorpusReprocessRequest) -> dict[str, Any]:
+        from novel_forge.modules.source_import.corpus_ingestion.runtime import CorpusIngestionRuntime
+        from novel_forge.modules.source_import.corpus_ingestion.reprocessing import admit_reprocessing
+        principal = _authorize("source.authority.execute",request.project_id)
+        try:
+            return admit_reprocessing(CorpusIngestionRuntime(application), **request.model_dump(exclude={"parser"}), parser=request.parser, principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/corpus/processing/{identity}")
+    def corpus_processing(identity: str, project_id: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = Query(default=20,ge=1,le=100)) -> dict[str, Any]:
+        principal = _authorize("source.authority.query",project_id)
+        try:
+            return query.corpus_processing(project_id=project_id,identity=identity,edition=edition,compare_to=compare_to,discover=discover,limit=limit,principal=principal)
+        except (KernelError,ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/corpus", status_code=202)
     def import_corpus(request: CorpusIngestionRequest) -> dict[str, Any]:

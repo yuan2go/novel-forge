@@ -1,0 +1,28 @@
+{
+  "chapters": 120,
+  "units": 122,
+  "coverage": "REVIEW_REQUIRED",
+  "issues": [
+    [
+      "NON_BODY_UNIT",
+      "unit:06bf2e25e1b3c69e8539ce0d635a27efdba9a169182cba59521a49513da5be76"
+    ],
+    [
+      "NON_BODY_UNIT",
+      "unit:b980a3f24faa82464ae5ac8b9f93f69ced9a896f8ce41e2b71bac5877d28f5f4"
+    ]
+  ],
+  "seconds": 0.10317504202248529,
+  "peak_rss_bytes": 81772544,
+  "body_bytes": 1841974,
+  "first_titles": [
+    "",
+    "第一回：宴桃園豪傑三結義，斬黃巾英雄首立功",
+    "第二回：張翼德怒鞭督郵，何國舅謀誅宦豎"
+  ],
+  "last_titles": [
+    "第一一九回：假投降巧計成虛話，再受禪依樣畫葫蘆",
+    "第一二○回：薦杜預老將獻新謀，降孫皓三分歸一統",
+    "*** END OF THE PROJECT GUTENBERG EBOOK 三國志演義 ***"
+  ]
+}

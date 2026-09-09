@@ -1,0 +1,349 @@
+{
+  "schema_version": "novel-forge.focused-engineering-evidence.v1",
+  "work_package": "WP-3",
+  "baseline_sha": "3f21928b95a595506304199582178b00da300964",
+  "baseline_source_tree": "ba4744e0379c81e13b43b1f3098eb6e466c895ba",
+  "implementation_sha": "47cf86bf8e02e83a7a572f30dfaba7ab5d7b1013",
+  "tested_sha": "8632e1a9ee779c3261c93e84ea744f9cd25d2d66",
+  "tested_source_tree": "05b7763ebb6d61bb1e09de2e0821f3ae4ff04c69",
+  "implementation_tree_identity": "sha256:499708477473f917ff60558dfb4004c2b42cc27958829c8be1f863c3c54ea01c",
+  "baseline_implementation_identity": "sha256:c45ebff46c0e203a40f48a052c5b7c80d327bd5fa34c9793b63f0e8b123ef4ed",
+  "evidence_commit_identity": "Resolve containing commit using git log -1 --format=%H -- this report; evidence-only tree must match implementation identity.",
+  "branch": "codex/corpus-normalization-20260909",
+  "worktree": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909",
+  "migration_head": "20260909_0126_corpus_processing",
+  "migration_count": 127,
+  "upgrade_baseline": "20260909_0125_corpus_ingestion_bridge",
+  "postgres_image": "pgvector/pgvector:pg16",
+  "postgres_image_identity": "sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b",
+  "test_accounting": {
+    "units": {
+      "junit_cases": 74,
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "subtests": "not separately reported by the existing runner"
+    },
+    "postgres": {
+      "junit_cases": 35,
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "subtests": "not separately reported by the existing runner"
+    },
+    "upgrade": {
+      "junit_cases": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "subtests": "not separately reported by the existing runner"
+    }
+  },
+  "commands": [
+    {
+      "gate": "fresh",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-c",
+        "import os,json; from novel_forge.storage.migrations.runner import run_migrations; print(json.dumps(run_migrations(os.environ[\"NOVEL_FORGE_DATABASE_URL\"]),default=str))"
+      ],
+      "exit_code": 0,
+      "seconds": 4.938140916987322,
+      "log": "bound-fresh.log"
+    },
+    {
+      "gate": "validate",
+      "argv": [
+        "make",
+        "validate",
+        "RUFF=.venv/bin/ruff",
+        "PYTHON=.venv/bin/python"
+      ],
+      "exit_code": 0,
+      "seconds": 51.49731695803348,
+      "log": "bound-validate.log"
+    },
+    {
+      "gate": "units",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_corpus_ingestion_formats.py",
+        "tests/unit/test_corpus_ingestion_transports.py",
+        "tests/unit/test_corpus_admission.py",
+        "tests/unit/test_classical_corpus_parser.py",
+        "tests/unit/test_source_import_domain.py",
+        "tests/unit/test_source_import_worker_permissions.py",
+        "tests/unit/test_source_import_deadline_contract.py",
+        "tests/unit/test_source_authority_domain.py",
+        "tests/unit/test_mkaos_authority_domain.py",
+        "tests/unit/test_source_deconstruction_domain.py",
+        "tests/unit/test_source_import_git_adapter.py",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-units.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 2.0932876659790054,
+      "log": "bound-units.log"
+    },
+    {
+      "gate": "postgres",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_corpus_ingestion_postgres.py",
+        "tests/integration/test_corpus_foundation_postgres.py",
+        "tests/integration/test_source_import_runtime_postgres.py",
+        "tests/integration/test_mkaos_authority_postgres.py",
+        "tests/integration/test_source_deconstruction_authority_postgres.py",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-postgres.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 241.6740508749499,
+      "log": "bound-postgres.log"
+    },
+    {
+      "gate": "upgrade",
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_corpus_migrations_postgres.py",
+        "-k",
+        "0125",
+        "--junitxml=/tmp/nf-corpus-wp3-20260909/bound-upgrade.xml"
+      ],
+      "exit_code": 0,
+      "seconds": 12.081342292018235,
+      "log": "bound-upgrade.log"
+    }
+  ],
+  "failures_and_repairs": [
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/defects-before.log",
+      "sha256": "eff7728446fdccca3a794f99ee721e091b7ba4fb367e0ce7a59dde80e225d252",
+      "cause": "Safe range sentinel exposed allocation by chapter-number span; UTF-16 JSONL binary splitting rejected valid input.",
+      "fix": "9926e080",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/fresh.log",
+      "sha256": "72be8463be90eb240cd0604d37512bde965fc00536dbaf4746a92eab3b305339",
+      "cause": "Disposable initial PostgreSQL image lacked vector extension. Replaced owned image with pgvector/pgvector:pg16.",
+      "fix": "environment",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/reprocess-first.log",
+      "sha256": "95b00e006eb0f7b104f9d948bbd46e32acaca28c79b6cd47d9bd8261342b978d",
+      "cause": "New reprocessing job did not satisfy ingestion command scope trigger; forward migration amended before publication.",
+      "fix": "9926e080",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/corpus-regression-first.log",
+      "sha256": "53f74f6c222d5af45ebccf9d943956e160d8004719db0672a3dad07980e414a7",
+      "cause": "Nested UoW variable shadowing broke authorized analysis; old migration table inventory also needed the current contract.",
+      "fix": "9926e080",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/upgrade-repair.log",
+      "sha256": "665edbbc89e5caef520bddd911bf0bdb71ce9d5293f9eea712acc5265c2e4890",
+      "cause": "Existing-data comparison removed a column already present at baseline 0125; comparison now retains it.",
+      "fix": "966759d8",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/exact-boundary-repair.log",
+      "sha256": "bd196bff5c9c26e485d35b37ff256288e1d4abd317465f943934335d5ccae0da",
+      "cause": "Explicit boundary evidence was mistaken for a textual heading and the first prose line was removed from length assessment.",
+      "fix": "966759d8",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/final-review-cas.log",
+      "sha256": "ad17c0686aac52157dabc4fef76adbe9f03359024c1492df01b4725ed7340ba2",
+      "cause": "Regression test initially expected returned failure; canonical scheduler records failure then raises. Assertions updated to query terminal state.",
+      "fix": "d524b019",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/qualified-native.log",
+      "sha256": "ffe4e8d52241a0d20991a5d619c05954825f9fd6c19ee4c406580009d13e535b",
+      "cause": "Independent acquisition of identical content reused content-addressed receipt id with a different timestamp-bearing payload.",
+      "fix": "c0178011",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/delivery-native.log",
+      "sha256": "963f2b90a759e6d7c63c3125885f58f37242c8979cfdca76297f77e63609aa67",
+      "cause": "Ingestion metadata child action keys were not scoped by project/workspace.",
+      "fix": "47cf86bf",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/verified-native.log",
+      "sha256": "c89d0ca677add7142ab2ab09c5ebd02bfbd4b8213bdffdfa897a2a782803877a",
+      "cause": "The same key collision also affected operator review; final fix centralized all Corpus keys in Source Authority.",
+      "fix": "47cf86bf",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/baseline-repository-import.log",
+      "sha256": "b78ac0f72d7e5f11f57877c1c073df708bc4569799934cf5a860f0bd67a3e588",
+      "cause": "Baseline also cannot import repository first because authority package initialization is cyclic. Canonical CLI/API composition is unaffected; no unrelated package refactor.",
+      "fix": "baseline limitation",
+      "evidence_role": "development or failed run; NOT current qualification"
+    },
+    {
+      "original": "/tmp/nf-corpus-wp3-20260909/catalogue-compare.log",
+      "sha256": "93870e66023b03f23016221e7d1e6111729e9caa0de4d337aa464fa310a40171",
+      "cause": "Local TLS acquisition of Wikisource catalogue failed. Fixed primary catalogue obtained through web extraction, explicitly not a local acquisition receipt.",
+      "fix": "external limitation",
+      "evidence_role": "development or failed run; NOT current qualification"
+    }
+  ],
+  "proof_scope": {
+    "proves": [
+      "canonical Corpus command/API/CLI and worker wiring",
+      "strict encoding/raw spans and sparse chapter orders",
+      "versioned segmentation, scoped review and checksum-bound boundary repair",
+      "immutable Edition/acquisition with append-only processing/Bridge",
+      "scope-safe receipts and commands across projects",
+      "Source analysis admission, MKAOS abstract approval/Pack positive path with scripted transport",
+      "benchmark/research generation denial after exact-content association",
+      "bounded indexed exact/near candidate discovery and explicit non-transitive pair decisions",
+      "fresh, latest-main data upgrade and baseline-code frozen-history replay",
+      "independent-process recovery, duplicate dispatch, current fence and concurrent review rejection"
+    ],
+    "does_not_prove": [
+      "complete P0 or unrelated product capabilities",
+      "independent human annotations",
+      "general Chinese segmentation/equivalence precision or recall",
+      "all editions of the novel are complete/equivalent",
+      "automatic global canonical grouping or transitive merge",
+      "real model, literary quality, long-run production quality",
+      "HF/IA real acquisition in current DNS environment"
+    ]
+  },
+  "status": {
+    "WP2_identified_defects": "FIXED",
+    "normalization_and_segmentation": "IMPLEMENTED_WITH_BOUNDED_PROFILES_AND_REVIEW_FALLBACK",
+    "integrity_review_loop": "PASS",
+    "cross_source_equivalence_and_dedup": "PASS_PAIRWISE_CANDIDATE_AND_DECISION_SCOPE",
+    "versioned_reprocessing_and_lineage": "PASS",
+    "real_chinese_longform_validation": "PARTIAL",
+    "focused_engineering_qualification": "PASS",
+    "remote_main_includes_delivery": false
+  },
+  "real_validation": {
+    "source": "Project Gutenberg 23950, TXT and HTML independently acquired files from same catalogue, not two independent publishers",
+    "sample_raw_txt_bytes": 1863656,
+    "chapters": 120,
+    "toc_comparison": "Wikisource oldid5401635; 106/120 titles match after presentation normalization, 14 differences unresolved; preface coverage differs",
+    "completeness": "UNKNOWN after framing review; REVIEW_REQUIRED when external catalogue comparison is required",
+    "review_actor": "agent, not independent human",
+    "model_calls": 0,
+    "human_label_count": 0,
+    "matching_variants": "four explicitly synthetic transformations; no tuning on validation sample; not semantic accuracy"
+  },
+  "limits": [
+    "Default per-work normalized text limit is 16 MB, max configurable 64 MB with matching memory budget; scanning is streamed, current SourceWork materialization remains bounded per work.",
+    "Exact raw unit byte coverage is supported for decoded text; HTML/EPUB/Parquet preserve structured record/member/selector locators, not invented per-character raw offsets.",
+    "Heuristic boundaries, conflicting metadata and uncertain completeness fail closed or require scoped review. No blanket waiver.",
+    "Similarity discovery is bounded and can miss candidates; pair decisions do not create automatic transitive clusters or transfer rights.",
+    "This sample has no independent human boundary/completeness/equivalence labels; its 14 catalogue title differences remain unresolved.",
+    "Direct repository-first import has a pre-existing authority package initialization cycle; canonical production entry imports and focused regressions pass."
+  ],
+  "not_run": [
+    {
+      "gate": "full P0, full unrelated backend/UI and historical migration matrix",
+      "reason": "user requested affected collections; no affected production UI/model or all-history changes"
+    },
+    {
+      "gate": "paid or real-model campaign",
+      "reason": "deterministic Corpus scope and no paid-call authorization"
+    },
+    {
+      "gate": "independent human annotation",
+      "reason": "no external annotator provided"
+    }
+  ],
+  "retained_local_artifacts": "/tmp/nf-corpus-wp3-20260909",
+  "final_main_sha": "3f21928b95a595506304199582178b00da300964",
+  "artifact_hashes": {
+    "bound-legacy-key-replay.json": "a7c6e2a81174e9a64d326d6d0f2fe484d1e43b3c4e3ad870ed38c54e868457b9",
+    "native-storage-checks.json": "8cabff5fe83ad426a355eabd444c1ca45748d5d61fb1453052fc727827fdbad3",
+    "bound-cli-help.txt": "af25957fda646da4ca3efa3d3d6edc21a9ed0ece1ef24ab3d5c4cc9db9bc9150",
+    "bound-parser.log": "029c25bcf6c111c877a6e8df1f65839d5f230c482334eac3edc4fb786c5631e2",
+    "native-format-operations.json": "f21b53f817c6eb78ba1b87782ea0bf32fabf48d4d8c49884e513df4b528fdb82",
+    "bound-upgrade.xml": "1e9a1ba689ee4af7cfe1b4a46b4cc8a2a8ee8c3537438cf2dbca923887e61018",
+    "bound-legacy-upgrade.log": "fbea1e1222fb1538d966f4a055f4d7d3c8922e7ab84fb29c2fbf60ed8c37d3e3",
+    "bound-history-preservation.json": "df8eb5f4511f61593e4ba4376f9e73fb799aac5557d52ec0ecd7db601cbe747b",
+    "bound-native.log": "f7461d4f0fc3791094c91e76d2c53804ac91d12a8314fc65ca914a41466b8c9b",
+    "bound-matching.json": "83aa97f51a41a3610b89d95436e38de322e74dd499c9b492603d77e6099afde4",
+    "bound-dependencies.json": "0c0994b977a20cada1765db95cba79dc9eb9bfcf4bc6519caa02c9b16f876462",
+    "native-format-summary.json": "76ba1b1bcf65566a5f4993846bb7101f4f2600894219f677ac3cd650f1584f53",
+    "bound-units.log": "925f5373f6f686690d471127d2fc264a44bfc469698d60c40b4aee68303362de",
+    "bound-legacy-baseline.log": "298b8b50b23123ff0c9760961c04dcd3db35696149278ad25626908f6c86dba7",
+    "bound-query-plans.json": "a89e3980b0bc484dcc717cff4f31f118bfcecf23db5e9a486aa6285552720f6f",
+    "native-operations.json": "835a8916889f17b337dc36069bfe479b10ae66610c3bfd46471d2a75fe51fbef",
+    "remote-diagnostics.json": "a85df90bb6bcca71cec5af02d8ce499a5b482c063748ff0b7ac8242ef4ec19e7",
+    "bound-postgres.log": "41d7ecbdbdd9d7c66e38b99c62d0516be812cfee68c336b486cb744f70917cf0",
+    "bound-formats.log": "e2522153e4a57cc34304f806c2615ad9e87632c4dd845d0ea8b20098392bb138",
+    "resource-cleanup.json": "250c5552bede3233fd37830bfb6c5cd9c107dc4468d823d6bc375382978397cf",
+    "bound-validate.log": "5133af6e8e7d55c24786d38661d891e30226e28caa5eef8df0f18ccc00ea2e1b",
+    "native-summary.json": "efc7d83defb5685cb814b21294946245928b6d5851c55a561bd19586f3feec2d",
+    "bound-units.xml": "405cb0fa72e63a5a42182a071c64af214f75166b5a7fa0e1fdd06bb978f23347",
+    "final-main-fetch.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bound-postgres.xml": "603e183ab6f8abb28c5c69c8ffd366cff34e9f74cc4333459559b7dc466e0207",
+    "source-receipts.json": "04f2662f64870ba576ad0a737d4f10912a28709c03ee32d15540d484ca7f1331",
+    "bound-fresh.log": "bb5f906db2cf64b9f799dcfdee2222663bc44df04b1a0d0b40aa7b3eebe96ea8",
+    "legacy-upgrade-summary.json": "e3e34cb58fac352e52a5b32a1548af97b51a87127f3b8cde85388fec4f9e45a3",
+    "catalogue-comparison.json": "10a4b4941aac14af2af32bf6d26cdb8c2223c4f507d0c3e00edd681ccc5ddc29",
+    "bound-storage.log": "a924be6c1b2ba9841448e42330c87130c11c1af5b550f5b524855de0aefe742a",
+    "bound-commands.json": "170cc6a2b372ee649700168990d024faa5fc0531b7b88ace8ff37a885b4912fd",
+    "bound-upgrade.log": "11f9c97fa682379af56db654ed9eb5507cc1ab177f9b18cfe54fb8a4bd8b80f4",
+    "failures/delivery-native.log": "963f2b90a759e6d7c63c3125885f58f37242c8979cfdca76297f77e63609aa67",
+    "failures/final-review-cas.log": "ad17c0686aac52157dabc4fef76adbe9f03359024c1492df01b4725ed7340ba2",
+    "failures/defects-before.log": "eff7728446fdccca3a794f99ee721e091b7ba4fb367e0ce7a59dde80e225d252",
+    "failures/corpus-regression-first.log": "53f74f6c222d5af45ebccf9d943956e160d8004719db0672a3dad07980e414a7",
+    "failures/upgrade-repair.log": "665edbbc89e5caef520bddd911bf0bdb71ce9d5293f9eea712acc5265c2e4890",
+    "failures/verified-native.log": "c89d0ca677add7142ab2ab09c5ebd02bfbd4b8213bdffdfa897a2a782803877a",
+    "failures/qualified-native.log": "ffe4e8d52241a0d20991a5d619c05954825f9fd6c19ee4c406580009d13e535b",
+    "failures/baseline-repository-import.log": "b78ac0f72d7e5f11f57877c1c073df708bc4569799934cf5a860f0bd67a3e588",
+    "failures/reprocess-first.log": "95b00e006eb0f7b104f9d948bbd46e32acaca28c79b6cd47d9bd8261342b978d",
+    "failures/exact-boundary-repair.log": "bd196bff5c9c26e485d35b37ff256288e1d4abd317465f943934335d5ccae0da",
+    "README.md": "0de93c712f52d35b1a133c43539c3ba7e8046938c4207da2ff1c0f4361115ce0",
+    "evidence-checks.log": "7f9593a675b3190d60f0f2b891c8e5a6f05397a4342cc321d268aec67caac4a9"
+  },
+  "resource_cleanup": {
+    "owned_container_removed": "ca1c186f8cd80eeae2398aa12ac5b80d9ee5d11ee682fff76c8175a8d32c865e",
+    "owned_anonymous_volume_removed": "98d0bd323d5e6a33058ec9ea52da2e003e4530c2e6eeb54a291c0ad3e5823c3b",
+    "owned_runtime_residue": 0,
+    "user_resources_touched": false,
+    "retained_source_and_failure_evidence": "/tmp/nf-corpus-wp3-20260909",
+    "retention_reason": "verified originals and referenced test/export objects preserved outside Git; no production data used",
+    "no_active_owned_database_clients_before_cleanup": true
+  },
+  "normalization_support": {
+    "streamed_text": "Chinese anchored headings, volume-local numbering, exact checksum-bound boundaries, UTF-8/BOM/UTF-16/GB18030 strict decoding",
+    "structured": "explicit JSON/JSONL/Parquet chapter keys, disk-indexed cross-shard grouping",
+    "html_epub": "existing selectors/spine plus optional Chinese title segmentation; structured locators and explicit catalogue evidence",
+    "ambiguous": "review required, no fabricated complete chapter"
+  },
+  "post_evidence_validation": {
+    "command": "make documentation-reality-check historical-reality-check proposal-lifecycle-check PYTHON=.venv/bin/python",
+    "exit_code": 0,
+    "log": "evidence-checks.log",
+    "implementation_identity_unchanged": true
+  }
+}

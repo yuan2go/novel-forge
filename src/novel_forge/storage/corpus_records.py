@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from novel_forge.modules.source_authority.corpus import corpus_hash
 
 from psycopg import sql
 from psycopg.types.json import Jsonb
@@ -22,11 +23,30 @@ CORPUS_KEYS = {
 
 
 class CorpusRecords(CorpusIngestionRecords):
+    def corpus_command_key(self, project: str, workspace: str, key: str) -> str:
+        self.cursor.execute(
+            """SELECT 1 FROM authority_operation WHERE project_id=%s AND workspace_id=%s
+            AND definition_name='source.corpus.commit' AND idempotency_key=%s""",
+            [project, workspace, key],
+        )
+        if self.cursor.fetchone():
+            return key
+        return corpus_hash(
+            {"project_id": project, "workspace_id": workspace, "idempotency_key": key}
+        )
+
     cursor: Any
 
-    def corpus_authorization_lock(self, project_id: str, *, write: bool = False) -> None:
+    def corpus_authorization_lock(
+        self, project_id: str, *, write: bool = False
+    ) -> None:
         function = "pg_advisory_xact_lock" if write else "pg_advisory_xact_lock_shared"
-        self.cursor.execute(sql.SQL("SELECT {}(hashtextextended(%s,0))").format(sql.Identifier(function)), ["source-corpus-authorization:" + project_id])
+        self.cursor.execute(
+            sql.SQL("SELECT {}(hashtextextended(%s,0))").format(
+                sql.Identifier(function)
+            ),
+            ["source-corpus-authorization:" + project_id],
+        )
 
     def corpus_record(
         self, kind: str, project_id: str, identity: str, *, lock: bool = False

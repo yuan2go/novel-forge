@@ -1,0 +1,51 @@
+{
+  "source": "Gutenberg 23950 chapters21-30; synthetic transformations, NOT independent source editions",
+  "threshold": 0.8,
+  "threshold_tuning": "NONE; frozen default, not tuned on this sample",
+  "results": [
+    {
+      "label": "punctuation_whitespace",
+      "evidence_type": "SYNTHETIC_FIXTURE",
+      "expected_candidate": true,
+      "observed_candidate": true,
+      "similarity_estimate": 1.0,
+      "exact_bytes": false,
+      "source_bytes": 147285,
+      "human_label": false
+    },
+    {
+      "label": "traditional_simplified",
+      "evidence_type": "SYNTHETIC_FIXTURE",
+      "expected_candidate": true,
+      "observed_candidate": true,
+      "similarity_estimate": 1.0,
+      "exact_bytes": false,
+      "source_bytes": 152316,
+      "human_label": false
+    },
+    {
+      "label": "chapter_removed",
+      "evidence_type": "SYNTHETIC_FIXTURE",
+      "expected_candidate": true,
+      "observed_candidate": true,
+      "similarity_estimate": 0.8828125,
+      "exact_bytes": false,
+      "source_bytes": 137024,
+      "human_label": false
+    },
+    {
+      "label": "same_title_unrelated",
+      "evidence_type": "SYNTHETIC_FIXTURE",
+      "expected_candidate": false,
+      "observed_candidate": false,
+      "similarity_estimate": 0.0,
+      "exact_bytes": false,
+      "source_bytes": 12016,
+      "human_label": false
+    }
+  ],
+  "false_positive": 0,
+  "false_negative": 0,
+  "seconds": 0.23291429196251556,
+  "peak_rss_bytes": 74711040
+}

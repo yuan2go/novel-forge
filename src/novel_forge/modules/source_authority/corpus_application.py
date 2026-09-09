@@ -164,6 +164,7 @@ class SourceCorpusApplication:
             repository.require_scope(
                 project_id=command.project_id, workspace_id=command.workspace_id
             )
+            key = repository.corpus_command_key(command.project_id, command.workspace_id, key)
             if isinstance(action, ImportCorpusBatch):
                 snapshot = repository.corpus_record(
                     "snapshot", command.project_id, action.snapshot_id

@@ -187,6 +187,30 @@ class ControlCorpusImport(CorpusContract):
     reason: Text
 
 
+class IntegrityResolution(CorpusContract):
+    issue_id: Text
+    resolution: Literal["CONFIRM_EXCERPT", "MARK_NON_BODY", "CONFIRM_BOUNDARY", "REJECT_CORRUPT"]
+    reason: Text
+
+
+class ReviewCorpusProcessing(CorpusContract):
+    action: Literal["review_processing"]
+    processing_id: Text
+    previous_id: Text | None = None
+    decisions: tuple[IntegrityResolution, ...] = Field(min_length=1, max_length=32)
+    reason: Text
+
+
+class DecideCorpusEquivalence(CorpusContract):
+    action: Literal["decide_equivalence"]
+    left_id: Text
+    right_id: Text
+    previous_id: Text | None = None
+    decision: Literal["ACCEPT", "REJECT", "REVOKE"]
+    evidence_refs: tuple[Text, ...] = Field(min_length=1, max_length=16)
+    reason: Text
+
+
 CorpusAction = Annotated[
     RegisterCorpusSource
     | RightsDeclaration
@@ -194,7 +218,9 @@ CorpusAction = Annotated[
     | ImportCorpusBatch
     | EvaluateCorpusAdmission
     | RetireCorpusSource
-    | ControlCorpusImport,
+    | ControlCorpusImport
+    | ReviewCorpusProcessing
+    | DecideCorpusEquivalence,
     Field(discriminator="action"),
 ]
 CORPUS_ACTION = TypeAdapter(CorpusAction)

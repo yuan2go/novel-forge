@@ -618,11 +618,13 @@ HTML uses configured body/noise selectors. JSON, JSONL and Parquet map explicit 
 Edition and chapter keys, with a bounded disk index joining chapters across shards.
 ZIP/TAR expansion rejects unsafe paths, links, special files and excess expansion.
 Per-file/work/record, total byte, memory, disk, timeout, retry and concurrency limits are
-frozen. Oversized unstructured books require bounded chapter records. Ambiguous or missing
+frozen. Versioned Chinese TXT segmentation reads strict decoded lines under a body-unit limit; ambiguous or missing
 structure is `REVIEW_REQUIRED`; excerpts remain excerpts. Unicode positions, normalized
 UTF-8 offsets and raw record/member locators are distinct. Unknown original offsets remain
-null. Advanced chapter inference, near-duplicate/equivalence analysis, embeddings and
-classification are separate capabilities; a matching content hash never transfers rights.
+null. Chinese heading/volume and explicit byte-boundary profiles preserve original locators.
+A disk index compiles bounded works; the existing SourceWork materializer still assembles
+a work within the frozen per-work/memory allowance. Embeddings and classification remain
+separate capabilities; a matching content hash never transfers rights.
 
 Rights distinguish dataset license from underlying prose. `SELECTED_WORKS` declarations
 add exact work-key grants; root restrictions and purpose denials still apply. Corpus purpose
@@ -654,6 +656,41 @@ claimed. Terminal failures require a new run key and preserve old failure/byte e
 New requests resolve the current snapshot/rights at admission; the same run key reuses its
 original frozen identities. See [runtime operations](runtime-operations.md#corpus-content-ingestion)
 for the native entry and bounded examples.
+
+Acquisition receipt v2 separates immutable byte identity from the idempotent operation
+receipt; independent imports of identical bytes cannot reuse a timestamp-bearing receipt.
+Frozen v1 receipt queries retain their original identity. Source Authority scopes all
+Corpus command keys by project/workspace; only an existing exact-scope legacy key is reused.
+
+Corpus processing revisions append to the acquired Edition without a new acquisition.
+`source.import.corpus.work` also executes reprocessing admitted through the existing
+SourceImport application surface. SourceWork publication, exact Bridge, assessment,
+fingerprint, descendant invalidation and stage result share one UoW. Other materialized
+SourceDocument/Transform candidates are unusable until their exact document Bridge exists.
+The bridge binds the consumed SourceWork version; new consumption rejects superseded
+processing. Historical outputs remain queryable. Frozen parser-v1 output preserves its
+structure-contract ceiling; it is not backfilled as a verified full-book assessment.
+
+Parser v2 stores one frozen profile per parsed work; units reference its digest, avoiding
+repeating a full ToC for every chapter.
+
+`corpus-parser.v2` separates source completion, selected-edition coverage, verified bytes
+and structural usability. Counts/continuous numbering alone never establish completeness.
+A supplied exact ToC is checked against actual titles; unverified coverage stays UNKNOWN.
+Findings retain raw locators and hashes. Source Corpus commands append scoped review
+and pairwise equivalence decisions. Non-body exclusions require reprocessing; the raw
+units remain in the immutable source bundle. A changed parser cannot silently erase an
+unresolved prior issue. Explicit boundary overrides require checksum-bound, complete,
+non-overlapping raw byte coverage. They can close only matching boundary findings; unrelated
+issues remain open. Processing inspection also returns bounded downstream invalidation evidence.
+
+Exact text/structure/unit hashes and a versioned bottom-k shingle signature support
+bounded indexed candidate discovery and version comparison. Traditional-to-simplified
+conversion and punctuation/space removal apply only to the matching projection.
+Equivalence requires an explicit decision; pair decisions never imply a transitive merge,
+change source rights, or authorize knowledge reuse. Revoke appends to the same pair's
+history. Candidate discovery is bounded and may be incomplete; scores are estimates,
+not probabilities or proof of literary/work identity.
 
 ## Qualification ceiling
 

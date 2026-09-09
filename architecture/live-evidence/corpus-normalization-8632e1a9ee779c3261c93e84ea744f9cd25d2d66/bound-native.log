@@ -1,0 +1,13 @@
+{
+  "project": "corpus-public-97010a0f8c14456aa2e32f4fb0bbdc69",
+  "workspace": "workspace-98e238f67061438a8be55304255b0331",
+  "edition": "corpus-edition:d2edca8bcbc22caa6c74c2b0b902d2587c286059cd80b8e613bc31670344edd5",
+  "first": "corpus-processing:c5cff2d4585bf19f66c1d5f5af2bc63360ca78a83d2b4f68b07ac2d8bb94b7d7",
+  "second": "corpus-processing:27fa7294160d2f4b21a11c27fa63a16511bc82df068f33092765accf2a3bac95",
+  "chapters": 120,
+  "structure": true,
+  "coverage": "UNKNOWN",
+  "peak_rss_bytes": 108822528,
+  "provider_calls": 0
+}
+{"tested_sha": "8632e1a9ee779c3261c93e84ea744f9cd25d2d66", "project": "corpus-public-97010a0f8c14456aa2e32f4fb0bbdc69", "edition": "corpus-edition:d2edca8bcbc22caa6c74c2b0b902d2587c286059cd80b8e613bc31670344edd5", "chapters": 120, "reviewed_structure": true, "reviewed_coverage": "UNKNOWN", "external_catalogue_coverage": "REVIEW_REQUIRED", "processing_revisions": ["corpus-processing:c5cff2d4585bf19f66c1d5f5af2bc63360ca78a83d2b4f68b07ac2d8bb94b7d7", "corpus-processing:27fa7294160d2f4b21a11c27fa63a16511bc82df068f33092765accf2a3bac95", "corpus-processing:96bf013656972983acd3416a78347812999c89d1dca443eabec30729487ef35b"], "peak_rss_bytes": 108822528, "provider_calls": 0, "operations": [{"action": "import", "seconds": 0.05986795900389552}, {"action": "run", "seconds": 15.610876083024777}, {"action": "lineage", "seconds": 0.005781040992587805}, {"action": "inspect", "seconds": 0.004890292009804398}, {"action": "review", "seconds": 0.1050916250096634}, {"action": "reprocess", "seconds": 0.046969958988483995}, {"action": "run", "seconds": 14.604834665951785}, {"action": "inspect", "seconds": 0.005431583966128528}, {"action": "compare", "seconds": 0.016598791000433266}, {"action": "reprocess", "seconds": 0.03694695798913017}, {"action": "run", "seconds": 17.376296125003137}, {"action": "inspect", "seconds": 0.00531450001290068}]}

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260909_0125_corpus_ingestion_bridge",
+  "migration_head": "20260909_0126_corpus_processing",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4882,6 +4882,10 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
           "symbol": "CorpusIngestionRuntime"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/reprocessing.py",
+          "symbol": "admit_reprocessing"
         }
       ],
       "domain_symbols": [
@@ -4912,6 +4916,18 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus.py",
           "symbol": "corpus_use_admission"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/contracts.py",
+          "symbol": "NormalizationProfile"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/integrity.py",
+          "symbol": "assess_integrity"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/similarity.py",
+          "symbol": "compare"
         }
       ],
       "commands_operations": [
@@ -4926,6 +4942,14 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus_application.py",
           "symbol": "CorpusCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "ReviewCorpusProcessing"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "DecideCorpusEquivalence"
         }
       ],
       "state_ownership": {
@@ -4937,7 +4961,8 @@
           "immutable Corpus source purposes, snapshots, work identities and editions",
           "versioned dataset/underlying-work rights and admission decisions",
           "verified Corpus content/acquisition bindings and exact SourceWork bridges",
-          "versioned work-scoped use grants and current consumption admission"
+          "versioned work-scoped use grants and current consumption admission",
+          "immutable Corpus processing, scoped integrity reviews and non-transitive equivalence decisions"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -4989,6 +5014,10 @@
         {
           "path": "src/novel_forge/storage/corpus_ingestion_records.py",
           "symbol": "CorpusIngestionRecords"
+        },
+        {
+          "path": "src/novel_forge/storage/corpus_processing_records.py",
+          "symbol": "CorpusProcessingRecords"
         }
       ],
       "migrations": [
@@ -5026,6 +5055,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260909_0125_corpus_ingestion_bridge.py",
           "locator": "MIGRATION_ID = \"20260909_0125_corpus_ingestion_bridge\"",
           "id": "20260909_0125_corpus_ingestion_bridge"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260909_0126_corpus_processing.py",
+          "id": "20260909_0126_corpus_processing",
+          "locator": "MIGRATION_ID = '20260909_0126_corpus_processing'"
         }
       ],
       "external_effects": {
@@ -5102,6 +5136,14 @@
         {
           "path": "tests/integration/test_corpus_ingestion_postgres.py",
           "symbol": "test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_integrity_review_reprocessing_and_equivalence"
+        },
+        {
+          "path": "tests/unit/test_corpus_ingestion_formats.py",
+          "symbol": "test_longform_volume_reset_raw_coverage_and_review"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7583,7 +7625,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:c45ebff46c0e203a40f48a052c5b7c80d327bd5fa34c9793b63f0e8b123ef4ed"
+    "implementation_tree_sha": "sha256:499708477473f917ff60558dfb4004c2b42cc27958829c8be1f863c3c54ea01c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

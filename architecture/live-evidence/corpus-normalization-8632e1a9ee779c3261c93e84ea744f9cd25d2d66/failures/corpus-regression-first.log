@@ -1,0 +1,251 @@
+.F..................F.                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_authorized_bridge_reaches_existing_analysis_and_governance ________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10cae2ba0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-676/test_authorized_bridge_reaches0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c34dbb0>
+
+    def test_authorized_bridge_reaches_existing_analysis_and_governance(
+        corpus, tmp_path, monkeypatch
+    ):
+        from decimal import Decimal
+        from novel_forge.modules.mkaos_authority import (
+            MkaosAuthorityQuery,
+            ApproveKnowledgeCandidateCommand,
+            BuildKnowledgePackCommand,
+            KnowledgePackSelection,
+        )
+        from novel_forge.modules.source_authority.corpus_consumption import (
+            require_corpus_consumption,
+        )
+        from novel_forge.modules.command_kernel.errors import KernelError
+        import pytest
+    
+        from novel_forge.api import authority_dependencies
+        from novel_forge.modules.source_import.execution_contracts import (
+            CLASSIFICATION_STAGE,
+            content_intelligence_fixture_response,
+        )
+    
+        def scripted_transport(stage, inputs):
+            if stage == CLASSIFICATION_STAGE:
+                return {
+                    "content_type": "PUBLISHED_FICTION",
+                    "confidence": 0.97,
+                    "alternatives": [
+                        {"content_type": "PUBLISHED_FICTION", "confidence": 0.97},
+                        {"content_type": "UNKNOWN", "confidence": 0.03},
+                    ],
+                    "evidence_codes": ["BOUNDED_SEMANTIC_SAMPLE"],
+                    "boundary_assessment": {
+                        "scope_kind": "FILE_DOCUMENT",
+                        "suspected_document_count": 1,
+                        "review_required": False,
+                    },
+                }
+            return content_intelligence_fixture_response(stage, inputs)
+    
+        monkeypatch.setattr(
+            authority_dependencies,
+            "content_intelligence_fixture_response",
+            scripted_transport,
+        )
+        source = tmp_path / "original.jsonl"
+        source.write_text(
+            "\n".join(
+                json.dumps(
+                    {
+                        "book": "bridge-original",
+                        "chapter": str(i),
+                        "order": i,
+                        "text": text,
+                    },
+                    ensure_ascii=False,
+                )
+                for i, text in enumerate(
+                    (
+                        "阿青要取回钥匙，却必须先答应替守门人送信。她明知会误船，仍接过信。",
+                        "信送到后，守门人才解释仓门后是谁。阿青用迟到的代价换回了弟弟的消息。",
+                    ),
+                    1,
+                )
+            )
+        )
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        response = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": "authorized-bridge",
+                "manifest": _manifest(source, "PRODUCTION_REFERENCE", analyze=True),
+            },
+        )
+        assert response.status_code == 202, response.text
+        root = scheduler.run_or_recover(
+            operation_id=response.json()["operation_id"], project_id=corpus.project
+        )["result"]
+        child = root["children"][0]["operation_id"]
+>       content = scheduler.run_or_recover(operation_id=child, project_id=corpus.project)[
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "result"
+        ]
+
+tests/integration/test_corpus_ingestion_postgres.py:240: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/source_import/scheduler.py:45: in run_or_recover
+    return super().run_or_recover(
+src/novel_forge/modules/source_authority/scheduler.py:230: in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:794: in execute_fenced
+    return runtime.acquire(worker) if definition.endswith("acquire") else runtime.process_work(worker)
+                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/corpus_ingestion/runtime.py:994: in process_work
+    uow.commit()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cc06f60>
+
+    def commit(self) -> None:
+        if self.connection is None:
+>           raise RuntimeError("unit of work is not open")
+E           RuntimeError: unit of work is not open
+
+src/novel_forge/storage/authority_uow.py:61: RuntimeError
+_ test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260909_0125_corpus_ingestion_bridge] _
+
+baseline = '20260909_0125_corpus_ingestion_bridge'
+
+    @pytest.mark.parametrize(
+        "baseline",
+        [
+            "20260625_0001_initial_industrial_schema",
+            "20260907_0120_foundation_generation",
+            "20260908_0123_source_analysis_dimensions",
+            "20260909_0124_corpus_fk_indexes",
+            "20260909_0125_corpus_ingestion_bridge",
+        ],
+    )
+    def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
+        with disposable_database_at_migration(
+            DATABASE_URL, prefix="corpus_upgrade", target_migration_id=baseline
+        ) as url:
+            project, workspace = f"old-project-{uuid4()}", f"old-workspace-{uuid4()}"
+            if baseline != "20260625_0001_initial_industrial_schema":
+                created = ProjectAuthorityApplication(
+                    url, application_build_id="upgrade-test", commit_sha="e" * 40
+                ).execute(
+                    ProjectAuthorityCommand(
+                        definition_name="project_lifecycle.create",
+                        project_id=project,
+                        workspace_id=workspace,
+                        actor_id="upgrade-operator",
+                        idempotency_key=project,
+                        trace_id=project,
+                        correlation_id=project,
+                        payload={"title": "Existing project: 不可改写"},
+                    )
+                )
+                historical_facts = _seed_premerge_authority_facts(url, project, workspace)
+                with psycopg.connect(url) as connection:
+                    history_before = connection.execute(
+                        "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
+                        [created["operation_id"]],
+                    ).fetchone()[0]
+                    definition, operation = f"frozen-source-import-{uuid4()}", str(uuid4())
+                    with connection.cursor() as cursor:
+                        insert_definition(cursor, definition)
+                        insert_operation(
+                            cursor,
+                            operation_id=operation,
+                            definition_name=definition,
+                            project_id=project,
+                            workspace_id=workspace,
+                        )
+                        cursor.execute(
+                            """
+                            INSERT INTO authority_source_import_job (
+                                import_job_id,project_id,workspace_id,source_type,source_locator,requested_ref,
+                                import_policy,import_policy_hash,intelligence_policy,intelligence_policy_hash,
+                                mode,status,discovery_operation_id
+                            ) VALUES (%s,%s,%s,'github_repository','{"repository_url":"https://example.invalid/historical"}',
+                                'frozen-commit','{}',%s,'{}',%s,'PREVIEW','ADMITTED',%s)
+                        """,
+                            [
+                                operation,
+                                project,
+                                workspace,
+                                "sha256:" + "a" * 64,
+                                "sha256:" + "b" * 64,
+                                operation,
+                            ],
+                        )
+                    job_before = connection.execute(
+                        "SELECT to_jsonb(j) FROM authority_source_import_job j WHERE import_job_id=%s",
+                        [operation],
+                    ).fetchone()[0]
+            result = run_migrations(url)
+            assert result["ok"] and result["current"] == LATEST_MIGRATION_ID
+            with psycopg.connect(url) as connection:
+                assert connection.execute(
+                    "SELECT count(*) FROM nf_schema_migrations"
+                ).fetchone()[0] == len(MIGRATIONS)
+                tables = connection.execute(
+                    "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'authority_corpus_%'"
+                ).fetchall()
+>               assert {row[0] for row in tables} == {
+                    "authority_corpus_" + name
+                    for name in (
+                        "source",
+                        "rights",
+                        "snapshot",
+                        "book_identity",
+                        "edition",
+                        "admission",
+                        "membership",
+                        "retirement",
+                        "content",
+                        "bridge",
+                    )
+                }
+E               AssertionError: assert {'authority_c...valence', ...} == {'authority_c...bership', ...}
+E                 
+E                 Extra items in the left set:
+E                 'authority_corpus_equivalence'
+E                 'authority_corpus_processing'
+E                 'authority_corpus_review'
+E                 Use -v to get more diff
+
+tests/integration/test_corpus_migrations_postgres.py:113: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/starlette/testclient.py:53
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/integration/test_corpus_ingestion_postgres.py: 11 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/src/novel_forge/api/authority_app.py:746: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_ingestion_postgres.py: 11 warnings
+tests/integration/test_corpus_foundation_postgres.py: 9 warnings
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_ingestion_postgres.py::test_authorized_bridge_reaches_existing_analysis_and_governance
+FAILED tests/integration/test_corpus_migrations_postgres.py::test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260909_0125_corpus_ingestion_bridge]
+2 failed, 20 passed, 4 deselected, 41 warnings in 94.99s (0:01:34)

@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://www.gutenberg.org/ebooks/23950",
+    "resolved_url": "https://www.gutenberg.org/ebooks/23950",
+    "file": "catalog.html",
+    "bytes": 22222,
+    "sha256": "b9d2278ecb4c1405b97072cdab9d01ba4bf77c40624d5cf7524d9763d269715d",
+    "status": "ACQUIRED"
+  },
+  {
+    "url": "https://www.gutenberg.org/ebooks/23950.txt.utf-8",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23950/pg23950.txt",
+    "file": "23950.txt",
+    "bytes": 1863656,
+    "sha256": "ed422e10c16c19af7ca7b09ca0320012e60776b3d7cb054769b8f7d9a19aea7d",
+    "status": "ACQUIRED"
+  },
+  {
+    "url": "https://www.gutenberg.org/ebooks/23950.html.images",
+    "resolved_url": "https://www.gutenberg.org/cache/epub/23950/pg23950-images.html",
+    "file": "23950.html",
+    "bytes": 1955290,
+    "sha256": "84aef44aabca503bfbd15d6dc1490bec394ee3357cd72fcab4b1816634ae6b7e",
+    "status": "ACQUIRED"
+  }
+]
