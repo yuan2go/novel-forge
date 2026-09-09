@@ -172,3 +172,15 @@ def test_html_requires_a_frozen_work_parser_contract() -> None:
         "book/1.html", mode="100644", object_type="blob", size=100
     ) == ("ELIGIBLE", "eligible_text_candidate")
     assert policy.chunking_policy_hash.startswith("sha256:")
+
+
+def test_mixed_width_sentence_chunks_preserve_pending_prefix() -> None:
+    text = "a" * 150 + "。" + "x" * 256 + "乙" * 60
+    normalized = normalize_source_bytes(text.encode(), path="original.txt")
+    chunks = chunk_normalized_text(normalized, max_chunk_bytes=256)
+    assert b"".join(c.content for c in chunks) == normalized.text.encode()
+    assert all(c.byte_size <= 256 for c in chunks)
+    assert all(
+        a.normalized_byte_end == b.normalized_byte_start
+        for a, b in zip(chunks, chunks[1:])
+    )

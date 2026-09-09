@@ -94,9 +94,7 @@ class SourceImportPolicy:
             "extension_allowlist",
             tuple(sorted({item.lower() for item in self.extension_allowlist})),
         )
-        if not re.fullmatch(
-            r"[a-z][a-z0-9_.-]+\.v[0-9]+", self.parser_profile
-        ):
+        if not re.fullmatch(r"[a-z][a-z0-9_.-]+\.v[0-9]+", self.parser_profile):
             raise ValueError("Source parser_profile is invalid")
         work_aware = self.parser_profile != "generic-text.v1"
         if work_aware:
@@ -125,7 +123,8 @@ class SourceImportPolicy:
         }.issubset(self.extension_allowlist):
             raise ValueError("Chinese novel parser requires JSON and HTML inputs")
         if self.parser_profile == "chinese-poetry-json.v1" and (
-            ".json" not in self.extension_allowlist or ".html" in self.extension_allowlist
+            ".json" not in self.extension_allowlist
+            or ".html" in self.extension_allowlist
         ):
             raise ValueError("Chinese poetry parser accepts JSON inputs only")
 
@@ -499,6 +498,9 @@ def chunk_normalized_text(
             current = ""
         for segment in _split_by_utf8_bytes(block, max_chunk_bytes):
             if len(segment.encode("utf-8")) == max_chunk_bytes:
+                if current:
+                    pieces.append(current)
+                    current = ""
                 pieces.append(segment)
             elif not current:
                 current = segment

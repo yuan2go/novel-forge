@@ -26,9 +26,26 @@ def apply_corpus_action(
     workspace_id: str,
     operation_id: str,
 ) -> dict[str, Any]:
+    if action.action in {
+        "declare_relation",
+        "resolve_canonical_works",
+        "revise_curated_corpus",
+    }:
+        from .curation import apply_catalog_action
+
+        return apply_catalog_action(
+            repository,
+            action,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            operation_id=operation_id,
+        )
     if action.action in {"review_processing", "decide_equivalence"}:
         from .corpus_quality import apply_quality_decision
-        return apply_quality_decision(repository, action, project_id=project_id, operation_id=operation_id)
+
+        return apply_quality_decision(
+            repository, action, project_id=project_id, operation_id=operation_id
+        )
     repository.corpus_authorization_lock(project_id, write=True)
     scope = {"project_id": project_id, "created_by_operation_id": operation_id}
     if isinstance(action, RegisterCorpusSource):
@@ -221,7 +238,9 @@ def _decision(
         requested_purpose=purpose,
         retired=source["retired"],
         rights_current=latest == frozen["rights_id"],
-        external_work_id=repository.corpus_record("book_identity", scope["project_id"], edition["book_source_id"])["external_work_id"],
+        external_work_id=repository.corpus_record(
+            "book_identity", scope["project_id"], edition["book_source_id"]
+        )["external_work_id"],
     )
     decision_id = corpus_identity(
         "admission", scope["created_by_operation_id"], edition["edition_id"], purpose

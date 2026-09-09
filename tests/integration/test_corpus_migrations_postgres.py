@@ -41,6 +41,7 @@ from tests.integration.migration_window_postgres_support import (
         "20260908_0123_source_analysis_dimensions",
         "20260909_0124_corpus_fk_indexes",
         "20260909_0125_corpus_ingestion_bridge",
+        "20260909_0126_corpus_processing",
     ],
 )
 def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
@@ -126,12 +127,19 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
                     "processing",
                     "review",
                     "equivalence",
+                    "work_revision",
+                    "work_member",
+                    "curated_revision",
+                    "curated_member",
                 )
             }
             if baseline != "20260625_0001_initial_industrial_schema":
                 after = _authority_facts(connection, project)
                 for row in after["authority_source_document"]:
-                    if baseline != "20260909_0125_corpus_ingestion_bridge":
+                    if baseline not in {
+                        "20260909_0125_corpus_ingestion_bridge",
+                        "20260909_0126_corpus_processing",
+                    }:
                         assert row.pop("corpus_edition_id") is None
                 assert {key: after[key] for key in historical_facts} == historical_facts
                 assert all(

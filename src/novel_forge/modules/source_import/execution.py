@@ -723,9 +723,7 @@ class PostgresContentIntelligenceExecutionPort:
             )
         analyzer_contract_hashes = [item.fingerprint for item in analyzers]
         frozen_sampling_manifest = dict(sampling_manifest or {})
-        sampling_manifest_hash = (
-            _hash(frozen_sampling_manifest) if compound else ""
-        )
+        sampling_manifest_hash = _hash(frozen_sampling_manifest) if compound else ""
         input_payload = {
             "analyzer": analyzer.to_dict(),
             "scope": scope.to_dict(),
@@ -843,7 +841,9 @@ class PostgresContentIntelligenceExecutionPort:
                     except (KernelError, ValueError) as exc:
                         normalized["status"] = "FAILED_VALIDATION"
                         normalized["validation_errors"] = [
-                            exc.code if isinstance(exc, KernelError) else type(exc).__name__
+                            exc.code
+                            if isinstance(exc, KernelError)
+                            else type(exc).__name__
                         ]
                     else:
                         observation_hash = stable_hash(valid_observation)
@@ -862,10 +862,7 @@ class PostgresContentIntelligenceExecutionPort:
                                 "scope_hash": scope.fingerprint,
                                 "observation_hash": observation_hash,
                                 "evidence_span_ids": sorted(
-                                    {
-                                        item.evidence_span_id
-                                        for item in evidence_spans
-                                    }
+                                    {item.evidence_span_id for item in evidence_spans}
                                 ),
                                 "input_observation_asset_version_ids": [],
                                 **(
@@ -949,6 +946,7 @@ class PostgresContentIntelligenceExecutionPort:
                 execution.get("provider_execution_reused")
             ),
         }
+
     def execute_mkaos_extraction(
         self,
         *,
@@ -1036,9 +1034,25 @@ class PostgresContentIntelligenceExecutionPort:
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
         if replay is not None:
             return replay
-        from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
-        require_corpus_consumption(self.database_url, worker.project_id,
-            {"input": spec.input_payload, "asset_version_ids": list(spec.artifact_version_ids)}, source_analysis=True)
+        from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
+            curated_provider_gate,
+            capped_usage,
+        )
+
+        curated_budget = curated_provider_gate(self.database_url, worker)
+        from novel_forge.modules.source_authority.corpus_consumption import (
+            require_corpus_consumption,
+        )
+
+        require_corpus_consumption(
+            self.database_url,
+            worker.project_id,
+            {
+                "input": spec.input_payload,
+                "asset_version_ids": list(spec.artifact_version_ids),
+            },
+            source_analysis=True,
+        )
         definition = default_capability_registry().resolve(spec.capability)
         graph = self._operation_graph(worker.causation_id, worker.project_id)
         documents = tuple(
@@ -1248,8 +1262,13 @@ class PostgresContentIntelligenceExecutionPort:
                 ),
                 estimated_tokens=int(provider_admission.total_reserved),
                 caps=self.budget_caps,
-                call_caps=self.provider_call_caps,
-                token_caps=self.provider_token_caps,
+                call_caps=capped_usage(
+                    self.provider_call_caps, curated_budget.get("project_call_ceiling")
+                ),
+                token_caps=capped_usage(
+                    self.provider_token_caps,
+                    curated_budget.get("project_token_ceiling"),
+                ),
                 accounting_basis=self.cost_accounting_basis,
                 cost_authorization_ref=self.account_authorization_ref,
             ),
@@ -1275,8 +1294,18 @@ class PostgresContentIntelligenceExecutionPort:
                 worker_id=self.worker_id,
                 lease_seconds=self.lease_seconds,
                 adapter=adapter,
-                pre_send_assertion=lambda: require_corpus_consumption(self.database_url, worker.project_id,
-                    {"input": spec.input_payload, "asset_version_ids": list(spec.artifact_version_ids)}, source_analysis=True),
+                pre_send_assertion=lambda: (
+                    curated_provider_gate(self.database_url, worker),
+                    require_corpus_consumption(
+                        self.database_url,
+                        worker.project_id,
+                        {
+                            "input": spec.input_payload,
+                            "asset_version_ids": list(spec.artifact_version_ids),
+                        },
+                        source_analysis=True,
+                    ),
+                ),
             )
         except Exception:
             resolve_provider_budget_failure(
@@ -1855,9 +1884,8 @@ def _order_compound_observations(
         str(observation.get("dimension") or ""): observation
         for observation in observations
     }
-    if (
-        len(by_dimension) != len(observations)
-        or set(by_dimension) != set(requested_dimensions)
+    if len(by_dimension) != len(observations) or set(by_dimension) != set(
+        requested_dimensions
     ):
         raise KernelError(
             "SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH",

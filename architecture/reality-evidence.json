@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260909_0126_corpus_processing",
+  "migration_head": "20260909_0127_corpus_curation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4886,6 +4886,14 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/reprocessing.py",
           "symbol": "admit_reprocessing"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/curation.py",
+          "symbol": "apply_catalog_action"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py",
+          "symbol": "admit_curated_analysis"
         }
       ],
       "domain_symbols": [
@@ -4928,6 +4936,18 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/similarity.py",
           "symbol": "compare"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "ResolveCanonicalWorks"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "ReviseCuratedCorpus"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/corpus.py",
+          "symbol": "DeclareCorpusRelation"
         }
       ],
       "commands_operations": [
@@ -5018,6 +5038,10 @@
         {
           "path": "src/novel_forge/storage/corpus_processing_records.py",
           "symbol": "CorpusProcessingRecords"
+        },
+        {
+          "path": "src/novel_forge/storage/corpus_catalog_records.py",
+          "symbol": "CorpusCatalogRecords"
         }
       ],
       "migrations": [
@@ -5060,6 +5084,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260909_0126_corpus_processing.py",
           "id": "20260909_0126_corpus_processing",
           "locator": "MIGRATION_ID = '20260909_0126_corpus_processing'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260909_0127_corpus_curation.py",
+          "id": "20260909_0127_corpus_curation",
+          "locator": "MIGRATION_ID = \"20260909_0127_corpus_curation\""
         }
       ],
       "external_effects": {
@@ -5144,6 +5173,18 @@
         {
           "path": "tests/unit/test_corpus_ingestion_formats.py",
           "symbol": "test_longform_volume_reset_raw_coverage_and_review"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_curated_corpus_freeze_analysis_and_stale_members"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_multifile_duplicate_review_relations_and_discovery"
+        },
+        {
+          "path": "tests/integration/test_corpus_ingestion_postgres.py",
+          "symbol": "test_native_catalogue_resolution_preserves_input_scope"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7625,7 +7666,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:499708477473f917ff60558dfb4004c2b42cc27958829c8be1f863c3c54ea01c"
+    "implementation_tree_sha": "sha256:adcbd85f250f76ffac4e07cc5ac02eaa639ab98894d4e2e611112ca71418b751"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

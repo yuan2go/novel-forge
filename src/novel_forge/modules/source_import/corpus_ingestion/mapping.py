@@ -136,9 +136,23 @@ def parsed_source_work(
             "completeness": document["completeness"],
             "expected_units": document["expected_units"],
             "deduplication": "EXACT_RECORD_ONLY",
+            **(
+                {
+                    "processing_revision": {
+                        "parent": document.get("processing_parent"),
+                        "review_id": document.get("review_id"),
+                        "assessment_hash": corpus_hash(document["integrity"]),
+                    }
+                }
+                if document.get("parser_profile", {}).get("version")
+                == "corpus-parser.v3"
+                else {}
+            ),
         },
         excluded_fields=(),
-        parser_version="corpus-parser.v2"
+        parser_version=document.get("parser_profile", {}).get(
+            "version", "corpus-parser.v2"
+        )
         if "integrity" in document
         else "corpus-parser.v1",
     )

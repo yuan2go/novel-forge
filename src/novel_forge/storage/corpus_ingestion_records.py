@@ -14,10 +14,10 @@ from novel_forge.modules.source_authority.corpus import (
 )
 
 
-from .corpus_processing_records import CorpusProcessingRecords
+from .corpus_catalog_records import CorpusCatalogRecords
 
 
-class CorpusIngestionRecords(CorpusProcessingRecords):
+class CorpusIngestionRecords(CorpusCatalogRecords):
     cursor: Any
 
     def require_corpus_acquisition(

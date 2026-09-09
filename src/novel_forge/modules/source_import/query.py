@@ -14,46 +14,190 @@ class SourceImportQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
-    def corpus_processing(self, *, project_id: str, identity: str, edition: bool = False, compare_to: str = "", discover: bool = False, limit: int = 20, after: str = "", historical: bool = False, principal: Principal | None = None) -> dict[str, Any]:
-        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
-        from novel_forge.modules.source_import.corpus_ingestion.similarity import compare
+    def corpus_catalog(
+        self,
+        *,
+        project_id: str,
+        kind: str,
+        identity: str,
+        revision: bool = False,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+        from novel_forge.modules.source_authority.curation import curated_availability
+
+        self._require(principal, project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceAuthorityRepository(uow.cursor)
+            repository.corpus_authorization_lock(project_id)
+            value = repository.catalog_current(
+                kind, project_id, identity, revision=revision
+            )
+            if value is None:
+                raise KernelError(
+                    "CORPUS_CATALOG_NOT_FOUND", "catalog revision not in project"
+                )
+            if kind == "curated":
+                value["current_availability"] = curated_availability(
+                    repository, project_id, value["members"]
+                )
+                current = repository.catalog_current(
+                    "curated", project_id, value["corpus_id"]
+                )
+                value["selection_current"] = bool(
+                    current and current["revision_id"] == value["revision_id"]
+                )
+                value["analysis_dispatchable"] = (
+                    value["selection_current"]
+                    and value["manifest"]["state"] == "FROZEN"
+                    and all(
+                        r["available"]
+                        for r in value["current_availability"]
+                        if r["selected"]
+                    )
+                )
+                if not value["selection_current"]:
+                    for row in value["current_availability"]:
+                        row["available"] = False
+                        row["reasons"].append("CURATED_SELECTION_CHANGED")
+            return value
+
+    def corpus_processing(
+        self,
+        *,
+        project_id: str,
+        identity: str,
+        edition: bool = False,
+        compare_to: str = "",
+        discover: bool = False,
+        limit: int = 20,
+        after: str = "",
+        historical: bool = False,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+        from novel_forge.modules.source_import.corpus_ingestion.similarity import (
+            compare,
+        )
+
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = SourceAuthorityRepository(uow.cursor)
             source = repository.corpus_processing(project_id, identity, edition=edition)
             if compare_to:
                 other = repository.corpus_processing(project_id, compare_to)
-                return {"left":source["processing_id"], "right":other["processing_id"], "comparison":compare(source,other),
-                    "decision":repository.corpus_equivalence_current(project_id,*sorted((source["processing_id"],other["processing_id"]))) }
+                from novel_forge.modules.source_import.corpus_ingestion.comparison import (
+                    compare_page,
+                )
+
+                comparison = compare_page(
+                    source, other, after=after, limit=min(limit, 500)
+                )
+                return {
+                    "left": source["processing_id"],
+                    "right": other["processing_id"],
+                    "comparison": comparison,
+                    "decision": repository.corpus_equivalence_current(
+                        project_id,
+                        *sorted((source["processing_id"], other["processing_id"])),
+                    ),
+                }
             if discover:
-                candidates = repository.corpus_similar(project_id,source,limit,after=after,historical=historical)
-                threshold = (source["profile"].get("normalization") or {}).get("candidate_threshold",0.8)
+                candidates = repository.corpus_similar(
+                    project_id, source, limit, after=after, historical=historical
+                )
+                threshold = (source["profile"].get("normalization") or {}).get(
+                    "candidate_threshold", 0.8
+                )
                 scored = []
                 for candidate in candidates["rows"]:
-                    comparison = compare(source,candidate)
-                    metadata_match = any(key.startswith(("title-author:","external:")) for key in set(source["buckets"]) & set(candidate["buckets"]))
-                    if comparison["exact_text"] or comparison["similarity_estimate"] >= threshold or metadata_match:
-                        scored.append({"processing_id":candidate["processing_id"],"edition_id":candidate["edition_id"],"metadata_match":metadata_match,**comparison})
-                return {**{k:v for k,v in candidates.items() if k != "rows"},"processing_id":source["processing_id"],"candidates":scored,"threshold":threshold,"candidate_limit":limit,"evaluated_on_page":len(candidates["rows"]),"truncated_possible":bool(candidates["next_cursor"])}
+                    comparison = compare(source, candidate)
+                    metadata_match = any(
+                        key.startswith(("title-author:", "external:"))
+                        for key in set(source["buckets"]) & set(candidate["buckets"])
+                    )
+                    if (
+                        comparison["exact_text"]
+                        or comparison["similarity_estimate"] >= threshold
+                        or metadata_match
+                    ):
+                        scored.append(
+                            {
+                                "processing_id": candidate["processing_id"],
+                                "edition_id": candidate["edition_id"],
+                                "metadata_match": metadata_match,
+                                **comparison,
+                            }
+                        )
+                return {
+                    **{k: v for k, v in candidates.items() if k != "rows"},
+                    "processing_id": source["processing_id"],
+                    "candidates": scored,
+                    "threshold": threshold,
+                    "candidate_limit": limit,
+                    "evaluated_on_page": len(candidates["rows"]),
+                    "truncated_possible": bool(candidates["next_cursor"]),
+                }
             return source
 
-    def corpus_lineage(self, *, project_id: str, import_job_id: str, after: str = "", limit: int = 100, principal: Principal | None = None) -> dict[str, Any]:
-        from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+    def corpus_lineage(
+        self,
+        *,
+        project_id: str,
+        import_job_id: str,
+        after: str = "",
+        limit: int = 100,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
-            job = SourceImportRepository(uow.cursor).job(project_id=project_id, import_job_id=import_job_id)
+            job = SourceImportRepository(uow.cursor).job(
+                project_id=project_id, import_job_id=import_job_id
+            )
             if job["source_type"] != "corpus_content" or not job["corpus_snapshot_id"]:
-                raise KernelError("CORPUS_SNAPSHOT_NOT_AVAILABLE", "content acquisition has not frozen a Corpus snapshot")
+                raise KernelError(
+                    "CORPUS_SNAPSHOT_NOT_AVAILABLE",
+                    "content acquisition has not frozen a Corpus snapshot",
+                )
             repository = SourceAuthorityRepository(uow.cursor)
-            snapshot = repository.corpus_record("snapshot", project_id, job["corpus_snapshot_id"])
-            editions = repository.corpus_page("edition", project_id, parent_id=snapshot["snapshot_id"], after=after, limit=limit)
-            uow.cursor.execute("SELECT edition_id,to_jsonb(b) FROM authority_corpus_bridge b WHERE project_id=%s AND edition_id=ANY(%s) AND EXISTS(SELECT 1 FROM authority_source_work_version w WHERE w.asset_version_id=b.source_work_asset_version_id AND w.status='ACTIVE')",
-                [project_id, [edition["edition_id"] for edition in editions]])
+            snapshot = repository.corpus_record(
+                "snapshot", project_id, job["corpus_snapshot_id"]
+            )
+            editions = repository.corpus_page(
+                "edition",
+                project_id,
+                parent_id=snapshot["snapshot_id"],
+                after=after,
+                limit=limit,
+            )
+            uow.cursor.execute(
+                "SELECT edition_id,to_jsonb(b) FROM authority_corpus_bridge b WHERE project_id=%s AND edition_id=ANY(%s) AND EXISTS(SELECT 1 FROM authority_source_work_version w WHERE w.asset_version_id=b.source_work_asset_version_id AND w.status='ACTIVE')",
+                [project_id, [edition["edition_id"] for edition in editions]],
+            )
             bridges = {row[0]: row[1] for row in uow.cursor.fetchall()}
-            return {"import_job_id": import_job_id, "snapshot": snapshot,
-                "rights": repository.corpus_record("rights", project_id, snapshot["rights_id"]),
-                "editions": [{**edition, "bridge": bridges.get(edition["edition_id"])} for edition in editions],
-                "page_limit": limit, "next_after": editions[-1]["edition_id"] if len(editions) == limit else None}
+            return {
+                "import_job_id": import_job_id,
+                "snapshot": snapshot,
+                "rights": repository.corpus_record(
+                    "rights", project_id, snapshot["rights_id"]
+                ),
+                "editions": [
+                    {**edition, "bridge": bridges.get(edition["edition_id"])}
+                    for edition in editions
+                ],
+                "page_limit": limit,
+                "next_after": editions[-1]["edition_id"]
+                if len(editions) == limit
+                else None,
+            }
 
     def import_job(
         self,
@@ -67,9 +211,13 @@ class SourceImportQuery:
             repository = SourceImportRepository(uow.cursor)
             job = repository.job(project_id=project_id, import_job_id=import_job_id)
             if job["mode"] == "FOUNDATION":
-                from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+                from novel_forge.storage.source_authority_repositories import (
+                    SourceAuthorityRepository,
+                )
 
-                return SourceAuthorityRepository(uow.cursor).corpus_import_status(project_id, import_job_id)
+                return SourceAuthorityRepository(uow.cursor).corpus_import_status(
+                    project_id, import_job_id
+                )
             work = repository.list_work(
                 project_id=project_id, import_job_id=import_job_id
             )
@@ -103,12 +251,35 @@ class SourceImportQuery:
                 )
         corpus_summary = {}
         if job["source_type"] == "corpus_content":
-            acquisition = next((item["result"] for item in work if item["work_kind"] == "DISCOVERY"), {})
-            corpus_summary = {"snapshot_id": job["corpus_snapshot_id"], "acquisition": acquisition,
-                "content_imported": sum(item["work_kind"] == "WORK" and item["status"] in {"SUCCEEDED", "REUSED"} for item in work),
-                "content_blocked": sum(child.get("status") == "BLOCKED" for child in acquisition.get("children", [])),
-                "knowledge_approved_by_import": False, "purpose": job["source_locator"]["manifest"]["purpose"],
-                "stage_results": [{"operation_id": item["operation_id"], "kind": item["work_kind"], "status": item["status"], "result": item["result"], "failure": item["failure"]} for item in work]}
+            acquisition = next(
+                (item["result"] for item in work if item["work_kind"] == "DISCOVERY"),
+                {},
+            )
+            corpus_summary = {
+                "snapshot_id": job["corpus_snapshot_id"],
+                "acquisition": acquisition,
+                "content_imported": sum(
+                    item["work_kind"] == "WORK"
+                    and item["status"] in {"SUCCEEDED", "REUSED"}
+                    for item in work
+                ),
+                "content_blocked": sum(
+                    child.get("status") == "BLOCKED"
+                    for child in acquisition.get("children", [])
+                ),
+                "knowledge_approved_by_import": False,
+                "purpose": job["source_locator"]["manifest"]["purpose"],
+                "stage_results": [
+                    {
+                        "operation_id": item["operation_id"],
+                        "kind": item["work_kind"],
+                        "status": item["status"],
+                        "result": item["result"],
+                        "failure": item["failure"],
+                    }
+                    for item in work
+                ],
+            }
         return {
             **_serializable(job),
             "corpus": corpus_summary,
