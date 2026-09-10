@@ -1,0 +1,465 @@
+{
+  "schema_version": "corpus-real-analysis-delivery-evidence.v1",
+  "task": "WP-CORPUS-REAL-ANALYSIS-01",
+  "observed_at": "2026-09-10T16:14:00.780858+00:00",
+  "baseline_sha": "a6e25375ed568c546a6eb79328376b23b72d3c6d",
+  "implementation_sha": "7e1f638b8df540075166c797adcd4e195853b6e4",
+  "tested_head": "37b9a85b30a5c341a99c623107314daa5d77d541",
+  "tested_identities": [
+    {
+      "schema_version": "implementation-tree-identity.v3",
+      "algorithm": "sha256-canonical-file-records-v2",
+      "implementation_tree_sha": "sha256:2fe5a5beae58ad71c53d67e2c67c9f176cb5c0dafdd835a2c7994b2b9ee1b1d3",
+      "path_count": 1138,
+      "scope": {
+        "included": [
+          "src/**",
+          "tests/**",
+          "scripts/**",
+          "config/**",
+          "skills/**",
+          "architecture/manifests/**",
+          ".github/workflows/**",
+          ".claude/commands/**",
+          "AI instruction sources declared by architecture/manifests/ai-instruction-manifest.yaml",
+          "AGENTS.md",
+          "CLAUDE.md",
+          "compose*.yml",
+          "compose*.yaml",
+          "docker-compose*.yml",
+          "docker-compose*.yaml",
+          "Dockerfile",
+          "Dockerfile.*",
+          "Makefile",
+          "pyproject.toml"
+        ],
+        "excluded": [
+          "docs/**",
+          "generated test output",
+          "timestamped reports",
+          "CI run metadata",
+          "build artifacts",
+          "temporary files",
+          ".coverage",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          "__pycache__",
+          "*.pyc",
+          "*.pyo",
+          ".DS_Store",
+          "coverage.xml",
+          "junit*.xml",
+          "*.log"
+        ]
+      },
+      "commit_sha": "4e1a6103542e7fdb9e49b5b4132a3d85d8ce9362"
+    },
+    {
+      "schema_version": "implementation-tree-identity.v3",
+      "algorithm": "sha256-canonical-file-records-v2",
+      "implementation_tree_sha": "sha256:14dfd8410ed73a7cb50e1e3a30df86fbc731dfb937e75f30f6e79b9a1913dd4a",
+      "path_count": 1138,
+      "scope": {
+        "included": [
+          "src/**",
+          "tests/**",
+          "scripts/**",
+          "config/**",
+          "skills/**",
+          "architecture/manifests/**",
+          ".github/workflows/**",
+          ".claude/commands/**",
+          "AI instruction sources declared by architecture/manifests/ai-instruction-manifest.yaml",
+          "AGENTS.md",
+          "CLAUDE.md",
+          "compose*.yml",
+          "compose*.yaml",
+          "docker-compose*.yml",
+          "docker-compose*.yaml",
+          "Dockerfile",
+          "Dockerfile.*",
+          "Makefile",
+          "pyproject.toml"
+        ],
+        "excluded": [
+          "docs/**",
+          "generated test output",
+          "timestamped reports",
+          "CI run metadata",
+          "build artifacts",
+          "temporary files",
+          ".coverage",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          "__pycache__",
+          "*.pyc",
+          "*.pyo",
+          ".DS_Store",
+          "coverage.xml",
+          "junit*.xml",
+          "*.log"
+        ]
+      },
+      "commit_sha": "37b9a85b30a5c341a99c623107314daa5d77d541"
+    }
+  ],
+  "verification_runs": [
+    {
+      "tested_sha": "4e1a6103542e7fdb9e49b5b4132a3d85d8ce9362",
+      "kind": "unit-final",
+      "cases": 171,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/unit-final.xml",
+      "status": "PASS"
+    },
+    {
+      "tested_sha": "4e1a6103542e7fdb9e49b5b4132a3d85d8ce9362",
+      "kind": "postgres-final",
+      "cases": 31,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-final.xml",
+      "status": "PASS"
+    },
+    {
+      "tested_sha": "37b9a85b30a5c341a99c623107314daa5d77d541",
+      "kind": "postgres-affected",
+      "cases": 2,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-affected.xml",
+      "status": "PASS"
+    }
+  ],
+  "final_delta": "Only resume response reports PROCESSING for newly admitted expansion repairs; added native empty-result and before-send budget evidence cases. All affected resume/native paths rerun at final tested HEAD.",
+  "static_gates": {
+    "command": "make validate head-integrity-check",
+    "tested_sha": "37b9a85b30a5c341a99c623107314daa5d77d541",
+    "status": "PASS"
+  },
+  "real_sample": {
+    "project_id": "wp-corpus-real-analysis-01",
+    "query_class": "READ_ONLY_AUTHORITATIVE_RECORD_COUNTS",
+    "model_effects": 0,
+    "provider_budget_reservations": 0,
+    "expanded_target_units": 0,
+    "processed_target_units": 0,
+    "reviewed_target_units": 0,
+    "accepted_target_units": 0,
+    "frozen_preview_target_units": 3,
+    "actual_analysis_job": null,
+    "knowledge_candidates": 0,
+    "knowledge_cards": 0,
+    "production_consumable_knowledge": 0,
+    "quality": "NOT_EVALUATED"
+  },
+  "real_sample_identity": {
+    "project_id": "wp-corpus-real-analysis-01",
+    "workspace_id": "ws-corpus-real-analysis-01",
+    "processing_id": "corpus-processing:5a3968b6c14b0c799f126d560009b43b59c2c82a5055ccdc56f8ade919e1f67b",
+    "revision_id": "corpus-curated-revision:365bc0c3dcf692b8ace2a9bab9f6e52c803d7d669a946ae486bafcbda0a536bb",
+    "lineage": {
+      "stage": "CONTENT_IMPORTED",
+      "edition_id": "corpus-edition:23af404195cb1d6967349f5199bc87a4e3328051920ab920b2e0a9bd8a7cec45",
+      "unit_count": 102,
+      "chunk_count": 230,
+      "snapshot_id": "corpus-snapshot:d26b6e5ebce09bb2d2b9758ebd49f7c8dc05a1cf86b707e7a8d686ee30ad740e",
+      "completeness": "UNKNOWN",
+      "processing_id": "corpus-processing:5a3968b6c14b0c799f126d560009b43b59c2c82a5055ccdc56f8ade919e1f67b",
+      "source_work_id": "source-work:0286d3cd8b0e2e051214cdf710d697404d335d27bf3427b9925404e47471bb2e",
+      "normalized_hash": "sha256:00c633ae394da9a271a882b1a1a757ebb51ebd6219d58fef4d7c7b383d4daf50",
+      "structure_usable": true,
+      "analysis_scheduled": false,
+      "knowledge_approved": false,
+      "source_document_id": "source-document:wp-corpus-real-analysis-01:48f440c9a9fa8be509d4946aa2ca93087bc1dccf0f1a5a2fcfc9ef25327d2c8f",
+      "source_transform_id": "source-transform:wp-corpus-real-analysis-01:4c269614d89f0a51f52df7e539b454ccb922aa90a455a351be981758def07ec6",
+      "provider_model_calls": 0,
+      "source_asset_version_id": "source-document:wp-corpus-real-analysis-01:48f440c9a9fa8be509d4946aa2ca93087bc1dccf0f1a5a2fcfc9ef25327d2c8f:v1",
+      "source_work_version_reused": false,
+      "invalidated_descendant_count": 233,
+      "source_work_asset_version_id": "b012acba-31ae-428d-ba88-e5adbbc65461",
+      "source_transform_asset_version_id": "source-transform:wp-corpus-real-analysis-01:4c269614d89f0a51f52df7e539b454ccb922aa90a455a351be981758def07ec6:v1"
+    }
+  },
+  "verdicts": {
+    "READING_EXPANSION_AND_RECOVERY": "PASS",
+    "FAILED_STAGE_INPUT_EVIDENCE": "PASS",
+    "NATIVE_ANALYSIS_OPERATION_LOOP": "PASS",
+    "TARGET_COVERAGE_ACCOUNTING": "PASS",
+    "BOUNDED_ANALYSIS_PREFLIGHT": "PARTIAL",
+    "REAL_MODEL_AUTHORIZATION": "REQUIRED",
+    "REAL_MODEL_EXECUTION": "NOT_RUN",
+    "REAL_ANALYSIS_QUALITY": "NOT_EVALUATED",
+    "MKAOS_CANDIDATE_LINEAGE": "PARTIAL",
+    "FOCUSED_ENGINEERING_QUALIFICATION": "PASS",
+    "REMOTE_MAIN_INCLUDES_DELIVERY": "NO"
+  },
+  "overall": "ENGINEERING_COMPLETE_RUNTIME_BLOCKED",
+  "remote_main_at_end": "a6e25375ed568c546a6eb79328376b23b72d3c6d",
+  "main_drift": false,
+  "published": false,
+  "artifacts": [
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/planning-red.log",
+      "bytes": 24062,
+      "sha256": "sha256:50f792d8090c44d7d146a31ed56cea68aacb27ec2046619525e602499dcbbd25"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/failed-input-red.json",
+      "bytes": 647,
+      "sha256": "sha256:75b3e6a18f3c1bd03104fd048bad5b26fd1f300a7299ba4e82d7f5e38f53176d"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/focused-postgres-first.log",
+      "bytes": 48123,
+      "sha256": "sha256:85d985ee0a4c3ffdb51daeeea77884317cb81ec95eb2e4ada6441022184aca9a"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/api-unit-first.log",
+      "bytes": 2876,
+      "sha256": "sha256:196e1390bf4a015a809dc7ed6d85f01c4456908718bc7e1cd175ebfe8b4a9dd4"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/unit-final.xml",
+      "bytes": 28538,
+      "sha256": "sha256:c1ca049e1858cda371673deec33b2b2f0075303e7f584554d9337c2a8bc113d7"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/unit-final.log",
+      "bytes": 3051,
+      "sha256": "sha256:5540e9a4d9551dc2e16a0fca534121e9816211d9b8d928a5e8c232dc97f3b3fd"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-final.xml",
+      "bytes": 5630,
+      "sha256": "sha256:af1c1b3358ca35287f391ebc43d245019c3b0f2a456aaa2cd1e28777db06f64a"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-final.log",
+      "bytes": 1388,
+      "sha256": "sha256:9ad19441d42d9c5bd64b785674f78b2d03a9483a246d485bb3d1ea31ad0cb8be"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-affected.xml",
+      "bytes": 600,
+      "sha256": "sha256:5e21ecb248bdecc398c79ab524e5cfd8ee6c17cb1299b1f9ba65ddb5d2c19ea7"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/postgres-affected.log",
+      "bytes": 1620,
+      "sha256": "sha256:39738d62377689451db52358678ac97f803f71e5c24ba20e634da551bf5c5a39"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/static-final.log",
+      "bytes": 636483,
+      "sha256": "sha256:720c31c02b399a015086eb03b5eed083025ea22905f6dbfab15ae3db9e6b776b"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/static-affected.log",
+      "bytes": 636483,
+      "sha256": "sha256:13c96656303bd959e70b56f4fc3337e9844c9fdcff6e8dcb295b08c20c5f58ae"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/native-4e1a6103.json.gz",
+      "bytes": 665021,
+      "sha256": "sha256:2b17119ed39103db9bd4692aa864625d684f295f53d3d398bdc21f94c50fc620"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/native-37b9a85b.json.gz",
+      "bytes": 724852,
+      "sha256": "sha256:952981a631d1f984c49b48d8f58b34f28f9ea8901ed65499ea40c27bdbd858c1"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/native-summary.json",
+      "bytes": 397620,
+      "sha256": "sha256:ae687fd02964e95fd46614cf86f582589625fd0e7e3fae1cbd796957d7ea5f7f"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/native/job-query-plan.json",
+      "bytes": 6460,
+      "sha256": "sha256:cd9dda6f6d5a6f80834355f681756a5b08db8369a8d0571a0f11ec2cdfc1082b"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/dependency-snapshot.json",
+      "bytes": 3973,
+      "sha256": "sha256:cefd50e0a6ee14f73c402618889f32e216ddf53960cacd863fd446fd2bf22aea"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/schema-state.json",
+      "bytes": 219,
+      "sha256": "sha256:5fea9202ee310cf7e2740fe49a7c4dc2b2d67e330bc207c0c0fecb29226e4554"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/import-manifest.json",
+      "bytes": 1292,
+      "sha256": "sha256:c9c7777cd904ad9fcdb16a2f04fc02f339a972e79f4e68791b9a02a8bb3835cf"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/review-decision.json",
+      "bytes": 865,
+      "sha256": "sha256:b67514dc28d4d9b2b9817cd9014a57797b2053b7dc47418615e51d27667d1591"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/review.json",
+      "bytes": 195444,
+      "sha256": "sha256:2537a4e56cec963df5354c62a546a9ad1f19aadacade1176dc59b8715c936bdd"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/reprocess-run.json",
+      "bytes": 9151,
+      "sha256": "sha256:c2bb779d53025550748c2a62adbd7c0c95a3403d56bc50aecbca547ab4459660"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/reviewed-processing.json",
+      "bytes": 225253,
+      "sha256": "sha256:017df217c850eda8422e301f6a9f7ad282f71f4b3ea9c59cbaed7f2802ebe033"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/sample-frozen-selection.json",
+      "bytes": 1213,
+      "sha256": "sha256:00992d16f64046a642fbeee1e4b80a55c1f5ad6477a342dcfdb555548c9b7a7a"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/prepared-identities.json",
+      "bytes": 1813,
+      "sha256": "sha256:f3b593bff89009463b103f91eb9ece6cbe60ac6945b557b2fa02a2da000f407d"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/reading-scopes.json",
+      "bytes": 633,
+      "sha256": "sha256:4d191f81617d0a3307259cdb8d7f86ae7913208a04d7a63ab2e6bc40d04acc2a"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/reading-preview-api-37b9a85b.json",
+      "bytes": 14798,
+      "sha256": "sha256:4b2c001e90dbc3e1af4c03d9f93f040f68c693db1d1a6979699dc6fd3005bb0b"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/reading-preview-cli-37b9a85b.json",
+      "bytes": 14798,
+      "sha256": "sha256:4b2c001e90dbc3e1af4c03d9f93f040f68c693db1d1a6979699dc6fd3005bb0b"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/acceptance-benchmark.schema.json",
+      "bytes": 911,
+      "sha256": "sha256:3e70e79d8d7bcbaee9b13f8b992fd7f21f06156de464223c76fe156400e36479"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/acceptance-benchmark.v1.json",
+      "bytes": 10675,
+      "sha256": "sha256:6fcd4ceef1fececa053c93434dc7d47a7089e9964c6af929d07767b62668a17a"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/acceptance-benchmark.freeze.json",
+      "bytes": 218,
+      "sha256": "sha256:7832fa5c8f639026ed0eee2d4ddd82e3d8f9caa8aed3d1a32dabb93490efec11"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/real-execution-status.json",
+      "bytes": 477,
+      "sha256": "sha256:cd27caf8c80053cf9299b9db3bacd20e8761295a96976bb85e13e69586c7de75"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/mkaos-preflight-query.json",
+      "bytes": 83,
+      "sha256": "sha256:70d2434bf19126b8990f542313532b83c51755882c1a9f1aeb9b0512615b8ba0"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/codex-local-identity.json",
+      "bytes": 323,
+      "sha256": "sha256:14018a944c18760cff5342e59bfdbd7605973578660655c6217351a01356d6a8"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/authorization-required.json",
+      "bytes": 1723,
+      "sha256": "sha256:f8ed7bc653cf28a8f7dc806eefde0602603ea67f847c4ea41614723503d301d7"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/runtime-env.json",
+      "bytes": 1108,
+      "sha256": "sha256:e10946e07adf1177171cd601753ced177c0aab0bfd83b3e4877ba73843090d49"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/runtime.env",
+      "bytes": 1093,
+      "sha256": "sha256:e067c9f8089d135763433582036b3820da0e88cfda820bd7d1a1b552592cd431"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/authorized-runtime.env.template",
+      "bytes": 1718,
+      "sha256": "sha256:3d8581dc826e9b5581d70174b5b954ec56941a6a6768e6d579ebee0e794364bb"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/load-authorized-route.sh",
+      "bytes": 1891,
+      "sha256": "sha256:c51a117ef7afc5e2839117104bd94c4ce1f3474809db165b400d23b55f65d34b"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/analysis-request-proposal.json",
+      "bytes": 984,
+      "sha256": "sha256:8ab34752b4a459c0b5a8e3594bb7e56ee30fbfd3274ab721103d0d492c013cb9"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/NATIVE-OPERATIONS.md",
+      "bytes": 5856,
+      "sha256": "sha256:3fb15b83136e8e2c74d046b7b5e58f06896fd864237967f8564486420e7de841"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/backups/corpus_real_analysis.dump",
+      "bytes": 4492937,
+      "sha256": "sha256:57613a55a0ec2078a707555b3d4710e038da818acdd0f57a637a6c01bfe68cc2"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/backups/corpus_engineering_test.dump",
+      "bytes": 6804733,
+      "sha256": "sha256:dd96f2b132632063a390be8856f3c6f814983f842a9b96f84fd4195fe9b0aca2"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/backups/native-fixture-files.tar.gz",
+      "bytes": 40124,
+      "sha256": "sha256:ed280c91fd203d0733b4367bfa44fc7f4c409d9d4a969a845a9bc529202d1669"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/backups/native-fixture-origin.json",
+      "bytes": 276,
+      "sha256": "sha256:af9a5f1c62573bb0e585500ea5adf48e3c319b76df5643b4d82e1698bff4f5c9"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/backups/sample-restore-list.txt",
+      "bytes": 425694,
+      "sha256": "sha256:ed22be8eb1a5e23fbbdcd956b0641c388407e8f80d6259e638df3407dfd796f5"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/resource-final.json",
+      "bytes": 458,
+      "sha256": "sha256:205ee17a522f97325955bf471c73f492fb50abf0ed4a9ee2dccbdba705480f9e"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/evidence-documentation-check.json",
+      "bytes": 771,
+      "sha256": "sha256:7d824e5490c4d044638b9e1b8922791a224936bac05176c2b3c24f1a8aff7f59"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-ANALYSIS-01/tested-identities.json",
+      "bytes": 151471,
+      "sha256": "sha256:79ad245c9403207f963a879cae83f4461392a62cdabf7cae532f6bdb7e5b383c"
+    }
+  ],
+  "proof_ceiling": "Focused PostgreSQL/native CLI/API and process-receipt engineering. Scripted fixtures are not real model or semantic quality evidence. No independently human-annotated accuracy/recall.",
+  "resource_state": {
+    "observed_at": "2026-09-10T16:17:40.527960+00:00",
+    "task_api": "STOPPED",
+    "task_postgresql": "STOPPED",
+    "postgres_data_preserved": true,
+    "private_venv_preserved": true,
+    "source_and_objects_preserved": true,
+    "backups": "backups/corpus_real_analysis.dump; backups/corpus_engineering_test.dump; backups/native-fixture-files.tar.gz",
+    "original_worktree_status": "",
+    "system_configuration_changed": false,
+    "common_runtime_upgraded": false
+  },
+  "final_fetch_observed_at": "2026-09-10T16:18:49.909623+00:00"
+}
