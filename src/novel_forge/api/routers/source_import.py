@@ -54,12 +54,31 @@ class ChapterReadingPreviewRequest(BaseModel):
     project_id: str = Field(min_length=1, max_length=200)
     revision_id: str = Field(min_length=1, max_length=200)
     reading_scopes: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+    max_calls: int = Field(default=0, ge=0, le=10000)
+    max_tokens: int = Field(default=0, ge=0, le=100000000)
+    authorization_ref: str = Field(default="", max_length=1000)
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/source-imports", tags=["source-import"])
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
+
+    @router.get("/corpus/jobs/{job_id}/reading-targets")
+    def reading_targets(
+        job_id: str, project_id: str, after: int = 0, limit: int = 50
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.reading_targets(
+                project_id=project_id,
+                import_job_id=job_id,
+                after=after,
+                limit=limit,
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.get("/corpus/jobs/{job_id}/reading-evidence")
     def reading_evidence(
@@ -103,6 +122,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.revision_id,
                 request.reading_scopes,
                 principal,
+                runtime=application._require_execution_port().frozen_reading_runtime(),
+                max_calls=request.max_calls,
+                max_tokens=request.max_tokens,
+                authorization_ref=request.authorization_ref,
             )
         except (KernelError, ValueError) as exc:
             raise _http_error(exc) from exc

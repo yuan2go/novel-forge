@@ -4914,6 +4914,30 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/reading_scope.py",
           "symbol": "read_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/reading_recovery.py",
+          "symbol": "admit_expansion_repairs"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/reading_recovery.py",
+          "symbol": "execute_expansion_repair"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/reading_evidence.py",
+          "symbol": "receipt_input_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/corpus_ingestion/reading_progress.py",
+          "symbol": "target_progress"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/query.py",
+          "symbol": "SourceImportQuery.reading_targets"
+        },
+        {
+          "path": "src/novel_forge/api/authority_dependencies.py",
+          "symbol": "build_source_import_application"
         }
       ],
       "domain_symbols": [
@@ -5146,7 +5170,7 @@
       ],
       "external_effects": {
         "mode": "DIRECT",
-        "rule": "Git, object-store, and analysis model work use controlled adapters and keep raw evidence out of draft context.",
+        "rule": "Git, object-store, and analysis model work use controlled adapters and keep raw evidence out of draft context. Bounded reading binds final assembled inputs to durable intent/receipts even when output validation fails; rejected output stays restricted and missing usage remains held unknown.",
         "evidence": [
           {
             "path": "src/novel_forge/modules/source_import/execution.py",
@@ -7735,7 +7759,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:496f7792776e005cfcb993371fcd8034bf7a4ed1e704a114d9ba24b276b5353b"
+    "implementation_tree_sha": "sha256:2fe5a5beae58ad71c53d67e2c67c9f176cb5c0dafdd835a2c7994b2b9ee1b1d3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

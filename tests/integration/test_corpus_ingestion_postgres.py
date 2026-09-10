@@ -2147,6 +2147,11 @@ def transport(stage, inputs):
  if inputs.get('narrative_contract'):
   context=inputs['reading_context']
   prior=context['prior_issues']
+  invalid=os.environ.get('SOURCE_READING_INVALID_PHASE')
+  if invalid and ((invalid==context['phase']) or (invalid=='REPAIR' and context['phase']=='OBSERVE' and context['repair_round'])):
+   return {'invalid_provider_output':'restricted diagnostic sentinel'}
+  if invalid and 'review_target' in inputs and invalid!='REPAIR':
+   return {'decision':'ACCEPT_IN_SCOPE','issues':[],'resolved_issue_ids':[],'preserve_requirements':[],'scope_limitations':'Scripted empty/error fixture only.'}
   if 'review_target' in inputs:
    if context['repair_round']==0:
     return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
@@ -2165,6 +2170,26 @@ def transport(stage, inputs):
   return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','details':{k:'UNKNOWN' for k in ('preconditions','action_or_change','choice','cost','outcome','information_basis','scope_boundary')},'supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
  return content_intelligence_fixture_response(stage,inputs)
 d.content_intelligence_fixture_response=transport
+if os.environ.get('SOURCE_READING_LEGACY_EXPANSION'):
+ from novel_forge.modules.source_import.corpus_ingestion import narrative_execution as ne
+ def legacy_missing_registration(*args, **kwargs):
+  return None
+ ne.begin_reading=legacy_missing_registration
+if os.environ.get('SOURCE_READING_PLANNING_CRASH_ONCE'):
+ from novel_forge.modules.source_import.corpus_ingestion import narrative_execution as ne
+ original_begin=ne.begin_reading
+ def crash_before_registration(*args, **kwargs):
+  path=Path(os.environ['SOURCE_READING_PLANNING_CRASH_ONCE'])
+  if not path.exists():
+   path.write_text(args[1].causation_id)
+   os._exit(75)
+  child=original_begin(*args, **kwargs)
+  registered=Path(str(path)+'.registered')
+  if not registered.exists():
+   registered.write_text(args[1].causation_id)
+   os._exit(76)
+  return child
+ ne.begin_reading=crash_before_registration
 if os.environ.get('SOURCE_READING_CRASH_ONCE'):
  from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
  original=PostgresContentIntelligenceExecutionPort._execute
@@ -2458,6 +2483,10 @@ sys.exit(main(sys.argv[1:]))
             "reading-preview", "--revision-id", frozen["revision_id"], *scope_args
         )
         assert preview["model_calls"] == 0 and preview["target_chapters"] == 4
+        api_preview = corpus.client.post("/product/source-imports/corpus/reading-preview", json={"project_id":corpus.project,"revision_id":frozen["revision_id"],"reading_scopes":scopes})
+        assert api_preview.status_code == 200, api_preview.text
+        assert api_preview.json()["target_chapters"] == 4
+        assert api_preview.json()["runtime"] == preview["runtime"]
         invalid = tmp_path / "invalid-scope.json"
         invalid.write_text(
             json.dumps(
@@ -2494,6 +2523,11 @@ sys.exit(main(sys.argv[1:]))
     admitted = analyze("native-analysis")
     job = admitted["import_job_id"]
     assert cli("status", "--job-id", job)["corpus"]["selected_members"] == 2
+    if bounded_reading:
+        api_replay = corpus.client.post("/product/source-imports/corpus/analyze", json={"project_id":corpus.project,"revision_id":frozen["revision_id"],"run_key":"native-analysis","max_members":2,"max_calls":50,"max_tokens":500000,"authorization_ref":"scripted-engineering-no-paid-calls","reading_scopes":scopes})
+        assert api_replay.status_code == 202, api_replay.text
+        assert api_replay.json()["replayed"]
+        assert api_replay.json()["import_job_id"] == job
     from novel_forge.storage.source_import_repositories import SourceImportRepository
 
     with psycopg.connect(DATABASE_URL) as connection:
@@ -2553,6 +2587,35 @@ sys.exit(main(sys.argv[1:]))
     if bounded_reading:
         import time
 
+        planning_marker = tmp_path / "planning-registration-exit"
+        monkeypatch.setenv("SOURCE_READING_PLANNING_CRASH_ONCE", str(planning_marker))
+        cli("run", "--job-id", job, "--max-stages", 100, success=False)
+        assert planning_marker.is_file()
+        with psycopg.connect(DATABASE_URL) as connection:
+            work_status = connection.execute(
+                "SELECT status FROM authority_source_import_work WHERE operation_id=%s",
+                [planning_marker.read_text()],
+            ).fetchone()[0]
+            assert work_status == "RUNNING", "planning success escaped without durable first reading work"
+            assert connection.execute(
+                "SELECT count(*) FROM authority_operation WHERE parent_operation_id=%s AND command_payload->'payload' ? 'narrative_reading'",
+                [planning_marker.read_text()],
+            ).fetchone()[0] == 0
+        assert cli("status", "--job-id", job)["corpus"]["analysis_state"] != "COMPLETED"
+        time.sleep(31)
+        cli("run", "--job-id", job, "--max-stages", 100, success=False)
+        registered_marker = Path(str(planning_marker) + ".registered")
+        assert registered_marker.read_text() == planning_marker.read_text()
+        with psycopg.connect(DATABASE_URL) as connection:
+            assert connection.execute(
+                "SELECT status FROM authority_source_import_work WHERE operation_id=%s",
+                [registered_marker.read_text()],
+            ).fetchone()[0] == "RUNNING"
+            assert connection.execute(
+                "SELECT count(*) FROM authority_operation WHERE parent_operation_id=%s AND command_payload->'payload' ? 'narrative_reading'",
+                [registered_marker.read_text()],
+            ).fetchone()[0] == 0
+        time.sleep(31)
         marker = tmp_path / "confirmed-provider-process-exit"
         monkeypatch.setenv("SOURCE_READING_CRASH_ONCE", str(marker))
         cli("run", "--job-id", job, "--max-stages", 100, success=False)
@@ -2571,7 +2634,15 @@ sys.exit(main(sys.argv[1:]))
     assert {s["processing_id"] for s in stages if s["kind"] == "PROFILING"} == {
         m["processing_id"] for m in members
     }
-    assert all(s["status"] == "SUCCEEDED" for s in stages), stages
+    assert all(s["status"] in {"SUCCEEDED", "REUSED"} for s in stages), stages
+    if bounded_reading:
+        recovered_plan = next(s for s in stages if s["operation_id"] == planning_marker.read_text())
+        assert recovered_plan["status"] == "REUSED"
+        with psycopg.connect(DATABASE_URL) as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM authority_operation WHERE parent_operation_id=%s AND command_payload->'payload'->>'phase'='OBSERVE' AND command_payload->'payload'->>'unit_index'='0' AND command_payload->'payload'->>'repair_round'='0'",
+                [planning_marker.read_text()],
+            ).fetchone()[0] == 1
     assert page["summary"]["knowledge"]["knowledge_candidates"] > 0, page
     assert page["summary"]["knowledge"]["knowledge_cards"] == 0
     if bounded_reading:
@@ -2642,6 +2713,34 @@ sys.exit(main(sys.argv[1:]))
         == frozen["revision_id"]
     )
     if bounded_reading:
+        target_page = cli("targets", "--job-id", job, "--limit", 1)
+        assert len(target_page["targets"]) == 1 and target_page["next_after"] == 1
+        assert target_page["summary"]["accepted_target_units"] == 4
+        historic_job = analyze("historical-missing-expansion")["import_job_id"]
+        monkeypatch.setenv("SOURCE_READING_LEGACY_EXPANSION", "1")
+        history = cli("run", "--job-id", historic_job, "--max-stages", 100)
+        assert history["job"]["corpus"]["analysis_state"] == "PARTIAL"
+        missing = cli("status", "--job-id", historic_job)["corpus"]["reading_quality"]
+        assert missing["unexpanded_target_units"] == 4
+        assert len(missing["expansion_anomalies"]) == 2
+        with psycopg.connect(DATABASE_URL) as connection:
+            original_results = connection.execute(
+                "SELECT operation_id,status,result FROM authority_source_import_work WHERE import_job_id=%s AND work_kind='ANALYSIS_PLANNING' ORDER BY operation_id",
+                [historic_job],
+            ).fetchall()
+        monkeypatch.delenv("SOURCE_READING_LEGACY_EXPANSION")
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            resumes = list(pool.map(lambda _: cli("resume", "--job-id", historic_job), range(2)))
+        assert resumes[0]["expansion_repair_operation_ids"] == resumes[1]["expansion_repair_operation_ids"]
+        assert len(resumes[0]["expansion_repair_operation_ids"]) == 2
+        assert cli("run", "--job-id", historic_job, "--max-stages", 100)["stop_reason"] == "COMPLETED"
+        with psycopg.connect(DATABASE_URL) as connection:
+            assert original_results == connection.execute(
+                "SELECT operation_id,status,result FROM authority_source_import_work WHERE import_job_id=%s AND work_kind='ANALYSIS_PLANNING' ORDER BY operation_id",
+                [historic_job],
+            ).fetchall()
+        assert not cli("status", "--job-id", historic_job)["corpus"]["reading_quality"]["expansion_anomalies"]
         drift_job = analyze("runtime-change-requires-new-request")["import_job_id"]
         old_reserve = os.environ.get(
             "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", "4096"
@@ -2675,6 +2774,46 @@ sys.exit(main(sys.argv[1:]))
             for issue in ((stage.get("narrative") or {}).get("issues") or [])
         ), rejected
         monkeypatch.delenv("SOURCE_READING_BAD_REVIEW")
+        for phase in ("OBSERVE", "REVIEW", "REPAIR", "SYNTHESIZE"):
+            monkeypatch.setenv("SOURCE_READING_INVALID_PHASE", phase)
+            invalid_job = analyze("invalid-" + phase)["import_job_id"]
+            result = cli("run", "--job-id", invalid_job, "--max-stages", 100)
+            assert result["job"]["corpus"]["analysis_state"] == "PARTIAL", result
+            failed_page = cli("results", "--job-id", invalid_job, "--limit", 100)
+            bad = [s for s in failed_page["stages"] if (s.get("narrative") or {}).get("validation_error")]
+            assert bad, failed_page
+            for stage in bad:
+                narrative = stage["narrative"]
+                assert narrative["coverage"]["input_state"] == "CONFIRMED_RETURNED"
+                assert narrative["input_receipts"][-1]["receipt_id"]
+                assert narrative["finding_count"] == 0
+                assert "restricted diagnostic sentinel" not in json.dumps(stage)
+                if narrative["coverage"]["actual_text_inputs"]:
+                    chunk = narrative["coverage"]["actual_text_inputs"][0]
+                    args = ("--job-id", invalid_job, "--operation-id", stage["operation_id"], "--chunk-id", chunk["source_chunk_asset_version_id"])
+                    text = cli("evidence", *args, "--byte-end", chunk["byte_end"])["text"]
+                    params = {"project_id": corpus.project, "operation_id": stage["operation_id"], "chunk_id": chunk["source_chunk_asset_version_id"], "byte_start": 0, "byte_end": chunk["byte_end"]}
+                    endpoint = f"/product/source-imports/corpus/jobs/{invalid_job}/reading-evidence"
+                    response = corpus.client.get(endpoint, params=params)
+                    assert response.status_code == 200, response.text
+                    assert response.json()["text"] == text
+                    for overrides in ({"project_id": "other-project"}, {"chunk_id": "not-sent"}):
+                        denied = corpus.client.get(endpoint, params={**params, **overrides})
+                        assert denied.status_code in {400, 403, 404, 409}
+                        assert text not in denied.text
+                    offset = 0
+                    for char in text:
+                        if len(char.encode()) > 1:
+                            break
+                        offset += len(char.encode())
+                    assert "READING_EVIDENCE_UTF8_BOUNDARY" in cli("evidence", *args, "--byte-start", offset + 1, "--byte-end", offset + 2, success=False)
+                else:
+                    assert narrative["coverage"]["lower_observation_inputs"]
+            budget = cli("status", "--job-id", invalid_job)["corpus"]["budget"]
+            cli("run", "--job-id", invalid_job, "--max-stages", 100)
+            assert cli("status", "--job-id", invalid_job)["corpus"]["budget"] == budget
+            assert failed_page["summary"]["knowledge"]["knowledge_candidates"] == 0
+        monkeypatch.delenv("SOURCE_READING_INVALID_PHASE")
     cancelled = analyze("cancel-analysis")
     cli("cancel", "--job-id", cancelled["import_job_id"])
     assert (

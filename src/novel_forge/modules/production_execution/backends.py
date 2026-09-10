@@ -1548,7 +1548,11 @@ class CodexCliExecutionBackend:
         )
         if record.result is not None:
             return record.result
-        if recovery.receipt.status is ProcessReceiptStatus.SUCCEEDED:
+        if (
+            recovery.receipt.status
+            in {ProcessReceiptStatus.SUCCEEDED, ProcessReceiptStatus.CORRUPT_RESULT}
+            and recovery.receipt.returncode == 0
+        ):
             try:
                 self._validate_successful_process(record, recovery.receipt)
             except _CodexResultFailure as failure:
@@ -1569,6 +1573,9 @@ class CodexCliExecutionBackend:
                         else ExecutionOutcome.FINAL_FAILURE
                     ),
                     process_receipt_ref=receipt_ref,
+                )
+                record.result = self._rejected_output_receipts(
+                    record, recovery.receipt, record.result
                 )
             else:
                 record.result = ResultValidator(self.record_store).successful_result(
@@ -1596,6 +1603,34 @@ class CodexCliExecutionBackend:
             )
         self.record_store.save_record(record)
         return record.result
+
+    def _rejected_output_receipts(self, record, receipt, result):
+        refs = {}
+        if receipt.result_path and Path(receipt.result_path).is_file():
+            self.execution_policy.assert_result(receipt.result_path)
+            with Path(receipt.result_path).open("rb") as source:
+                result_hash = hashlib.file_digest(source, "sha256").hexdigest()
+                byte_size = source.tell()
+            refs["raw_output_ref"] = self.record_store.put_evidence(
+                "rejected-output",
+                record.request.execution_id,
+                {
+                    "result_path": receipt.result_path,
+                    "result_sha256": "sha256:" + result_hash,
+                    "byte_size": byte_size,
+                    "input_sha256": receipt.input_sha256,
+                    "validation": "REJECTED",
+                    "generation_allowed": False,
+                },
+            )
+        for name in ("usage", "cost"):
+            if isinstance(record.raw_evidence.get(name), Mapping):
+                refs[name + "_receipt_ref"] = self.record_store.put_evidence(
+                    name + "-receipt",
+                    record.request.execution_id,
+                    record.raw_evidence[name],
+                )
+        return replace(result, **refs)
 
     def _prepare_payload(
         self,
@@ -1726,26 +1761,6 @@ class CodexCliExecutionBackend:
         record: ExecutionRecord,
         receipt: Any,
     ) -> None:
-        if (
-            not receipt.result_path
-            or receipt.result_integrity is not ResultIntegrity.VALID
-        ):
-            raise _CodexResultFailure(
-                "INVALID_JSON", "Codex result is missing or corrupt", retryable=True
-            )
-        self.execution_policy.assert_result(receipt.result_path)
-        try:
-            parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise _CodexResultFailure(
-                "INVALID_JSON", "Codex last message is not valid JSON", retryable=True
-            ) from exc
-        if not isinstance(parsed, Mapping):
-            raise _CodexResultFailure(
-                "OUTPUT_SCHEMA_FAILURE",
-                "Codex result must be a JSON object",
-                retryable=True,
-            )
         capability_evidence = record.raw_evidence.get("capability_evidence")
         if isinstance(capability_evidence, Mapping) and capability_evidence:
             expected_prompt_hash = str(
@@ -1800,6 +1815,26 @@ class CodexCliExecutionBackend:
                     "Codex attempted a Tool outside the frozen Capability policy",
                     retryable=False,
                 )
+        if (
+            not receipt.result_path
+            or receipt.result_integrity is not ResultIntegrity.VALID
+        ):
+            raise _CodexResultFailure(
+                "INVALID_JSON", "Codex result is missing or corrupt", retryable=True
+            )
+        self.execution_policy.assert_result(receipt.result_path)
+        try:
+            parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise _CodexResultFailure(
+                "INVALID_JSON", "Codex last message is not valid JSON", retryable=True
+            ) from exc
+        if not isinstance(parsed, Mapping):
+            raise _CodexResultFailure(
+                "OUTPUT_SCHEMA_FAILURE",
+                "Codex result must be a JSON object",
+                retryable=True,
+            )
         output_schema = record.raw_evidence.get("output_schema")
         stage = str(record.raw_evidence.get("stage") or record.request.stage)
         normalized: Mapping[str, Any] = parsed
@@ -1825,7 +1860,7 @@ class CodexCliExecutionBackend:
                 )
                 raise _CodexResultFailure(
                     failure_code,
-                    str(exc),
+                    "structured output failed " + failure_code,
                     retryable=True,
                 ) from exc
         if not isinstance(normalized, Mapping) or not normalized:

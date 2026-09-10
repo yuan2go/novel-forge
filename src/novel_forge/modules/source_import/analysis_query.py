@@ -79,6 +79,19 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
     knowledge = repository.analysis_knowledge_counts(
         job["project_id"], job["import_job_id"]
     )
+    reading = {}
+    gaps = []
+    if payload.get("reading_plans"):
+        from .corpus_ingestion.reading_progress import target_progress
+
+        reading = target_progress(
+            payload["reading_plans"],
+            repository.reading_progress_rows(job["project_id"], job["import_job_id"]),
+            cancelled=job["status"] == "CANCELLED",
+        )
+        gaps = repository.missing_reading_expansions(
+            job["project_id"], job["import_job_id"]
+        )
     if job["status"] in {"PAUSED", "CANCELLED"}:
         state = job["status"]
     elif failed:
@@ -91,6 +104,8 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
             if succeeded or any(r["operation_status"] == "EXECUTING" for r in counts)
             else "QUEUED"
         )
+    elif reading and (gaps or not reading["coverage_complete"]):
+        state = "PARTIAL"
     else:
         state = "AWAITING_GOVERNANCE" if knowledge["review_required"] else "COMPLETED"
     return {
@@ -105,13 +120,13 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
             {
                 "reading_plans": payload["reading_plans"],
                 "reading_quality": {
-                    "target_units": sum(
-                        sum(u["role"] == "TARGET" for u in p["units"])
-                        for p in payload["reading_plans"].values()
-                    ),
                     **repository.reading_metrics(
                         job["project_id"], job["import_job_id"]
                     ),
+                    **{k: v for k, v in reading.items() if k != "target_outcomes"},
+                    "target_outcomes": reading["target_outcomes"][:20],
+                    "target_outcomes_truncated": len(reading["target_outcomes"]) > 20,
+                    "expansion_anomalies": gaps,
                     "semantic_evaluation": "AGENT_REVIEW_ONLY",
                     "independent_human_evaluation": "NOT_RUN",
                     "scope": "SELECTED_UNITS_ONLY",
@@ -145,12 +160,18 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         "remaining_stages": pending,
         "failed_stages": failed,
         "expanded_stages": sum(r["count"] for r in counts),
-        "final_stage_denominator": None if pending else sum(r["count"] for r in counts),
+        "final_stage_denominator": None
+        if pending or gaps or (reading and not reading["coverage_complete"])
+        else sum(r["count"] for r in counts),
         "knowledge": knowledge,
         "knowledge_approved_by_import": False,
         "budget": repository.analysis_budget(job["project_id"], job["import_job_id"]),
         "next_action": "RESUME"
         if state == "PAUSED"
+        else "NEW_AUTHORIZATION_OR_SELECTION_REQUIRED"
+        if blocked_members
+        else "RESUME_RECONCILE_EXPANSION"
+        if gaps
         else "REVIEW_BLOCKERS"
         if failed or blocked_members
         else "RUN_OR_RECONCILE"

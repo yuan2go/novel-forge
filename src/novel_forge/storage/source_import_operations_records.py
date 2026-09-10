@@ -8,6 +8,84 @@ from novel_forge.modules.command_kernel.errors import KernelError
 class SourceImportOperationsRecords:
     cursor: Any
 
+    def reading_input_records(self, project: str, operation: str) -> list[dict]:
+        self.cursor.execute(
+            """WITH contracts AS (
+                SELECT v.asset_version_id,v.content->'contract' AS content
+                FROM authority_operation_output_asset a
+                JOIN authority_asset_version v USING(asset_version_id)
+                JOIN authority_operation o USING(operation_id)
+                WHERE o.project_id=%s AND a.operation_id=%s
+            ) SELECT e.external_effect_id,e.operation_id,e.status,
+                e.request_payload->'_source_intelligence'->'actual_input_manifest',
+                d.receipt_id,
+                CASE WHEN e.reconciliation<>'{}'::jsonb THEN e.reconciliation ELSE d.evidence END,
+                e.request_payload->'_production_execution'->'capability_runtime'->>'provider_admission_asset_version_id',
+                EXISTS(SELECT 1 FROM contracts WHERE content->>'input_receipt_reuse'=e.external_effect_id)
+            FROM authority_external_effect e
+            LEFT JOIN LATERAL (SELECT receipt_id,evidence FROM authority_external_effect_dispatch
+                WHERE external_effect_id=e.external_effect_id ORDER BY generation DESC LIMIT 1) d ON true
+            WHERE e.project_id=%s AND (e.operation_id=%s OR e.external_effect_id IN (
+                SELECT content->>'input_receipt_reuse' FROM contracts))
+            ORDER BY e.created_at,e.external_effect_id LIMIT 33""",
+            [project, operation, project, operation],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > 32:
+            raise KernelError(
+                "READING_RECEIPT_BOUND",
+                "stage has too many effects; inspect effect records",
+            )
+        result = []
+        for row in rows:
+            evidence = row[5] or {}
+            execution = evidence.get("production_execution", {}).get(
+                "execution_result", {}
+            )
+            refs = {
+                k: execution[k]
+                for k in (
+                    "raw_output_ref",
+                    "normalized_output_ref",
+                    "usage_receipt_ref",
+                    "cost_receipt_ref",
+                )
+                if execution.get(k)
+            }
+            result.append(
+                {
+                    "effect_id": row[0],
+                    "origin_operation_id": row[1],
+                    "status": row[2],
+                    "manifest": row[3],
+                    "receipt_id": row[4],
+                    "diagnostic_refs": refs,
+                    "admission_asset_version_id": row[6],
+                    "reused": bool(row[7]),
+                    "returned": row[2] == "SUCCEEDED"
+                    or bool(refs.get("normalized_output_ref")),
+                }
+            )
+        if not rows:
+            self.cursor.execute(
+                """SELECT v.asset_version_id,v.content->'contract'->'actual_input_manifest'
+                FROM authority_operation_output_asset a JOIN authority_asset_version v USING(asset_version_id)
+                JOIN authority_operation o USING(operation_id)
+                WHERE o.project_id=%s AND a.operation_id=%s
+                  AND v.content->'contract' ? 'actual_input_manifest'
+                ORDER BY v.created_at DESC LIMIT 1""",
+                [project, operation],
+            )
+            if prepared := self.cursor.fetchone():
+                result.append(
+                    {
+                        "admission_asset_version_id": prepared[0],
+                        "manifest": prepared[1],
+                        "status": "PREPARED",
+                    }
+                )
+        return result
+
     def reading_stage(self, project: str, job: str, operation: str) -> dict:
         self.cursor.execute(
             """SELECT o.command_payload->'payload',w.result,w.status
@@ -48,6 +126,80 @@ class SourceImportOperationsRecords:
                 strict=True,
             )
         )
+
+    def reading_progress_rows(self, project: str, job: str) -> list[dict]:
+        self.cursor.execute(
+            """SELECT o.operation_id,o.status,w.status,
+                o.command_payload->'payload'->>'phase',
+                o.command_payload->'payload'->>'unit_index',
+                o.command_payload->'payload'->'narrative_reading'->>'identity',
+                w.result->>'validation_error',w.result->'review'->>'decision',
+                w.result->>'semantic_evidence',w.result ? 'observation_asset_version_id',
+                w.result->>'phase_status',w.result->'coverage'->>'input_state'
+            FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id)
+            WHERE w.project_id=%s AND w.import_job_id=%s
+              AND o.command_payload->'payload' ? 'narrative_reading'
+            ORDER BY o.created_at,o.operation_id LIMIT 10001""",
+            [project, job],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > 10000:
+            raise KernelError(
+                "READING_PROGRESS_BOUND", "inspect stages in bounded pages"
+            )
+        keys = (
+            "operation_id",
+            "operation_status",
+            "status",
+            "phase",
+            "unit_index",
+            "reading_identity",
+            "validation_error",
+            "decision",
+            "semantic_evidence",
+            "has_observation",
+            "phase_status",
+            "input_state",
+        )
+        return [dict(zip(keys, r, strict=True)) for r in rows]
+
+    def missing_reading_expansions(
+        self, project: str, job: str, limit: int = 100
+    ) -> list[dict]:
+        self.cursor.execute(
+            """SELECT o.operation_id,w.result->>'analysis_plan_asset_version_id',
+                o.command_payload->'payload'->'reading_plan'->>'identity',
+                o.command_payload->'payload'->'reading_plan'->>'processing_id'
+            FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id)
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.work_kind='ANALYSIS_PLANNING'
+              AND w.status IN ('SUCCEEDED','REUSED') AND o.command_payload->'payload' ? 'reading_plan'
+              AND NOT EXISTS (SELECT 1 FROM authority_source_import_work c
+                JOIN authority_operation child USING(operation_id,project_id)
+                WHERE c.project_id=w.project_id AND c.import_job_id=w.import_job_id
+                  AND child.parent_operation_id=o.operation_id
+                  AND child.command_payload->'payload'->>'phase'='OBSERVE'
+                  AND child.command_payload->'payload'->>'unit_index'='0'
+                  AND child.command_payload->'payload'->>'repair_round'='0'
+                  AND child.command_payload->'payload'->'narrative_reading'->>'identity'
+                      =o.command_payload->'payload'->'reading_plan'->>'identity')
+            ORDER BY o.operation_id LIMIT %s""",
+            [project, job, limit],
+        )
+        return [
+            dict(
+                zip(
+                    (
+                        "planning_operation_id",
+                        "analysis_plan_asset_version_id",
+                        "reading_identity",
+                        "processing_id",
+                    ),
+                    r,
+                    strict=True,
+                )
+            )
+            for r in self.cursor.fetchall()
+        ]
 
     def frozen_operation(self, project: str, operation: str) -> dict[str, Any]:
         self.cursor.execute(
@@ -114,7 +266,8 @@ class SourceImportOperationsRecords:
             CASE WHEN o.command_payload->'payload' ? 'narrative_reading' THEN jsonb_build_object(
               'phase',w.result->'phase','phase_status',w.result->'phase_status','repair_round',w.result->'repair_round',
               'coverage',w.result->'coverage','review',w.result->'review','issues',w.result->'issues',
-              'observation',w.result->'observation','validation_error',w.result->'validation_error') END
+              'observation',w.result->'observation','validation_error',w.result->'validation_error',
+              'output_validation',w.result->'output_validation','semantic_review_status',w.result->'semantic_review_status') END
             FROM binding b JOIN authority_source_import_work w ON w.operation_id=b.target
             JOIN authority_operation o USING(operation_id,project_id)
             WHERE (%s='' OR b.processing_id=%s) ORDER BY w.operation_id LIMIT %s""",
@@ -148,6 +301,21 @@ class SourceImportOperationsRecords:
         for row in result:
             narrative = row.get("narrative")
             if narrative:
+                from novel_forge.modules.source_import.corpus_ingestion.reading_evidence import (
+                    receipt_input_evidence,
+                )
+
+                payload = self.reading_stage(project, job, row["operation_id"])[
+                    "payload"
+                ]
+                narrative.update(
+                    receipt_input_evidence(
+                        self.reading_input_records(project, row["operation_id"]),
+                        payload,
+                    )
+                )
+                narrative["phase"] = payload["phase"]
+                narrative["repair_round"] = payload["repair_round"]
                 observation = narrative.pop("observation", None) or {}
                 narrative["finding_count"] = len(observation.get("findings", []))
                 narrative["findings_summary"] = [

@@ -40,10 +40,10 @@ def narrative_strategy(strategy: Any) -> Any:
     )
 
 
-def begin_reading(app, worker, job, plan, scope, strategy, plan_version):
-    payload = {
+def initial_reading_payload(parent, job, plan, scope, strategy, plan_version):
+    return {
         "import_job_id": job["import_job_id"],
-        "reading_parent_operation_id": worker.causation_id,
+        "reading_parent_operation_id": parent,
         "source_document_id": scope.source_document_id,
         "source_transform_id": scope.source_transform_id,
         "analysis_plan_asset_version_id": plan_version,
@@ -58,10 +58,18 @@ def begin_reading(app, worker, job, plan, scope, strategy, plan_version):
         "prior_issues": [],
         "previous_candidate": None,
     }
+
+
+def begin_reading(app, worker, job, plan, scope, strategy, plan_version):
+    payload = initial_reading_payload(
+        worker.causation_id, job, plan, scope, strategy, plan_version
+    )
     with AuthorityUnitOfWork(app.database_url, coordinate_nested=True) as uow:
         require_current_fence(uow, worker)
-        _queue(app, uow, worker, job, payload)
+        curated_provider_gate(app.database_url, worker)
+        child = _queue(app, uow, worker, job, payload)
         uow.commit()
+        return child
 
 
 def _queue(app, uow, worker, job, payload):
@@ -210,6 +218,21 @@ def execute_reading(app, worker, payload):
             )
     context = {
         "reading_identity": plan["identity"],
+        "processing_id": plan["processing_id"],
+        "source_transform_id": plan["source_transform_id"],
+        "unit_bindings": [
+            {
+                k: u[k]
+                for k in (
+                    "source_unit_version_id",
+                    "normalized_content_hash",
+                    "normalized_byte_start",
+                    "normalized_byte_end",
+                    "role",
+                )
+            }
+            for u in units
+        ],
         "dimensions": plan["contract"]["dimensions"],
         "phase": payload["phase"],
         "unit_versions": [u["source_unit_version_id"] for u in units],
@@ -231,6 +254,7 @@ def execute_reading(app, worker, payload):
         "prior_issues": payload["prior_issues"],
         "previous_candidate": payload.get("previous_candidate"),
         "preserve_requirements": payload.get("preserve_requirements", []),
+        "failed_output": payload.get("failed_output"),
     }
     review = payload["phase"] == "REVIEW"
     candidate = payload.get("candidate")
@@ -261,29 +285,15 @@ def execute_reading(app, worker, payload):
             raise
         return _invalid_result(app, worker, job, payload, exc)
     curated_provider_gate(app.database_url, worker)
-    coverage = {
-        "reading_identity": plan["identity"],
-        "processing_id": plan["processing_id"],
-        "target_units": [u["source_unit_version_id"] for u in units],
-        "actual_text_inputs": [
-            {k: v for k, v in s.items() if k != "content"} for s in segments
-        ],
-        "lower_observation_inputs": [i["asset_version_id"] for i in lower],
-        "read_mode": "VERIFIED_OBSERVATIONS" if aggregate else "FULL_TARGET_UNIT_TEXT",
-        "allowed_context_not_read": [
-            u["source_unit_version_id"]
-            for u in plan["units"]
-            if u["role"] == "ALLOWED_CONTEXT"
-        ],
-        "execution_asset_version_id": executed["execution_asset_version_id"],
-        "understanding_claim": False,
-    }
+    evidence = _input_evidence(app, worker, payload)
     result = {
         "phase": payload["phase"],
         "processing_id": plan["processing_id"],
         "unit_index": index,
         "repair_round": payload["repair_round"],
-        "coverage": coverage,
+        "output_validation": "PASSED",
+        "semantic_review_status": executed.get("review", {}).get("decision", "PENDING"),
+        **evidence,
         **executed,
     }
     if not review:
@@ -373,6 +383,7 @@ def execute_reading(app, worker, payload):
                 "repair_round": 0,
                 "prior_issues": [],
                 "previous_candidate": None,
+                "failed_output": None,
                 "preserve_requirements": [],
                 "accepted_observations": accepted,
             }
@@ -384,6 +395,7 @@ def execute_reading(app, worker, payload):
 
 
 def _invalid_result(app, worker, job, payload, error, result=None):
+    evidence = _input_evidence(app, worker, payload)
     review = payload["phase"] == "REVIEW"
     issue = {
         "issue_id": corpus_hash(
@@ -416,6 +428,17 @@ def _invalid_result(app, worker, job, payload, error, result=None):
             else _repair(payload, issues)
         )
     )
+    confirmed = [
+        r for r in evidence["input_receipts"] if r["state"] == "CONFIRMED_RETURNED"
+    ]
+    if following and confirmed:
+        following["failed_output"] = {
+            "effect_id": confirmed[-1]["effect_id"],
+            "validation_error": error.code,
+            "output_validation": "FAILED",
+            "semantic_review_status": "NOT_ACCEPTED",
+            "reading_identity": payload["narrative_reading"]["identity"],
+        }
     return _finish_stage(
         app,
         None,
@@ -424,14 +447,27 @@ def _invalid_result(app, worker, job, payload, error, result=None):
         payload,
         {
             **(result or {}),
+            **evidence,
             "phase": payload["phase"],
             "repair_round": payload["repair_round"],
             "validation_error": error.code,
+            "output_validation": "FAILED",
+            "semantic_review_status": "NOT_ACCEPTED",
             "issues": issues,
         },
         following,
         blocked=blocked,
     )
+
+
+def _input_evidence(app, worker, payload):
+    from .reading_evidence import receipt_input_evidence
+
+    with AuthorityUnitOfWork(app.database_url) as uow:
+        records = SourceImportRepository(uow.cursor).reading_input_records(
+            worker.project_id, worker.causation_id
+        )
+    return receipt_input_evidence(records, payload)
 
 
 def _repair(payload, issues, preserve_requirements=None):

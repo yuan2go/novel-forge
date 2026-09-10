@@ -269,6 +269,15 @@ def _source_gateway_provider_result(
         ExecutionOutcome.FINAL_FAILURE: "final_failure",
         ExecutionOutcome.CANCELLED: "cancelled",
     }.get(result.outcome, "unknown")
+    failure_code = record.raw_evidence.get("failure_code")
+    if result.raw_output_ref and failure_code in {
+        "INVALID_JSON",
+        "OUTPUT_SCHEMA_FAILURE",
+        "OUTPUT_SEMANTIC_FAILURE",
+    }:
+        evidence["result"] = {"_rejected_provider_output": result.raw_output_ref}
+        evidence["output_validation_error"] = "SOURCE_OUTPUT_" + failure_code
+        outcome = "success"
     return ProviderResult(
         outcome,
         handle.backend_execution_id,
@@ -461,7 +470,8 @@ class PostgresContentIntelligenceExecutionPort:
 
         route = self.transport.routes["quality_source_originality"]
         return {
-            "version": "source-reading-runtime.v1",
+            "version": "source-reading-runtime.v2",
+            "input_evidence_version": "source-actual-input.v1",
             "provider": route.model_profile.model_provider,
             "model": route.model_profile.model_id,
             "route_hash": _hash(asdict(route)),
@@ -848,6 +858,11 @@ class PostgresContentIntelligenceExecutionPort:
             ),
         )
         execution = self._execute(worker=worker, spec=spec)
+        if execution.get("output_validation_error"):
+            raise KernelError(
+                execution["output_validation_error"],
+                "returned output is retained in restricted diagnostic evidence",
+            )
         provider_output = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
@@ -1154,6 +1169,21 @@ class PostgresContentIntelligenceExecutionPort:
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
         if replay is not None:
+            if spec.input_payload.get("narrative_contract"):
+                self._ensure_contract(
+                    operation_id=worker.causation_id,
+                    project_id=worker.project_id,
+                    logical_ref="source-intelligence/receipt-reuse/"
+                    + _token(worker.causation_id + spec.stage),
+                    asset_type="source_execution_context_manifest",
+                    contract={
+                        "input_receipt_reuse": replay["reused_external_effect_id"],
+                        "cache_key": cache_key,
+                    },
+                    trace_id=worker.trace_id,
+                    correlation_id=worker.correlation_id,
+                    eligibility="INELIGIBLE",
+                )
             return replay
         from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
             curated_provider_gate,
@@ -1276,10 +1306,6 @@ class PostgresContentIntelligenceExecutionPort:
                 "safety_margin",
             ),
         )
-        if provider_admission.status != "ADMITTED":
-            raise KernelError(
-                "PROVIDER_TOKEN_ADMISSION_REJECTED", provider_admission.reason
-            )
         admission_contract = {
             "schema_version": "novelos.provider_request_admission.v1",
             "provider_request_identity": envelope.to_identity_dict(),
@@ -1293,6 +1319,24 @@ class PostgresContentIntelligenceExecutionPort:
                 materialization_document.content_hash
             ),
         }
+        actual_input_manifest = None
+        if spec.input_payload.get("narrative_contract"):
+            from .corpus_ingestion.reading_evidence import materialized_input_manifest
+
+            actual_input_manifest = materialized_input_manifest(
+                transient_inputs,
+                envelope.to_identity_dict(),
+                {
+                    "prompt_id": spec.prompt_id,
+                    "prompt_version": spec.prompt_version,
+                    "skill_id": spec.skill_id,
+                    "skill_version": spec.skill_version,
+                    "methodology_content_hash": spec.methodology_content_hash,
+                    "materialization_hash": materialization["materialization_hash"],
+                    "token_accounting_contract": token_contract.to_dict(),
+                },
+            )
+            admission_contract["actual_input_manifest"] = actual_input_manifest
         admission_document = self._ensure_contract(
             operation_id=worker.causation_id,
             project_id=worker.project_id,
@@ -1305,6 +1349,10 @@ class PostgresContentIntelligenceExecutionPort:
             trace_id=worker.trace_id,
             correlation_id=worker.correlation_id,
         )
+        if provider_admission.status != "ADMITTED":
+            raise KernelError(
+                "PROVIDER_TOKEN_ADMISSION_REJECTED", provider_admission.reason
+            )
         effect_context = EffectCommandContext(
             operation_id=worker.causation_id,
             project_id=worker.project_id,
@@ -1351,6 +1399,10 @@ class PostgresContentIntelligenceExecutionPort:
             },
             "max_output_tokens": self.provider_output_token_reserve,
         }
+        if actual_input_manifest:
+            request_payload["_source_intelligence"]["actual_input_manifest"] = (
+                actual_input_manifest
+            )
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -1457,17 +1509,30 @@ class PostgresContentIntelligenceExecutionPort:
         usage = evidence.get("usage")
         cost = evidence.get("cost")
         if not all(isinstance(item, Mapping) for item in (result, usage, cost)):
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=worker.project_id,
+                external_state_unknown=True,
+            )
             raise KernelError(
                 "SOURCE_PEP_EVIDENCE_INCOMPLETE",
                 "Source PEP result lacks output, usage, or cost evidence",
             )
         assert isinstance(usage, Mapping)
         assert isinstance(cost, Mapping)
-        total_tokens = int(
-            usage.get("total_tokens")
-            or int(usage.get("input_tokens") or 0)
-            + int(usage.get("output_tokens") or 0)
-        )
+        total_tokens = _recorded_token_usage(usage)
+        if total_tokens is None:
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=worker.project_id,
+                external_state_unknown=True,
+            )
+            raise KernelError(
+                "SOURCE_PEP_USAGE_UNKNOWN",
+                "returned output has no observed token total; reservation remains held",
+            )
         amount = (
             None
             if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
@@ -1553,11 +1618,18 @@ class PostgresContentIntelligenceExecutionPort:
         if row[2] and str(row[3]) in {"RESERVED", "HELD_UNKNOWN"}:
             assert isinstance(usage, Mapping)
             assert isinstance(cost, Mapping)
-            total_tokens = int(
-                usage.get("total_tokens")
-                or int(usage.get("input_tokens") or 0)
-                + int(usage.get("output_tokens") or 0)
-            )
+            total_tokens = _recorded_token_usage(usage)
+            if total_tokens is None:
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=str(row[2]),
+                    project_id=worker.project_id,
+                    external_state_unknown=True,
+                )
+                raise KernelError(
+                    "SOURCE_PEP_USAGE_UNKNOWN",
+                    "replay cannot invent a token receipt or reset the reservation",
+                )
             request_payload = row[4] if isinstance(row[4], Mapping) else {}
             production = request_payload.get("_production_execution", {})
             runtime = (
@@ -1999,6 +2071,23 @@ class PostgresContentIntelligenceExecutionPort:
         ):
             return "PROVIDER_QUALIFIED"
         return "PROVIDER_UNCALIBRATED"
+
+
+def _recorded_token_usage(usage: Mapping[str, Any]) -> int | None:
+    if (
+        usage.get("availability") == "UNAVAILABLE"
+        or usage.get("measurement") == "UNKNOWN"
+    ):
+        return None
+    if type(usage.get("total_tokens")) is int:
+        return usage["total_tokens"] if usage["total_tokens"] >= 0 else None
+    if all(type(usage.get(k)) is int for k in ("input_tokens", "output_tokens")):
+        return (
+            usage["input_tokens"] + usage["output_tokens"]
+            if min(usage["input_tokens"], usage["output_tokens"]) >= 0
+            else None
+        )
+    return None
 
 
 def _order_compound_observations(
