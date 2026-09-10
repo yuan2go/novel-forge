@@ -93,7 +93,10 @@ def carry_review(
             if f["code"] == old["code"]
             and sorted(source_evidence_key(e) for e in f["evidence"]) == keys
         ]
-        if not equivalent and parser.version == "corpus-parser.v4":
+        if not equivalent and parser.version in {
+            "corpus-parser.v4",
+            "corpus-parser.v5",
+        }:
             occurrences = _epub_occurrences(old, document)
             if occurrences:
                 equivalent = [

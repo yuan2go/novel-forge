@@ -44,7 +44,8 @@ def assess_integrity(
     seen: set[tuple[str, int]] = set()
     titles = Counter(
         (r["volume"], r["title"])
-        if parser.version in {"corpus-parser.v3", "corpus-parser.v4"}
+        if parser.version
+        in {"corpus-parser.v3", "corpus-parser.v4", "corpus-parser.v5"}
         else r["title"]
         for r in chapters
     )
@@ -85,7 +86,8 @@ def assess_integrity(
         if (
             titles[
                 (row["volume"], row["title"])
-                if parser.version in {"corpus-parser.v3", "corpus-parser.v4"}
+                if parser.version
+                in {"corpus-parser.v3", "corpus-parser.v4", "corpus-parser.v5"}
                 else row["title"]
             ]
             > 1

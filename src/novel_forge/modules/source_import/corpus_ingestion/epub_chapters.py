@@ -34,7 +34,43 @@ def _xml(archive: ZipFile, name: str):
     )
 
 
-def _text(raw: bytes, profile: Any) -> tuple[str, dict[str, int], bool, dict[int, str]]:
+def _toc_volume_scopes(root: Any, base: str, limit: int) -> dict:
+    """Preserve explicit navigation ancestry; labels alone never group volumes."""
+    result = {}
+
+    def visit(node: Any, parents: list, depth: int) -> None:
+        kind = node.tag.rsplit("}", 1)[-1]
+        scope = parents
+        if kind in {"li", "navPoint"}:
+            link = node.find("{*}a") if kind == "li" else node.find("{*}content")
+            label = link if kind == "li" else node.find("{*}navLabel/{*}text")
+            if link is not None:
+                target = _target(base, link.attrib["href" if kind == "li" else "src"])
+                title = "".join(label.itertext()).strip() if label is not None else ""
+                found = heading(title, limit)
+                if found and found[0] == "VOLUME":
+                    scope = [
+                        *parents,
+                        {
+                            "identity": target[0] + "#" + (target[1] or "0"),
+                            "display_name": title,
+                            "level": depth,
+                            "basis": "EXPLICIT_TOC_HIERARCHY.v1",
+                        },
+                    ]
+                if target in result and result[target] != scope:
+                    raise IngestionFailure(
+                        "EPUB_VOLUME_SCOPE_REVIEW_REQUIRED", str(target)
+                    )
+                result[target] = scope
+        for child in node:
+            visit(child, scope, depth + (1 if kind in {"li", "navPoint"} else 0))
+
+    visit(root, [], 1)
+    return result
+
+
+def _text(raw: bytes, profile: Any) -> tuple:
     soup = BeautifulSoup(raw, "html.parser")
     for selector in (
         *[
@@ -59,9 +95,12 @@ def _text(raw: bytes, profile: Any) -> tuple[str, dict[str, int], bool, dict[int
         raise IngestionFailure("EPUB_BODY_SELECTOR_OVERLAP")
     parts, anchors, classifications = [], {}, {}
     offset = 0
+    heading_levels = {}
     for root in roots:
         for node in [root, *root.descendants]:
             if isinstance(node, Tag):
+                if node.name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+                    heading_levels[offset] = int(node.name[1])
                 frame = (
                     node
                     if node.name in {"header", "footer", "nav", "noscript"}
@@ -90,6 +129,7 @@ def _text(raw: bytes, profile: Any) -> tuple[str, dict[str, int], bool, dict[int
         anchors,
         bool(soup.find("img") or soup.find("image")),
         classifications,
+        heading_levels,
     )
 
 
@@ -101,6 +141,7 @@ def logical_records(
 
     normal = profile.normalization
     assert normal is not None
+    scoped_volumes = profile.version == "corpus-parser.v5"
     with ZipFile(path) as archive:
         entries = archive.infolist()
         if (
@@ -153,6 +194,7 @@ def logical_records(
         if len(order) != len(spine):
             raise IngestionFailure("EPUB_SPINE_DUPLICATE")
         toc = []
+        toc_scopes = {}
         for item in items.values():
             name, _ = _target(opf_name, item["href"])
             if "nav" in item.get("properties", "").split():
@@ -165,6 +207,10 @@ def logical_records(
                         ).split()
                     ):
                         continue
+                    if scoped_volumes:
+                        toc_scopes.update(
+                            _toc_volume_scopes(section, name, normal.heading_max_chars)
+                        )
                     for link in section.findall(".//{*}a"):
                         toc.append(
                             (
@@ -183,7 +229,12 @@ def logical_records(
             )
             if ncx:
                 name, _ = _target(opf_name, ncx["href"])
-                for node in _xml(archive, name).findall(".//{*}navPoint"):
+                navigation = _xml(archive, name)
+                if scoped_volumes:
+                    toc_scopes = _toc_volume_scopes(
+                        navigation, name, normal.heading_max_chars
+                    )
+                for node in navigation.findall(".//{*}navPoint"):
                     content = node.find("{*}content")
                     label = node.find("{*}navLabel/{*}text")
                     if content is not None:
@@ -209,6 +260,7 @@ def logical_records(
             ):
                 raise IngestionFailure("EPUB_CONTINUATION_SCOPE_INVALID")
         current = None
+        volume_stack = []
         ordinal = 0
         last_href = ""
         toc_open = False
@@ -234,7 +286,7 @@ def logical_records(
                 declared_number=current["number"],
                 order=ordinal,
                 chapter_id=current["key"],
-                volume="",
+                volume=current.get("volume_id", ""),
             )
             row["source_locator"].update(
                 offset_kind="EPUB_LOGICAL_CHAPTER",
@@ -244,12 +296,14 @@ def logical_records(
                 join_rule="LF_BETWEEN_FRAGMENTS.v1",
                 nontext_resources=list(nontext_resources),
             )
+            if scoped_volumes:
+                row["source_locator"]["volume_scope"] = current["volume_scope"]
             return row
 
         for spine_index, (href, linear) in enumerate(spine):
             raw = archive.read(href)
             resource_xml = _xml(archive, href)
-            text, anchors, images, classifications = _text(raw, profile)
+            text, anchors, images, classifications, heading_levels = _text(raw, profile)
             member_hash = "sha256:" + hashlib.sha256(raw).hexdigest()
             starts = {}
             ordered_toc = []
@@ -349,6 +403,31 @@ def logical_records(
                         "",
                         "REVIEW_REQUIRED",
                     )
+                    explicit_scope = (
+                        toc_scopes.get((href, anchor))
+                        if basis == "TOC_ANCHOR"
+                        else None
+                    )
+                    if scoped_volumes and explicit_scope:
+                        volume_stack = [dict(v) for v in explicit_scope]
+                    elif scoped_volumes and info[0] == "VOLUME":
+                        level = heading_levels.get(left)
+                        if level is None:
+                            raise IngestionFailure(
+                                "EPUB_VOLUME_SCOPE_REVIEW_REQUIRED",
+                                href + "#" + (anchor or str(left)),
+                            )
+                        while volume_stack and volume_stack[-1]["level"] >= level:
+                            volume_stack.pop()
+                        volume_stack.append(
+                            {
+                                "identity": href + "#" + (anchor or str(left)),
+                                "display_name": info[2],
+                                "level": level,
+                                "basis": "EXPLICIT_HEADING_HIERARCHY.v1",
+                                "member_hash": member_hash,
+                            }
+                        )
                     current = {
                         "text": "",
                         "title": info[2],
@@ -357,6 +436,10 @@ def logical_records(
                         "key": href + "#" + (anchor or str(left)),
                         "fragments": [],
                         "heading_end": 0,
+                        "volume_id": volume_stack[-1]["identity"]
+                        if volume_stack
+                        else "",
+                        "volume_scope": [dict(v) for v in volume_stack],
                     }
                     toc_open = basis == "TOC_ANCHOR" and info[0] in {"CHAPTER", "EXTRA"}
                 else:
@@ -409,6 +492,8 @@ def logical_records(
                         else None,
                     }
                 )
+                if scoped_volumes:
+                    current["fragments"][-1]["volume_scope"] = current["volume_scope"]
                 if not current["heading_end"] and declared:
                     first, sep, _ = normalized.partition("\n")
                     if first.strip() == current["title"]:

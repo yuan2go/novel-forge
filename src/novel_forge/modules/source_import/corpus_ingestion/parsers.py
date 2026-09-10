@@ -311,7 +311,10 @@ def _format_records(
 def _segmented_records(
     file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
 ) -> Iterator[dict[str, Any]]:
-    if profile.version == "corpus-parser.v4" and profile.format == "epub":
+    if (
+        profile.version in {"corpus-parser.v4", "corpus-parser.v5"}
+        and profile.format == "epub"
+    ):
         from .epub_chapters import logical_records
 
         yield from logical_records(Path(file["cache_path"]), file, profile, budget)
@@ -358,7 +361,11 @@ def parse_records(
     file: dict[str, Any], profile: ParserProfile, budget: IngestionBudget
 ) -> Iterator[dict[str, Any]]:
     for row in _segmented_records(file, profile, budget):
-        if profile.version in {"corpus-parser.v3", "corpus-parser.v4"}:
+        if profile.version in {
+            "corpus-parser.v3",
+            "corpus-parser.v4",
+            "corpus-parser.v5",
+        }:
             locator = row["source_locator"]
             row["source_chapter_id"] = row["chapter_id"]
             row["chapter_id"] = "unit:" + corpus_hash(
@@ -410,7 +417,11 @@ def compile_work_index(
             selected = ParserProfile.model_validate(
                 file.get("parser") or profile.model_dump()
             )
-            if selected.version in {"corpus-parser.v3", "corpus-parser.v4"}:
+            if selected.version in {
+                "corpus-parser.v3",
+                "corpus-parser.v4",
+                "corpus-parser.v5",
+            }:
                 file_key = (file.get("container_path") or "", file["path"])
                 if file_key in seen_files:
                     if seen_files[file_key] != file["checksum"]:
@@ -453,7 +464,11 @@ def compile_work_index(
                     if selected.normalization is None
                     else {"profile_hash": selected_hash},
                 )
-                if selected.version in {"corpus-parser.v3", "corpus-parser.v4"}:
+                if selected.version in {
+                    "corpus-parser.v3",
+                    "corpus-parser.v4",
+                    "corpus-parser.v5",
+                }:
                     count_heading = record["confirmed_heading_chars"]
                     original_heading = body[:count_heading]
                     normalized_heading = original_heading.replace("\r\n", "\n").replace(
@@ -481,7 +496,8 @@ def compile_work_index(
                 if (
                     selected.normalization
                     and record["volume"]
-                    and selected.version not in {"corpus-parser.v3", "corpus-parser.v4"}
+                    and selected.version
+                    not in {"corpus-parser.v3", "corpus-parser.v4", "corpus-parser.v5"}
                 ):
                     record["source_chapter_id"] = record["chapter_id"]
                     record["chapter_id"] = record["volume"] + ":" + record["chapter_id"]
@@ -580,7 +596,11 @@ def compile_work_index(
                 from .integrity import assess_integrity
 
                 integrity = assess_integrity(records, parser)
-                if parser.version in {"corpus-parser.v3", "corpus-parser.v4"}:
+                if parser.version in {
+                    "corpus-parser.v3",
+                    "corpus-parser.v4",
+                    "corpus-parser.v5",
+                }:
                     from .integrity_v2 import enrich_integrity
 
                     integrity = enrich_integrity(records, parser, integrity)

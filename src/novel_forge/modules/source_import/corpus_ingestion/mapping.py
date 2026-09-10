@@ -145,7 +145,7 @@ def parsed_source_work(
                     }
                 }
                 if document.get("parser_profile", {}).get("version")
-                in {"corpus-parser.v3", "corpus-parser.v4"}
+                in {"corpus-parser.v3", "corpus-parser.v4", "corpus-parser.v5"}
                 else {}
             ),
         },

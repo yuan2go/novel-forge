@@ -131,14 +131,18 @@ class EpubContinuation(CorpusContract):
 
 class ParserProfile(CorpusContract):
     version: Literal[
-        "corpus-parser.v1", "corpus-parser.v2", "corpus-parser.v3", "corpus-parser.v4"
+        "corpus-parser.v1",
+        "corpus-parser.v2",
+        "corpus-parser.v3",
+        "corpus-parser.v4",
+        "corpus-parser.v5",
     ] = "corpus-parser.v1"
     normalization: NormalizationProfile | None = None
 
     @model_serializer(mode="wrap")
     def preserve_frozen_v1(self, handler: Any) -> dict[str, Any]:
         result = handler(self)
-        if self.version != "corpus-parser.v4":
+        if self.version not in {"corpus-parser.v4", "corpus-parser.v5"}:
             result.pop("epub_continuations", None)
         if self.normalization is None:
             result.pop("normalization", None)
@@ -174,18 +178,24 @@ class ParserProfile(CorpusContract):
     @model_validator(mode="after")
     def mapping_contract(self) -> ParserProfile:
         if self.epub_continuations and (
-            self.version != "corpus-parser.v4" or self.format != "epub"
+            self.version not in {"corpus-parser.v4", "corpus-parser.v5"}
+            or self.format != "epub"
         ):
             raise ValueError("continuation evidence requires EPUB parser v4")
         if self.normalization is not None and self.version not in {
             "corpus-parser.v2",
             "corpus-parser.v3",
             "corpus-parser.v4",
+            "corpus-parser.v5",
         }:
             raise ValueError(
                 "normalization requires corpus-parser.v2; frozen v1 is not reinterpreted"
             )
-        if self.version in {"corpus-parser.v3", "corpus-parser.v4"} and (
+        if self.version in {
+            "corpus-parser.v3",
+            "corpus-parser.v4",
+            "corpus-parser.v5",
+        } and (
             self.normalization is None
             or self.normalization.version != "chinese-longform.v2"
         ):
@@ -193,7 +203,8 @@ class ParserProfile(CorpusContract):
         if (
             self.normalization
             and self.normalization.version == "chinese-longform.v2"
-            and self.version not in {"corpus-parser.v3", "corpus-parser.v4"}
+            and self.version
+            not in {"corpus-parser.v3", "corpus-parser.v4", "corpus-parser.v5"}
         ):
             raise ValueError("new integrity semantics require parser v3")
         if self.format in {"epub", "parquet"} and self.encoding != "utf-8":
