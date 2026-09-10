@@ -837,7 +837,10 @@ HTTP equivalents are POST `/product/source-imports/corpus/reading-preview`, GET
 `/product/source-imports/corpus/jobs/{job_id}/reading-evidence` with project, operation,
 chunk and byte boundaries. Analysis extends the existing `/corpus/analyze` request.
 
-Automatic directed repair stays within frozen `max_repairs`. A stopped semantic issue
+Automatic directed repair stays within frozen `max_repairs`. Repair receives the immutable
+prior observation, issue targets and preservation requirements. An unresolved blocking
+issue cannot be silently downgraded or retargeted; explicit resolution is required.
+Invalid review output retries only that review within the same repair allowance. A stopped semantic issue
 requires review and a new explicitly bounded request if further analysis is authorized;
 query/resume cannot reset budgets. Transient failures resume the original job; confirmed
 Effects survive lease takeover, unknown outcomes reconcile. `attempt_count` and
