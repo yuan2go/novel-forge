@@ -2439,6 +2439,7 @@ sys.exit(main(sys.argv[1:]))
             scopes.append(
                 {
                     "processing_id": member["processing_id"],
+                    "max_chapters": 2,
                     "first_unit_version_id": versions[0],
                     "last_unit_version_id": versions[-1],
                     "max_repairs": 1,

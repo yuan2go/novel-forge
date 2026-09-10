@@ -108,22 +108,48 @@ class CorpusCatalogRecords(CorpusProcessingRecords):
             endpoints[scope["first_unit_version_id"]],
             endpoints[scope["last_unit_version_id"]],
         )
-        if last < first or last - first + 1 > scope["max_chapters"]:
+        if last < first or last - first + 1 > 128:
             raise KernelError(
-                "READING_CHAPTER_BOUND", "range must be ordered and bounded"
+                "READING_STRUCTURE_BOUND",
+                "range must be ordered and contain at most 128 source units including volume boundaries",
             )
+        self.cursor.execute(
+            """SELECT min(ordinal),max(ordinal) FROM (
+            (SELECT ordinal FROM authority_source_unit_version WHERE project_id=%s AND source_work_asset_version_id=%s
+             AND ordinal<%s AND kind IN ('chapter','extra') ORDER BY ordinal DESC LIMIT %s)
+            UNION ALL
+            (SELECT ordinal FROM authority_source_unit_version WHERE project_id=%s AND source_work_asset_version_id=%s
+             AND ordinal>%s AND kind IN ('chapter','extra') ORDER BY ordinal LIMIT %s)) nearby""",
+            [
+                project,
+                work_version,
+                first,
+                scope["context_before"],
+                project,
+                work_version,
+                last,
+                scope["context_after"],
+            ],
+        )
+        before, after = self.cursor.fetchone()
+        left, right = min(first, before or first), max(last, after or last)
         self.cursor.execute(
             """SELECT to_jsonb(u) - 'project_id' - 'author' - 'raw_file_path' FROM authority_source_unit_version u
             WHERE project_id=%s AND source_work_asset_version_id=%s AND ordinal BETWEEN %s AND %s ORDER BY ordinal LIMIT %s""",
             [
                 project,
                 work_version,
-                max(1, first - scope["context_before"]),
-                last + scope["context_after"],
-                scope["max_chapters"] + 5,
+                left,
+                right,
+                133,
             ],
         )
         units = [r[0] for r in self.cursor.fetchall()]
+        if len(units) > 132:
+            raise KernelError(
+                "READING_STRUCTURE_BOUND",
+                "narrow the chapter/context window with excessive structural units",
+            )
         target = [u for u in units if first <= u["ordinal"] <= last]
         if len(target) != last - first + 1:
             raise KernelError(
