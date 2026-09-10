@@ -2672,7 +2672,7 @@ sys.exit(main(sys.argv[1:]))
         assert any(
             issue["reason"] == "NARRATIVE_REVIEW_UNDECLARED_RESOLUTION"
             for stage in rejected["stages"]
-            for issue in (stage.get("narrative") or {}).get("issues", [])
+            for issue in ((stage.get("narrative") or {}).get("issues") or [])
         ), rejected
         monkeypatch.delenv("SOURCE_READING_BAD_REVIEW")
     cancelled = analyze("cancel-analysis")
