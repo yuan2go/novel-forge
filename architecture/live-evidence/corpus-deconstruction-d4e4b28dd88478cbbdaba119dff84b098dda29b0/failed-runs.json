@@ -1,0 +1,210 @@
+{
+  "originals_retained": true,
+  "original_directory": "/tmp/nf-corpus-deconstruction-20260910",
+  "development_runs": [
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/epub-first-failure.xml",
+      "sha256": "fd52c922ea5ac2d5fdb6440da673b373372b23a613dde460a417e810183900d6",
+      "accounting": {
+        "junit_cases": 25,
+        "passed": 24,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.178,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-fifth.xml",
+      "sha256": "d4ff258b1615c81eb8f3fec597499d462ace4ac6a212e553674fcbc1c9a852e1",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 8.156,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-first.xml",
+      "sha256": "c23382e5509c5bfb452a6ee6cc91c8b4bb90e3e78890d4cd6f4c6d9a03489654",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 27.784,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-second.xml",
+      "sha256": "d472fb99b04456c53405f5120f85ece3bedbfb8b3450bef84b0a972a0c3752bb",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 146.27,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-seventh.xml",
+      "sha256": "7beec1d3ccd4d0936df17065305a3bdbdb3e979a7bfc776f66486119b93a6f93",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.384,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-sixth.xml",
+      "sha256": "a24e9eb6828a05bd2023c7086ef594dcf726164a3a89712762ba7e7f65da63d7",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 37.134,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/narrative-third.xml",
+      "sha256": "3cd229c14db8168088b409d7b071d2d9809aeb340a0a47ef329b2c4dec57d0e8",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 37.212,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/native-recovery.xml",
+      "sha256": "1a677ff5683e4f46432c23ec3ae755e34842cf4c9fe28afd152a0e6d05b4f9cd",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 84.755,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    },
+    {
+      "path": "/tmp/nf-corpus-deconstruction-20260910/review-native-fix.xml",
+      "sha256": "ada1b23013f37a27f0429b4b29b2a6821deb1f962f6bee4c0858f2ce713450d0",
+      "accounting": {
+        "junit_cases": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 91.874,
+        "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+      },
+      "identity": "DEVELOPMENT_RUN_NOT_CURRENT_QUALIFICATION"
+    }
+  ],
+  "prior_complete_collection": {
+    "tested_sha": "c0203eb92fa6f8f6b0f09a81d70fc03f4adb5ee3",
+    "status": "FAIL",
+    "accounting": {
+      "junit_cases": 47,
+      "passed": 46,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 384.056,
+      "node_ids": [
+        "tests.integration.test_corpus_ingestion_postgres::test_native_corpus_cross_shard_import_and_replay",
+        "tests.integration.test_corpus_ingestion_postgres::test_authorized_bridge_reaches_existing_analysis_and_governance",
+        "tests.integration.test_corpus_ingestion_postgres::test_corpus_pause_resume_cancel_and_preview_do_not_fabricate_content",
+        "tests.integration.test_corpus_ingestion_postgres::test_corpus_native_research_and_benchmark_cannot_be_generation_input",
+        "tests.integration.test_corpus_ingestion_postgres::test_corpus_current_rights_checked_before_external_acquisition",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_import_new_process_recovery_and_concurrent_admission[after_output]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_import_new_process_recovery_and_concurrent_admission[after_receipt]",
+        "tests.integration.test_corpus_ingestion_postgres::test_mixed_work_rights_and_legacy_rewrapping_remain_fail_closed",
+        "tests.integration.test_corpus_ingestion_postgres::test_final_acquisition_failure_cannot_reopen_import",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_integrity_review_reprocessing_and_equivalence[False]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_integrity_review_reprocessing_and_equivalence[True]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[False]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues[True]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_curated_corpus_freeze_analysis_and_stale_members[False]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_curated_corpus_freeze_analysis_and_stale_members[True]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_multifile_duplicate_review_relations_and_discovery",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_catalogue_resolution_preserves_input_scope",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_cli_curated_analysis_controls_results_and_relation_guards[False]",
+        "tests.integration.test_corpus_ingestion_postgres::test_native_cli_curated_analysis_controls_results_and_relation_guards[True]",
+        "tests.integration.test_corpus_foundation_postgres::test_native_api_worker_vertical_multi_source_editions_and_replay",
+        "tests.integration.test_corpus_foundation_postgres::test_rights_update_cannot_reauthorize_frozen_editions_and_benchmark_stays_isolated",
+        "tests.integration.test_corpus_foundation_postgres::test_native_worker_process_and_trusted_principal",
+        "tests.integration.test_corpus_foundation_postgres::test_corpus_stale_fence_and_retired_source_cannot_mutate",
+        "tests.integration.test_corpus_foundation_postgres::test_concurrent_duplicate_import_and_immutable_batch_input",
+        "tests.integration.test_corpus_foundation_postgres::test_failed_batch_rolls_back_and_postgres_rejects_immutable_and_illegal_admission",
+        "tests.integration.test_corpus_foundation_postgres::test_new_process_recovers_committed_batch_without_duplicate_state[after_output]",
+        "tests.integration.test_corpus_foundation_postgres::test_new_process_recovers_committed_batch_without_duplicate_state[after_attempt]",
+        "tests.integration.test_corpus_foundation_postgres::test_bounded_catalog_pagination_uses_index_with_representative_imports",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_document_routing_exact_reuse_and_contract_invalidation",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_exact_commit_import_deduplicates_content_and_reuses_transform",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_import_work_rejects_cross_project_job_reference",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_product_api_previews_repository_without_low_level_inputs",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_production_composition_runs_automatic_document_routing",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_source_provider_timeout_is_independent_from_worker_lease",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_unknown_effect_checkpoints_and_reconciles_without_redispatch",
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_work_import_materializes_native_manifest_and_exact_replay",
+        "tests.integration.test_source_deconstruction_authority_postgres.SourceDeconstructionAuthorityPostgresTests::test_observation_is_source_isolated_and_commit_consumes_no_tokens",
+        "tests.integration.test_source_deconstruction_authority_postgres.SourceDeconstructionAuthorityPostgresTests::test_replay_and_analyzer_upgrade_recompute_only_affected_dimension",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_api_admission_is_worker_driven_and_database_recoverable",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_expired_lease_replays_committed_output_without_duplicate_source",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_transform_commits_verified_chunk_blobs_as_evidence_only_assets",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_transform_rejects_quarantined_source_and_cross_project_chunk",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_unknown_rights_quarantine_and_cross_project_blob_fail_closed",
+        "tests.integration.test_source_document_authority_postgres.SourceDocumentAuthorityPostgresTests::test_verified_blob_registers_one_replayable_source_without_raw_text",
+        "tests.integration.test_mkaos_authority_postgres.MkaosAuthorityPostgresTests::test_candidate_decision_card_and_deterministic_pack_are_separate",
+        "tests.integration.test_mkaos_authority_postgres.MkaosAuthorityPostgresTests::test_fixture_candidate_cannot_activate_with_production_defaults",
+        "tests.integration.test_mkaos_authority_postgres.MkaosAuthorityPostgresTests::test_raw_source_field_and_cross_project_lineage_fail_closed"
+      ],
+      "assertion_or_subtest_count": "NOT_REPORTED_AS_TEST_NODES"
+    },
+    "root_cause": "New assertion iterated nullable issues on stages without diagnostics. Final change only fixes test result iteration; production code unchanged. Full affected Corpus test module rerun. Other 28 tests in this collection passed on their unchanged code and test files."
+  },
+  "resolved_production_findings": [
+    "EPUB volume identity and scope lost across spines",
+    "Logical chapter limit counted structural volume units",
+    "Subset profiling incorrectly retained FILE_DOCUMENT authority contract",
+    "Aggregate MKAOS evidence lacked transitive precise source spans",
+    "Unresolved review severity could be downgraded without explicit resolution",
+    "Directed repair lacked full frozen prior candidate/preservation requirements"
+  ],
+  "harness_failures": [
+    "Registered output schema metadata",
+    "Native test timeout made explicit for bounded multi-stage workflow",
+    "Concurrent migration pytest autouse fixture truncated shared isolated test database; PostgreSQL suites now serialized",
+    "Whole-job PARTIAL vs individual review BLOCKED aggregation assertion",
+    "Nullable issues iteration in added result assertion"
+  ]
+}

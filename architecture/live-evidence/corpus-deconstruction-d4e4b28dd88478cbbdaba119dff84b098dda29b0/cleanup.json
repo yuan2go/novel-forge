@@ -1,0 +1,29 @@
+{
+  "owned_container": "nf-corpus-deconstruction-20260910-postgres",
+  "owned_container_id": "edb68db5904340ba1b8077dc30d73ad23757fe8decf2aca39acc49f3a776904a",
+  "backup": {
+    "backup_path": "/tmp/nf-corpus-deconstruction-20260910/backups/corpus_deconstruction_samples.dump",
+    "sha256": "10cedd9baa74747d2916060406e76d5ffd3e61bbd2175a72b1866dfdc17a429b",
+    "size": 20423075,
+    "format": "PostgreSQL custom dump",
+    "private_file_mode": "0600",
+    "object_store_retained": "/tmp/nf-corpus-deconstruction-20260910/real-final",
+    "samples_and_private_configuration_not_committed": true,
+    "schema_head": "20260910_0128_corpus_operations",
+    "applied_count": 129,
+    "counts": {
+      "authority_corpus_processing": 14,
+      "authority_source_unit_version": 1676,
+      "authority_corpus_curated_revision": 4
+    },
+    "owned_container": "nf-corpus-deconstruction-20260910-postgres",
+    "container_identity": "edb68db5904340ba1b8077dc30d73ad23757fe8decf2aca39acc49f3a776904a sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b pgvector/pgvector:pg16"
+  },
+  "removal_exit_code": 0,
+  "container_residue": 0,
+  "volume_residue": [],
+  "resource_residue": 0,
+  "only_task_owned_container_and_attached_anonymous_volumes_removed": true,
+  "object_store_and_raw_samples_preserved": true,
+  "checked_at_utc": "2026-09-10T02:34:47.165645+00:00"
+}
