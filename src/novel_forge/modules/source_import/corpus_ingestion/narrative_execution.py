@@ -230,6 +230,7 @@ def execute_reading(app, worker, payload):
         "repair_round": payload["repair_round"],
         "prior_issues": payload["prior_issues"],
         "previous_candidate": payload.get("previous_candidate"),
+        "preserve_requirements": payload.get("preserve_requirements", []),
     }
     review = payload["phase"] == "REVIEW"
     candidate = payload.get("candidate")
@@ -258,31 +259,7 @@ def execute_reading(app, worker, payload):
             )
         ):
             raise
-        issue = {
-            "issue_id": corpus_hash(
-                {"operation": worker.causation_id, "error": exc.code}
-            ),
-            "finding_code": "SCOPE",
-            "category": "EVIDENCE",
-            "severity": "BLOCKING",
-            "reason": exc.code,
-            "repair_goal": "Regenerate only this frozen observation and correct the reported evidence contract.",
-            "acceptance_condition": "All exact source, reference and coverage checks pass.",
-        }
-        return _finish_stage(
-            app,
-            uow=None,
-            worker=worker,
-            job=job,
-            payload=payload,
-            result={
-                "phase": payload["phase"],
-                "validation_error": exc.code,
-                "issues": [issue],
-            },
-            next_payload=_repair(payload, [*payload["prior_issues"], issue]),
-            blocked=payload["repair_round"] >= plan["contract"]["max_repairs"],
-        )
+        return _invalid_result(app, worker, job, payload, exc)
     curated_provider_gate(app.database_url, worker)
     coverage = {
         "reading_identity": plan["identity"],
@@ -312,11 +289,14 @@ def execute_reading(app, worker, payload):
     if not review:
         next_payload = {**payload, "phase": "REVIEW", "candidate": executed}
         return _finish_stage(app, None, worker, job, payload, result, next_payload)
-    issues = reconcile_review(
-        executed["review"],
-        payload["prior_issues"],
-        {f["finding_code"] for f in candidate["observation"]["findings"]},
-    )
+    try:
+        issues = reconcile_review(
+            executed["review"],
+            payload["prior_issues"],
+            {f["finding_code"] for f in candidate["observation"]["findings"]},
+        )
+    except KernelError as exc:
+        return _invalid_result(app, worker, job, payload, exc, result=result)
     result["issues"] = issues
     if executed["review"]["decision"] != "ACCEPT_IN_SCOPE" or any(
         i["severity"] == "BLOCKING" for i in issues
@@ -332,7 +312,9 @@ def execute_reading(app, worker, payload):
             job,
             payload,
             result,
-            None if blocked else _repair(payload, issues),
+            None
+            if blocked
+            else _repair(payload, issues, executed["review"]["preserve_requirements"]),
             blocked=blocked,
         )
     with AuthorityUnitOfWork(app.database_url, coordinate_nested=True) as uow:
@@ -391,6 +373,7 @@ def execute_reading(app, worker, payload):
                 "repair_round": 0,
                 "prior_issues": [],
                 "previous_candidate": None,
+                "preserve_requirements": [],
                 "accepted_observations": accepted,
             }
         result["knowledge_approved"] = False
@@ -400,7 +383,58 @@ def execute_reading(app, worker, payload):
         return result
 
 
-def _repair(payload, issues):
+def _invalid_result(app, worker, job, payload, error, result=None):
+    review = payload["phase"] == "REVIEW"
+    issue = {
+        "issue_id": corpus_hash(
+            {"operation": worker.causation_id, "error": error.code}
+        ),
+        "finding_code": "SCOPE",
+        "category": "EVIDENCE",
+        "severity": "BLOCKING",
+        "reason": error.code,
+        "repair_goal": "Correct the review contract and explicitly account for every prior blocking issue."
+        if review
+        else "Repair only this frozen observation and its exact evidence contract.",
+        "acceptance_condition": "Exact source/identity checks pass and unresolved gates remain blocking.",
+    }
+    issues = [*payload["prior_issues"], issue]
+    blocked = (
+        payload["repair_round"]
+        >= payload["narrative_reading"]["contract"]["max_repairs"]
+    )
+    following = (
+        None
+        if blocked
+        else (
+            {
+                **payload,
+                "repair_round": payload["repair_round"] + 1,
+                "prior_issues": issues,
+            }
+            if review
+            else _repair(payload, issues)
+        )
+    )
+    return _finish_stage(
+        app,
+        None,
+        worker,
+        job,
+        payload,
+        {
+            **(result or {}),
+            "phase": payload["phase"],
+            "repair_round": payload["repair_round"],
+            "validation_error": error.code,
+            "issues": issues,
+        },
+        following,
+        blocked=blocked,
+    )
+
+
+def _repair(payload, issues, preserve_requirements=None):
     return {k: v for k, v in payload.items() if k != "candidate"} | {
         "phase": "SYNTHESIZE"
         if payload["unit_index"]
@@ -410,8 +444,9 @@ def _repair(payload, issues):
         else "OBSERVE",
         "repair_round": payload["repair_round"] + 1,
         "prior_issues": issues,
-        "previous_candidate": payload.get("candidate", {}).get(
-            "execution_asset_version_id"
+        "previous_candidate": payload.get("candidate"),
+        "preserve_requirements": list(
+            preserve_requirements or payload.get("preserve_requirements", [])
         ),
     }
 

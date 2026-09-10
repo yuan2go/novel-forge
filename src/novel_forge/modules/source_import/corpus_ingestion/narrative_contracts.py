@@ -299,6 +299,12 @@ def reconcile_review(
     review: dict, prior: list[dict], finding_ids: set[str]
 ) -> list[dict]:
     by_id = {i["issue_id"]: i for i in prior}
+    identifiers = [i["issue_id"] for i in review["issues"]]
+    if len(identifiers) != len(set(identifiers)):
+        raise KernelError(
+            "NARRATIVE_REVIEW_IDENTITY_DUPLICATE",
+            "one diagnostic identity cannot carry conflicting entries",
+        )
     resolutions = set(review["resolved_issue_ids"])
     if not resolutions <= set(by_id):
         raise KernelError(
@@ -315,6 +321,18 @@ def reconcile_review(
             raise KernelError(
                 "NARRATIVE_REVIEW_TARGET_INVALID",
                 "diagnostic targets no supplied finding",
+            )
+        previous = by_id.get(issue["issue_id"])
+        if previous and (
+            (previous["severity"] == "BLOCKING" and issue["severity"] != "BLOCKING")
+            or any(
+                previous[k] != issue[k]
+                for k in ("finding_code", "category", "acceptance_condition")
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_REVIEW_UNDECLARED_RESOLUTION",
+                "unresolved diagnostic target, gate and blocking severity cannot be weakened",
             )
         by_id[issue["issue_id"]] = issue
     if review["decision"] == "ACCEPT_IN_SCOPE" and any(

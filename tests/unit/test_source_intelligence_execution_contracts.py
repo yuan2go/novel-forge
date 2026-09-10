@@ -351,6 +351,18 @@ def test_bounded_narrative_evidence_and_blocker_continuity():
     validate_content_intelligence_output(DECONSTRUCTION_STAGE, review_schema(), review)
     with pytest.raises(KernelError, match="UNRESOLVED_BLOCKERS"):
         reconcile_review(review, [issue], {"belief"})
+    with pytest.raises(KernelError, match="UNDECLARED_RESOLUTION"):
+        reconcile_review(
+            {**review, "issues": [{**issue, "severity": "ADVISORY"}]},
+            [issue],
+            {"belief"},
+        )
+    with pytest.raises(KernelError, match="IDENTITY_DUPLICATE"):
+        reconcile_review(
+            {**review, "issues": [issue, {**issue, "severity": "ADVISORY"}]},
+            [],
+            {"belief"},
+        )
     assert (
         reconcile_review(
             {**review, "resolved_issue_ids": ["knowledge"]}, [issue], {"belief"}

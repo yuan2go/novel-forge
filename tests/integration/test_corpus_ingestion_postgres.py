@@ -2150,7 +2150,13 @@ def transport(stage, inputs):
   if 'review_target' in inputs:
    if context['repair_round']==0:
     return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
+   if os.environ.get('SOURCE_READING_BAD_REVIEW'):
+    return {'decision':'ACCEPT_IN_SCOPE','issues':[{**i,'severity':'ADVISORY'} for i in prior],'resolved_issue_ids':[],'preserve_requirements':[],'scope_limitations':'Synthetic invalid blocker downgrade.'}
    return {'decision':'ACCEPT_IN_SCOPE','issues':[],'resolved_issue_ids':[i['issue_id'] for i in prior],'preserve_requirements':[],'scope_limitations':'Only the supplied target is evaluated; literary quality is unproven.'}
+  if context['repair_round']:
+   assert context['previous_candidate']['observation']['findings'][0]['statement']=='A choice occurs.'
+   assert context['previous_candidate']['execution_asset_version_id']
+   assert context['preserve_requirements']==['Keep the exact input boundary and uncertainty.']
   segments=inputs.get('source_segments') or []
   evidence=[]
   if segments:
@@ -2655,6 +2661,20 @@ sys.exit(main(sys.argv[1:]))
         monkeypatch.setenv(
             "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", old_reserve
         )
+    if bounded_reading:
+        rejected_job = analyze("undeclared-review-downgrade")["import_job_id"]
+        monkeypatch.setenv("SOURCE_READING_BAD_REVIEW", "1")
+        refused = cli("run", "--job-id", rejected_job, "--max-stages", 100)
+        assert refused["job"]["corpus"]["analysis_state"] == "PARTIAL", refused
+        rejected = cli("results", "--job-id", rejected_job, "--limit", 100)
+        assert rejected["summary"]["knowledge"]["knowledge_candidates"] == 0
+        assert any(stage["status"] == "BLOCKED" for stage in rejected["stages"])
+        assert any(
+            issue["reason"] == "NARRATIVE_REVIEW_UNDECLARED_RESOLUTION"
+            for stage in rejected["stages"]
+            for issue in (stage.get("narrative") or {}).get("issues", [])
+        ), rejected
+        monkeypatch.delenv("SOURCE_READING_BAD_REVIEW")
     cancelled = analyze("cancel-analysis")
     cli("cancel", "--job-id", cancelled["import_job_id"])
     assert (
