@@ -488,7 +488,9 @@ def test_multifile_chapters_preserve_physical_order_and_explicit_mode(tmp_path):
 
 
 @pytest.mark.parametrize("format", ["txt", "html"])
-def test_v3_duplicate_body_and_multifile_identity_preserve_occurrences(tmp_path, format):
+def test_v3_duplicate_body_and_multifile_identity_preserve_occurrences(
+    tmp_path, format
+):
     text = "她把钥匙还给守门人，决定独自绕行，并承担迟到的代价。" * 12
     files = []
     for number in (1, 2):
@@ -498,18 +500,39 @@ def test_v3_duplicate_body_and_multifile_identity_preserve_occurrences(tmp_path,
             content = f"<body><h1>第{number}章 标题{number}</h1><p>{text}</p></body>"
         path.write_text(content)
         digest, size = file_identity(path)
-        files.append({"path": path.name, "container_path": "volume.zip", "checksum": digest, "size_bytes": size, "cache_path": str(path)})
-    parser = ParserProfile(version="corpus-parser.v3", format=format, constants={"work_id": "same-work"}, normalization={"version": "chinese-longform.v2", "expected_toc": ["第1章 标题1", "第2章 标题2"], "toc_evidence": "original-fixture:titles"})
+        files.append(
+            {
+                "path": path.name,
+                "container_path": "volume.zip",
+                "checksum": digest,
+                "size_bytes": size,
+                "cache_path": str(path),
+            }
+        )
+    parser = ParserProfile(
+        version="corpus-parser.v3",
+        format=format,
+        constants={"work_id": "same-work"},
+        normalization={
+            "version": "chinese-longform.v2",
+            "expected_toc": ["第1章 标题1", "第2章 标题2"],
+            "toc_evidence": "original-fixture:titles",
+        },
+    )
+
     def parse(inputs, name):
         r = compile_work_index(inputs, parser, IngestionBudget(), tmp_path / name)
         return json.loads(Path(r["works"][0]["cache_path"]).read_text())
+
     document = parse(files, "first")
     assert document == parse(list(reversed(files)) + files, "repeat")
     units = document["units"]
     assert len({u["chapter_id"] for u in units}) == 2
     assert len({u["normalized_content_hash"] for u in units}) == 2
     assert len({u["body_content_hash"] for u in units}) == 1
-    finding = next(i for i in document["integrity"]["issues"] if i["code"] == "DUPLICATE_BODY")
+    finding = next(
+        i for i in document["integrity"]["issues"] if i["code"] == "DUPLICATE_BODY"
+    )
     assert len(finding["evidence"]) == 2 and finding["blocking"]
     assert document["integrity"]["coverage"] == "REVIEW_REQUIRED"
     assert all(u["text"].endswith(text) for u in units)
@@ -521,28 +544,198 @@ def test_v3_duplicate_body_and_multifile_identity_preserve_occurrences(tmp_path,
 def test_v3_plain_first_line_is_not_discarded_as_heading(tmp_path):
     path = tmp_path / "chapters.jsonl"
     body = "这是正文，不是标题。\n结尾。"
-    path.write_text(json.dumps({"id": "x", "text": body, "title": "这是正文，不是标题。", "n": 1}, ensure_ascii=False))
+    path.write_text(
+        json.dumps(
+            {"id": "x", "text": body, "title": "这是正文，不是标题。", "n": 1},
+            ensure_ascii=False,
+        )
+    )
     digest, size = file_identity(path)
-    parser = ParserProfile(version="corpus-parser.v3", format="jsonl", layout="CHAPTER_ROWS", fields={"chapter_id":"id", "text":"text", "title":"title", "order":"n"}, constants={"work_id":"one"}, normalization={"version":"chinese-longform.v2"})
-    output = compile_work_index([{"path": path.name, "cache_path": str(path), "checksum": digest, "size_bytes": size}],parser,IngestionBudget(),tmp_path/'index')
-    unit = json.loads(Path(output['works'][0]['cache_path']).read_text())["units"][0]
-    assert unit['confirmed_heading_chars'] == 0
+    parser = ParserProfile(
+        version="corpus-parser.v3",
+        format="jsonl",
+        layout="CHAPTER_ROWS",
+        fields={"chapter_id": "id", "text": "text", "title": "title", "order": "n"},
+        constants={"work_id": "one"},
+        normalization={"version": "chinese-longform.v2"},
+    )
+    output = compile_work_index(
+        [
+            {
+                "path": path.name,
+                "cache_path": str(path),
+                "checksum": digest,
+                "size_bytes": size,
+            }
+        ],
+        parser,
+        IngestionBudget(),
+        tmp_path / "index",
+    )
+    unit = json.loads(Path(output["works"][0]["cache_path"]).read_text())["units"][0]
+    assert unit["confirmed_heading_chars"] == 0
     from novel_forge.modules.source_authority.corpus import corpus_hash
-    assert unit['body_content_hash'] == corpus_hash(body)
+
+    assert unit["body_content_hash"] == corpus_hash(body)
 
 
 def test_version_comparison_retains_duplicate_multiplicity_volume_and_pages():
-    from novel_forge.modules.source_import.corpus_ingestion.comparison import compare_versions
+    from novel_forge.modules.source_import.corpus_ingestion.comparison import (
+        compare_versions,
+    )
+
     def unit(identity, volume, digest):
-        return {"unit_id":identity,"volume":volume,"title":"同名章节","hash":digest,"body_hash":digest}
-    left = {"edition_id":"e1","normalized_hash":"left","fingerprint":{"hashes":["a"]},"assessment":{"units":[unit("a","第一卷","one"),unit("b","第二卷","one"),unit("c","第二卷","two")]}}
-    right = {"edition_id":"e2","normalized_hash":"right","fingerprint":{"hashes":["a"]},"assessment":{"units":[unit("c2","第二卷","two"),unit("a2","第一卷","one")]}}
-    result = compare_versions(left,right,limit=1)
-    assert result['total_correspondences'] == 3 and result['next_after'] == 1
-    assert {"hash":"one","left":2,"right":1} in result['unit_multiplicity_differences']
-    assert result['change_counts']['MISSING_OR_UNALIGNED'] == 1
-    assert result['change_counts']['MOVED'] == 2
-    assert not result['exact_structure'] and not result['same_edition']
-    assert not result['rights_transfer']
-    page2 = compare_versions(left,right,after=1,limit=2)
-    assert len(page2['correspondence']) == 2 and page2['next_after'] is None
+        return {
+            "unit_id": identity,
+            "volume": volume,
+            "title": "同名章节",
+            "hash": digest,
+            "body_hash": digest,
+        }
+
+    left = {
+        "edition_id": "e1",
+        "normalized_hash": "left",
+        "fingerprint": {"hashes": ["a"]},
+        "assessment": {
+            "units": [
+                unit("a", "第一卷", "one"),
+                unit("b", "第二卷", "one"),
+                unit("c", "第二卷", "two"),
+            ]
+        },
+    }
+    right = {
+        "edition_id": "e2",
+        "normalized_hash": "right",
+        "fingerprint": {"hashes": ["a"]},
+        "assessment": {
+            "units": [unit("c2", "第二卷", "two"), unit("a2", "第一卷", "one")]
+        },
+    }
+    result = compare_versions(left, right, limit=1)
+    assert result["total_correspondences"] == 3 and result["next_after"] == 1
+    assert {"hash": "one", "left": 2, "right": 1} in result[
+        "unit_multiplicity_differences"
+    ]
+    assert result["change_counts"]["MISSING_OR_UNALIGNED"] == 1
+    assert result["change_counts"]["MOVED"] == 2
+    assert not result["exact_structure"] and not result["same_edition"]
+    assert not result["rights_transfer"]
+    page2 = compare_versions(left, right, after=1, limit=2)
+    assert len(page2["correspondence"]) == 2 and page2["next_after"] is None
+
+
+def test_epub_logical_chapters_span_resources_and_retain_exact_fragments(tmp_path):
+    from ebooklib import epub
+    from novel_forge.modules.source_import.corpus_ingestion.parsers import parse_records
+
+    book = epub.EpubBook()
+    book.set_identifier("logical-original")
+    book.set_title("跨文件原创")
+    book.set_language("zh")
+    bodies = [
+        '<h2 id="one">第一章 消息</h2><p>甲Ａ得信，仍怀疑其真伪。</p>',
+        '<p>乙Ｂ核验印章，愿意承担行动代价。</p><h2 id="two">第二章 选择</h2>',
+        '<p>甲将信交还，选择守约。</p><h2 id="three">第三章 兑现</h2><p>乙履行约定，两人离开城门。</p>',
+    ]
+    chapters = []
+    for i, body in enumerate(bodies):
+        c = epub.EpubHtml(title=str(i), file_name=f"p{i}.xhtml", lang="zh")
+        c.content = "<html><body>" + body + "</body></html>"
+        chapters.append(c)
+        book.add_item(c)
+    book.spine = chapters
+    book.toc = (
+        epub.Link("p0.xhtml#one", "第一章 消息", "one"),
+        epub.Link("p1.xhtml#two", "第二章 选择", "two"),
+        epub.Link("p2.xhtml#three", "第三章 兑现", "three"),
+    )
+    book.add_item(epub.EpubNcx())
+    path = tmp_path / "logical.epub"
+    epub.write_epub(str(path), book)
+    digest, size = file_identity(path)
+    file = {
+        "path": path.name,
+        "cache_path": str(path),
+        "checksum": digest,
+        "size_bytes": size,
+    }
+    profile = ParserProfile(
+        version="corpus-parser.v4",
+        format="epub",
+        normalization={"version": "chinese-longform.v2", "min_body_chars": 1},
+    )
+    rows = list(parse_records(file, profile, IngestionBudget()))
+    assert [r["declared_number"] for r in rows] == [1, 2, 3]
+    assert "乙Ｂ核验" in rows[0]["text"] and "甲将信交还" in rows[1]["text"]
+    assert [len(r["source_locator"]["fragments"]) for r in rows] == [2, 2, 1]
+    import hashlib
+
+    for row in rows:
+        position = 0
+        for fragment in row["source_locator"]["fragments"]:
+            assert fragment["logical_unicode_start"] == position + len(
+                fragment["separator"]
+            )
+            position = fragment["logical_unicode_end"]
+            value = row["text"][fragment["logical_unicode_start"] : position]
+            assert (
+                "sha256:" + hashlib.sha256(value.encode()).hexdigest()
+                == fragment["text_hash"]
+            )
+        assert position == len(row["text"])
+    old = profile.model_copy(update={"version": "corpus-parser.v3"})
+    assert "epub_continuations" not in old.model_dump()
+    assert len(list(parse_records(file, old, IngestionBudget()))) > 3
+    book.toc = (epub.Link("p0.xhtml#missing", "坏锚点", "broken"),)
+    epub.write_epub(str(path), book)
+    digest, size = file_identity(path)
+    with pytest.raises(IngestionFailure, match="EPUB_TOC_ANCHOR_MISSING"):
+        list(
+            parse_records(
+                {**file, "checksum": digest, "size_bytes": size},
+                profile,
+                IngestionBudget(),
+            )
+        )
+
+    book.toc = ()
+    epub.write_epub(str(path), book)
+    digest, size = file_identity(path)
+    unverified = list(
+        parse_records(
+            {**file, "checksum": digest, "size_bytes": size}, profile, IngestionBudget()
+        )
+    )
+    assert any(
+        r["unit_kind"] == "UNSTRUCTURED" and "乙Ｂ核验" in r["text"] for r in unverified
+    )
+    assert (
+        "甲将信交还" in next(r for r in unverified if r["declared_number"] == 2)["text"]
+    )
+    with pytest.raises(IngestionFailure, match="EPUB_BODY_SELECTOR_OVERLAP"):
+        list(
+            parse_records(
+                {**file, "checksum": digest, "size_bytes": size},
+                profile.model_copy(update={"html_body_selector": "body, p"}),
+                IngestionBudget(),
+            )
+        )
+    from zipfile import ZipFile
+
+    with ZipFile(path) as original:
+        entries = {n: original.read(n) for n in original.namelist()}
+    with ZipFile(path, "w") as damaged:
+        for name, value in entries.items():
+            if not name.endswith("p1.xhtml"):
+                damaged.writestr(name, value)
+    digest, size = file_identity(path)
+    with pytest.raises(IngestionFailure, match="EPUB_RESOURCE_MISSING"):
+        list(
+            parse_records(
+                {**file, "checksum": digest, "size_bytes": size},
+                profile,
+                IngestionBudget(),
+            )
+        )

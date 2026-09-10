@@ -821,6 +821,12 @@ class SourceImportApplication:
             return self._execute_file(worker)
         if definition == SOURCE_IMPORT_WORK_OPERATION:
             return self._execute_work(worker)
+        if definition in {
+            SOURCE_IMPORT_PROFILING_OPERATION, SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
+            SOURCE_IMPORT_DECONSTRUCTION_OPERATION, SOURCE_IMPORT_MKAOS_OPERATION,
+        }:
+            from .corpus_ingestion.curated_analysis import curated_provider_gate
+            curated_provider_gate(self.database_url, worker)
         if definition == SOURCE_IMPORT_PROFILING_OPERATION:
             return self._execute_profiling(worker)
         if definition == SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION:

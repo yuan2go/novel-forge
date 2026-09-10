@@ -876,6 +876,18 @@ class MkaosAuthorityApplication:
                 project_id=worker.project_id,
                 asset_version_id=str(command["execution_asset_version_id"]),
             )
+            from novel_forge.modules.source_authority.curation import (
+                require_curated_evidence_current,
+            )
+            from novel_forge.storage.source_authority_repositories import (
+                SourceAuthorityRepository,
+            )
+
+            require_curated_evidence_current(
+                SourceAuthorityRepository(uow.cursor),
+                worker.project_id,
+                str(command["execution_asset_version_id"]),
+            )
             execution_proof = _execution_proof(execution["content"])
             candidate = validate_knowledge_candidate(dict(payload["candidate"]))
             spans = tuple(

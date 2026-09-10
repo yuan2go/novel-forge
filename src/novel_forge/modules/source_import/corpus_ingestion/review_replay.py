@@ -56,7 +56,7 @@ def carry_review(
                 if unit is None:
                     raise KernelError(
                         "CORPUS_REVIEW_EVIDENCE_CHANGED",
-                        "excluded occurrence no longer has the exact reviewed source span",
+                        f"excluded occurrence {evidence['unit_id']} in resolution {resolution['issue_id']} no longer has the exact reviewed source span",
                     )
                 unit["excluded_from_analysis"] = True
         mapped[resolution["issue_id"]] = resolution
@@ -93,6 +93,15 @@ def carry_review(
             if f["code"] == old["code"]
             and sorted(source_evidence_key(e) for e in f["evidence"]) == keys
         ]
+        if not equivalent and parser.version == "corpus-parser.v4":
+            occurrences = _epub_occurrences(old, document)
+            if occurrences:
+                equivalent = [
+                    f
+                    for f in findings
+                    if f["code"] == old["code"]
+                    and {e["unit_id"] for e in f["evidence"]} == occurrences
+                ]
         if old["code"] == "TOC_ENTRY_MISMATCH":
             equivalent = [
                 f
@@ -160,7 +169,7 @@ def carry_review(
                         "excluded_unit_ids": [u["chapter_id"] for u in excluded],
                     }
                 )
-            elif boundary_repair(old):
+            elif boundary_repair(old) or _epub_fragment_repair(old, document):
                 resolutions.append(
                     {
                         "issue_id": old["issue_id"],
@@ -184,3 +193,69 @@ def carry_review(
         assessment["coverage"] = "REVIEW_REQUIRED"
     elif assessment["coverage"] == "REVIEW_REQUIRED":
         assessment["coverage"] = "COMPLETE" if assessment["toc_matches"] else "UNKNOWN"
+
+
+def _epub_occurrences(finding: dict[str, Any], document: dict[str, Any]) -> set[str]:
+    import hashlib
+
+    if not finding["evidence"]:
+        return set()
+    matched = set()
+    for evidence in finding["evidence"]:
+        locator = evidence["locator"]
+        if locator.get("offset_kind") != "EPUB_SPINE":
+            return set()
+        matches = []
+        for unit in document["units"]:
+            current = unit["source_locator"]
+            if current["path"] != locator["path"] or current.get(
+                "container_path"
+            ) != locator.get("container_path"):
+                continue
+            for fragment in current.get("fragments", []):
+                if fragment["normalization_changed"] or not (
+                    fragment["href"] == locator.get("href")
+                    or fragment["href"].endswith("/" + str(locator.get("href")))
+                ):
+                    continue
+                left, right = (
+                    locator.get("extracted_unicode_start"),
+                    locator.get("extracted_unicode_end"),
+                )
+                if (
+                    left is None
+                    or right is None
+                    or not fragment["extracted_unicode_start"]
+                    <= left
+                    < right
+                    <= fragment["extracted_unicode_end"]
+                ):
+                    continue
+                start = (
+                    fragment["logical_unicode_start"]
+                    + left
+                    - fragment["extracted_unicode_start"]
+                )
+                text = unit["text"][start : start + right - left]
+                if (
+                    "sha256:" + hashlib.sha256(text.encode()).hexdigest()
+                    == evidence["content_hash"]
+                ):
+                    matches.append(unit["chapter_id"])
+        if len(matches) != 1:
+            return set()
+        matched.update(matches)
+    return matched
+
+
+def _epub_fragment_repair(finding: dict[str, Any], document: dict[str, Any]) -> bool:
+    if finding["code"] not in {"NON_BODY_UNIT", "SHORT_OR_TOC_UNIT"}:
+        return False
+    matched = _epub_occurrences(finding, document)
+    rows = [u for u in document["units"] if u["chapter_id"] in matched]
+    minimum = document["parser_profile"]["normalization"]["min_body_chars"]
+    return bool(rows) and all(
+        u.get("unit_kind") in {"CHAPTER", "EXTRA"}
+        and len(u["text"][u.get("confirmed_heading_chars", 0) :].strip()) >= minimum
+        for u in rows
+    )

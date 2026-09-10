@@ -162,6 +162,17 @@ class SourceImportQuery:
             job = SourceImportRepository(uow.cursor).job(
                 project_id=project_id, import_job_id=import_job_id
             )
+            contract = SourceImportRepository(uow.cursor).frozen_operation(
+                project_id, job["discovery_operation_id"]
+            )
+            if contract["name"] == "source.import.corpus.analysis":
+                return self.analysis_results(
+                    project_id=project_id,
+                    import_job_id=import_job_id,
+                    after=after,
+                    limit=limit,
+                    principal=principal,
+                )
             if job["source_type"] != "corpus_content" or not job["corpus_snapshot_id"]:
                 raise KernelError(
                     "CORPUS_SNAPSHOT_NOT_AVAILABLE",
@@ -218,6 +229,25 @@ class SourceImportQuery:
                 return SourceAuthorityRepository(uow.cursor).corpus_import_status(
                     project_id, import_job_id
                 )
+            contract = repository.frozen_operation(
+                project_id, job["discovery_operation_id"]
+            )
+            if contract["name"] == "source.import.corpus.analysis":
+                from .analysis_query import analysis_job
+                from novel_forge.storage.source_authority_repositories import (
+                    SourceAuthorityRepository,
+                )
+
+                sources = SourceAuthorityRepository(uow.cursor)
+                sources.corpus_authorization_lock(project_id)
+                summary = analysis_job(repository, sources, job, contract)
+                return {
+                    **_serializable(job),
+                    "job_kind": "CURATED_ANALYSIS",
+                    "corpus": summary,
+                    "effective_status": summary["analysis_state"],
+                    "downstream": summary["knowledge"],
+                }
             work = repository.list_work(
                 project_id=project_id, import_job_id=import_job_id
             )
@@ -268,7 +298,10 @@ class SourceImportQuery:
                     for child in acquisition.get("children", [])
                 ),
                 "knowledge_approved_by_import": False,
-                "purpose": job["source_locator"]["manifest"]["purpose"],
+                "purpose": _content_purpose(contract),
+                "job_kind": "REPROCESSING"
+                if contract["payload"].get("reprocess")
+                else "CONTENT_ACQUISITION",
                 "stage_results": [
                     {
                         "operation_id": item["operation_id"],
@@ -293,6 +326,37 @@ class SourceImportQuery:
                 principal=principal,
             ),
         }
+
+    def analysis_results(
+        self,
+        *,
+        project_id: str,
+        import_job_id: str,
+        after: str = "",
+        limit: int = 50,
+        processing_id: str = "",
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._require(principal, project_id)
+        if not 1 <= limit <= 100:
+            raise ValueError("stage limit must be 1..100")
+        status = self.import_job(
+            project_id=project_id, import_job_id=import_job_id, principal=principal
+        )
+        if status.get("job_kind") != "CURATED_ANALYSIS":
+            raise KernelError(
+                "SOURCE_JOB_KIND_INVALID", "results require a curated analysis job"
+            )
+        members = status["corpus"]["frozen_members"]
+        if processing_id and processing_id not in {m["processing_id"] for m in members}:
+            raise KernelError(
+                "CURATED_MEMBER_NOT_FOUND", "member is not part of frozen job"
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            page = SourceImportRepository(uow.cursor).analysis_stage_page(
+                project_id, import_job_id, after, limit, processing_id
+            )
+        return {"import_job_id": import_job_id, "summary": status["corpus"], **page}
 
     def list_imports(
         self,
@@ -850,3 +914,17 @@ def _serializable(row: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = ["SourceImportQuery"]
+
+
+def _content_purpose(contract: dict) -> str:
+    purpose = contract["payload"].get("manifest", {}).get("purpose")
+    if purpose not in {
+        "RESEARCH",
+        "BENCHMARK",
+        "MARKET_INTELLIGENCE",
+        "PRODUCTION_REFERENCE",
+    }:
+        raise KernelError(
+            "SOURCE_JOB_PURPOSE_INVALID", "frozen ingestion purpose missing or invalid"
+        )
+    return purpose

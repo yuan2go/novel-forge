@@ -728,6 +728,34 @@ project usage consumes the same ceiling. No knowledge is automatically approved.
 cancel, fence recovery and terminal result replay remain SourceImport/Kernel operations.
 Raw SourceWork/Corpus bodies still cannot enter Writer context.
 
+Curated job queries resolve the exact frozen Operation, revision, members, purpose and
+budget. They never infer a snapshot for a multi-source selection. Member/stage results,
+formal output references, candidate/Card/Pack counts and known/unknown ledger records are
+read-only projections; coordinator success is distinct from completed analysis. The CLI
+runs job-scoped eligible work with existing lease/fence recovery and reports partial,
+paused, cancelled, stage-bound and leased outcomes separately. New and legacy pair
+commands share canonical-group conflict validation; a deferred PostgreSQL constraint
+checks the final membership state. A changed relation evidence set requires a new inspected
+curated revision for new execution; frozen results remain queryable. Source profile,
+Observation and MKAOS candidate publication recheck the originating curated selection
+inside the owning transaction under the Source authorization lock. Confirmed Provider
+receipts remain evidence when a changed selection blocks publication.
+
+`corpus-parser.v4` adds EPUB logical chapters over ordered physical spine fragments.
+TOC/NCX/nav anchors define reading intervals; verified headings can split a spine item.
+A title-only final segment can receive its body from the next linear resource. Other
+unheaded cross-resource continuation requires an exact acquisition-bound declaration.
+Unknown prefixes remain review findings. Logical fragments retain member hashes, extracted
+Unicode ranges, normalized Unicode/UTF-8 ranges and the LF joining rule. Image-only
+unclassified body resources, missing anchors and conflicting TOC order fail closed.
+Declared cover images and semantic non-body resources retain explicit provenance.
+Versions v1–v3 retain their frozen parser serialization and behavior. Reprocessing v4
+reuses the acquired bytes and Edition and appends a Processing/Bridge; an old finding is
+replaced or resolved only when its exact evidence maps to a new occurrence or supported
+logical body. Format agreement for one acquired Gutenberg item is not independent edition
+or worldwide-rights proof.
+
+
 ## Qualification ceiling
 
 `make p0-backend-qualification` is the single high-level backend engineering gate. It

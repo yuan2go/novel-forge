@@ -9,7 +9,10 @@ from novel_forge.modules.source_authority.corpus import (
     Text,
     corpus_hash,
 )
-from novel_forge.modules.source_authority.curation import curated_availability
+from novel_forge.modules.source_authority.curation import (
+    curated_availability,
+    require_curated_operation_current,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
 from novel_forge.modules.source_import.domain import SourceImportPolicy
@@ -269,22 +272,9 @@ def curated_provider_gate(database_url: str, worker: Any) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         require_current_fence(uow, worker)
         repository = SourceAuthorityRepository(uow.cursor)
-        repository.corpus_authorization_lock(worker.project_id)
-        binding = repository.catalog_execution_binding(
-            worker.project_id, worker.causation_id
+        return require_curated_operation_current(
+            repository, worker.project_id, worker.causation_id
         )
-        if not binding:
-            return {}
-        ensure_selection_active(repository, worker.project_id, binding)
-        selected = [
-            m
-            for m in binding["members"]
-            if m["processing_id"] == binding["member_processing_id"]
-        ]
-        availability = curated_availability(repository, worker.project_id, selected)
-        if len(selected) != 1 or any(not r["available"] for r in availability):
-            raise KernelError("CURATED_PROVIDER_INPUT_STALE", str(availability))
-        return binding["budget"]
 
 
 def capped_usage(existing: dict[str, int], bound: int | None) -> dict[str, int]:

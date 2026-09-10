@@ -1,0 +1,93 @@
+{
+  "version": "corpus-parser.v4",
+  "normalization": {
+    "version": "chinese-longform.v2",
+    "duplicate_body_min_chars": 128,
+    "unicode_form": "NFC",
+    "segmentation": "CHINESE_HEADINGS",
+    "heading_max_chars": 100,
+    "min_body_chars": 80,
+    "max_unit_bytes": 2000000,
+    "expected_toc": [],
+    "toc_evidence": "",
+    "candidate_threshold": 0.8,
+    "boundaries": [],
+    "external_work_ids": [],
+    "work_completion": "UNKNOWN"
+  },
+  "format": "epub",
+  "work_key_encoding": "VALUE",
+  "encoding": "utf-8",
+  "epub_continuations": [
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-0.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-1.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:81761:81921;witness-sha256:2a26cf66ce43b5f4ad5d4f7a2bbb166c6a40694af9019b56430ba07cc57fac56"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-1.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-2.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:165404:165564;witness-sha256:43f4e190b60bb4e3ecb3183c4521f695208e21d251ae8b0341f51c0801db3f51"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-2.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-3.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:249266:249426;witness-sha256:913517ed96e186ea417fe4e815ef7eba04b42b88815eeef44d0617df497dfe9c"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-3.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-4.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:331063:331223;witness-sha256:ebcf2de74b6cec69235ff10e9956b63af30de1ce89ff875614d90f46570cc766"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-4.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-5.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:412073:412233;witness-sha256:a4a2526ad73f41b2b9582dc35d7b79754178713f3360f02a52cbdbef28e7001b"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-5.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-6.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:490700:490860;witness-sha256:f3bc614ce6738e365b85326b33e54afa1f67898f5db08468729649506a546f95"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-6.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-7.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:570980:571140;witness-sha256:a8008ca2f24caa82560606aa837460c9182c7dba331a713b89cd545e543580f6"
+    },
+    {
+      "left_href": "OEBPS/6720093905975313470_24264-0-10.txt.xhtml",
+      "right_href": "OEBPS/6720093905975313470_24264-0-11.txt.xhtml",
+      "checksum": "sha256:b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1",
+      "evidence": "acquired-TXT:sha256:ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011;whitespace-comparison-codepoints:865842:866002;witness-sha256:d62da947e36ef399b679cbd98863679f302f2ed27933b2882c87c010a98415e6"
+    }
+  ],
+  "records_path": "item",
+  "layout": "SINGLE_WORK",
+  "fields": {
+    "text": "text"
+  },
+  "constants": {
+    "work_id": "gutenberg:24264",
+    "work_title": "紅樓夢",
+    "author": "曹雪芹"
+  },
+  "html_body_selector": "body",
+  "html_remove_selectors": [
+    "script",
+    "style",
+    "nav",
+    "header",
+    "footer",
+    "noscript"
+  ],
+  "completeness": "UNKNOWN",
+  "expected_units": null,
+  "filters": {}
+}

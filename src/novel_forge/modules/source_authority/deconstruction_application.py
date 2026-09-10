@@ -124,7 +124,6 @@ class PlanSourceReprocessingCommand:
 
 
 class SourceDeconstructionApplication:
-
     def __init__(
         self,
         database_url: str,
@@ -580,6 +579,18 @@ class SourceDeconstructionApplication:
             )
             command = dict(operation["command_payload"])
             payload = dict(command["payload"])
+            from novel_forge.modules.source_authority.curation import (
+                require_curated_evidence_current,
+            )
+            from novel_forge.storage.source_authority_repositories import (
+                SourceAuthorityRepository,
+            )
+
+            require_curated_evidence_current(
+                SourceAuthorityRepository(uow.cursor),
+                worker.project_id,
+                str(payload["execution_asset_version_id"]),
+            )
             analyzer = AnalyzerContract(
                 **{
                     key: value

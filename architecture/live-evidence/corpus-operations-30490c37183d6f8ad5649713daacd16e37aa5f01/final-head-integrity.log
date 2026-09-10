@@ -1,0 +1,12 @@
+PYTHONPATH=src /tmp/nf-corpus-operations-20260910/venv/bin/python -m novel_forge.tools.head_integrity --repo-root .
+{
+  "failed_required_imports": [],
+  "missing_exports": [],
+  "missing_import_targets": [],
+  "missing_registry_targets": [],
+  "missing_test_collection": [],
+  "scanned_python_files": 658,
+  "status": "PASS",
+  "tracked_file_count": 1825,
+  "untracked_required_paths": []
+}

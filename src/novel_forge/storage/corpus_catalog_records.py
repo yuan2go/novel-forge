@@ -95,6 +95,29 @@ class CorpusCatalogRecords(CorpusProcessingRecords):
             for r in self.cursor.fetchall()
         }
 
+    def catalog_relation_versions(
+        self, project: str, editions: list[str]
+    ) -> dict[str, list[str]]:
+        if len(editions) > 800:
+            raise ValueError("bounded edition relation query required")
+        self.cursor.execute(
+            """SELECT p.edition_id,e.decision_id FROM authority_corpus_processing p
+            JOIN authority_corpus_equivalence e ON e.project_id=p.project_id AND (e.left_id=p.processing_id OR e.right_id=p.processing_id)
+            WHERE p.project_id=%s AND p.edition_id=ANY(%s)
+            AND NOT EXISTS(SELECT 1 FROM authority_corpus_equivalence n WHERE n.previous_id=e.decision_id)
+            ORDER BY p.edition_id,e.decision_id LIMIT 10001""",
+            [project, editions],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > 10000:
+            raise KernelError(
+                "CORPUS_RELATION_QUERY_BOUND", "narrow relation review scope"
+            )
+        result = {}
+        for edition, decision in rows:
+            result.setdefault(edition, set()).add(decision)
+        return {edition: sorted(decisions) for edition, decisions in result.items()}
+
     def catalog_conflicts(
         self, project: str, editions: list[str], changed_work_ids: list[str]
     ) -> dict[str, Any]:
@@ -213,6 +236,21 @@ class CorpusCatalogRecords(CorpusProcessingRecords):
         )
         row = self.cursor.fetchone()
         return row[0] if row else None
+
+    def catalog_evidence_operation(
+        self, project: str, asset_version: str
+    ) -> str | None:
+        self.cursor.execute(
+            "SELECT DISTINCT out.operation_id FROM authority_operation_output_asset out JOIN authority_operation op USING(operation_id) WHERE op.project_id=%s AND out.asset_version_id=%s LIMIT 2",
+            [project, asset_version],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > 1:
+            raise KernelError(
+                "CORPUS_EXECUTION_LINEAGE_AMBIGUOUS",
+                "execution evidence has multiple operation owners",
+            )
+        return rows[0][0] if rows else None
 
     def catalog_active_work_revisions(self, project: str, ids: list[str]) -> set[str]:
         self.cursor.execute(

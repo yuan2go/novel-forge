@@ -92,8 +92,11 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
         if args.command == "corpus":
-            from novel_forge.cli.corpus import run_corpus_command
-            print(json.dumps(run_corpus_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            from novel_forge.cli.corpus import run_corpus_command, format_corpus_report
+            result = run_corpus_command(settings, args)
+            print(format_corpus_report(result) if args.format == "text" else json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            if args.action == "run":
+                return 0 if result["stop_reason"] == "COMPLETED" else 3 if result["stop_reason"] in {"PARTIAL", "BLOCKED", "FAILED", "CANCELLED"} else 2
             return 0
         if args.command == "serve-api":
             _serve_authority_api(settings, args.host, args.port, args.reload)

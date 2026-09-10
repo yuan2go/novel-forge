@@ -1326,8 +1326,9 @@ def test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues(
     assert current["downstream_impact"]["operation_id"] == repair.json()["operation_id"]
 
 
+@pytest.mark.parametrize("invalidate_after_model", [False, True])
 def test_native_curated_corpus_freeze_analysis_and_stale_members(
-    corpus, tmp_path, monkeypatch
+    corpus, tmp_path, monkeypatch, invalidate_after_model
 ):
     from novel_forge.api import authority_dependencies
     from novel_forge.modules.source_import.execution_contracts import (
@@ -1338,6 +1339,25 @@ def test_native_curated_corpus_freeze_analysis_and_stale_members(
 
     def transport(stage, inputs):
         if stage == CLASSIFICATION_STAGE:
+            if invalidate_after_model:
+                corpus.run(
+                    {
+                        "action": "resolve_canonical_works",
+                        "changes": [
+                            {
+                                "work_key": "key-story",
+                                "previous_id": work["revisions"][0]["revision_id"],
+                                "title": "钥匙与来信",
+                                "state": "RETIRED",
+                                "metadata_evidence": [
+                                    "operator:concurrent-selection-withdrawal"
+                                ],
+                                "members": [],
+                            }
+                        ],
+                        "reason": "withdraw after request send before formal output publication",
+                    }
+                )
             return {
                 "content_type": "PUBLISHED_FICTION",
                 "confidence": 0.97,
@@ -1515,6 +1535,12 @@ def test_native_curated_corpus_freeze_analysis_and_stale_members(
         "/product/source-imports/corpus/analyze", json=request
     )
     assert analysis.status_code == 202, analysis.text
+    status = corpus.client.get(
+        "/product/source-imports/" + analysis.json()["import_job_id"],
+        params={"project_id": corpus.project},
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["corpus"]["purpose"] == "RESEARCH"
     repeated = corpus.client.post(
         "/product/source-imports/corpus/analyze", json=request
     )
@@ -1586,6 +1612,40 @@ print(json.dumps(SourceImportScheduler(app,worker_id='curated-'+sys.argv[4],leas
         row = next((r for r in rows if r["operation_id"] in pending), None)
         if row is None:
             break
+        if invalidate_after_model and row["work_kind"] == "PROFILING":
+            with pytest.raises(KernelError, match="CURATED_PROVIDER_INPUT_STALE"):
+                scheduler.run_or_recover(
+                    operation_id=row["operation_id"], project_id=corpus.project
+                )
+            with psycopg.connect(DATABASE_URL) as connection:
+                assert (
+                    connection.execute(
+                        "SELECT count(*) FROM authority_operation_output_asset out JOIN authority_operation op USING(operation_id) WHERE op.project_id=%s AND out.output_key='source.content.profile'",
+                        [corpus.project],
+                    ).fetchone()[0]
+                    == 0
+                )
+                receipts = connection.execute(
+                    "SELECT count(*) FROM authority_external_effect_dispatch d JOIN authority_external_effect e USING(external_effect_id) WHERE e.project_id=%s AND d.receipt_id IS NOT NULL",
+                    [corpus.project],
+                ).fetchone()[0]
+                assert receipts > 0
+            with pytest.raises(
+                KernelError,
+                match="CURATED_PROVIDER_INPUT_STALE|CURATED_MEMBERS_UNAVAILABLE",
+            ):
+                scheduler.run_or_recover(
+                    operation_id=row["operation_id"], project_id=corpus.project
+                )
+            with psycopg.connect(DATABASE_URL) as connection:
+                assert (
+                    connection.execute(
+                        "SELECT count(*) FROM authority_external_effect_dispatch d JOIN authority_external_effect e USING(external_effect_id) WHERE e.project_id=%s AND d.receipt_id IS NOT NULL",
+                        [corpus.project],
+                    ).fetchone()[0]
+                    == receipts
+                )
+            return
         scheduler.run_or_recover(
             operation_id=row["operation_id"], project_id=corpus.project
         )
@@ -2063,3 +2123,383 @@ def test_native_catalogue_resolution_preserves_input_scope(
     )
     assert not fourth["assessment"]["structure_usable"]
     assert any(i.get("annotations") for i in fourth["assessment"]["issues"])
+
+
+def test_native_cli_curated_analysis_controls_results_and_relation_guards(
+    corpus, tmp_path, monkeypatch
+):
+    import os
+    from pathlib import Path
+    import subprocess
+    import sys
+    from uuid import uuid4
+
+    _runtime(tmp_path, monkeypatch)
+    script = """
+import sys,json
+from novel_forge.api import authority_dependencies as d
+from novel_forge.modules.source_import.execution_contracts import content_intelligence_fixture_response,CLASSIFICATION_STAGE
+def transport(stage, inputs):
+ if stage == CLASSIFICATION_STAGE:
+  return {'content_type':'PUBLISHED_FICTION','confidence':0.97,'alternatives':[{'content_type':'PUBLISHED_FICTION','confidence':0.97},{'content_type':'UNKNOWN','confidence':0.03}],'evidence_codes':['BOUNDED_SEMANTIC_SAMPLE'],'boundary_assessment':{'scope_kind':'FILE_DOCUMENT','suspected_document_count':1,'review_required':False}}
+ return content_intelligence_fixture_response(stage,inputs)
+d.content_intelligence_fixture_response=transport
+from novel_forge.cli.authority import main
+sys.exit(main(sys.argv[1:]))
+"""
+    transcript = []
+
+    def cli(action, *args, success=True):
+        command = [
+            sys.executable,
+            "-c",
+            script,
+            "corpus",
+            action,
+            "--project-id",
+            corpus.project,
+            *map(str, args),
+        ]
+        run = subprocess.run(
+            command, env=dict(os.environ), capture_output=True, text=True, timeout=120
+        )
+        transcript.append(
+            {
+                "action": action,
+                "args": list(map(str, args)),
+                "exit_code": run.returncode,
+                "stdout": run.stdout,
+                "stderr": run.stderr,
+            }
+        )
+        if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+            Path(directory, "native-operations.json").write_text(
+                json.dumps(transcript, ensure_ascii=False, indent=2)
+            )
+        if not success:
+            assert run.returncode != 0, run.stdout
+            return run.stderr
+        assert run.returncode in ({0, 2, 3} if action == "run" else {0}), (
+            run.stdout,
+            run.stderr,
+        )
+        value = json.loads(run.stdout)
+        if action == "run":
+            assert (run.returncode == 0) == (value["stop_reason"] == "COMPLETED")
+        return value
+
+    def decision(action, payload, success=True):
+        path = tmp_path / (str(uuid4()) + ".json")
+        path.write_text(json.dumps(payload))
+        return cli(
+            action,
+            "--workspace-id",
+            corpus.workspace,
+            "--run-key",
+            uuid4(),
+            "--decision",
+            path,
+            success=success,
+        )
+
+    members = []
+    for n in range(2):
+        path = tmp_path / f"novel-{n}.txt"
+        path.write_text(
+            "第一章 选择\n"
+            + (
+                "阿青归还钥匙，承担失约的代价。"
+                if n == 0
+                else "守门人送出家书，拒绝交出信任。"
+            )
+            * 20
+            + "\n第二章 回信\n"
+            + (
+                "弟弟读过信，愿意独自守门。"
+                if n == 0
+                else "姐姐履行约定，替母亲照看院子。"
+            )
+            * 20
+        )
+        manifest = {
+            **_manifest(path),
+            "parser": {
+                "version": "corpus-parser.v3",
+                "format": "txt",
+                "constants": {"work_id": f"original-{n}"},
+                "normalization": {"version": "chinese-longform.v2"},
+            },
+        }
+        config = tmp_path / f"manifest-{n}.json"
+        config.write_text(json.dumps(manifest))
+        admitted = cli(
+            "import",
+            "--workspace-id",
+            corpus.workspace,
+            "--manifest",
+            config,
+            "--run-key",
+            f"import-{n}",
+        )
+        cli("run", "--job-id", admitted["import_job_id"], "--max-stages", 8)
+        lineage = cli("lineage", "--job-id", admitted["import_job_id"])
+        edition = lineage["editions"][0]["edition_id"]
+        inspected = cli("inspect", "--edition-id", edition)
+        members.append(inspected)
+    grouped = decision(
+        "resolve-work",
+        {
+            "action": "resolve_canonical_works",
+            "changes": [
+                {
+                    "work_key": "original-library",
+                    "title": "同源原创版本示例",
+                    "language": "zh",
+                    "metadata_evidence": ["synthetic:controlled-test-revisions"],
+                    "members": [
+                        {
+                            "processing_id": m["processing_id"],
+                            "relation": "REVISION",
+                            "evidence_refs": ["synthetic:controlled-test-revisions"],
+                        }
+                        for m in members
+                    ],
+                }
+            ],
+            "reason": "explicit fixture relation; similarity is not identity",
+        },
+    )
+    for action, typed in [("equivalence", False), ("relate", True)]:
+        error = decision(
+            action,
+            {
+                "action": "declare_relation" if typed else "decide_equivalence",
+                "left_id": members[0]["processing_id"],
+                "right_id": members[1]["processing_id"],
+                **({"relation": "DIFFERENT_WORK"} if typed else {"decision": "REJECT"}),
+                "evidence_refs": ["synthetic:negative-conflict"],
+                "reason": "must split before negative relation",
+            },
+            success=False,
+        )
+        assert "CORPUS_SPLIT_REQUIRED" in error
+    candidate = {
+        "action": "revise_curated_corpus",
+        "corpus_key": "operations-set",
+        "title": "精选操作测试",
+        "purpose": "RESEARCH",
+        "filters": {"language": "zh"},
+        "reason": "inspect two explicitly scoped members",
+    }
+    opened = decision("curate", candidate)
+    frozen = decision(
+        "curate",
+        {
+            **candidate,
+            "previous_id": opened["revision_id"],
+            "state": "FROZEN",
+            "choices": [
+                {
+                    "processing_id": m["processing_id"],
+                    "selected": True,
+                    "reason": "eligible original structure",
+                    "evidence_refs": ["synthetic:reviewed"],
+                }
+                for m in members
+            ],
+        },
+    )
+    assert cli("curated", "--revision-id", frozen["revision_id"])[
+        "analysis_dispatchable"
+    ]
+
+    def analyze(key, calls=50):
+        return cli(
+            "analyze",
+            "--revision-id",
+            frozen["revision_id"],
+            "--run-key",
+            key,
+            "--limit",
+            2,
+            "--max-calls",
+            calls,
+            "--max-tokens",
+            500000,
+            "--authorization-ref",
+            "scripted-engineering-no-paid-calls",
+        )
+
+    admitted = analyze("native-analysis")
+    job = admitted["import_job_id"]
+    assert cli("status", "--job-id", job)["corpus"]["selected_members"] == 2
+    from novel_forge.storage.source_import_repositories import SourceImportRepository
+
+    with psycopg.connect(DATABASE_URL) as connection:
+        other = connection.execute(
+            "SELECT import_job_id,operation_id FROM authority_source_import_work WHERE project_id=%s AND import_job_id<>%s LIMIT 1",
+            [corpus.project, job],
+        ).fetchone()
+        connection.execute(
+            """INSERT INTO authority_operation SELECT (jsonb_populate_record(NULL::authority_operation,to_jsonb(o)||jsonb_build_object('operation_id','query-fixture-'||n,'idempotency_key','query-fixture-'||n,'status','READY','created_at','2000-01-01T00:00:00Z'))).* FROM authority_operation o CROSS JOIN generate_series(1,5000)n WHERE o.operation_id=%s""",
+            [other[1]],
+        )
+        connection.execute(
+            """INSERT INTO authority_source_import_work SELECT (jsonb_populate_record(NULL::authority_source_import_work,to_jsonb(w)||jsonb_build_object('work_id','query-fixture-'||n,'stable_key','query-fixture-'||n,'operation_id','query-fixture-'||n,'status','PLANNED'))).* FROM authority_source_import_work w CROSS JOIN generate_series(1,5000)n WHERE w.operation_id=%s""",
+            [other[1]],
+        )
+        connection.execute("ANALYZE authority_source_import_work")
+        connection.execute("ANALYZE authority_operation")
+        with connection.cursor() as cursor:
+            repository = SourceImportRepository(cursor)
+            assert repository.job_ready_operations(corpus.project, job, 1) == (
+                (admitted["operation_id"], corpus.project),
+            )
+        plan = connection.execute(
+            """EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON) SELECT o.operation_id FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id) WHERE w.project_id=%s AND w.import_job_id=%s ORDER BY o.created_at,o.operation_id LIMIT 10""",
+            [corpus.project, job],
+        ).fetchone()[0]
+
+        def nodes(node):
+            yield node
+            for child in node.get("Plans", []):
+                yield from nodes(child)
+
+        assert all(
+            "Index" in n["Node Type"]
+            for n in nodes(plan[0]["Plan"])
+            if n.get("Relation Name")
+            in {"authority_source_import_work", "authority_operation"}
+        ), plan
+        if directory := os.environ.get("CORPUS_EVIDENCE_DIR"):
+            Path(directory, "job-query-plan.json").write_text(
+                json.dumps(
+                    {
+                        "plan": plan,
+                        "unrelated_ready_rows": 5000,
+                        "planner_settings_changed": False,
+                        "fixture_rolled_back": True,
+                    },
+                    indent=2,
+                )
+            )
+        connection.rollback()
+    initial = cli("run", "--job-id", job, "--max-stages", 1)
+    assert initial["stop_reason"] == "MAX_STAGES" and initial["remaining_stages"] == 2
+    cli("pause", "--job-id", job)
+    assert cli("run", "--job-id", job)["stop_reason"] == "PAUSED"
+    cli("resume", "--job-id", job)
+    outcome = cli("run", "--job-id", job, "--max-stages", 100)
+    assert outcome["stop_reason"] == "COMPLETED", outcome
+    stages = []
+    after = ""
+    while True:
+        page = cli("results", "--job-id", job, "--limit", 3, "--after", after)
+        stages.extend(page["stages"])
+        after = page["next_after"]
+        if not after:
+            break
+    assert {s["processing_id"] for s in stages if s["kind"] == "PROFILING"} == {
+        m["processing_id"] for m in members
+    }
+    assert all(s["status"] == "SUCCEEDED" for s in stages), stages
+    assert page["summary"]["knowledge"]["knowledge_candidates"] > 0, page
+    assert page["summary"]["knowledge"]["knowledge_cards"] == 0
+    assert all(s["outputs"] for s in stages if s["kind"] == "MKAOS_EXTRACTION")
+    before = cli("status", "--job-id", job)["corpus"]["budget"]
+    assert analyze("native-analysis")["replayed"]
+    assert cli("run", "--job-id", job)["stages"] == []
+    assert cli("status", "--job-id", job)["corpus"]["budget"] == before
+    assert (
+        cli("lineage", "--job-id", job)["summary"]["revision_id"]
+        == frozen["revision_id"]
+    )
+    cancelled = analyze("cancel-analysis")
+    cli("cancel", "--job-id", cancelled["import_job_id"])
+    assert (
+        cli("run", "--job-id", cancelled["import_job_id"])["stop_reason"] == "CANCELLED"
+    )
+    policy = tmp_path / "bounded-policy.json"
+    policy.write_text(json.dumps({"max_sample_chunks": 2}))
+    partial = cli(
+        "analyze",
+        "--revision-id",
+        frozen["revision_id"],
+        "--run-key",
+        "budget-bound-analysis",
+        "--limit",
+        2,
+        "--max-calls",
+        1,
+        "--max-tokens",
+        500000,
+        "--authorization-ref",
+        "scripted-engineering-no-paid-calls",
+        "--manifest",
+        policy,
+    )
+    limited = cli("run", "--job-id", partial["import_job_id"], "--max-stages", 50)
+    assert limited["job"]["corpus"]["analysis_state"] in {
+        "PARTIAL",
+        "BLOCKED",
+        "FAILED",
+    }, limited
+    assert (
+        cli("results", "--job-id", partial["import_job_id"])["summary"]["failed_stages"]
+        > 0
+    )
+    for action, typed in [("equivalence", False), ("relate", True)]:
+        error = decision(
+            action,
+            {
+                "action": "declare_relation" if typed else "decide_equivalence",
+                "left_id": members[0]["processing_id"],
+                "right_id": members[1]["processing_id"],
+                **({"relation": "DIFFERENT_WORK"} if typed else {"decision": "REJECT"}),
+                "evidence_refs": ["synthetic:frozen-negative-conflict"],
+                "reason": "frozen consumers do not permit group contradictions",
+            },
+            success=False,
+        )
+        assert "CORPUS_SPLIT_REQUIRED" in error
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(
+            psycopg.errors.CheckViolation, match="canonical members contradict"
+        ):
+            with connection.transaction():
+                connection.execute(
+                    """INSERT INTO authority_corpus_equivalence(decision_id,project_id,left_id,right_id,canonical_work_id,decision,relation,evidence,reason,created_by_operation_id)
+                    VALUES(%s,%s,%s,%s,%s,'REJECT','DIFFERENT_WORK','{}','illegal database negative',%s)""",
+                    [
+                        str(uuid4()),
+                        corpus.project,
+                        *sorted(m["processing_id"] for m in members),
+                        grouped["revisions"][0]["work_id"],
+                        grouped["operation_id"],
+                    ],
+                )
+                connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
+    relation = decision(
+        "relate",
+        {
+            "action": "declare_relation",
+            "left_id": members[0]["processing_id"],
+            "right_id": members[1]["processing_id"],
+            "relation": "REVISION",
+            "evidence_refs": ["synthetic:new-precise-version-evidence"],
+            "reason": "new relation evidence requires explicit selection refresh",
+        },
+    )
+    assert relation["relation"] == "REVISION"
+    stale = cli("curated", "--revision-id", frozen["revision_id"])
+    assert not stale["analysis_dispatchable"]
+    assert all(
+        "RELATION_EVIDENCE_CHANGED" in r["reasons"]
+        for r in stale["current_availability"]
+    )
+    assert analyze("native-analysis")["replayed"]
+    assert (
+        cli("results", "--job-id", job)["summary"]["knowledge"]["knowledge_candidates"]
+        > 0
+    )
+    assert grouped["revisions"]

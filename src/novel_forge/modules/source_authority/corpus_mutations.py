@@ -44,7 +44,7 @@ def apply_corpus_action(
         from .corpus_quality import apply_quality_decision
 
         return apply_quality_decision(
-            repository, action, project_id=project_id, operation_id=operation_id
+            repository, action, project_id=project_id, workspace_id=workspace_id, operation_id=operation_id
         )
     repository.corpus_authorization_lock(project_id, write=True)
     scope = {"project_id": project_id, "created_by_operation_id": operation_id}

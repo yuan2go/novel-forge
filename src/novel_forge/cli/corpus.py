@@ -51,12 +51,14 @@ def add_corpus_parser(subparsers: Any) -> None:
             "import",
             "run",
             "status",
+            "results",
             "pause",
             "resume",
             "cancel",
             "lineage",
         ),
     )
+    parser.add_argument("--format", choices=("json", "text"), default="json")
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--manifest", type=Path)
@@ -86,7 +88,16 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     principal.require(
         "source.authority.query"
         if args.action
-        in {"status", "lineage", "inspect", "compare", "discover", "work", "curated"}
+        in {
+            "status",
+            "results",
+            "lineage",
+            "inspect",
+            "compare",
+            "discover",
+            "work",
+            "curated",
+        }
         else "source.authority.execute",
         project,
     )
@@ -107,6 +118,11 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             admit_curated_analysis,
         )
 
+        policy = {}
+        if args.manifest:
+            if args.manifest.stat().st_size > 262144:
+                raise ValueError("analysis policy exceeds 256 KiB")
+            policy = json.loads(args.manifest.read_text(encoding="utf-8"))
         request = CuratedAnalysisRequest(
             project_id=project,
             revision_id=args.revision_id,
@@ -115,6 +131,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             max_calls=args.max_calls,
             max_tokens=args.max_tokens,
             authorization_ref=args.authorization_ref,
+            intelligence_policy=policy,
         )
         app = SourceImportApplication(
             settings.database_url, application_build_id=build, commit_sha=sha
@@ -228,6 +245,15 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     job = query.import_job(
         project_id=project, import_job_id=args.job_id, principal=principal
     )
+    if args.action == "results":
+        return query.analysis_results(
+            project_id=project,
+            import_job_id=args.job_id,
+            after=args.after,
+            limit=min(args.limit, 100),
+            processing_id=args.processing_id,
+            principal=principal,
+        )
     if args.action == "status":
         return job
     if args.action == "lineage":
@@ -282,21 +308,17 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     app = build_source_import_application(settings, execution=execution)
     scheduler = SourceImportScheduler(app)
     outcomes = []
+    failed_this_run = []
     for _ in range(args.max_stages):
         job = query.import_job(
             project_id=project, import_job_id=args.job_id, principal=principal
         )
         if job["status"] in {"PAUSED", "CANCELLED"}:
             break
-        rows = query.work(
-            project_id=project, import_job_id=args.job_id, principal=principal
+        eligible = scheduler.pending_for_job(
+            project_id=project, import_job_id=args.job_id, limit=1, excluded=tuple(failed_this_run)
         )
-        eligible = {
-            operation
-            for operation, scope in scheduler.pending_operations(limit=1000)
-            if scope == project
-        }
-        selected = next((row for row in rows if row["operation_id"] in eligible), None)
+        selected = {"operation_id": eligible[0][0]} if eligible else None
         if selected is None:
             break
         try:
@@ -313,8 +335,14 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
                 (r for r in refreshed if r["operation_id"] == selected["operation_id"]),
                 None,
             )
-            if not failed or failed["status"] not in {"FAILED", "BLOCKED"}:
+            if not failed or failed["status"] not in {
+                "FAILED",
+                "FAILED_FINAL",
+                "FAILED_RETRYABLE",
+                "BLOCKED",
+            }:
                 raise
+            failed_this_run.append(selected["operation_id"])
             outcomes.append(
                 {
                     "operation_id": selected["operation_id"],
@@ -327,11 +355,43 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         outcomes.append(
             {"operation_id": selected["operation_id"], "status": result["status"]}
         )
+    final = query.import_job(
+        project_id=project, import_job_id=args.job_id, principal=principal
+    )
+    summary = final.get("corpus", {})
+    state = summary.get("analysis_state", final["effective_status"])
+    remaining = summary.get("remaining_stages")
+    stop = (
+        state
+        if state in {"PAUSED", "CANCELLED", "BLOCKED", "FAILED", "PARTIAL"}
+        else "MAX_STAGES"
+        if len(outcomes) == args.max_stages and remaining != 0
+        else "COMPLETED"
+        if remaining == 0 or state in {"IMPORTED", "PREVIEWED", "AWAITING_GOVERNANCE"}
+        else "LEASED_BY_OTHER_WORKER" if summary.get("leased_stages", 0) else "NO_READY_WORK"
+    )
     return {
+        "stop_reason": stop,
+        "remaining_stages": remaining,
         "stages": outcomes,
-        "failed_stages": sum(r["status"] in {"FAILED", "BLOCKED"} for r in outcomes),
-        "stage_limit": args.max_stages,
-        "job": query.import_job(
-            project_id=project, import_job_id=args.job_id, principal=principal
+        "failed_stages": sum(
+            r["status"] in {"FAILED", "FAILED_FINAL", "FAILED_RETRYABLE", "BLOCKED"} for r in outcomes
         ),
+        "stage_limit": args.max_stages,
+        "job": final,
     }
+
+
+def format_corpus_report(result: dict[str, Any]) -> str:
+    job = result.get("job", result)
+    summary = result.get("summary", job.get("corpus", {}))
+    lines = [f"Job: {result.get('import_job_id', job.get('import_job_id', '-'))}", f"State: {summary.get('analysis_state', job.get('effective_status', job.get('status', '-')))}"]
+    for key in ("purpose", "revision_id", "selected_members", "unselected_members", "remaining_stages", "failed_stages", "next_action"):
+        if key in summary:
+            lines.append(f"{key}: {summary[key]}")
+    if "stop_reason" in result:
+        lines.append(f"stop_reason: {result['stop_reason']}")
+    for stage in result.get("stages", []):
+        lines.append(f"{stage['operation_id']} {stage.get('kind', '')} {stage['status']} {stage.get('processing_id', '')}")
+    lines.append("Use --format json for exact frozen lineage, output identities and cost-status evidence.")
+    return "\n".join(lines)

@@ -247,6 +247,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise _http_error(exc, not_found=True) from exc
 
+    @router.get("/{import_job_id}/analysis-results")
+    def analysis_results(import_job_id: str, project_id: str, after: str = "", limit: int = Query(default=50, ge=1, le=100), processing_id: str = "") -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.analysis_results(project_id=project_id, import_job_id=import_job_id, after=after, limit=limit, processing_id=processing_id, principal=principal)
+        except KernelError as exc:
+            raise _http_error(exc, not_found=True) from exc
+
     @router.get("/{import_job_id}/corpus-lineage")
     def corpus_lineage(
         import_job_id: str,
