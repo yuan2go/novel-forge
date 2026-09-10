@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `50482c59c47af35291c646361f0ddb936af456a0`
+Reality baseline: `343ccf3144bc545125ab35ef0e07ea6c10cdd083`
 Baseline implementation identity:
-`sha256:28dde45e88a6b26a3c3996e691e9a2d678d4f0e697aab7b3ec80dd51a8b6bfbd`
+`sha256:d5b6ab05eeeeaf660eb18bab1e1ee580e5df119818af4308854d6180ad741179`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "50482c59c47af35291c646361f0ddb936af456a0",
-    "implementation_tree_sha": "sha256:28dde45e88a6b26a3c3996e691e9a2d678d4f0e697aab7b3ec80dd51a8b6bfbd"
+    "sha": "343ccf3144bc545125ab35ef0e07ea6c10cdd083",
+    "implementation_tree_sha": "sha256:d5b6ab05eeeeaf660eb18bab1e1ee580e5df119818af4308854d6180ad741179"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -54,6 +54,10 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/source_import/classical_corpus.py",
       "symbol": "parse_classical_work"
+    },
+    {
+      "path": "src/novel_forge/modules/source_import/corpus_ingestion/narrative_execution.py",
+      "symbol": "execute_reading"
     }
   ],
   "superseding_refs": [],
@@ -61,7 +65,7 @@ Baseline implementation identity:
   "remaining_work": [
     {
       "id": "g3-bounded-analysis-and-consumption",
-      "description": "Replace dimension Cartesian expansion with bounded composite observations, govern variable candidate sets, close Chinese and applicability selection gaps, and prove exact-context consumption for all twenty works.",
+      "description": "Complete variable mechanism candidate sets, Chinese applicability selection and exact-context production evidence for all twenty works; the bounded curated chapter observation/review/repair path is implemented, with scripted engineering evidence only.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/source_import/analysis_profiles.py",
