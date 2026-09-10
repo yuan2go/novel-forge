@@ -51,6 +51,11 @@ def admit_curated_analysis(
     app._register_definitions()
     policy = SourceIntelligencePolicy(**request.intelligence_policy)
     frozen = request.model_dump(mode="json")
+    runtime_identity = (
+        app._require_execution_port().frozen_reading_runtime()
+        if request.reading_scopes
+        else None
+    )
     key = "curated-analysis:" + corpus_hash(
         {"project": request.project_id, "key": request.run_key}
     )
@@ -121,6 +126,7 @@ def admit_curated_analysis(
         }
         if reading_plans:
             payload["reading_plans"] = reading_plans
+            payload["budget"]["reading_runtime"] = runtime_identity
         operation = app._admit_child(
             definition_name=OPERATION,
             project_id=request.project_id,

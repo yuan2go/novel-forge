@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
@@ -450,6 +451,40 @@ class PostgresContentIntelligenceExecutionPort:
         self.source_object_reader = source_object_reader
         self.provider_output_token_reserve = provider_output_token_reserve
         self.provider_timeout_seconds = provider_timeout_seconds
+
+    def frozen_reading_runtime(self) -> dict[str, Any]:
+        from .corpus_ingestion.narrative_contracts import (
+            NARRATIVE_POLICY,
+            narrative_schema,
+            review_schema,
+        )
+
+        route = self.transport.routes["quality_source_originality"]
+        return {
+            "version": "source-reading-runtime.v1",
+            "provider": route.model_profile.model_provider,
+            "model": route.model_profile.model_id,
+            "route_hash": _hash(asdict(route)),
+            "policy_hash": _hash(NARRATIVE_POLICY),
+            "schemas_hash": _hash([narrative_schema(), review_schema()]),
+            "classifier_hash": SOURCE_CLASSIFIER_METHODOLOGY_HASH,
+            "skills": {
+                key: self.methodology_registry.require(key).content_digest
+                for key in sorted(self.methodology_registry.versions)
+            },
+            "output_token_reserve": self.provider_output_token_reserve,
+            "timeout_seconds": self.provider_timeout_seconds,
+            "budget_contract_hash": _hash(
+                {
+                    "basis": self.cost_accounting_basis,
+                    "authorization": self.account_authorization_ref,
+                    "calls": self.provider_call_caps,
+                    "tokens": self.provider_token_caps,
+                    "monetary": self.budget_caps,
+                    "per_call": self.max_cost_per_call,
+                }
+            ),
+        }
 
     @property
     def source_sample_byte_limit(self) -> int:
@@ -1097,6 +1132,15 @@ class PostgresContentIntelligenceExecutionPort:
     def _execute(
         self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec
     ) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            binding = SourceAuthorityRepository(uow.cursor).catalog_execution_binding(
+                worker.project_id, worker.causation_id
+            )
+        frozen_runtime = (binding or {}).get("budget", {}).get("reading_runtime")
         cache_key = _hash(
             {
                 "schema_version": "source-provider-execution-cache.v2",
@@ -1105,6 +1149,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "methodology_content_hash": spec.methodology_content_hash,
                 "input": spec.input_payload,
                 "context_contract": spec.context_contract,
+                **({"reading_runtime": frozen_runtime} if frozen_runtime else {}),
             }
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
@@ -1116,6 +1161,11 @@ class PostgresContentIntelligenceExecutionPort:
         )
 
         curated_budget = curated_provider_gate(self.database_url, worker)
+        if frozen_runtime and frozen_runtime != self.frozen_reading_runtime():
+            raise KernelError(
+                "READING_RUNTIME_CHANGED",
+                "new calls require a new request when model, policy, Skill or runtime budget changes",
+            )
         from novel_forge.modules.source_authority.corpus_consumption import (
             require_corpus_consumption,
         )

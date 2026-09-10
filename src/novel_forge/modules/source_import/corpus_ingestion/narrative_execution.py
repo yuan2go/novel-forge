@@ -149,20 +149,6 @@ def _source_inputs(app, worker, units):
             expected_hash=row["actual_hash"],
             expected_size=row["actual_size"],
         )
-        # SECURITY: Chunk joins may contain separators, never prose outside the selected unit.
-        covered = bytearray(len(content))
-        for unit in units:
-            left = max(0, unit["normalized_byte_start"] - chunk["source_byte_start"])
-            right = min(
-                len(content), unit["normalized_byte_end"] - chunk["source_byte_start"]
-            )
-            if left < right:
-                covered[left:right] = b"\1" * (right - left)
-        if bytes(v for v, c in zip(content, covered) if not c).strip():
-            raise KernelError(
-                "READING_CHUNK_REPROCESS_REQUIRED",
-                "chunk contains out-of-range prose; reprocess with chapter boundaries",
-            )
         segments.append(
             {
                 "source_chunk_asset_version_id": row["asset_version_id"],
@@ -176,6 +162,9 @@ def _source_inputs(app, worker, units):
                 row["asset_version_id"], 0, row["byte_size"], row["content_hash"]
             )
         )
+    from .reading_scope import validate_reading_segments
+
+    validate_reading_segments(units, tuple(segments))
     return tuple(segments), tuple(spans)
 
 

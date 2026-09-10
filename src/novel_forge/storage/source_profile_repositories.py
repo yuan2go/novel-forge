@@ -46,7 +46,11 @@ class SourceProfileRepository:
         )
 
     def chunks(
-        self, *, project_id: str, source_transform_id: str
+        self,
+        *,
+        project_id: str,
+        source_transform_id: str,
+        chunk_ids: tuple[str, ...] | None = None,
     ) -> list[dict[str, Any]]:
         self.cursor.execute(
             """
@@ -58,10 +62,16 @@ class SourceProfileRepository:
             JOIN authority_asset_version AS version
               ON version.asset_version_id=chunk.asset_version_id
             WHERE chunk.project_id=%s AND chunk.source_transform_id=%s
+              AND (%s::text[] IS NULL OR chunk.asset_version_id=ANY(%s))
             ORDER BY chunk.chunk_index
             FOR SHARE OF chunk, version
             """,
-            [project_id, source_transform_id],
+            [
+                project_id,
+                source_transform_id,
+                list(chunk_ids) if chunk_ids is not None else None,
+                list(chunk_ids) if chunk_ids is not None else None,
+            ],
         )
         keys = (
             "asset_version_id",

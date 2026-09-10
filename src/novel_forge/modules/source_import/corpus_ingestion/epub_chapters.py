@@ -35,10 +35,11 @@ def _xml(archive: ZipFile, name: str):
 
 
 def _toc_volume_scopes(root: Any, base: str, limit: int) -> dict:
-    """Preserve explicit navigation ancestry; labels alone never group volumes."""
     result = {}
 
     def visit(node: Any, parents: list, depth: int) -> None:
+        if depth > 32:
+            raise IngestionFailure("EPUB_VOLUME_HIERARCHY_TOO_DEEP")
         kind = node.tag.rsplit("}", 1)[-1]
         scope = parents
         if kind in {"li", "navPoint"}:
@@ -410,6 +411,13 @@ def logical_records(
                     )
                     if scoped_volumes and explicit_scope:
                         volume_stack = [dict(v) for v in explicit_scope]
+                    elif (
+                        scoped_volumes
+                        and explicit_scope == []
+                        and volume_stack
+                        and volume_stack[-1]["basis"] == "EXPLICIT_TOC_HIERARCHY.v1"
+                    ):
+                        volume_stack = []
                     elif scoped_volumes and info[0] == "VOLUME":
                         level = heading_levels.get(left)
                         if level is None:

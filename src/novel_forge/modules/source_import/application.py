@@ -2033,12 +2033,18 @@ class SourceImportApplication:
                 source_work_content_hash = str(source_work_row[1])
         policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
         scope = LogicalDocumentScope(
-            scope_kind="FILE_DOCUMENT",
+            scope_kind="CHAPTER_WINDOW" if reading_plan else "FILE_DOCUMENT",
             source_document_id=source_document_id,
             source_transform_id=transform_id,
             source_chunk_asset_version_ids=tuple(str(row[2]) for row in rows),
             boundary_policy_version=policy.logical_document_policy_version,
             label=f"governed file document {source_document_id}",
+            reading_binding={
+                "member_operation_id": worker.causation_id,
+                "reading_identity": reading_plan["identity"],
+            }
+            if reading_plan
+            else None,
         )
         requested_override = _source_analysis_override(job.get("analysis_override"))
         override = (
@@ -3258,6 +3264,10 @@ class SourceImportApplication:
                     "byte_size": int(row[2]),
                 }
             )
+        if payload.get("reading_plan"):
+            from .corpus_ingestion.reading_scope import validate_reading_segments
+
+            validate_reading_segments(payload["reading_plan"]["units"], tuple(segments))
         evidence = build_classification_evidence(
             scope=scope,
             path_hints=tuple(payload.get("source_paths") or ()),

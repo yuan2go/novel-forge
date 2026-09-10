@@ -47,6 +47,15 @@ def parsed_source_work(
             line_count=len(text.splitlines()),
             metadata={
                 "volume": row["volume"],
+                **(
+                    {
+                        "declared_number": row.get("declared_number"),
+                        "volume_scope": row["source_locator"].get("volume_scope", []),
+                    }
+                    if document.get("parser_profile", {}).get("version")
+                    == "corpus-parser.v5"
+                    else {}
+                ),
                 "declared_order": row["order"],
                 "raw_blob_id": row["raw_blob_id"],
                 "normalized_unicode_start": character_offset,

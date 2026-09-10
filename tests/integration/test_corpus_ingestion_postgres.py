@@ -2248,6 +2248,52 @@ sys.exit(main(sys.argv[1:]))
                 "normalization": {"version": "chinese-longform.v2"},
             },
         }
+        if bounded_reading and n == 0:
+            from ebooklib import epub
+
+            book = epub.EpubBook()
+            book.set_identifier("native-volume-original")
+            book.set_title("原创分卷")
+            book.set_language("zh")
+            bodies = [
+                '<h1 id="v1">第一卷 来信</h1><h2 id="c1">第一章 选择</h2><p>阿青接过来信，愿意承担迟到的代价。</p>',
+                '<p>她核验印章后才走向城门。</p><h1 id="v2">第二卷 守约</h1><h2 id="c2">第一章 回信</h2>',
+                "<p>弟弟从信里得知约定，决定留下守门。</p>",
+            ]
+            items = []
+            for number, body in enumerate(bodies):
+                item = epub.EpubHtml(
+                    title=str(number), file_name=f"p{number}.xhtml", lang="zh"
+                )
+                item.content = "<html><body>" + body + "</body></html>"
+                book.add_item(item)
+                items.append(item)
+            book.spine = items
+            book.toc = (
+                (
+                    epub.Link("p0.xhtml#v1", "第一卷 来信", "v1"),
+                    (epub.Link("p0.xhtml#c1", "第一章 选择", "c1"),),
+                ),
+                (
+                    epub.Link("p1.xhtml#v2", "第二卷 守约", "v2"),
+                    (epub.Link("p1.xhtml#c2", "第一章 回信", "c2"),),
+                ),
+            )
+            book.add_item(epub.EpubNcx())
+            path = tmp_path / "volumes.epub"
+            epub.write_epub(str(path), book)
+            manifest = {
+                **_manifest(path),
+                "parser": {
+                    "version": "corpus-parser.v4",
+                    "format": "epub",
+                    "constants": {"work_id": "original-0"},
+                    "normalization": {
+                        "version": "chinese-longform.v2",
+                        "min_body_chars": 1,
+                    },
+                },
+            }
         config = tmp_path / f"manifest-{n}.json"
         config.write_text(json.dumps(manifest))
         admitted = cli(
@@ -2263,6 +2309,42 @@ sys.exit(main(sys.argv[1:]))
         lineage = cli("lineage", "--job-id", admitted["import_job_id"])
         edition = lineage["editions"][0]["edition_id"]
         inspected = cli("inspect", "--edition-id", edition)
+        if bounded_reading and n == 0:
+            assert any(
+                i["code"] == "NUMBER_CONFLICT"
+                for i in inspected["assessment"]["issues"]
+            )
+            profile_file = tmp_path / "epub-v5.json"
+            profile_file.write_text(
+                json.dumps({**manifest["parser"], "version": "corpus-parser.v5"})
+            )
+            previous_edition = edition
+            upgraded = cli(
+                "reprocess",
+                "--edition-id",
+                edition,
+                "--manifest",
+                profile_file,
+                "--run-key",
+                "append-volume-scope",
+            )
+            assert (
+                cli("run", "--job-id", upgraded["import_job_id"], "--max-stages", 8)[
+                    "stop_reason"
+                ]
+                == "COMPLETED"
+            )
+            inspected = cli("inspect", "--edition-id", edition)
+            assert (
+                inspected["edition_id"] == previous_edition
+                and inspected["assessment"]["structure_usable"]
+            )
+            chapters = cli("chapters", "--processing-id", inspected["processing_id"])[
+                "units"
+            ]
+            body = [u for u in chapters if u["kind"] == "chapter"]
+            assert len(body) == 2 and len({u["volume_id"] for u in body}) == 2
+            assert all(u["volume_scope"] for u in body)
         members.append(inspected)
     grouped = decision(
         "resolve-work",
@@ -2334,24 +2416,43 @@ sys.exit(main(sys.argv[1:]))
     scope_args = []
     if bounded_reading:
         scopes = []
-        with psycopg.connect(DATABASE_URL) as connection:
-            for member in members:
-                versions = connection.execute(
-                    "SELECT source_unit_version_id FROM authority_source_unit_version WHERE source_work_asset_version_id=%s AND status='AVAILABLE' AND kind='chapter' ORDER BY ordinal",
-                    [member["source_work_asset_version_id"]],
-                ).fetchall()
-                assert len(versions) == 2
-                scopes.append(
-                    {
-                        "processing_id": member["processing_id"],
-                        "first_unit_version_id": versions[0][0],
-                        "last_unit_version_id": versions[-1][0],
-                        "max_repairs": 1,
-                    }
-                )
+        for member in members:
+            units = cli("chapters", "--processing-id", member["processing_id"])["units"]
+            versions = [
+                u["source_unit_version_id"]
+                for u in units
+                if u["kind"] == "chapter" and u["status"] == "AVAILABLE"
+            ]
+            assert len(versions) == 2
+            scopes.append(
+                {
+                    "processing_id": member["processing_id"],
+                    "first_unit_version_id": versions[0],
+                    "last_unit_version_id": versions[-1],
+                    "max_repairs": 1,
+                }
+            )
         scope_file = tmp_path / "reading-scopes.json"
         scope_file.write_text(json.dumps(scopes))
         scope_args = ["--reading-scopes", scope_file]
+        preview = cli(
+            "reading-preview", "--revision-id", frozen["revision_id"], *scope_args
+        )
+        assert preview["model_calls"] == 0 and preview["target_chapters"] == 4
+        invalid = tmp_path / "invalid-scope.json"
+        invalid.write_text(
+            json.dumps(
+                [{**item, "max_input_bytes_per_chapter": 256} for item in scopes]
+            )
+        )
+        assert "READING_WINDOW_TOO_LARGE" in cli(
+            "reading-preview",
+            "--revision-id",
+            frozen["revision_id"],
+            "--reading-scopes",
+            invalid,
+            success=False,
+        )
 
     def analyze(key, calls=50):
         return cli(
@@ -2446,6 +2547,27 @@ sys.exit(main(sys.argv[1:]))
     assert all(s["status"] == "SUCCEEDED" for s in stages), stages
     assert page["summary"]["knowledge"]["knowledge_candidates"] > 0, page
     assert page["summary"]["knowledge"]["knowledge_cards"] == 0
+    if bounded_reading:
+        narrative = [stage["narrative"] for stage in stages if stage.get("narrative")]
+        observed = [n for n in narrative if n["phase"] == "OBSERVE"]
+        assert len({u for n in observed for u in n["coverage"]["target_units"]}) == 4
+        assert all(
+            n["coverage"]["actual_text_inputs"]
+            and not n["coverage"]["lower_observation_inputs"]
+            for n in observed
+        )
+        assert any(
+            n["phase"] == "SYNTHESIZE"
+            and n["coverage"]["lower_observation_inputs"]
+            and not n["coverage"]["actual_text_inputs"]
+            for n in narrative
+        )
+        assert any(n["repair_round"] == 1 for n in narrative)
+        assert any(
+            n["review"] and n["review"]["decision"] == "REVISE" for n in narrative
+        )
+        assert all(n["coverage"]["understanding_claim"] is False for n in narrative)
+
     assert all(s["outputs"] for s in stages if s["kind"] == "MKAOS_EXTRACTION")
     before = cli("status", "--job-id", job)["corpus"]["budget"]
     assert analyze("native-analysis")["replayed"]

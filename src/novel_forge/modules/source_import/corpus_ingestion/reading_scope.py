@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Literal
-from pydantic import Field
+from pydantic import Field, field_validator
 from novel_forge.modules.source_authority.corpus import (
     CorpusContract,
     Text,
@@ -40,6 +40,13 @@ class ChapterReadingScope(CorpusContract):
         max_length=9,
     )
 
+    @field_validator("dimensions")
+    @classmethod
+    def unique_dimensions(cls, value: tuple) -> tuple:
+        if len(set(value)) != len(value):
+            raise ValueError("reading dimensions must be unique")
+        return value
+
 
 def freeze_reading_scope(
     repository,
@@ -67,6 +74,10 @@ def freeze_reading_scope(
         units = repository.catalog_reading_units(
             project, source["source_work_asset_version_id"], scope.model_dump()
         )
+        excluded = [
+            u for u in units if u["kind"] == "volume" and u["status"] == "AVAILABLE"
+        ]
+        units = [u for u in units if u not in excluded]
         targets = [u for u in units if u["role"] == "TARGET"]
         if not targets or len(targets) > scope.max_chapters:
             raise KernelError(
@@ -106,15 +117,20 @@ def freeze_reading_scope(
                 if c["source_byte_end"] > unit["normalized_byte_start"]
                 and c["source_byte_start"] < unit["normalized_byte_end"]
             ]
-            covered = sum(
-                min(c["source_byte_end"], unit["normalized_byte_end"])
-                - max(c["source_byte_start"], unit["normalized_byte_start"])
-                for c in unit["chunks"]
-            )
-            if covered != unit["normalized_byte_end"] - unit["normalized_byte_start"]:
+            cursor = unit["normalized_byte_start"]
+            for chunk in unit["chunks"]:
+                left = max(chunk["source_byte_start"], unit["normalized_byte_start"])
+                right = min(chunk["source_byte_end"], unit["normalized_byte_end"])
+                if left != cursor:
+                    raise KernelError(
+                        "READING_CHUNK_COVERAGE_INVALID",
+                        "chunk overlap or gap in exact unit",
+                    )
+                cursor = right
+            if cursor != unit["normalized_byte_end"]:
                 raise KernelError(
                     "READING_CHUNK_COVERAGE_INVALID",
-                    "source unit lacks exact chunk coverage",
+                    "unit lacks complete chunk coverage",
                 )
         frozen = {
             "contract": scope.model_dump(mode="json"),
@@ -128,6 +144,13 @@ def freeze_reading_scope(
                 m for m in selected if m["processing_id"] == scope.processing_id
             ),
             "units": units,
+            "excluded_structural_units": [
+                {
+                    "unit_version_id": u["source_unit_version_id"],
+                    "reason": "VOLUME_HEADING_NOT_CHAPTER_PROSE",
+                }
+                for u in excluded
+            ],
             "coverage_claim": "SELECTED_CONTIGUOUS_UNITS_ONLY",
             "outside_range": "NOT_READ",
             "tool_access": "DENY_FILESYSTEM_SHELL_WEB_MCP",
@@ -184,3 +207,49 @@ def preview_reading(database_url, project, revision_id, scopes, principal):
         "input_token_accounting": "FINAL_MATERIALIZED_PROVIDER_REQUEST_REQUIRED",
         "state": "PREVIEW_ONLY",
     }
+
+
+def validate_reading_segments(units: list[dict], segments: tuple[dict, ...]) -> None:
+    import hashlib
+
+    chunks = {c["asset_version_id"]: c for u in units for c in u["chunks"]}
+    if {s["source_chunk_asset_version_id"] for s in segments} != set(chunks):
+        raise KernelError(
+            "READING_SEGMENT_SCOPE_MISMATCH",
+            "actual chunks differ from frozen allowed input",
+        )
+    bodies = {u["source_unit_version_id"]: bytearray() for u in units}
+    for segment in segments:
+        content = segment["content"].encode("utf-8")
+        chunk = chunks[segment["source_chunk_asset_version_id"]]
+        if (
+            len(content) != chunk["byte_size"]
+            or "sha256:" + hashlib.sha256(content).hexdigest() != chunk["content_hash"]
+        ):
+            raise KernelError(
+                "READING_SOURCE_DRIFT", "actual bytes differ from the frozen chunk"
+            )
+        covered = bytearray(len(content))
+        for unit in units:
+            left = max(0, unit["normalized_byte_start"] - chunk["source_byte_start"])
+            right = min(
+                len(content), unit["normalized_byte_end"] - chunk["source_byte_start"]
+            )
+            if left < right:
+                covered[left:right] = b"\1" * (right - left)
+                bodies[unit["source_unit_version_id"]].extend(content[left:right])
+        if bytes(v for v, c in zip(content, covered) if not c).strip():
+            raise KernelError(
+                "READING_CHUNK_REPROCESS_REQUIRED",
+                "out-of-range prose requires chapter-aligned reprocessing",
+            )
+    for unit in units:
+        if (
+            "sha256:"
+            + hashlib.sha256(bodies[unit["source_unit_version_id"]]).hexdigest()
+            != unit["normalized_content_hash"]
+        ):
+            raise KernelError(
+                "READING_UNIT_COVERAGE_MISMATCH",
+                "unit bytes, order or coverage differ from frozen Processing",
+            )

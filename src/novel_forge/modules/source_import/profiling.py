@@ -193,10 +193,13 @@ class LogicalDocumentScope:
     source_chunk_asset_version_ids: tuple[str, ...]
     boundary_policy_version: str
     label: str
+    reading_binding: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
-        if self.scope_kind != "FILE_DOCUMENT":
-            raise ValueError("only FILE_DOCUMENT boundary resolution is implemented")
+        if self.scope_kind not in {"FILE_DOCUMENT", "CHAPTER_WINDOW"}:
+            raise ValueError("unsupported LogicalDocument boundary")
+        if (self.scope_kind == "CHAPTER_WINDOW") != bool(self.reading_binding):
+            raise ValueError("chapter windows require a frozen reading binding")
         if (
             not all(
                 value.strip()
@@ -225,6 +228,11 @@ class LogicalDocumentScope:
             "source_chunk_asset_version_ids": list(self.source_chunk_asset_version_ids),
             "boundary_policy_version": self.boundary_policy_version,
             "label": self.label,
+            **(
+                {"reading_binding": self.reading_binding}
+                if self.reading_binding
+                else {}
+            ),
         }
 
     @property
@@ -429,8 +437,7 @@ def resolve_profile(
         reasons.append("LOW_CLASSIFICATION_MARGIN")
     suspected_document_count = int(boundary.get("suspected_document_count") or 0)
     boundary_requires_review = (
-        bool(boundary.get("review_required"))
-        or suspected_document_count != 1
+        bool(boundary.get("review_required")) or suspected_document_count != 1
     )
     boundary_confirmed = bool(
         boundary_requires_review

@@ -167,6 +167,10 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         app = SourceImportApplication(
             settings.database_url, application_build_id=build, commit_sha=sha
         )
+        if reading_scopes:
+            app = build_source_import_application(
+                settings, execution=build_production_execution_composition(settings)
+            )
         return admit_curated_analysis(app, request, principal)
     if args.action in {"inspect", "compare", "discover"}:
         return query.corpus_processing(
