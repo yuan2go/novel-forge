@@ -606,7 +606,7 @@ class SourceImportApplication:
         return {
             "import_job_id": import_job_id,
             "project_id": project_id,
-            "status": "PROCESSING" if resumable else str(job["status"]),
+            "status": "PROCESSING" if resumable or repairs else str(job["status"]),
             "resumable_operation_ids": resumable,
             "new_provider_work_created": False,
             "expansion_repair_operation_ids": repairs,

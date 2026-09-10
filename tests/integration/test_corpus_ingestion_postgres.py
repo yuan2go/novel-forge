@@ -2152,6 +2152,8 @@ def transport(stage, inputs):
    return {'invalid_provider_output':'restricted diagnostic sentinel'}
   if invalid and 'review_target' in inputs and invalid!='REPAIR':
    return {'decision':'ACCEPT_IN_SCOPE','issues':[],'resolved_issue_ids':[],'preserve_requirements':[],'scope_limitations':'Scripted empty/error fixture only.'}
+  if invalid=='EMPTY' and 'review_target' not in inputs:
+   return {'findings':[],'entities':[],'confidence':0.0,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Scripted empty findings with actual bounded input and accepting review; no semantic quality claim.'}
   if 'review_target' in inputs:
    if context['repair_round']==0:
     return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
@@ -2734,6 +2736,7 @@ sys.exit(main(sys.argv[1:]))
             resumes = list(pool.map(lambda _: cli("resume", "--job-id", historic_job), range(2)))
         assert resumes[0]["expansion_repair_operation_ids"] == resumes[1]["expansion_repair_operation_ids"]
         assert len(resumes[0]["expansion_repair_operation_ids"]) == 2
+        assert all(reply["status"] == "PROCESSING" for reply in resumes)
         assert cli("run", "--job-id", historic_job, "--max-stages", 100)["stop_reason"] == "COMPLETED"
         with psycopg.connect(DATABASE_URL) as connection:
             assert original_results == connection.execute(
@@ -2813,7 +2816,27 @@ sys.exit(main(sys.argv[1:]))
             cli("run", "--job-id", invalid_job, "--max-stages", 100)
             assert cli("status", "--job-id", invalid_job)["corpus"]["budget"] == budget
             assert failed_page["summary"]["knowledge"]["knowledge_candidates"] == 0
+        monkeypatch.setenv("SOURCE_READING_INVALID_PHASE", "EMPTY")
+        empty_job = analyze("empty-observation")["import_job_id"]
+        empty_run = cli("run", "--job-id", empty_job, "--max-stages", 100)
+        assert empty_run["stop_reason"] == "COMPLETED", empty_run
+        empty_targets = cli("targets", "--job-id", empty_job)
+        assert empty_targets["summary"]["no_applicable_findings"] == 4
+        assert empty_targets["summary"]["processed_target_units"] == 4
+        assert empty_targets["summary"]["reviewed_target_units"] == 4
+        assert cli("results", "--job-id", empty_job)["summary"]["knowledge"]["knowledge_candidates"] == 0
         monkeypatch.delenv("SOURCE_READING_INVALID_PHASE")
+        denied_job = analyze("reading-before-send-budget-denied", calls=2)["import_job_id"]
+        cli("run", "--job-id", denied_job, "--max-stages", 100)
+        denied_page = cli("results", "--job-id", denied_job, "--limit", 100)
+        prepared = [stage for stage in denied_page["stages"] if (stage.get("narrative") or {}).get("coverage", {}).get("input_state") == "PREPARED"]
+        assert prepared, denied_page
+        for stage in prepared:
+            assert not stage["narrative"]["coverage"]["actual_text_inputs"]
+            receipt = stage["narrative"]["input_receipts"][-1]
+            assert receipt["receipt_id"] is None
+            chunk = receipt["manifest"]["actual_text_inputs"][0]
+            assert "READING_EVIDENCE_NOT_READ" in cli("evidence", "--job-id", denied_job, "--operation-id", stage["operation_id"], "--chunk-id", chunk["source_chunk_asset_version_id"], "--byte-end", 3, success=False)
     cancelled = analyze("cancel-analysis")
     cli("cancel", "--job-id", cancelled["import_job_id"])
     assert (
