@@ -787,3 +787,42 @@ through its immutable ChapterOutcome, then verify exact Candidate/Quality/Review
 Context/Memo bindings and hashes. Historical Quality targets remain in the workspace.
 Partial exports retain completed files and explicit errors. These contracts establish
 engineering behavior; real creative effects require actual authorized text and receipts.
+
+Bounded narrative reading extends curated `reading_scopes`. Each selected member freezes
+exact Edition/Processing, ordered SourceUnit versions, permitted adjacent context, chunk
+hashes, review/rights/member references, dimensions and byte/repair bounds. `CHAPTER_WINDOW`
+profiling independently validates that frozen manifest in Source Authority; `FILE_DOCUMENT`
+retains its complete-transform requirement. Model route, prompt/schema, Skill digests and
+runtime budget configuration are frozen before dispatch. Changed configuration blocks new
+calls; known Effects remain replayable. Preview does not grant model authorization.
+
+SourceImport schedules chapter observation, semantic review and bounded directed repair,
+then ordered synthesis over accepted lower observations and existing MKAOS extraction.
+The existing AnalysisPlan, Deconstruction Operation, Provider Effect and budget ledger own
+execution. Only a failed chapter/synthesis is revised; original candidates, unresolved
+issues and receipts remain immutable. Exhausted repair budgets block. Mechanical extraction
+failure is distinct from a valid finding-free result, which creates no invented knowledge.
+
+Observations distinguish explicit text, supported inference, hypothesis and unknown, with
+narrator/character/reader/analyst perspectives, entity and causal references, and structured
+prerequisite, choice, cost, consequence and information details. Exact chunk UTF-8 spans
+must match the quoted text. Synthesis sees ordered verified observations, not unsent chapters
+or remembered whole-book outcomes. Its precise evidence spans are resolved through bounded
+lower-observation lineage before MKAOS extraction. Agent review is not independent semantic
+or human proof; Candidate, approved Card, Pack and generation eligibility remain distinct.
+Research/Benchmark/Fixture, revocation and stale-version consumption guards still apply.
+
+Reading results separate actual text, lower observations, permitted unread context and
+unknown outside scope. Coverage records supplied input, not understanding. An authorized
+query exposes at most 4096 UTF-8 bytes of an actual stage input; it checks current admission
+before and after object reading. Metadata/receipts remain queryable after consumption is
+revoked. Querying never creates model calls or resets a budget.
+
+`corpus-parser.v5` adds explicit EPUB volume ancestry from TOC hierarchy or heading depth.
+Stable href/anchor scope identities are separate from display names; repeated names and
+chapter numbers do not merge volumes. Scopes persist across verified spine continuation
+until an explicit hierarchy boundary. Missing hierarchy requires review. Unit/fragment
+mappings carry volume scope and original chapter numbers separately from reading ordinal.
+Older parser versions retain their frozen semantics. v5 reprocessing appends to the same
+Edition/acquisition; prior number/title conflicts close only when identical source units
+and content are distinguished by verified volume scopes. Other issues remain carried.

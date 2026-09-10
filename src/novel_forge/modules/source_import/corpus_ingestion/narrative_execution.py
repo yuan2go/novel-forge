@@ -213,6 +213,16 @@ def execute_reading(app, worker, payload):
         "dimensions": plan["contract"]["dimensions"],
         "phase": payload["phase"],
         "unit_versions": [u["source_unit_version_id"] for u in units],
+        "ordered_observation_units": [
+            {
+                "observation_asset_version_id": i["observation_asset_version_id"],
+                "source_unit_version_id": i["source_unit_version_id"],
+                "ordinal": i["ordinal"],
+            }
+            for i in payload["accepted_observations"]
+        ]
+        if aggregate
+        else [],
         "coverage_claim": "VERIFIED_LOWER_OBSERVATIONS_ONLY"
         if aggregate
         else "EXACT_TARGET_UNIT_TEXT",
@@ -241,8 +251,11 @@ def execute_reading(app, worker, payload):
             else None,
         )
     except KernelError as exc:
-        if not exc.code.startswith(
-            ("NARRATIVE_", "SOURCE_OUTPUT_", "DECONSTRUCTION_FINDING_")
+        if (
+            exc.code != "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
+            and not exc.code.startswith(
+                ("NARRATIVE_", "SOURCE_OUTPUT_", "DECONSTRUCTION_FINDING_")
+            )
         ):
             raise
         issue = {
@@ -357,6 +370,10 @@ def execute_reading(app, worker, payload):
             )
             observation = {
                 "observation_id": formal["observation_id"],
+                "source_unit_version_id": None
+                if aggregate
+                else units[0]["source_unit_version_id"],
+                "ordinal": index,
                 "observation_asset_version_id": formal["asset_version_id"],
                 "execution_asset_version_id": candidate["execution_asset_version_id"],
                 "evidence_class": candidate["evidence_class"],

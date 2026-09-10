@@ -2137,7 +2137,8 @@ def test_native_cli_curated_analysis_controls_results_and_relation_guards(
 
     _runtime(tmp_path, monkeypatch)
     script = """
-import sys,json
+import sys,json,os
+from pathlib import Path
 from novel_forge.api import authority_dependencies as d
 from novel_forge.modules.source_import.execution_contracts import content_intelligence_fixture_response,CLASSIFICATION_STAGE
 def transport(stage, inputs):
@@ -2153,11 +2154,22 @@ def transport(stage, inputs):
   segments=inputs.get('source_segments') or []
   evidence=[]
   if segments:
-   segment=segments[0];value=segment['content'].splitlines(keepends=True)[0]
-   evidence=[{'chunk_id':segment['source_chunk_asset_version_id'],'byte_start':0,'byte_end':len(value.encode()),'support_text':value}]
-  return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
+   segment=segments[0];lines=segment['content'].splitlines(keepends=True);prefix=''.join(lines[:-1]);value=lines[-1]
+   evidence=[{'chunk_id':segment['source_chunk_asset_version_id'],'byte_start':len(prefix.encode()),'byte_end':len((prefix+value).encode()),'support_text':value}]
+  return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','details':{k:'UNKNOWN' for k in ('preconditions','action_or_change','choice','cost','outcome','information_basis','scope_boundary')},'supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
  return content_intelligence_fixture_response(stage,inputs)
 d.content_intelligence_fixture_response=transport
+if os.environ.get('SOURCE_READING_CRASH_ONCE'):
+ from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+ original=PostgresContentIntelligenceExecutionPort._execute
+ def crash_after_receipt(self, *, worker, spec):
+  result=original(self,worker=worker,spec=spec)
+  path=Path(os.environ['SOURCE_READING_CRASH_ONCE'])
+  if spec.input_payload.get('reading_context',{}).get('phase')=='OBSERVE' and not path.exists():
+   path.write_text(worker.causation_id)
+   os._exit(74)
+  return result
+ PostgresContentIntelligenceExecutionPort._execute=crash_after_receipt
 from novel_forge.cli.authority import main
 sys.exit(main(sys.argv[1:]))
 """
@@ -2531,6 +2543,14 @@ sys.exit(main(sys.argv[1:]))
     cli("pause", "--job-id", job)
     assert cli("run", "--job-id", job)["stop_reason"] == "PAUSED"
     cli("resume", "--job-id", job)
+    if bounded_reading:
+        import time
+
+        marker = tmp_path / "confirmed-provider-process-exit"
+        monkeypatch.setenv("SOURCE_READING_CRASH_ONCE", str(marker))
+        cli("run", "--job-id", job, "--max-stages", 100, success=False)
+        assert marker.is_file()
+        time.sleep(31)
     outcome = cli("run", "--job-id", job, "--max-stages", 100)
     assert outcome["stop_reason"] == "COMPLETED", outcome
     stages = []
@@ -2567,6 +2587,43 @@ sys.exit(main(sys.argv[1:]))
             n["review"] and n["review"]["decision"] == "REVISE" for n in narrative
         )
         assert all(n["coverage"]["understanding_claim"] is False for n in narrative)
+        assert page["summary"]["reading_quality"]["reviewed_target_units"] == 4
+        stage = next(
+            s
+            for s in stages
+            if s.get("narrative") and s["narrative"]["phase"] == "OBSERVE"
+        )
+        chunk = stage["narrative"]["coverage"]["actual_text_inputs"][0]
+        evidence_args = (
+            "--job-id",
+            job,
+            "--operation-id",
+            stage["operation_id"],
+            "--chunk-id",
+            chunk["source_chunk_asset_version_id"],
+        )
+        snippet = cli("evidence", *evidence_args, "--byte-end", chunk["byte_size"])
+        assert snippet["text"] and snippet["generation_allowed"] is False
+        denied = cli(
+            "evidence",
+            *evidence_args,
+            "--byte-end",
+            chunk["byte_size"] + 3,
+            success=False,
+        )
+        assert "READING_EVIDENCE_NOT_READ" in denied
+        recovered_stage = next(
+            s for s in stages if s["operation_id"] == marker.read_text()
+        )
+        assert (
+            recovered_stage["recovery_attempts"]
+            + recovered_stage["fence_reacquisitions"]
+            >= 1
+        )
+        assert (
+            len([e for e in recovered_stage["effects"] if e["status"] == "SUCCEEDED"])
+            == 1
+        )
 
     assert all(s["outputs"] for s in stages if s["kind"] == "MKAOS_EXTRACTION")
     before = cli("status", "--job-id", job)["corpus"]["budget"]
@@ -2577,6 +2634,26 @@ sys.exit(main(sys.argv[1:]))
         cli("lineage", "--job-id", job)["summary"]["revision_id"]
         == frozen["revision_id"]
     )
+    if bounded_reading:
+        drift_job = analyze("runtime-change-requires-new-request")["import_job_id"]
+        old_reserve = os.environ.get(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", "4096"
+        )
+        monkeypatch.setenv(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE",
+            str(int(old_reserve) + 1),
+        )
+        drifted = cli("run", "--job-id", drift_job, "--max-stages", 20)
+        assert any(
+            s.get("failure", {}).get("code") == "READING_RUNTIME_CHANGED"
+            for s in drifted["stages"]
+        ), drifted
+        assert all(
+            not s["effects"] for s in cli("results", "--job-id", drift_job)["stages"]
+        )
+        monkeypatch.setenv(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", old_reserve
+        )
     cancelled = analyze("cancel-analysis")
     cli("cancel", "--job-id", cancelled["import_job_id"])
     assert (

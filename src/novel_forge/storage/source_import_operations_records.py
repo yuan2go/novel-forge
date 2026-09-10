@@ -8,6 +8,47 @@ from novel_forge.modules.command_kernel.errors import KernelError
 class SourceImportOperationsRecords:
     cursor: Any
 
+    def reading_stage(self, project: str, job: str, operation: str) -> dict:
+        self.cursor.execute(
+            """SELECT o.command_payload->'payload',w.result,w.status
+            FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id)
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.operation_id=%s""",
+            [project, job, operation],
+        )
+        row = self.cursor.fetchone()
+        if not row or not row[0].get("narrative_reading"):
+            raise KernelError(
+                "READING_STAGE_NOT_FOUND",
+                "exact job and bounded reading operation required",
+            )
+        return {"payload": row[0], "result": row[1], "status": row[2]}
+
+    def reading_metrics(self, project: str, job: str) -> dict:
+        self.cursor.execute(
+            """SELECT
+            count(*) FILTER(WHERE w.result ? 'validation_error'),
+            count(*) FILTER(WHERE w.result->'review'->>'decision'='REVISE'),
+            count(*) FILTER(WHERE w.status='BLOCKED'),
+            count(DISTINCT u.unit_id) FILTER(WHERE w.result->>'semantic_evidence'='AGENT_REVIEW_ONLY')
+            FROM authority_source_import_work w
+            LEFT JOIN LATERAL jsonb_array_elements_text(COALESCE(w.result->'coverage'->'target_units','[]')) u(unit_id) ON true
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.work_kind='DECONSTRUCTION'""",
+            [project, job],
+        )
+        row = self.cursor.fetchone()
+        return dict(
+            zip(
+                (
+                    "mechanical_failures",
+                    "revision_requests",
+                    "blocked_stages",
+                    "reviewed_target_units",
+                ),
+                row,
+                strict=True,
+            )
+        )
+
     def frozen_operation(self, project: str, operation: str) -> dict[str, Any]:
         self.cursor.execute(
             "SELECT definition_name,definition_version,command_payload->'payload' FROM authority_operation WHERE project_id=%s AND operation_id=%s",
@@ -69,6 +110,7 @@ class SourceImportOperationsRecords:
             w.target_asset_version_id,w.failure,w.result->>'stage',
             w.result->>'analysis_plan_asset_version_id',w.result->>'source_content_profile_asset_version_id',
             (SELECT count(*) FROM authority_attempt a WHERE a.operation_id=o.operation_id),
+            (SELECT count(*) FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=o.operation_id),
             CASE WHEN o.command_payload->'payload' ? 'narrative_reading' THEN jsonb_build_object(
               'phase',w.result->'phase','phase_status',w.result->'phase_status','repair_round',w.result->'repair_round',
               'coverage',w.result->'coverage','review',w.result->'review','issues',w.result->'issues',
@@ -94,6 +136,7 @@ class SourceImportOperationsRecords:
                         "analysis_plan_asset_version_id",
                         "source_content_profile_asset_version_id",
                         "attempt_count",
+                        "lease_acquisition_count",
                         "narrative",
                     ),
                     r,
@@ -179,6 +222,9 @@ class SourceImportOperationsRecords:
                 if e[0] == row["operation_id"]
             ]
             row["recovery_attempts"] = max(0, row["attempt_count"] - 1)
+            row["fence_reacquisitions"] = max(
+                0, row["lease_acquisition_count"] - row["attempt_count"]
+            )
         return {
             "stages": result,
             "next_after": result[-1]["operation_id"] if len(rows) > limit else None,

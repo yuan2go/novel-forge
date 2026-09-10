@@ -43,6 +43,7 @@ from tests.integration.migration_window_postgres_support import (
         "20260909_0125_corpus_ingestion_bridge",
         "20260909_0126_corpus_processing",
         "20260909_0127_corpus_curation",
+        "20260910_0128_corpus_operations",
     ],
 )
 def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):

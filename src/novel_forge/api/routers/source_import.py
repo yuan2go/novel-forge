@@ -61,6 +61,34 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
 
+    @router.get("/corpus/jobs/{job_id}/reading-evidence")
+    def reading_evidence(
+        job_id: str,
+        project_id: str,
+        operation_id: str,
+        chunk_id: str,
+        byte_start: int,
+        byte_end: int,
+    ) -> dict[str, Any]:
+        from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
+            read_evidence,
+        )
+
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return read_evidence(
+                application,
+                project_id,
+                job_id,
+                operation_id,
+                chunk_id,
+                byte_start,
+                byte_end,
+                principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
     @router.post("/corpus/reading-preview")
     def reading_preview(request: ChapterReadingPreviewRequest) -> dict[str, Any]:
         from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (

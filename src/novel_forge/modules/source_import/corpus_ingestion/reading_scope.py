@@ -209,6 +209,81 @@ def preview_reading(database_url, project, revision_id, scopes, principal):
     }
 
 
+def read_evidence(
+    app,
+    project: str,
+    job: str,
+    operation: str,
+    chunk_id: str,
+    start: int,
+    end: int,
+    principal,
+) -> dict:
+    import hashlib
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    from novel_forge.storage.source_import_repositories import SourceImportRepository
+    from novel_forge.storage.source_authority_repositories import (
+        SourceAuthorityRepository,
+    )
+    from novel_forge.modules.source_authority.curation import (
+        require_curated_operation_current,
+    )
+
+    principal.require("source.authority.query", project)
+    if not 0 <= start < end or end - start > 4096:
+        raise KernelError(
+            "READING_EVIDENCE_BOUND",
+            "request at most 4096 UTF-8 bytes within an actual input chunk",
+        )
+    with AuthorityUnitOfWork(app.database_url) as uow:
+        stage = SourceImportRepository(uow.cursor).reading_stage(
+            project, job, operation
+        )
+        repository = SourceAuthorityRepository(uow.cursor)
+        require_curated_operation_current(repository, project, operation)
+        inputs = stage["result"].get("coverage", {}).get("actual_text_inputs", [])
+        actual = next(
+            (s for s in inputs if s["source_chunk_asset_version_id"] == chunk_id), None
+        )
+        if not actual or end > actual["byte_size"]:
+            raise KernelError(
+                "READING_EVIDENCE_NOT_READ",
+                "source is outside this stage's actual reading evidence",
+            )
+        rows = repository.catalog_reading_chunk_blobs(project, [chunk_id])
+        if len(rows) != 1 or rows[0]["content_hash"] != actual["content_hash"]:
+            raise KernelError(
+                "READING_SOURCE_DRIFT", "exact input is no longer available"
+            )
+        row = rows[0]
+    content = app.object_store_reader.read(
+        object_key=row["actual_object_key"],
+        expected_hash=row["actual_hash"],
+        expected_size=row["actual_size"],
+    )
+    try:
+        text = content[start:end].decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise KernelError(
+            "READING_EVIDENCE_UTF8_BOUNDARY", "span splits a Unicode code point"
+        ) from exc
+    with AuthorityUnitOfWork(app.database_url) as uow:
+        require_curated_operation_current(
+            SourceAuthorityRepository(uow.cursor), project, operation
+        )
+    return {
+        "operation_id": operation,
+        "chunk_id": chunk_id,
+        "byte_start": start,
+        "byte_end": end,
+        "offset_kind": "CHUNK_UTF8_BYTES",
+        "content_hash": actual["content_hash"],
+        "evidence_hash": "sha256:" + hashlib.sha256(content[start:end]).hexdigest(),
+        "text": text,
+        "generation_allowed": False,
+    }
+
+
 def validate_reading_segments(units: list[dict], segments: tuple[dict, ...]) -> None:
     import hashlib
 

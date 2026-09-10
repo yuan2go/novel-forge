@@ -43,6 +43,7 @@ def add_corpus_parser(subparsers: Any) -> None:
             "analyze",
             "reading-preview",
             "chapters",
+            "evidence",
             "inspect",
             "compare",
             "discover",
@@ -82,6 +83,10 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--compare-to", default="")
     parser.add_argument("--decision", type=Path)
     parser.add_argument("--job-id", default="")
+    parser.add_argument("--operation-id", default="")
+    parser.add_argument("--chunk-id", default="")
+    parser.add_argument("--byte-start", type=int, default=0)
+    parser.add_argument("--byte-end", type=int, default=0)
     parser.add_argument("--after", default="")
     parser.add_argument("--historical", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
@@ -100,6 +105,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             "results",
             "reading-preview",
             "chapters",
+            "evidence",
             "lineage",
             "inspect",
             "compare",
@@ -112,6 +118,24 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     )
     build, sha = authority_release_identity()
     query = SourceImportQuery(settings.database_url)
+    if args.action == "evidence":
+        from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
+            read_evidence,
+        )
+
+        app = build_source_import_application(
+            settings, execution=build_production_execution_composition(settings)
+        )
+        return read_evidence(
+            app,
+            project,
+            args.job_id,
+            args.operation_id,
+            args.chunk_id,
+            args.byte_start,
+            args.byte_end,
+            principal,
+        )
     if args.action in {"work", "curated"}:
         return query.corpus_catalog(
             project_id=project,

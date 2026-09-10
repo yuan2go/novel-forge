@@ -102,7 +102,21 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         "frozen_request": payload["requested_manifest"],
         "frozen_budget": payload["budget"],
         **(
-            {"reading_plans": payload["reading_plans"]}
+            {
+                "reading_plans": payload["reading_plans"],
+                "reading_quality": {
+                    "target_units": sum(
+                        sum(u["role"] == "TARGET" for u in p["units"])
+                        for p in payload["reading_plans"].values()
+                    ),
+                    **repository.reading_metrics(
+                        job["project_id"], job["import_job_id"]
+                    ),
+                    "semantic_evaluation": "AGENT_REVIEW_ONLY",
+                    "independent_human_evaluation": "NOT_RUN",
+                    "scope": "SELECTED_UNITS_ONLY",
+                },
+            }
             if payload.get("reading_plans")
             else {}
         ),

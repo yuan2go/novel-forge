@@ -267,6 +267,18 @@ def test_bounded_narrative_evidence_and_blocker_continuity():
                 "entity_ids": ["actor"],
                 "caused_by": [],
                 "causal_basis": "",
+                "details": {
+                    k: "UNKNOWN"
+                    for k in (
+                        "preconditions",
+                        "action_or_change",
+                        "choice",
+                        "cost",
+                        "outcome",
+                        "information_basis",
+                        "scope_boundary",
+                    )
+                },
                 "supports": [
                     {
                         "chunk_id": "c1",

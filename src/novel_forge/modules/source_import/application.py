@@ -1539,21 +1539,6 @@ class SourceImportApplication:
                     "SOURCE_REPROCESSING_OBSERVATION_MISSING",
                     "replacement Observation is unavailable for abstraction",
                 )
-            uow.cursor.execute(
-                """
-                SELECT span.source_chunk_asset_version_id,
-                       span.chunk_byte_start, span.chunk_byte_end,
-                       span.evidence_hash
-                FROM authority_source_deconstruction_observation_input AS input
-                JOIN authority_source_evidence_span AS span
-                  ON span.evidence_span_id=input.evidence_span_id
-                WHERE input.project_id=%s
-                  AND input.observation_asset_version_id=%s
-                  AND input.role='SOURCE_CHUNK_EVIDENCE'
-                ORDER BY input.ordinal
-                """,
-                [worker.project_id, observation_id],
-            )
             evidence_spans = tuple(
                 KnowledgeEvidenceSpan(
                     source_chunk_asset_version_id=str(row[0]),
@@ -1561,7 +1546,11 @@ class SourceImportApplication:
                     chunk_byte_end=int(row[2]),
                     evidence_hash=str(row[3]),
                 )
-                for row in uow.cursor.fetchall()
+                for row in SourceIntelligenceRepository(
+                    uow.cursor
+                ).observation_evidence_spans(
+                    project_id=worker.project_id, asset_version_id=observation_id
+                )
             )
             uow.commit()
         observation_content = dict(observation_row[0])
