@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
@@ -451,6 +452,40 @@ class PostgresContentIntelligenceExecutionPort:
         self.provider_output_token_reserve = provider_output_token_reserve
         self.provider_timeout_seconds = provider_timeout_seconds
 
+    def frozen_reading_runtime(self) -> dict[str, Any]:
+        from .corpus_ingestion.narrative_contracts import (
+            NARRATIVE_POLICY,
+            narrative_schema,
+            review_schema,
+        )
+
+        route = self.transport.routes["quality_source_originality"]
+        return {
+            "version": "source-reading-runtime.v1",
+            "provider": route.model_profile.model_provider,
+            "model": route.model_profile.model_id,
+            "route_hash": _hash(asdict(route)),
+            "policy_hash": _hash(NARRATIVE_POLICY),
+            "schemas_hash": _hash([narrative_schema(), review_schema()]),
+            "classifier_hash": SOURCE_CLASSIFIER_METHODOLOGY_HASH,
+            "skills": {
+                key: self.methodology_registry.require(key).content_digest
+                for key in sorted(self.methodology_registry.versions)
+            },
+            "output_token_reserve": self.provider_output_token_reserve,
+            "timeout_seconds": self.provider_timeout_seconds,
+            "budget_contract_hash": _hash(
+                {
+                    "basis": self.cost_accounting_basis,
+                    "authorization": self.account_authorization_ref,
+                    "calls": self.provider_call_caps,
+                    "tokens": self.provider_token_caps,
+                    "monetary": self.budget_caps,
+                    "per_call": self.max_cost_per_call,
+                }
+            ),
+        }
+
     @property
     def source_sample_byte_limit(self) -> int:
         source_route = self.transport.routes["quality_source_originality"]
@@ -626,6 +661,8 @@ class PostgresContentIntelligenceExecutionPort:
         analysis_plan_asset_version_id: str = "",
         compound_analyzers: tuple[AnalyzerContract, ...] = (),
         sampling_manifest: Mapping[str, Any] | None = None,
+        narrative_context: dict[str, Any] | None = None,
+        review_target: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         analyzers = compound_analyzers or (analyzer,)
         compound = bool(compound_analyzers)
@@ -742,6 +779,20 @@ class PostgresContentIntelligenceExecutionPort:
                     "sampling_manifest_hash": sampling_manifest_hash,
                 }
             )
+        if narrative_context:
+            from .corpus_ingestion.narrative_contracts import (
+                NARRATIVE_POLICY,
+                narrative_schema,
+                review_schema,
+            )
+
+            input_payload["narrative_contract"] = NARRATIVE_POLICY
+            input_payload["reading_context"] = narrative_context
+            if review_target is not None:
+                input_payload["review_target"] = review_target
+                input_payload["review_task"] = (
+                    "Diagnose evidence support, causal overreach, epistemic confusion, omitted preconditions, outside-range spoilers and vague summaries. Give scoped actionable repairs. Independent human validation is not implied."
+                )
         spec = _ExecutionSpec(
             kind=(
                 "deconstruction_compound"
@@ -787,15 +838,70 @@ class PostgresContentIntelligenceExecutionPort:
                 "generation_context_allowed": False,
             },
             output_schema=(
-                compound_deconstruction_output_schema()
-                if compound
-                else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+                (review_schema() if review_target is not None else narrative_schema())
+                if narrative_context
+                else (
+                    compound_deconstruction_output_schema()
+                    if compound
+                    else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+                )
             ),
         )
         execution = self._execute(worker=worker, spec=spec)
         provider_output = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
+        if narrative_context:
+            if review_target is not None:
+                log = self._execution_log(
+                    worker=worker,
+                    spec=spec,
+                    execution=execution,
+                    domain_binding={
+                        "narrative_review_binding": {
+                            "reading_identity": narrative_context["reading_identity"],
+                            "target_hash": _hash(review_target),
+                            "review": provider_output,
+                        }
+                    },
+                )
+                return {
+                    "review": provider_output,
+                    "execution_asset_version_id": log.asset_version_id,
+                    "evidence_class": self._evidence_class(execution),
+                    "provider_execution_reused": bool(
+                        execution.get("provider_execution_reused")
+                    ),
+                }
+            from .corpus_ingestion.narrative_contracts import validate_narrative
+
+            provider_output, evidence_spans = validate_narrative(
+                provider_output,
+                segments=source_segments,
+                lower_ids=lower_ids,
+                dimensions=narrative_context["dimensions"],
+            )
+            if not provider_output["findings"]:
+                log = self._execution_log(
+                    worker=worker,
+                    spec=spec,
+                    execution=execution,
+                    domain_binding={
+                        "narrative_empty_observation": {
+                            "reading_identity": narrative_context["reading_identity"],
+                            "scope_limitations": provider_output["scope_limitations"],
+                        }
+                    },
+                )
+                return {
+                    "observation": provider_output,
+                    "evidence_spans": [],
+                    "execution_asset_version_id": log.asset_version_id,
+                    "evidence_class": self._evidence_class(execution),
+                    "provider_execution_reused": bool(
+                        execution.get("provider_execution_reused")
+                    ),
+                }
         if compound:
             requested_dimensions = tuple(item.dimension for item in analyzers)
             ordered_observations = _order_compound_observations(
@@ -940,6 +1046,11 @@ class PostgresContentIntelligenceExecutionPort:
         )
         return {
             "observation": observation,
+            **(
+                {"evidence_spans": [item.to_dict() for item in evidence_spans]}
+                if narrative_context
+                else {}
+            ),
             "execution_asset_version_id": log.asset_version_id,
             "evidence_class": self._evidence_class(execution),
             "provider_execution_reused": bool(
@@ -1021,6 +1132,15 @@ class PostgresContentIntelligenceExecutionPort:
     def _execute(
         self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec
     ) -> dict[str, Any]:
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            binding = SourceAuthorityRepository(uow.cursor).catalog_execution_binding(
+                worker.project_id, worker.causation_id
+            )
+        frozen_runtime = (binding or {}).get("budget", {}).get("reading_runtime")
         cache_key = _hash(
             {
                 "schema_version": "source-provider-execution-cache.v2",
@@ -1029,6 +1149,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "methodology_content_hash": spec.methodology_content_hash,
                 "input": spec.input_payload,
                 "context_contract": spec.context_contract,
+                **({"reading_runtime": frozen_runtime} if frozen_runtime else {}),
             }
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
@@ -1040,6 +1161,11 @@ class PostgresContentIntelligenceExecutionPort:
         )
 
         curated_budget = curated_provider_gate(self.database_url, worker)
+        if frozen_runtime and frozen_runtime != self.frozen_reading_runtime():
+            raise KernelError(
+                "READING_RUNTIME_CHANGED",
+                "new calls require a new request when model, policy, Skill or runtime budget changes",
+            )
         from novel_forge.modules.source_authority.corpus_consumption import (
             require_corpus_consumption,
         )

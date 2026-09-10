@@ -327,6 +327,27 @@ class SourceImportQuery:
             ),
         }
 
+    def chapter_units(
+        self,
+        *,
+        project_id: str,
+        processing_id: str,
+        after: int = 0,
+        limit: int = 50,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._require(principal, project_id)
+        if not 0 <= after or not 1 <= limit <= 100:
+            raise ValueError("bounded chapter page requires after>=0 and limit=1..100")
+        from novel_forge.storage.source_authority_repositories import (
+            SourceAuthorityRepository,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return SourceAuthorityRepository(uow.cursor).catalog_chapter_page(
+                project_id, processing_id, after, limit
+            )
+
     def analysis_results(
         self,
         *,

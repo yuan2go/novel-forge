@@ -1,0 +1,40 @@
+{
+  "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+  "implementation_identity": "sha256:496f7792776e005cfcb993371fcd8034bf7a4ed1e704a114d9ba24b276b5353b",
+  "baseline_sha": "f90b7abc3366327f73a2551ee8f5a73c302840e2",
+  "proof_ceiling": "FOCUSED_ENGINEERING; SCRIPTED_PROVIDER_WIRING; DETERMINISTIC_REAL_LOCAL_CORPUS_PROCESSING",
+  "authority_chain": "Corpus CLI/API -> SourceImport Command/worker -> Provider Effect/receipt -> Source validated Observation -> MKAOS Candidate -> existing decision/Card/Pack and current consumption admission",
+  "new_tables": 0,
+  "new_migrations": 0,
+  "migration_head": "20260910_0128_corpus_operations",
+  "migration_count": 129,
+  "epub_contract": "corpus-parser.v5; v1-v4 frozen replay preserved",
+  "bounded_native_slice": {
+    "members": 2,
+    "target_chapters": 4,
+    "per_member_repair_limit": 1,
+    "reviewed_target_chapters": 4,
+    "aggregate_candidates": 2,
+    "approved_cards": 0,
+    "production_planning_positive": "NOT_PROVEN; no qualified real card; fixture production rejection verified"
+  },
+  "knowledge_consumption": "Existing governed original-fixture Card/Pack path and raw/Research/Benchmark/Fixture/stale negative gates tested separately; no claim of real production knowledge activation",
+  "status": {
+    "EPUB_VOLUME_SCOPE": "PASS",
+    "BOUNDED_ANALYSIS_SCOPE_AND_COVERAGE": "PASS",
+    "DECONSTRUCTION_ENGINEERING_LOOP": "PASS",
+    "EVIDENCE_VALIDATION_AND_REPAIR": "PASS",
+    "MKAOS_ACCEPTANCE_INTEGRATION": "PASS",
+    "GOVERNED_KNOWLEDGE_CONSUMPTION": "PASS",
+    "REAL_MODEL_EXECUTION": "NOT_RUN",
+    "REAL_ANALYSIS_QUALITY": "NOT_EVALUATED",
+    "FOCUSED_ENGINEERING_QUALIFICATION": "PASS",
+    "REMOTE_MAIN_INCLUDES_DELIVERY": "NO"
+  },
+  "go_no_go": {
+    "local_bounded_engineering": "GO",
+    "real_model_analysis": "NO_GO_WITHOUT_EXPLICIT_AUTHORIZATION",
+    "production_knowledge_quality": "NOT_PROVEN"
+  },
+  "resource_residue": 0
+}

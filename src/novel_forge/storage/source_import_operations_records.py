@@ -8,6 +8,47 @@ from novel_forge.modules.command_kernel.errors import KernelError
 class SourceImportOperationsRecords:
     cursor: Any
 
+    def reading_stage(self, project: str, job: str, operation: str) -> dict:
+        self.cursor.execute(
+            """SELECT o.command_payload->'payload',w.result,w.status
+            FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id)
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.operation_id=%s""",
+            [project, job, operation],
+        )
+        row = self.cursor.fetchone()
+        if not row or not row[0].get("narrative_reading"):
+            raise KernelError(
+                "READING_STAGE_NOT_FOUND",
+                "exact job and bounded reading operation required",
+            )
+        return {"payload": row[0], "result": row[1], "status": row[2]}
+
+    def reading_metrics(self, project: str, job: str) -> dict:
+        self.cursor.execute(
+            """SELECT
+            count(*) FILTER(WHERE w.result ? 'validation_error'),
+            count(*) FILTER(WHERE w.result->'review'->>'decision'='REVISE'),
+            count(*) FILTER(WHERE w.status='BLOCKED'),
+            count(DISTINCT u.unit_id) FILTER(WHERE w.result->>'semantic_evidence'='AGENT_REVIEW_ONLY')
+            FROM authority_source_import_work w
+            LEFT JOIN LATERAL jsonb_array_elements_text(COALESCE(w.result->'coverage'->'target_units','[]')) u(unit_id) ON true
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.work_kind='DECONSTRUCTION'""",
+            [project, job],
+        )
+        row = self.cursor.fetchone()
+        return dict(
+            zip(
+                (
+                    "mechanical_failures",
+                    "revision_requests",
+                    "blocked_stages",
+                    "reviewed_target_units",
+                ),
+                row,
+                strict=True,
+            )
+        )
+
     def frozen_operation(self, project: str, operation: str) -> dict[str, Any]:
         self.cursor.execute(
             "SELECT definition_name,definition_version,command_payload->'payload' FROM authority_operation WHERE project_id=%s AND operation_id=%s",
@@ -68,7 +109,12 @@ class SourceImportOperationsRecords:
         ) SELECT w.operation_id,w.work_kind,w.status,o.status,b.processing_id,
             w.target_asset_version_id,w.failure,w.result->>'stage',
             w.result->>'analysis_plan_asset_version_id',w.result->>'source_content_profile_asset_version_id',
-            (SELECT count(*) FROM authority_attempt a WHERE a.operation_id=o.operation_id)
+            (SELECT count(*) FROM authority_attempt a WHERE a.operation_id=o.operation_id),
+            (SELECT count(*) FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=o.operation_id),
+            CASE WHEN o.command_payload->'payload' ? 'narrative_reading' THEN jsonb_build_object(
+              'phase',w.result->'phase','phase_status',w.result->'phase_status','repair_round',w.result->'repair_round',
+              'coverage',w.result->'coverage','review',w.result->'review','issues',w.result->'issues',
+              'observation',w.result->'observation','validation_error',w.result->'validation_error') END
             FROM binding b JOIN authority_source_import_work w ON w.operation_id=b.target
             JOIN authority_operation o USING(operation_id,project_id)
             WHERE (%s='' OR b.processing_id=%s) ORDER BY w.operation_id LIMIT %s""",
@@ -90,6 +136,8 @@ class SourceImportOperationsRecords:
                         "analysis_plan_asset_version_id",
                         "source_content_profile_asset_version_id",
                         "attempt_count",
+                        "lease_acquisition_count",
+                        "narrative",
                     ),
                     r,
                     strict=True,
@@ -97,6 +145,29 @@ class SourceImportOperationsRecords:
             )
             for r in rows[:limit]
         ]
+        for row in result:
+            narrative = row.get("narrative")
+            if narrative:
+                observation = narrative.pop("observation", None) or {}
+                narrative["finding_count"] = len(observation.get("findings", []))
+                narrative["findings_summary"] = [
+                    {
+                        k: (v[:500] if isinstance(v, str) else v)
+                        for k, v in f.items()
+                        if k
+                        in {
+                            "finding_code",
+                            "statement",
+                            "dimension",
+                            "certainty",
+                            "perspective",
+                            "evidence_span_ids",
+                            "input_observation_asset_version_ids",
+                        }
+                    }
+                    for f in observation.get("findings", [])[:6]
+                ]
+                narrative["findings_summary_truncated"] = narrative["finding_count"] > 6
         ids = [r["operation_id"] for r in result]
         self.cursor.execute(
             """WITH refs AS (
@@ -106,7 +177,9 @@ class SourceImportOperationsRecords:
                 AND r.key IN ('profile_asset_version_id','source_content_profile_asset_version_id','analysis_plan_asset_version_id','candidate_asset_version_id','observation_asset_version_id','execution_asset_version_id')
             ) SELECT r.operation_id,r.output_key,r.asset_version_id,v.content_hash,v.lifecycle,v.eligibility,v.governance
             FROM refs r JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
-            WHERE a.project_id=%s ORDER BY r.operation_id,r.output_key LIMIT 2001""", [ids, ids, project])
+            WHERE a.project_id=%s ORDER BY r.operation_id,r.output_key LIMIT 2001""",
+            [ids, ids, project],
+        )
         assets = self.cursor.fetchall()
         if len(assets) > 2000:
             raise KernelError("SOURCE_RESULT_PAGE_TOO_LARGE", "reduce stage page size")
@@ -149,6 +222,9 @@ class SourceImportOperationsRecords:
                 if e[0] == row["operation_id"]
             ]
             row["recovery_attempts"] = max(0, row["attempt_count"] - 1)
+            row["fence_reacquisitions"] = max(
+                0, row["lease_acquisition_count"] - row["attempt_count"]
+            )
         return {
             "stages": result,
             "next_after": result[-1]["operation_id"] if len(rows) > limit else None,
@@ -217,8 +293,11 @@ class SourceImportOperationsRecords:
             )
         )
 
-    def analysis_member_counts(self, project: str, job: str) -> dict[str, list[dict[str, Any]]]:
-        self.cursor.execute("""WITH RECURSIVE chain AS (
+    def analysis_member_counts(
+        self, project: str, job: str
+    ) -> dict[str, list[dict[str, Any]]]:
+        self.cursor.execute(
+            """WITH RECURSIVE chain AS (
             SELECT w.operation_id AS target,o.parent_operation_id,o.command_payload,0 AS depth FROM authority_source_import_work w
             JOIN authority_operation o USING(operation_id,project_id) WHERE w.project_id=%s AND w.import_job_id=%s
             UNION ALL SELECT c.target,p.parent_operation_id,p.command_payload,c.depth+1 FROM chain c
@@ -226,14 +305,27 @@ class SourceImportOperationsRecords:
             WHERE c.depth<20 AND NOT(c.command_payload->'payload' ? 'member_processing_id')
         ), binding AS (SELECT target,max(command_payload->'payload'->>'member_processing_id') AS processing_id FROM chain GROUP BY target)
         SELECT b.processing_id,w.work_kind,w.status,o.status,count(*) FROM binding b JOIN authority_source_import_work w ON w.operation_id=b.target
-        JOIN authority_operation o USING(operation_id,project_id) WHERE b.processing_id IS NOT NULL GROUP BY 1,2,3,4 ORDER BY 1,2,3,4""", [project, job, project])
+        JOIN authority_operation o USING(operation_id,project_id) WHERE b.processing_id IS NOT NULL GROUP BY 1,2,3,4 ORDER BY 1,2,3,4""",
+            [project, job, project],
+        )
         result = {}
         for row in self.cursor.fetchall():
-            result.setdefault(row[0], []).append(dict(zip(("kind", "work_status", "operation_status", "count"), row[1:], strict=True)))
+            result.setdefault(row[0], []).append(
+                dict(
+                    zip(
+                        ("kind", "work_status", "operation_status", "count"),
+                        row[1:],
+                        strict=True,
+                    )
+                )
+            )
         return result
 
     def job_active_leases(self, project: str, job: str) -> int:
-        self.cursor.execute("""SELECT count(DISTINCT w.operation_id) FROM authority_source_import_work w
+        self.cursor.execute(
+            """SELECT count(DISTINCT w.operation_id) FROM authority_source_import_work w
             JOIN authority_attempt a USING(operation_id) JOIN authority_lease_acquisition l USING(attempt_id)
-            WHERE w.project_id=%s AND w.import_job_id=%s AND l.status='HELD' AND l.expires_at>NOW()""", [project, job])
+            WHERE w.project_id=%s AND w.import_job_id=%s AND l.status='HELD' AND l.expires_at>NOW()""",
+            [project, job],
+        )
         return self.cursor.fetchone()[0]

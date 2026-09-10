@@ -791,3 +791,64 @@ Inspect unresolved issues, use the existing scoped `review` command, and reproce
 input to apply exclusions. Updating a Processing, review, canonical membership or relation
 requires re-inspection and a new explicit curated freeze before new analysis. Neither
 rights nor MKAOS approval transfers through a work group or identical text.
+
+## Bounded chapter deconstruction
+
+For each currently selected curated member, inspect exact unit IDs and create a range.
+This example selects five available chapters. A multi-member selection needs one scope per
+member; the service verifies continuity, version, rights, review and all input bounds.
+
+```bash
+novel-forge corpus chapters --project-id "$PROJECT" --processing-id "$PROCESSING" --limit 100 > units.json
+python3 - "$PROCESSING" <<'PY'
+import json, sys
+units = [u for u in json.load(open("units.json"))["units"] if u["kind"] == "chapter" and u["status"] == "AVAILABLE"][:5]
+assert len(units) == 5, "inspect structure or explicitly choose a smaller range"
+json.dump([{"processing_id": sys.argv[1], "first_unit_version_id": units[0]["source_unit_version_id"],
+ "last_unit_version_id": units[-1]["source_unit_version_id"], "max_chapters": 5,
+ "max_input_bytes_per_chapter": 48000, "max_total_input_bytes": 240000,
+ "context_before": 0, "context_after": 0, "max_repairs": 1,
+ "dimensions": ["causal_constraints", "character_choice_cost", "information_gap"]}], open("reading-scopes.json", "w"))
+PY
+novel-forge corpus reading-preview --project-id "$PROJECT" --revision-id "$CURATED_REVISION" --reading-scopes reading-scopes.json
+novel-forge corpus analyze --project-id "$PROJECT" --revision-id "$CURATED_REVISION" \
+  --reading-scopes reading-scopes.json --run-key "$ANALYSIS_KEY" --limit 1 \
+  --max-calls "$AUTHORIZED_CALLS" --max-tokens "$AUTHORIZED_TOKENS" --authorization-ref "$AUTHORIZATION_REF"
+novel-forge corpus run --project-id "$PROJECT" --job-id "$JOB" --max-stages 10
+novel-forge corpus results --project-id "$PROJECT" --job-id "$JOB" --limit 10
+novel-forge corpus evidence --project-id "$PROJECT" --job-id "$JOB" \
+  --operation-id "$STAGE_OPERATION" --chunk-id "$ACTUAL_CHUNK" --byte-start 0 --byte-end 300
+```
+
+Only execute `analyze` and `run` with actual authorization for the purpose, backend and total
+allowance. Preview grants none. Calls without repairs are estimated; classification,
+review, repair, synthesis and extraction share the actual ledger ceiling. Token admission
+meters the final materialized request; byte limits are not token estimates. Budget
+exhaustion is partial/blocked, never implicit scope reduction. Inspect `reading_quality`,
+per-stage `narrative.coverage`, diagnostics and output IDs. Adjacent context is permission,
+not a claim of reading; the current path reads the target and synthesizes verified lower
+observations. Source-external outcomes remain unknown.
+
+Evidence offsets address the actual input chunk, not original EPUB bytes or chapter
+numbers. Both endpoints must be UTF-8 boundaries, with at most 4096 bytes per request.
+Current Source query permission and curated eligibility are required for raw evidence.
+HTTP equivalents are POST `/product/source-imports/corpus/reading-preview`, GET
+`/product/source-imports/corpus/processing/{processing_id}/chapters`, and GET
+`/product/source-imports/corpus/jobs/{job_id}/reading-evidence` with project, operation,
+chunk and byte boundaries. Analysis extends the existing `/corpus/analyze` request.
+
+Automatic directed repair stays within frozen `max_repairs`. Repair receives the immutable
+prior observation, issue targets and preservation requirements. An unresolved blocking
+issue cannot be silently downgraded or retargeted; explicit resolution is required.
+Invalid review output retries only that review within the same repair allowance. A stopped semantic issue
+requires review and a new explicitly bounded request if further analysis is authorized;
+query/resume cannot reset budgets. Transient failures resume the original job; confirmed
+Effects survive lease takeover, unknown outcomes reconcile. `attempt_count` and
+`fence_reacquisitions` distinguish a new attempt from a new lease on the same attempt.
+Candidates follow existing MKAOS decisions and Pack selection; successful analysis does
+not approve a Card or authorize production consumption.
+
+The EPUB logical profile example selects v5. Copy it locally, retain original work constants
+and any validated continuation declarations, then use `corpus reprocess --edition-id
+"$EDITION" --manifest "$LOCAL_PROFILE" --run-key "$REPROCESS_KEY"`. This appends Processing
+and Bridge to acquired bytes without new download, changed rights or rewritten history.

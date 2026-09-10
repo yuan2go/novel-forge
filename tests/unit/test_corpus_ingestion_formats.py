@@ -739,3 +739,101 @@ def test_epub_logical_chapters_span_resources_and_retain_exact_fragments(tmp_pat
                 IngestionBudget(),
             )
         )
+
+
+def test_epub_volume_scope_keeps_repeated_names_and_numbers_distinct(tmp_path):
+    from ebooklib import epub
+    from novel_forge.modules.source_import.corpus_ingestion.parsers import parse_records
+    from novel_forge.modules.source_import.corpus_ingestion.integrity import (
+        assess_integrity,
+    )
+    import hashlib
+
+    book = epub.EpubBook()
+    book.set_identifier("volume-original")
+    book.set_title("原创卷界")
+    book.set_language("zh")
+    bodies = [
+        '<h1 id="v1">第一卷 归途</h1><h2 id="c1">第一章 信</h2><p>甲收到来信。</p>',
+        '<p>甲核验印章，决定赴约。</p><h1 id="v2">第一卷 归途</h1><h2 id="c2">第一章 信</h2>',
+        "<p>乙不曾见信，只因守约留在城外。</p>",
+    ]
+    chapters = []
+    for index, body in enumerate(bodies):
+        item = epub.EpubHtml(
+            title=str(index), file_name=f"part{index}.xhtml", lang="zh"
+        )
+        item.content = "<html><body>" + body + "</body></html>"
+        book.add_item(item)
+        chapters.append(item)
+    book.spine = chapters
+    book.toc = (
+        (
+            epub.Link("part0.xhtml#v1", "第一卷 归途", "v1"),
+            (epub.Link("part0.xhtml#c1", "第一章 信", "c1"),),
+        ),
+        (
+            epub.Link("part1.xhtml#v2", "第一卷 归途", "v2"),
+            (epub.Link("part1.xhtml#c2", "第一章 信", "c2"),),
+        ),
+    )
+    book.add_item(epub.EpubNcx())
+    path = tmp_path / "volumes.epub"
+    epub.write_epub(str(path), book)
+    digest, size = file_identity(path)
+    file = dict(path=path.name, cache_path=str(path), checksum=digest, size_bytes=size)
+    profile = ParserProfile(
+        version="corpus-parser.v5",
+        format="epub",
+        normalization={"version": "chinese-longform.v2", "min_body_chars": 1},
+    )
+    rows = list(parse_records(file, profile, IngestionBudget()))
+    chapters = [r for r in rows if r["unit_kind"] == "CHAPTER"]
+    assert [r["declared_number"] for r in chapters] == [1, 1]
+    assert chapters[0]["volume"] != chapters[1]["volume"]
+    assert [len(r["source_locator"]["fragments"]) for r in chapters] == [2, 2]
+    assert "甲核验" in chapters[0]["text"] and "乙不曾" in chapters[1]["text"]
+    assert {
+        r["source_locator"]["volume_scope"][-1]["display_name"] for r in chapters
+    } == {"第一卷 归途"}
+    for r in rows:
+        r["normalized_content_hash"] = (
+            "sha256:" + hashlib.sha256(r["text"].encode()).hexdigest()
+        )
+    assessment = assess_integrity(rows, profile)
+    assert not any(
+        i["code"] in {"NUMBER_CONFLICT", "DUPLICATE_TITLE"}
+        for i in assessment["issues"]
+    )
+    old = list(
+        parse_records(
+            file,
+            profile.model_copy(update={"version": "corpus-parser.v4"}),
+            IngestionBudget(),
+        )
+    )
+    for r in old:
+        r["normalized_content_hash"] = (
+            "sha256:" + hashlib.sha256(r["text"].encode()).hexdigest()
+        )
+    assert any(
+        i["code"] == "NUMBER_CONFLICT"
+        for i in assess_integrity(
+            old, profile.model_copy(update={"version": "corpus-parser.v4"})
+        )["issues"]
+    )
+    book.toc = ()
+    # A plain paragraph can resemble a volume heading without proving hierarchy.
+    for item in book.get_items():
+        if item.get_name() == "part0.xhtml":
+            item.content = "<html><body><p>第一卷 归途</p><h2>第一章 信</h2><p>甲收到来信。</p></body></html>"
+    epub.write_epub(str(path), book)
+    digest, size = file_identity(path)
+    with pytest.raises(IngestionFailure, match="EPUB_VOLUME_SCOPE_REVIEW_REQUIRED"):
+        list(
+            parse_records(
+                {**file, "checksum": digest, "size_bytes": size},
+                profile,
+                IngestionBudget(),
+            )
+        )

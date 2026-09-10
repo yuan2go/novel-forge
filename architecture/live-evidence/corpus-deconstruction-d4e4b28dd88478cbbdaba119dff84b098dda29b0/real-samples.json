@@ -1,0 +1,76 @@
+{
+  "acquisition_processing_tested_sha": "73eb7444b1df6d7a91b1853a7f0e459e2ebf2ec6",
+  "current_query_tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+  "source": "Previously acquired local Gutenberg files; no new remote acquisition claim",
+  "rights_scope": "RESEARCH per versioned Source declarations; not worldwide commercial clearance",
+  "raw_files": [
+    {
+      "path": "/tmp/nf-corpus-wp3c-20260909/public/23962.txt",
+      "bytes": 2264069,
+      "sha256": "af3c9e408c0c58595b666ed9981b6fa1e9343f4bbc78309b1cb0818c32fc1f58"
+    },
+    {
+      "path": "/tmp/nf-corpus-wp3c-20260909/public/24264.txt",
+      "bytes": 2663455,
+      "sha256": "ff1526996bf4b81807651921a85e5c1c0f1d1d123c9fa4553057ba6a3ec72011"
+    },
+    {
+      "path": "/tmp/nf-corpus-wp3c-20260909/public/24264.epub",
+      "bytes": 1228370,
+      "sha256": "b053027b975d96c17a3d650c867e7f445e9b22bbccf18078c111f5da269452e1"
+    }
+  ],
+  "samples": [
+    {
+      "key": "23962-txt",
+      "initial_processing": "corpus-processing:c1382dbed9184418227f9a883633333abdeb5e8da53128ffbd1d98b9a5be920c",
+      "processing": "corpus-processing:b525d3602bea5a52556fca4586761454995bf372198cdd7f03c81677c01425d9",
+      "edition": "corpus-edition:8f266cfb98d05662b95c2a8555eb58e037dc6faf843b71e65d39a3621e999a9e",
+      "chapter_count": 100,
+      "structure_usable": true,
+      "coverage": "UNKNOWN",
+      "issues": [],
+      "seconds": 34.55842937499983,
+      "peak_child_rss_bytes": 134103040
+    },
+    {
+      "key": "24264-txt",
+      "initial_processing": "corpus-processing:35f526e3500465426716ee1612a59ae88537743ce37e47d0b973e3766d564727",
+      "processing": "corpus-processing:3cd2aaa8cddfa3db663c89610bfb827cbf462774f8ab7e58adfcc9c85bcef9c5",
+      "edition": "corpus-edition:a36a08f6a820ec405b0db8ee7509b80bb295fc99f44948ba4967e81f9463c6b3",
+      "chapter_count": 120,
+      "structure_usable": true,
+      "coverage": "UNKNOWN",
+      "issues": [],
+      "seconds": 49.29466279101325,
+      "peak_child_rss_bytes": 140886016
+    },
+    {
+      "key": "24264-epub",
+      "initial_processing": "corpus-processing:b992410cfeb4a3edb76310385e2bbac2d11db7250767ad3db64ab9458df9e8d9",
+      "processing": "corpus-processing:f18d724cf41f36e737d44b143d57c9b51650a84636187eac9d903f15a8c51cf9",
+      "edition": "corpus-edition:21f26e23ff1b4ae5ce1a61798db8aa7180e3cc978e0f8b8f02de9b7daa5640c9",
+      "chapter_count": 120,
+      "structure_usable": true,
+      "coverage": "UNKNOWN",
+      "issues": [],
+      "seconds": 81.57956579100573,
+      "peak_child_rss_bytes": 152698880
+    }
+  ],
+  "annotations": "Mechanical checks and Agent-scoped boundary review; no independent human labels or semantic accuracy denominator",
+  "current_preview": {
+    "target_chapters": 10,
+    "planned_calls_without_repairs": 28,
+    "model_calls": 0,
+    "paid_authorization": "NOT_GRANTED_BY_PREVIEW",
+    "state": "PREVIEW_ONLY"
+  },
+  "query_elapsed_seconds": 2.534946875006426,
+  "query_child_peak_rss_bytes": 87425024,
+  "raw_bytes_verified": true,
+  "real_model_analysis": "NOT_RUN",
+  "reason": "No explicit authorization covering this analysis purpose and call/token ceiling",
+  "coverage_not_claimed": "Whole-book completeness and literary understanding",
+  "raw_run_summary_sha256": "a6dbad229bff28670cc1e7a1e5a0e2fab7c612616dbdf45ee3ae53d6912af0d8"
+}

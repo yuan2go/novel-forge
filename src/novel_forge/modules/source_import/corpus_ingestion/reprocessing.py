@@ -237,7 +237,11 @@ def prepare_reprocessing(
     pointer = candidates[0]
     document = json.loads(Path(pointer["cache_path"]).read_text())
     review = revision.get("assessment")
-    if review and parser.version in {"corpus-parser.v3", "corpus-parser.v4"}:
+    if review and parser.version in {
+        "corpus-parser.v3",
+        "corpus-parser.v4",
+        "corpus-parser.v5",
+    }:
         from .review_replay import carry_review
 
         carry_review(

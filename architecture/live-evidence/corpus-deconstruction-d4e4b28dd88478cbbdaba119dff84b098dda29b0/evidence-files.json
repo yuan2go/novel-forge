@@ -1,0 +1,132 @@
+{
+  "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+  "files": [
+    {
+      "path": "accounting.json",
+      "size": 18275,
+      "sha256": "978eb94eb0c241be66a24eddc7e2c32eeeb3234b05d7e6da1e9dc106fd4f994a"
+    },
+    {
+      "path": "cleanup.json",
+      "size": 1378,
+      "sha256": "8b199fd353158c001dd33d56f62171aed5e3891571ba871b04bc0bffefe403a5"
+    },
+    {
+      "path": "commands.json",
+      "size": 3715,
+      "sha256": "041b598b1f45ca3e636da64a996aa707e752f56fe68f3b815abff5fb95f5f227"
+    },
+    {
+      "path": "dependencies.json.gz",
+      "size": 3143,
+      "sha256": "3f4055e37bbcd29d6ac841cecefa9bfa504758bda2c4168837c359cf452ea30e"
+    },
+    {
+      "path": "evidence-final-check.log.gz",
+      "size": 547,
+      "sha256": "5e75d77d3bc75c045ad78c41dfbc198ae02caa6f64bde2c90f3cb23f6e4be2f1"
+    },
+    {
+      "path": "failed-runs.json",
+      "size": 12707,
+      "sha256": "eed89fdbcfe95bc9c8eb5109c25c1b50fdc434d28b02a8f942960cd153ba1fce"
+    },
+    {
+      "path": "identity.json",
+      "size": 1399,
+      "sha256": "ae32ac51bfac9698559d79adec1dad0e67dd450655c1f28d9ba7cadb48cd0d00"
+    },
+    {
+      "path": "implementation-diff.json",
+      "size": 1601,
+      "sha256": "39deb1fa3a25d88c865e7816cfbe869f9ac99ad8b960ded6d4a0e2be14070e75"
+    },
+    {
+      "path": "implementation-files.json.gz",
+      "size": 72172,
+      "sha256": "2f891a0cf08b2cba733fd763f2b3782b99de01994da79bc9651dbbe805ff0b47"
+    },
+    {
+      "path": "job-query-plan.json",
+      "size": 6459,
+      "sha256": "ee3e37a3b05cdfffd328a53916b333078fe531d0c2ce5334b3217a61568042c1"
+    },
+    {
+      "path": "main-recheck.json",
+      "size": 232,
+      "sha256": "fb9e004a7dd4c87af05cb51e4049819dc1105c175366c6dc3bc24201c2aefa89"
+    },
+    {
+      "path": "migrations.log.gz",
+      "size": 66,
+      "sha256": "d2505f03021c55ac54adbf443890034b99ebe8a510c1fb36efb36109e14fc746"
+    },
+    {
+      "path": "migrations.xml.gz",
+      "size": 347,
+      "sha256": "7890923ae9e9060f5d27e91b32958d76bfd45eb04d07f167b9ef476d6b356a1d"
+    },
+    {
+      "path": "native-operations.json.gz",
+      "size": 69324,
+      "sha256": "f0916ff21ff38c2fbf064c504c206ae9f16999f0276d57887654bd621e2bd1b5"
+    },
+    {
+      "path": "postgres.log.gz",
+      "size": 899,
+      "sha256": "6f1985c75f096f3e4f507cb3c3f82d3199f970448efed3931a4c35ac7780d16f"
+    },
+    {
+      "path": "postgres.xml.gz",
+      "size": 806,
+      "sha256": "cca7e65ef62405f2c499055ff8fc14dcfc68813282c9c1da18bddee10cfc30b9"
+    },
+    {
+      "path": "prior-c0203eb9-postgres.log.gz",
+      "size": 8581,
+      "sha256": "737f31d67d5501457e6738c98842dcf52fb321e34010f3b3652b36beecb7c95e"
+    },
+    {
+      "path": "prior-c0203eb9-postgres.xml.gz",
+      "size": 9326,
+      "sha256": "1087143db5fb80549700929493bb942fb115f2c4cb58bad23680ad136a5d4155"
+    },
+    {
+      "path": "reading-query-plans.json",
+      "size": 5757,
+      "sha256": "6c4e3ea792f704801b20b4c989edeae4cab42c9e36e6a5cabbe0a8f11c95fbca"
+    },
+    {
+      "path": "real-samples.json",
+      "size": 3329,
+      "sha256": "a50c74c23119ee2719d8699478632970d7cbe7630dabc10082f5b423f1087fd9"
+    },
+    {
+      "path": "reproduced-review-defect.json",
+      "size": 1149,
+      "sha256": "7874898fe063fbfb84d9ac6400f4b8b5b9b4a051d8778ba63308d20f8173797d"
+    },
+    {
+      "path": "summary.json",
+      "size": 1928,
+      "sha256": "dc276c8090152f41d9ac019239e0d0331f45fecf201da31b17e9063b6b332234"
+    },
+    {
+      "path": "unit.log.gz",
+      "size": 62,
+      "sha256": "ac3d42add999c524762a1bc4282c2f90cf96951da1f7ae6f984a0c82ac657657"
+    },
+    {
+      "path": "unit.xml.gz",
+      "size": 3089,
+      "sha256": "b4c67f054bae3a2f4cbf0546c97f050f51202746e759c082ad5660a423b718c1"
+    },
+    {
+      "path": "validate.log.gz",
+      "size": 49012,
+      "sha256": "d6290cf4e2ff896de305efbac5f6a0971e0b6c0a51dbd9dbf1e25a56134b5747"
+    }
+  ],
+  "secret_scan": "PASS",
+  "novel_raw_bytes_exported": false
+}

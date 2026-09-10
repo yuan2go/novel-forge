@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 from uuid import uuid4
-from pydantic import Field
+from pydantic import Field, model_serializer
+from .reading_scope import ChapterReadingScope, freeze_reading_scope
 from novel_forge.modules.source_authority.corpus import (
     CorpusContract,
     Text,
@@ -33,6 +34,14 @@ class CuratedAnalysisRequest(CorpusContract):
     max_tokens: int = Field(ge=1, le=100000000)
     authorization_ref: Text
     intelligence_policy: dict[str, Any] = Field(default_factory=dict)
+    reading_scopes: tuple[ChapterReadingScope, ...] = Field(default=(), max_length=100)
+
+    @model_serializer(mode="wrap")
+    def preserve_frozen_request(self, handler: Any) -> dict:
+        result = handler(self)
+        if not self.reading_scopes:
+            result.pop("reading_scopes", None)
+        return result
 
 
 def admit_curated_analysis(
@@ -42,6 +51,11 @@ def admit_curated_analysis(
     app._register_definitions()
     policy = SourceIntelligencePolicy(**request.intelligence_policy)
     frozen = request.model_dump(mode="json")
+    runtime_identity = (
+        app._require_execution_port().frozen_reading_runtime()
+        if request.reading_scopes
+        else None
+    )
     key = "curated-analysis:" + corpus_hash(
         {"project": request.project_id, "key": request.run_key}
     )
@@ -85,6 +99,13 @@ def admit_curated_analysis(
         availability = curated_availability(repository, request.project_id, selected)
         if any(not r["available"] for r in availability):
             raise KernelError("CURATED_MEMBERS_UNAVAILABLE", str(availability))
+        reading_plans = (
+            freeze_reading_scope(
+                repository, request.project_id, selected, request.reading_scopes
+            )
+            if request.reading_scopes
+            else {}
+        )
         uow.cursor.execute(
             "SELECT count(DISTINCT external_effect_id),COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens ELSE greatest(actual_tokens,estimated_tokens) END),0) FROM authority_budget_reservation WHERE project_id=%s AND (status IN ('RESERVED','HELD_UNKNOWN','SETTLED') OR (status='RELEASED' AND actual_tokens>0))",
             [request.project_id],
@@ -103,6 +124,9 @@ def admit_curated_analysis(
                 "accounting_scope": "PROJECT_TOTAL_CONSERVATIVE_SHARED_CEILING",
             },
         }
+        if reading_plans:
+            payload["reading_plans"] = reading_plans
+            payload["budget"]["reading_runtime"] = runtime_identity
         operation = app._admit_child(
             definition_name=OPERATION,
             project_id=request.project_id,
@@ -170,6 +194,7 @@ def admit_curated_analysis(
         "selected_members": len(selected),
         "model_calls": 0,
         "budget": payload["budget"],
+        **({"reading_plans": reading_plans} if reading_plans else {}),
     }
 
 
@@ -197,7 +222,13 @@ def execute_curated_analysis(runtime: Any, worker: Any) -> dict[str, Any]:
             source = repository.catalog_processings(worker.project_id, [member_id])[
                 member_id
             ]
-            app._admit_profiling_child(worker, job, source, source_paths=())
+            app._admit_profiling_child(
+                worker,
+                job,
+                source,
+                source_paths=(),
+                reading_plan=payload.get("reading_plans", {}).get(member_id),
+            )
             result = {
                 "stage": "SOURCE_ANALYSIS_SCHEDULED",
                 "processing_id": member_id,

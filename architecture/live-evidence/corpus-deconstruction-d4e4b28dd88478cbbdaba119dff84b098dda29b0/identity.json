@@ -1,0 +1,31 @@
+{
+  "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+  "implementation_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+  "last_production_code_sha": "92b9337ecd85bdab665645c53eb5293138e6562c",
+  "source_tree": "7324b27f4fd931c4fd8ebd39cd4ba2a15106fd3e",
+  "baseline_sha": "f90b7abc3366327f73a2551ee8f5a73c302840e2",
+  "clean_at_test_start": true,
+  "python": "3.12.2",
+  "runtime": "macOS-26.5.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "postgres": "16.15 (Debian 16.15-1.pgdg12+2)",
+  "migration_head": "20260910_0128_corpus_operations",
+  "migration_count": 129,
+  "dependencies_sha256": "37f0b25ae510f5e0419b12cbfdb56eedfab2c0d1f0dc39888acd7dd25944ae66",
+  "prior_run_compatibility": {
+    "tested_sha": "c0203eb92fa6f8f6b0f09a81d70fc03f4adb5ee3",
+    "changed_paths": [
+      "architecture/reality-evidence.json",
+      "tests/integration/test_corpus_ingestion_postgres.py"
+    ],
+    "production_code_schema_config_dependencies_and_other_test_modules_unchanged": true,
+    "affected_test_file_rerun": "tests/integration/test_corpus_ingestion_postgres.py",
+    "prior_run_is_not_relabelled": true
+  },
+  "implementation_tree_identity": {
+    "schema_version": "implementation-tree-identity.v3",
+    "algorithm": "sha256-canonical-file-records-v2",
+    "implementation_tree_sha": "sha256:496f7792776e005cfcb993371fcd8034bf7a4ed1e704a114d9ba24b276b5353b",
+    "path_count": 1135
+  }
+}

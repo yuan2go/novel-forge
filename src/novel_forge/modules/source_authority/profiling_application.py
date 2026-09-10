@@ -355,12 +355,52 @@ class SourceProfilingApplication:
             "duplicate": False,
         }
 
+    @staticmethod
+    def _validate_reading_binding(
+        uow: Any, command: Any, scope: dict, chunk_ids: tuple
+    ) -> None:
+        from .curation import require_curated_operation_current
+
+        reference = scope.get("reading_binding") or {}
+        repository = SourceAuthorityRepository(uow.cursor)
+        operation = reference.get("member_operation_id", "")
+        require_curated_operation_current(repository, command.project_id, operation)
+        binding = repository.catalog_execution_binding(command.project_id, operation)
+        plan = (
+            (binding or {})
+            .get("reading_plans", {})
+            .get((binding or {}).get("member_processing_id"))
+        )
+        if (
+            not plan
+            or plan["identity"] != reference.get("reading_identity")
+            or plan["source_transform_id"] != scope["source_transform_id"]
+        ):
+            raise KernelError(
+                "SOURCE_PROFILE_READING_BINDING_INVALID",
+                "chapter window must match frozen curated scope",
+            )
+        chunks = {
+            c["asset_version_id"]: c for unit in plan["units"] for c in unit["chunks"]
+        }
+        expected = tuple(
+            c["asset_version_id"]
+            for c in sorted(chunks.values(), key=lambda c: c["chunk_index"])
+        )
+        if expected != chunk_ids:
+            raise KernelError(
+                "SOURCE_PROFILE_READING_CHUNKS_INVALID",
+                "scope cannot expand or truncate frozen reading chunks",
+            )
+
     def _preflight_profile(
         self, command: CommitSourceContentProfileCommand
     ) -> dict[str, Any]:
         scope = dict(command.logical_document_scope)
-        if scope.get("scope_kind") != "FILE_DOCUMENT":
-            raise ValueError("Source Profile requires an explicit FILE_DOCUMENT scope")
+        if scope.get("scope_kind") not in {"FILE_DOCUMENT", "CHAPTER_WINDOW"}:
+            raise ValueError(
+                "Source Profile requires an explicit document or frozen chapter window"
+            )
         required_scope = {
             "source_document_id",
             "source_transform_id",
@@ -460,6 +500,8 @@ class SourceProfilingApplication:
                 project_id=command.project_id, workspace_id=command.workspace_id
             )
             repository = SourceProfileRepository(uow.cursor)
+            if scope["scope_kind"] == "CHAPTER_WINDOW":
+                self._validate_reading_binding(uow, command, scope, chunk_ids)
             transform = repository.transform_scope(
                 project_id=command.project_id,
                 workspace_id=command.workspace_id,
@@ -468,6 +510,9 @@ class SourceProfilingApplication:
             chunks = repository.chunks(
                 project_id=command.project_id,
                 source_transform_id=str(scope["source_transform_id"]),
+                chunk_ids=chunk_ids
+                if scope["scope_kind"] == "CHAPTER_WINDOW"
+                else None,
             )
             execution = MkaosAuthorityRepository(uow.cursor).execution_evidence(
                 project_id=command.project_id,

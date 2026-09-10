@@ -200,6 +200,47 @@ class SourceIntelligenceRepository:
             result[str(root_asset_version_id)].add(str(source_chunk_asset_version_id))
         return result
 
+    def observation_evidence_spans(
+        self, *, project_id: str, asset_version_id: str
+    ) -> tuple[tuple, ...]:
+        pending = {asset_version_id}
+        visited = set()
+        spans = set()
+        for _ in range(32):
+            if not pending:
+                return tuple(sorted(spans))
+            if len(visited | pending) > 1000:
+                break
+            self.cursor.execute(
+                """SELECT i.role,i.input_asset_version_id,s.source_chunk_asset_version_id,
+                s.chunk_byte_start,s.chunk_byte_end,s.evidence_hash
+                FROM authority_source_deconstruction_observation_input i
+                LEFT JOIN authority_source_evidence_span s ON s.evidence_span_id=i.evidence_span_id
+                WHERE i.project_id=%s AND i.observation_asset_version_id=ANY(%s)
+                ORDER BY i.observation_asset_version_id,i.ordinal LIMIT 1001""",
+                [project_id, sorted(pending)],
+            )
+            rows = self.cursor.fetchall()
+            if len(rows) > 1000:
+                break
+            visited.update(pending)
+            pending = set()
+            for role, identity, chunk, start, end, digest in rows:
+                if role == "LOWER_SCALE_OBSERVATION" and identity not in visited:
+                    pending.add(identity)
+                elif role == "SOURCE_CHUNK_EVIDENCE":
+                    if not chunk:
+                        raise KernelError(
+                            "SOURCE_EVIDENCE_LINEAGE_MISSING",
+                            "observation span was not found",
+                        )
+                    spans.add((chunk, start, end, digest))
+            if len(spans) > 1000:
+                break
+        raise KernelError(
+            "SOURCE_EVIDENCE_LINEAGE_BOUND", "narrow the bounded aggregate input"
+        )
+
     def current_observation(
         self,
         *,

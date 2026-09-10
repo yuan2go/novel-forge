@@ -1,0 +1,40 @@
+{
+  "tested_sha": "c340973320353a42842d96ae4b9e4c794eb462d3",
+  "prior": {
+    "issue_id": "blocked",
+    "finding_code": "choice",
+    "category": "EVIDENCE",
+    "severity": "BLOCKING",
+    "reason": "Exact support is absent",
+    "repair_goal": "Supply exact support",
+    "acceptance_condition": "Source span matches the conclusion"
+  },
+  "review": {
+    "decision": "ACCEPT_IN_SCOPE",
+    "issues": [
+      {
+        "issue_id": "blocked",
+        "finding_code": "choice",
+        "category": "EVIDENCE",
+        "severity": "ADVISORY",
+        "reason": "Exact support is absent",
+        "repair_goal": "Supply exact support",
+        "acceptance_condition": "Source span matches the conclusion"
+      }
+    ],
+    "resolved_issue_ids": []
+  },
+  "actual": [
+    {
+      "issue_id": "blocked",
+      "finding_code": "choice",
+      "category": "EVIDENCE",
+      "severity": "ADVISORY",
+      "reason": "Exact support is absent",
+      "repair_goal": "Supply exact support",
+      "acceptance_condition": "Source span matches the conclusion"
+    }
+  ],
+  "expected": "reject undeclared severity downgrade",
+  "status": "REPRODUCED_DEFECT"
+}

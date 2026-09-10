@@ -1,0 +1,58 @@
+{
+  "runner_prefix": "/tmp/nf-corpus-deconstruction-20260910/venv/bin/python /tmp/nf-corpus-deconstruction-20260910/run.py",
+  "private_environment": "Environment injected by local run.py; passwords/tokens deliberately excluded",
+  "database_execution": "All PostgreSQL pytest processes SERIAL; distinct persistent real-sample database",
+  "commands": [
+    {
+      "kind": "current_unit",
+      "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+      "command": "python -m pytest tests/unit/test_corpus_admission.py tests/unit/test_corpus_ingestion_formats.py tests/unit/test_corpus_ingestion_transports.py tests/unit/test_mkaos_authority_domain.py tests/unit/test_source_authority_domain.py tests/unit/test_source_deconstruction_domain.py tests/unit/test_source_import_domain.py tests/unit/test_source_import_worker_permissions.py tests/unit/test_source_intelligence_execution_contracts.py tests/unit/test_source_intelligence_routing.py -q --junitxml=/tmp/nf-corpus-deconstruction-20260910/verified/unit.xml",
+      "exit_code": 0
+    },
+    {
+      "kind": "current_postgresql",
+      "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+      "command": "python -m pytest tests/integration/test_corpus_ingestion_postgres.py -q --junitxml=/tmp/nf-corpus-deconstruction-20260910/verified/postgres.xml",
+      "exit_code": 0,
+      "measurement": "/usr/bin/time -l",
+      "maximum_resident_set_size_bytes": 194445312
+    },
+    {
+      "kind": "current_migration",
+      "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+      "command": "python -m pytest tests/integration/test_corpus_migrations_postgres.py -k '20260625_0001 or 20260909_0127 or 20260910_0128' -q --junitxml=/tmp/nf-corpus-deconstruction-20260910/verified/migrations.xml",
+      "exit_code": 0,
+      "selected_paths": [
+        "fresh 0001 + remaining registry to 0128",
+        "existing-data 0127 to 0128",
+        "executing-main 0128 existing-data replay"
+      ],
+      "nonapplicable_matrix_rows_deselected": 6
+    },
+    {
+      "kind": "current_governance",
+      "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+      "command": "make validate head-integrity-check",
+      "exit_code": 0
+    },
+    {
+      "kind": "prior_complete_related_postgresql_collection",
+      "tested_sha": "c0203eb92fa6f8f6b0f09a81d70fc03f4adb5ee3",
+      "command": "python -m pytest tests/integration/test_corpus_ingestion_postgres.py tests/integration/test_corpus_foundation_postgres.py tests/integration/test_source_import_runtime_postgres.py tests/integration/test_source_deconstruction_authority_postgres.py tests/integration/test_source_document_authority_postgres.py tests/integration/test_mkaos_authority_postgres.py -q --junitxml=/tmp/nf-corpus-deconstruction-20260910/closure/postgres.xml",
+      "exit_code": 1,
+      "accounting": "46 passed, 1 failed assertion on nullable diagnostics; entire affected module rerun on current SHA",
+      "runtime_files_and_unaffected_test_files_identical": true
+    },
+    {
+      "kind": "real_sample_current_queries",
+      "tested_sha": "d4e4b28dd88478cbbdaba119dff84b098dda29b0",
+      "command": "/tmp/nf-corpus-deconstruction-20260910/venv/bin/python /tmp/nf-corpus-deconstruction-20260910/recheck_samples.py",
+      "script_sha256": "8da3820e853625d00e0200f674db5f15190071c49b3a3eb6ca8e7a0618809dfb",
+      "exit_code": 0,
+      "model_calls": 0,
+      "retained_processing_producer_sha": "73eb7444b1df6d7a91b1853a7f0e459e2ebf2ec6"
+    }
+  ],
+  "runtime_cli": "novel-forge corpus chapters / reading-preview / analyze --reading-scopes / run / status / results / evidence / pause / resume / cancel",
+  "runbook": "docs/runtime-operations.md#bounded-chapter-deconstruction"
+}

@@ -49,10 +49,79 @@ class CorpusReprocessRequest(BaseModel):
     parser: ParserProfile
 
 
+class ChapterReadingPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1, max_length=200)
+    revision_id: str = Field(min_length=1, max_length=200)
+    reading_scopes: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/source-imports", tags=["source-import"])
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
+
+    @router.get("/corpus/jobs/{job_id}/reading-evidence")
+    def reading_evidence(
+        job_id: str,
+        project_id: str,
+        operation_id: str,
+        chunk_id: str,
+        byte_start: int,
+        byte_end: int,
+    ) -> dict[str, Any]:
+        from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
+            read_evidence,
+        )
+
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return read_evidence(
+                application,
+                project_id,
+                job_id,
+                operation_id,
+                chunk_id,
+                byte_start,
+                byte_end,
+                principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/corpus/reading-preview")
+    def reading_preview(request: ChapterReadingPreviewRequest) -> dict[str, Any]:
+        from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
+            preview_reading,
+        )
+
+        principal = _authorize("source.authority.query", request.project_id)
+        try:
+            return preview_reading(
+                application.database_url,
+                request.project_id,
+                request.revision_id,
+                request.reading_scopes,
+                principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/corpus/processing/{processing_id}/chapters")
+    def reading_chapters(
+        processing_id: str, project_id: str, after: int = 0, limit: int = 50
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.query", project_id)
+        try:
+            return query.chapter_units(
+                project_id=project_id,
+                processing_id=processing_id,
+                after=after,
+                limit=limit,
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/corpus/analyze", status_code=202)
     def analyze_curated(request: CuratedAnalysisRequest) -> dict[str, Any]:
@@ -248,10 +317,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise _http_error(exc, not_found=True) from exc
 
     @router.get("/{import_job_id}/analysis-results")
-    def analysis_results(import_job_id: str, project_id: str, after: str = "", limit: int = Query(default=50, ge=1, le=100), processing_id: str = "") -> dict[str, Any]:
+    def analysis_results(
+        import_job_id: str,
+        project_id: str,
+        after: str = "",
+        limit: int = Query(default=50, ge=1, le=100),
+        processing_id: str = "",
+    ) -> dict[str, Any]:
         principal = _authorize("source.authority.query", project_id)
         try:
-            return query.analysis_results(project_id=project_id, import_job_id=import_job_id, after=after, limit=limit, processing_id=processing_id, principal=principal)
+            return query.analysis_results(
+                project_id=project_id,
+                import_job_id=import_job_id,
+                after=after,
+                limit=limit,
+                processing_id=processing_id,
+                principal=principal,
+            )
         except KernelError as exc:
             raise _http_error(exc, not_found=True) from exc
 

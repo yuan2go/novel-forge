@@ -2125,8 +2125,9 @@ def test_native_catalogue_resolution_preserves_input_scope(
     assert any(i.get("annotations") for i in fourth["assessment"]["issues"])
 
 
+@pytest.mark.parametrize("bounded_reading", [False, True])
 def test_native_cli_curated_analysis_controls_results_and_relation_guards(
-    corpus, tmp_path, monkeypatch
+    corpus, tmp_path, monkeypatch, bounded_reading
 ):
     import os
     from pathlib import Path
@@ -2136,14 +2137,45 @@ def test_native_cli_curated_analysis_controls_results_and_relation_guards(
 
     _runtime(tmp_path, monkeypatch)
     script = """
-import sys,json
+import sys,json,os
+from pathlib import Path
 from novel_forge.api import authority_dependencies as d
 from novel_forge.modules.source_import.execution_contracts import content_intelligence_fixture_response,CLASSIFICATION_STAGE
 def transport(stage, inputs):
  if stage == CLASSIFICATION_STAGE:
   return {'content_type':'PUBLISHED_FICTION','confidence':0.97,'alternatives':[{'content_type':'PUBLISHED_FICTION','confidence':0.97},{'content_type':'UNKNOWN','confidence':0.03}],'evidence_codes':['BOUNDED_SEMANTIC_SAMPLE'],'boundary_assessment':{'scope_kind':'FILE_DOCUMENT','suspected_document_count':1,'review_required':False}}
+ if inputs.get('narrative_contract'):
+  context=inputs['reading_context']
+  prior=context['prior_issues']
+  if 'review_target' in inputs:
+   if context['repair_round']==0:
+    return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
+   if os.environ.get('SOURCE_READING_BAD_REVIEW'):
+    return {'decision':'ACCEPT_IN_SCOPE','issues':[{**i,'severity':'ADVISORY'} for i in prior],'resolved_issue_ids':[],'preserve_requirements':[],'scope_limitations':'Synthetic invalid blocker downgrade.'}
+   return {'decision':'ACCEPT_IN_SCOPE','issues':[],'resolved_issue_ids':[i['issue_id'] for i in prior],'preserve_requirements':[],'scope_limitations':'Only the supplied target is evaluated; literary quality is unproven.'}
+  if context['repair_round']:
+   assert context['previous_candidate']['observation']['findings'][0]['statement']=='A choice occurs.'
+   assert context['previous_candidate']['execution_asset_version_id']
+   assert context['preserve_requirements']==['Keep the exact input boundary and uncertainty.']
+  segments=inputs.get('source_segments') or []
+  evidence=[]
+  if segments:
+   segment=segments[0];lines=segment['content'].splitlines(keepends=True);prefix=''.join(lines[:-1]);value=lines[-1]
+   evidence=[{'chunk_id':segment['source_chunk_asset_version_id'],'byte_start':len(prefix.encode()),'byte_end':len((prefix+value).encode()),'support_text':value}]
+  return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','details':{k:'UNKNOWN' for k in ('preconditions','action_or_change','choice','cost','outcome','information_basis','scope_boundary')},'supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
  return content_intelligence_fixture_response(stage,inputs)
 d.content_intelligence_fixture_response=transport
+if os.environ.get('SOURCE_READING_CRASH_ONCE'):
+ from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+ original=PostgresContentIntelligenceExecutionPort._execute
+ def crash_after_receipt(self, *, worker, spec):
+  result=original(self,worker=worker,spec=spec)
+  path=Path(os.environ['SOURCE_READING_CRASH_ONCE'])
+  if spec.input_payload.get('reading_context',{}).get('phase')=='OBSERVE' and not path.exists():
+   path.write_text(worker.causation_id)
+   os._exit(74)
+  return result
+ PostgresContentIntelligenceExecutionPort._execute=crash_after_receipt
 from novel_forge.cli.authority import main
 sys.exit(main(sys.argv[1:]))
 """
@@ -2161,7 +2193,11 @@ sys.exit(main(sys.argv[1:]))
             *map(str, args),
         ]
         run = subprocess.run(
-            command, env=dict(os.environ), capture_output=True, text=True, timeout=120
+            command,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+            timeout=240 if bounded_reading else 120,
         )
         transcript.append(
             {
@@ -2230,6 +2266,52 @@ sys.exit(main(sys.argv[1:]))
                 "normalization": {"version": "chinese-longform.v2"},
             },
         }
+        if bounded_reading and n == 0:
+            from ebooklib import epub
+
+            book = epub.EpubBook()
+            book.set_identifier("native-volume-original")
+            book.set_title("原创分卷")
+            book.set_language("zh")
+            bodies = [
+                '<h1 id="v1">第一卷 来信</h1><h2 id="c1">第一章 选择</h2><p>阿青接过来信，愿意承担迟到的代价。</p>',
+                '<p>她核验印章后才走向城门。</p><h1 id="v2">第二卷 守约</h1><h2 id="c2">第一章 回信</h2>',
+                "<p>弟弟从信里得知约定，决定留下守门。</p>",
+            ]
+            items = []
+            for number, body in enumerate(bodies):
+                item = epub.EpubHtml(
+                    title=str(number), file_name=f"p{number}.xhtml", lang="zh"
+                )
+                item.content = "<html><body>" + body + "</body></html>"
+                book.add_item(item)
+                items.append(item)
+            book.spine = items
+            book.toc = (
+                (
+                    epub.Link("p0.xhtml#v1", "第一卷 来信", "v1"),
+                    (epub.Link("p0.xhtml#c1", "第一章 选择", "c1"),),
+                ),
+                (
+                    epub.Link("p1.xhtml#v2", "第二卷 守约", "v2"),
+                    (epub.Link("p1.xhtml#c2", "第一章 回信", "c2"),),
+                ),
+            )
+            book.add_item(epub.EpubNcx())
+            path = tmp_path / "volumes.epub"
+            epub.write_epub(str(path), book)
+            manifest = {
+                **_manifest(path),
+                "parser": {
+                    "version": "corpus-parser.v4",
+                    "format": "epub",
+                    "constants": {"work_id": "original-0"},
+                    "normalization": {
+                        "version": "chinese-longform.v2",
+                        "min_body_chars": 1,
+                    },
+                },
+            }
         config = tmp_path / f"manifest-{n}.json"
         config.write_text(json.dumps(manifest))
         admitted = cli(
@@ -2245,6 +2327,42 @@ sys.exit(main(sys.argv[1:]))
         lineage = cli("lineage", "--job-id", admitted["import_job_id"])
         edition = lineage["editions"][0]["edition_id"]
         inspected = cli("inspect", "--edition-id", edition)
+        if bounded_reading and n == 0:
+            assert any(
+                i["code"] == "NUMBER_CONFLICT"
+                for i in inspected["assessment"]["issues"]
+            )
+            profile_file = tmp_path / "epub-v5.json"
+            profile_file.write_text(
+                json.dumps({**manifest["parser"], "version": "corpus-parser.v5"})
+            )
+            previous_edition = edition
+            upgraded = cli(
+                "reprocess",
+                "--edition-id",
+                edition,
+                "--manifest",
+                profile_file,
+                "--run-key",
+                "append-volume-scope",
+            )
+            assert (
+                cli("run", "--job-id", upgraded["import_job_id"], "--max-stages", 8)[
+                    "stop_reason"
+                ]
+                == "COMPLETED"
+            )
+            inspected = cli("inspect", "--edition-id", edition)
+            assert (
+                inspected["edition_id"] == previous_edition
+                and inspected["assessment"]["structure_usable"]
+            )
+            chapters = cli("chapters", "--processing-id", inspected["processing_id"])[
+                "units"
+            ]
+            body = [u for u in chapters if u["kind"] == "chapter"]
+            assert len(body) == 2 and len({u["volume_id"] for u in body}) == 2
+            assert all(u["volume_scope"] for u in body)
         members.append(inspected)
     grouped = decision(
         "resolve-work",
@@ -2313,6 +2431,48 @@ sys.exit(main(sys.argv[1:]))
         "analysis_dispatchable"
     ]
 
+    scope_args = []
+    if bounded_reading:
+        scopes = []
+        for member in members:
+            units = cli("chapters", "--processing-id", member["processing_id"])["units"]
+            versions = [
+                u["source_unit_version_id"]
+                for u in units
+                if u["kind"] == "chapter" and u["status"] == "AVAILABLE"
+            ]
+            assert len(versions) == 2
+            scopes.append(
+                {
+                    "processing_id": member["processing_id"],
+                    "max_chapters": 2,
+                    "first_unit_version_id": versions[0],
+                    "last_unit_version_id": versions[-1],
+                    "max_repairs": 1,
+                }
+            )
+        scope_file = tmp_path / "reading-scopes.json"
+        scope_file.write_text(json.dumps(scopes))
+        scope_args = ["--reading-scopes", scope_file]
+        preview = cli(
+            "reading-preview", "--revision-id", frozen["revision_id"], *scope_args
+        )
+        assert preview["model_calls"] == 0 and preview["target_chapters"] == 4
+        invalid = tmp_path / "invalid-scope.json"
+        invalid.write_text(
+            json.dumps(
+                [{**item, "max_input_bytes_per_chapter": 256} for item in scopes]
+            )
+        )
+        assert "READING_WINDOW_TOO_LARGE" in cli(
+            "reading-preview",
+            "--revision-id",
+            frozen["revision_id"],
+            "--reading-scopes",
+            invalid,
+            success=False,
+        )
+
     def analyze(key, calls=50):
         return cli(
             "analyze",
@@ -2328,6 +2488,7 @@ sys.exit(main(sys.argv[1:]))
             500000,
             "--authorization-ref",
             "scripted-engineering-no-paid-calls",
+            *scope_args,
         )
 
     admitted = analyze("native-analysis")
@@ -2389,6 +2550,14 @@ sys.exit(main(sys.argv[1:]))
     cli("pause", "--job-id", job)
     assert cli("run", "--job-id", job)["stop_reason"] == "PAUSED"
     cli("resume", "--job-id", job)
+    if bounded_reading:
+        import time
+
+        marker = tmp_path / "confirmed-provider-process-exit"
+        monkeypatch.setenv("SOURCE_READING_CRASH_ONCE", str(marker))
+        cli("run", "--job-id", job, "--max-stages", 100, success=False)
+        assert marker.is_file()
+        time.sleep(31)
     outcome = cli("run", "--job-id", job, "--max-stages", 100)
     assert outcome["stop_reason"] == "COMPLETED", outcome
     stages = []
@@ -2405,6 +2574,64 @@ sys.exit(main(sys.argv[1:]))
     assert all(s["status"] == "SUCCEEDED" for s in stages), stages
     assert page["summary"]["knowledge"]["knowledge_candidates"] > 0, page
     assert page["summary"]["knowledge"]["knowledge_cards"] == 0
+    if bounded_reading:
+        narrative = [stage["narrative"] for stage in stages if stage.get("narrative")]
+        observed = [n for n in narrative if n["phase"] == "OBSERVE"]
+        assert len({u for n in observed for u in n["coverage"]["target_units"]}) == 4
+        assert all(
+            n["coverage"]["actual_text_inputs"]
+            and not n["coverage"]["lower_observation_inputs"]
+            for n in observed
+        )
+        assert any(
+            n["phase"] == "SYNTHESIZE"
+            and n["coverage"]["lower_observation_inputs"]
+            and not n["coverage"]["actual_text_inputs"]
+            for n in narrative
+        )
+        assert any(n["repair_round"] == 1 for n in narrative)
+        assert any(
+            n["review"] and n["review"]["decision"] == "REVISE" for n in narrative
+        )
+        assert all(n["coverage"]["understanding_claim"] is False for n in narrative)
+        assert page["summary"]["reading_quality"]["reviewed_target_units"] == 4
+        stage = next(
+            s
+            for s in stages
+            if s.get("narrative") and s["narrative"]["phase"] == "OBSERVE"
+        )
+        chunk = stage["narrative"]["coverage"]["actual_text_inputs"][0]
+        evidence_args = (
+            "--job-id",
+            job,
+            "--operation-id",
+            stage["operation_id"],
+            "--chunk-id",
+            chunk["source_chunk_asset_version_id"],
+        )
+        snippet = cli("evidence", *evidence_args, "--byte-end", chunk["byte_size"])
+        assert snippet["text"] and snippet["generation_allowed"] is False
+        denied = cli(
+            "evidence",
+            *evidence_args,
+            "--byte-end",
+            chunk["byte_size"] + 3,
+            success=False,
+        )
+        assert "READING_EVIDENCE_NOT_READ" in denied
+        recovered_stage = next(
+            s for s in stages if s["operation_id"] == marker.read_text()
+        )
+        assert (
+            recovered_stage["recovery_attempts"]
+            + recovered_stage["fence_reacquisitions"]
+            >= 1
+        )
+        assert (
+            len([e for e in recovered_stage["effects"] if e["status"] == "SUCCEEDED"])
+            == 1
+        )
+
     assert all(s["outputs"] for s in stages if s["kind"] == "MKAOS_EXTRACTION")
     before = cli("status", "--job-id", job)["corpus"]["budget"]
     assert analyze("native-analysis")["replayed"]
@@ -2414,6 +2641,40 @@ sys.exit(main(sys.argv[1:]))
         cli("lineage", "--job-id", job)["summary"]["revision_id"]
         == frozen["revision_id"]
     )
+    if bounded_reading:
+        drift_job = analyze("runtime-change-requires-new-request")["import_job_id"]
+        old_reserve = os.environ.get(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", "4096"
+        )
+        monkeypatch.setenv(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE",
+            str(int(old_reserve) + 1),
+        )
+        drifted = cli("run", "--job-id", drift_job, "--max-stages", 20)
+        assert any(
+            s.get("failure", {}).get("code") == "READING_RUNTIME_CHANGED"
+            for s in drifted["stages"]
+        ), drifted
+        assert all(
+            not s["effects"] for s in cli("results", "--job-id", drift_job)["stages"]
+        )
+        monkeypatch.setenv(
+            "NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE", old_reserve
+        )
+    if bounded_reading:
+        rejected_job = analyze("undeclared-review-downgrade")["import_job_id"]
+        monkeypatch.setenv("SOURCE_READING_BAD_REVIEW", "1")
+        refused = cli("run", "--job-id", rejected_job, "--max-stages", 100)
+        assert refused["job"]["corpus"]["analysis_state"] == "PARTIAL", refused
+        rejected = cli("results", "--job-id", rejected_job, "--limit", 100)
+        assert rejected["summary"]["knowledge"]["knowledge_candidates"] == 0
+        assert any(stage["status"] == "BLOCKED" for stage in rejected["stages"])
+        assert any(
+            issue["reason"] == "NARRATIVE_REVIEW_UNDECLARED_RESOLUTION"
+            for stage in rejected["stages"]
+            for issue in ((stage.get("narrative") or {}).get("issues") or [])
+        ), rejected
+        monkeypatch.delenv("SOURCE_READING_BAD_REVIEW")
     cancelled = analyze("cancel-analysis")
     cli("cancel", "--job-id", cancelled["import_job_id"])
     assert (

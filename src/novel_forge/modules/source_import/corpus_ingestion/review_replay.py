@@ -93,7 +93,10 @@ def carry_review(
             if f["code"] == old["code"]
             and sorted(source_evidence_key(e) for e in f["evidence"]) == keys
         ]
-        if not equivalent and parser.version == "corpus-parser.v4":
+        if not equivalent and parser.version in {
+            "corpus-parser.v4",
+            "corpus-parser.v5",
+        }:
             occurrences = _epub_occurrences(old, document)
             if occurrences:
                 equivalent = [
@@ -169,6 +172,20 @@ def carry_review(
                         "excluded_unit_ids": [u["chapter_id"] for u in excluded],
                     }
                 )
+            elif _epub_volume_repair(old, document):
+                resolutions.append(
+                    {
+                        "issue_id": old["issue_id"],
+                        "resolution": "VERIFIED_VOLUME_SCOPE",
+                        "evidence": old["evidence"],
+                        "profile_hash": document["parser_hash"],
+                        "volume_scopes": [
+                            u["source_locator"]["volume_scope"]
+                            for u in document["units"]
+                            if u["source_locator"].get("volume_scope")
+                        ],
+                    }
+                )
             elif boundary_repair(old) or _epub_fragment_repair(old, document):
                 resolutions.append(
                     {
@@ -193,6 +210,51 @@ def carry_review(
         assessment["coverage"] = "REVIEW_REQUIRED"
     elif assessment["coverage"] == "REVIEW_REQUIRED":
         assessment["coverage"] = "COMPLETE" if assessment["toc_matches"] else "UNKNOWN"
+
+
+def _epub_volume_repair(finding: dict[str, Any], document: dict[str, Any]) -> bool:
+    if document["parser_profile"]["version"] != "corpus-parser.v5" or finding[
+        "code"
+    ] not in {"NUMBER_CONFLICT", "DUPLICATE_TITLE"}:
+        return False
+
+    def without_scope(locator):
+        value = deepcopy(locator)
+        value.pop("volume_scope", None)
+        for fragment in value.get("fragments", []):
+            fragment.pop("volume_scope", None)
+        return value
+
+    matched = []
+    for evidence in finding["evidence"]:
+        rows = [
+            u
+            for u in document["units"]
+            if u["chapter_id"] == evidence["unit_id"]
+            and u["normalized_content_hash"] == evidence["content_hash"]
+            and without_scope(u["source_locator"]) == without_scope(evidence["locator"])
+        ]
+        if len(rows) != 1 or not rows[0]["source_locator"].get("volume_scope"):
+            return False
+        matched.extend(rows)
+    if not matched:
+        return False
+    for unit in matched:
+        peers = [
+            u
+            for u in document["units"]
+            if u.get("unit_kind") in {"CHAPTER", "EXTRA"}
+            and (
+                u.get("declared_number") == unit.get("declared_number")
+                if finding["code"] == "NUMBER_CONFLICT"
+                else u["title"] == unit["title"]
+            )
+        ]
+        if len(peers) < 2 or len({u["volume"] for u in peers}) != len(peers):
+            return False
+        if any(not u["source_locator"].get("volume_scope") for u in peers):
+            return False
+    return True
 
 
 def _epub_occurrences(finding: dict[str, Any], document: dict[str, Any]) -> set[str]:
