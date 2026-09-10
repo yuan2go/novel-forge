@@ -22,6 +22,11 @@
       "sha256": "3f4055e37bbcd29d6ac841cecefa9bfa504758bda2c4168837c359cf452ea30e"
     },
     {
+      "path": "evidence-final-check.log.gz",
+      "size": 547,
+      "sha256": "5e75d77d3bc75c045ad78c41dfbc198ae02caa6f64bde2c90f3cb23f6e4be2f1"
+    },
+    {
       "path": "failed-runs.json",
       "size": 12707,
       "sha256": "eed89fdbcfe95bc9c8eb5109c25c1b50fdc434d28b02a8f942960cd153ba1fce"
@@ -62,9 +67,9 @@
       "sha256": "7890923ae9e9060f5d27e91b32958d76bfd45eb04d07f167b9ef476d6b356a1d"
     },
     {
-      "path": "native-operations.json",
-      "size": 473094,
-      "sha256": "15def1a7d4d259c3d68a666cf8d2251c54f65861c7bffebf2e4a2ed9da6b1a94"
+      "path": "native-operations.json.gz",
+      "size": 69324,
+      "sha256": "f0916ff21ff38c2fbf064c504c206ae9f16999f0276d57887654bd621e2bd1b5"
     },
     {
       "path": "postgres.log.gz",
