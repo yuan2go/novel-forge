@@ -101,6 +101,11 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         "contract_version": contract["version"],
         "frozen_request": payload["requested_manifest"],
         "frozen_budget": payload["budget"],
+        **(
+            {"reading_plans": payload["reading_plans"]}
+            if payload.get("reading_plans")
+            else {}
+        ),
         "frozen_members": frozen["members"],
         "current_availability": availability,
         "members": [

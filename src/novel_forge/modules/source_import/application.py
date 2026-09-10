@@ -822,10 +822,13 @@ class SourceImportApplication:
         if definition == SOURCE_IMPORT_WORK_OPERATION:
             return self._execute_work(worker)
         if definition in {
-            SOURCE_IMPORT_PROFILING_OPERATION, SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
-            SOURCE_IMPORT_DECONSTRUCTION_OPERATION, SOURCE_IMPORT_MKAOS_OPERATION,
+            SOURCE_IMPORT_PROFILING_OPERATION,
+            SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
+            SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
+            SOURCE_IMPORT_MKAOS_OPERATION,
         }:
             from .corpus_ingestion.curated_analysis import curated_provider_gate
+
             curated_provider_gate(self.database_url, worker)
         if definition == SOURCE_IMPORT_PROFILING_OPERATION:
             return self._execute_profiling(worker)
@@ -1940,6 +1943,7 @@ class SourceImportApplication:
         transform: dict[str, Any],
         *,
         source_paths: tuple[str, ...],
+        reading_plan: dict | None = None,
     ) -> None:
         transform_id = str(transform["source_transform_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1958,9 +1962,31 @@ class SourceImportApplication:
                 WHERE transform.project_id=%s
                   AND transform.source_transform_id=%s
                   AND transform.status='ACTIVE'
+                  AND (%s::text[] IS NULL OR chunk.asset_version_id=ANY(%s))
                 ORDER BY chunk.chunk_index
                 """,
-                [worker.project_id, transform_id],
+                [
+                    worker.project_id,
+                    transform_id,
+                    list(
+                        {
+                            c["asset_version_id"]
+                            for u in reading_plan["units"]
+                            for c in u["chunks"]
+                        }
+                    )
+                    if reading_plan
+                    else None,
+                    list(
+                        {
+                            c["asset_version_id"]
+                            for u in reading_plan["units"]
+                            for c in u["chunks"]
+                        }
+                    )
+                    if reading_plan
+                    else None,
+                ],
             )
             rows = uow.cursor.fetchall()
             if not rows:
@@ -2039,7 +2065,7 @@ class SourceImportApplication:
             }
             for item in chunks
         )
-        if source_work_asset_version_id:
+        if source_work_asset_version_id and not reading_plan:
             input_assets += (
                 {
                     "asset_version_id": source_work_asset_version_id,
@@ -2070,6 +2096,7 @@ class SourceImportApplication:
                 "source_work_asset_version_id": source_work_asset_version_id,
                 "source_work_unit_count": source_work_unit_count,
                 "source_paths": list(source_paths),
+                **({"reading_plan": reading_plan} if reading_plan else {}),
             },
             input_assets=input_assets,
             ready=False,
@@ -3379,6 +3406,7 @@ class SourceImportApplication:
                 scope=scope,
                 profile_asset_version_id=str(profile["asset_version_id"]),
                 resolved_content_type=str(profile["resolved_content_type"]),
+                reading_plan=payload.get("reading_plan"),
             )
         else:
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -3399,6 +3427,7 @@ class SourceImportApplication:
         scope: LogicalDocumentScope,
         profile_asset_version_id: str,
         resolved_content_type: str,
+        reading_plan: dict | None = None,
     ) -> None:
         policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
         import_policy = SourceImportPolicy(**dict(job["import_policy"]))
@@ -3427,6 +3456,10 @@ class SourceImportApplication:
                 registry=self.methodology_registry,
                 routing_policy_version=policy.routing_policy_version,
             )
+        if reading_plan:
+            from .corpus_ingestion.narrative_execution import narrative_strategy
+
+            strategy = narrative_strategy(strategy)
         stable_key = _hash(
             {
                 "profile_asset_version_id": profile_asset_version_id,
@@ -3452,6 +3485,7 @@ class SourceImportApplication:
                 "routing_policy_version": policy.routing_policy_version,
                 "analysis_strategy": strategy.to_dict(),
                 "analysis_strategy_fingerprint": strategy.fingerprint,
+                **({"reading_plan": reading_plan} if reading_plan else {}),
             },
             input_assets=(
                 {
@@ -3587,6 +3621,19 @@ class SourceImportApplication:
                 result=result,
             )
             uow.commit()
+        if payload.get("reading_plan"):
+            from .corpus_ingestion.narrative_execution import begin_reading
+
+            begin_reading(
+                self,
+                worker,
+                job,
+                payload["reading_plan"],
+                scope,
+                strategy,
+                str(plan["asset_version_id"]),
+            )
+            return result
         self._admit_deconstruction_children(
             worker,
             job,
@@ -3742,6 +3789,10 @@ class SourceImportApplication:
                 worker.causation_id, worker.project_id
             )
             operation_payload = dict(operation["command_payload"])["payload"]
+        if "narrative_reading" in operation_payload:
+            from .corpus_ingestion.narrative_execution import execute_reading
+
+            return execute_reading(self, worker, operation_payload)
         if "reprocessing_plan_asset_version_id" in operation_payload:
             return self._execute_reprocessing_deconstruction(
                 worker, dict(operation_payload)
@@ -4202,29 +4253,18 @@ class SourceImportApplication:
                     "SOURCE_IMPORT_OBSERVATION_MISSING",
                     "MKAOS extraction Observation is unavailable",
                 )
-            uow.cursor.execute(
-                """
-                SELECT span.source_chunk_asset_version_id,
-                       span.chunk_byte_start, span.chunk_byte_end,
-                       span.evidence_hash
-                FROM authority_source_deconstruction_observation_input AS input
-                JOIN authority_source_evidence_span AS span
-                  ON span.evidence_span_id=input.evidence_span_id
-                WHERE input.project_id=%s
-                  AND input.observation_asset_version_id=%s
-                  AND input.role='SOURCE_CHUNK_EVIDENCE'
-                ORDER BY input.ordinal
-                """,
-                [worker.project_id, observation_version],
-            )
             evidence_spans = tuple(
                 KnowledgeEvidenceSpan(
-                    source_chunk_asset_version_id=str(row[0]),
-                    chunk_byte_start=int(row[1]),
-                    chunk_byte_end=int(row[2]),
-                    evidence_hash=str(row[3]),
+                    source_chunk_asset_version_id=row[0],
+                    chunk_byte_start=row[1],
+                    chunk_byte_end=row[2],
+                    evidence_hash=row[3],
                 )
-                for row in uow.cursor.fetchall()
+                for row in SourceIntelligenceRepository(
+                    uow.cursor
+                ).observation_evidence_spans(
+                    project_id=worker.project_id, asset_version_id=observation_version
+                )
             )
             mkaos_methodology = self.methodology_registry.require(
                 str(payload["mkaos_skill_id"]),

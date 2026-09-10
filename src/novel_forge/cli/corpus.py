@@ -41,6 +41,8 @@ def add_corpus_parser(subparsers: Any) -> None:
             "relate",
             "curate",
             "analyze",
+            "reading-preview",
+            "chapters",
             "inspect",
             "compare",
             "discover",
@@ -62,6 +64,11 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument(
+        "--reading-scopes",
+        type=Path,
+        help="bounded JSON array of exact ChapterReadingScope requests",
+    )
     parser.add_argument("--work-id", default="")
     parser.add_argument("--corpus-id", default="")
     parser.add_argument("--revision-id", default="")
@@ -91,6 +98,8 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         in {
             "status",
             "results",
+            "reading-preview",
+            "chapters",
             "lineage",
             "inspect",
             "compare",
@@ -112,6 +121,27 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             revision=bool(args.revision_id),
             principal=principal,
         )
+    if args.action == "chapters":
+        return query.chapter_units(
+            project_id=project,
+            processing_id=args.processing_id,
+            after=int(args.after or 0),
+            limit=args.limit,
+            principal=principal,
+        )
+    reading_scopes = []
+    if getattr(args, "reading_scopes", None):
+        if args.reading_scopes.stat().st_size > 262144:
+            raise ValueError("reading scope configuration exceeds 256 KiB")
+        reading_scopes = json.loads(args.reading_scopes.read_text(encoding="utf-8"))
+    if args.action == "reading-preview":
+        from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
+            preview_reading,
+        )
+
+        return preview_reading(
+            settings.database_url, project, args.revision_id, reading_scopes, principal
+        )
     if args.action == "analyze":
         from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
             CuratedAnalysisRequest,
@@ -132,6 +162,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             max_tokens=args.max_tokens,
             authorization_ref=args.authorization_ref,
             intelligence_policy=policy,
+            reading_scopes=reading_scopes,
         )
         app = SourceImportApplication(
             settings.database_url, application_build_id=build, commit_sha=sha
@@ -316,7 +347,10 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         if job["status"] in {"PAUSED", "CANCELLED"}:
             break
         eligible = scheduler.pending_for_job(
-            project_id=project, import_job_id=args.job_id, limit=1, excluded=tuple(failed_this_run)
+            project_id=project,
+            import_job_id=args.job_id,
+            limit=1,
+            excluded=tuple(failed_this_run),
         )
         selected = {"operation_id": eligible[0][0]} if eligible else None
         if selected is None:
@@ -368,14 +402,17 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         if len(outcomes) == args.max_stages and remaining != 0
         else "COMPLETED"
         if remaining == 0 or state in {"IMPORTED", "PREVIEWED", "AWAITING_GOVERNANCE"}
-        else "LEASED_BY_OTHER_WORKER" if summary.get("leased_stages", 0) else "NO_READY_WORK"
+        else "LEASED_BY_OTHER_WORKER"
+        if summary.get("leased_stages", 0)
+        else "NO_READY_WORK"
     )
     return {
         "stop_reason": stop,
         "remaining_stages": remaining,
         "stages": outcomes,
         "failed_stages": sum(
-            r["status"] in {"FAILED", "FAILED_FINAL", "FAILED_RETRYABLE", "BLOCKED"} for r in outcomes
+            r["status"] in {"FAILED", "FAILED_FINAL", "FAILED_RETRYABLE", "BLOCKED"}
+            for r in outcomes
         ),
         "stage_limit": args.max_stages,
         "job": final,
@@ -385,13 +422,28 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
 def format_corpus_report(result: dict[str, Any]) -> str:
     job = result.get("job", result)
     summary = result.get("summary", job.get("corpus", {}))
-    lines = [f"Job: {result.get('import_job_id', job.get('import_job_id', '-'))}", f"State: {summary.get('analysis_state', job.get('effective_status', job.get('status', '-')))}"]
-    for key in ("purpose", "revision_id", "selected_members", "unselected_members", "remaining_stages", "failed_stages", "next_action"):
+    lines = [
+        f"Job: {result.get('import_job_id', job.get('import_job_id', '-'))}",
+        f"State: {summary.get('analysis_state', job.get('effective_status', job.get('status', '-')))}",
+    ]
+    for key in (
+        "purpose",
+        "revision_id",
+        "selected_members",
+        "unselected_members",
+        "remaining_stages",
+        "failed_stages",
+        "next_action",
+    ):
         if key in summary:
             lines.append(f"{key}: {summary[key]}")
     if "stop_reason" in result:
         lines.append(f"stop_reason: {result['stop_reason']}")
     for stage in result.get("stages", []):
-        lines.append(f"{stage['operation_id']} {stage.get('kind', '')} {stage['status']} {stage.get('processing_id', '')}")
-    lines.append("Use --format json for exact frozen lineage, output identities and cost-status evidence.")
+        lines.append(
+            f"{stage['operation_id']} {stage.get('kind', '')} {stage['status']} {stage.get('processing_id', '')}"
+        )
+    lines.append(
+        "Use --format json for exact frozen lineage, output identities and cost-status evidence."
+    )
     return "\n".join(lines)

@@ -8,6 +8,169 @@ from .corpus_processing_records import CorpusProcessingRecords
 
 
 class CorpusCatalogRecords(CorpusProcessingRecords):
+    def catalog_chapter_page(
+        self, project: str, processing: str, after: int, limit: int
+    ) -> dict:
+        source = self.catalog_processings(project, [processing]).get(processing)
+        if source is None:
+            raise KernelError(
+                "READING_PROCESSING_MISSING",
+                "exact Processing not found in this project",
+            )
+        self.cursor.execute(
+            """SELECT source_unit_version_id,source_unit_id,ordinal,kind,title,normalized_content_hash,
+            character_count,status,metadata->>'volume',source_locator->'volume_scope'
+            FROM authority_source_unit_version WHERE project_id=%s AND source_work_asset_version_id=%s
+            AND ordinal>%s ORDER BY ordinal LIMIT %s""",
+            [project, source["source_work_asset_version_id"], after, limit + 1],
+        )
+        rows = self.cursor.fetchall()
+        return {
+            "processing_id": processing,
+            "edition_id": source["edition_id"],
+            "current": source["current"],
+            "source_work_asset_version_id": source["source_work_asset_version_id"],
+            "units": [
+                dict(
+                    zip(
+                        (
+                            "source_unit_version_id",
+                            "source_unit_id",
+                            "ordinal",
+                            "kind",
+                            "title",
+                            "normalized_content_hash",
+                            "characters",
+                            "status",
+                            "volume_id",
+                            "volume_scope",
+                        ),
+                        r,
+                    )
+                )
+                for r in rows[:limit]
+            ],
+            "next_after": rows[limit - 1][2] if len(rows) > limit else None,
+        }
+
+    def catalog_reading_chunk_blobs(
+        self, project: str, identities: list[str]
+    ) -> list[dict]:
+        if not identities or len(identities) > 4096:
+            raise KernelError(
+                "READING_CHUNK_BOUND", "a nonempty bounded exact input is required"
+            )
+        self.cursor.execute(
+            """SELECT c.asset_version_id,c.content_hash,c.byte_size,b.actual_object_key,b.actual_hash,b.actual_size,b.status
+            FROM authority_source_chunk c JOIN authority_blob b ON b.blob_id=c.blob_id
+            WHERE c.project_id=%s AND c.asset_version_id=ANY(%s) ORDER BY c.chunk_index""",
+            [project, identities],
+        )
+        return [
+            dict(
+                zip(
+                    (
+                        "asset_version_id",
+                        "content_hash",
+                        "byte_size",
+                        "actual_object_key",
+                        "actual_hash",
+                        "actual_size",
+                        "status",
+                    ),
+                    r,
+                )
+            )
+            for r in self.cursor.fetchall()
+        ]
+
+    def catalog_reading_units(
+        self, project: str, work_version: str, scope: dict
+    ) -> list[dict]:
+        self.cursor.execute(
+            "SELECT source_unit_version_id,ordinal FROM authority_source_unit_version WHERE project_id=%s AND source_work_asset_version_id=%s AND source_unit_version_id=ANY(%s)",
+            [
+                project,
+                work_version,
+                [scope["first_unit_version_id"], scope["last_unit_version_id"]],
+            ],
+        )
+        endpoints = dict(self.cursor.fetchall())
+        if set(endpoints) != {
+            scope["first_unit_version_id"],
+            scope["last_unit_version_id"],
+        }:
+            raise KernelError(
+                "READING_UNIT_VERSION_MISMATCH",
+                "endpoints must belong to the exact project and Processing",
+            )
+        first, last = (
+            endpoints[scope["first_unit_version_id"]],
+            endpoints[scope["last_unit_version_id"]],
+        )
+        if last < first or last - first + 1 > scope["max_chapters"]:
+            raise KernelError(
+                "READING_CHAPTER_BOUND", "range must be ordered and bounded"
+            )
+        self.cursor.execute(
+            """SELECT to_jsonb(u) - 'project_id' - 'author' - 'raw_file_path' FROM authority_source_unit_version u
+            WHERE project_id=%s AND source_work_asset_version_id=%s AND ordinal BETWEEN %s AND %s ORDER BY ordinal LIMIT %s""",
+            [
+                project,
+                work_version,
+                max(1, first - scope["context_before"]),
+                last + scope["context_after"],
+                scope["max_chapters"] + 5,
+            ],
+        )
+        units = [r[0] for r in self.cursor.fetchall()]
+        target = [u for u in units if first <= u["ordinal"] <= last]
+        if len(target) != last - first + 1:
+            raise KernelError(
+                "READING_UNIT_GAP", "selected source unit sequence is incomplete"
+            )
+        for unit in units:
+            unit["role"] = (
+                "TARGET" if first <= unit["ordinal"] <= last else "ALLOWED_CONTEXT"
+            )
+        return units
+
+    def catalog_reading_chunks(
+        self, project: str, transform: str, units: list[dict]
+    ) -> list[dict]:
+        self.cursor.execute(
+            """SELECT asset_version_id,chunk_index,content_hash,byte_size,source_byte_start,source_byte_end
+            FROM authority_source_chunk WHERE project_id=%s AND source_transform_id=%s
+            AND source_byte_end>%s AND source_byte_start<%s ORDER BY chunk_index LIMIT 4097""",
+            [
+                project,
+                transform,
+                units[0]["normalized_byte_start"],
+                units[-1]["normalized_byte_end"],
+            ],
+        )
+        rows = self.cursor.fetchall()
+        if len(rows) > 4096:
+            raise KernelError(
+                "READING_CHUNK_BOUND", "narrow the requested reading range"
+            )
+        return [
+            dict(
+                zip(
+                    (
+                        "asset_version_id",
+                        "chunk_index",
+                        "content_hash",
+                        "byte_size",
+                        "source_byte_start",
+                        "source_byte_end",
+                    ),
+                    r,
+                )
+            )
+            for r in rows
+        ]
+
     def catalog_current(
         self, kind: str, project: str, identity: str, *, revision: bool = False
     ) -> dict[str, Any] | None:

@@ -2125,8 +2125,9 @@ def test_native_catalogue_resolution_preserves_input_scope(
     assert any(i.get("annotations") for i in fourth["assessment"]["issues"])
 
 
+@pytest.mark.parametrize("bounded_reading", [False, True])
 def test_native_cli_curated_analysis_controls_results_and_relation_guards(
-    corpus, tmp_path, monkeypatch
+    corpus, tmp_path, monkeypatch, bounded_reading
 ):
     import os
     from pathlib import Path
@@ -2142,6 +2143,19 @@ from novel_forge.modules.source_import.execution_contracts import content_intell
 def transport(stage, inputs):
  if stage == CLASSIFICATION_STAGE:
   return {'content_type':'PUBLISHED_FICTION','confidence':0.97,'alternatives':[{'content_type':'PUBLISHED_FICTION','confidence':0.97},{'content_type':'UNKNOWN','confidence':0.03}],'evidence_codes':['BOUNDED_SEMANTIC_SAMPLE'],'boundary_assessment':{'scope_kind':'FILE_DOCUMENT','suspected_document_count':1,'review_required':False}}
+ if inputs.get('narrative_contract'):
+  context=inputs['reading_context']
+  prior=context['prior_issues']
+  if 'review_target' in inputs:
+   if context['repair_round']==0:
+    return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
+   return {'decision':'ACCEPT_IN_SCOPE','issues':[],'resolved_issue_ids':[i['issue_id'] for i in prior],'preserve_requirements':[],'scope_limitations':'Only the supplied target is evaluated; literary quality is unproven.'}
+  segments=inputs.get('source_segments') or []
+  evidence=[]
+  if segments:
+   segment=segments[0];value=segment['content'].splitlines(keepends=True)[0]
+   evidence=[{'chunk_id':segment['source_chunk_asset_version_id'],'byte_start':0,'byte_end':len(value.encode()),'support_text':value}]
+  return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
  return content_intelligence_fixture_response(stage,inputs)
 d.content_intelligence_fixture_response=transport
 from novel_forge.cli.authority import main
@@ -2161,7 +2175,11 @@ sys.exit(main(sys.argv[1:]))
             *map(str, args),
         ]
         run = subprocess.run(
-            command, env=dict(os.environ), capture_output=True, text=True, timeout=120
+            command,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+            timeout=240 if bounded_reading else 120,
         )
         transcript.append(
             {
@@ -2313,6 +2331,28 @@ sys.exit(main(sys.argv[1:]))
         "analysis_dispatchable"
     ]
 
+    scope_args = []
+    if bounded_reading:
+        scopes = []
+        with psycopg.connect(DATABASE_URL) as connection:
+            for member in members:
+                versions = connection.execute(
+                    "SELECT source_unit_version_id FROM authority_source_unit_version WHERE source_work_asset_version_id=%s AND status='AVAILABLE' AND kind='chapter' ORDER BY ordinal",
+                    [member["source_work_asset_version_id"]],
+                ).fetchall()
+                assert len(versions) == 2
+                scopes.append(
+                    {
+                        "processing_id": member["processing_id"],
+                        "first_unit_version_id": versions[0][0],
+                        "last_unit_version_id": versions[-1][0],
+                        "max_repairs": 1,
+                    }
+                )
+        scope_file = tmp_path / "reading-scopes.json"
+        scope_file.write_text(json.dumps(scopes))
+        scope_args = ["--reading-scopes", scope_file]
+
     def analyze(key, calls=50):
         return cli(
             "analyze",
@@ -2328,6 +2368,7 @@ sys.exit(main(sys.argv[1:]))
             500000,
             "--authorization-ref",
             "scripted-engineering-no-paid-calls",
+            *scope_args,
         )
 
     admitted = analyze("native-analysis")

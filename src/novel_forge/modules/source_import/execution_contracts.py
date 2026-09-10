@@ -62,7 +62,7 @@ def compound_deconstruction_output_schema() -> dict[str, Any]:
                                 "SUCCEEDED",
                                 "NOT_APPLICABLE",
                                 "FAILED_VALIDATION",
-                            ]
+                            ],
                         },
                         "findings": {
                             "type": "array",
@@ -110,7 +110,7 @@ def compound_deconstruction_output_schema() -> dict[str, Any]:
                 "properties": {
                     "scope_claim": {
                         "type": "string",
-                        "enum": ["FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"]
+                        "enum": ["FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"],
                     },
                     "uncovered_material_acknowledged": {"type": "boolean"},
                 },
@@ -251,7 +251,7 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                                 "properties": {
                                     "input_observation_asset_version_ids": {
                                         "type": "array",
-                                        "minItems": 1
+                                        "minItems": 1,
                                     }
                                 },
                             },
@@ -291,7 +291,7 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "copyright_boundaries": string_list,
                 "knowledge_kind": {
                     "type": "string",
-                    "enum": ["NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"]
+                    "enum": ["NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"],
                 },
                 "semantic_family": {
                     "type": "string",
@@ -311,7 +311,7 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                         "SCENE_INTERACTION",
                         "ANTI_PATTERN_FAILURE",
                         "PROFESSIONAL_CAUSAL_MECHANISM",
-                    ]
+                    ],
                 },
                 "mechanism": {"type": "string", "minLength": 1, "maxLength": 2_000},
                 "applicability": string_list,
@@ -526,9 +526,24 @@ def validate_content_intelligence_output(
     output_schema: Mapping[str, Any],
     value: Mapping[str, Any],
 ) -> Mapping[str, Any]:
+    if stage == DECONSTRUCTION_STAGE:
+        from .corpus_ingestion.narrative_contracts import (
+            narrative_schema,
+            review_schema,
+        )
 
+        if dict(output_schema) in (narrative_schema(), review_schema()):
+            from novel_forge.modules.chapter_authority.provider_output_contracts import (
+                validate_chapter_provider_output_against_schema,
+            )
+
+            return validate_chapter_provider_output_against_schema(
+                stage, output_schema, value
+            )
     compound_schema = compound_deconstruction_output_schema()
-    is_compound = stage == DECONSTRUCTION_STAGE and dict(output_schema) == compound_schema
+    is_compound = (
+        stage == DECONSTRUCTION_STAGE and dict(output_schema) == compound_schema
+    )
     expected = (
         compound_schema if is_compound else content_intelligence_output_schema(stage)
     )
@@ -700,10 +715,8 @@ def _validate_compound_deconstruction(payload: dict[str, Any]) -> dict[str, Any]
         not isinstance(observations, list)
         or not 1 <= len(observations) <= 12
         or not isinstance(coverage, Mapping)
-        or set(coverage)
-        != {"scope_claim", "uncovered_material_acknowledged"}
-        or coverage.get("scope_claim")
-        not in {"FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"}
+        or set(coverage) != {"scope_claim", "uncovered_material_acknowledged"}
+        or coverage.get("scope_claim") not in {"FULL_WORK", "BOUNDED_STRATIFIED_SAMPLE"}
         or not isinstance(coverage.get("uncovered_material_acknowledged"), bool)
     ):
         raise ValueError("invalid compound deconstruction Provider output")
@@ -740,9 +753,7 @@ def _validate_compound_deconstruction(payload: dict[str, Any]) -> dict[str, Any]
             or not isinstance(validation_errors, list)
             or len(validation_errors) > 10
             or any(
-                not isinstance(error, str)
-                or not error.strip()
-                or len(error) > 500
+                not isinstance(error, str) or not error.strip() or len(error) > 500
                 for error in validation_errors
             )
         ):
@@ -759,8 +770,7 @@ def _validate_compound_deconstruction(payload: dict[str, Any]) -> dict[str, Any]
         for finding in findings:
             if (
                 not isinstance(finding, Mapping)
-                or set(finding)
-                != {"finding_code", "statement", "evidence_span_ids"}
+                or set(finding) != {"finding_code", "statement", "evidence_span_ids"}
                 or not str(finding.get("finding_code") or "").strip()
                 or not str(finding.get("statement") or "").strip()
                 or not isinstance(finding.get("evidence_span_ids"), list)

@@ -626,6 +626,8 @@ class PostgresContentIntelligenceExecutionPort:
         analysis_plan_asset_version_id: str = "",
         compound_analyzers: tuple[AnalyzerContract, ...] = (),
         sampling_manifest: Mapping[str, Any] | None = None,
+        narrative_context: dict[str, Any] | None = None,
+        review_target: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         analyzers = compound_analyzers or (analyzer,)
         compound = bool(compound_analyzers)
@@ -742,6 +744,20 @@ class PostgresContentIntelligenceExecutionPort:
                     "sampling_manifest_hash": sampling_manifest_hash,
                 }
             )
+        if narrative_context:
+            from .corpus_ingestion.narrative_contracts import (
+                NARRATIVE_POLICY,
+                narrative_schema,
+                review_schema,
+            )
+
+            input_payload["narrative_contract"] = NARRATIVE_POLICY
+            input_payload["reading_context"] = narrative_context
+            if review_target is not None:
+                input_payload["review_target"] = review_target
+                input_payload["review_task"] = (
+                    "Diagnose evidence support, causal overreach, epistemic confusion, omitted preconditions, outside-range spoilers and vague summaries. Give scoped actionable repairs. Independent human validation is not implied."
+                )
         spec = _ExecutionSpec(
             kind=(
                 "deconstruction_compound"
@@ -787,15 +803,70 @@ class PostgresContentIntelligenceExecutionPort:
                 "generation_context_allowed": False,
             },
             output_schema=(
-                compound_deconstruction_output_schema()
-                if compound
-                else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+                (review_schema() if review_target is not None else narrative_schema())
+                if narrative_context
+                else (
+                    compound_deconstruction_output_schema()
+                    if compound
+                    else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+                )
             ),
         )
         execution = self._execute(worker=worker, spec=spec)
         provider_output = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
+        if narrative_context:
+            if review_target is not None:
+                log = self._execution_log(
+                    worker=worker,
+                    spec=spec,
+                    execution=execution,
+                    domain_binding={
+                        "narrative_review_binding": {
+                            "reading_identity": narrative_context["reading_identity"],
+                            "target_hash": _hash(review_target),
+                            "review": provider_output,
+                        }
+                    },
+                )
+                return {
+                    "review": provider_output,
+                    "execution_asset_version_id": log.asset_version_id,
+                    "evidence_class": self._evidence_class(execution),
+                    "provider_execution_reused": bool(
+                        execution.get("provider_execution_reused")
+                    ),
+                }
+            from .corpus_ingestion.narrative_contracts import validate_narrative
+
+            provider_output, evidence_spans = validate_narrative(
+                provider_output,
+                segments=source_segments,
+                lower_ids=lower_ids,
+                dimensions=narrative_context["dimensions"],
+            )
+            if not provider_output["findings"]:
+                log = self._execution_log(
+                    worker=worker,
+                    spec=spec,
+                    execution=execution,
+                    domain_binding={
+                        "narrative_empty_observation": {
+                            "reading_identity": narrative_context["reading_identity"],
+                            "scope_limitations": provider_output["scope_limitations"],
+                        }
+                    },
+                )
+                return {
+                    "observation": provider_output,
+                    "evidence_spans": [],
+                    "execution_asset_version_id": log.asset_version_id,
+                    "evidence_class": self._evidence_class(execution),
+                    "provider_execution_reused": bool(
+                        execution.get("provider_execution_reused")
+                    ),
+                }
         if compound:
             requested_dimensions = tuple(item.dimension for item in analyzers)
             ordered_observations = _order_compound_observations(
@@ -940,6 +1011,11 @@ class PostgresContentIntelligenceExecutionPort:
         )
         return {
             "observation": observation,
+            **(
+                {"evidence_spans": [item.to_dict() for item in evidence_spans]}
+                if narrative_context
+                else {}
+            ),
             "execution_asset_version_id": log.asset_version_id,
             "evidence_class": self._evidence_class(execution),
             "provider_execution_reused": bool(

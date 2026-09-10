@@ -87,9 +87,9 @@ def test_source_content_classification_is_registered_and_bounded() -> None:
     schema = content_intelligence_output_schema(CLASSIFICATION_STAGE)
     assert schema["additionalProperties"] is False
     assert schema["properties"]["alternatives"]["maxItems"] == 5
-    assert "including content_type" in schema["properties"]["alternatives"][
-        "description"
-    ]
+    assert (
+        "including content_type" in schema["properties"]["alternatives"]["description"]
+    )
 
 
 def test_fixture_classifier_uses_semantics_and_routes_heterogeneous_documents() -> None:
@@ -202,7 +202,9 @@ def test_compound_deconstruction_canonicalizes_provider_dimension_order() -> Non
         "conflict",
         "pacing",
     ]
-    with pytest.raises(KernelError, match="SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH"):
+    with pytest.raises(
+        KernelError, match="SOURCE_COMPOUND_ANALYSIS_DIMENSION_MISMATCH"
+    ):
         _order_compound_observations(
             observations,
             requested_dimensions=("structure", "conflict", "chapter_hook"),
@@ -236,3 +238,121 @@ def test_compound_not_applicable_result_cannot_smuggle_findings() -> None:
     }
     with pytest.raises(ValueError, match="NOT_APPLICABLE"):
         validate_content_intelligence_output(DECONSTRUCTION_STAGE, schema, output)
+
+
+def test_bounded_narrative_evidence_and_blocker_continuity():
+    import copy
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import (
+        narrative_schema,
+        review_schema,
+        validate_narrative,
+        reconcile_review,
+    )
+    from novel_forge.modules.source_import.execution_contracts import (
+        validate_content_intelligence_output,
+        DECONSTRUCTION_STAGE,
+    )
+
+    raw = "她收到密信。她相信城门仍开着，但叙述者没有确认。"
+    output = {
+        "findings": [
+            {
+                "finding_code": "belief",
+                "statement": "The actor believes the gate is open; objective confirmation is unknown.",
+                "dimension": "information_gap",
+                "certainty": "TEXT_EXPLICIT",
+                "perspective": "CHARACTER_BELIEF",
+                "entity_ids": ["actor"],
+                "caused_by": [],
+                "causal_basis": "",
+                "supports": [
+                    {
+                        "chunk_id": "c1",
+                        "byte_start": 0,
+                        "byte_end": len(raw.encode()),
+                        "support_text": raw,
+                    }
+                ],
+                "input_observation_asset_version_ids": [],
+            }
+        ],
+        "entities": [{"entity_id": "actor", "role": "recipient"}],
+        "confidence": 0.7,
+        "knowledge_status": "NOT_ABSTRACTED",
+        "scope_limitations": "No later chapter has been read.",
+    }
+    segments = ({"source_chunk_asset_version_id": "c1", "content": raw},)
+    validate_content_intelligence_output(
+        DECONSTRUCTION_STAGE, narrative_schema(), output
+    )
+    observed, spans = validate_narrative(
+        output, segments=segments, lower_ids=(), dimensions=["information_gap"]
+    )
+    assert len(spans) == 1 and "supports" not in observed["findings"][0]
+    assert observed["findings"][0]["perspective"] == "CHARACTER_BELIEF"
+    assert observed["findings"][0]["evidence_span_ids"] == [spans[0].evidence_span_id]
+    for mutation, code in (
+        ({"chunk_id": "outside"}, "OUT_OF_SCOPE"),
+        ({"byte_start": 1}, "UTF8_BOUNDARY"),
+        ({"support_text": "城门已经打开。"}, "TEXT_MISMATCH"),
+        ({"byte_end": len(raw.encode()) + 1}, "OUT_OF_SCOPE"),
+    ):
+        changed = copy.deepcopy(output)
+        changed["findings"][0]["supports"][0].update(mutation)
+        with pytest.raises(KernelError, match=code):
+            validate_narrative(
+                changed, segments=segments, lower_ids=(), dimensions=["information_gap"]
+            )
+    for field, value, code in (
+        ("entity_ids", ["invented"], "REFERENCE_INVALID"),
+        ("caused_by", ["belief"], "CAUSAL_REFERENCE_INVALID"),
+        (
+            "input_observation_asset_version_ids",
+            ["other-project"],
+            "LOWER_OBSERVATION_INVALID",
+        ),
+    ):
+        changed = copy.deepcopy(output)
+        changed["findings"][0][field] = value
+        with pytest.raises(KernelError, match=code):
+            validate_narrative(
+                changed, segments=segments, lower_ids=(), dimensions=["information_gap"]
+            )
+    issue = {
+        "issue_id": "knowledge",
+        "finding_code": "belief",
+        "category": "EPISTEMIC_CONFUSION",
+        "severity": "BLOCKING",
+        "reason": "Belief does not confirm objective state.",
+        "repair_goal": "Preserve uncertainty.",
+        "acceptance_condition": "No objective claim without evidence.",
+    }
+    review = {
+        "decision": "ACCEPT_IN_SCOPE",
+        "issues": [],
+        "resolved_issue_ids": [],
+        "preserve_requirements": [],
+        "scope_limitations": "Agent review only.",
+    }
+    validate_content_intelligence_output(DECONSTRUCTION_STAGE, review_schema(), review)
+    with pytest.raises(KernelError, match="UNRESOLVED_BLOCKERS"):
+        reconcile_review(review, [issue], {"belief"})
+    assert (
+        reconcile_review(
+            {**review, "resolved_issue_ids": ["knowledge"]}, [issue], {"belief"}
+        )
+        == []
+    )
+    with pytest.raises(KernelError, match="UNKNOWN_RESOLUTION"):
+        reconcile_review(
+            {**review, "resolved_issue_ids": ["invented"]}, [issue], {"belief"}
+        )
+    empty = {**output, "findings": [], "entities": []}
+    validate_content_intelligence_output(
+        DECONSTRUCTION_STAGE, narrative_schema(), empty
+    )
+    assert validate_narrative(
+        empty, segments=segments, lower_ids=(), dimensions=["information_gap"]
+    ) == (empty, ())
