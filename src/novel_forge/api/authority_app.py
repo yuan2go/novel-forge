@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
     build_production_execution_composition,
+    build_source_import_application,
     build_chapter_authority_application,
     build_chapter_authority_query,
     build_content_authority_application,
@@ -23,7 +24,6 @@ from novel_forge.api.authority_dependencies import (
     chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
@@ -208,12 +208,6 @@ def create_authority_app(settings: IndustrialSettings):
         chapter_application=application,
     )
     build_id, commit_sha = authority_release_identity()
-    runtime_environment = RuntimeEnvironment.parse(
-        str(os.environ.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
-    )
-    source_fixture_root = str(
-        os.environ.get("NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT") or ""
-    ).strip()
     services = AuthorityApiServices(
         production_execution=production_execution,
         chapter_application=application,
@@ -242,13 +236,8 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         source_authority_query=SourceAuthorityQuery(settings.database_url),
-        source_import_application=SourceImportApplication(
-            settings.database_url,
-            application_build_id=build_id,
-            commit_sha=commit_sha,
-            allow_file_repositories=(
-                runtime_environment.fixture_allowed and bool(source_fixture_root)
-            ),
+        source_import_application=build_source_import_application(
+            settings, execution=production_execution
         ),
         source_import_query=SourceImportQuery(settings.database_url),
         mkaos_authority_application=MkaosAuthorityApplication(

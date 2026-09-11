@@ -160,7 +160,18 @@ def freeze_reading_scope(
     return result
 
 
-def preview_reading(database_url, project, revision_id, scopes, principal):
+def preview_reading(
+    database_url,
+    project,
+    revision_id,
+    scopes,
+    principal,
+    *,
+    runtime=None,
+    max_calls=0,
+    max_tokens=0,
+    authorization_ref="",
+):
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     from novel_forge.storage.source_authority_repositories import (
         SourceAuthorityRepository,
@@ -202,6 +213,41 @@ def preview_reading(database_url, project, revision_id, scopes, principal):
         "reading_plans": plans,
         "target_chapters": chapters,
         "planned_calls_without_repairs": 2 * chapters + 4 * len(plans),
+        "planned_calls_with_object_repairs": sum(
+            2
+            * (sum(u["role"] == "TARGET" for u in p["units"]) + 1)
+            * (1 + p["contract"]["max_repairs"])
+            + 2
+            for p in plans.values()
+        ),
+        "runtime": runtime or {"state": "NOT_INSPECTED"},
+        "requested_budget": {
+            "max_calls": max_calls,
+            "max_tokens": max_tokens,
+            "shared_by": [
+                "classification",
+                "observation",
+                "review",
+                "revision",
+                "synthesis",
+                "extraction",
+                "retry",
+            ],
+        },
+        "authorization": {
+            "status": "AUTHORIZATION_REQUIRED",
+            "declared_reference": authorization_ref or None,
+            "reference_is_not_verification": True,
+        },
+        "stop_conditions": [
+            "CURRENT_AUTHORIZATION_CHANGED",
+            "INPUT_OR_RUNTIME_CHANGED",
+            "TOTAL_CALL_OR_TOKEN_BUDGET_EXHAUSTED",
+            "REPAIR_ALLOWANCE_EXHAUSTED",
+            "UNKNOWN_PROVIDER_OUTCOME",
+        ],
+        "hidden_backend_usage": "NOT_OBSERVED",
+        "token_preview_limit": "Later-stage inputs depend on returned observations; every final request requires native token admission.",
         "model_calls": 0,
         "paid_authorization": "NOT_GRANTED_BY_PREVIEW",
         "input_token_accounting": "FINAL_MATERIALIZED_PROVIDER_REQUEST_REQUIRED",
@@ -236,16 +282,49 @@ def read_evidence(
             "request at most 4096 UTF-8 bytes within an actual input chunk",
         )
     with AuthorityUnitOfWork(app.database_url) as uow:
-        stage = SourceImportRepository(uow.cursor).reading_stage(
-            project, job, operation
-        )
+        imports = SourceImportRepository(uow.cursor)
+        stage = imports.reading_stage(project, job, operation)
         repository = SourceAuthorityRepository(uow.cursor)
         require_curated_operation_current(repository, project, operation)
-        inputs = stage["result"].get("coverage", {}).get("actual_text_inputs", [])
-        actual = next(
-            (s for s in inputs if s["source_chunk_asset_version_id"] == chunk_id), None
+        from .reading_evidence import receipt_input_evidence
+
+        evidence = receipt_input_evidence(
+            imports.reading_input_records(project, operation), stage["payload"]
         )
-        if not actual or end > actual["byte_size"]:
+        plan = stage["payload"]["narrative_reading"]
+        for receipt in evidence["input_receipts"]:
+            manifest = receipt.get("manifest")
+            if receipt["state"] == "CONFIRMED_RETURNED" and (
+                manifest.get("reading_identity") != plan["identity"]
+                or manifest.get("processing_id") != plan["processing_id"]
+                or manifest.get("source_transform_id") != plan["source_transform_id"]
+                or manifest.get("manifest_hash")
+                != corpus_hash(
+                    {k: v for k, v in manifest.items() if k != "manifest_hash"}
+                )
+                or not set(manifest.get("target_units", []))
+                <= {
+                    u["source_unit_version_id"]
+                    for u in plan["units"]
+                    if u["role"] == "TARGET"
+                }
+            ):
+                raise KernelError(
+                    "READING_RECEIPT_SCOPE_INVALID",
+                    "receipt does not match the frozen stage and source version",
+                )
+        inputs = evidence["coverage"]["actual_text_inputs"]
+        actual = next(
+            (
+                s
+                for s in inputs
+                if s["source_chunk_asset_version_id"] == chunk_id
+                and start >= s["byte_start"]
+                and end <= s["byte_end"]
+            ),
+            None,
+        )
+        if not actual:
             raise KernelError(
                 "READING_EVIDENCE_NOT_READ",
                 "source is outside this stage's actual reading evidence",
@@ -278,6 +357,8 @@ def read_evidence(
         "byte_end": end,
         "offset_kind": "CHUNK_UTF8_BYTES",
         "content_hash": actual["content_hash"],
+        "input_state": "CONFIRMED_RETURNED",
+        "manifest_hash": evidence["coverage"]["manifest_hash"],
         "evidence_hash": "sha256:" + hashlib.sha256(content[start:end]).hexdigest(),
         "text": text,
         "generation_allowed": False,

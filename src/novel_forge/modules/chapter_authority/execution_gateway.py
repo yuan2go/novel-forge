@@ -2874,8 +2874,16 @@ class PostgresProductionExecutionPayloadResolver:
             raise ValueError("frozen Production ExternalEffect payload changed")
         source_metadata = payload.get("_source_intelligence")
         source_execution = isinstance(source_metadata, Mapping)
-        from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
-        require_corpus_consumption(self.database_url, request.project_id, stored_inputs, source_analysis=source_execution)
+        from novel_forge.modules.source_authority.corpus_consumption import (
+            require_corpus_consumption,
+        )
+
+        require_corpus_consumption(
+            self.database_url,
+            request.project_id,
+            stored_inputs,
+            source_analysis=source_execution,
+        )
         inputs = (
             self.resolve_source_intelligence_inputs(
                 project_id=request.project_id,
@@ -2885,6 +2893,16 @@ class PostgresProductionExecutionPayloadResolver:
             if source_execution
             else stored_inputs
         )
+        actual_manifest = (
+            source_metadata.get("actual_input_manifest") if source_execution else None
+        )
+        if actual_manifest and actual_manifest["materialized_input_hash"] != (
+            "sha256:" + hashlib.sha256(_canonical(inputs).encode("utf-8")).hexdigest()
+        ):
+            raise KernelError(
+                "SOURCE_ACTUAL_INPUT_DRIFT",
+                "final source input differs from durable prepared evidence",
+            )
         if self.fixture_response_factory is None:
             metadata = payload.get("_production_execution")
             capability_runtime = (
@@ -3064,6 +3082,65 @@ class PostgresProductionExecutionPayloadResolver:
         metadata: Mapping[str, Any],
     ) -> dict[str, Any]:
         kind = str(metadata.get("kind") or "")
+        reading_context = stored_inputs.get("reading_context") or {}
+        failed_output = reading_context.get("failed_output")
+        if failed_output:
+            runtime = get_database_runtime(self.database_url)
+            with runtime.connection() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT CASE WHEN e.reconciliation<>'{}'::jsonb THEN e.reconciliation ELSE d.evidence END
+                    FROM authority_external_effect e
+                    JOIN LATERAL (SELECT evidence FROM authority_external_effect_dispatch
+                      WHERE external_effect_id=e.external_effect_id AND status='SUCCEEDED'
+                      ORDER BY generation DESC LIMIT 1) d ON true
+                    WHERE e.project_id=%s AND e.external_effect_id=%s AND e.status='SUCCEEDED'
+                      AND e.request_payload->'input'->'reading_context'->>'reading_identity'=%s""",
+                    [
+                        project_id,
+                        failed_output["effect_id"],
+                        failed_output["reading_identity"],
+                    ],
+                )
+                row = cursor.fetchone()
+            if not row or "result" not in row[0]:
+                raise KernelError(
+                    "SOURCE_DIAGNOSTIC_RECEIPT_UNAVAILABLE",
+                    "directed repair requires the exact returned output",
+                )
+            raw_result = row[0]["result"]
+            if diagnostic_ref := raw_result.get("_rejected_provider_output"):
+                from novel_forge.modules.production_execution.recovery import (
+                    AuthorityExecutionRecoveryStore,
+                )
+
+                diagnostic = AuthorityExecutionRecoveryStore(
+                    self.database_url, project_id=project_id
+                ).read_evidence(diagnostic_ref)
+                path = Path(diagnostic["result_path"])
+                if diagnostic["byte_size"] > 262144:
+                    raise KernelError(
+                        "SOURCE_DIAGNOSTIC_INPUT_BOUND",
+                        "rejected result exceeds the directed repair input bound",
+                    )
+                with path.open("rb") as source:
+                    content = source.read(262145)
+                if (
+                    len(content) != diagnostic["byte_size"]
+                    or "sha256:" + hashlib.sha256(content).hexdigest()
+                    != diagnostic["result_sha256"]
+                ):
+                    raise KernelError(
+                        "SOURCE_DIAGNOSTIC_INPUT_DRIFT",
+                        "rejected result differs from its durable receipt",
+                    )
+                raw_result = content.decode("utf-8", errors="strict")
+            stored_inputs = {
+                **stored_inputs,
+                "reading_context": {
+                    **reading_context,
+                    "failed_output": {**failed_output, "raw_result": raw_result},
+                },
+            }
         if kind == "classification":
             if self.source_object_reader is None:
                 raise KernelError(

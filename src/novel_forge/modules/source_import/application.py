@@ -535,7 +535,7 @@ class SourceImportApplication:
     ) -> dict[str, Any]:
         if principal is not None:
             principal.require("source.authority.execute", project_id)
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
             repository = SourceImportRepository(uow.cursor)
             job = repository.job_for_update(
                 project_id=project_id, import_job_id=import_job_id
@@ -597,13 +597,20 @@ class SourceImportApplication:
                     target="PROCESSING",
                     failure={},
                 )
+            from .corpus_ingestion.reading_recovery import admit_expansion_repairs
+
+            repairs = admit_expansion_repairs(
+                self, uow, job, principal.principal_id if principal else self.worker_id,
+            )
             uow.commit()
         return {
             "import_job_id": import_job_id,
             "project_id": project_id,
-            "status": "PROCESSING" if resumable else str(job["status"]),
+            "status": "PROCESSING" if resumable or repairs else str(job["status"]),
             "resumable_operation_ids": resumable,
             "new_provider_work_created": False,
+            "expansion_repair_operation_ids": repairs,
+            "historical_operations_unchanged": True,
         }
 
     def reconcile_external_state(self, worker: WorkerLeaseCommand) -> str:
@@ -3363,7 +3370,8 @@ class SourceImportApplication:
             "profile_reused": profile_reused,
         }
         blocked = profile["profile_status"] != "ROUTABLE"
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
+            require_current_fence(uow, worker)
             repository = SourceImportRepository(uow.cursor)
             repository.update_files_analysis_by_transform(
                 project_id=worker.project_id,
@@ -3397,8 +3405,15 @@ class SourceImportApplication:
                     else {}
                 ),
             )
+            if not blocked and payload.get("reading_plan"):
+                self._admit_analysis_planning_child(
+                    worker, job, scope=scope,
+                    profile_asset_version_id=str(profile["asset_version_id"]),
+                    resolved_content_type=str(profile["resolved_content_type"]),
+                    reading_plan=payload["reading_plan"],
+                )
             uow.commit()
-        if not blocked:
+        if not blocked and not payload.get("reading_plan"):
             self._admit_analysis_planning_child(
                 worker,
                 job,
@@ -3407,7 +3422,7 @@ class SourceImportApplication:
                 resolved_content_type=str(profile["resolved_content_type"]),
                 reading_plan=payload.get("reading_plan"),
             )
-        else:
+        elif blocked:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 repository = SourceImportRepository(uow.cursor)
                 self._refresh_job(
@@ -3598,7 +3613,8 @@ class SourceImportApplication:
             ],
             "plan_reused": bool(plan.get("duplicate")),
         }
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        with AuthorityUnitOfWork(self.database_url, coordinate_nested=True) as uow:
+            require_current_fence(uow, worker)
             repository = SourceImportRepository(uow.cursor)
             repository.update_files_analysis_by_transform(
                 project_id=worker.project_id,
@@ -3612,6 +3628,19 @@ class SourceImportApplication:
                 profile_asset_version_id=str(payload["profile_asset_version_id"]),
                 analysis_plan_asset_version_id=str(plan["asset_version_id"]),
             )
+            if payload.get("reading_plan"):
+                from .corpus_ingestion.narrative_execution import begin_reading
+
+                child = begin_reading(
+                    self, worker, job, payload["reading_plan"], scope,
+                    strategy, str(plan["asset_version_id"]),
+                )
+                result.update({
+                    "planning_status": "PRODUCED",
+                    "expansion_status": "EXPANDED",
+                    "first_reading_operation_id": child,
+                    "downstream_status": "PENDING",
+                })
             repository.update_work(
                 project_id=worker.project_id,
                 operation_id=worker.causation_id,
@@ -3621,17 +3650,6 @@ class SourceImportApplication:
             )
             uow.commit()
         if payload.get("reading_plan"):
-            from .corpus_ingestion.narrative_execution import begin_reading
-
-            begin_reading(
-                self,
-                worker,
-                job,
-                payload["reading_plan"],
-                scope,
-                strategy,
-                str(plan["asset_version_id"]),
-            )
             return result
         self._admit_deconstruction_children(
             worker,
@@ -5302,6 +5320,8 @@ class SourceImportApplication:
             target = "PARTIALLY_COMPLETED"
         elif statuses & {"PLANNED", "QUEUED", "RUNNING"}:
             return
+        elif repository.missing_reading_expansions(project_id, import_job_id, limit=1):
+            target = "PARTIALLY_COMPLETED"
         else:
             requested_override = _source_analysis_override(job.get("analysis_override"))
             override_applied = True

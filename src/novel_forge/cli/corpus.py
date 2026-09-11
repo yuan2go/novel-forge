@@ -55,6 +55,7 @@ def add_corpus_parser(subparsers: Any) -> None:
             "run",
             "status",
             "results",
+            "targets",
             "pause",
             "resume",
             "cancel",
@@ -103,6 +104,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         in {
             "status",
             "results",
+            "targets",
             "reading-preview",
             "chapters",
             "evidence",
@@ -164,7 +166,19 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         )
 
         return preview_reading(
-            settings.database_url, project, args.revision_id, reading_scopes, principal
+            settings.database_url,
+            project,
+            args.revision_id,
+            reading_scopes,
+            principal,
+            runtime=build_source_import_application(
+                settings, execution=build_production_execution_composition(settings)
+            )
+            ._require_execution_port()
+            .frozen_reading_runtime(),
+            max_calls=args.max_calls,
+            max_tokens=args.max_tokens,
+            authorization_ref=args.authorization_ref,
         )
     if args.action == "analyze":
         from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
@@ -315,6 +329,14 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         )
     if args.action == "status":
         return job
+    if args.action == "targets":
+        return query.reading_targets(
+            project_id=project,
+            import_job_id=args.job_id,
+            after=int(args.after or 0),
+            limit=args.limit,
+            principal=principal,
+        )
     if args.action == "lineage":
         return query.corpus_lineage(
             project_id=project,

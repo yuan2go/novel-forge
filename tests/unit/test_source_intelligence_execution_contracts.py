@@ -19,6 +19,132 @@ from novel_forge.modules.source_import.execution_contracts import (
 from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 
+def test_actual_reading_manifest_uses_materialized_bytes_and_context_roles():
+    from novel_forge.modules.source_import.corpus_ingestion.reading_evidence import (
+        materialized_input_manifest,
+    )
+
+    inputs = {
+        "source_segments": [
+            {"source_chunk_asset_version_id": "chunk:v2", "content": "甲乙"}
+        ],
+        "reading_context": {
+            "reading_identity": "reading:1",
+            "unit_versions": ["unit:v2"],
+        },
+        "review_target": {"observation": {"findings": []}},
+    }
+    manifest = materialized_input_manifest(
+        inputs, {"input_text_hash": "request-hash"}, {"prompt": "v2"}
+    )
+    assert manifest["actual_text_inputs"][0]["byte_end"] == 6
+    assert manifest["actual_text_inputs"][0]["content_hash"].startswith("sha256:")
+    assert manifest["context_roles"]["review_target"].startswith("sha256:")
+    assert "甲乙" not in str(manifest)
+    aggregate = materialized_input_manifest(
+        {"input_observations": [{"asset_version_id": "obs:1", "observation": {}}]},
+        {},
+        {},
+    )
+    assert aggregate["actual_text_inputs"] == []
+    assert aggregate["lower_observation_inputs"] == ["obs:1"]
+
+
+def test_failed_and_unconfirmed_reading_receipts_do_not_share_coverage():
+    from novel_forge.modules.source_import.corpus_ingestion.reading_evidence import (
+        receipt_input_evidence,
+    )
+
+    payload = {
+        "narrative_reading": {
+            "identity": "reading",
+            "processing_id": "processing",
+            "units": [],
+        }
+    }
+    manifest = {
+        "actual_text_inputs": [{"source_chunk_asset_version_id": "sent"}],
+        "target_units": ["unit"],
+    }
+    for status in ("PREPARED", "PLANNED", "UNKNOWN", "RECONCILIATION_REQUIRED"):
+        value = receipt_input_evidence(
+            [{"manifest": manifest, "status": status}], payload
+        )
+        assert value["coverage"]["actual_text_inputs"] == []
+    returned = receipt_input_evidence(
+        [
+            {
+                "manifest": manifest,
+                "returned": True,
+                "status": "SUCCEEDED",
+                "reused": True,
+            }
+        ],
+        payload,
+    )
+    assert returned["coverage"]["actual_text_inputs"] == manifest["actual_text_inputs"]
+    assert returned["input_receipts"][0]["reused"]
+    old = receipt_input_evidence([{"returned": True, "status": "SUCCEEDED"}], payload)
+    assert old["coverage"]["input_state"] == "NOT_RECORDED"
+    assert old["coverage"]["actual_text_inputs"] == []
+
+
+def test_frozen_target_denominator_includes_missing_empty_and_blocked_units():
+    from novel_forge.modules.source_import.corpus_ingestion.reading_progress import (
+        target_progress,
+    )
+
+    plans = {
+        "p": {
+            "identity": "reading",
+            "processing_id": "p",
+            "units": [
+                {"source_unit_version_id": f"unit:{i}", "ordinal": i, "role": "TARGET"}
+                for i in range(3)
+            ],
+        }
+    }
+    rows = [
+        {
+            "reading_identity": "reading",
+            "unit_index": "0",
+            "phase": "OBSERVE",
+            "operation_id": "o",
+            "status": "SUCCEEDED",
+            "input_state": "CONFIRMED_RETURNED",
+        },
+        {
+            "reading_identity": "reading",
+            "unit_index": "0",
+            "phase": "REVIEW",
+            "operation_id": "r",
+            "status": "SUCCEEDED",
+            "decision": "ACCEPT_IN_SCOPE",
+            "semantic_evidence": "AGENT_REVIEW_ONLY",
+            "has_observation": False,
+        },
+        {
+            "reading_identity": "reading",
+            "unit_index": "1",
+            "phase": "REVIEW",
+            "operation_id": "b",
+            "status": "BLOCKED",
+            "decision": "NEEDS_REVIEW",
+        },
+    ]
+    result = target_progress(plans, rows)
+    assert result["target_units"] == 3
+    assert result["processed_target_units"] == 1
+    assert result["no_applicable_findings"] == 1
+    assert not result["coverage_complete"]
+    assert [t["status"] for t in result["target_outcomes"]] == [
+        "NO_APPLICABLE_FINDINGS",
+        "NEEDS_REVIEW",
+        "NOT_EXPANDED",
+    ]
+    assert target_progress(plans, rows + rows)["processed_target_units"] == 1
+
+
 def _inputs(content: str) -> dict[str, object]:
     return {
         "classification_evidence": {
@@ -369,6 +495,10 @@ def test_bounded_narrative_evidence_and_blocker_continuity():
         )
         == []
     )
+    with pytest.raises(KernelError, match="FINDING_DROPPED"):
+        reconcile_review(
+            {**review, "resolved_issue_ids": ["knowledge"]}, [issue], set()
+        )
     with pytest.raises(KernelError, match="UNKNOWN_RESOLUTION"):
         reconcile_review(
             {**review, "resolved_issue_ids": ["invented"]}, [issue], {"belief"}
@@ -380,3 +510,14 @@ def test_bounded_narrative_evidence_and_blocker_continuity():
     assert validate_narrative(
         empty, segments=segments, lower_ids=(), dimensions=["information_gap"]
     ) == (empty, ())
+
+
+def test_recorded_usage_requires_observed_nonnegative_integer_counts():
+    from novel_forge.modules.source_import.execution import _recorded_token_usage
+
+    assert _recorded_token_usage({"total_tokens": 0}) == 0
+    assert _recorded_token_usage({"input_tokens": 14, "output_tokens": 3}) == 17
+    for usage in ({}, {"total_tokens": None}, {"total_tokens": True},
+                  {"total_tokens": -1}, {"input_tokens": 4},
+                  {"total_tokens": 0, "availability": "UNAVAILABLE"}):
+        assert _recorded_token_usage(usage) is None

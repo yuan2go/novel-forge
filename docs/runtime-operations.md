@@ -840,6 +840,42 @@ chunk and byte boundaries. Analysis extends the existing `/corpus/analyze` reque
 Automatic directed repair stays within frozen `max_repairs`. Repair receives the immutable
 prior observation, issue targets and preservation requirements. An unresolved blocking
 issue cannot be silently downgraded or retargeted; explicit resolution is required.
+
+`status` and `results` separate frozen targets, expanded targets, confirmed input, reviewed
+and accepted targets. Use `corpus targets --project-id "$PROJECT" --job-id "$JOB"
+--limit 20 --after 0` for the bounded target page (HTTP GET
+`/product/source-imports/corpus/jobs/{job_id}/reading-targets`). Status embeds at most 20
+targets; result assets remain separate references. An absent chapter task has outcome
+`NOT_EXPANDED`, never “no findings”. An empty observation requires a valid accepting
+review before `NO_APPLICABLE_FINDINGS`. Target counts deduplicate retries and revisions.
+
+Planning success, first reading Operation/Work and READY registration share the owning
+transaction. Observation/review/revision/next-chapter transitions and synthesis-to-MKAOS
+registration also commit with their parent stage. A historical successful plan without its
+expected reading work appears in `expansion_diagnostics`. `corpus resume` admits a
+stable, causally linked reconciliation Operation through the existing Kernel, then
+`corpus run` executes it. It leaves terminal Operations and their recorded results intact.
+Current Source/selection authorization is rechecked; stale authorization blocks repair
+and new dispatch. A changed scope, Prompt, model, or allowance requires a new request and
+frozen selection as applicable. Resume and result queries never reset the budget.
+
+Each stage exposes `input_receipts`, `output_validation` and semantic review independently.
+The actual input manifest binds final assembled chunks and UTF-8 ranges, unit versions,
+Processing, request hash, Prompt/Skill/runtime policy, lower observations and token
+admission. `CONFIRMED_RETURNED` input remains queryable through `evidence` when output
+format, quotation, range or review validation fails. `PREPARED` has no send proof;
+`UNKNOWN` requires reconciliation. Older receipts lacking the manifest report
+`NOT_RECORDED`; current source files cannot fill in historical proof. Reused receipts
+retain the origin Effect and are not new sends. Synthesis of lower observations does not
+increase source-text reading coverage.
+
+Rejected Provider output retains a restricted diagnostic reference, separate from accepted
+Observations and Candidates. Directed repair consumes that exact return, prior issues,
+preservation requirements and the original evidence scope. Deleting a challenged finding
+cannot resolve its blocker. Returned receipts are replayed before another invocation;
+new revisions consume the original shared call/token budget. Missing observed usage
+holds its reservation as unknown, including unobserved CLI overhead. Account-entitlement
+preflight bounds application-visible input only; it does not prove a hard remote limit.
 Invalid review output retries only that review within the same repair allowance. A stopped semantic issue
 requires review and a new explicitly bounded request if further analysis is authorized;
 query/resume cannot reset budgets. Transient failures resume the original job; confirmed

@@ -177,16 +177,16 @@ def admit_curated_analysis(
                 "failure": {},
             }
         )
+        app._ready_child(
+            operation_id=operation,
+            project_id=request.project_id,
+            actor_id=principal.principal_id,
+            trace_id=key,
+            correlation_id=key,
+            causation_id=key,
+            reason="frozen curated analysis ready",
+        )
         uow.commit()
-    app._ready_child(
-        operation_id=operation,
-        project_id=request.project_id,
-        actor_id=principal.principal_id,
-        trace_id=key,
-        correlation_id=key,
-        causation_id=key,
-        reason="frozen curated analysis ready",
-    )
     return {
         "import_job_id": job,
         "operation_id": operation,
@@ -202,6 +202,10 @@ def execute_curated_analysis(runtime: Any, worker: Any) -> dict[str, Any]:
     work, job, payload = runtime._load(worker)
     if work["status"] in {"SUCCEEDED", "REUSED"}:
         return work["result"]
+    if payload.get("reading_expansion_repair"):
+        from .reading_recovery import execute_expansion_repair
+
+        return execute_expansion_repair(runtime, worker, job, payload)
     app = runtime.app
     with AuthorityUnitOfWork(app.database_url, coordinate_nested=True) as uow:
         require_current_fence(uow, worker)

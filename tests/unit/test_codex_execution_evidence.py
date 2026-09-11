@@ -417,7 +417,16 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     }
 
 
-def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
+@pytest.mark.parametrize(
+    "bad_output,expected_failure",
+    [
+        ('{"unexpected":true}', "OUTPUT_SCHEMA_FAILURE"),
+        ("not valid JSON", "INVALID_JSON"),
+    ],
+)
+def test_codex_backend_schema_failure_is_not_a_success_receipt(
+    bad_output, expected_failure
+) -> None:
     contract_set = contracts(
         backend_id="codex-cli",
         runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
@@ -439,8 +448,19 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
         command = (
             sys.executable,
             "-c",
-            "import json,sys; json.dump({'unexpected':True},open(sys.argv[1],'w'))",
+            "import sys; open(sys.argv[1],'w').write(sys.argv[2]); print(sys.argv[3])",
             str(result_path),
+            bad_output,
+            json.dumps(
+                {
+                    "type": "turn.completed",
+                    "usage": {
+                        "input_tokens": 10,
+                        "cached_input_tokens": 0,
+                        "output_tokens": 4,
+                    },
+                }
+            ),
         )
         store = InMemoryExecutionRecordStore()
         backend = CodexCliExecutionBackend(
@@ -454,7 +474,13 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
                         timeout_seconds=5,
                         output_schema_version="schema:chapter-provider-output:draft:v2",
                         command=command,
+                        allowed_tools=("model.provider.invoke",),
                         output_schema=chapter_provider_output_schema("draft"),
+                        capability_evidence={
+                            "fully_rendered_prompt_hash": "sha256:"
+                            + hashlib.sha256(b"prompt").hexdigest(),
+                            "materialization_hash": "sha256:" + "a" * 64,
+                        },
                     )
                 }
             ),
@@ -465,6 +491,7 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
                 allowed_command_prefixes=((sys.executable,),),
                 maximum_result_bytes=1_000_000,
             ),
+            account_entitlement=_entitlement(),
             structured_result_validator=lambda stage, schema, value: (
                 validate_chapter_provider_output_schema(stage, value)
             ),
@@ -472,9 +499,40 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt() -> None:
 
         result = backend.reconcile(backend.submit(request))
 
-    assert result.outcome is ExecutionOutcome.RETRYABLE_FAILURE
+    assert result.outcome is ExecutionOutcome.RETRYABLE_FAILURE, store.get_record(
+        request.execution_id
+    ).raw_evidence.get("failure_code")
     assert (
         store.get_record(request.execution_id).raw_evidence["failure_code"]
-        == "OUTPUT_SCHEMA_FAILURE"
+        == expected_failure
     )
+    assert result.usage_receipt_ref
+    assert store.read_evidence(result.usage_receipt_ref)["total_tokens"] == 14
     assert result.output_manifest_ref is None
+    assert result.raw_output_ref is not None
+    diagnostic = store.read_evidence(result.raw_output_ref)
+    assert diagnostic["result_sha256"].startswith("sha256:")
+    assert diagnostic["input_sha256"]
+    assert "unexpected" not in json.dumps(diagnostic)
+    from types import SimpleNamespace
+    from novel_forge.modules.source_import.execution import (
+        _source_gateway_provider_result,
+    )
+
+    external = _source_gateway_provider_result(
+        binding=SimpleNamespace(
+            request=request, route_snapshot=route, input_manifest=manifest
+        ),
+        session=SimpleNamespace(evidence_store=store),
+        handle=store.get_record(request.execution_id).handle,
+        result=result,
+    )
+    assert external.outcome == "success"
+    assert (
+        external.evidence["output_validation_error"]
+        == "SOURCE_OUTPUT_" + expected_failure
+    )
+    assert external.evidence["usage"]["total_tokens"] == 14
+    assert external.evidence["result"] == {
+        "_rejected_provider_output": result.raw_output_ref
+    }

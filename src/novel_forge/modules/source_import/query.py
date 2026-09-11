@@ -379,6 +379,44 @@ class SourceImportQuery:
             )
         return {"import_job_id": import_job_id, "summary": status["corpus"], **page}
 
+    def reading_targets(
+        self,
+        *,
+        project_id: str,
+        import_job_id: str,
+        after: int = 0,
+        limit: int = 50,
+        principal: Principal | None = None,
+    ) -> dict:
+        from .corpus_ingestion.reading_progress import target_progress
+
+        self._require(principal, project_id)
+        if after < 0 or not 1 <= limit <= 100:
+            raise ValueError("target page requires nonnegative offset and limit 1..100")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            job = repository.job(project_id=project_id, import_job_id=import_job_id)
+            frozen = repository.frozen_operation(
+                project_id, job["discovery_operation_id"]
+            )["payload"]
+            if not frozen.get("reading_plans"):
+                raise KernelError(
+                    "READING_SCOPE_NOT_FOUND", "job has no frozen chapter targets"
+                )
+            progress = target_progress(
+                frozen["reading_plans"],
+                repository.reading_progress_rows(project_id, import_job_id),
+                cancelled=job["status"] == "CANCELLED",
+            )
+        targets = progress.pop("target_outcomes")
+        return {
+            "import_job_id": import_job_id,
+            "summary": progress,
+            "targets": targets[after : after + limit],
+            "next_after": after + limit if after + limit < len(targets) else None,
+            "limit": limit,
+        }
+
     def list_imports(
         self,
         *,

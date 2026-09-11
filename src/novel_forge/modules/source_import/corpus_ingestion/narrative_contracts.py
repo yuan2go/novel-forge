@@ -312,6 +312,14 @@ def reconcile_review(
             "review resolved an unknown prior issue",
         )
     for key in resolutions:
+        if (
+            by_id[key]["finding_code"] != "SCOPE"
+            and by_id[key]["finding_code"] not in finding_ids
+        ):
+            raise KernelError(
+                "NARRATIVE_REVIEW_FINDING_DROPPED",
+                "deleting the finding does not resolve its blocking diagnostic",
+            )
         by_id.pop(key)
     for issue in review["issues"]:
         if (
