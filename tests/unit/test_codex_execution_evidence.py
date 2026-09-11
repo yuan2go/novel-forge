@@ -295,6 +295,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
 
     assert set(CODEX_INPUT_ONLY_OVERRIDES) <= set(prepared.command)
     assert 'web_search="disabled"' in prepared.command
+    assert "features.view_image=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
     assert "features.skip_host_skill_discovery=true" in prepared.command
     assert evidence["policy_requested_model"] == profile.model_id

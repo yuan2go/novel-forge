@@ -9,6 +9,7 @@ from typing import Mapping
 CODEX_INPUT_ONLY_OVERRIDES = (
     'web_search="disabled"',
     "tools.view_image=false",
+    "features.view_image=false",
     "project_doc_max_bytes=0",
     "features.shell_tool=false",
     "features.shell_snapshot=false",
