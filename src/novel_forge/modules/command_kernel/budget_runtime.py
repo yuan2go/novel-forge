@@ -3710,6 +3710,8 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]
         WHERE b.project_id=%s AND e.status<>'SUCCEEDED'
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
           AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
+          AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
+            OR NULLIF(d.evidence #>> '{production_execution,execution_result,started_at}', '') IS NOT NULL)
           AND d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}' IS NULL
           AND NOT EXISTS(SELECT 1 FROM authority_effect_manual_resolution m
               WHERE m.external_effect_id=e.external_effect_id AND m.project_id=b.project_id)
