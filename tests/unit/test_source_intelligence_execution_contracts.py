@@ -194,17 +194,25 @@ def _properties_without_explicit_type(
 
 
 def test_codex_source_output_schemas_type_every_declared_property() -> None:
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import narrative_schema, review_schema
+
     schemas = (
         content_intelligence_output_schema(CLASSIFICATION_STAGE),
         content_intelligence_output_schema(DECONSTRUCTION_STAGE),
         content_intelligence_output_schema(MKAOS_STAGE),
         compound_deconstruction_output_schema(),
+        narrative_schema(), review_schema(),
     )
     assert [
         missing
         for schema in schemas
-        for missing in _properties_without_explicit_type(schema)
+        for missing in _properties_without_explicit_type(codex_output_schema(schema))
     ] == []
+    assert narrative_schema()["properties"]["knowledge_status"] == {"const": "NOT_ABSTRACTED"}
+    for value, expected in [(True, "boolean"), (3, "integer"), (0.5, "number"), (None, "null")]:
+        assert codex_output_schema({"const": value})["type"] == expected
+
 
 
 def test_source_content_classification_is_registered_and_bounded() -> None:

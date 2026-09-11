@@ -916,6 +916,9 @@ do not increase the project caps to compensate for consumed calls.
 
 Codex structured output uses a versioned wire-schema projection: `uniqueItems` remains
 in the frozen local validation Schema and is omitted only from the Provider Schema.
+Primitive enum/const types are explicit in the wire Schema. The native reading preview
+compiles observation, review, classification and extraction schemas without a model call;
+it retains their hashes and distinguishes local compilation from remote acceptance.
 Both schema hashes are retained with execution evidence. A remote `invalid_json_schema`
 400 is a protocol rejection requiring a corrected frozen request, not a transient retry.
 

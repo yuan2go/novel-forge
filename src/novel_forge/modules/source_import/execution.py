@@ -469,7 +469,27 @@ class PostgresContentIntelligenceExecutionPort:
         )
 
         route = self.transport.routes["quality_source_originality"]
+        provider_schemas = {}
+        if route.model_profile.model_provider == "codex-cli":
+            from novel_forge.modules.production_execution.codex_configuration import (
+                CODEX_SCHEMA_PROJECTION_VERSION, codex_output_schema,
+            )
+
+            provider_schemas = {
+                "version": CODEX_SCHEMA_PROJECTION_VERSION,
+                "schema_hashes": {
+                    name: _hash(codex_output_schema(schema))
+                    for name, schema in {
+                        "observation": narrative_schema(),
+                        "review": review_schema(),
+                        "classification": content_intelligence_output_schema(CLASSIFICATION_STAGE),
+                        "extraction": content_intelligence_output_schema(MKAOS_STAGE),
+                    }.items()
+                },
+                "remote_acceptance": "NOT_TESTED_BY_PREVIEW",
+            }
         return {
+            **({"provider_schemas": provider_schemas} if provider_schemas else {}),
             "version": "source-reading-runtime.v2",
             "input_evidence_version": "source-actual-input.v1",
             "provider": route.model_profile.model_provider,
