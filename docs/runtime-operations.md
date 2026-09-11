@@ -937,3 +937,5 @@ Effect and process receipt; admission and pre-send checks block new requests unt
 reconciliation resolves it. Legacy retryable Effects with these receipts are diagnosed
 without rewriting their terminal history. Local process termination is not proof of remote
 cancellation; missing remote identifiers or receipts can require external evidence.
+Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
+`RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
