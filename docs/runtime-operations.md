@@ -336,8 +336,8 @@ The controlled Codex account-entitlement route may instead use
 the CLI, including visible instruction, schema and context, plus the configured reserve
 and margin. It does not prove or precisely limit hidden CLI framing, injected provider
 context, or the final remote request. The route therefore freezes the absolute executable,
-binary hash, observed CLI version, account/configuration references, model and reasoning
-setting, and reconciles observable terminal usage after execution. Reports must preserve
+binary hash, observed CLI version, explicit `NOVEL_FORGE_CODEX_HOME`,
+account/configuration references, model and reasoning setting, and reconciles observable terminal usage after execution. Reports must preserve
 that proof ceiling rather than describing the post-call usage as a precise pre-call hard
 limit.
 
@@ -810,7 +810,7 @@ json.dump([{"processing_id": sys.argv[1], "first_unit_version_id": units[0]["sou
  "context_before": 0, "context_after": 0, "max_repairs": 1,
  "dimensions": ["causal_constraints", "character_choice_cost", "information_gap"]}], open("reading-scopes.json", "w"))
 PY
-novel-forge corpus reading-preview --project-id "$PROJECT" --revision-id "$CURATED_REVISION" --reading-scopes reading-scopes.json
+novel-forge corpus reading-preview --project-id "$PROJECT" --revision-id "$CURATED_REVISION" --reading-scopes reading-scopes.json --inspect-local-codex
 novel-forge corpus analyze --project-id "$PROJECT" --revision-id "$CURATED_REVISION" \
   --reading-scopes reading-scopes.json --run-key "$ANALYSIS_KEY" --limit 1 \
   --max-calls "$AUTHORIZED_CALLS" --max-tokens "$AUTHORIZED_TOKENS" --authorization-ref "$AUTHORIZATION_REF"
@@ -888,3 +888,28 @@ The EPUB logical profile example selects v5. Copy it locally, retain original wo
 and any validated continuation declarations, then use `corpus reprocess --edition-id
 "$EDITION" --manifest "$LOCAL_PROFILE" --run-key "$REPROCESS_KEY"`. This appends Processing
 and Bridge to acquired bytes without new download, changed rights or rewritten history.
+
+
+Corpus `reading-preview` verifies the selected Blob and Chunk bytes, complete UTF-8
+unit coverage and current selection through the same Source readers used by execution.
+`prepared_source_checks` is `NOT_SENT`; it never supplies historical reading evidence.
+Optional `--inspect-local-codex` (HTTP `inspect_local_codex=true`) observes only the
+explicit executable's version/digest and local configuration gaps. It does not inspect
+credentials, call a model or verify a user grant. A metadata-only runtime may use `mock`
+while inspecting a proposed Codex executable; the response keeps those identities separate.
+The real route must be explicitly configured and previewed again before admission.
+
+Controlled Codex invocations freeze the designated account directory and override inherited
+`CODEX_HOME`. They ignore user config/rules, suppress host Skill/AGENTS discovery and
+explicitly disable shell, web search, apps, plugins, browser/computer access, images,
+memories, hooks and autonomous agents. Account entitlement also requires ChatGPT login
+mode. Local configuration and tool policy are part of route identity; changed bindings
+require a new governed request. Returned tool-use evidence remains checked independently.
+Local checks do not establish remote availability or bound unobserved CLI overhead.
+
+For multiple corrected requests under one grant, retain the same project and absolute
+`NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` / `NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT`.
+The existing budget ledger conservatively includes unknown reservations, and Source uses
+the stricter of those absolute caps and the request ceiling. A new run key does not reset
+those project caps. Supply only the remaining authorized allowance to a corrected request;
+do not increase the project caps to compensate for consumed calls.

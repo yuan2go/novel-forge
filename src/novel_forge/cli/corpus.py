@@ -74,6 +74,7 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--work-id", default="")
     parser.add_argument("--corpus-id", default="")
     parser.add_argument("--revision-id", default="")
+    parser.add_argument("--inspect-local-codex", action="store_true")
     parser.add_argument("--max-calls", type=int, default=0)
     parser.add_argument("--max-tokens", type=int, default=0)
     parser.add_argument("--authorization-ref", default="")
@@ -165,17 +166,18 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             preview_reading,
         )
 
+        app = build_source_import_application(
+            settings, execution=build_production_execution_composition(settings)
+        )
         return preview_reading(
             settings.database_url,
             project,
             args.revision_id,
             reading_scopes,
             principal,
-            runtime=build_source_import_application(
-                settings, execution=build_production_execution_composition(settings)
-            )
-            ._require_execution_port()
-            .frozen_reading_runtime(),
+            runtime=app._require_execution_port().frozen_reading_runtime(),
+            object_store_reader=app.object_store_reader,
+            inspect_codex=args.inspect_local_codex,
             max_calls=args.max_calls,
             max_tokens=args.max_tokens,
             authorization_ref=args.authorization_ref,
