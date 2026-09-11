@@ -3625,9 +3625,15 @@ def resolve_provider_budget_failure_in_uow(
             "budget reservation ExternalEffect is missing",
         )
     effect_status = str(effect[0])
+    uow.cursor.execute(
+        f"SELECT {_STARTED_CODEX_DISPATCH_SQL} FROM authority_budget_reservation WHERE reservation_id=%s AND project_id=%s",
+        [reservation_id, project_id],
+    )
+    process_started = bool(uow.cursor.fetchone()[0])
     target = (
         "HELD_UNKNOWN"
         if external_state_unknown
+        or process_started
         or effect_status
         in {
             "DISPATCHING",
@@ -3651,6 +3657,7 @@ def resolve_provider_budget_failure_in_uow(
                 {
                     "effect_status": effect_status,
                     "external_state_unknown": external_state_unknown,
+                    "started_cli_usage_unmeasured": process_started,
                 }
             ),
             reservation_id,
@@ -3677,6 +3684,37 @@ def resolve_provider_budget_failure_in_uow(
         "budget_scope_id": str(row["budget_scope_id"] or ""),
         "budget_scope_revision": row["budget_scope_revision"],
     }
+
+
+_STARTED_CODEX_DISPATCH_SQL = """EXISTS (
+    SELECT 1 FROM authority_external_effect_dispatch d
+    WHERE d.external_effect_id=authority_budget_reservation.external_effect_id
+      AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
+      AND NULLIF(d.evidence #>> '{production_execution,execution_result,started_at}', '') IS NOT NULL
+)"""
+
+
+def provider_usage_accounted_sql() -> str:
+    return f"""(status IN ('RESERVED','HELD_UNKNOWN','SETTLED')
+        OR (status='RELEASED' AND (actual_tokens>0 OR {_STARTED_CODEX_DISPATCH_SQL})))"""
+
+
+def provider_project_usage(cursor: Any, project_id: str) -> dict[str, Any]:
+    cursor.execute(
+        f"""SELECT count(DISTINCT external_effect_id),
+            COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens
+                ELSE greatest(actual_tokens,estimated_tokens) END),0),
+            COALESCE(sum(actual_tokens),0),
+            count(*) FILTER (WHERE status<>'SETTLED' AND actual_tokens=0),
+            COALESCE(sum(greatest(actual_tokens,estimated_tokens)) FILTER
+                (WHERE status<>'SETTLED' AND actual_tokens=0),0)
+        FROM authority_budget_reservation
+        WHERE project_id=%s AND {provider_usage_accounted_sql()}""",
+        [project_id],
+    )
+    row = cursor.fetchone()
+    return dict(zip(("calls_used_or_reserved", "conservative_tokens", "recorded_actual_tokens",
+        "unmeasured_reservations", "unmeasured_reserved_tokens"), map(int, row), strict=True))
 
 
 _USAGE_CAP_DIMENSIONS = frozenset(
@@ -3784,10 +3822,7 @@ def _enforce_usage_caps(
                 SELECT {aggregate}
                 FROM authority_budget_reservation
                 WHERE {where} AND stable_idempotency_key <> %s
-                  AND (
-                    status IN ('RESERVED','HELD_UNKNOWN','SETTLED')
-                    OR (status='RELEASED' AND actual_tokens > 0)
-                  )
+                  AND {provider_usage_accounted_sql()}
                 """,
                 [*params, request.stable_idempotency_key],
             )

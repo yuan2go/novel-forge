@@ -431,9 +431,13 @@ class SourceImportOperationsRecords:
             WHERE w.project_id=%s AND w.import_job_id=%s GROUP BY e.status ORDER BY e.status""",
             [project, job],
         )
+        effects = dict(self.cursor.fetchall())
+        from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage
+
         return {
             "reservations": rows,
-            "effects": dict(self.cursor.fetchall()),
+            "effects": effects,
+            "project_cumulative": provider_project_usage(self.cursor, project),
             "scope": "JOB_OWNED_EFFECTS_ONLY",
             "hidden_backend_usage": "NOT_OBSERVED",
         }

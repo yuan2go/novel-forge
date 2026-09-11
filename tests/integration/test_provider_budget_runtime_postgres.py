@@ -539,6 +539,60 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             )
             self.assertEqual(reserved["status"], "RESERVED")
 
+    def test_started_cli_failure_keeps_shared_allowance_and_legacy_receipts_count(self) -> None:
+        from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage
+        from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+
+        for started, legacy in ((True, False), (True, True), (False, False)):
+            with self.subTest(started=started, legacy=legacy):
+                class RejectedCli(FakeDeterministicProvider):
+                    def execute(self, **kwargs):
+                        return ProviderResult("retryable_failure", "fixture-cli-400", {
+                            "production_execution": {
+                                "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
+                                "execution_result": {"started_at": "2026-09-11T00:00:00Z" if started else None},
+                            },
+                        })
+
+                context, effect = self._effect("retryable_failure")
+                reservation = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                    operation_id=context.operation_id, external_effect_id=effect,
+                    project_id=context.project_id, stable_idempotency_key=f"budget:{effect}",
+                    provider="fake_deterministic_provider", currency="UNKNOWN", estimated_amount=None,
+                    estimated_tokens=1200, accounting_basis="ACCOUNT_ENTITLEMENT",
+                    cost_authorization_ref="fixture-user-grant", call_caps={"project_total": 1},
+                    token_caps={"project_total": 2000},
+                ))
+                dispatch_external_effect(DATABASE_URL, context, effect_id=effect,
+                    worker_id="fixture-worker", lease_seconds=30, adapter=RejectedCli("retryable_failure"))
+                if legacy:
+                    with patch("novel_forge.modules.command_kernel.budget_runtime._STARTED_CODEX_DISPATCH_SQL", "FALSE"):
+                        failed = resolve_provider_budget_failure(DATABASE_URL,
+                            reservation_id=reservation["reservation_id"], project_id=context.project_id)
+                else:
+                    failed = resolve_provider_budget_failure(DATABASE_URL,
+                        reservation_id=reservation["reservation_id"], project_id=context.project_id)
+                self.assertEqual(failed["status"], "HELD_UNKNOWN" if started and not legacy else "RELEASED")
+                with transaction() as connection, connection.cursor() as cursor:
+                    usage = provider_project_usage(cursor, context.project_id)
+                self.assertEqual(usage["calls_used_or_reserved"], int(started))
+                self.assertEqual(usage["conservative_tokens"], 1200 if started else 0)
+                self.assertEqual(usage["recorded_actual_tokens"], 0)
+                if not started:
+                    continue
+                second, second_effect = self._effect_for_project(context.project_id)
+                for call_cap, token_cap, expected in [(1, 3000, "BUDGET_CALL_CAP_EXCEEDED"), (3, 2000, "BUDGET_TOKEN_CAP_EXCEEDED")]:
+                    with self.subTest(cap=expected), self.assertRaises(KernelError) as raised:
+                        reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                            operation_id=second.operation_id, external_effect_id=second_effect,
+                            project_id=context.project_id, stable_idempotency_key=f"budget:{second_effect}:{expected}",
+                            provider="fake_deterministic_provider", currency="UNKNOWN", estimated_amount=None,
+                            estimated_tokens=1000, accounting_basis="ACCOUNT_ENTITLEMENT",
+                            cost_authorization_ref="fixture-user-grant", call_caps={"project_total": call_cap},
+                            token_caps={"project_total": token_cap},
+                        ))
+                    self.assertEqual(raised.exception.code, expected)
+
     def _effect(self, scenario: str) -> tuple[EffectCommandContext, str]:
         project_id = identifier("budget-project")
         return self._effect_for_project(project_id, scenario=scenario)

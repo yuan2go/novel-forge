@@ -913,3 +913,15 @@ The existing budget ledger conservatively includes unknown reservations, and Sou
 the stricter of those absolute caps and the request ceiling. A new run key does not reset
 those project caps. Supply only the remaining authorized allowance to a corrected request;
 do not increase the project caps to compensate for consumed calls.
+
+Codex structured output uses a versioned wire-schema projection: `uniqueItems` remains
+in the frozen local validation Schema and is omitted only from the Provider Schema.
+Both schema hashes are retained with execution evidence. A remote `invalid_json_schema`
+400 is a protocol rejection requiring a corrected frozen request, not a transient retry.
+
+Source status includes `budget.project_cumulative`, derived from the project ledger and
+process receipts across jobs. A started CLI with missing measured usage retains its
+estimated tokens and call allowance. Legacy released reservations with a recorded process
+start remain conservatively counted without rewriting their history; pre-start failures
+remain distinguishable. Unknown use is never reported as measured zero. New requests must
+use the remaining allowance while keeping the original absolute project caps.

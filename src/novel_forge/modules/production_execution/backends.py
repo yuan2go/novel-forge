@@ -48,7 +48,10 @@ from .process_supervisor import (
     ResultIntegrity,
 )
 from .security import assert_no_inline_secrets
-from .codex_configuration import CODEX_INPUT_ONLY_OVERRIDES, require_codex_home
+from .codex_configuration import (
+    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION,
+    codex_output_schema, require_codex_home,
+)
 
 
 def _utc_now() -> str:
@@ -1322,6 +1325,23 @@ class _CodexResultFailure(ValueError):
         self.retryable = retryable
 
 
+def codex_protocol_failure(stdout: str) -> str | None:
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+            if not isinstance(event, dict):
+                continue
+            message = event.get("message") if event.get("type") == "error" else None
+            detail = json.loads(message) if isinstance(message, str) else {}
+            if (isinstance(detail, dict) and detail.get("status") == 400
+                and isinstance(detail.get("error"), dict)
+                and detail["error"].get("code") == "invalid_json_schema"):
+                return "PROVIDER_SCHEMA_REJECTED"
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 def _codex_process_failure(
     status: ProcessReceiptStatus,
 ) -> tuple[str, ExecutionOutcome]:
@@ -1525,6 +1545,12 @@ class CodexCliExecutionBackend:
             "provider_request_id": None,
             "stage": request.stage,
             "output_schema": dict(payload.output_schema or {}),
+            "provider_schema_contract": {
+                "version": CODEX_SCHEMA_PROJECTION_VERSION,
+                "canonical_hash": _sha256(dict(payload.output_schema or {})),
+                "provider_hash": _sha256(codex_output_schema(dict(payload.output_schema or {}))),
+                "local_constraints_retained": ["uniqueItems"],
+            },
             "capability_evidence": dict(payload.capability_evidence or {}),
             "allowed_tools": list(payload.allowed_tools),
             "denied_tools": list(payload.denied_tools),
@@ -1586,6 +1612,11 @@ class CodexCliExecutionBackend:
                 )
         else:
             failure_code, outcome = _codex_process_failure(recovery.receipt.status)
+            if recovery.receipt.status is ProcessReceiptStatus.FAILED:
+                with Path(recovery.receipt.stdout_path).open(encoding="utf-8") as stdout:
+                    protocol_failure = codex_protocol_failure(stdout.read(262144))
+                if protocol_failure:
+                    failure_code, outcome = protocol_failure, ExecutionOutcome.FINAL_FAILURE
             record.raw_evidence.update(
                 {
                     "failure_code": failure_code,
@@ -1654,7 +1685,7 @@ class CodexCliExecutionBackend:
         schema_path = layout.result_path("output.schema.json")
         schema_path.write_text(
             json.dumps(
-                payload.output_schema,
+                codex_output_schema(payload.output_schema),
                 ensure_ascii=False,
                 sort_keys=True,
                 indent=2,

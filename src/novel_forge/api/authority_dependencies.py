@@ -870,6 +870,7 @@ def build_production_execution_composition(
     if codex_models:
         from novel_forge.modules.production_execution.codex_configuration import (
             CODEX_INPUT_ONLY_OVERRIDES,
+            CODEX_SCHEMA_PROJECTION_VERSION,
             require_codex_home,
         )
 
@@ -970,6 +971,7 @@ def build_production_execution_composition(
                     if codex_entitlement
                     else None,
                     "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
+                    "schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
                 },
                 sort_keys=True,
             ).encode()

@@ -1500,6 +1500,13 @@ class PostgresContentIntelligenceExecutionPort:
                 reservation_id=str(reservation["reservation_id"]),
                 project_id=worker.project_id,
             )
+            provider_evidence = dispatched.get("provider_evidence") or {}
+            process_evidence = provider_evidence.get("production_execution", {}).get("process_evidence", {})
+            if process_evidence.get("failure_code") == "PROVIDER_SCHEMA_REJECTED":
+                raise KernelError(
+                    "SOURCE_PROVIDER_SCHEMA_REJECTED",
+                    "Provider rejected the structured Schema; freeze a corrected request using the remaining shared allowance",
+                )
             raise KernelError(
                 "SOURCE_PEP_EXECUTION_FAILED",
                 f"Source Provider outcome was {dispatched.get('outcome')}",
