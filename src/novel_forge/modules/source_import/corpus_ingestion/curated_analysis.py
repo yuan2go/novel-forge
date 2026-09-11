@@ -108,6 +108,7 @@ def admit_curated_analysis(
         )
         from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage
 
+        require_known_cli_outcomes(uow.cursor, request.project_id)
         spent = provider_project_usage(uow.cursor, request.project_id)
         payload = {
             "requested_manifest": frozen,
@@ -305,8 +306,21 @@ def curated_provider_gate(database_url: str, worker: Any) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         require_current_fence(uow, worker)
         repository = SourceAuthorityRepository(uow.cursor)
+        require_known_cli_outcomes(uow.cursor, worker.project_id)
         return require_curated_operation_current(
             repository, worker.project_id, worker.causation_id
+        )
+
+
+def require_known_cli_outcomes(cursor: Any, project: str) -> None:
+    from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+
+    unresolved = unresolved_cli_outcomes(cursor, project)
+    if unresolved:
+        raise KernelError(
+            "SOURCE_CLI_OUTCOME_RECONCILIATION_REQUIRED",
+            "No new model dispatch while the original CLI remote outcome or usage is unknown: "
+            + str([item["external_effect_id"] for item in unresolved]),
         )
 
 

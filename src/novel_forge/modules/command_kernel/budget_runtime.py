@@ -3699,6 +3699,27 @@ def provider_usage_accounted_sql() -> str:
         OR (status='RELEASED' AND (actual_tokens>0 OR {_STARTED_CODEX_DISPATCH_SQL})))"""
 
 
+def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]]:
+    cursor.execute(
+        """SELECT e.external_effect_id,e.operation_id,e.status,
+            d.evidence #>> '{production_execution,execution_result,process_receipt_ref}'
+        FROM authority_budget_reservation b
+        JOIN authority_external_effect e USING(external_effect_id)
+        JOIN LATERAL (SELECT evidence FROM authority_external_effect_dispatch
+            WHERE external_effect_id=e.external_effect_id ORDER BY generation DESC LIMIT 1) d ON true
+        WHERE b.project_id=%s AND e.status<>'SUCCEEDED'
+          AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
+          AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
+          AND d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}' IS NULL
+          AND NOT EXISTS(SELECT 1 FROM authority_effect_manual_resolution m
+              WHERE m.external_effect_id=e.external_effect_id AND m.project_id=b.project_id)
+        ORDER BY e.created_at,e.external_effect_id LIMIT 20""",
+        [project_id],
+    )
+    return [dict(zip(("external_effect_id", "operation_id", "effect_status", "process_receipt_ref"), row, strict=True))
+        | {"state": "RECONCILIATION_REQUIRED", "usage": "UNKNOWN"} for row in cursor.fetchall()]
+
+
 def provider_project_usage(cursor: Any, project_id: str) -> dict[str, Any]:
     cursor.execute(
         f"""SELECT count(DISTINCT external_effect_id),

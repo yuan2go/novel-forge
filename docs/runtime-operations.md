@@ -928,3 +928,12 @@ estimated tokens and call allowance. Legacy released reservations with a recorde
 start remain conservatively counted without rewriting their history; pre-start failures
 remain distinguishable. Unknown use is never reported as measured zero. New requests must
 use the remaining allowance while keeping the original absolute project caps.
+
+Source Codex requests allocate the Effect deadline to one local invocation, retaining
+settlement headroom. The preview reports both the Effect timeout and actual local process
+timeout. A local CLI timeout/cancellation without a final usage receipt is an unknown
+remote outcome, not permission to resend. Source preflight/status exposes the original
+Effect and process receipt; admission and pre-send checks block new requests until governed
+reconciliation resolves it. Legacy retryable Effects with these receipts are diagnosed
+without rewriting their terminal history. Local process termination is not proof of remote
+cancellation; missing remote identifiers or receipts can require external evidence.

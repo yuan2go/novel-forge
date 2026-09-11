@@ -87,6 +87,11 @@ def test_failed_and_unconfirmed_reading_receipts_do_not_share_coverage():
     old = receipt_input_evidence([{"returned": True, "status": "SUCCEEDED"}], payload)
     assert old["coverage"]["input_state"] == "NOT_RECORDED"
     assert old["coverage"]["actual_text_inputs"] == []
+    legacy_timeout = receipt_input_evidence(
+        [{"manifest": manifest, "status": "FAILED_RETRYABLE", "external_state_unknown": True}], payload
+    )
+    assert legacy_timeout["input_receipts"][0]["state"] == "UNKNOWN"
+    assert legacy_timeout["coverage"]["actual_text_inputs"] == []
 
 
 def test_frozen_target_denominator_includes_missing_empty_and_blocked_units():
@@ -529,3 +534,32 @@ def test_recorded_usage_requires_observed_nonnegative_integer_counts():
                   {"total_tokens": -1}, {"input_tokens": 4},
                   {"total_tokens": 0, "availability": "UNAVAILABLE"}):
         assert _recorded_token_usage(usage) is None
+
+
+def test_source_local_timeout_is_unknown_remote_outcome():
+    from novel_forge.modules.source_import.execution import _source_gateway_provider_result
+    from novel_forge.modules.production_execution import ExecutionOutcome, ExecutionRuntimeClass
+
+    class Contract:
+        def __init__(self, **values):
+            self.__dict__.update(values)
+        def to_dict(self):
+            return {}
+
+    binding = Contract(request=Contract(execution_id="fixture-timeout"),
+        route_snapshot=Contract(model_provider="codex-cli", model_id="fixture-model"),
+        input_manifest=Contract(prompt_bundle_version="1", skill_bundle_version="1"))
+    record = Contract(raw_evidence={}, process_receipt=Contract(local_termination_only=True))
+    session = Contract(evidence_store=Contract(get_record=lambda _:record))
+    handle = Contract(transport=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        backend_execution_id="fixture-execution", provider_request_id=None)
+    for outcome in (ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED):
+        result = Contract(outcome=outcome, started_at="2026-09-11T00:00:00Z", normalized_output_ref=None, usage_receipt_ref=None,
+            cost_receipt_ref=None, raw_output_ref=None)
+        adapted = _source_gateway_provider_result(binding=binding, session=session, handle=handle, result=result)
+        assert adapted.outcome == "unknown"
+        assert adapted.evidence["external_state_unknown"] is True
+
+    result.started_at = None
+    adapted = _source_gateway_provider_result(binding=binding, session=session, handle=handle, result=result)
+    assert adapted.outcome == "cancelled"

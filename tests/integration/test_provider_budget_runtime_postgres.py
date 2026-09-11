@@ -593,6 +593,42 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                         ))
                     self.assertEqual(raised.exception.code, expected)
 
+    def test_legacy_cli_timeout_blocks_source_until_reconciled(self) -> None:
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+        from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+        from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import require_known_cli_outcomes
+
+        class TimedOutCli(FakeDeterministicProvider):
+            def execute(self, **kwargs):
+                return ProviderResult("retryable_failure", "fixture-timeout", {
+                    "production_execution": {
+                        "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
+                        "execution_result": {"started_at": "2026-09-11T00:00:00Z",
+                            "outcome": "TIMED_OUT", "usage_receipt_ref": None,
+                            "process_receipt_ref": "fixture-local-only-receipt"},
+                    },
+                })
+
+        context, effect = self._effect("retryable_failure")
+        reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+            operation_id=context.operation_id, external_effect_id=effect,
+            project_id=context.project_id, stable_idempotency_key=f"budget:{effect}",
+            provider="fake_deterministic_provider", currency="UNKNOWN", estimated_amount=None,
+            estimated_tokens=1200, accounting_basis="ACCOUNT_ENTITLEMENT",
+            cost_authorization_ref="fixture-user-grant", call_caps={"project_total": 2},
+            token_caps={"project_total": 3000},
+        ))
+        dispatch_external_effect(DATABASE_URL, context, effect_id=effect,
+            worker_id="fixture-worker", lease_seconds=30, adapter=TimedOutCli("retryable_failure"))
+        with transaction() as connection, connection.cursor() as cursor:
+            rows = unresolved_cli_outcomes(cursor, context.project_id)
+            self.assertEqual(rows[0]["external_effect_id"], effect)
+            self.assertEqual(rows[0]["state"], "RECONCILIATION_REQUIRED")
+            with self.assertRaises(KernelError) as blocked:
+                require_known_cli_outcomes(cursor, context.project_id)
+            self.assertEqual(blocked.exception.code, "SOURCE_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+            require_known_cli_outcomes(cursor, identifier("another-project"))
+
     def _effect(self, scenario: str) -> tuple[EffectCommandContext, str]:
         project_id = identifier("budget-project")
         return self._effect_for_project(project_id, scenario=scenario)

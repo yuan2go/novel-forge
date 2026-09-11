@@ -201,6 +201,9 @@ def preview_reading(
         availability = curated_availability(repository, project, selected)
         if any(not a["available"] for a in availability):
             raise KernelError("CURATED_MEMBERS_UNAVAILABLE", str(availability))
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+
+        execution_blockers = unresolved_cli_outcomes(uow.cursor, project)
         plans = freeze_reading_scope(
             repository,
             project,
@@ -298,6 +301,7 @@ def preview_reading(
         "runtime": runtime or {"state": "NOT_INSPECTED"},
         "prepared_source_checks": input_checks,
         **({"local_codex_preflight": local_codex} if local_codex is not None else {}),
+        "execution_blockers": execution_blockers,
         "requested_budget": {
             "max_calls": max_calls,
             "max_tokens": max_tokens,

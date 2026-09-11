@@ -269,6 +269,15 @@ def _source_gateway_provider_result(
         ExecutionOutcome.FINAL_FAILURE: "final_failure",
         ExecutionOutcome.CANCELLED: "cancelled",
     }.get(result.outcome, "unknown")
+    if (
+        handle.transport is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+        and result.outcome in {ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED}
+        and result.started_at is not None
+        and not result.usage_receipt_ref
+    ):
+        evidence["external_state_unknown"] = True
+        evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"
+        outcome = "unknown"
     failure_code = record.raw_evidence.get("failure_code")
     if result.raw_output_ref and failure_code in {
         "INVALID_JSON",
@@ -504,6 +513,10 @@ class PostgresContentIntelligenceExecutionPort:
             },
             "output_token_reserve": self.provider_output_token_reserve,
             "timeout_seconds": self.provider_timeout_seconds,
+            "provider_max_attempts": self.provider_max_attempts,
+            "local_process_timeout_seconds": _provider_process_timeout_seconds(
+                self.provider_timeout_seconds, max_attempts=self.provider_max_attempts
+            ),
             "budget_contract_hash": _hash(
                 {
                     "basis": self.cost_accounting_basis,
@@ -515,6 +528,11 @@ class PostgresContentIntelligenceExecutionPort:
                 }
             ),
         }
+
+    @property
+    def provider_max_attempts(self) -> int:
+        route = self.transport.routes["quality_source_originality"]
+        return 1 if route.model_profile.model_provider == "codex-cli" else 2
 
     @property
     def source_sample_byte_limit(self) -> int:
@@ -1287,7 +1305,7 @@ class PostgresContentIntelligenceExecutionPort:
             input_text=prompt,
             max_output_tokens=self.provider_output_token_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
-                provider_timeout, max_attempts=2
+                provider_timeout, max_attempts=self.provider_max_attempts
             ),
             stable_idempotency_key=stable_key,
         )
@@ -1431,7 +1449,7 @@ class PostgresContentIntelligenceExecutionPort:
             capability=spec.capability,
             stable_idempotency_key=stable_key,
             request_payload=request_payload,
-            max_attempts=2,
+            max_attempts=self.provider_max_attempts,
             reversible=False,
             completion_policy="synchronous_final",
             model_id=base_route.model_profile.model_id,
