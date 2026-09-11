@@ -48,6 +48,7 @@ from .process_supervisor import (
     ResultIntegrity,
 )
 from .security import assert_no_inline_secrets
+from .codex_configuration import CODEX_INPUT_ONLY_OVERRIDES, require_codex_home
 
 
 def _utc_now() -> str:
@@ -1356,6 +1357,7 @@ class CodexCliExecutionBackend:
         backend_version: str = "1.0.0",
         qualification_ref: str = "capability-probe:codex-cli:1",
         codex_executable: str = "",
+        codex_home: str = "",
         pricing: CodexPricingSnapshot | None = None,
         account_entitlement: CodexAccountEntitlementSnapshot | None = None,
         structured_result_validator: CodexStructuredResultValidator | None = None,
@@ -1366,6 +1368,7 @@ class CodexCliExecutionBackend:
         self.supervisor = supervisor
         self.execution_policy = execution_policy
         self.codex_executable = codex_executable
+        self.codex_home = require_codex_home(codex_home) if codex_executable else ""
         self.pricing = pricing
         self.account_entitlement = account_entitlement
         self.structured_result_validator = structured_result_validator
@@ -1668,6 +1671,16 @@ class CodexCliExecutionBackend:
             route.model_id,
             "-c",
             f"model_reasoning_effort={route.reasoning_effort}",
+            *(
+                arg
+                for override in CODEX_INPUT_ONLY_OVERRIDES
+                for arg in ("-c", override)
+            ),
+            *(
+                ("-c", 'forced_login_method="chatgpt"')
+                if self.account_entitlement
+                else ()
+            ),
             "--sandbox",
             "read-only",
             "--skip-git-repo-check",
@@ -1688,6 +1701,10 @@ class CodexCliExecutionBackend:
         return replace(
             payload,
             command=command,
+            environment_overrides={
+                **(payload.environment_overrides or {}),
+                "CODEX_HOME": self.codex_home,
+            },
             result_filename=result_filename,
         )
 

@@ -294,6 +294,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_RUNTIME_HOST_ID": "host:codex-test",
                 "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:codex-test",
                 "NOVEL_FORGE_CODEX_EXECUTABLE": str(executable),
+                "NOVEL_FORGE_CODEX_HOME": str(root),
                 "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
                 "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(root / "executions"),
                 "NOVEL_FORGE_CODEX_PRICING_REF": "pricing:gpt-5.4:test",
@@ -314,6 +315,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                     env=environment,
                 )
 
+            session = execution.gateway.session_factory("project:codex-test")
+            backend = session.gateway.backends.resolve("codex-cli")
+
         routes = execution.gateway.routes
         self.assertEqual(
             {route.model_profile.backend_id for route in routes.values()},
@@ -326,8 +330,6 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(
             execution.gateway.capability_profile.real_provider_validation_eligible
         )
-        session = execution.gateway.session_factory("project:codex-test")
-        backend = session.gateway.backends.resolve("codex-cli")
         self.assertEqual(
             backend.capability_profile.qualification_ref,
             next(iter(routes.values())).model_profile.capability_probe_ref,
@@ -369,6 +371,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_RUNTIME_HOST_ID": "host:codex-test",
                 "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:chatgpt-account",
                 "NOVEL_FORGE_CODEX_EXECUTABLE": str(executable),
+                "NOVEL_FORGE_CODEX_HOME": str(root),
                 "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
                 "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(root / "executions"),
                 "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
@@ -394,6 +397,31 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                     env=environment,
                 )
 
+                session = execution.gateway.session_factory("project:codex-entitlement")
+                backend = session.gateway.backends.resolve("codex-cli")
+                self.assertEqual(backend.codex_home, str(root.resolve()))
+                changed_home = root / "different-account-directory"
+                changed_home.mkdir()
+                changed = build_production_execution_composition(
+                    IndustrialSettings(
+                        root=repository_root, database_url="postgresql://authority"
+                    ),
+                    provider_registry=ProviderAdapterRegistry(),
+                    env={**environment, "NOVEL_FORGE_CODEX_HOME": str(changed_home)},
+                )
+                self.assertNotEqual(
+                    execution.gateway.routes["draft"].auth_profile_ref,
+                    changed.gateway.routes["draft"].auth_profile_ref,
+                )
+                with self.assertRaisesRegex(ValueError, "explicit existing CODEX_HOME"):
+                    build_production_execution_composition(
+                        IndustrialSettings(
+                            root=repository_root, database_url="postgresql://authority"
+                        ),
+                        provider_registry=ProviderAdapterRegistry(),
+                        env={**environment, "NOVEL_FORGE_CODEX_HOME": ""},
+                    )
+
         self.assertEqual(execution.cost_accounting_basis, "ACCOUNT_ENTITLEMENT")
         self.assertEqual(
             execution.account_authorization_ref,
@@ -403,8 +431,6 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertEqual(execution.shared_budget_caps, {})
         self.assertEqual(execution.provider_call_caps, {"project_total": 420})
         self.assertEqual(execution.provider_token_caps, {"project_total": 42_000_000})
-        session = execution.gateway.session_factory("project:codex-entitlement")
-        backend = session.gateway.backends.resolve("codex-cli")
         self.assertIsNone(backend.pricing)
         self.assertEqual(
             backend.account_entitlement.authorization_ref,

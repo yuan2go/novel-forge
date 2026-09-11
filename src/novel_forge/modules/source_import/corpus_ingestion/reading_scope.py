@@ -168,6 +168,8 @@ def preview_reading(
     principal,
     *,
     runtime=None,
+    object_store_reader=None,
+    inspect_codex=False,
     max_calls=0,
     max_tokens=0,
     authorization_ref="",
@@ -205,6 +207,79 @@ def preview_reading(
             selected,
             tuple(ChapterReadingScope.model_validate(s) for s in scopes),
         )
+    input_checks = {"state": "NOT_INSPECTED", "model_input_state": "NOT_SENT"}
+    if object_store_reader is not None:
+        checked_chunks = 0
+        checked_bytes = 0
+        for plan in plans.values():
+            chunk_ids = list(
+                dict.fromkeys(
+                    c["asset_version_id"]
+                    for unit in plan["units"]
+                    for c in unit["chunks"]
+                )
+            )
+            with AuthorityUnitOfWork(database_url) as uow:
+                rows = SourceAuthorityRepository(
+                    uow.cursor
+                ).catalog_reading_chunk_blobs(project, chunk_ids)
+            if len(rows) != len(chunk_ids) or any(
+                row["status"] != "AVAILABLE" for row in rows
+            ):
+                raise KernelError(
+                    "READING_SOURCE_DRIFT", "selected Blob references are missing"
+                )
+            segments = tuple(
+                {
+                    "source_chunk_asset_version_id": row["asset_version_id"],
+                    "content": object_store_reader.read(
+                        object_key=row["actual_object_key"],
+                        expected_hash=row["actual_hash"],
+                        expected_size=row["actual_size"],
+                    ).decode("utf-8", errors="strict"),
+                }
+                for row in rows
+            )
+            validate_reading_segments(plan["units"], segments)
+            checked_chunks += len(rows)
+            checked_bytes += sum(row["actual_size"] for row in rows)
+        with AuthorityUnitOfWork(database_url) as uow:
+            repository = SourceAuthorityRepository(uow.cursor)
+            repository.corpus_authorization_lock(project)
+            current = repository.catalog_current(
+                "curated", project, frozen["corpus_id"]
+            )
+            if (
+                current["revision_id"] != revision_id
+                or any(
+                    not a["available"]
+                    for a in curated_availability(repository, project, selected)
+                )
+                or freeze_reading_scope(
+                    repository,
+                    project,
+                    selected,
+                    tuple(ChapterReadingScope.model_validate(s) for s in scopes),
+                )
+                != plans
+            ):
+                raise KernelError(
+                    "READING_SOURCE_DRIFT",
+                    "selection changed during input verification",
+                )
+        input_checks = {
+            "state": "VERIFIED",
+            "chunks": checked_chunks,
+            "bytes": checked_bytes,
+            "model_input_state": "NOT_SENT",
+        }
+    local_codex = None
+    if inspect_codex:
+        from novel_forge.modules.production_execution.codex_configuration import (
+            inspect_local_codex,
+        )
+
+        local_codex = inspect_local_codex()
     chapters = sum(
         sum(u["role"] == "TARGET" for u in p["units"]) for p in plans.values()
     )
@@ -221,6 +296,8 @@ def preview_reading(
             for p in plans.values()
         ),
         "runtime": runtime or {"state": "NOT_INSPECTED"},
+        "prepared_source_checks": input_checks,
+        **({"local_codex_preflight": local_codex} if local_codex is not None else {}),
         "requested_budget": {
             "max_calls": max_calls,
             "max_tokens": max_tokens,

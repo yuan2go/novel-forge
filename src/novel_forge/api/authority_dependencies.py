@@ -861,12 +861,19 @@ def build_production_execution_composition(
         )
 
     codex_executable = ""
+    codex_home = ""
     codex_workspace: Path | None = None
     codex_execution_root: Path | None = None
     codex_pricing: CodexPricingSnapshot | None = None
     codex_entitlement: CodexAccountEntitlementSnapshot | None = None
     codex_model = next(iter(codex_models), "")
     if codex_models:
+        from novel_forge.modules.production_execution.codex_configuration import (
+            CODEX_INPUT_ONLY_OVERRIDES,
+            require_codex_home,
+        )
+
+        codex_home = require_codex_home(str(values.get("NOVEL_FORGE_CODEX_HOME") or ""))
         codex_executable = str(values.get("NOVEL_FORGE_CODEX_EXECUTABLE") or "").strip()
         workspace_value = str(values.get("NOVEL_FORGE_CODEX_WORKSPACE") or "").strip()
         execution_root_value = str(
@@ -954,6 +961,26 @@ def build_production_execution_composition(
                     "controlled Codex CLI version differs from its frozen identity"
                 )
             codex_entitlement = CodexAccountEntitlementSnapshot(**entitlement_values)
+        local_binding = hashlib.sha256(
+            json.dumps(
+                {
+                    "codex_home": codex_home,
+                    "executable": codex_executable,
+                    "entitlement": codex_entitlement.to_dict()
+                    if codex_entitlement
+                    else None,
+                    "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
+                },
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        routes = {
+            stage: replace(
+                route,
+                auth_profile_ref=route.auth_profile_ref + ":codex:" + local_binding,
+            )
+            for stage, route in routes.items()
+        }
 
     def validate_codex_result(
         stage: str,
@@ -1067,6 +1094,7 @@ def build_production_execution_composition(
                         ),
                     ),
                     codex_executable=codex_executable,
+                    codex_home=codex_home,
                     pricing=codex_pricing,
                     account_entitlement=codex_entitlement,
                     structured_result_validator=validate_codex_result,

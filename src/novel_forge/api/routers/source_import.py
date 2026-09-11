@@ -57,6 +57,7 @@ class ChapterReadingPreviewRequest(BaseModel):
     max_calls: int = Field(default=0, ge=0, le=10000)
     max_tokens: int = Field(default=0, ge=0, le=100000000)
     authorization_ref: str = Field(default="", max_length=1000)
+    inspect_local_codex: bool = False
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
@@ -123,6 +124,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.reading_scopes,
                 principal,
                 runtime=application._require_execution_port().frozen_reading_runtime(),
+                object_store_reader=application.object_store_reader,
+                inspect_codex=request.inspect_local_codex,
                 max_calls=request.max_calls,
                 max_tokens=request.max_tokens,
                 authorization_ref=request.authorization_ref,

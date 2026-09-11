@@ -172,6 +172,7 @@ def test_real_codex_backend_accepts_one_account_entitlement_without_pricing() ->
                 maximum_result_bytes=1_000_000,
             ),
             codex_executable=sys.executable,
+            codex_home=tmp,
             account_entitlement=_entitlement(),
             structured_result_validator=lambda _stage, _schema, value: value,
         )
@@ -272,6 +273,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
                 maximum_result_bytes=1_000_000,
             ),
             codex_executable=sys.executable,
+            codex_home=tmp,
             pricing=_pricing(),
             structured_result_validator=lambda _stage, _schema, value: value,
         )
@@ -286,6 +288,15 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
     assert prepared.command[prepared.command.index("--model") + 1] == route.model_id
     assert f"model_reasoning_effort={route.reasoning_effort}" in prepared.command
     assert "--ignore-user-config" in prepared.command
+    assert prepared.environment_overrides["CODEX_HOME"] == str(Path(tmp).resolve())
+    from novel_forge.modules.production_execution.codex_configuration import (
+        CODEX_INPUT_ONLY_OVERRIDES,
+    )
+
+    assert set(CODEX_INPUT_ONLY_OVERRIDES) <= set(prepared.command)
+    assert 'web_search="disabled"' in prepared.command
+    assert "features.shell_tool=false" in prepared.command
+    assert "features.skip_host_skill_discovery=true" in prepared.command
     assert evidence["policy_requested_model"] == profile.model_id
     assert evidence["frozen_route_model"] == route.model_id
     assert evidence["invocation_model"] == route.model_id
@@ -536,3 +547,50 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt(
     assert external.evidence["result"] == {
         "_rejected_provider_output": result.raw_output_ref
     }
+
+
+def test_local_codex_preflight_rejects_path_fallback_and_missing_account(
+    tmp_path, monkeypatch
+):
+    from novel_forge.modules.production_execution.codex_configuration import (
+        inspect_local_codex,
+    )
+
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path))
+    report = inspect_local_codex({"NOVEL_FORGE_CODEX_EXECUTABLE": "codex"})
+    assert report["blockers"] == [
+        "CODEX_LOCAL_PROCESS_UNAVAILABLE",
+        "CODEX_HOME_NOT_EXPLICIT",
+        "CODEX_EXECUTION_ROOT_NOT_ABSOLUTE",
+    ]
+    assert report["model_calls"] == 0
+    assert report["credentials_inspected"] is False
+    assert report["fallback"] == "FORBIDDEN"
+
+
+def test_local_codex_preflight_observes_process_and_reports_drift_without_authorizing(
+    tmp_path,
+):
+    from novel_forge.modules.production_execution.codex_configuration import (
+        inspect_local_codex,
+    )
+
+    values = {
+        "NOVEL_FORGE_CODEX_EXECUTABLE": sys.executable,
+        "NOVEL_FORGE_CODEX_WORKSPACE": str(tmp_path),
+        "NOVEL_FORGE_CODEX_HOME": str(tmp_path),
+        "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(tmp_path / "executions"),
+        "NOVEL_FORGE_CODEX_CLI_VERSION": "different-version",
+        "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": "sha256:" + "0" * 64,
+        "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": "declared-not-verified",
+    }
+    report = inspect_local_codex(values)
+    assert report["blockers"] == [
+        "CODEX_CLI_VERSION_DRIFT",
+        "CODEX_EXECUTABLE_SHA256_DRIFT",
+    ]
+    assert report["identity"]["codex_home"] == str(tmp_path.resolve())
+    assert report["authorization"] == "REQUIRES_EXTERNAL_USER_GRANT_VERIFICATION"
+    assert report["remote_availability"] == "NOT_TESTED"
+    assert "NOVEL_FORGE_QUALITY_MODEL" in report["missing_configuration"]
+    assert report["model_calls"] == 0
