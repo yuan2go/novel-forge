@@ -1,0 +1,161 @@
+[
+  {
+    "name": "status",
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "novel_forge.cli.authority",
+      "corpus",
+      "status",
+      "--project-id",
+      "wp-corpus-real-analysis-01",
+      "--job-id",
+      "source-import:00693992-26dc-4564-b50b-9927b3aaf52c"
+    ],
+    "exit_code": 0,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "targets",
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "novel_forge.cli.authority",
+      "corpus",
+      "targets",
+      "--project-id",
+      "wp-corpus-real-analysis-01",
+      "--job-id",
+      "source-import:00693992-26dc-4564-b50b-9927b3aaf52c",
+      "--limit",
+      "3"
+    ],
+    "exit_code": 0,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "results",
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "novel_forge.cli.authority",
+      "corpus",
+      "results",
+      "--project-id",
+      "wp-corpus-real-analysis-01",
+      "--job-id",
+      "source-import:00693992-26dc-4564-b50b-9927b3aaf52c",
+      "--limit",
+      "10"
+    ],
+    "exit_code": 0,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "status-api-closure",
+    "method": "GET",
+    "path": "/product/source-imports/source-import:00693992-26dc-4564-b50b-9927b3aaf52c",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01"
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "results-api-closure",
+    "method": "GET",
+    "path": "/product/source-imports/source-import:00693992-26dc-4564-b50b-9927b3aaf52c/analysis-results",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "limit": 10
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "targets-api-closure",
+    "method": "GET",
+    "path": "/product/source-imports/corpus/jobs/source-import:00693992-26dc-4564-b50b-9927b3aaf52c/reading-targets",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "limit": 3
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "candidates-api-closure",
+    "method": "GET",
+    "path": "/product/mkaos/knowledge-candidates",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "limit": 10
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "cards-api-closure",
+    "method": "GET",
+    "path": "/product/mkaos/knowledge-cards",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "limit": 10
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "packs-api-closure",
+    "method": "GET",
+    "path": "/product/mkaos/knowledge-packs",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "limit": 10
+    },
+    "http_status": 200,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "unknown-evidence-api",
+    "method": "GET",
+    "path": "/product/source-imports/corpus/jobs/source-import:00693992-26dc-4564-b50b-9927b3aaf52c/reading-evidence",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "operation_id": "38e09dd1-eb47-4b9f-87ee-e5174baf426d",
+      "chunk_id": "source-chunk:wp-corpus-real-analysis-01:4c269614d89f0a51f52df7e539b454ccb922aa90a455a351be981758def07ec6:0:v1",
+      "byte_start": 0,
+      "byte_end": 3
+    },
+    "http_status": 409,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "unread-evidence-api",
+    "method": "GET",
+    "path": "/product/source-imports/corpus/jobs/source-import:00693992-26dc-4564-b50b-9927b3aaf52c/reading-evidence",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01",
+      "operation_id": "38e09dd1-eb47-4b9f-87ee-e5174baf426d",
+      "chunk_id": "source-chunk:wp-corpus-real-analysis-01:4c269614d89f0a51f52df7e539b454ccb922aa90a455a351be981758def07ec6:2:v1",
+      "byte_start": 0,
+      "byte_end": 3
+    },
+    "http_status": 409,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  },
+  {
+    "name": "cross-project-evidence-api",
+    "method": "GET",
+    "path": "/product/source-imports/corpus/jobs/source-import:00693992-26dc-4564-b50b-9927b3aaf52c/reading-evidence",
+    "query": {
+      "project_id": "wp-corpus-real-analysis-01-other",
+      "operation_id": "38e09dd1-eb47-4b9f-87ee-e5174baf426d",
+      "chunk_id": "source-chunk:wp-corpus-real-analysis-01:4c269614d89f0a51f52df7e539b454ccb922aa90a455a351be981758def07ec6:0:v1",
+      "byte_start": 0,
+      "byte_end": 3
+    },
+    "http_status": 409,
+    "implementation_sha": "a3450d4e4a7c7b50e205743bab80edabb76a3e3f"
+  }
+]
