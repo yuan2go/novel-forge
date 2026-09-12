@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
-Baseline implementation identity: `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
+Current-reality baseline: `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe`
+Baseline implementation identity: `sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e0
   "reviewed_on": "2026-09-13",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
-    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
+    "sha": "b10a4a8c5cf6410ba1557ad850a90d12a632d9fe",
+    "implementation_tree_sha": "sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -115,6 +115,14 @@ Baseline implementation identity: `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e0
     {
       "path": "src/novel_forge/modules/narrative_state/causal_batch.py",
       "symbol": "compile_causal_batch"
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/author_input.py",
+      "symbol": "compile_provider_author_projection"
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/author_input.py",
+      "symbol": "validate_author_decisions"
     }
   ],
   "superseding_refs": [],
@@ -190,6 +198,11 @@ Baseline implementation identity: `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e0
   "remaining_work": []
 }
 -->
+
+Implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): Author document spans enter the existing Content and Story Design/Planning chain as versioned intent. Role projections preserve selected text and keep private intent outside viewpoint and Canon inputs. Located adoption decisions and official-driver reading checkpoints do not establish human quorum, reader policy or retrospective correction of accepted history. All seven remaining decisions are unchanged; no new Authority or trajectory store was added. Native Content registration and scripted PostgreSQL tests establish bounded wiring only; real prose and independent editorial evidence remain absent.
+
+Prior lifecycle baseline retained for provenance: `abe2e0df7c817ed5faf1fd07839f19d796304371`, `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`. The earlier review below is preserved.
+
 
 Current implementation review (2026-09-13): The changed budget and storage seams reuse Command Kernel reservations and versioned runtime policies for bounded creative experiments. They add no narrative Authority, trajectory layer, literary judgment or automatic project approval. The seven remaining architecture decisions are unchanged. No real Provider or independent editorial evidence is added by this review.
 
