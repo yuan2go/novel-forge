@@ -1,0 +1,140 @@
+Figure \(\PageIndex{1}\): Hydraulic system
+In most hydraulic systems, components are divided into two main sections:
+The actuator and control valves
+are mounted on the machine structure
+The power unit,
+which supplies hydraulic energy to the system
+The
+hydraulic power unit
+consists of several key components, including:
+A
+pump
+to generate fluid flow.
+A
+reservoir
+to store hydraulic fluid.
+A
+prime mover
+, typically an
+electric motor
+, to drive the pump.
+In addition to these primary components, most hydraulic power units include additional elements for monitoring and safety, such as:
+Pressure gauges
+to track system pressure.
+Filters
+to remove contaminants from the oil.
+Relief valves
+to prevent overpressure conditions.
+Cooling mechanisms
+to maintain optimal fluid temperature.
+How a Hydraulic Power Unit Works
+When the
+prime mover
+(electric motor) starts, it rotates the pump shaft. This movement causes the pump to draw oil from the
+reservoir
+through a
+suction filter
+and push it into the hydraulic system via the
+supply line
+.
+Once the oil has completed its work within the actuators, it returns to the
+reservoir
+through the
+return line
+. This process ensures a continuous flow of hydraulic fluid to power the system.
+Beyond supplying fluid, the power unit must also ensure the
+oil remains clean and within a safe temperature range
+. To accomplish this, most power units incorporate:
+Filtration systems
+, including suction and return filters, to remove contaminants.
+Cooling systems
+, such as heat exchangers using air or water, to dissipate excess heat. Some units rely on
+large reservoirs
+to allow oil to cool naturally before recirculating.
+Key Components of a Hydraulic Power Unit
+Figure \(\PageIndex{2}\): Hydraulic power unit
+Electric Motor
+Most industrial hydraulic systems use a
+constant-speed electric motor
+to drive the pump. The motor's shaft is connected to the pump shaft through a
+coupling
+, allowing efficient transfer of mechanical power.
+Hydraulic Pump
+The
+hydraulic pump
+generates fluid flow. As the electric motor drives the pump, it, in a way, pulls oil from the
+reservoir
+through its
+inlet
+and forces it into the system via its
+outlet
+.
+Reservoir
+The
+reservoir
+serves multiple functions:
+It
+stores hydraulic fluid
+when not in use.
+It allows
+dirt and contaminants
+to settle
+before re-entering the system.
+It helps
+dissipate heat
+, keeping the fluid at an appropriate temperature.
+Suction Line
+The
+suction line
+connects the
+pump inlet
+to the reservoir, allowing the pump to draw in oil.
+Supply Line (Pressure Line)
+The
+supply line
+connects to the
+pump outlet
+and delivers pressurized oil to the hydraulic system. This line runs through the
+relief valve manifold block
+and exits through a port usually labeled
+“P”
+.
+Sometimes, a supply line will distribute oil to a
+supply manifold
+, a machined block with multiple ports that provide hydraulic fluid to various system components.
+Return Line
+The
+return line
+is responsible for directing oil from the hydraulic system back to the reservoir. This ensures continuous circulation of hydraulic fluid, allowing it to be reused in the system.
+Relief Valve
+The
+relief valve
+is a crucial safety component that prevents excessive pressure from building up in the system. It is designed to open when system pressure exceeds a preset limit, allowing excess fluid to return to the reservoir and maintain safe operating conditions. The pressure setting can be adjusted using a control knob located on the valve body.
+Suction Strainer
+Located within the
+suction line
+at the pump inlet and submerged in hydraulic fluid, the
+suction strainer
+plays a critical role in protecting the pump from contaminants. It acts as a first line of defense, preventing large dirt particles from entering the pump and causing damage.
+Filler/Breather
+The
+filler/breather
+serves two essential functions in a hydraulic power unit:
+Reservoir Filling
+– The unit features a removable cap that allows hydraulic oil to be added to the reservoir. A protective screen is often included to prevent large contaminants from entering during filling.
+Airflow Regulation
+– Since the fluid level fluctuates during system operation, the
+filler/breather
+ensures that air can enter or exit the reservoir, maintaining a pressure balance close to atmospheric levels. Air passes through filtered openings in the breather cap to prevent dust and debris from contaminating the fluid.
+Liquid Level Gauge
+Often, there is a
+liquid level gauge
+that provides a visual indication of the amount of oil in the reservoir. There are two common types:
+Oil level gauge
+– This gauge is mounted externally on the reservoir and is connected to the oil inside, providing an accurate reading.
+Sight glass
+– A small, circular glass window mounted at the correct oil level on the reservoir, allowing operators to verify the fluid level at a glance.
+Return Filter
+Sometimes, a
+return filter
+is installed in the return line to remove contaminants that may have been picked up as the oil circulated through the system. By filtering the returning fluid before it re-enters the reservoir, it helps maintain hydraulic fluid cleanliness and prolongs the lifespan of system components.

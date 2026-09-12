@@ -1,0 +1,94 @@
+{
+  "head_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "evidence_class": "ISOLATED_POSTGRES_ENGINEERING_AND_REAL_SOURCE_OFFLINE_INSPECTION",
+  "tested_file_sha256": {
+    "src/novel_forge/modules/source_import/corpus_ingestion/review_replay.py": "27cf55aa8e7ebbb3ee87ac813afc363c4a66a850828620c2c1225e47a7986bfd",
+    "tests/unit/test_corpus_nonbody_review_replay.py": "c32230d1d383461cde617dcc497b53a19bbaf5fe5d202e38b54d071b90499e20",
+    "tests/integration/test_corpus_nonbody_reprocessing_postgres.py": "a3f70ccb97bed35327158fb3e4ff078829e52d5c3d6d4b7633971013a348ec36"
+  },
+  "red": {
+    "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/unit/test_corpus_nonbody_review_replay.py",
+    "result": "2 failed in 0.41s",
+    "log": "red.txt"
+  },
+  "tests": [
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/unit/test_corpus_nonbody_review_replay.py tests/unit/test_corpus_ingestion_formats.py",
+      "result": "29 passed in 0.90s",
+      "log": "unit-green.txt"
+    },
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/integration/test_corpus_nonbody_reprocessing_postgres.py",
+      "result": "1 passed, 2 deprecation warnings in 5.07s",
+      "log": "native-green.txt"
+    },
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/integration/test_corpus_ingestion_postgres.py::test_native_integrity_review_reprocessing_and_equivalence[False] tests/integration/test_corpus_ingestion_postgres.py::test_native_exact_boundary_repair_preserves_source_and_closes_scoped_issues",
+      "result": "3 passed, 6 deprecation warnings in 7.88s",
+      "log": "regression-postgres.txt"
+    }
+  ],
+  "database": "Dedicated novel_forge_source_purpose_test at localhost:50290; shared cluster retained for root",
+  "product_defects": [
+    {
+      "cause": "Derived record ordinal was included in physical evidence key despite exact raw byte span and normalized content hash; inserting a volume boundary made unchanged tail-license evidence stale",
+      "fix": "When byte span is exact, compare source path/container/href, byte coordinates, extracted scope if present and content hash; record ordinal is not the physical identity. Without exact bytes, retain record identity."
+    },
+    {
+      "cause": "Splitting old AUTHOR_NOTE into AUTHOR_NOTE + VOLUME left an unresolved prior finding whose old span no longer identified a current unit",
+      "fix": "Only allow exact contiguous nonbody partition with identical concatenated content hash, and require every new AUTHOR_NOTE retains a blocking current NON_BODY_UNIT issue. Record replacement issue IDs; missing issues, changed bytes/spans and VOLUME-only relabel cannot close old blocker."
+    }
+  ],
+  "input_findings": [
+    "Current three real imports were blocked by exactly two AUTHOR_NOTE findings each. expected_units was not the cause; do not change count from total physical units to main chapters.",
+    "Scarlet original Part I header bytes1650..1780 were folded into front matter and Part II header bytes127437..127485 into Part I chapter7; proposed parser adds two exact VOLUME units.",
+    "SourceWork title is a frozen stable identity field. Preserve original constants completely; canonical-work titles already hold the proper display titles. v3 profiles only change Scarlet exact volume boundaries and expected_units.",
+    "No frozen expected_toc in these original profiles; after review/reprocessing coverage remains UNKNOWN rather than claiming full-text completeness.",
+    "Railway contents itemVIII says fireman while actual chapter heading says firemen; no fabricated catalogue match or automatic variant acceptance."
+  ],
+  "operator_assets": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/structural-remediation",
+  "operator_order": {
+    "railway_and_thirty": "Native corpus review using prepared exact review-v1.json (if not already committed), then corpus reprocess using parser-v3.json and a fresh run key; run job, inspect new processing, replace canonical member and create new curated revision. Do not retry failed v2 payload.",
+    "scarlet": "Native corpus reprocess with study-in-scarlet-parser-v3.json first; run and save current new inspect. prepare_v3.py --name study-in-scarlet --inspect NEW_INSPECT --output NEW_REVIEW validates exact v3 parser/bytes and generates review input. Native corpus review, then second reprocess with the same v3 parser and fresh run key; new processing must replace canonical and curated members.",
+    "approval_scope": "Operator/AI-assisted structural exclusion only; no independent human or knowledge Card approval; parent root explicitly authorized and owns persistent CLI execution."
+  },
+  "offline_reproduction": {
+    "command": "PYTHONPATH=src:. .venv/bin/python /Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/structural-remediation/prepare_v3.py --verify",
+    "result": "Three actual raw files parsed before/after with exactly unchanged stable work/edition/title and per-unit metadata. Original constants identical; new issues remain reviewable; no persistent DB writes.",
+    "evidence": "corpus/structural-remediation/offline-validation-v3.json"
+  },
+  "static": {
+    "ruff": "PASS",
+    "git diff --check": "PASS"
+  },
+  "proof_limits": [
+    "No model calls, spending, or Provider qualification executed",
+    "Agent did not write persistent pilot DB or execute live structural reviews; root owns these commands",
+    "Fixture structural review is not independent human review or Card approval",
+    "Historical source bytes, manifests, old processing and rights are retained; future selection requires new canonical/curated revisions"
+  ],
+  "evidence_sha256": {
+    "development/nonbody-review/unit-green.txt": "a2dc6c98e1cf598381edb6fd384302837f1dd0c9fb834e0f9654fe16afa3f0ae",
+    "development/nonbody-review/ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "development/nonbody-review/red.txt": "4d35bb8cba8c34a2b20b01144837c488429bd445997da21bd2030ec2448d1631",
+    "development/nonbody-review/native-green.txt": "8cda6d5ddc3d26c4b8630de5505e19af11220c2f214dd1ebdbe27247fba17b14",
+    "development/nonbody-review/regression-postgres.txt": "c23c74802541edaf444ba32f230609bbc5dbbb82dd315b2605f665bc49ea2df1",
+    "corpus/structural-remediation/offline-validation-v3.json": "c74e35a8d4e93fe3497c5d6663a059b008b7492a2134974cd7a06f298268b4a1",
+    "corpus/structural-remediation/railway-children-parser-v2.json": "83da61b125331df13fa84fc381aaea515f406f1b3362f21536daf251d3f239a1",
+    "corpus/structural-remediation/thirty-nine-steps-parser-v2.json": "667855186ed576fc1f7dd7f80a3a0729891083fa9e3400fd2f59e8c7d16151f1",
+    "corpus/structural-remediation/prepare_v3.py": "799f9034f5940258ff7ad1cdf8aed5243b5ad95a29b6ac4d1da2bb28c56793b8",
+    "corpus/structural-remediation/thirty-nine-steps-parser-v3.json": "655330d5f4b966b59f535b25cc25dbf156b2a258f0d1dfb620c00f21deeee19d",
+    "corpus/structural-remediation/offline-validation.json": "a4c49bfc337312cf6de397c224eea279088662e4af2f77c3d611c02b4e7a8c8f",
+    "corpus/structural-remediation/railway-children-parser-v3.json": "ffb0291f653b5932a7c6ab8636d6f20f0bf336a4371407bd236da322f8054fed",
+    "corpus/structural-remediation/railway-children-review-v1.json": "7ec693d34744eabb5010a812f63e83cdc18bc9bd6f2f243a926a8e6ea982a59a",
+    "corpus/structural-remediation/thirty-nine-steps-review-v1.json": "61c3f953244b70ffa55797f40f1544c11fa7e27ac7eacdeba6c48d79167e57e5",
+    "corpus/structural-remediation/study-in-scarlet-parser-v3.json": "acaf246a1a69fedb41361ad90d80e05d31b068f7955cc049424e946fbcecf697",
+    "corpus/structural-remediation/study-in-scarlet-parser-v2.json": "2d5444d306a235a6fce21838ce657aa307ac6c0c8e10d7853f1c057f5543c7c3",
+    "corpus/structural-remediation/prepare.py": "cdbd1320f1b4fbfcfe04e87eb4f1ad7f3f10bf4e3714a9c7dfa37d83f2e8ba8e"
+  },
+  "supersedes_recommendation": {
+    "file": "validation.json",
+    "sha256": "6bcca2077d41f31df6cd976af7f576fa238a26ef8d304220933fd2128e5d6264",
+    "correction": "The additional constants.work_title in parser-v2 changed stable SourceWork metadata and correctly failed native SOURCE_WORK_IDENTITY_CONFLICT. Do not use v2 profiles. Exact original constants are preserved in new parser-v3 files; unchanged Authority guard and failed v2 operation retained."
+  }
+}

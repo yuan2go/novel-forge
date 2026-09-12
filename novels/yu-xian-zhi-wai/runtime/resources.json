@@ -1,0 +1,11 @@
+{
+  "container": "novel-forge-first-novel-pilot-data",
+  "volume": "novel-forge-first-novel-pilot-data-pg16",
+  "port": 50760,
+  "database": "novel_forge_first_novel_pilot_test",
+  "environment_file": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/runtime/local-environment.json",
+  "retention": "KEEP_BUSINESS_DATA",
+  "model_calls_authorized": false,
+  "model_provider_note": "mock transport configured only to disable real calls; no analysis or creative outputs may be fabricated",
+  "database_name_note": "Owned isolated pilot data retained; _test suffix required by native controlled-runner guard; never a pytest target"
+}

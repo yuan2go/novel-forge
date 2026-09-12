@@ -1,0 +1,33 @@
+{
+  "action": "resolve_canonical_works",
+  "revisions": [
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:173a2aba9336bf37c290fa7f782490f7d8ab4e4cec3a9f8bda460349828c07f2",
+      "revision_id": "corpus-canonical-revision:5f5eff23607d6e9aa4839c7bb3a333ea626393d6cd934f28b9466d2a3c589592"
+    },
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:35d3d65a95115a59cc34913a1516e717f2faed19997653ff5778ec259345b15f",
+      "revision_id": "corpus-canonical-revision:2d3449ae48ccf85bafec75aaae8028b74eea72bcf9172e25aae814d569026217"
+    },
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:5f5d2b7b7224af0e84ea90c22a1e56f02cbf6b798c4db705268f8f95a56e7255",
+      "revision_id": "corpus-canonical-revision:c485e4815e75d412fb378f6191f41646e72b6ad5bac20d59f4a4eeda2383a38d"
+    }
+  ],
+  "input_hash": "sha256:a7c09e5aab99af6ee5dcdf7e93e736f661e935c9865ceb1f08d5f7555eb45fda",
+  "policy_version": "source-corpus-admission.v1",
+  "schema_version": "source-corpus-result.v1",
+  "rights_transfer": false,
+  "automatic_transitive_merge": false,
+  "asset_version_id": "corpus-result:1d721d515cbabd92b065f82a789cd649c58d3de5fc6f2cc98105bddaa30def09:v1",
+  "operation_id": "d604dd33-f1c9-427f-9275-6904e9b3a0a6",
+  "project_id": "first-novel-pilot-20260912",
+  "status": "SUCCEEDED",
+  "replayed": false,
+  "attempt_id": "32ef02c7-140a-4555-a514-13c19bba7503",
+  "attempt_number": 1,
+  "recovery_mode": "fresh_attempt"
+}

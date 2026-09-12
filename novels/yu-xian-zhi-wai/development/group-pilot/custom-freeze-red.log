@@ -1,0 +1,47 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_custom_pilot_input_freeze_preserves_rights_and_does_not_invent_sources __
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-168/test_custom_pilot_input_freeze0')
+
+    def test_custom_pilot_input_freeze_preserves_rights_and_does_not_invent_sources(tmp_path):
+        import hashlib
+        import json
+        from scripts.prepare_knowledge_closure import main
+        source = tmp_path / 'custom'
+        source.mkdir()
+        manifest = {'purpose': 'PRODUCTION_REFERENCE', 'rights': {'evidence_refs': ['rights:operator-declared']}}
+        (source / 'real-import.json').write_text(json.dumps(manifest))
+        (source / 'creation.json').write_text(json.dumps({'pilot_stop_after_chapter': 6}))
+        destination = tmp_path / 'frozen'
+>       assert main(['prepare', '--input-dir', str(source), '--output', str(destination), '--target-book-id', 'treatment-book']) == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_creation_pilot.py:220: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/prepare_knowledge_closure.py:253: in main
+    args = parser.parse_args(argv)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/argparse.py:1894: in parse_args
+    self.error(msg % ' '.join(argv))
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/argparse.py:2655: in error
+    self.exit(2, _('%(prog)s: error: %(message)s\n') % args)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ArgumentParser(prog='__main__.py', usage=None, description='Freeze native six-chapter comparison inputs or export exis...nuscripts for blind review', formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)
+status = 2
+message = '__main__.py: error: unrecognized arguments: --input-dir /private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-168/test_custom_pilot_input_freeze0/custom\n'
+
+    def exit(self, status=0, message=None):
+        if message:
+            self._print_message(message, _sys.stderr)
+>       _sys.exit(status)
+E       SystemExit: 2
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/argparse.py:2642: SystemExit
+----------------------------- Captured stderr call -----------------------------
+usage: __main__.py [-h] {prepare,blind} ...
+__main__.py: error: unrecognized arguments: --input-dir /private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-168/test_custom_pilot_input_freeze0/custom
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_pilot.py::test_custom_pilot_input_freeze_preserves_rights_and_does_not_invent_sources
+1 failed, 23 deselected in 0.51s

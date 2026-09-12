@@ -1,0 +1,60 @@
+[
+  {
+    "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+    "first_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+    "last_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+    "context_before": 0,
+    "context_after": 0,
+    "max_chapters": 1,
+    "max_input_bytes_per_chapter": 12000,
+    "max_total_input_bytes": 12000,
+    "max_repairs": 1,
+    "dimensions": [
+      "core_concept",
+      "causal_constraints",
+      "assumption",
+      "misuse_risk",
+      "source_reliability",
+      "review_check"
+    ]
+  },
+  {
+    "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+    "first_unit_version_id": "source-unit-version:2e613bdeed5b5d3dd515d494fefb58ed181dbef6e1ba26444a003ba200183bfd",
+    "last_unit_version_id": "source-unit-version:2e613bdeed5b5d3dd515d494fefb58ed181dbef6e1ba26444a003ba200183bfd",
+    "context_before": 0,
+    "context_after": 0,
+    "max_chapters": 1,
+    "max_input_bytes_per_chapter": 12000,
+    "max_total_input_bytes": 12000,
+    "max_repairs": 1,
+    "dimensions": [
+      "core_concept",
+      "causal_constraints",
+      "assumption",
+      "misuse_risk",
+      "source_reliability",
+      "review_check"
+    ]
+  },
+  {
+    "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+    "first_unit_version_id": "source-unit-version:9d2997ff931bbc750738394488b439fb88f44da76916d7dcb338f03d923cbca3",
+    "last_unit_version_id": "source-unit-version:e84ae8a27da26a347395fc7bfd5574550210221752f9eec4744da8e7749ac3f5",
+    "context_before": 1,
+    "context_after": 1,
+    "max_chapters": 6,
+    "max_input_bytes_per_chapter": 120000,
+    "max_total_input_bytes": 600000,
+    "max_repairs": 1,
+    "dimensions": [
+      "character_choice_cost",
+      "information_gap",
+      "foreshadowing_payoff",
+      "conflict",
+      "emotion_curve",
+      "chapter_hook",
+      "point_of_view"
+    ]
+  }
+]

@@ -1,0 +1,21 @@
+[
+  {
+    "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+    "first_unit_version_id": "source-unit-version:0d8d5376f1076d7bf05dd49e8df44a281cf28ea05ce1469de35f6ec14cd98143",
+    "last_unit_version_id": "source-unit-version:0d8d5376f1076d7bf05dd49e8df44a281cf28ea05ce1469de35f6ec14cd98143",
+    "context_before": 0,
+    "context_after": 0,
+    "max_chapters": 1,
+    "max_input_bytes_per_chapter": 12000,
+    "max_total_input_bytes": 12000,
+    "max_repairs": 1,
+    "dimensions": [
+      "core_concept",
+      "causal_constraints",
+      "assumption",
+      "misuse_risk",
+      "source_reliability",
+      "review_check"
+    ]
+  }
+]

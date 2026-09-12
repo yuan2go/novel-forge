@@ -1,0 +1,89 @@
+{
+  "evidence_class": "OPERATOR_AI_ASSISTED_STRUCTURAL_INSPECTION",
+  "provider_calls": 0,
+  "persistent_database_writes": 0,
+  "independent_human_review": false,
+  "card_approval": false,
+  "works": [
+    {
+      "work": "railway-children",
+      "raw_sha256": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+      "original_manifest_sha256": "sha256:3e04801d931360ddc2ccb77b5aa6c4e146927268212e289c5f6db6573faa5ec4",
+      "parser_v2_sha256": "sha256:83da61b125331df13fa84fc381aaea515f406f1b3362f21536daf251d3f239a1",
+      "original_processing_id": "corpus-processing:e48ee1359efae10153db4d90b5ea48ef15163aa400654e2782916b4df50583a7",
+      "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+      "original_issue_ids_reproduced": true,
+      "original_expected_units": 16,
+      "revised_expected_units": 16,
+      "main_chapters": 14,
+      "nonbody_review_still_required": true,
+      "coverage_after_review_without_catalogue": "UNKNOWN",
+      "structural_issues_after_reprocess": [
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        },
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        }
+      ]
+    },
+    {
+      "work": "thirty-nine-steps",
+      "raw_sha256": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+      "original_manifest_sha256": "sha256:211e8fd1c36fbd20e9acc9233ed91d764da25cdcedaa2d012e07249820b3323e",
+      "parser_v2_sha256": "sha256:667855186ed576fc1f7dd7f80a3a0729891083fa9e3400fd2f59e8c7d16151f1",
+      "original_processing_id": "corpus-processing:4cd6aae2092680c63b07daca35dde7642190d7ee1a1ea06f031d0373e3b1f633",
+      "edition_id": "corpus-edition:bf4bfcb22fb42fad9628f5f8b8a9563b8bd60039457bfc68370f7625b43f3533",
+      "original_issue_ids_reproduced": true,
+      "original_expected_units": 12,
+      "revised_expected_units": 12,
+      "main_chapters": 10,
+      "nonbody_review_still_required": true,
+      "coverage_after_review_without_catalogue": "UNKNOWN",
+      "structural_issues_after_reprocess": [
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        },
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        }
+      ]
+    },
+    {
+      "work": "study-in-scarlet",
+      "raw_sha256": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+      "original_manifest_sha256": "sha256:0cbc8954223a2f17bf8a6bc6d1a0fdc88949a49cfea9a08ab0e8bdab8ed0964f",
+      "parser_v2_sha256": "sha256:2d5444d306a235a6fce21838ce657aa307ac6c0c8e10d7853f1c057f5543c7c3",
+      "original_processing_id": "corpus-processing:18c38de58b2bcb46a728c577c295061d5d763e0ac56c88afe1b3053a84ec81e4",
+      "edition_id": "corpus-edition:ca543999291227320e06079d5c5043a11c999c47beb26a6a0504e79ad7758df5",
+      "original_issue_ids_reproduced": true,
+      "original_expected_units": 16,
+      "revised_expected_units": 18,
+      "main_chapters": 14,
+      "nonbody_review_still_required": true,
+      "coverage_after_review_without_catalogue": "UNKNOWN",
+      "structural_issues_after_reprocess": [
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        },
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": true
+        },
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": false
+        },
+        {
+          "code": "NON_BODY_UNIT",
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}

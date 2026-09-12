@@ -1,0 +1,536 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[long_novel_pilot] _
+
+request = OpenBookProductionRequest(project_id='project-6c8ac9dc751f4c70a78872cd43dfd287', workspace_id='workspace-6c8ac9dc751f4...state:v1', initial_canon_snapshot_version='fixture:project-6c8ac9dc751f4c70a78872cd43dfd287:initial_canon_snapshot:v1')
+autonomous_world = 'long_novel_pilot'
+
+    @pytest.mark.parametrize(
+        "autonomous_world",
+        [
+            False,
+            True,
+            pytest.param("causal_preparation", id="causal-preparation"),
+            pytest.param("intra_chapter", id="intra-chapter"),
+            *[
+                pytest.param(value, id=value)
+                for value in (
+                    "multi_preparation",
+                    "historical_disclosure",
+                    "process_recovery",
+                    "smoke_command",
+                    "on_camera_preparation",
+                    "on_camera_missing",
+                    "on_camera_observer_drift",
+                    "preparation_expiry",
+                    "reader_partial",
+                    "character_disclosure",
+                    "reader_misdirect",
+                    "mixed_disclosure",
+                    "withhold_disclosure",
+                    "intra_chapter_missing",
+                    "intra_chapter_cycle",
+                    "manual_director",
+                    "acceptance_recovery",
+                    "provider_recovery",
+                    "concurrent_workers",
+                    "perturbed_foundation",
+                    "creative_grounding",
+                    "creative_retained_original",
+                    "creative_process_memo",
+                    "creative_process_support",
+                    "creative_process_artifact",
+                    "creative_reject_plan",
+                    "creative_reject_dialogue",
+                    "creative_reject_deleted",
+                    "creative_reject_memo",
+                    "operator_plan_change",
+                    "long_novel_pilot",
+                )
+            ],
+        ],
+    )
+    def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
+        request: pytest.FixtureRequest, autonomous_world: bool | str
+    ) -> None:
+        test_case = request.node
+        harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
+        chapter_pack_id = ""
+        if autonomous_world:
+            from copy import copy
+    
+            chapter_pack = copy(harness)
+            chapter_pack.pack_id = f"world-chapter-{uuid4().hex}"
+            chapter_pack._base_manifest = deepcopy(harness._base_manifest)
+            chapter_pack._base_catalog = deepcopy(harness._base_catalog)
+            approved = chapter_pack.register_compile_approve(
+                "1.0.0",
+                generation=1,
+                approval_scope=chapter_pack.approval_scope(
+                    environments=("test",), runtime_profiles=("test",)
+                ),
+                target_runtime_profile="test",
+            )
+            chapter_pack.register_agents(approved.compiled)
+            deployed = chapter_pack.deploy(
+                approved, environment="test", runtime_profile="test"
+            )
+            chapter_pack.activate(deployed, environment="test")
+            chapter_pack_id = chapter_pack.pack_id
+        _activate_planning_pack(harness)
+        project_id = harness.project_id
+        workspace_id = harness.workspace_id
+        book_id = harness.book_ids[0]
+        principal = _principal(project_id)
+        evaluator = Principal(
+            principal_id=f"foundation-evaluator:{project_id}",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"narrative_design.evaluate"}),
+            project_scope=frozenset({project_id}),
+            authentication_source="postgres-foundation-evaluator-fixture",
+        )
+        design = BookDesignAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="narrative-evolution-opening",
+            commit_sha=RELEASE_SHA,
+            allow_scripted_evaluation_fixture=True,
+        )
+    
+        def design_command(
+            definition_name: str,
+            *,
+            payload: dict[str, object],
+            target_asset_version_id: str = "",
+        ) -> dict[str, Any]:
+            return design.execute(
+                BookDesignAuthorityCommand(
+                    definition_name=definition_name,
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    book_id=book_id,
+                    actor_id=principal.principal_id,
+                    service_identity="narrative-evolution-opening-fixture",
+                    idempotency_key=f"{project_id}:{definition_name}",
+                    trace_id=f"trace:{project_id}:foundation",
+                    correlation_id=f"correlation:{project_id}",
+                    payload=payload,
+                    expected_book_version=1,
+                    target_asset_version_id=target_asset_version_id,
+                ),
+                principal=principal,
+            )
+    
+        candidate = design_command(
+            "book_design.propose", payload=_evolution_foundation_fixture()
+        )
+        qualification = design.evaluate_semantics(
+            BookDesignSemanticEvaluationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=evaluator.principal_id,
+                candidate_asset_version_id=str(candidate["asset_version_id"]),
+                generation_operation_id=str(candidate["operation_id"]),
+                generator_operation_name="book_design.propose",
+                candidate_content_hash=str(candidate["content_hash"]),
+                evaluator_execution_class="SCRIPTED_FIXTURE",
+                evaluation=scripted_qualification("book_design.propose"),
+                idempotency_key=f"{project_id}:book-design-evaluate",
+                trace_id=f"trace:{project_id}:foundation-evaluate",
+                correlation_id=f"correlation:{project_id}",
+            ),
+            principal=evaluator,
+        )
+        assert qualification["status"] == "VALIDATED"
+        design_command(
+            "book_design.decide",
+            payload={"decision": "APPROVE", "reason": "qualified opening foundation"},
+            target_asset_version_id=str(candidate["asset_version_id"]),
+        )
+        activated = design_command(
+            "book_design.activate",
+            payload={"reason": "selected opening foundation"},
+            target_asset_version_id=str(candidate["asset_version_id"]),
+        )
+        assert set(activated["foundation_asset_versions"]) == {
+            "creative_foundation",
+            "world_bible",
+            "character_cast",
+            "character_arc_portfolio",
+            "theme_contract",
+            "ending_intent",
+            "reader_promise",
+        }
+    
+        from tests.integration.narrative_reality_vertical_support import (
+            compiled_world_fixture,
+        )
+    
+        approved_world = compiled_world_fixture()
+        if autonomous_world == "perturbed_foundation":
+            approved_world["entities"] = [
+                {"entity_id": "faction:harbor", "kind": "FACTION"}
+            ]
+            approved_world["rules"][0]["rule_id"] = "harbor-pressure"
+            approved_world["rules"][0]["predicate"].update(
+                entity_key="world_state_id=harbor-pressure", value="RISING"
+            )
+        generic = _seed_inputs(
+            project_id,
+            book_id,
+            target_chapter_count=180 if autonomous_world == "long_novel_pilot" else 6 if autonomous_world == "operator_plan_change" else 3,
+            world_foundation=approved_world,
+            world_production_policy={"planning_window_chapters": 2}
+            if autonomous_world == "preparation_expiry"
+            else None,
+        )
+        from tests.integration.test_postgresql_only_chapter_slice import (
+            PostgreSQLOnlyChapterSliceTests,
+        )
+    
+        PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s",
+                [f"{project_id}:platform-profile-v1"],
+            )
+            cursor.execute(
+                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'approval_decision')",
+                [f"fixture:{project_id}:native-approval", project_id],
+            )
+            cursor.execute(
+                "INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) SELECT %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',content,content_hash,'integration-fixture.v1' FROM authority_asset_version WHERE asset_version_id=%s",
+                [
+                    f"fixture:{project_id}:native-approval:v1",
+                    f"fixture:{project_id}:native-approval",
+                    f"{project_id}:approval-v1",
+                ],
+            )
+        with transaction() as connection, connection.cursor() as cursor:
+            for asset_type in ("reader_segment_profile", "reader_contract"):
+                asset_id = f"fixture:{project_id}:opening:{asset_type}"
+                version_id = f"{asset_id}:v1"
+                content = {"book_id": book_id, "role": asset_type}
+                cursor.execute(
+                    "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
+                    [asset_id, project_id, asset_type],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version(
+                        asset_version_id,asset_id,version_number,lifecycle,
+                        eligibility,governance,content,content_hash,schema_version
+                    ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
+                    """,
+                    [
+                        version_id,
+                        asset_id,
+                        Jsonb(content),
+                        canonical_hash(content),
+                        f"{asset_type}.v1",
+                    ],
+                )
+        opening_roles = {
+            role
+            for generator in (
+                "book_plan.generate",
+                "volume_plan.generate",
+                "arc_plan.generate",
+            )
+            for role in GENERATOR_INPUT_ROLES[generator]
+            if role not in {"book_plan", "volume_plan"}
+        }
+        planning_inputs = {
+            role: (
+                generic["initial_story_state"]
+                if role == "story_state"
+                else generic["initial_canon_snapshot"]
+                if role == "canon_snapshot"
+                else generic[role]
+            )
+            for role in opening_roles
+        }
+    
+        with tempfile.TemporaryDirectory(prefix="narrative-evolution-opening-") as root:
+            settings = IndustrialSettings(
+                root=root,
+                environment="development",
+                storage_authority="postgresql",
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "narrative-evolution-opening",
+                "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_PLANNING_MODEL": "scripted-planning-fixture",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+                "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+                "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id
+                or "chapter_generation_pack",
+            }
+            from tests.integration.narrative_reality_vertical_support import (
+                NativeRealityTransportFixture,
+                execute_native_reality_vertical,
+            )
+    
+            if autonomous_world:
+                from tests.integration.world_causal_production_support import (
+                    AutonomousWorldTransport,
+                )
+    
+                native_transport = AutonomousWorldTransport(
+                    scenario=autonomous_world
+                    if isinstance(autonomous_world, str)
+                    else "delayed_disclosure"
+                )
+            else:
+                native_transport = NativeRealityTransportFixture()
+            if autonomous_world in {"creative_grounding", "creative_retained_original"}:
+                from tests.integration.creative_grounding_support import CreativeGroundingTransport
+                native_transport = CreativeGroundingTransport(retain_original=autonomous_world == "creative_retained_original")
+            if str(autonomous_world).startswith("creative_reject_"):
+                from tests.integration.creative_grounding_support import CreativeGroundingTransport
+                native_transport = CreativeGroundingTransport(negative=str(autonomous_world).removeprefix("creative_reject_"))
+            if autonomous_world in {"operator_plan_change", "long_novel_pilot"}:
+                from tests.integration.operator_plan_change_support import OperatorPlanChangeTransport
+                native_transport = OperatorPlanChangeTransport(long_novel=autonomous_world == "long_novel_pilot")
+            execution = build_production_execution_composition(
+                settings,
+                env=env,
+                chapter_fixture_factory=native_transport,
+                planning_fixture_factory=native_transport.planning,
+            )
+            chapter_application = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            composition = build_book_production_composition(
+                settings,
+                principal=principal,
+                execution=execution,
+                env=env,
+                chapter_application=chapter_application,
+                planning_post_provider_fault_injector=native_transport.post_provider_checkpoint
+                if autonomous_world
+                else None,
+            )
+            request = OpenBookProductionRequest(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=principal.principal_id,
+                expected_book_version=int(generic["book_version"]),
+                production_profile=generic["production_profile"],
+                planning_input_versions=planning_inputs,
+                arc_logical_keys=("arc:central", "arc:relationship"),
+                idempotency_key=f"{project_id}:open-book",
+                trace_id=f"trace:{project_id}:open-book",
+                correlation_id=f"correlation:{project_id}",
+                initial_story_state_version=generic["initial_story_state"],
+                initial_canon_snapshot_version=generic["initial_canon_snapshot"],
+            )
+            from fastapi import FastAPI
+            from fastapi.testclient import TestClient
+    
+            from novel_forge.api.models import product_model_map
+            from novel_forge.api.routers.book_authority import create_router
+            from novel_forge.api.routers.context import ProductRouterContext
+    
+            authority_api = FastAPI()
+            authority_api.include_router(
+                create_router(
+                    ProductRouterContext(
+                        app_settings=settings,
+                        models=product_model_map(),
+                        services=SimpleNamespace(book_production=composition),
+                    )
+                )
+            )
+            opening_trusted = SimpleNamespace(
+                resolve_api_principal=lambda **_values: principal
+            )
+            with (
+                patch(
+                    "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                    return_value=opening_trusted,
+                ),
+                TestClient(authority_api) as opening_client,
+            ):
+                opening_response = opening_client.post(
+                    f"/product/production/book-authority/books/{book_id}/opening-runs",
+                    json={
+                        "project_id": project_id,
+                        "workspace_id": workspace_id,
+                        "expected_book_version": int(generic["book_version"]),
+                        "production_profile": generic["production_profile"],
+                        "planning_input_versions": planning_inputs,
+                        "arc_logical_keys": ["arc:central", "arc:relationship"],
+                        "initial_story_state_version": generic["initial_story_state"],
+                        "initial_canon_snapshot_version": generic["initial_canon_snapshot"],
+                        "idempotency_key": f"{project_id}:open-book",
+                        "actor_id": principal.principal_id,
+                        "trace_id": f"trace:{project_id}:open-book",
+                        "correlation_id": f"correlation:{project_id}",
+                    },
+                )
+            assert opening_response.status_code == 202
+            admission = SimpleNamespace(**opening_response.json())
+            assert composition.opening is not None
+            runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+            opening_claim = composition.opening.claim_next_execution(
+                worker_id="opening-integration-worker",
+                lease_seconds=30,
+                project_id=project_id,
+            )
+            assert opening_claim is not None
+    
+            class RejectSeparateRuntimeCompletion:
+                def __init__(self, delegate: RuntimeJobAuthority) -> None:
+                    self.delegate = delegate
+    
+                def __getattr__(self, name: str) -> object:
+                    return getattr(self.delegate, name)
+    
+                def complete(self, _claim: object, _result: object) -> None:
+                    raise AssertionError(
+                        "Book Opening and RuntimeJob completion must share one UoW"
+                    )
+    
+>           opened = execute_book_opening_claim(
+                RejectSeparateRuntimeCompletion(runtime_jobs),  # type: ignore[arg-type]
+                composition.opening,
+                principal,
+                opening_claim,
+                lease_seconds=30,
+            )
+
+tests/integration/test_core_functional_loops_postgres.py:1762: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/workers/book_authority.py:551: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:363: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:397: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1160: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1229: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1667: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5789: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.story_planning_runtime.search_application.PostgresNarrativeSearchApplication object at 0x10a8f17f0>
+request = NarrativeSearchRequest(generation=StoryPlanningGenerationCommand(project_id='project-6c8ac9dc751f4c70a78872cd43dfd287'...g recent patterns'), expected_active_asset_version_id='', replacement_approved=False, replacement_decision_evidence={})
+principal = Principal(principal_id='planning-operator:project-6c8ac9dc751f4c70a78872cd43dfd287', principal_type=<PrincipalType.LOC...cope=frozenset({'project-6c8ac9dc751f4c70a78872cd43dfd287'}), authentication_source='postgres-functional-loop-fixture')
+activate_selected = True
+execution_probe = <bound method LeaseHeartbeatGuard.assert_healthy of <novel_forge.modules.command_kernel.lease_heartbeat.LeaseHeartbeatGuard object at 0x10aeebda0>>
+qualified_branch_committer = <function PostgresBookOpeningApplication._search.<locals>.commit_qualified_branch at 0x10a44b740>
+
+    def explore(
+        self,
+        request: NarrativeSearchRequest,
+        *,
+        principal: Principal,
+        activate_selected: bool = False,
+        execution_probe: Callable[[], object] | None = None,
+        qualified_branch_committer: NarrativeSearchQualifiedBranchCommitter
+        | None = None,
+    ) -> NarrativeSearchResult:
+        command = request.generation
+        principal.require("story_planning.authority.execute", command.project_id)
+        self._probe(execution_probe)
+        search_key, search_id, input_hash, parent_hash = self._search_identity(request)
+        replayed = self._open_search(
+            search_id=search_id,
+            request=request,
+            input_hash=input_hash,
+            parent_hash=parent_hash,
+            stable_key=search_key,
+        )
+        generations: dict[str, PlanningGenerationResult] = {}
+        reconciled_branch_seen = False
+        for ordinal, directive in enumerate(request.strategy_directives, start=1):
+            self._probe(execution_probe)
+            branch_key = f"future-{ordinal}"
+            existing = self._candidate_for_branch(search_id, branch_key)
+            if existing:
+                generation = self.planning.require_generation(
+                    str(existing["generation_operation_id"])
+                )
+                result = PlanningGenerationResult(
+                    generation_operation_id=str(generation["operation_id"]),
+                    candidate_asset_version_id=str(
+                        generation["candidate_asset_version_id"]
+                    ),
+                    status=PlanningGenerationStatus(str(generation["status"])),
+                    story_design_state=self.planning.story_design.require(
+                        project_id=command.project_id,
+                        asset_version_id=str(generation["candidate_asset_version_id"]),
+                    ),
+                    replayed=True,
+                )
+            else:
+                branch_command = replace(
+                    command,
+                    idempotency_key=f"{search_key}:{branch_key}",
+                    narrative_search_id=search_id,
+                    narrative_search_branch_key=branch_key,
+                    narrative_search_parent_state_asset_version_id=(
+                        request.parent_state_asset_version_id
+                    ),
+                    narrative_search_accepted_through_chapter=(
+                        request.accepted_through_chapter
+                    ),
+                    narrative_search_strategy_directive=directive,
+                    narrative_search_planning_horizon=(request.planning_horizon),
+                    narrative_search_desired_transformation=(
+                        request.desired_transformation
+                    ),
+                    narrative_search_hard_constraints=(request.hard_constraints),
+                    # INVARIANT: Keep the exact outer Authority fence explicit at the
+                    # branch boundary.  ``replace`` currently preserves it,
+                    # but naming it here makes every future-N command's
+                    # persisted lineage independent of dataclass defaults.
+                    opening_execution_binding=command.opening_execution_binding,
+                    auto_approve_low_risk=False,
+                )
+                frozen_command = self.planning.find_frozen_generation_command(
+                    project_id=command.project_id,
+                    idempotency_key=branch_command.idempotency_key,
+                )
+                if frozen_command is not None:
+                    expected_frozen_semantics = replace(
+                        branch_command,
+                        opening_execution_binding=(
+                            frozen_command.opening_execution_binding
+                        ),
+                    )
+                    if frozen_command != expected_frozen_semantics:
+                        raise KernelError(
+                            "NARRATIVE_SEARCH_BRANCH_FROZEN_COMMAND_DRIFT",
+                            "persisted future branch differs from the current Search semantics",
+                        )
+                    branch_command = frozen_command
+                result = self.planning.generate(
+                    branch_command,
+                    principal=principal,
+                    execution_probe=execution_probe,
+                )
+                self._probe(execution_probe)
+                if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
+>                   raise KernelError(
+                        "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
+                        "search branch did not reach qualified approval-pending state",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED: search branch did not reach qualified approval-pending state
+
+src/novel_forge/modules/story_planning_runtime/search_application.py:340: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[long_novel_pilot]
+1 failed in 16.86s

@@ -1,0 +1,136 @@
+....FFFFF                                                                [100%]
+=================================== FAILURES ===================================
+_ test_existing_source_project_initializes_and_replays_owned_book_without_project_recreate _
+
+pilot_project = ('shared-pilot-project-beda4707-98c6-4e3a-9e38-db66c56898ad', 'shared-pilot-workspace-515d94db-3dcc-430b-add3-50ac5e99...ot-project-beda4707-98c6-4e3a-9e38-db66c56898ad:ffad34f78c101fc36e3ee7ebe674936793d71adc301e2455db066ff730c2945b:0:v1')
+
+    def test_existing_source_project_initializes_and_replays_owned_book_without_project_recreate(pilot_project):
+        project_id, workspace_id, principal, _, _, source_id = pilot_project
+        before = ProjectAuthorityQuery(DATABASE_URL).require_project(project_id)
+>       book = _initialize(pilot_project, run_key='arm-a')
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_creation_pilot_shared_project_postgres.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_creation_pilot_shared_project_postgres.py:39: in _initialize
+    return prepare_pilot_book(composition=composition, principal=principal or operator, project_id=project_id,
+scripts/creation_pilot.py:160: in prepare_pilot_book
+    ).execute(
+src/novel_forge/modules/project_authority/application.py:130: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/project_authority/application.py:325: in _execute_transaction
+    project_document = uow.repositories.asset_documents.materialize_output(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.authority_asset_store.AuthorityAssetDocumentRepository object at 0x109824f80>
+command = AuthorityAssetWriteCommand(operation_id='01398738-4885-4651-990b-c902b12820f6', project_id='shared-pilot-project-beda4...), causation_id='01398738-4885-4651-990b-c902b12820f6', lifecycle='ACTIVE', eligibility='ELIGIBLE', governance='CLEAR')
+
+    def materialize_output(self, command: AuthorityAssetWriteCommand) -> AuthorityAssetDocument:
+        self._lock_identity(command.project_id, command.logical_ref)
+        self._require_executing_operation(command.operation_id, command.project_id)
+        self._require_project_references(command.project_id, command.reference_asset_ids)
+        locator = self._locator_for_update(command.project_id, command.logical_ref)
+        if locator is not None and locator["asset_id"] != command.asset_id:
+            raise KernelError(
+                "AUTHORITY_ASSET_LOCATOR_CONFLICT",
+                "logical asset reference is already bound to a different Asset",
+            )
+        current_version_id = locator["asset_version_id"] if locator else None
+        if current_version_id != command.expected_current_asset_version_id:
+>           raise KernelError(
+                "AUTHORITY_ASSET_VERSION_CONFLICT",
+                "expected current AssetVersion does not match PostgreSQL authority",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority
+
+src/novel_forge/storage/authority_asset_store.py:68: KernelError
+_ test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[foreign_workspace] _
+
+pilot_project = ('shared-pilot-project-a56d658e-8eee-4e0b-86e9-716800218326', 'shared-pilot-workspace-cefdd7d4-3c19-46e4-a82a-fd64bca0...ot-project-a56d658e-8eee-4e0b-86e9-716800218326:5c614b34d253dffe383eaae326cb6dfe74cb6db30c739798bbb2657e3fdb5e4a:0:v1')
+fault = 'foreign_workspace'
+
+    @pytest.mark.parametrize('fault', ['foreign_workspace','PAUSED','ARCHIVED','DELETED'])
+    def test_existing_project_scope_and_lifecycle_are_checked_before_book_creation(pilot_project, fault):
+        project_id, workspace_id, principal, project_app, _, _ = pilot_project
+        if fault != 'foreign_workspace':
+            current = ProjectAuthorityQuery(DATABASE_URL).require_project(project_id)
+            project_app.execute(ProjectAuthorityCommand(definition_name='project_lifecycle.transition', project_id=project_id,
+                workspace_id=workspace_id, actor_id=principal.principal_id, expected_version=current['version'],
+                expected_current_asset_version_id=current['asset_version_id'], idempotency_key=f'{project_id}:{fault}',
+                trace_id=f'trace:{project_id}', correlation_id=project_id, payload={'target_status':fault}), principal=principal)
+>       with pytest.raises((KernelError, ValueError), match='workspace|ACTIVE|active'):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'workspace|ACTIVE|active'
+E         Actual message: 'AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority'
+
+tests/integration/test_creation_pilot_shared_project_postgres.py:70: AssertionError
+_ test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[PAUSED] _
+
+pilot_project = ('shared-pilot-project-5cba9804-93e5-4c58-b06e-05f34d1e16d5', 'shared-pilot-workspace-48a324ea-f2f5-440b-8800-e039a719...ot-project-5cba9804-93e5-4c58-b06e-05f34d1e16d5:94a6f0c5d98b23a83dfc8a0f6b9e8b66e6b09c2aa9f40a3afeb31d3945fefa09:0:v1')
+fault = 'PAUSED'
+
+    @pytest.mark.parametrize('fault', ['foreign_workspace','PAUSED','ARCHIVED','DELETED'])
+    def test_existing_project_scope_and_lifecycle_are_checked_before_book_creation(pilot_project, fault):
+        project_id, workspace_id, principal, project_app, _, _ = pilot_project
+        if fault != 'foreign_workspace':
+            current = ProjectAuthorityQuery(DATABASE_URL).require_project(project_id)
+            project_app.execute(ProjectAuthorityCommand(definition_name='project_lifecycle.transition', project_id=project_id,
+                workspace_id=workspace_id, actor_id=principal.principal_id, expected_version=current['version'],
+                expected_current_asset_version_id=current['asset_version_id'], idempotency_key=f'{project_id}:{fault}',
+                trace_id=f'trace:{project_id}', correlation_id=project_id, payload={'target_status':fault}), principal=principal)
+>       with pytest.raises((KernelError, ValueError), match='workspace|ACTIVE|active'):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'workspace|ACTIVE|active'
+E         Actual message: 'AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority'
+
+tests/integration/test_creation_pilot_shared_project_postgres.py:70: AssertionError
+_ test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[ARCHIVED] _
+
+pilot_project = ('shared-pilot-project-45f4406e-abbe-4cd4-bf6f-e0cdb56bf3eb', 'shared-pilot-workspace-2b747ffe-7abd-4b3a-a357-f0f3def3...ot-project-45f4406e-abbe-4cd4-bf6f-e0cdb56bf3eb:02aba50c32deff0af7dacdf3003296c7c6011e45b9e2907292fbbe45aad84cfc:0:v1')
+fault = 'ARCHIVED'
+
+    @pytest.mark.parametrize('fault', ['foreign_workspace','PAUSED','ARCHIVED','DELETED'])
+    def test_existing_project_scope_and_lifecycle_are_checked_before_book_creation(pilot_project, fault):
+        project_id, workspace_id, principal, project_app, _, _ = pilot_project
+        if fault != 'foreign_workspace':
+            current = ProjectAuthorityQuery(DATABASE_URL).require_project(project_id)
+            project_app.execute(ProjectAuthorityCommand(definition_name='project_lifecycle.transition', project_id=project_id,
+                workspace_id=workspace_id, actor_id=principal.principal_id, expected_version=current['version'],
+                expected_current_asset_version_id=current['asset_version_id'], idempotency_key=f'{project_id}:{fault}',
+                trace_id=f'trace:{project_id}', correlation_id=project_id, payload={'target_status':fault}), principal=principal)
+>       with pytest.raises((KernelError, ValueError), match='workspace|ACTIVE|active'):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'workspace|ACTIVE|active'
+E         Actual message: 'AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority'
+
+tests/integration/test_creation_pilot_shared_project_postgres.py:70: AssertionError
+_ test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[DELETED] _
+
+pilot_project = ('shared-pilot-project-67ca32fe-7b24-4851-98e5-25e19d3da68d', 'shared-pilot-workspace-9ebfa8c3-2bcd-4ed4-8ae9-0f2a3930...ot-project-67ca32fe-7b24-4851-98e5-25e19d3da68d:479306a999fd831b1a7d0688064a797bf69f35d493fac473f4c64a2696a703d8:0:v1')
+fault = 'DELETED'
+
+    @pytest.mark.parametrize('fault', ['foreign_workspace','PAUSED','ARCHIVED','DELETED'])
+    def test_existing_project_scope_and_lifecycle_are_checked_before_book_creation(pilot_project, fault):
+        project_id, workspace_id, principal, project_app, _, _ = pilot_project
+        if fault != 'foreign_workspace':
+            current = ProjectAuthorityQuery(DATABASE_URL).require_project(project_id)
+            project_app.execute(ProjectAuthorityCommand(definition_name='project_lifecycle.transition', project_id=project_id,
+                workspace_id=workspace_id, actor_id=principal.principal_id, expected_version=current['version'],
+                expected_current_asset_version_id=current['asset_version_id'], idempotency_key=f'{project_id}:{fault}',
+                trace_id=f'trace:{project_id}', correlation_id=project_id, payload={'target_status':fault}), principal=principal)
+>       with pytest.raises((KernelError, ValueError), match='workspace|ACTIVE|active'):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'workspace|ACTIVE|active'
+E         Actual message: 'AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority'
+
+tests/integration/test_creation_pilot_shared_project_postgres.py:70: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_creation_pilot_shared_project_postgres.py::test_existing_source_project_initializes_and_replays_owned_book_without_project_recreate
+FAILED tests/integration/test_creation_pilot_shared_project_postgres.py::test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[foreign_workspace]
+FAILED tests/integration/test_creation_pilot_shared_project_postgres.py::test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[PAUSED]
+FAILED tests/integration/test_creation_pilot_shared_project_postgres.py::test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[ARCHIVED]
+FAILED tests/integration/test_creation_pilot_shared_project_postgres.py::test_existing_project_scope_and_lifecycle_are_checked_before_book_creation[DELETED]
+5 failed, 4 passed in 4.41s

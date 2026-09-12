@@ -1,0 +1,66 @@
+{
+  "schema_version": "source-purpose-admission-validation.v1",
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "current_head": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "working_tree": "SHARED_UNCOMMITTED_IMPLEMENTATION",
+  "source_files": {
+    "src/novel_forge/modules/source_authority/consumption.py": "sha256:73f86c5a905a3f3b9d0990c732f8c885addad906a2035e3a387c97729214a3f4",
+    "src/novel_forge/modules/source_authority/curation.py": "sha256:6f2fe7219d0f915e8515e60067d5fb1337021bc4af66b10cdcca33ec7aca718c",
+    "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py": "sha256:b388f579c458654251a858cf2ce02f6ecdd21dfff3807d2334ff8af923a712a1",
+    "src/novel_forge/modules/source_import/corpus_ingestion/reading_scope.py": "sha256:ce3ad9b1b2834fd517b7c04e37996fb60d79189099f3644fb84bb094a4930e0d",
+    "src/novel_forge/modules/source_import/analysis_query.py": "sha256:58941ae1ae3b31e74abc740d1e0b271431d123f97f34f0c0e0592c6728206f66",
+    "src/novel_forge/cli/corpus.py": "sha256:b6344eb01595f606d0726908dc37fdaaed2a54ae3ab42128c8224d1d5ab65292",
+    "src/novel_forge/api/routers/source_import.py": "sha256:7c94202b9593e064377979eb0a4f8c7850df038e04a352c21f7c4a8d1a18af32",
+    "tests/integration/test_corpus_consumption_admission_postgres.py": "sha256:56cead12f9875bb59c729b92239bde3535375f4e2a2568445500c4ed41855b9b",
+    "tests/unit/test_source_consumption_intent.py": "sha256:ec7b8c2e8436cf634abefc5cfb05b6b773e38cbea73519e19449ba5dde995478"
+  },
+  "red": {
+    "passed": 0,
+    "failed": 2,
+    "log": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/development/source-purpose/red.txt",
+    "actual_gap": "Curated analysis had no typed intended use or target Book scope. Targeted requests were rejected as extra fields; legal RESEARCH analysis could proceed until later production knowledge gates rejected its purpose."
+  },
+  "green": {
+    "postgresql": {
+      "passed": 7,
+      "seconds": 24.02,
+      "log": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/development/source-purpose/green-preview-scope.txt",
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$ISOLATED_POSTGRES_DSN\" PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/integration/test_corpus_consumption_admission_postgres.py 'tests/integration/test_corpus_ingestion_postgres.py::test_native_curated_corpus_freeze_analysis_and_stale_members[False]'"
+    },
+    "unit": {
+      "passed": 31,
+      "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/unit/test_source_consumption_intent.py tests/unit/test_corpus_admission.py tests/unit/test_source_intelligence_execution_contracts.py"
+    },
+    "ruff": "PASS",
+    "git_diff_check": "PASS",
+    "native_cli_help": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/development/source-purpose/cli-help.txt"
+  },
+  "validated_behavior": [
+    "RESEARCH explicit ABSTRACT_GENERATION blocked before job/model creation",
+    "PRODUCTION_REFERENCE with explicit per-use rights freezes exact membership/rights/snapshot/processing references and declaration hash",
+    "reading-preview and analyze use the same owner admission",
+    "declared absent Book is PENDING_BOOK_CREATION with no fake Book or approval",
+    "existing Book project/workspace and actual production knowledge policy checked; foreign Book and DENY_ALL rejected",
+    "missing ABSTRACT_GENERATION grant blocks before model",
+    "later rights revocation or new DENY_ALL Book blocks native member stage and Provider gate",
+    "original admitted request remains immutable after later denial",
+    "legacy research request serialization and native research recovery remain valid"
+  ],
+  "unchanged_boundaries": [
+    "Source purpose identity immutable",
+    "MKAOS Card approval and real execution qualification remain required",
+    "Book Card selection and applicability remain pending",
+    "same text cannot inherit an older Corpus purpose or rights"
+  ],
+  "real_provider_calls": 0,
+  "knowledge_or_human_approval": "NOT_RUN",
+  "narrative_correctness": "NOT_PROVEN",
+  "creative_benefit": "NOT_PROVEN",
+  "runtime_resource": {
+    "container": "novel-forge-source-purpose-pilot",
+    "image": "pgvector/pgvector:pg16",
+    "port": 50290,
+    "test_database": "novel_forge_source_purpose_test",
+    "lifecycle": "RETAINED_AND_SHARED_WITH_ROOT_AND_OTHER_AGENTS_ON_DISTINCT_DATABASES"
+  }
+}

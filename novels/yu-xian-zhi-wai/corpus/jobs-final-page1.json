@@ -1,0 +1,2403 @@
+{
+  "items": [
+    {
+      "import_job_id": "source-import:0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "txt",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "A Study in Scarlet",
+              "author": "Arthur Conan Doyle (1859–1930)",
+              "work_id": "study-in-scarlet"
+            },
+            "completeness": "COMPLETE",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [
+                {
+                  "end": 1780,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "study-in-scarlet.txt",
+                  "start": 0,
+                  "title": "Publisher identity, front matter and rights",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 17929,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 1780,
+                  "title": "CHAPTER I.",
+                  "number": 1,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 38469,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 17929,
+                  "title": "CHAPTER II.",
+                  "number": 2,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 60914,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 38469,
+                  "title": "CHAPTER III.",
+                  "number": 3,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 75207,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 60914,
+                  "title": "CHAPTER IV.",
+                  "number": 4,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 89495,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 75207,
+                  "title": "CHAPTER V.",
+                  "number": 5,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 108420,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 89495,
+                  "title": "CHAPTER VI.",
+                  "number": 6,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 127485,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 108420,
+                  "title": "CHAPTER VII.",
+                  "number": 7,
+                  "volume": "Part I",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 148743,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 127485,
+                  "title": "CHAPTER I.",
+                  "number": 1,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 163535,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 148743,
+                  "title": "CHAPTER II.",
+                  "number": 2,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 174232,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 163535,
+                  "title": "CHAPTER III.",
+                  "number": 3,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 193555,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 174232,
+                  "title": "CHAPTER IV.",
+                  "number": 4,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 213674,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 193555,
+                  "title": "CHAPTER V.",
+                  "number": 5,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 237851,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 213674,
+                  "title": "CHAPTER VI.",
+                  "number": 6,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 249872,
+                  "kind": "CHAPTER",
+                  "path": "study-in-scarlet.txt",
+                  "start": 237851,
+                  "title": "CHAPTER VII.",
+                  "number": 7,
+                  "volume": "Part II",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 268777,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "study-in-scarlet.txt",
+                  "start": 249872,
+                  "title": "Project Gutenberg license and trailing metadata",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                  "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                }
+              ],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "FINISHED",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 16,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": "body",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+              "https://www.gutenberg.org/ebooks/244",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet-catalogue.html",
+              "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497"
+            ],
+            "dataset_license": "Project Gutenberg License; exact original English work public domain",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "PUBLIC_DOMAIN",
+            "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review."
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "study-in-scarlet.txt",
+                "parser": null,
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:07de355e5061c10ae7d72b93b9cdbcdbf3b41c594f4fd8a327ae2e25f864ae51",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:18:13.852633+00:00",
+      "updated_at": "2026-09-12T10:18:16.802472+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:434e25ee4c259704f224a7fa4495d2e99652690b4122f35181ad87ae8c955030"
+    },
+    {
+      "import_job_id": "source-import:9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "txt",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "The Thirty-Nine Steps",
+              "author": "John Buchan (1875–1940)",
+              "work_id": "thirty-nine-steps"
+            },
+            "completeness": "COMPLETE",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [
+                {
+                  "end": 2161,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 0,
+                  "title": "Publisher identity, front matter and rights",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 26962,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 2161,
+                  "title": "Chapter I.",
+                  "number": 1,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 40215,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 26962,
+                  "title": "Chapter II.",
+                  "number": 2,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 65385,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 40215,
+                  "title": "Chapter III.",
+                  "number": 3,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 88879,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 65385,
+                  "title": "Chapter IV.",
+                  "number": 4,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 108101,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 88879,
+                  "title": "Chapter V.",
+                  "number": 5,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 140542,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 108101,
+                  "title": "Chapter VI.",
+                  "number": 6,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 163004,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 140542,
+                  "title": "Chapter VII.",
+                  "number": 7,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 179053,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 163004,
+                  "title": "Chapter VIII.",
+                  "number": 8,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 193397,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 179053,
+                  "title": "Chapter IX.",
+                  "number": 9,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 223208,
+                  "kind": "CHAPTER",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 193397,
+                  "title": "Chapter X.",
+                  "number": 10,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 242116,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "thirty-nine-steps.txt",
+                  "start": 223208,
+                  "title": "Project Gutenberg license and trailing metadata",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                  "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                }
+              ],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "FINISHED",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 12,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": "body",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+              "https://www.gutenberg.org/ebooks/558",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps-catalogue.html",
+              "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+            ],
+            "dataset_license": "Project Gutenberg License; exact original English work public domain",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "PUBLIC_DOMAIN",
+            "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review."
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "thirty-nine-steps.txt",
+                "parser": null,
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:1a1d4ef2392fdb6b04c07fadff252f6a604ff29dd1bd7ce547effe67b38b1d6f",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:18:09.206975+00:00",
+      "updated_at": "2026-09-12T10:18:12.108889+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:fc0dd379027f366d41fbed6c5f11c156ec6c298ffaa032967281d1f56deb0143"
+    },
+    {
+      "import_job_id": "source-import:c79e4030-a88f-41b8-ad80-89d2f723d184",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "txt",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "The Railway Children",
+              "author": "E. Nesbit (1858–1924)",
+              "work_id": "railway-children"
+            },
+            "completeness": "COMPLETE",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [
+                {
+                  "end": 1597,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "railway-children.txt",
+                  "start": 0,
+                  "title": "Publisher identity, front matter and rights",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 25452,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 1597,
+                  "title": "Chapter I. The beginning of things.",
+                  "number": 1,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 54930,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 25452,
+                  "title": "Chapter II. Peter's coal-mine.",
+                  "number": 2,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 81001,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 54930,
+                  "title": "Chapter III. The old gentleman.",
+                  "number": 3,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 110100,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 81001,
+                  "title": "Chapter IV. The engine-burglar.",
+                  "number": 4,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 130983,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 110100,
+                  "title": "Chapter V. Prisoners and captives.",
+                  "number": 5,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 153003,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 130983,
+                  "title": "Chapter VI. Saviours of the train.",
+                  "number": 6,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 179066,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 153003,
+                  "title": "Chapter VII. For valour.",
+                  "number": 7,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 201954,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 179066,
+                  "title": "Chapter VIII. The amateur firemen.",
+                  "number": 8,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 227172,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 201954,
+                  "title": "Chapter IX. The pride of Perks.",
+                  "number": 9,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 248738,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 227172,
+                  "title": "Chapter X. The terrible secret.",
+                  "number": 10,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 276876,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 248738,
+                  "title": "Chapter XI. The hound in the red jersey.",
+                  "number": 11,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 298429,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 276876,
+                  "title": "Chapter XII. What Bobbie brought home.",
+                  "number": 12,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 322895,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 298429,
+                  "title": "Chapter XIII. The hound's grandfather.",
+                  "number": 13,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 344437,
+                  "kind": "CHAPTER",
+                  "path": "railway-children.txt",
+                  "start": 322895,
+                  "title": "Chapter XIV. The End.",
+                  "number": 14,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                },
+                {
+                  "end": 363344,
+                  "kind": "AUTHOR_NOTE",
+                  "path": "railway-children.txt",
+                  "start": 344437,
+                  "title": "Project Gutenberg license and trailing metadata",
+                  "number": null,
+                  "volume": "",
+                  "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                  "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+                }
+              ],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "FINISHED",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 16,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": "body",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+              "https://www.gutenberg.org/ebooks/1874",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children-catalogue.html",
+              "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290"
+            ],
+            "dataset_license": "Project Gutenberg License; exact original English work public domain",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "PUBLIC_DOMAIN",
+            "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review."
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "railway-children.txt",
+                "parser": null,
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "c79e4030-a88f-41b8-ad80-89d2f723d184",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:18:03.949936+00:00",
+      "updated_at": "2026-09-12T10:18:07.394703+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3"
+    },
+    {
+      "import_job_id": "source-import:a7328b9b-712f-48a1-af62-b2c979775dee",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "15.2: Operation of a Flow Control Valve and its Scematic Symbol",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-17"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.02%3A_Operation_of_a_Flow_Control_Valve_and_its_Scematic_Symbol",
+              "sha256:977d76df0013e7e271b1c663a91be66a66a0c84663b696ae139d76c4197f2868",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-17.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-17.html",
+                "parser": null,
+                "checksum": "sha256:977d76df0013e7e271b1c663a91be66a66a0c84663b696ae139d76c4197f2868",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-17.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:d2140ad44f1de9de9408ecab5b2ecba18eefa024d6f842b33f54aca3c996577b",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "a7328b9b-712f-48a1-af62-b2c979775dee",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:18:00.951390+00:00",
+      "updated_at": "2026-09-12T10:18:02.239915+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:d642dee2570bc89173b8052c8abe1faca09a5a1996191ba86b51c0883b026dde"
+    },
+    {
+      "import_job_id": "source-import:4501f386-a5ca-4900-b481-593f76ae0782",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "15.1: The Function of a Flow Control Valve",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-16"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.01%3A_The_Function_of_a_Flow_Control_Valve",
+              "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-16.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-16.html",
+                "parser": null,
+                "checksum": "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-16.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:3222d393c47f636124681bf6ddcf2c94e49091ef3ce6f87018f90b9d4aca7151",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "4501f386-a5ca-4900-b481-593f76ae0782",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:57.842497+00:00",
+      "updated_at": "2026-09-12T10:17:59.217992+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:acf2674c4d571fd2a4067eb0320c7a12319c7792a47fb3698f33ba7690278c72"
+    },
+    {
+      "import_job_id": "source-import:81a683e8-91b5-41db-8cef-6f45788a8d45",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "14.2: Types of Check Valves and Their Operation",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-15"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.02%3A_Types_of_Check_Valves_and_Their_Operation",
+              "sha256:13ce632f5417fe6adf3597a0b967436e9f3daaf8e29b2aeca96c3f6955b2cc8d",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-15.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-15.html",
+                "parser": null,
+                "checksum": "sha256:13ce632f5417fe6adf3597a0b967436e9f3daaf8e29b2aeca96c3f6955b2cc8d",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-15.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:898ee0703d390e06f50db54b03ec08cefb569e7b74f12798c548b92cebd469de",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "81a683e8-91b5-41db-8cef-6f45788a8d45",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:54.798122+00:00",
+      "updated_at": "2026-09-12T10:17:56.106407+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:00878382d52f54274844f9a43bbdaea25966b400dd0affa4858e425ebcee22b6"
+    },
+    {
+      "import_job_id": "source-import:049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "14.1: Check Valves in Hydraulic Systems",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-14"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+              "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-14.html",
+                "parser": null,
+                "checksum": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:d091af952c8c1dcf30ecba1af8338fe245b44f59821728e4e7ff27ceb776bf5c",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:51.778217+00:00",
+      "updated_at": "2026-09-12T10:17:53.073945+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349"
+    },
+    {
+      "import_job_id": "source-import:c97ba847-2361-416d-bc99-b03cd624c9c5",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "13.2: Operation of a Direct-Acting Relief Valve and Its Schematic Symbol",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-13"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.02%3A_Operation_of_a_Direct-Acting_Relief_Valve_and_Its_Schematic_Symbol",
+              "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-13.html",
+                "parser": null,
+                "checksum": "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "c97ba847-2361-416d-bc99-b03cd624c9c5",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:48.798152+00:00",
+      "updated_at": "2026-09-12T10:17:50.079659+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:7f8e398fb91f7270b9d83232a6d4bbe10808caaaa377078b5518431cb8ec1520"
+    },
+    {
+      "import_job_id": "source-import:58679569-1c39-4446-8ce9-6ab44b70dc00",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "13.1: Function and Application of a Relief Valve",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-12"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.01%3A_Function_and_Application_of_a_Relief_Valve",
+              "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-12.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-12.html",
+                "parser": null,
+                "checksum": "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-12.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:291c2febaf6c733f4b475a32f0b817db7e0a0bd373f0fd68819da03db197d5e3",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "58679569-1c39-4446-8ce9-6ab44b70dc00",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:45.785627+00:00",
+      "updated_at": "2026-09-12T10:17:47.059602+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:91e0dec7885439c17de5fa13b2508ed84a92b8116abcf474060529ebba35817b"
+    },
+    {
+      "import_job_id": "source-import:8f8b2d21-a070-4f08-ba96-05669c146601",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "first-novel-pilot-workspace",
+      "source_type": "corpus_content",
+      "source_locator": {
+        "manifest": {
+          "budget": {
+            "version": "corpus-resource-policy.v1",
+            "max_files": 100,
+            "max_works": 100,
+            "concurrency": 1,
+            "max_records": 10000,
+            "max_retries": 2,
+            "memory_bytes": 256000000,
+            "max_file_bytes": 64000000,
+            "max_work_bytes": 16000000,
+            "max_chunk_bytes": 12000,
+            "max_total_bytes": 256000000,
+            "timeout_seconds": 60,
+            "max_record_bytes": 2000000,
+            "max_archive_ratio": 100,
+            "max_expanded_bytes": 512000000,
+            "max_units_per_work": 2000,
+            "min_free_disk_bytes": 256000000
+          },
+          "parser": {
+            "fields": {
+              "text": "text"
+            },
+            "format": "html",
+            "layout": "SINGLE_WORK",
+            "filters": {},
+            "version": "corpus-parser.v3",
+            "encoding": "utf-8",
+            "constants": {
+              "title": "12.2: Pulling Suction of a Fluid",
+              "author": "Jessy Haid / Northeast Wisconsin Technical College",
+              "work_id": "hydraulics-11"
+            },
+            "completeness": "EXCERPT",
+            "records_path": "item",
+            "normalization": {
+              "version": "chinese-longform.v2",
+              "boundaries": [],
+              "expected_toc": [],
+              "segmentation": "EXPLICIT",
+              "toc_evidence": "",
+              "unicode_form": "NFC",
+              "max_unit_bytes": 2000000,
+              "min_body_chars": 80,
+              "work_completion": "UNKNOWN",
+              "external_work_ids": [],
+              "heading_max_chars": 100,
+              "candidate_threshold": 0.8,
+              "duplicate_body_min_chars": 128
+            },
+            "expected_units": 1,
+            "work_key_encoding": "VALUE",
+            "html_body_selector": ".mt-content-container",
+            "html_remove_selectors": [
+              "script",
+              "style",
+              "nav",
+              "header",
+              "footer",
+              "noscript"
+            ]
+          },
+          "rights": {
+            "scope": "ALL_WORKS_IN_SNAPSHOT",
+            "allowed_uses": [
+              "LOCAL_PROCESSING",
+              "SOURCE_ANALYSIS",
+              "ABSTRACT_GENERATION"
+            ],
+            "evidence_refs": [
+              "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.02%3A_Pulling_Suction_of_a_Fluid",
+              "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656",
+              "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html"
+            ],
+            "dataset_license": "CC-BY-4.0",
+            "allowed_purposes": [
+              "PRODUCTION_REFERENCE"
+            ],
+            "underlying_rights": "LICENSED",
+            "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+            "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+          },
+          "source": {
+            "kind": "LOCAL",
+            "files": [
+              {
+                "path": "hydraulics-11.html",
+                "parser": null,
+                "checksum": "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656",
+                "size_bytes": null
+              }
+            ],
+            "split": "",
+            "config": "",
+            "exclude": [
+              ".git/**",
+              "**/.git/**",
+              ".DS_Store"
+            ],
+            "include": [
+              "*",
+              "**/*"
+            ],
+            "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html",
+            "revision": ""
+          },
+          "analyze": false,
+          "purpose": "PRODUCTION_REFERENCE",
+          "rights_id": null,
+          "source_id": null,
+          "schema_version": "corpus-ingestion-manifest.v1",
+          "adapter_version": "corpus-adapters.v1",
+          "previous_snapshot_id": null
+        }
+      },
+      "requested_ref": "sha256:8963309de0fc31e26711da7c67306ff4a0e7df131d8177fd45e3391149786ea7",
+      "import_policy": {
+        "max_files": 20000,
+        "allow_git_lfs": false,
+        "exclude_globs": [
+          ".git/**",
+          "**/.git/**",
+          "node_modules/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "include_globs": [
+          "**/*",
+          "*"
+        ],
+        "allow_symlinks": false,
+        "max_file_bytes": 8000000,
+        "parser_profile": "generic-text.v1",
+        "policy_version": "source-import-policy.v1",
+        "max_chunk_bytes": 12000,
+        "source_work_key": "",
+        "allow_submodules": false,
+        "chunking_version": "source-structural-chunking.v1",
+        "corpus_registry_id": "",
+        "extension_allowlist": [
+          ".json",
+          ".jsonl",
+          ".markdown",
+          ".md",
+          ".text",
+          ".txt",
+          ".yaml",
+          ".yml"
+        ],
+        "corpus_registry_hash": "",
+        "max_repository_bytes": 500000000,
+        "normalization_version": "source-normalization.v1"
+      },
+      "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+      "intelligence_policy": {
+        "min_margin": 0.12,
+        "classifier_id": "novel-forge.source-content-classifier",
+        "min_confidence": 0.72,
+        "policy_version": "source-intelligence-policy.v1",
+        "max_signal_bytes": 128000,
+        "max_sample_chunks": 3,
+        "classifier_version": "1.0",
+        "classifier_capability": "source.content.classify",
+        "sample_policy_version": "source-profile-sampling.v1",
+        "signal_schema_version": "source-profile-signals.v1",
+        "routing_policy_version": "source-analysis-routing.v2",
+        "classifier_prompt_version": "1.0",
+        "classifier_schema_version": "source-content-classification.v1",
+        "max_sample_bytes_per_chunk": 6000,
+        "logical_document_policy_version": "file-logical-document.v1"
+      },
+      "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+      "analysis_override": {},
+      "mode": "IMPORT",
+      "status": "IMPORTED",
+      "discovery_operation_id": "8f8b2d21-a070-4f08-ba96-05669c146601",
+      "repository_snapshot_asset_version_id": null,
+      "previous_snapshot_asset_version_id": null,
+      "counters": {},
+      "failure": {},
+      "created_at": "2026-09-12T10:17:42.504463+00:00",
+      "updated_at": "2026-09-12T10:17:43.943252+00:00",
+      "corpus_snapshot_id": "corpus-snapshot:a7401d63e33339ba143f88ce8ad871667de5d8eff04a0a5269f5d8a6fa67dc42"
+    }
+  ],
+  "after": "",
+  "next_after": "source-import:8f8b2d21-a070-4f08-ba96-05669c146601"
+}

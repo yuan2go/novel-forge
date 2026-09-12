@@ -1,0 +1,358 @@
+FF
+=================================== FAILURES ===================================
+_ test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3] _
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10eff06e0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-201/test_default_helper_import_cur0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e4599d0>
+sample = 'professional', content_type = 'PROFESSIONAL_KNOWLEDGE', units = 3
+
+    @pytest.mark.parametrize(
+        "sample,content_type,units",
+        [("professional", "PROFESSIONAL_KNOWLEDGE", 3), ("fiction", "WEB_NOVEL", 6)],
+    )
+    def test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade(
+        corpus, tmp_path, monkeypatch, sample, content_type, units
+    ):
+        def source_fixture(stage, inputs):
+            if stage == CLASSIFICATION_STAGE:
+                return {
+                    "content_type": content_type,
+                    "confidence": 0.97,
+                    "alternatives": [
+                        {"content_type": content_type, "confidence": 0.97},
+                        {"content_type": "UNKNOWN", "confidence": 0.03},
+                    ],
+                    "evidence_codes": ["BOUNDED_SEMANTIC_SAMPLE"],
+                    "boundary_assessment": {
+                        "scope_kind": "FILE_DOCUMENT",
+                        "suspected_document_count": 1,
+                        "review_required": False,
+                    },
+                }
+            return content_intelligence_fixture_response(stage, inputs)
+    
+        monkeypatch.setattr(
+            authority_dependencies, "content_intelligence_fixture_response", source_fixture
+        )
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        folder = tmp_path / "helper-inputs"
+        frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project)
+        manifest_path = folder / f"{sample}-import.json"
+        assert (
+            frozen_inputs["files"][manifest_path.name]
+            == "sha256:" + hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        )
+        manifest = json.loads(manifest_path.read_text())
+        imported = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": sample + ":helper-import",
+                "manifest": manifest,
+            },
+        )
+        assert imported.status_code == 202, imported.text
+        acquired = scheduler.run_or_recover(
+            operation_id=imported.json()["operation_id"], project_id=corpus.project
+        )["result"]
+        assert len(acquired["children"]) == 1
+        processed = scheduler.run_or_recover(
+            operation_id=acquired["children"][0]["operation_id"], project_id=corpus.project
+        )["result"]
+        assert processed["unit_count"] == units
+        assert processed["analysis_scheduled"] is False
+        processing_id = processed["processing_id"]
+        work = corpus.run(
+            {
+                "action": "resolve_canonical_works",
+                "changes": [
+                    {
+                        "work_key": sample,
+                        "title": sample,
+                        "language": "zh",
+                        "metadata_evidence": [
+                            "repository:original-synthetic-knowledge-closure-fixture"
+                        ],
+                        "members": [
+                            {
+                                "processing_id": processing_id,
+                                "relation": "SAME_WORK",
+                                "evidence_refs": [
+                                    "repository:original-synthetic-knowledge-closure-fixture"
+                                ],
+                            }
+                        ],
+                    }
+                ],
+                "reason": "Review exact original helper sample identity",
+            }
+        )
+        curation = {
+            "action": "revise_curated_corpus",
+            "corpus_key": sample,
+            "title": sample,
+            "purpose": manifest["purpose"],
+            "filters": {"work_ids": [work["revisions"][0]["work_id"]]},
+            "reason": "Select the exact helper snapshot for abstract generation",
+        }
+        proposed = corpus.run(curation)
+        curated = corpus.run(
+            {
+                **curation,
+                "previous_id": proposed["revision_id"],
+                "state": "FROZEN",
+                "choices": [
+                    {
+                        "processing_id": processing_id,
+                        "selected": True,
+                        "reason": "Original bounded helper fixture",
+                        "evidence_refs": [
+                            "repository:original-synthetic-knowledge-closure-fixture"
+                        ],
+                    }
+                ],
+            }
+        )
+        analysis_request = {
+            "project_id": corpus.project,
+            "revision_id": curated["revision_id"],
+            "run_key": sample + ":helper-analysis",
+            "max_members": 1,
+            "max_calls": 120,
+            "max_tokens": 500000,
+            "authorization_ref": "fixture:scripted-source-no-real-model-authorization",
+            **{
+                key: frozen_inputs["analysis_target"][key]
+                for key in ("intended_use", "target_book_id")
+            },
+        }
+        analysis = corpus.client.post(
+            "/product/source-imports/corpus/analyze", json=analysis_request
+        )
+        assert analysis.status_code == 202, analysis.text
+        admission = analysis.json()["consumption_admission"]
+        assert (
+            admission["source_use_admitted"] is True
+            and admission["generation_consumption_allowed"] is False
+        )
+        assert (
+            admission["book_status"] == "PENDING_BOOK_CREATION"
+            and admission["knowledge_status"] == "PENDING_CARD_REVIEW"
+        )
+        assert admission["source_evidence"][0]["source_id"] == acquired["source_id"]
+        for _ in range(50):
+            pending = [
+                (operation, project)
+                for operation, project in scheduler.pending_operations(limit=100)
+                if project == corpus.project
+            ]
+            if not pending:
+                break
+            for operation, project in pending:
+                scheduler.run_or_recover(operation_id=operation, project_id=project)
+        else:
+            pytest.fail("Default helper bounded Source chain did not finish")
+        job_path = f"/product/source-imports/{analysis.json()['import_job_id']}"
+        status = corpus.client.get(job_path, params={"project_id": corpus.project})
+        assert status.status_code == 200, status.text
+>       assert status.json()["effective_status"] == "COMPLETED", status.json()
+E       AssertionError: {'import_job_id': 'source-import:cbdca03e-bb8a-4892-9f60-96960d4bd282', 'project_id': 'corpus-fcbed204-241e-4eda-862f-fe16d8e204aa', 'workspace_id': 'workspace-2fd7a7e6-b6fd-4202-ae39-626a0448ef9d', 'source_type': 'corpus_content', ...}
+E       assert 'AWAITING_GOVERNANCE' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + AWAITING_GOVERNANCE
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py:181: AssertionError
+_ test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6] _
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10f830e00>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-201/test_default_helper_import_cur1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f004fb0>
+sample = 'fiction', content_type = 'WEB_NOVEL', units = 6
+
+    @pytest.mark.parametrize(
+        "sample,content_type,units",
+        [("professional", "PROFESSIONAL_KNOWLEDGE", 3), ("fiction", "WEB_NOVEL", 6)],
+    )
+    def test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade(
+        corpus, tmp_path, monkeypatch, sample, content_type, units
+    ):
+        def source_fixture(stage, inputs):
+            if stage == CLASSIFICATION_STAGE:
+                return {
+                    "content_type": content_type,
+                    "confidence": 0.97,
+                    "alternatives": [
+                        {"content_type": content_type, "confidence": 0.97},
+                        {"content_type": "UNKNOWN", "confidence": 0.03},
+                    ],
+                    "evidence_codes": ["BOUNDED_SEMANTIC_SAMPLE"],
+                    "boundary_assessment": {
+                        "scope_kind": "FILE_DOCUMENT",
+                        "suspected_document_count": 1,
+                        "review_required": False,
+                    },
+                }
+            return content_intelligence_fixture_response(stage, inputs)
+    
+        monkeypatch.setattr(
+            authority_dependencies, "content_intelligence_fixture_response", source_fixture
+        )
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        folder = tmp_path / "helper-inputs"
+        frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project)
+        manifest_path = folder / f"{sample}-import.json"
+        assert (
+            frozen_inputs["files"][manifest_path.name]
+            == "sha256:" + hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        )
+        manifest = json.loads(manifest_path.read_text())
+        imported = corpus.client.post(
+            "/product/source-imports/corpus",
+            json={
+                "project_id": corpus.project,
+                "workspace_id": corpus.workspace,
+                "run_key": sample + ":helper-import",
+                "manifest": manifest,
+            },
+        )
+        assert imported.status_code == 202, imported.text
+        acquired = scheduler.run_or_recover(
+            operation_id=imported.json()["operation_id"], project_id=corpus.project
+        )["result"]
+        assert len(acquired["children"]) == 1
+        processed = scheduler.run_or_recover(
+            operation_id=acquired["children"][0]["operation_id"], project_id=corpus.project
+        )["result"]
+        assert processed["unit_count"] == units
+        assert processed["analysis_scheduled"] is False
+        processing_id = processed["processing_id"]
+        work = corpus.run(
+            {
+                "action": "resolve_canonical_works",
+                "changes": [
+                    {
+                        "work_key": sample,
+                        "title": sample,
+                        "language": "zh",
+                        "metadata_evidence": [
+                            "repository:original-synthetic-knowledge-closure-fixture"
+                        ],
+                        "members": [
+                            {
+                                "processing_id": processing_id,
+                                "relation": "SAME_WORK",
+                                "evidence_refs": [
+                                    "repository:original-synthetic-knowledge-closure-fixture"
+                                ],
+                            }
+                        ],
+                    }
+                ],
+                "reason": "Review exact original helper sample identity",
+            }
+        )
+        curation = {
+            "action": "revise_curated_corpus",
+            "corpus_key": sample,
+            "title": sample,
+            "purpose": manifest["purpose"],
+            "filters": {"work_ids": [work["revisions"][0]["work_id"]]},
+            "reason": "Select the exact helper snapshot for abstract generation",
+        }
+        proposed = corpus.run(curation)
+        curated = corpus.run(
+            {
+                **curation,
+                "previous_id": proposed["revision_id"],
+                "state": "FROZEN",
+                "choices": [
+                    {
+                        "processing_id": processing_id,
+                        "selected": True,
+                        "reason": "Original bounded helper fixture",
+                        "evidence_refs": [
+                            "repository:original-synthetic-knowledge-closure-fixture"
+                        ],
+                    }
+                ],
+            }
+        )
+        analysis_request = {
+            "project_id": corpus.project,
+            "revision_id": curated["revision_id"],
+            "run_key": sample + ":helper-analysis",
+            "max_members": 1,
+            "max_calls": 120,
+            "max_tokens": 500000,
+            "authorization_ref": "fixture:scripted-source-no-real-model-authorization",
+            **{
+                key: frozen_inputs["analysis_target"][key]
+                for key in ("intended_use", "target_book_id")
+            },
+        }
+        analysis = corpus.client.post(
+            "/product/source-imports/corpus/analyze", json=analysis_request
+        )
+        assert analysis.status_code == 202, analysis.text
+        admission = analysis.json()["consumption_admission"]
+        assert (
+            admission["source_use_admitted"] is True
+            and admission["generation_consumption_allowed"] is False
+        )
+        assert (
+            admission["book_status"] == "PENDING_BOOK_CREATION"
+            and admission["knowledge_status"] == "PENDING_CARD_REVIEW"
+        )
+        assert admission["source_evidence"][0]["source_id"] == acquired["source_id"]
+        for _ in range(50):
+            pending = [
+                (operation, project)
+                for operation, project in scheduler.pending_operations(limit=100)
+                if project == corpus.project
+            ]
+            if not pending:
+                break
+            for operation, project in pending:
+                scheduler.run_or_recover(operation_id=operation, project_id=project)
+        else:
+            pytest.fail("Default helper bounded Source chain did not finish")
+        job_path = f"/product/source-imports/{analysis.json()['import_job_id']}"
+        status = corpus.client.get(job_path, params={"project_id": corpus.project})
+        assert status.status_code == 200, status.text
+>       assert status.json()["effective_status"] == "COMPLETED", status.json()
+E       AssertionError: {'import_job_id': 'source-import:d11fcb49-704b-4890-be83-1364b52c741a', 'project_id': 'corpus-24cc9934-870a-4fa9-89d4-c038f19bd910', 'workspace_id': 'workspace-fbb8ddc9-681b-4422-8f1b-4b94da54dbee', 'source_type': 'corpus_content', ...}
+E       assert 'AWAITING_GOVERNANCE' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + AWAITING_GOVERNANCE
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py:181: AssertionError
+=============================== warnings summary ===============================
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+FAILED tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+2 failed, 4 warnings in 35.34s

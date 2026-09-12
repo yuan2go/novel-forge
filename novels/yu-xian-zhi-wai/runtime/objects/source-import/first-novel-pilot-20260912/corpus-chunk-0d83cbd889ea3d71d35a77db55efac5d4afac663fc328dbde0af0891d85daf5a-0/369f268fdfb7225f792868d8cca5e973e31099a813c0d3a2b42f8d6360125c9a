@@ -1,0 +1,27 @@
+Figure \(\PageIndex{1}\): Diagram of a hydraulic cylinder in retraction.
+When a cylinder is retracting, the piston rod takes up some of the area inside the bore. This means that the effective surface area the fluid can push against is reduced. This
+annular area
+(sometimes called the "ring area") is what we use to calculate retraction force.
+To find the retraction force, we use:
+F = P × A annular = P × (A piston − A rod)
+Or, combining both into a single formula:
+F = P × 0.7854 × (D² − d²)
+Where:
+D
+= piston (bore) diameter
+d
+= rod diameter
+Example: Calculating the Retraction Force of a Cylinder Given its Size and Pressure
+Let’s use the same cylinder from the previous example, but now account for a
+1.0-inch diameter rod
+and the same
+1000 psi
+system pressure.
+A annular = 0.7854 × (2.0² −1.0² )
+= 0.7854 × (4−1) = 0.7854 × 3
+= 2.356 in²
+F = 1000 × 2.356 = 2,356 lbs
+Result
+The retracting force of this cylinder is
+2,356 lbs
+, which is less than the extending force (3,142 lbs) because of the reduced surface area.

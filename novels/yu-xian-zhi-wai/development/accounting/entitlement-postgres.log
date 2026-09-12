@@ -1,0 +1,19 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_ SourceRuntimeQualificationPostgresTests.test_entitlement_qualification_unknown_cost_finite_budget_recovery_and_revocation _
+
+self = <tests.integration.test_source_runtime_qualification_postgres.SourceRuntimeQualificationPostgresTests testMethod=test_entitlement_qualification_unknown_cost_finite_budget_recovery_and_revocation>
+
+    def test_entitlement_qualification_unknown_cost_finite_budget_recovery_and_revocation(self):
+>       self._exercise_source_qualification(accounting_basis="ACCOUNT_ENTITLEMENT")
+
+tests/integration/test_source_runtime_qualification_postgres.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_source_runtime_qualification_postgres.py:276: in _exercise_source_qualification
+    with self.assertRaisesRegex(ValueError, "settled Provider reservation|exact account authorization"):
+E   AssertionError: ValueError not raised
+=========================== short test summary info ============================
+FAILED tests/integration/test_source_runtime_qualification_postgres.py::SourceRuntimeQualificationPostgresTests::test_entitlement_qualification_unknown_cost_finite_budget_recovery_and_revocation
+1 failed, 1 passed in 4.27s
+..                                                                       [100%]
+2 passed in 2.37s

@@ -1,0 +1,165 @@
+{
+  "native_authority": "PostgreSQL; this file holds operator input and native job references only",
+  "entries": [
+    {
+      "id": "hydraulics-01",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-01:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-01.json",
+      "manifest_hash": "sha256:a3158d95bb119620c723f4c946805370b48f8368d4c5fd1fe93dc9a03f490e2f",
+      "source_hash": "sha256:135ee4179252987221dfcc000e72ee49ce3ed1b6d339d3ac65339d8b702c80f3"
+    },
+    {
+      "id": "hydraulics-02",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-02:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-02.json",
+      "manifest_hash": "sha256:d9e3dea93faccef3676dd801a7762f0161d92b77ed1f34af75b4129c7bd9e580",
+      "source_hash": "sha256:8ea646393c49dea81f0c8384e9d0aac666742c0e65c16e64cf9b302636b63b4f"
+    },
+    {
+      "id": "hydraulics-03",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-03:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-03.json",
+      "manifest_hash": "sha256:466e3d41bec964722ed4646914ecb32edd91461f532e31b598cc5cc10c56fdeb",
+      "source_hash": "sha256:8f41183a7a3ec1d3a098ad761f12743d10a7a444de7737d0f1273db3e4a442dd"
+    },
+    {
+      "id": "hydraulics-04",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-04:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-04.json",
+      "manifest_hash": "sha256:b39c3b50b780e1e3bc4f2d44e13ecbb7577cd4eef1aca6192ee1a0ab0131fa1d",
+      "source_hash": "sha256:ac32f24fb8305f73fc2215f7f976639325d72905dd789c2560dc000df5c5cd9b"
+    },
+    {
+      "id": "hydraulics-05",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-05:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-05.json",
+      "manifest_hash": "sha256:5e15101cca0992a5722a0d2440e04df2c5c7cc7dd28a8e49c12e102df9859510",
+      "source_hash": "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16"
+    },
+    {
+      "id": "hydraulics-06",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-06:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-06.json",
+      "manifest_hash": "sha256:95c80b9fbb83685f9f9040b7be493b492ac28489bdaf4038b70827b31276b3cc",
+      "source_hash": "sha256:eee5b52bd4dd628c1f348f98c95b6208586641e4d52978c485d0c129fe992bc5"
+    },
+    {
+      "id": "hydraulics-07",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-07:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-07.json",
+      "manifest_hash": "sha256:036dbb80a1f4042739da52e1ea0270e7995146a538403e1bf03c8e840cacbb8d",
+      "source_hash": "sha256:871122f09d3066aac26649f7e1f2df60d9894086a011204a199d090bd250b80d"
+    },
+    {
+      "id": "hydraulics-08",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-08:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-08.json",
+      "manifest_hash": "sha256:e13878f3ca4d981355c877fbdd89fe8f3a4d06ee20f720c7c0add99dbadf4bd6",
+      "source_hash": "sha256:43854709708e085160df915a006a2e57002811a8a047d08a480ac0db872ab6dd"
+    },
+    {
+      "id": "hydraulics-09",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-09:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-09.json",
+      "manifest_hash": "sha256:212e3ada2a39d3e89b013ea7466c7de9ecf6d69f94b3bdc6ead65f3bf60e66f7",
+      "source_hash": "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31"
+    },
+    {
+      "id": "hydraulics-10",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-10:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-10.json",
+      "manifest_hash": "sha256:0d6b9a5cf168eae38e76bd02425670bf67ed1517aaedfafde71e5381580becbb",
+      "source_hash": "sha256:db93eca06f8417080e17c6196b8ea0148ac844425ca349b41844f239542bfba2"
+    },
+    {
+      "id": "hydraulics-11",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-11:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-11.json",
+      "manifest_hash": "sha256:8963309de0fc31e26711da7c67306ff4a0e7df131d8177fd45e3391149786ea7",
+      "source_hash": "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656"
+    },
+    {
+      "id": "hydraulics-12",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-12:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-12.json",
+      "manifest_hash": "sha256:291c2febaf6c733f4b475a32f0b817db7e0a0bd373f0fd68819da03db197d5e3",
+      "source_hash": "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78"
+    },
+    {
+      "id": "hydraulics-13",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-13:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-13.json",
+      "manifest_hash": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282",
+      "source_hash": "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984"
+    },
+    {
+      "id": "hydraulics-14",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-14:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-14.json",
+      "manifest_hash": "sha256:d091af952c8c1dcf30ecba1af8338fe245b44f59821728e4e7ff27ceb776bf5c",
+      "source_hash": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2"
+    },
+    {
+      "id": "hydraulics-15",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-15:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-15.json",
+      "manifest_hash": "sha256:898ee0703d390e06f50db54b03ec08cefb569e7b74f12798c548b92cebd469de",
+      "source_hash": "sha256:13ce632f5417fe6adf3597a0b967436e9f3daaf8e29b2aeca96c3f6955b2cc8d"
+    },
+    {
+      "id": "hydraulics-16",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-16:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-16.json",
+      "manifest_hash": "sha256:3222d393c47f636124681bf6ddcf2c94e49091ef3ce6f87018f90b9d4aca7151",
+      "source_hash": "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c"
+    },
+    {
+      "id": "hydraulics-17",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-17:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-17.json",
+      "manifest_hash": "sha256:d2140ad44f1de9de9408ecab5b2ecba18eefa024d6f842b33f54aca3c996577b",
+      "source_hash": "sha256:977d76df0013e7e271b1c663a91be66a66a0c84663b696ae139d76c4197f2868"
+    },
+    {
+      "id": "railway-children",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:railway-children:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/railway-children.json",
+      "manifest_hash": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca",
+      "source_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290"
+    },
+    {
+      "id": "thirty-nine-steps",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:thirty-nine-steps:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/thirty-nine-steps.json",
+      "manifest_hash": "sha256:1a1d4ef2392fdb6b04c07fadff252f6a604ff29dd1bd7ce547effe67b38b1d6f",
+      "source_hash": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+    },
+    {
+      "id": "study-in-scarlet",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:study-in-scarlet:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/study-in-scarlet.json",
+      "manifest_hash": "sha256:07de355e5061c10ae7d72b93b9cdbcdbf3b41c594f4fd8a327ae2e25f864ae51",
+      "source_hash": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497"
+    }
+  ]
+}

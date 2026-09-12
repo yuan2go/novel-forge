@@ -1,0 +1,130 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106a25790>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0')
+runner_name = 'run_creation_synthesis'
+
+    @pytest.mark.parametrize('runner_name', ['run_creation_synthesis', 'run_world_production_smoke'])
+    def test_native_creation_runners_preserve_isolated_object_store_configuration(monkeypatch, tmp_path, runner_name):
+        from scripts import run_creation_synthesis, run_world_production_smoke
+        runner = run_creation_synthesis if runner_name == 'run_creation_synthesis' else run_world_production_smoke
+        values = {
+            'NOVEL_FORGE_ENVIRONMENT': 'production',
+            'NOVEL_FORGE_DATABASE_URL': 'REDACTED_CREDENTIAL_CONNECTION_URL',
+            'NOVEL_FORGE_MINIO_ENDPOINT': 'isolated-storage.invalid:9911',
+            'NOVEL_FORGE_MINIO_ACCESS_KEY': 'dummy-pilot-access',
+            'NOVEL_FORGE_MINIO_SECRET_KEY': 'dummy-pilot-secret',
+            'NOVEL_FORGE_MINIO_SECURE': 'true',
+            'NOVEL_FORGE_MINIO_RAW_BUCKET': 'pilot-raw',
+            'NOVEL_FORGE_MINIO_ARTIFACT_BUCKET': 'pilot-artifacts',
+            'NOVEL_FORGE_MINIO_EXPORT_BUCKET': 'pilot-exports',
+        }
+        for key, value in values.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **_kw: '' if args[1] == 'status' else 'a' * 40)
+        monkeypatch.setattr(runner, 'build_implementation_tree_identity', lambda _root: {'implementation_tree_sha': 'fixture-tree'})
+        monkeypatch.setattr(runner, 'validate_configuration', lambda _values: None)
+        import psycopg
+        connection = SimpleNamespace(execute=lambda _sql: SimpleNamespace(fetchone=lambda: ('isolated_pilot_test',)))
+        monkeypatch.setattr(psycopg, 'connect', lambda *_args, **_kw: nullcontext(connection))
+        captured = []
+        def capture(settings, **_kwargs):
+            captured.append(settings)
+            raise RuntimeError('test stops before execution composition')
+        monkeypatch.setattr(runner, 'build_production_execution_composition', capture)
+        args = ['--expected-sha', 'a' * 40, '--root', str(tmp_path / 'runtime'), '--run-key', 'settings-only',
+                '--evidence-dir', str(tmp_path / 'evidence'), '--execute']
+        if runner_name == 'run_creation_synthesis':
+            monkeypatch.setattr(runner, 'authorize_execution', lambda *_args: {'accounting_basis': 'FIXTURE'})
+            monkeypatch.setattr(runner, 'build_trusted_principal_resolver', lambda **_kwargs: Mock())
+            monkeypatch.setattr(runner, 'build_content_authority_application', lambda *_args, **_kwargs: None)
+            source = Path(__file__).resolve().parents[2] / 'config/production/knowledge-closure'
+            args += ['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+                     '--formation-policy', str(source / 'formation.json'), '--project-id', 'settings-project', '--book-id', 'settings-book']
+        else:
+            args += ['--input-snapshot-id', 'settings-snapshot']
+        assert runner.main(args) == 2
+        assert len(captured) == 1
+        settings = captured[0]
+>       assert settings.root == (tmp_path / 'runtime').resolve()
+E       AssertionError: assert '/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0/runtime' == PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0/runtime')
+E        +  where '/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0/runtime' = IndustrialSettings(root='/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_nativ...aos_fixture_activation_enabled=False, api_host='127.0.0.1', api_port=8000, api_cors_origins=('http://localhost:3000',)).root
+E        +  and   PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0/runtime') = resolve()
+E        +    where resolve = (PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p0') / 'runtime').resolve
+
+tests/unit/test_creation_runner_settings.py:51: AssertionError
+_ test_native_creation_runners_preserve_isolated_object_store_configuration[run_world_production_smoke] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10965b9b0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1')
+runner_name = 'run_world_production_smoke'
+
+    @pytest.mark.parametrize('runner_name', ['run_creation_synthesis', 'run_world_production_smoke'])
+    def test_native_creation_runners_preserve_isolated_object_store_configuration(monkeypatch, tmp_path, runner_name):
+        from scripts import run_creation_synthesis, run_world_production_smoke
+        runner = run_creation_synthesis if runner_name == 'run_creation_synthesis' else run_world_production_smoke
+        values = {
+            'NOVEL_FORGE_ENVIRONMENT': 'production',
+            'NOVEL_FORGE_DATABASE_URL': 'REDACTED_CREDENTIAL_CONNECTION_URL',
+            'NOVEL_FORGE_MINIO_ENDPOINT': 'isolated-storage.invalid:9911',
+            'NOVEL_FORGE_MINIO_ACCESS_KEY': 'dummy-pilot-access',
+            'NOVEL_FORGE_MINIO_SECRET_KEY': 'dummy-pilot-secret',
+            'NOVEL_FORGE_MINIO_SECURE': 'true',
+            'NOVEL_FORGE_MINIO_RAW_BUCKET': 'pilot-raw',
+            'NOVEL_FORGE_MINIO_ARTIFACT_BUCKET': 'pilot-artifacts',
+            'NOVEL_FORGE_MINIO_EXPORT_BUCKET': 'pilot-exports',
+        }
+        for key, value in values.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **_kw: '' if args[1] == 'status' else 'a' * 40)
+        monkeypatch.setattr(runner, 'build_implementation_tree_identity', lambda _root: {'implementation_tree_sha': 'fixture-tree'})
+        monkeypatch.setattr(runner, 'validate_configuration', lambda _values: None)
+        import psycopg
+        connection = SimpleNamespace(execute=lambda _sql: SimpleNamespace(fetchone=lambda: ('isolated_pilot_test',)))
+        monkeypatch.setattr(psycopg, 'connect', lambda *_args, **_kw: nullcontext(connection))
+        captured = []
+        def capture(settings, **_kwargs):
+            captured.append(settings)
+            raise RuntimeError('test stops before execution composition')
+        monkeypatch.setattr(runner, 'build_production_execution_composition', capture)
+        args = ['--expected-sha', 'a' * 40, '--root', str(tmp_path / 'runtime'), '--run-key', 'settings-only',
+                '--evidence-dir', str(tmp_path / 'evidence'), '--execute']
+        if runner_name == 'run_creation_synthesis':
+            monkeypatch.setattr(runner, 'authorize_execution', lambda *_args: {'accounting_basis': 'FIXTURE'})
+            monkeypatch.setattr(runner, 'build_trusted_principal_resolver', lambda **_kwargs: Mock())
+            monkeypatch.setattr(runner, 'build_content_authority_application', lambda *_args, **_kwargs: None)
+            source = Path(__file__).resolve().parents[2] / 'config/production/knowledge-closure'
+            args += ['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+                     '--formation-policy', str(source / 'formation.json'), '--project-id', 'settings-project', '--book-id', 'settings-book']
+        else:
+            args += ['--input-snapshot-id', 'settings-snapshot']
+        assert runner.main(args) == 2
+        assert len(captured) == 1
+        settings = captured[0]
+>       assert settings.root == (tmp_path / 'runtime').resolve()
+E       AssertionError: assert '/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1/runtime' == PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1/runtime')
+E        +  where '/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1/runtime' = IndustrialSettings(root='/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_nativ...aos_fixture_activation_enabled=False, api_host='127.0.0.1', api_port=8000, api_cors_origins=('http://localhost:3000',)).root
+E        +  and   PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1/runtime') = resolve()
+E        +    where resolve = (PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-196/test_native_creation_runners_p1') / 'runtime').resolve
+
+tests/unit/test_creation_runner_settings.py:51: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{
+  "status": "BLOCKED",
+  "proof_ceiling": "REAL_PROVIDER_SMOKE_ONLY",
+  "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "implementation_tree_sha": "fixture-tree",
+  "snapshot_id": "settings-snapshot",
+  "run_key": "settings-only",
+  "human_editorial": "NOT_PROVEN",
+  "longitudinal": "NOT_PROVEN",
+  "production_operation": "NOT_PROVEN",
+  "error_type": "RuntimeError",
+  "error": "test stops before execution composition"
+}
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_runner_settings.py::test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis]
+FAILED tests/unit/test_creation_runner_settings.py::test_native_creation_runners_preserve_isolated_object_store_configuration[run_world_production_smoke]
+2 failed in 0.56s

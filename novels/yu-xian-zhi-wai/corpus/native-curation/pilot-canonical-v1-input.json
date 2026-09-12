@@ -1,0 +1,238 @@
+{
+  "action": "resolve_canonical_works",
+  "changes": [
+    {
+      "work_key": "NWTC-Fluids2-BasicHydraulics-JessyHaid",
+      "title": "Fluids 2: Basic Hydraulics — Jessy Haid / NWTC (17 acquired section excerpts)",
+      "language": "en",
+      "genre_tags": [
+        "professional",
+        "hydraulics"
+      ],
+      "external_ids": {
+        "publisher_work": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)"
+      },
+      "metadata_evidence": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units/2.01%3A_Operation_of_a_Hydraulic_Power_Unit",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-01.html"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:c42d79acae82a7a4f46370922312a782e42b3318ab1e0412fad776b32e6fefe1",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units/2.01%3A_Operation_of_a_Hydraulic_Power_Unit",
+            "sha256:135ee4179252987221dfcc000e72ee49ce3ed1b6d339d3ac65339d8b702c80f3"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:672d56d442253a1ed83387f7565182b1dc6a5ab22d6e0f23ba34067870040d24",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.01%3A_Flow_Rate_and_Its_Measurement",
+            "sha256:8ea646393c49dea81f0c8384e9d0aac666742c0e65c16e64cf9b302636b63b4f"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:705d77a8d60b81ba6b22279f79220fd22335ede0e29d1038ef9f0c62bd1a6bbb",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.02%3A_Types_of_Flowmeters_and_Their_Operation",
+            "sha256:8f41183a7a3ec1d3a098ad761f12743d10a7a444de7737d0f1273db3e4a442dd"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:219f09699eb45ea0b9dac312e767e338835e8e1e5200272ea502443619740a4b",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.01%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Extention_(Pushing)",
+            "sha256:ac32f24fb8305f73fc2215f7f976639325d72905dd789c2560dc000df5c5cd9b"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:a6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.02%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Retraction_(Pulling)",
+            "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:b6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.01%3A_Pascals_Law_and_Its_Significance_in_Hydraulics",
+            "sha256:eee5b52bd4dd628c1f348f98c95b6208586641e4d52978c485d0c129fe992bc5"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:2a3eb4c808d9c63d877e1ff0328401143814cd81acf774f08b23cce85290a9de",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.02%3A_How_Force_Is_Multiplied_Using_Pascals_Law",
+            "sha256:871122f09d3066aac26649f7e1f2df60d9894086a011204a199d090bd250b80d"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:570b62038e9b9e4dca6e78be58add941fc74dc89ae40c3d2d6c652a684dfe4d5",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.01%3A_Two_Types_of_Resistance_in_a_Hydraulic_System",
+            "sha256:43854709708e085160df915a006a2e57002811a8a047d08a480ac0db872ab6dd"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:0cb64d77f20aed4e2df8992382ae0cf257f04908ecb90bee4db6caa1c0092afc",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.02%3A_How_Delta_P_Describes_Hydraulic_Resistance",
+            "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:c831377e9df6554caa5fb9a2be40699a8c98a258abe34eb613476765097ce437",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.01%3A_Pressure_in_a_Hydraulic_System",
+            "sha256:db93eca06f8417080e17c6196b8ea0148ac844425ca349b41844f239542bfba2"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:511d682e68d2b98e48b8462e7c7572c96ca66647943b4e07eafbd51c5bba16fe",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.02%3A_Pulling_Suction_of_a_Fluid",
+            "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.01%3A_Function_and_Application_of_a_Relief_Valve",
+            "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:55f3e8c6122e47d9b298ab56c39f0d549acd53c7c268dbead1ab7550c9ed3aba",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.02%3A_Operation_of_a_Direct-Acting_Relief_Valve_and_Its_Schematic_Symbol",
+            "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+            "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:02a0124e2c3e9607d924d6df0c98183e4f6265e437b61a6eda50e8f1e35abeb9",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.02%3A_Types_of_Check_Valves_and_Their_Operation",
+            "sha256:13ce632f5417fe6adf3597a0b967436e9f3daaf8e29b2aeca96c3f6955b2cc8d"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.01%3A_The_Function_of_a_Flow_Control_Valve",
+            "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c"
+          ]
+        },
+        {
+          "processing_id": "corpus-processing:b91afb73fadbb26e62cc4b55b06782b842d0532fae865aaa6e5ec36bf704078a",
+          "relation": "EXCERPT",
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.02%3A_Operation_of_a_Flow_Control_Valve_and_its_Scematic_Symbol",
+            "sha256:977d76df0013e7e271b1c663a91be66a66a0c84663b696ae139d76c4197f2868"
+          ]
+        }
+      ]
+    },
+    {
+      "work_key": "gutenberg:1874",
+      "title": "The Railway Children",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:1874"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:e48ee1359efae10153db4d90b5ea48ef15163aa400654e2782916b4df50583a7",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+            "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290"
+          ]
+        }
+      ]
+    },
+    {
+      "work_key": "gutenberg:558",
+      "title": "The Thirty-Nine Steps",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:558"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:4cd6aae2092680c63b07daca35dde7642190d7ee1a1ea06f031d0373e3b1f633",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+            "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+          ]
+        }
+      ]
+    },
+    {
+      "work_key": "gutenberg:244",
+      "title": "A Study in Scarlet",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:244"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:18c38de58b2bcb46a728c577c295061d5d763e0ac56c88afe1b3053a84ec81e4",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+            "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497"
+          ]
+        }
+      ]
+    }
+  ],
+  "reason": "Native bibliographic grouping: one professional textbook with disjoint section excerpts and three original novels. No rights transfer; page licenses remain independent."
+}

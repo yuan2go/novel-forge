@@ -1,0 +1,79 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter[bounded-target] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109619ca0>
+long_goal = False
+
+    @pytest.mark.parametrize("long_goal", [False, True], ids=["bounded-target", "long-novel-pilot"])
+    def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(monkeypatch, long_goal):
+        from scripts import run_world_production_smoke as runner
+        monkeypatch.setattr(runner, "RuntimeJobAuthority", lambda _database: None)
+        book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "state": "CANON_COMMITTED",
+                "target_chapter_count": 180 if long_goal else 6, "accepted_through_chapter": 6}
+        group = {"group_run_id": "second-group", "state": "CLOSURE_PENDING", "chapter_end": 6}
+        closed, paused, events = [], [], []
+        def close(identity, **_kw):
+            closed.append(identity)
+            group["state"] = "COMPLETED"
+            return group
+        def pause(identity, **_kw):
+            paused.append(identity)
+            book["state"] = "PAUSED"
+            return book
+        composition = SimpleNamespace(
+            principal="operator", authority=SimpleNamespace(database_url="not-connected", require=lambda _id: dict(book), pause=pause),
+            query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: "" if closed else "second-group"),
+            chapter_groups=SimpleNamespace(require=lambda _id: dict(group), close=close),
+        )
+        chapter = Mock()
+        options = {"pilot_stop_after_chapter": 6} if long_goal else {}
+        for _ in range(2):
+            result = runner.drive(composition=composition, chapter=chapter, book_run_id="run", worker="worker",
+                                  events=events.append, maximum_ticks=2, deadline=0, **options)
+            assert result == ("PILOT_ACCEPTED_CURSOR_REACHED" if long_goal else "ACCEPTED_TARGET_REACHED")
+>       assert closed == ["second-group"]
+E       AssertionError: assert [] == ['second-group']
+E         
+E         Right contains one more item: 'second-group'
+E         Use -v to get more diff
+
+tests/unit/test_creation_pilot.py:119: AssertionError
+_ test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter[long-novel-pilot] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109da73b0>
+long_goal = True
+
+    @pytest.mark.parametrize("long_goal", [False, True], ids=["bounded-target", "long-novel-pilot"])
+    def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(monkeypatch, long_goal):
+        from scripts import run_world_production_smoke as runner
+        monkeypatch.setattr(runner, "RuntimeJobAuthority", lambda _database: None)
+        book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "state": "CANON_COMMITTED",
+                "target_chapter_count": 180 if long_goal else 6, "accepted_through_chapter": 6}
+        group = {"group_run_id": "second-group", "state": "CLOSURE_PENDING", "chapter_end": 6}
+        closed, paused, events = [], [], []
+        def close(identity, **_kw):
+            closed.append(identity)
+            group["state"] = "COMPLETED"
+            return group
+        def pause(identity, **_kw):
+            paused.append(identity)
+            book["state"] = "PAUSED"
+            return book
+        composition = SimpleNamespace(
+            principal="operator", authority=SimpleNamespace(database_url="not-connected", require=lambda _id: dict(book), pause=pause),
+            query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: "" if closed else "second-group"),
+            chapter_groups=SimpleNamespace(require=lambda _id: dict(group), close=close),
+        )
+        chapter = Mock()
+        options = {"pilot_stop_after_chapter": 6} if long_goal else {}
+        for _ in range(2):
+>           result = runner.drive(composition=composition, chapter=chapter, book_run_id="run", worker="worker",
+                                  events=events.append, maximum_ticks=2, deadline=0, **options)
+E           TypeError: drive() got an unexpected keyword argument 'pilot_stop_after_chapter'
+
+tests/unit/test_creation_pilot.py:116: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_pilot.py::test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter[bounded-target]
+FAILED tests/unit/test_creation_pilot.py::test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter[long-novel-pilot]
+2 failed, 14 deselected in 0.57s

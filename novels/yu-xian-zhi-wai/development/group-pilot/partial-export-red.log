@@ -1,0 +1,104 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+____ test_blind_export_requires_complete_native_evidence_export[run_failed] ____
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-182/test_blind_export_requires_com0')
+fault = 'run_failed'
+
+    @pytest.mark.parametrize('fault', ['run_failed', 'partial_assets', 'missing_assets', 'partial_workspace'])
+    def test_blind_export_requires_complete_native_evidence_export(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+        folder = tmp_path / 'treatment'
+        if fault == 'run_failed':
+            path = folder / 'creation-run.json'
+            value = json.loads(path.read_text())
+            value.update(status='EVIDENCE_EXPORT_BLOCKED', artifact_export_error='missing model-call page')
+            path.write_text(json.dumps(value))
+        elif fault == 'missing_assets':
+            (folder / 'asset-export-status.json').unlink(missing_ok=True)
+        else:
+            path = folder / ('asset-export-status.json' if fault == 'partial_assets' else 'workspace-export-status.json')
+            path.write_text(json.dumps({'status': 'PARTIAL', 'errors': ['missing exact evidence']}))
+>       with pytest.raises(ValueError, match='complete native evidence'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:280: Failed
+__ test_blind_export_requires_complete_native_evidence_export[partial_assets] __
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-182/test_blind_export_requires_com1')
+fault = 'partial_assets'
+
+    @pytest.mark.parametrize('fault', ['run_failed', 'partial_assets', 'missing_assets', 'partial_workspace'])
+    def test_blind_export_requires_complete_native_evidence_export(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+        folder = tmp_path / 'treatment'
+        if fault == 'run_failed':
+            path = folder / 'creation-run.json'
+            value = json.loads(path.read_text())
+            value.update(status='EVIDENCE_EXPORT_BLOCKED', artifact_export_error='missing model-call page')
+            path.write_text(json.dumps(value))
+        elif fault == 'missing_assets':
+            (folder / 'asset-export-status.json').unlink(missing_ok=True)
+        else:
+            path = folder / ('asset-export-status.json' if fault == 'partial_assets' else 'workspace-export-status.json')
+            path.write_text(json.dumps({'status': 'PARTIAL', 'errors': ['missing exact evidence']}))
+>       with pytest.raises(ValueError, match='complete native evidence'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:280: Failed
+__ test_blind_export_requires_complete_native_evidence_export[missing_assets] __
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-182/test_blind_export_requires_com2')
+fault = 'missing_assets'
+
+    @pytest.mark.parametrize('fault', ['run_failed', 'partial_assets', 'missing_assets', 'partial_workspace'])
+    def test_blind_export_requires_complete_native_evidence_export(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+        folder = tmp_path / 'treatment'
+        if fault == 'run_failed':
+            path = folder / 'creation-run.json'
+            value = json.loads(path.read_text())
+            value.update(status='EVIDENCE_EXPORT_BLOCKED', artifact_export_error='missing model-call page')
+            path.write_text(json.dumps(value))
+        elif fault == 'missing_assets':
+            (folder / 'asset-export-status.json').unlink(missing_ok=True)
+        else:
+            path = folder / ('asset-export-status.json' if fault == 'partial_assets' else 'workspace-export-status.json')
+            path.write_text(json.dumps({'status': 'PARTIAL', 'errors': ['missing exact evidence']}))
+>       with pytest.raises(ValueError, match='complete native evidence'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:280: Failed
+_ test_blind_export_requires_complete_native_evidence_export[partial_workspace] _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-182/test_blind_export_requires_com3')
+fault = 'partial_workspace'
+
+    @pytest.mark.parametrize('fault', ['run_failed', 'partial_assets', 'missing_assets', 'partial_workspace'])
+    def test_blind_export_requires_complete_native_evidence_export(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+        folder = tmp_path / 'treatment'
+        if fault == 'run_failed':
+            path = folder / 'creation-run.json'
+            value = json.loads(path.read_text())
+            value.update(status='EVIDENCE_EXPORT_BLOCKED', artifact_export_error='missing model-call page')
+            path.write_text(json.dumps(value))
+        elif fault == 'missing_assets':
+            (folder / 'asset-export-status.json').unlink(missing_ok=True)
+        else:
+            path = folder / ('asset-export-status.json' if fault == 'partial_assets' else 'workspace-export-status.json')
+            path.write_text(json.dumps({'status': 'PARTIAL', 'errors': ['missing exact evidence']}))
+>       with pytest.raises(ValueError, match='complete native evidence'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:280: Failed
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_export.py::test_blind_export_requires_complete_native_evidence_export[run_failed]
+FAILED tests/unit/test_creation_export.py::test_blind_export_requires_complete_native_evidence_export[partial_assets]
+FAILED tests/unit/test_creation_export.py::test_blind_export_requires_complete_native_evidence_export[missing_assets]
+FAILED tests/unit/test_creation_export.py::test_blind_export_requires_complete_native_evidence_export[partial_workspace]
+4 failed, 19 deselected in 0.53s

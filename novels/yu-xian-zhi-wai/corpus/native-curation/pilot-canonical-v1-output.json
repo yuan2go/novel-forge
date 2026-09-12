@@ -1,0 +1,36 @@
+{
+  "action": "resolve_canonical_works",
+  "revisions": [
+    {
+      "members": 17,
+      "work_id": "corpus-canonical-work:a9f71c9c6554db8efa95e71a2ea6426cbf25b064464fb70314fac58e9f2b65d3",
+      "revision_id": "corpus-canonical-revision:cc965bd8a25daba71f498700fac84c8d1819701f8c37dd74e1789e30543e1be2"
+    },
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:173a2aba9336bf37c290fa7f782490f7d8ab4e4cec3a9f8bda460349828c07f2",
+      "revision_id": "corpus-canonical-revision:528bdbee2d6208c3cd59113e623773fd2a579013ad6966d96f130eaa1f5ef1db"
+    },
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:35d3d65a95115a59cc34913a1516e717f2faed19997653ff5778ec259345b15f",
+      "revision_id": "corpus-canonical-revision:2d77e92064398920818fbaecd24714ba796bffdfede8ec8f4e86714954d892e3"
+    },
+    {
+      "members": 1,
+      "work_id": "corpus-canonical-work:5f5d2b7b7224af0e84ea90c22a1e56f02cbf6b798c4db705268f8f95a56e7255",
+      "revision_id": "corpus-canonical-revision:8df8f562bd0cb215252928bf6ad6363bdc744ce5389358a5e3295aee46f86878"
+    }
+  ],
+  "input_hash": "sha256:9b0cf4db4b5a05e58bc4e4a0120b320792ece46b394d6fd31cea5ec67e8a74bd",
+  "policy_version": "source-corpus-admission.v1",
+  "schema_version": "source-corpus-result.v1",
+  "rights_transfer": false,
+  "automatic_transitive_merge": false,
+  "asset_version_id": "corpus-result:496a557900f0eb637d25bb19a8100a3c1937b9e63ea2b2b6180be33183f4e3f1:v1",
+  "operation_id": "195ab7f5-b351-439e-865e-7608504c9673",
+  "project_id": "first-novel-pilot-20260912",
+  "status": "SUCCEEDED",
+  "replayed": true,
+  "recovery_mode": "operation_replay"
+}

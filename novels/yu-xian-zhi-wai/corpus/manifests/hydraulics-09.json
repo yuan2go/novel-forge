@@ -1,0 +1,51 @@
+{
+  "purpose": "PRODUCTION_REFERENCE",
+  "analyze": false,
+  "source": {
+    "kind": "LOCAL",
+    "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html",
+    "files": [
+      {
+        "path": "hydraulics-09.html",
+        "checksum": "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31"
+      }
+    ]
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "html",
+    "html_body_selector": ".mt-content-container",
+    "constants": {
+      "work_id": "hydraulics-09",
+      "title": "11.2: How Delta P Describes Hydraulic Resistance",
+      "author": "Jessy Haid / Northeast Wisconsin Technical College"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "EXPLICIT",
+      "min_body_chars": 80
+    },
+    "completeness": "EXCERPT",
+    "expected_units": 1
+  },
+  "rights": {
+    "dataset_license": "CC-BY-4.0",
+    "underlying_rights": "LICENSED",
+    "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "evidence_refs": [
+      "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.02%3A_How_Delta_P_Describes_Hydraulic_Resistance",
+      "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31",
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html"
+    ],
+    "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+    "allowed_purposes": [
+      "PRODUCTION_REFERENCE"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING",
+      "SOURCE_ANALYSIS",
+      "ABSTRACT_GENERATION"
+    ]
+  }
+}

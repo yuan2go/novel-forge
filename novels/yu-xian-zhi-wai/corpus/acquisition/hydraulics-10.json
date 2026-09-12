@@ -1,0 +1,13 @@
+{
+  "id": "hydraulics-10",
+  "requested_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.01%3A_Pressure_in_a_Hydraulic_System",
+  "resolved_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.01%3A_Pressure_in_a_Hydraulic_System",
+  "format": "html",
+  "status": "ACQUIRED",
+  "sha256": "db93eca06f8417080e17c6196b8ea0148ac844425ca349b41844f239542bfba2",
+  "bytes": 135630,
+  "acquired_utc": "2026-09-12T10:12:01Z",
+  "etag": null,
+  "last_modified": null,
+  "raw_path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-10.html"
+}

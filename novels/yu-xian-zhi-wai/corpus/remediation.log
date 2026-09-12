@@ -1,0 +1,13 @@
+railway-children-front-and-license-review-v1 SUCCEEDED
+railway-children-nonbody-reprocess-v2 None
+Traceback (most recent call last):
+  File "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/apply_structural_remediation.py", line 19, in <module>
+    stage,inspect=reprocess(id,id+'-nonbody-reprocess-v2',old['edition_id'],rem/(id+'-parser-v2.json'));summary[id]=stage
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/apply_structural_remediation.py", line 12, in reprocess
+    j=a['import_job_id'];run('run',key+'-execute',['--job-id',j,'--max-stages','10'])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/apply_structural_remediation.py", line 8, in run
+    if out.returncode:raise RuntimeError((key,out.stderr[-2500:]))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ('railway-children-nonbody-reprocess-v2-execute', 'error: SOURCE_WORK_IDENTITY_CONFLICT: stable SourceWork identity differs from the frozen work\n')

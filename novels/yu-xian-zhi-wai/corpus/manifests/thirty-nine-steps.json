@@ -1,0 +1,181 @@
+{
+  "purpose": "PRODUCTION_REFERENCE",
+  "analyze": false,
+  "source": {
+    "kind": "LOCAL",
+    "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+    "files": [
+      {
+        "path": "thirty-nine-steps.txt",
+        "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+      }
+    ]
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "txt",
+    "constants": {
+      "work_id": "thirty-nine-steps",
+      "title": "The Thirty-Nine Steps",
+      "author": "John Buchan (1875–1940)"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "EXPLICIT",
+      "min_body_chars": 80,
+      "boundaries": [
+        {
+          "start": 0,
+          "end": 2161,
+          "title": "Publisher identity, front matter and rights",
+          "kind": "AUTHOR_NOTE",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 2161,
+          "end": 26962,
+          "title": "Chapter I.",
+          "kind": "CHAPTER",
+          "number": 1,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 26962,
+          "end": 40215,
+          "title": "Chapter II.",
+          "kind": "CHAPTER",
+          "number": 2,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 40215,
+          "end": 65385,
+          "title": "Chapter III.",
+          "kind": "CHAPTER",
+          "number": 3,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 65385,
+          "end": 88879,
+          "title": "Chapter IV.",
+          "kind": "CHAPTER",
+          "number": 4,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 88879,
+          "end": 108101,
+          "title": "Chapter V.",
+          "kind": "CHAPTER",
+          "number": 5,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 108101,
+          "end": 140542,
+          "title": "Chapter VI.",
+          "kind": "CHAPTER",
+          "number": 6,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 140542,
+          "end": 163004,
+          "title": "Chapter VII.",
+          "kind": "CHAPTER",
+          "number": 7,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 163004,
+          "end": 179053,
+          "title": "Chapter VIII.",
+          "kind": "CHAPTER",
+          "number": 8,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 179053,
+          "end": 193397,
+          "title": "Chapter IX.",
+          "kind": "CHAPTER",
+          "number": 9,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 193397,
+          "end": 223208,
+          "title": "Chapter X.",
+          "kind": "CHAPTER",
+          "number": 10,
+          "volume": "",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        },
+        {
+          "start": 223208,
+          "end": 242116,
+          "title": "Project Gutenberg license and trailing metadata",
+          "kind": "AUTHOR_NOTE",
+          "path": "thirty-nine-steps.txt",
+          "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+          "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+        }
+      ],
+      "work_completion": "FINISHED"
+    },
+    "completeness": "COMPLETE",
+    "expected_units": 12
+  },
+  "rights": {
+    "dataset_license": "Project Gutenberg License; exact original English work public domain",
+    "underlying_rights": "PUBLIC_DOMAIN",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "evidence_refs": [
+      "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+      "https://www.gutenberg.org/ebooks/558",
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps-catalogue.html",
+      "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+    ],
+    "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review.",
+    "allowed_purposes": [
+      "PRODUCTION_REFERENCE"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING",
+      "SOURCE_ANALYSIS",
+      "ABSTRACT_GENERATION"
+    ]
+  }
+}

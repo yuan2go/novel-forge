@@ -1,0 +1,71 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_native_jobs_keyset_literal_batches_filters_and_cli ____________
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10cc1fd10>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-175/test_native_jobs_keyset_litera0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c221fa0>
+
+    def test_native_jobs_keyset_literal_batches_filters_and_cli(corpus, tmp_path, monkeypatch):
+        app, _ = _runtime(tmp_path, monkeypatch)
+        manifest = _input(tmp_path)
+        principal = build_trusted_principal_resolver().resolve_api_principal()
+        admitted = []
+        # WHY: Native commands share PostgreSQL transaction time, without rewriting job timestamps.
+        with AuthorityUnitOfWork(DATABASE_URL, coordinate_nested=True) as uow:
+            for key in ("batch%_a/1", "batch%_a/2", "batchZZa/1", "batchZZa/2"):
+                admitted.append(app.create_corpus_import(
+                    project_id=corpus.project, workspace_id=corpus.workspace,
+                    manifest=IngestionManifest.model_validate(manifest), mode="IMPORT",
+                    run_key=key, actor_id=principal.principal_id, principal=principal,
+                )["import_job_id"])
+            uow.commit()
+        git = corpus.client.post(BASE, json={
+            "project_id": corpus.project, "workspace_id": corpus.workspace,
+            "source": {"type": "github_repository", "repository": "https://github.com/fixture/not-fetched",
+                       "ref": "batch%_a/not-a-run-key"},
+            "rights_authorization": "owned", "copyright_boundary": "Synthetic fixture admission only; no fetch or model",
+            "idempotency_key": "separate-git-job",
+        })
+        assert git.status_code == 202, git.text
+        git_id = git.json()["import_job_id"]
+        full = _page(corpus, limit=10)
+        assert _ids(full) == [git_id, *sorted(admitted)]
+        assert len({row["created_at"] for row in full if row["import_job_id"] in admitted}) == 1
+        pages, after = [], ""
+        while page := _page(corpus, limit=2, after=after):
+            pages.extend(page)
+            after = page[-1]["import_job_id"]
+        assert pages == full
+        assert len(set(_ids(pages))) == 5
+>       assert set(_ids(_page(corpus, run_key_prefix="batch%_a/"))) == set(admitted[:2])
+E       AssertionError: assert {'source-impo...9d820ed75b80'} == {'source-impo...a6f403178cdd'}
+E         
+E         Extra items in the left set:
+E         'source-import:e0e87f5d-b29c-4d4d-b091-9d820ed75b80'
+E         Use -v to get more diff
+
+tests/integration/test_corpus_jobs_query_postgres.py:103: AssertionError
+=============================== warnings summary ===============================
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli
+1 failed, 2 warnings in 3.08s

@@ -1,0 +1,26 @@
+...                                                                      [100%]
+=============================== warnings summary ===============================
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_reject_foreign_cursors_and_permissions
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_fifty_job_pages_record_bounded_database_cost
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_reject_foreign_cursors_and_permissions
+tests/integration/test_corpus_jobs_query_postgres.py::test_native_fifty_job_pages_record_bounded_database_cost
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 6 warnings in 6.41s

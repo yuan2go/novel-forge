@@ -1,0 +1,309 @@
+{
+  "stop_reason": "COMPLETED",
+  "remaining_stages": null,
+  "stages": [
+    {
+      "operation_id": "d2438529-d020-425c-9fa2-a7eb42eb81ed",
+      "status": "SUCCEEDED"
+    },
+    {
+      "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6",
+      "status": "SUCCEEDED"
+    }
+  ],
+  "failed_stages": 0,
+  "stage_limit": 10,
+  "job": {
+    "import_job_id": "source-import:d2438529-d020-425c-9fa2-a7eb42eb81ed",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "first-novel-pilot-workspace",
+    "source_type": "corpus_content",
+    "source_locator": {
+      "manifest": {
+        "budget": {
+          "version": "corpus-resource-policy.v1",
+          "max_files": 100,
+          "max_works": 100,
+          "concurrency": 1,
+          "max_records": 10000,
+          "max_retries": 2,
+          "memory_bytes": 256000000,
+          "max_file_bytes": 64000000,
+          "max_work_bytes": 16000000,
+          "max_chunk_bytes": 12000,
+          "max_total_bytes": 256000000,
+          "timeout_seconds": 60,
+          "max_record_bytes": 2000000,
+          "max_archive_ratio": 100,
+          "max_expanded_bytes": 512000000,
+          "max_units_per_work": 2000,
+          "min_free_disk_bytes": 256000000
+        },
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "10.1: Pascal’s Law and Its Significance in Hydraulics",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-06"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "rights": {
+          "scope": "ALL_WORKS_IN_SNAPSHOT",
+          "allowed_uses": [
+            "LOCAL_PROCESSING",
+            "SOURCE_ANALYSIS",
+            "ABSTRACT_GENERATION"
+          ],
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.01%3A_Pascals_Law_and_Its_Significance_in_Hydraulics",
+            "sha256:eee5b52bd4dd628c1f348f98c95b6208586641e4d52978c485d0c129fe992bc5",
+            "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-06.html"
+          ],
+          "dataset_license": "CC-BY-4.0",
+          "allowed_purposes": [
+            "PRODUCTION_REFERENCE"
+          ],
+          "underlying_rights": "LICENSED",
+          "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+          "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-06.html",
+              "parser": null,
+              "checksum": "sha256:eee5b52bd4dd628c1f348f98c95b6208586641e4d52978c485d0c129fe992bc5",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-06.html",
+          "revision": ""
+        },
+        "analyze": false,
+        "purpose": "PRODUCTION_REFERENCE",
+        "rights_id": null,
+        "source_id": null,
+        "schema_version": "corpus-ingestion-manifest.v1",
+        "adapter_version": "corpus-adapters.v1",
+        "previous_snapshot_id": null
+      }
+    },
+    "requested_ref": "sha256:95c80b9fbb83685f9f9040b7be493b492ac28489bdaf4038b70827b31276b3cc",
+    "import_policy": {
+      "max_files": 20000,
+      "allow_git_lfs": false,
+      "exclude_globs": [
+        ".git/**",
+        "**/.git/**",
+        "node_modules/**",
+        "**/node_modules/**",
+        "**/__pycache__/**"
+      ],
+      "include_globs": [
+        "**/*",
+        "*"
+      ],
+      "allow_symlinks": false,
+      "max_file_bytes": 8000000,
+      "parser_profile": "generic-text.v1",
+      "policy_version": "source-import-policy.v1",
+      "max_chunk_bytes": 12000,
+      "source_work_key": "",
+      "allow_submodules": false,
+      "chunking_version": "source-structural-chunking.v1",
+      "corpus_registry_id": "",
+      "extension_allowlist": [
+        ".json",
+        ".jsonl",
+        ".markdown",
+        ".md",
+        ".text",
+        ".txt",
+        ".yaml",
+        ".yml"
+      ],
+      "corpus_registry_hash": "",
+      "max_repository_bytes": 500000000,
+      "normalization_version": "source-normalization.v1"
+    },
+    "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+    "intelligence_policy": {
+      "min_margin": 0.12,
+      "classifier_id": "novel-forge.source-content-classifier",
+      "min_confidence": 0.72,
+      "policy_version": "source-intelligence-policy.v1",
+      "max_signal_bytes": 128000,
+      "max_sample_chunks": 3,
+      "classifier_version": "1.0",
+      "classifier_capability": "source.content.classify",
+      "sample_policy_version": "source-profile-sampling.v1",
+      "signal_schema_version": "source-profile-signals.v1",
+      "routing_policy_version": "source-analysis-routing.v2",
+      "classifier_prompt_version": "1.0",
+      "classifier_schema_version": "source-content-classification.v1",
+      "max_sample_bytes_per_chunk": 6000,
+      "logical_document_policy_version": "file-logical-document.v1"
+    },
+    "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+    "analysis_override": {},
+    "mode": "IMPORT",
+    "status": "IMPORTED",
+    "discovery_operation_id": "d2438529-d020-425c-9fa2-a7eb42eb81ed",
+    "repository_snapshot_asset_version_id": null,
+    "previous_snapshot_asset_version_id": null,
+    "counters": {},
+    "failure": {},
+    "created_at": "2026-09-12T10:17:26.863782+00:00",
+    "updated_at": "2026-09-12T10:17:28.170825+00:00",
+    "corpus_snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+    "corpus": {
+      "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+      "acquisition": {
+        "stage": "ACQUIRED",
+        "children": [
+          {
+            "status": "READY",
+            "edition_id": "corpus-edition:767a4f46db871fc95bcdee944f7a90f9c560dbda48faec6227d05337d0c4dd66",
+            "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6"
+          }
+        ],
+        "rights_id": "corpus-rights:f94a74c50c6628a81b71d65806077972ad3144be029337f27cb74af2afd34712",
+        "source_id": "corpus-source:9197aa8fecac7169a5f9ad626a136349ec44890ef51ae45d93c473cbb09f30c2",
+        "work_count": 1,
+        "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+        "actual_bytes": 131452,
+        "parsed_records": 1,
+        "verified_files": 1,
+        "analysis_called": false,
+        "acquisition_effect_id": "3c38222a-f76e-4f1d-96e4-dc07ebf5c05f"
+      },
+      "content_imported": 1,
+      "content_blocked": 0,
+      "knowledge_approved_by_import": false,
+      "purpose": "PRODUCTION_REFERENCE",
+      "job_kind": "CONTENT_ACQUISITION",
+      "stage_results": [
+        {
+          "operation_id": "d2438529-d020-425c-9fa2-a7eb42eb81ed",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:767a4f46db871fc95bcdee944f7a90f9c560dbda48faec6227d05337d0c4dd66",
+                "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6"
+              }
+            ],
+            "rights_id": "corpus-rights:f94a74c50c6628a81b71d65806077972ad3144be029337f27cb74af2afd34712",
+            "source_id": "corpus-source:9197aa8fecac7169a5f9ad626a136349ec44890ef51ae45d93c473cbb09f30c2",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+            "actual_bytes": 131452,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "3c38222a-f76e-4f1d-96e4-dc07ebf5c05f"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:767a4f46db871fc95bcdee944f7a90f9c560dbda48faec6227d05337d0c4dd66",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:b6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed",
+            "source_work_id": "source-work:c6f946bb7c20ea2a2f1d6ffa9fd568abf61931b1e0ba7e714d9f7b40556aba05",
+            "normalized_hash": "sha256:bd44b3a9b4776898eeeb1ce39df9525339a8e9f8ecf8c0879049f4477a5871d4",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:4451048bae61b2108359302c2b220f3669e78c90c1d5208b83032c79c4d6b437",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:d430fd7dba2c5231b7d65967d1365a522cf5f0d95c148ab28cd3288b2da76efc",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:4451048bae61b2108359302c2b220f3669e78c90c1d5208b83032c79c4d6b437:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "68d05e8f-f064-4aa5-ad11-a00c048cbbe8",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:d430fd7dba2c5231b7d65967d1365a522cf5f0d95c148ab28cd3288b2da76efc:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    "effective_status": "IMPORTED",
+    "work_counts": {
+      "SUCCEEDED": 2
+    },
+    "work_kind_counts": {
+      "DISCOVERY": 1,
+      "WORK": 1
+    },
+    "file_counts": {},
+    "downstream": {
+      "source_documents": 0,
+      "transforms": 0,
+      "content_profiles": 0,
+      "analysis_plans": 0,
+      "observations": 0,
+      "knowledge_candidates": 0,
+      "review_required": 0,
+      "knowledge_cards": 0,
+      "knowledge_packs": 0
+    }
+  }
+}

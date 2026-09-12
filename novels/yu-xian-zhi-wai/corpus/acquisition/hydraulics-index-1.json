@@ -1,0 +1,13 @@
+{
+  "id": "hydraulics-index-1",
+  "requested_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units",
+  "resolved_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units",
+  "format": "html",
+  "status": "ACQUIRED",
+  "sha256": "eec139b2f9c0beabde384b7903983f5dfaf87ec545c2caa7bff67a673e48abcc",
+  "bytes": 127414,
+  "acquired_utc": "2026-09-12T10:11:36Z",
+  "etag": null,
+  "last_modified": null,
+  "raw_path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-index-1.html"
+}

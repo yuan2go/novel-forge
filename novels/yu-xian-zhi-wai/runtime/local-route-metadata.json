@@ -1,0 +1,12 @@
+{
+  "evidence_class": "LOCAL_CONFIGURATION_INSPECTION_NOT_AUTHORIZATION",
+  "account_directory_ref": "/Users/yuan/.codex-claude",
+  "config_model": "gpt-6-astra",
+  "config_reasoning_effort": "xhigh",
+  "binary": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+  "binary_exists": true,
+  "credential_files_read": false,
+  "model_calls": 0,
+  "binary_sha256": "4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+  "version": "codex-cli 0.154.0"
+}

@@ -1,0 +1,301 @@
+..FFFFFFFFF.......                                                       [100%]
+=================================== FAILURES ===================================
+_ test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_forms_empty _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_six_chapter_blind_export_0')
+
+    def test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_forms_empty(tmp_path):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+>       result = blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "blind")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_creation_export.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+left = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_six_chapter_blind_export_0/treatment')
+right = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_six_chapter_blind_export_0/control')
+destination = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_six_chapter_blind_export_0/blind')
+
+    def blind_export(left: Path, right: Path, destination: Path) -> dict:
+        results = [chapter_results(path) for path in (left, right)]
+        if any(errors or set(chapters) != set(range(1, 7)) for chapters, errors in results):
+            raise ValueError("Blind export requires six exact accepted chapters in each arm; preserve partial exports")
+        arms = [item[0] for item in results]
+        identities = [json.loads((path / "creation-run.json").read_text()) for path in (left, right)]
+        for field in ("implementation_identity", "brief_input_hash", "formation_policy"):
+            if not identities[0].get(field) or identities[0][field] != identities[1].get(field):
+                raise ValueError("Comparison frozen inputs differ: " + field)
+        frozen = [item.get("frozen_configuration", {}) for item in identities]
+        if not frozen[0].get("models") or frozen[0]["models"] != frozen[1].get("models"):
+            raise ValueError("Comparison requires identical frozen model, Prompt and Skill routes")
+        policies_without_knowledge = []
+        for item in frozen:
+            policy = deepcopy(item.get("creation_policy") or {})
+            if not policy:
+                raise ValueError("Comparison requires frozen creation and revision policies")
+            policy["profiles"]["production_profile"]["content"].pop("knowledge_access_policy", None)
+            policies_without_knowledge.append(policy)
+        if policies_without_knowledge[0] != policies_without_knowledge[1]:
+            raise ValueError("Comparison word targets, revision policy or future intervention differ")
+        for field in ("runtime_settings", "cost_accounting"):
+            values = [deepcopy(item.get(field)) for item in frozen]
+            if field == "cost_accounting":
+                for value in values:
+                    if isinstance(value, dict):
+                        value.pop("authorization_ref", None)
+            if any(value is None for value in values) or values[0] != values[1]:
+                raise ValueError("Comparison frozen budgets or runtime settings differ: " + field)
+        if identities[0]["book_id"] == identities[1]["book_id"]:
+            raise ValueError("Comparison arms require independently created Books")
+        arc_sets = []
+        for i, identity in enumerate(identities):
+            changed = identity.get("future_plan_change") or {}
+            if changed.get("after_chapter") != 3 or not changed.get("result", {}).get("snapshot_id"):
+                raise ValueError("Comparison requires the applied third-chapter future PlanChange receipt")
+            arcs = {arc for chapter in arms[i].values()
+                    for arc in chapter["workspace"]["run"]["command"].get("context_version_refs", {}).get("arc_plan_versions", [])}
+            if len(arcs) < 2:
+>               raise ValueError("Comparison requires at least two independently executed chapter groups")
+E               ValueError: Comparison requires at least two independently executed chapter groups
+
+scripts/prepare_knowledge_closure.py:116: ValueError
+__________ test_multiple_arcs_do_not_make_one_executed_group_into_two __________
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_multiple_arcs_do_not_make0')
+
+    def test_multiple_arcs_do_not_make_one_executed_group_into_two(tmp_path):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, group_ranges=((1, 6),), shared_arc=False)
+>       with pytest.raises(ValueError, match="two.*chapter groups"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:176: Failed
+___ test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_book] ____
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_0')
+fault = 'wrong_book'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+___ test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_range] ___
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_1')
+fault = 'wrong_range'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+__ test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_outcome] __
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_2')
+fault = 'wrong_outcome'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+___ test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_state] ___
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_3')
+fault = 'wrong_state'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+__ test_blind_group_lineage_must_match_exact_accepted_chapters[missing_child] __
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_4')
+fault = 'missing_child'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+_ test_blind_group_lineage_must_match_exact_accepted_chapters[duplicate_group] _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_5')
+fault = 'duplicate_group'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+__ test_blind_group_lineage_must_match_exact_accepted_chapters[partial_page] ___
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-160/test_blind_group_lineage_must_6')
+fault = 'partial_page'
+
+    @pytest.mark.parametrize("fault", ["wrong_book", "wrong_range", "wrong_outcome", "wrong_state", "missing_child", "duplicate_group", "partial_page"])
+    def test_blind_group_lineage_must_match_exact_accepted_chapters(tmp_path, fault):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path, shared_arc=False)
+        path = tmp_path / "treatment/chapter-groups.json"
+        value = json.loads(path.read_text())
+        group = value["groups"][0]
+        if fault == "wrong_book":
+            group["book_id"] = "foreign-book"
+        elif fault == "wrong_range":
+            group["chapter_range"] = [1, 4]
+        elif fault == "wrong_outcome":
+            group["chapters"][0]["chapter_outcome_version_id"] = "different-outcome"
+        elif fault == "wrong_state":
+            group["chapters"][0]["story_state_asset_version_id"] = "different-state"
+        elif fault == "missing_child":
+            group["chapters"].pop()
+        elif fault == "duplicate_group":
+            value["groups"].append(deepcopy(group))
+        else:
+            value["has_more"] = True
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match="ChapterGroup"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:202: Failed
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_export.py::test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_forms_empty
+FAILED tests/unit/test_creation_export.py::test_multiple_arcs_do_not_make_one_executed_group_into_two
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_book]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_range]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_outcome]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[wrong_state]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[missing_child]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[duplicate_group]
+FAILED tests/unit/test_creation_export.py::test_blind_group_lineage_must_match_exact_accepted_chapters[partial_page]
+9 failed, 9 passed in 0.52s

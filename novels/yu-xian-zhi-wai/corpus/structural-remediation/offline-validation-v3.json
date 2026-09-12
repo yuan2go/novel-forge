@@ -1,0 +1,38 @@
+{
+  "evidence_class": "REAL_SOURCE_OFFLINE_PARSER_VALIDATION",
+  "supersedes_configuration_recommendation": "v2 work_title addition rejected by unchanged SourceWork identity gate; frozen v2 profiles and failed native operation retained",
+  "provider_calls": 0,
+  "database_writes": 0,
+  "results": [
+    {
+      "name": "railway-children",
+      "metadata_unchanged": true,
+      "stable_work_title": "railway-children",
+      "unit_count": 16,
+      "chapters": 14,
+      "profile_sha256": "sha256:ffb0291f653b5932a7c6ab8636d6f20f0bf336a4371407bd236da322f8054fed",
+      "only_intended_structure_changes": true,
+      "review_still_required": true
+    },
+    {
+      "name": "thirty-nine-steps",
+      "metadata_unchanged": true,
+      "stable_work_title": "thirty-nine-steps",
+      "unit_count": 12,
+      "chapters": 10,
+      "profile_sha256": "sha256:655330d5f4b966b59f535b25cc25dbf156b2a258f0d1dfb620c00f21deeee19d",
+      "only_intended_structure_changes": true,
+      "review_still_required": true
+    },
+    {
+      "name": "study-in-scarlet",
+      "metadata_unchanged": true,
+      "stable_work_title": "study-in-scarlet",
+      "unit_count": 18,
+      "chapters": 14,
+      "profile_sha256": "sha256:acaf246a1a69fedb41361ad90d80e05d31b068f7955cc049424e946fbcecf697",
+      "only_intended_structure_changes": true,
+      "review_still_required": true
+    }
+  ]
+}

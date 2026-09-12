@@ -1,0 +1,37 @@
+{
+  "contract_version": "knowledge-closure-freeze.v1",
+  "status": "READY_FOR_AUTHORIZATION",
+  "input_directory": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/config/production/first-novel-pilot",
+  "arm_a_binding": "KNOWLEDGE_APPROVAL_AND_EXACT_VERSION_BINDING_REQUIRED",
+  "real_provider_execution": "NOT_RUN",
+  "human_editorial": "NOT_RUN",
+  "analysis_target": {
+    "intended_use": "ABSTRACT_GENERATION",
+    "target_book_id": "first-novel-pilot-a",
+    "status": "PENDING_AUTHORITY_PREFLIGHT"
+  },
+  "source_production_qualification": {
+    "required_scope": "EXACT_SOURCE_CAPABILITY_D0",
+    "supported_accounting_bases": [
+      "PRICED",
+      "ACCOUNT_ENTITLEMENT"
+    ],
+    "account_entitlement": "EXACT_AUTHORIZATION_ACCOUNT_AND_ENTITLEMENT_SNAPSHOT_REQUIRED",
+    "card_approval": "SEPARATE_GOVERNANCE_REVIEW_AND_AUTHORITY_RECHECK_REQUIRED"
+  },
+  "model_binding": "REQUIRED_AUTHORIZED_EXACT_ROUTE_FOR_BOTH_ARMS",
+  "required_authorization": [
+    "provider/backend and exact model",
+    "account identity and permitted purpose",
+    "total calls, input/output tokens and priced cost or explicit accounting basis",
+    "revision/retry allocation within the same total",
+    "independent Books and upper plans; frozen project sublimits sum within the shared grant"
+  ],
+  "files": {
+    "brief.json": "sha256:e01988ff8c197404623babfe11245169488f8fd99bbb633c2b776d4901f2f4bd",
+    "creation.json": "sha256:f09249f2908e009ccc660fcc67330699020e66442e8ee6366af96a991258a950",
+    "deny-all.json": "sha256:924ca3b1d67d49b31d893b9432dc0f3a1007febe685aadca51c4df5dd14993fe",
+    "formation.json": "sha256:46175142683eab67dc45cbe9c75185655fc738c4276a2c8acab9e86da6cf6741",
+    "review-form.json": "sha256:21fffdd7c2db5ef426326ef1e4c036dd57824dc6fafa5b63247c9b37f23aadfb"
+  }
+}

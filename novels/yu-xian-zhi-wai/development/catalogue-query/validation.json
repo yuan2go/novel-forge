@@ -1,0 +1,90 @@
+{
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "head_sha_at_verification": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "worktree": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot",
+  "evidence_class": "ISOLATED_POSTGRES_NATIVE_QUERY_FIXTURE",
+  "tested_uncommitted_file_sha256": {
+    "src/novel_forge/storage/source_import_repositories.py": "e0575d9aad09f6a7f38b5448435d3d6a789e9db35be585f6ed91ed4c863bf9a3",
+    "src/novel_forge/modules/source_import/query.py": "84ecbd896f82861ebd49f4bb5231c8702e49603180567fbe691a83ff17a6b6a3",
+    "src/novel_forge/api/routers/source_import.py": "7d1c66939fd87c5f5cf6ad5aae742c339a9c5f02ea03d8e6c88f879876925722",
+    "src/novel_forge/cli/corpus.py": "1a25893fce3d1a1043a5d2db9a2a09ee9dc35a81091767bcf77ec321c38dfed3",
+    "tests/integration/test_corpus_jobs_query_postgres.py": "d0e7838eda805f35620cccee76eb67f5c246264d6a8f1ad9ebdfeee3b5007a16"
+  },
+  "database": {
+    "container": "novel-forge-source-purpose-pilot",
+    "database": "novel_forge_source_purpose_test",
+    "port": 50290,
+    "retained": "cluster now shared with root and other agents, not deleted"
+  },
+  "red": {
+    "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/integration/test_corpus_jobs_query_postgres.py::test_native_jobs_keyset_literal_batches_filters_and_cli",
+    "environment": "NOVEL_FORGE_DATABASE_URL points to isolated source_purpose_test database",
+    "result": "1 failed, 2 warnings in 3.08s",
+    "defect": "Git discovery causation_id is requested_ref, not a Corpus run_key; prefix incorrectly included a Git job",
+    "log": "red.txt"
+  },
+  "green": {
+    "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/integration/test_corpus_jobs_query_postgres.py",
+    "environment": "NOVEL_FORGE_DATABASE_URL points to isolated source_purpose_test database; CORPUS_JOBS_EVIDENCE_DIR points to this evidence directory",
+    "result": "3 passed, 6 warnings in 6.41s",
+    "log": "green.txt"
+  },
+  "fix": "Restrict run-key prefix predicate to source.import.corpus.acquire; Corpus import and preview share this operation, other causation roles are excluded. API Query description and CLI help expose exact scope.",
+  "checks": [
+    "4 native Corpus admissions in one coordinated PostgreSQL transaction produce the same created_at without updating timestamps",
+    "5 same-project jobs page without loss or repetition at size 2",
+    "literal percent and underscore in prefixes do not act as wildcards",
+    "Git ref prefix collision excluded",
+    "native PAUSE status plus source_type and batch filters compose",
+    "missing/foreign-project cursors rejected identically; invalid sizes and long cursors rejected",
+    "API cross-project permission denial; CLI permission denial; direct query permission denial",
+    "native CLI jobs initial/cursor/status/source-type/prefix queries execute against real PostgreSQL",
+    "50 native import jobs at page size 10 measured through real API with delegating psycopg instrumentation; 0 external effects"
+  ],
+  "query_measurement": {
+    "evidence_class": "ISOLATED_POSTGRES_NATIVE_QUERY_FIXTURE",
+    "project_id": "corpus-1a6422b0-6b3d-46c7-91df-09cc2aa4fcbc",
+    "native_enqueued_jobs": 50,
+    "page_limit": 10,
+    "page_sizes": [
+      10,
+      10,
+      10,
+      10,
+      10,
+      0
+    ],
+    "business_query_count": 11,
+    "observed_cursor_execute_count": 17,
+    "elapsed_seconds": 0.040531500009819865,
+    "python_tracemalloc_current_bytes": 561182,
+    "python_tracemalloc_peak_bytes": 700523,
+    "external_effect_count": 0,
+    "provider_calls": 0,
+    "measurement_scope": "API pagination including terminal empty page; excludes admission, DB server memory and subprocess CLI"
+  },
+  "static_checks": {
+    "ruff": "PASS (ruff.txt)",
+    "git_diff_check": "PASS",
+    "cli_help": "PASS (corpus-help.txt)"
+  },
+  "proof_limits": [
+    "Local isolated engineering test, not production corpus-scale qualification",
+    "Peak memory is tracemalloc Python allocations; excludes database server and subprocess CLI",
+    "Fixture admissions do not approve source knowledge and do not demonstrate source/prose semantics",
+    "No acquisition, model calls, paid usage or external publications were performed"
+  ],
+  "files_written_by_this_subtask": [
+    "src/novel_forge/storage/source_import_repositories.py",
+    "src/novel_forge/api/routers/source_import.py",
+    "src/novel_forge/cli/corpus.py",
+    "tests/integration/test_corpus_jobs_query_postgres.py"
+  ],
+  "evidence_sha256": {
+    "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "fifty-jobs-query.json": "671c1ef168a8de931905bc669b3eddc51c5066f75c30df2a2f91d7740eaa3d37",
+    "red.txt": "048e407dacbbd43e2e7123b2492e129259855dac84e900e09e40ff073e0cfd01",
+    "green.txt": "105c150ed7933e8d7071783adb9007a4a9a0f994e6f0f69de2e67e23c45a72a5",
+    "corpus-help.txt": "01a8240aca4f2907db73e97c71953c8640725e61d7b03ef6103f6717afafbe26"
+  }
+}

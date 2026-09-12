@@ -1,0 +1,218 @@
+{
+  "revision_id": "corpus-curated-revision:d7202836d9753903ba45e9f8ef3d4282696cdde7580f45c7c6cd92deee12bb10",
+  "consumption_admission": {
+    "schema_version": "source-consumption-admission.v1",
+    "intended_use": "ABSTRACT_GENERATION",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "first-novel-pilot-workspace",
+    "target_book_id": "first-novel-pilot-a",
+    "source_use_admitted": true,
+    "generation_consumption_allowed": false,
+    "book_status": "PENDING_BOOK_CREATION",
+    "knowledge_status": "PENDING_CARD_REVIEW",
+    "target_card_selection_status": "PENDING_CARD_SELECTION_AND_BOOK_POLICY_CHECK",
+    "source_evidence": [
+      {
+        "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+        "edition_id": "corpus-edition:25ceba4232992cb069bfa3de75963c3c94d72c1c776205bd3e4b5890cca1eaa5",
+        "membership_id": "corpus-membership:10146c1d4fbdd50f2f2fec8311f16b592c3c1c9dc2f1577d7492093ae4bc51a5",
+        "source_id": "corpus-source:ac4fe823099bf0f3a7e1e44f6359487bf71e5008015b95cc50dc3fc4e41fec07",
+        "snapshot_id": "corpus-snapshot:91e0dec7885439c17de5fa13b2508ed84a92b8116abcf474060529ebba35817b",
+        "rights_id": "corpus-rights:7d7fb526d2fe45d76bcfb87179fe2df078ccc90044919e8f652691c3836c6375",
+        "external_work_id": "hydraulics-12",
+        "purpose": "PRODUCTION_REFERENCE",
+        "use": "ABSTRACT_GENERATION",
+        "policy_version": "corpus-use-policy.v1",
+        "rights_declaration_hash": "sha256:cf935cc8faf26838b8c18c8008e34298e05d47988e7aa5e784ee0d81f2d73a13"
+      }
+    ],
+    "book_policy_evidence": []
+  },
+  "reading_plans": {
+    "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512": {
+      "contract": {
+        "version": "chapter-reading.v1",
+        "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+        "first_unit_version_id": "source-unit-version:0d8d5376f1076d7bf05dd49e8df44a281cf28ea05ce1469de35f6ec14cd98143",
+        "last_unit_version_id": "source-unit-version:0d8d5376f1076d7bf05dd49e8df44a281cf28ea05ce1469de35f6ec14cd98143",
+        "context_before": 0,
+        "context_after": 0,
+        "max_chapters": 1,
+        "max_input_bytes_per_chapter": 12000,
+        "max_total_input_bytes": 12000,
+        "max_repairs": 1,
+        "dimensions": [
+          "core_concept",
+          "causal_constraints",
+          "assumption",
+          "misuse_risk",
+          "source_reliability",
+          "review_check"
+        ]
+      },
+      "edition_id": "corpus-edition:25ceba4232992cb069bfa3de75963c3c94d72c1c776205bd3e4b5890cca1eaa5",
+      "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+      "source_work_asset_version_id": "e9407dc0-1b02-4ea1-80dd-be5cb4eeb5e4",
+      "source_transform_id": "source-transform:first-novel-pilot-20260912:f8b393ce1cc888e1b22c6e854c163f10d4abec355eff5cf63176991de67b1022",
+      "assessment_hash": "sha256:06da9339bee0b7d700fdcea6689dabbca07a6e5d07162f2d2a1bfd92faa70956",
+      "review_id": null,
+      "member": {
+        "evidence": {
+          "reason": "Selected text-only mechanism / continuous original fiction window; evidence and assumptions require Source review",
+          "purpose": "PRODUCTION_REFERENCE",
+          "coverage": "EXCERPT",
+          "language": "en",
+          "selected": true,
+          "review_id": null,
+          "rights_id": "corpus-rights:7d7fb526d2fe45d76bcfb87179fe2df078ccc90044919e8f652691c3836c6375",
+          "characters": 730,
+          "genre_tags": [
+            "professional",
+            "hydraulics"
+          ],
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.01%3A_Function_and_Application_of_a_Relief_Valve",
+            "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-12.html"
+          ],
+          "membership_id": "corpus-membership:10146c1d4fbdd50f2f2fec8311f16b592c3c1c9dc2f1577d7492093ae4bc51a5",
+          "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+          "assessment_hash": "sha256:06da9339bee0b7d700fdcea6689dabbca07a6e5d07162f2d2a1bfd92faa70956",
+          "structure_usable": true,
+          "relation_versions": [],
+          "canonical_revision_id": "corpus-canonical-revision:cc965bd8a25daba71f498700fac84c8d1819701f8c37dd74e1789e30543e1be2"
+        },
+        "edition_id": "corpus-edition:25ceba4232992cb069bfa3de75963c3c94d72c1c776205bd3e4b5890cca1eaa5",
+        "project_id": "first-novel-pilot-20260912",
+        "revision_id": "corpus-curated-revision:d7202836d9753903ba45e9f8ef3d4282696cdde7580f45c7c6cd92deee12bb10",
+        "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512"
+      },
+      "units": [
+        {
+          "kind": "chapter",
+          "title": "13.1: Function and Application of a Relief Valve",
+          "status": "AVAILABLE",
+          "ordinal": 1,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "ae40043b-3625-519b-82ab-7ae08b02a512",
+            "declared_order": 1,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "STRUCTURED_LOCATOR",
+              "raw_text_changed": false,
+              "normalized_utf8_bytes": 730,
+              "normalized_unicode_length": 730
+            },
+            "normalized_unicode_end": 730,
+            "normalized_unicode_start": 0,
+            "original_offset_semantics": "HTML_SELECTOR"
+          },
+          "line_count": 7,
+          "raw_file_hash": "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78",
+          "source_locator": {
+            "path": "hydraulics-12.html",
+            "field": "text",
+            "record": 1,
+            "selector": ".mt-content-container",
+            "offset_kind": "HTML_SELECTOR",
+            "container_path": null,
+            "original_byte_offset": null
+          },
+          "source_unit_id": "source-unit:74ed3303bb8a6236e6d092dc828e06482c29c20591638a2e33c84381bdb00b23",
+          "character_count": 730,
+          "normalized_byte_end": 730,
+          "normalized_byte_start": 0,
+          "original_content_hash": "sha256:d921725e365fce236e6b1d16001dcfdfae2000647c5a347637962a3a1c99b652",
+          "source_unit_version_id": "source-unit-version:0d8d5376f1076d7bf05dd49e8df44a281cf28ea05ce1469de35f6ec14cd98143",
+          "normalized_content_hash": "sha256:d921725e365fce236e6b1d16001dcfdfae2000647c5a347637962a3a1c99b652",
+          "source_work_asset_version_id": "e9407dc0-1b02-4ea1-80dd-be5cb4eeb5e4",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:f8b393ce1cc888e1b22c6e854c163f10d4abec355eff5cf63176991de67b1022:0:v1",
+              "chunk_index": 0,
+              "content_hash": "sha256:d921725e365fce236e6b1d16001dcfdfae2000647c5a347637962a3a1c99b652",
+              "byte_size": 730,
+              "source_byte_start": 0,
+              "source_byte_end": 730
+            }
+          ]
+        }
+      ],
+      "excluded_structural_units": [],
+      "coverage_claim": "SELECTED_CONTIGUOUS_UNITS_ONLY",
+      "outside_range": "NOT_READ",
+      "tool_access": "DENY_FILESYSTEM_SHELL_WEB_MCP",
+      "identity": "sha256:3ba3ec2c7a8c97b17d0e02d50d8ee68ac9b3da0a7c8324653df239ec91204b56"
+    }
+  },
+  "target_chapters": 1,
+  "planned_calls_without_repairs": 6,
+  "planned_calls_with_object_repairs": 10,
+  "runtime": {
+    "version": "source-reading-runtime.v3",
+    "input_evidence_version": "source-actual-input.v1",
+    "provider": "scripted_provider_v2",
+    "model": "scripted_provider_v2-quality_source_originality",
+    "route_hash": "sha256:af2d2892a45cd97b262694b28cb68b1dba1015211baa9e57471e8ae803655b4a",
+    "policy_hash": "sha256:f5850f84b7b5efbe4e8e8d19b49e7ad83e52a574384db3b15552cd9bd7fb65b5",
+    "schemas_hash": "sha256:b9d66960ede846f37c2f6358acb160df4e264faf2d37f55458afc63f9faa3357",
+    "classifier_hash": "sha256:e0f50aa6f5503304a19165edc696519dbe77b75a12bad86bebe7eac4850ddb15",
+    "skills": {
+      "anti-copy-abstraction": "sha256:574222188fe361af4530d1b50b3ab71cd00dfe788c852e05419fc9ccc7893515",
+      "classic-literary-depth-analysis": "sha256:55a22fd03ae6410f8d0e8148a6feccf424d24fcb50ce7dc5305d1a008b6733b2",
+      "hot-novel-business-deconstruction": "sha256:7feaaf6da55d30956f953f4b12228729dacb18bf4d4ebdf505727b625f77dcdf",
+      "hot-novel-deconstruction": "sha256:3844f7152f4d1bd1c2b5a8b95c916abb5d44d8a26e0c84800bdf6a7e38270cdb",
+      "multidisciplinary-knowledge": "sha256:ef27e852557903648f86d5a7bd11b595bce4ab859690d9b60597183350f983ef",
+      "platform-strategy-os": "sha256:5aff23f16416c66dc03dea781aac7922f35752e9e8e7e54003627b8fa1e61a43",
+      "published-fiction-craft-analysis": "sha256:ffcbead275b93bff7942dd72bf1c142f37ab94d88dc13b4865822a64f2dafdae"
+    },
+    "output_token_reserve": 4096,
+    "timeout_seconds": 300,
+    "provider_max_attempts": 2,
+    "local_process_timeout_seconds": 135,
+    "budget_contract_hash": "sha256:cfd2fce49a3bc63f39571ca3fe44c9b8252c70645404a18c6a2fafced1c292af"
+  },
+  "prepared_source_checks": {
+    "state": "VERIFIED",
+    "chunks": 1,
+    "bytes": 730,
+    "model_input_state": "NOT_SENT"
+  },
+  "execution_blockers": [],
+  "requested_budget": {
+    "max_calls": 60,
+    "max_tokens": 1500000,
+    "shared_by": [
+      "classification",
+      "observation",
+      "review",
+      "revision",
+      "synthesis",
+      "extraction",
+      "retry"
+    ]
+  },
+  "authorization": {
+    "status": "AUTHORIZATION_REQUIRED",
+    "declared_reference": null,
+    "reference_is_not_verification": true
+  },
+  "stop_conditions": [
+    "CURRENT_AUTHORIZATION_CHANGED",
+    "INPUT_OR_RUNTIME_CHANGED",
+    "TOTAL_CALL_OR_TOKEN_BUDGET_EXHAUSTED",
+    "REPAIR_ALLOWANCE_EXHAUSTED",
+    "UNKNOWN_PROVIDER_OUTCOME"
+  ],
+  "hidden_backend_usage": "NOT_OBSERVED",
+  "token_preview_limit": "Later-stage inputs depend on returned observations; every final request requires native token admission.",
+  "model_calls": 0,
+  "paid_authorization": "NOT_GRANTED_BY_PREVIEW",
+  "input_token_accounting": "FINAL_MATERIALIZED_PROVIDER_REQUEST_REQUIRED",
+  "state": "PREVIEW_ONLY"
+}

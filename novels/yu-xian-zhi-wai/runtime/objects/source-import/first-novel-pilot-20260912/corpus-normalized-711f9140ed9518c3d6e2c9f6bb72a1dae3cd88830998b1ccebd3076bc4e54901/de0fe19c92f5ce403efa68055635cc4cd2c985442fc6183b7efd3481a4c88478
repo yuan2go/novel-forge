@@ -1,0 +1,52 @@
+Figure \(\PageIndex{1}\): When there is no resistance in a hydraulic system, there is no fluid pressure, just flow.
+In hydraulic systems, there’s often a misconception that pumps create pressure. That’s not quite true.
+Pumps create flow
+, and
+pressure is the result of resistance to that flow
+. If a hydraulic system had no resistance—say, if it were pumping fluid into an open tank—then there would be no pressure at all, just flow.
+In the real world, however, resistance is always present. This resistance is what creates the system pressure, and it comes from two main sources:
+Frictional resistance from the fluid and system components
+Resistance from the load being moved
+Let’s take a closer look at each one.
+Fluid Friction (Frictional Resistance)
+Figure \(\PageIndex{2}\): Frictional resistance causes a pressure increase upstream. The system must generate more pressure to keep fluid moving past that resistance
+.
+As hydraulic fluid travels through pipes, valves, fittings, and other components, it encounters internal surfaces that slow it down. Even the smoothest components still create
+some
+friction. This is referred to as
+fluid friction
+, and it shows up as a pressure drop across each part of the circuit.
+Key Factors Affecting Frictional Resistance
+Component size and design
+– Narrow passages, sharp turns, or rough internal surfaces increase resistance.
+Fluid viscosity
+– Thicker fluids (higher viscosity) have a harder time flowing and generate more resistance.
+Flow rate
+– Higher flow means more friction due to increased turbulence in the fluid.
+Each of these factors causes a
+pressure increase upstream
+of the component. The system must generate more pressure to overcome this resistance and keep the fluid moving.
+While some friction is unavoidable,
+excessive friction wastes energy
+, turning it into heat. That heat buildup can reduce system efficiency and shorten component life. That’s why designers aim to
+minimize friction by properly sizing system components
+. For example, using larger-diameter hoses and fittings reduces resistance, just like using a wider straw makes it easier to drink a thick milkshake.
+Load Resistance
+The second major source of resistance is the
+load
+being acted upon by the actuator, usually a hydraulic cylinder or motor. When a cylinder pushes or lifts a load, the pressure needed to do that work depends on the force required and the piston area.
+Pressure (P) = Area (A) x Force (F)​
+For example, to lift a load that requires 7000 psi with a known piston area, the system must generate at least that amount of pressure. However, this load pressure doesn’t exist in isolation. You still have to add the
+pressure drop from fluid friction
+.
+Let’s look at a quick breakdown of total system pressure:
+Load pressure: 7000 psi
+Frictional pressure: 60 psi
+Total pressure at the pump = 7060 psi
+The 60 psi of friction might come from several points in the system. For example:
+(7060 - 7020) = 40 psi drop due to one part (maybe a DCV)
+(7020 - 7000) = 20 psi drop across another (possibly a pressure regulating device and the hoses of the system)
+Combined: 40 + 20 = 60 psi total frictional resistance
+This shows how
+system pressure is the sum of both the load and all frictional losses
+throughout the system.

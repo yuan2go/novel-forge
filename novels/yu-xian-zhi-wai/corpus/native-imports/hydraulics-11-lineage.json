@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:8f8b2d21-a070-4f08-ba96-05669c146601",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:a9df24ed9892161661433e9dcdf41e7886cd4998b23166752ab969b28098eee3",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "12.2: Pulling Suction of a Fluid",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-11"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-11.html",
+              "parser": null,
+              "checksum": "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:8963309de0fc31e26711da7c67306ff4a0e7df131d8177fd45e3391149786ea7"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:a9df24ed9892161661433e9dcdf41e7886cd4998b23166752ab969b28098eee3",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:ca9d5b4393a73105340f9a5e9d7d698e32dd3c580f72bdb71175a97281d5cdf4",
+    "source_id": "corpus-source:53a273609c1db27affdc2a91daecf48de6dc1a265fca5292e963a64652b091ad",
+    "created_at": "2026-09-12T10:17:43.382794+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html",
+      "checksum": "sha256:a9df24ed9892161661433e9dcdf41e7886cd4998b23166752ab969b28098eee3",
+      "acquired_at": "2026-09-12T10:17:43.222844+00:00",
+      "receipt_ref": "815ff943-4f53-4e16-a3a7-c798d81bf535",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:a7401d63e33339ba143f88ce8ad871667de5d8eff04a0a5269f5d8a6fa67dc42",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "9a58ccff-29c5-4182-a5cb-57cf9bdc0352",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:ca9d5b4393a73105340f9a5e9d7d698e32dd3c580f72bdb71175a97281d5cdf4",
+    "source_id": "corpus-source:53a273609c1db27affdc2a91daecf48de6dc1a265fca5292e963a64652b091ad",
+    "created_at": "2026-09-12T10:17:43.327992+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:53a273609c1db27affdc2a91daecf48de6dc1a265fca5292e963a64652b091ad",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.02%3A_Pulling_Suction_of_a_Fluid",
+        "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "47e98f26-fa50-47ee-990b-a4553dc81e34"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-11",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html",
+      "checksum": "sha256:32acdd6182d95f7d38d9632dca0e09318f9aa5eda6848c95c88b2154f756d826",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:53a273609c1db27affdc2a91daecf48de6dc1a265fca5292e963a64652b091ad",
+      "created_at": "2026-09-12T10:17:43.546662+00:00",
+      "edition_id": "corpus-edition:d6ff4f9f8cfc2ff0c0b6c69c7365efab0a3a7618fb8543f3f6bf10720405d012",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:a7401d63e33339ba143f88ce8ad871667de5d8eff04a0a5269f5d8a6fa67dc42",
+      "book_source_id": "corpus-book:c241fc7b9a8ba54f5adb8ab5ce57df686c21151e96aa358c35039a0fa3d5fa75",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "15359266-0fc7-4758-aa5d-47305e3bb56c",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:8963309de0fc31e26711da7c67306ff4a0e7df131d8177fd45e3391149786ea7",
+          "parsed_blob_id": "f5c22f27-65fd-5e2d-8c96-63dae2ae45f1",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "815ff943-4f53-4e16-a3a7-c798d81bf535"
+        },
+        "rights_id": "corpus-rights:ca9d5b4393a73105340f9a5e9d7d698e32dd3c580f72bdb71175a97281d5cdf4",
+        "created_at": "2026-09-12T10:17:43.943252+00:00",
+        "edition_id": "corpus-edition:d6ff4f9f8cfc2ff0c0b6c69c7365efab0a3a7618fb8543f3f6bf10720405d012",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:fcdc66791df8e20cb8cc7dee8eba2ae683c6a59bc7cf6d1452f545b072a0d573",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:c12cbe59bac5ee07b9b3c3416a5a19667077aeffbcad60467ca2d26ab8202894",
+        "source_document_id": "source-document:first-novel-pilot-20260912:78882644b5d1bde5f44b11b5504e97020f374c5d3ac519b8e4a98d2af7ef745c",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:7237485d12677d37f43fb79da14f21cdbada5d446f610a3d5a7620511e0147c1",
+        "created_by_operation_id": "e53a1cb8-2e66-4227-8287-e865308e3333",
+        "source_work_asset_version_id": "241ac7fd-d958-4578-ac9b-cf1e4de60fdc"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

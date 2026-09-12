@@ -1,0 +1,312 @@
+{
+  "import_job_id": "source-import:9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+  "snapshot": {
+    "manifest": {
+      "format": "txt",
+      "checksum": "sha256:7ee068265b84143f5b445f139399888a1391da5906d979a56f889d228ee99d56",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "txt",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "The Thirty-Nine Steps",
+            "author": "John Buchan (1875–1940)",
+            "work_id": "thirty-nine-steps"
+          },
+          "completeness": "COMPLETE",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [
+              {
+                "end": 2161,
+                "kind": "AUTHOR_NOTE",
+                "path": "thirty-nine-steps.txt",
+                "start": 0,
+                "title": "Publisher identity, front matter and rights",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 26962,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 2161,
+                "title": "Chapter I.",
+                "number": 1,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 40215,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 26962,
+                "title": "Chapter II.",
+                "number": 2,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 65385,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 40215,
+                "title": "Chapter III.",
+                "number": 3,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 88879,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 65385,
+                "title": "Chapter IV.",
+                "number": 4,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 108101,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 88879,
+                "title": "Chapter V.",
+                "number": 5,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 140542,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 108101,
+                "title": "Chapter VI.",
+                "number": 6,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 163004,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 140542,
+                "title": "Chapter VII.",
+                "number": 7,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 179053,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 163004,
+                "title": "Chapter VIII.",
+                "number": 8,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 193397,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 179053,
+                "title": "Chapter IX.",
+                "number": 9,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 223208,
+                "kind": "CHAPTER",
+                "path": "thirty-nine-steps.txt",
+                "start": 193397,
+                "title": "Chapter X.",
+                "number": 10,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 242116,
+                "kind": "AUTHOR_NOTE",
+                "path": "thirty-nine-steps.txt",
+                "start": 223208,
+                "title": "Project Gutenberg license and trailing metadata",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+                "evidence": "https://www.gutenberg.org/cache/epub/558/pg558.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              }
+            ],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "FINISHED",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 12,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": "body",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "thirty-nine-steps.txt",
+              "parser": null,
+              "checksum": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:1a1d4ef2392fdb6b04c07fadff252f6a604ff29dd1bd7ce547effe67b38b1d6f"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:7ee068265b84143f5b445f139399888a1391da5906d979a56f889d228ee99d56",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:89f9ba461d6a02cb931c875f16f2be3b9dad6cc7b5cafae1f839bd382ed54e4f",
+    "source_id": "corpus-source:4022d4c186df6090ba08cec97b5d4ea279b627416b0db62a9a8dc0bdf91f054f",
+    "created_at": "2026-09-12T10:18:10.046761+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+      "checksum": "sha256:7ee068265b84143f5b445f139399888a1391da5906d979a56f889d228ee99d56",
+      "acquired_at": "2026-09-12T10:18:09.890406+00:00",
+      "receipt_ref": "090583d5-7c38-4136-b9dc-879684516000",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:fc0dd379027f366d41fbed6c5f11c156ec6c298ffaa032967281d1f56deb0143",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "aeba701d-4c06-46de-8fe0-91f1f34d5a37",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:89f9ba461d6a02cb931c875f16f2be3b9dad6cc7b5cafae1f839bd382ed54e4f",
+    "source_id": "corpus-source:4022d4c186df6090ba08cec97b5d4ea279b627416b0db62a9a8dc0bdf91f054f",
+    "created_at": "2026-09-12T10:18:09.989587+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:4022d4c186df6090ba08cec97b5d4ea279b627416b0db62a9a8dc0bdf91f054f",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+        "https://www.gutenberg.org/ebooks/558",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps-catalogue.html",
+        "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+      ],
+      "dataset_license": "Project Gutenberg License; exact original English work public domain",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "PUBLIC_DOMAIN",
+      "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review.",
+      "previous_rights_id": null,
+      "underlying_license": ""
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "1a97ebf3-f8e6-4df0-8e8c-c6268ae03851"
+  },
+  "editions": [
+    {
+      "title": "thirty-nine-steps",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt",
+      "checksum": "sha256:e04159cea6cbcb38a01ce9dbcadad8a09ce1f239022b2fa64c96cc17189b27a7",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 12,
+        "completeness": "REVIEW_REQUIRED"
+      },
+      "source_id": "corpus-source:4022d4c186df6090ba08cec97b5d4ea279b627416b0db62a9a8dc0bdf91f054f",
+      "created_at": "2026-09-12T10:18:10.436709+00:00",
+      "edition_id": "corpus-edition:bf4bfcb22fb42fad9628f5f8b8a9563b8bd60039457bfc68370f7625b43f3533",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:fc0dd379027f366d41fbed6c5f11c156ec6c298ffaa032967281d1f56deb0143",
+      "book_source_id": "corpus-book:c35f2f3357874cae0a207b4dba4c3049409f792eee36b0e85aa533263ef9c980",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "2446ad55-7854-4bb1-8313-2c896235a4ce",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "REVIEW_REQUIRED",
+          "manifest_hash": "sha256:1a1d4ef2392fdb6b04c07fadff252f6a604ff29dd1bd7ce547effe67b38b1d6f",
+          "parsed_blob_id": "18da7c24-7028-54d9-b02f-0688465fcea0",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "090583d5-7c38-4136-b9dc-879684516000"
+        },
+        "rights_id": "corpus-rights:89f9ba461d6a02cb931c875f16f2be3b9dad6cc7b5cafae1f839bd382ed54e4f",
+        "created_at": "2026-09-12T10:18:12.108889+00:00",
+        "edition_id": "corpus-edition:bf4bfcb22fb42fad9628f5f8b8a9563b8bd60039457bfc68370f7625b43f3533",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:ccda10270bfd7f26754885990b7cc7f947af24edfc490ed85b63cb7a6c4c59e0",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:8d3fd3a635922939adfc4d8827b09d737c8d3e0a7be09d56d01e63a183ffecff",
+        "source_document_id": "source-document:first-novel-pilot-20260912:4fffa2d0709116de70c125de506f1d5989557c35d26716a2eeac53bac98ac9a3",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:4c59d8b0d03da7acae708ac1b18d59a2b1dec6e3883cbedeb84e21070847749c",
+        "created_by_operation_id": "a0e37fdd-228a-4988-afe4-b7df803c414b",
+        "source_work_asset_version_id": "b12efd03-cdd9-4b7c-b664-cd27cea98706"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

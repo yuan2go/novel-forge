@@ -1,0 +1,87 @@
+{
+  "action": "resolve_canonical_works",
+  "changes": [
+    {
+      "work_key": "gutenberg:1874",
+      "title": "The Railway Children",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:1874"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+            "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290"
+          ]
+        }
+      ],
+      "previous_id": "corpus-canonical-revision:528bdbee2d6208c3cd59113e623773fd2a579013ad6966d96f130eaa1f5ef1db"
+    },
+    {
+      "work_key": "gutenberg:558",
+      "title": "The Thirty-Nine Steps",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:558"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:81eaa5c09d1f79b8404cd58c4f5f003f66d1d2299a6cb6c287245e37f67ef7b8",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+            "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f"
+          ]
+        }
+      ],
+      "previous_id": "corpus-canonical-revision:2d77e92064398920818fbaecd24714ba796bffdfede8ec8f4e86714954d892e3"
+    },
+    {
+      "work_key": "gutenberg:244",
+      "title": "A Study in Scarlet",
+      "language": "en",
+      "genre_tags": [
+        "fiction",
+        "narrative-craft"
+      ],
+      "external_ids": {
+        "publisher_work": "gutenberg:244"
+      },
+      "metadata_evidence": [
+        "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt"
+      ],
+      "members": [
+        {
+          "processing_id": "corpus-processing:52c6f87961db06f67b3e498c01f65097d0f682612bfb987fb8d50913f5cbcce4",
+          "relation": "SAME_WORK",
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+            "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497"
+          ]
+        }
+      ],
+      "previous_id": "corpus-canonical-revision:8df8f562bd0cb215252928bf6ad6363bdc744ce5389358a5e3295aee46f86878"
+    }
+  ],
+  "reason": "Bind existing bibliographic works to native reviewed/reprocessed exact source revisions; preserve original metadata, rights and history."
+}

@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:ac8b3c8ba66af9c5c2ca5d5ce9951c3ed05946028d75960a1cd09cb2a2e9cd19",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "14.1: Check Valves in Hydraulic Systems",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-14"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-14.html",
+              "parser": null,
+              "checksum": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:d091af952c8c1dcf30ecba1af8338fe245b44f59821728e4e7ff27ceb776bf5c"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:ac8b3c8ba66af9c5c2ca5d5ce9951c3ed05946028d75960a1cd09cb2a2e9cd19",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+    "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+    "created_at": "2026-09-12T10:17:52.57394+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+      "checksum": "sha256:ac8b3c8ba66af9c5c2ca5d5ce9951c3ed05946028d75960a1cd09cb2a2e9cd19",
+      "acquired_at": "2026-09-12T10:17:52.427361+00:00",
+      "receipt_ref": "aab02f86-cbb9-4741-806a-213a624d64ba",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "f0fa89b5-b477-4eaf-b049-e467c769bab6",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+    "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+    "created_at": "2026-09-12T10:17:52.518588+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+        "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "cf02439d-262e-4976-939b-242ab1cef62c"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-14",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+      "checksum": "sha256:3e442bae67138ba175835a4c917de3eeed877fa1c2b1ecdf69732d001eb32516",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+      "created_at": "2026-09-12T10:17:52.716793+00:00",
+      "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349",
+      "book_source_id": "corpus-book:675fe0274fa6a90004462e9413d95ce5776afd3702ae3d979277e8445ca0133c",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "a91530ec-585f-48b0-becb-333a40f22b57",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:d091af952c8c1dcf30ecba1af8338fe245b44f59821728e4e7ff27ceb776bf5c",
+          "parsed_blob_id": "867b9968-f742-5c17-87f9-7389aadb9e3b",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "aab02f86-cbb9-4741-806a-213a624d64ba"
+        },
+        "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+        "created_at": "2026-09-12T10:17:53.073945+00:00",
+        "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:812c184f0cf4bc1de8182dbf6380f241c9bef121a5bf80f2ec6d148009cd5949",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+        "source_document_id": "source-document:first-novel-pilot-20260912:625dabe3ab5e54d0d5888fe08b697c73ece0c54606bbdb4e3338adeed9d83fb0",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:d9272c181f5aeab270f20fb8c925cbad3160b5b3023344c5980a0e15337671e8",
+        "created_by_operation_id": "3cde7bb9-1c01-48af-8b53-bb8aa100abab",
+        "source_work_asset_version_id": "028183e4-9921-417d-8ffa-1bb18a6d17da"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

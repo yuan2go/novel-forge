@@ -1,0 +1,30 @@
+.....                                                                    [100%]
+=============================== warnings summary ===============================
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_analysis_checks_intended_book_use_before_model_or_book_creation[RESEARCH]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_analysis_checks_intended_book_use_before_model_or_book_creation[PRODUCTION_REFERENCE]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[missing_use]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[rights_changed]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[book_deny_all]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_analysis_checks_intended_book_use_before_model_or_book_creation[RESEARCH]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_analysis_checks_intended_book_use_before_model_or_book_creation[PRODUCTION_REFERENCE]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[missing_use]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[rights_changed]
+tests/integration/test_corpus_consumption_admission_postgres.py::test_native_intended_use_and_later_book_or_rights_changes_block_dispatch[book_deny_all]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+5 passed, 10 warnings in 8.12s

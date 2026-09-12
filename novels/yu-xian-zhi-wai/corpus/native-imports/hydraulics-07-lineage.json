@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:66e73318-d637-449a-b80d-08e04da34583",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:48c10bbc68895ff781e028635af5412553dcaa7d53cce9acd39d4a43dd1aedf2",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "10.2: How Force Is Multiplied Using Pascal’s Law",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-07"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-07.html",
+              "parser": null,
+              "checksum": "sha256:871122f09d3066aac26649f7e1f2df60d9894086a011204a199d090bd250b80d",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:036dbb80a1f4042739da52e1ea0270e7995146a538403e1bf03c8e840cacbb8d"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:48c10bbc68895ff781e028635af5412553dcaa7d53cce9acd39d4a43dd1aedf2",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:f18631ed1195f75a89677e7d0928eef767cfae21ec86cfdf51fe45c4ad67fbcb",
+    "source_id": "corpus-source:41a2d9fe65ddb8fd61544145eb7d31dc25db1211bb91302421b5f63e5085b4d9",
+    "created_at": "2026-09-12T10:17:30.759589+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html",
+      "checksum": "sha256:48c10bbc68895ff781e028635af5412553dcaa7d53cce9acd39d4a43dd1aedf2",
+      "acquired_at": "2026-09-12T10:17:30.606010+00:00",
+      "receipt_ref": "d68de61a-5159-4743-9c3e-6038ca142d4b",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:ad2913c519d458a05adadd108c97de3619a62e6c4715f939ccff1ab018a14e21",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "889ad835-cf72-46dd-b285-c431115fdbbf",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:f18631ed1195f75a89677e7d0928eef767cfae21ec86cfdf51fe45c4ad67fbcb",
+    "source_id": "corpus-source:41a2d9fe65ddb8fd61544145eb7d31dc25db1211bb91302421b5f63e5085b4d9",
+    "created_at": "2026-09-12T10:17:30.707169+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:41a2d9fe65ddb8fd61544145eb7d31dc25db1211bb91302421b5f63e5085b4d9",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.02%3A_How_Force_Is_Multiplied_Using_Pascals_Law",
+        "sha256:871122f09d3066aac26649f7e1f2df60d9894086a011204a199d090bd250b80d",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "51a503da-f69b-4856-80cd-2ec4e5c134e2"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-07",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html",
+      "checksum": "sha256:3afce384c0c78580cc5578525f23d7bc3571a6be67d229e5a2528c440ff2d54f",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:41a2d9fe65ddb8fd61544145eb7d31dc25db1211bb91302421b5f63e5085b4d9",
+      "created_at": "2026-09-12T10:17:30.904037+00:00",
+      "edition_id": "corpus-edition:e5ebab0379c36ae43f360a295ea63c722da54d4f9c7c11fb541097acf35ad412",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:ad2913c519d458a05adadd108c97de3619a62e6c4715f939ccff1ab018a14e21",
+      "book_source_id": "corpus-book:f6be164debcf3bd4d44b7d9232510a4620c3a0b2dbef0b3a3a57310b0bae6396",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "93f58ab2-4d46-4d63-ad84-9f59d97b8906",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:036dbb80a1f4042739da52e1ea0270e7995146a538403e1bf03c8e840cacbb8d",
+          "parsed_blob_id": "245774c3-b1cb-56bc-9011-addaadde6194",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "d68de61a-5159-4743-9c3e-6038ca142d4b"
+        },
+        "rights_id": "corpus-rights:f18631ed1195f75a89677e7d0928eef767cfae21ec86cfdf51fe45c4ad67fbcb",
+        "created_at": "2026-09-12T10:17:31.257555+00:00",
+        "edition_id": "corpus-edition:e5ebab0379c36ae43f360a295ea63c722da54d4f9c7c11fb541097acf35ad412",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:4c457ae88a8fd10cad1ce63604e3b03e44efcace96858b9f59c06158daed394d",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:18781092da69d0d7fae3c02e5c38d48e99484045c6f2baa96eb16bbae2c0e378",
+        "source_document_id": "source-document:first-novel-pilot-20260912:474c5839778d515f3a334ad15755da3d315fc96cb487d06985a7e1c4dcbbe766",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:db6017516e552c4d4e4e60a6524e2f237c325e9484ad93412e1fd573892456e1",
+        "created_by_operation_id": "31f3f224-bf2f-469e-9070-3cb383dea865",
+        "source_work_asset_version_id": "4a484c76-f676-4aba-9860-1fa855dd4090"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

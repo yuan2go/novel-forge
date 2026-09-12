@@ -1,0 +1,23 @@
+{
+  "created_at": "2026-09-12T11:00:45.095575+00:00",
+  "status": "BACKED_UP_ARCHIVE_LIST_VERIFIED",
+  "restore_rehearsal": "NOT_RUN",
+  "credentials_included": false,
+  "files": [
+    {
+      "path": "corpus-pilot.pgcustom",
+      "bytes": 4861013,
+      "sha256": "sha256:49ad8f4966824e4f462ab85b73a0477ccf7647257ded7213b958da00a2086fba"
+    },
+    {
+      "path": "immutable-objects.tar.gz",
+      "bytes": 3810507,
+      "sha256": "sha256:ac64d4dee571242a15a801871b17cfcdb2a206a6cbc469f8534da203a47c2f16"
+    },
+    {
+      "path": "pg-archive-contents.txt",
+      "bytes": 421797,
+      "sha256": "sha256:32fe1043761c26bfd5b9e741b3d51b4627bdc59e4953e4f55ae8296f53d8f20d"
+    }
+  ]
+}

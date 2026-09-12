@@ -1,0 +1,16 @@
+{
+  "action": "revise_curated_corpus",
+  "corpus_key": "first-novel-next",
+  "title": "First novel next source selection",
+  "purpose": "PRODUCTION_REFERENCE",
+  "filters": {
+    "work_ids": [
+      "corpus-canonical-work:a9f71c9c6554db8efa95e71a2ea6426cbf25b064464fb70314fac58e9f2b65d3",
+      "corpus-canonical-work:173a2aba9336bf37c290fa7f782490f7d8ab4e4cec3a9f8bda460349828c07f2",
+      "corpus-canonical-work:35d3d65a95115a59cc34913a1516e717f2faed19997653ff5778ec259345b15f",
+      "corpus-canonical-work:5f5d2b7b7224af0e84ea90c22a1e56f02cbf6b798c4db705268f8f95a56e7255"
+    ]
+  },
+  "candidate_limit": 30,
+  "reason": "Operator source selection only; not knowledge approval or paid-call authorization."
+}

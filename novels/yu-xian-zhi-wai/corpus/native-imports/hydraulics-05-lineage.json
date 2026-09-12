@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:b0bca781-e9fc-468b-89b5-f35d211f8a89",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:b05e7cb99ebf8dc15c00da5bd5f721bf56b1dc134629835fcf01b0da9290d27b",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "9.2: How to Calculate the Force Output of an Hydraulic Cylinder in Retraction (Pulling)",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-05"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-05.html",
+              "parser": null,
+              "checksum": "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:5e15101cca0992a5722a0d2440e04df2c5c7cc7dd28a8e49c12e102df9859510"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:b05e7cb99ebf8dc15c00da5bd5f721bf56b1dc134629835fcf01b0da9290d27b",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+    "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+    "created_at": "2026-09-12T10:17:24.294542+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html",
+      "checksum": "sha256:b05e7cb99ebf8dc15c00da5bd5f721bf56b1dc134629835fcf01b0da9290d27b",
+      "acquired_at": "2026-09-12T10:17:24.074894+00:00",
+      "receipt_ref": "bae3bef2-46ca-44cc-9548-7be900808c27",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "69e8d7b8-1c8b-4f46-8087-cecdcfba9432",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+    "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+    "created_at": "2026-09-12T10:17:24.191243+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.02%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Retraction_(Pulling)",
+        "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "10ddddd0-ddc3-4dc3-863c-f5210e09ac52"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-05",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html",
+      "checksum": "sha256:365b0f2759ebe61d0773c3da90a69277681688b054406d1ecbc6102fae9fa4c3",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+      "created_at": "2026-09-12T10:17:24.496424+00:00",
+      "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+      "book_source_id": "corpus-book:4887b83f5f49e82d721112196aa21546457e4f0e3da027fc5aad7e0768ba2550",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "0ec16678-faf6-4551-8f6c-468fa4f2b68e",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:5e15101cca0992a5722a0d2440e04df2c5c7cc7dd28a8e49c12e102df9859510",
+          "parsed_blob_id": "0cd870b0-29a2-5c19-96df-67def79b1800",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "bae3bef2-46ca-44cc-9548-7be900808c27"
+        },
+        "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+        "created_at": "2026-09-12T10:17:25.067036+00:00",
+        "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:e9dc1d4c49733411bf8678390c1b352b6f6e05834af6a70d4fc528736400c690",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:369f268fdfb7225f792868d8cca5e973e31099a813c0d3a2b42f8d6360125c9a",
+        "source_document_id": "source-document:first-novel-pilot-20260912:b3c0ceb2d59d3388a3915aa3ec35574ba24b16f3e2cb7e81146ebb94d5b2126e",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:45a9f396bd190905e4c594bc55f2a1d13b87a30185d2635f11f783b6d5ac5a50",
+        "created_by_operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80",
+        "source_work_asset_version_id": "9fa6ca40-bf9b-46a9-8b7f-b4e18f60d533"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

@@ -1,0 +1,70 @@
+Figure \(\PageIndex{1}\): Diagram of a hydraulic cylinder in extension.
+The output force of a hydraulic cylinder depends on two factors:
+The
+pressure
+supplied by the hydraulic system
+The
+area
+over which that pressure is applied
+When a cylinder is extending, fluid pressure acts across the full
+piston area
+on the cap end of the cylinder. The force produced is the product of pressure and this piston area.
+To calculate theoretical force output:
+Force (lbs)=Pressure (psi) × Piston Area (in²)
+Where the piston area is calculated by:
+A = 0.7854 × D²
+This formula assumes no losses due to friction or leakage. In practice, the actual force may be slightly lower due to these factors, but this gives a reliable baseline for sizing components and understanding system capabilities.
+Example: Calculating the Extension Force of a Cylinder Given its Size and Pressure
+To determine the force output of a hydraulic cylinder when it's extending, use the following formula:
+P × A = F
+Where:
+F
+= Force in pounds (lbs)
+P
+= Pressure in pounds per square inch (psi)
+A
+= Area of the piston in square inches (in²)
+Since hydraulic cylinders use round pistons, we calculate piston area using the formula for the area of a circle:
+A = 0.7854 ×
+D
+²
+Where
+D
+is the bore diameter of the cylinder.
+Example Calculation
+Let’s say the cylinder has a
+bore diameter of 2.0 inches
+and is subjected to
+1000 psi
+of hydraulic pressure.
+A=0.7854 ×
+D
+²
+A= 0.7854 × (2.0)²
+A = 0.7854 × 4 = 3.1416 in.²
+F = P × A
+F=1000 × 3.1416=3,142 lbs
+Result:
+The cylinder can theoretically exert
+3,142 pounds of force
+while extending at 1000 psi.
+Additional Practice Problem
+Determine the minimum pressure required to lift a known load given:
+Load to lift = 5,000 lbs
+Cylinder Bore = 3.0 in
+Rod Diameter = 1.0 in
+We’re lifting, so this is an extension force problem. First, calculate piston area:
+A = 0.7854 × (3.0)² = 0.7854 × 9 = 7.069 in²
+Now solve for pressure:
+P = F / A = 5000 x 7.069 ≈ 707 psi
+Answer
+A pressure of approximately
+707 psi
+is required to lift a 5,000 lb load using a 3-inch bore cylinder.
+A
+big lesson
+to learn here is that
+larger bore cylinders
+reduce the pressure
+required
+to move a load.

@@ -1,0 +1,39 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_physical_evidence_does_not_depend_on_derived_record_number ________
+
+    def test_physical_evidence_does_not_depend_on_derived_record_number():
+        old = {"content_hash": "sha256:" + "a" * 64, "locator": {"path": "original.txt", "record": 4,
+               "original_byte_offset": 100, "original_byte_end": 120}}
+        revised = deepcopy(old)
+        revised["locator"]["record"] = 6
+>       assert source_evidence_key(old) == source_evidence_key(revised)
+E       AssertionError: assert 'sha256:74147...1b68a979e3c48' == 'sha256:4f9f1...82c21a905c45d'
+E         
+E         - sha256:4f9f1326a03e728c9f5047853a163d9a163cfd048ea6aa1bddf82c21a905c45d
+E         + sha256:74147d8d92b5df4c4cb8f2cf7ff9ef8c7087d913f1c5fc523681b68a979e3c48
+
+tests/unit/test_corpus_nonbody_review_replay.py:57: AssertionError
+___ test_nonbody_partition_replaces_old_issue_but_preserves_current_blockers ___
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-187/test_nonbody_partition_replace0')
+
+    def test_nonbody_partition_replaces_old_issue_but_preserves_current_blockers(tmp_path):
+        path, original, revised = volume_fixture(tmp_path)
+        old = parsed(path, original, tmp_path / "old")
+        new = parsed(path, revised, tmp_path / "new")
+        current = deepcopy(new["integrity"]["issues"])
+        carry_review(new, old["integrity"], parser=ParserProfile.model_validate(revised), boundary_repair=lambda _: False)
+>       assert {f["issue_id"] for f in new["integrity"]["issues"]} == {f["issue_id"] for f in current}
+E       AssertionError: assert {'sha256:36f7...f5c72bc50a74'} == {'sha256:6649...f5c72bc50a74'}
+E         
+E         Extra items in the left set:
+E         'sha256:36f7c7b9eb2e92bffb9b070af69095b7a9183cf2435306160808aca732e4980d'
+E         'sha256:c151a9711de19a3295e31fcf23bc8a2eb7a4d9439864cd393179c5454b312b41'
+E         Use -v to get more diff
+
+tests/unit/test_corpus_nonbody_review_replay.py:75: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_corpus_nonbody_review_replay.py::test_physical_evidence_does_not_depend_on_derived_record_number
+FAILED tests/unit/test_corpus_nonbody_review_replay.py::test_nonbody_partition_replaces_old_issue_but_preserves_current_blockers
+2 failed in 0.41s

@@ -1,0 +1,54 @@
+{
+  "status": "PASS",
+  "implementation_sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+  "three_batch_representatives": [
+    {
+      "id": "hydraulics-01",
+      "same_job": true,
+      "result": {
+        "import_job_id": "source-import:7c86095e-4c48-46f5-b9a3-d9b94367348d",
+        "operation_id": "7c86095e-4c48-46f5-b9a3-d9b94367348d",
+        "manifest_hash": "sha256:a3158d95bb119620c723f4c946805370b48f8368d4c5fd1fe93dc9a03f490e2f",
+        "replayed": true,
+        "mode": "IMPORT"
+      }
+    },
+    {
+      "id": "hydraulics-07",
+      "same_job": true,
+      "result": {
+        "import_job_id": "source-import:66e73318-d637-449a-b80d-08e04da34583",
+        "operation_id": "66e73318-d637-449a-b80d-08e04da34583",
+        "manifest_hash": "sha256:036dbb80a1f4042739da52e1ea0270e7995146a538403e1bf03c8e840cacbb8d",
+        "replayed": true,
+        "mode": "IMPORT"
+      }
+    },
+    {
+      "id": "railway-children",
+      "same_job": true,
+      "result": {
+        "import_job_id": "source-import:c79e4030-a88f-41b8-ad80-89d2f723d184",
+        "operation_id": "c79e4030-a88f-41b8-ad80-89d2f723d184",
+        "manifest_hash": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca",
+        "replayed": true,
+        "mode": "IMPORT"
+      }
+    }
+  ],
+  "counts_before": [
+    187,
+    379,
+    430
+  ],
+  "counts_after": [
+    187,
+    379,
+    430
+  ],
+  "new_operations": 0,
+  "new_effects": 0,
+  "new_asset_versions": 0,
+  "new_model_calls": 0,
+  "meaning": "Exact prior import keys replay after MinIO restore without acquiring or rewriting source data"
+}

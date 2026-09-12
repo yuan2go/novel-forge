@@ -1,0 +1,152 @@
+{"analysis_job_id": "source-import:4caf9f53-ccd6-4793-af41-158dcf2ac2c3", "candidate_asset_version_id": "knowledge-candidate:corpus-1b2ae973-0f20-4333-87b2-60dcbae3eae9:f58dd792d519abb99f5151dbf35fb494f866f99fc50abb2246ba00cb51c2c6e8:v1", "curated_revision_id": "corpus-curated-revision:0772af7980d9772d5e33b56c045fda00d282c9c08533dfb472aacc39396525e3", "evidence_class": "SCRIPTED_SOURCE_PROTOCOL_ONLY", "fixture_card_asset_version_id": "knowledge-card:corpus-1b2ae973-0f20-4333-87b2-60dcbae3eae9:3fc423cb426fc91f774ce96ec3354f9116df06438601a68f516ace40eb941699:v1", "helper_manifest_hash": "sha256:95dba4b0bc5bdfa24602f0e5c3cf933a6a27be27ff6c53c114a307533deb6432", "import_job_id": "source-import:23465990-c379-4c76-91e4-78be3961c5dd", "production_approval": "BLOCKED_FIXTURE_EVIDENCE", "real_d0_binding": "NOT_PROVEN", "real_provider_execution": "NOT_RUN", "sample": "professional"}
+.F
+=================================== FAILURES ===================================
+_ test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6] _
+
+corpus = <tests.integration.test_corpus_foundation_postgres.CorpusFixture object at 0x10ccb4fe0>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-199/test_default_helper_import_cur1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cf7fe00>
+sample = 'fiction', content_type = 'WEB_NOVEL', units = 6
+
+    @pytest.mark.parametrize('sample,content_type,units', [('professional','PROFESSIONAL_KNOWLEDGE',3), ('fiction','WEB_NOVEL',6)])
+    def test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade(corpus, tmp_path, monkeypatch, sample, content_type, units):
+        def source_fixture(stage, inputs):
+            if stage == CLASSIFICATION_STAGE:
+                return {'content_type':content_type,'confidence':0.97,
+                        'alternatives':[{'content_type':content_type,'confidence':0.97},{'content_type':'UNKNOWN','confidence':0.03}],
+                        'evidence_codes':['BOUNDED_SEMANTIC_SAMPLE'],
+                        'boundary_assessment':{'scope_kind':'FILE_DOCUMENT','suspected_document_count':1,'review_required':False}}
+            return content_intelligence_fixture_response(stage, inputs)
+        monkeypatch.setattr(authority_dependencies, 'content_intelligence_fixture_response', source_fixture)
+        app, scheduler = _runtime(tmp_path, monkeypatch)
+        folder = tmp_path / 'helper-inputs'
+        frozen_inputs = prepare(folder, target_book_id='intended-book:'+corpus.project)
+        manifest_path = folder / f'{sample}-import.json'
+        assert frozen_inputs['files'][manifest_path.name] == 'sha256:'+hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        manifest = json.loads(manifest_path.read_text())
+        imported = corpus.client.post('/product/source-imports/corpus', json={
+            'project_id':corpus.project,'workspace_id':corpus.workspace,'run_key':sample+':helper-import','manifest':manifest})
+        assert imported.status_code == 202, imported.text
+        acquired = scheduler.run_or_recover(operation_id=imported.json()['operation_id'], project_id=corpus.project)['result']
+        assert len(acquired['children']) == 1
+        processed = scheduler.run_or_recover(operation_id=acquired['children'][0]['operation_id'], project_id=corpus.project)['result']
+        assert processed['unit_count'] == units
+        assert processed['analysis_scheduled'] is False
+        processing_id = processed['processing_id']
+        work = corpus.run({'action':'resolve_canonical_works','changes':[{'work_key':sample,'title':sample,
+            'language':'zh','metadata_evidence':['repository:original-synthetic-knowledge-closure-fixture'],
+            'members':[{'processing_id':processing_id,'relation':'SAME_WORK','evidence_refs':['repository:original-synthetic-knowledge-closure-fixture']}]}],
+            'reason':'Review exact original helper sample identity'})
+        curation = {'action':'revise_curated_corpus','corpus_key':sample,'title':sample,'purpose':manifest['purpose'],
+                    'filters':{'work_ids':[work['revisions'][0]['work_id']]},'reason':'Select the exact helper snapshot for abstract generation'}
+        proposed = corpus.run(curation)
+        curated = corpus.run({**curation,'previous_id':proposed['revision_id'],'state':'FROZEN','choices':[{
+            'processing_id':processing_id,'selected':True,'reason':'Original bounded helper fixture',
+            'evidence_refs':['repository:original-synthetic-knowledge-closure-fixture']}]})
+        analysis_request = {'project_id':corpus.project,'revision_id':curated['revision_id'],'run_key':sample+':helper-analysis',
+                            'max_members':1,'max_calls':50,'max_tokens':500000,
+                            'authorization_ref':'fixture:scripted-source-no-real-model-authorization',
+                            **{key:frozen_inputs['analysis_target'][key] for key in ('intended_use','target_book_id')}}
+        analysis = corpus.client.post('/product/source-imports/corpus/analyze', json=analysis_request)
+        assert analysis.status_code == 202, analysis.text
+        admission = analysis.json()['consumption_admission']
+        assert admission['source_use_admitted'] is True and admission['generation_consumption_allowed'] is False
+        assert admission['book_status'] == 'PENDING_BOOK_CREATION' and admission['knowledge_status'] == 'PENDING_CARD_REVIEW'
+        assert admission['source_evidence'][0]['source_id'] == acquired['source_id']
+        for _ in range(50):
+            pending = [(operation,project) for operation,project in scheduler.pending_operations(limit=100) if project==corpus.project]
+            if not pending:
+                break
+            for operation, project in pending:
+>               scheduler.run_or_recover(operation_id=operation, project_id=project)
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/source_import/scheduler.py:63: in run_or_recover
+    return super().run_or_recover(
+src/novel_forge/modules/source_authority/scheduler.py:230: in run_or_recover
+    result = self.application.execute_fenced(worker)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:847: in execute_fenced
+    return self._execute_mkaos(worker)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/application.py:4354: in _execute_mkaos
+    executed = port.execute_mkaos_extraction(
+src/novel_forge/modules/source_import/execution.py:1188: in execute_mkaos_extraction
+    execution = self._execute(worker=worker, spec=spec)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/source_import/execution.py:1493: in _execute
+    reservation = reserve_provider_budget(
+src/novel_forge/modules/command_kernel/budget_runtime.py:2593: in reserve_provider_budget
+    result = reserve_provider_budget_in_uow(uow, request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/budget_runtime.py:2893: in reserve_provider_budget_in_uow
+    _enforce_usage_caps(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=50290 user=novel_forge database=novel_forge_accounting_test) at 0x10ceca210>
+request = BudgetReservationRequest(operation_id='66d6c438-495f-4c20-a7d8-0c10f213d22c', external_effect_id='62cef26c-ecef-4f73-a...e='UTC', budget_scope_id='', expected_budget_scope_revision=None, accounting_basis='PRICED', cost_authorization_ref='')
+tokens = 14153, call_caps = {'project_total': 50}
+token_caps = {'project_total': 500000}
+
+    def _enforce_usage_caps(
+        cursor: Any,
+        request: BudgetReservationRequest,
+        *,
+        tokens: int,
+        call_caps: Mapping[str, int],
+        token_caps: Mapping[str, int],
+    ) -> None:
+        for kind, caps in (("call", call_caps), ("token", token_caps)):
+            for dimension, cap in caps.items():
+                where, params = _usage_cap_dimension(request, dimension)
+                aggregate = (
+                    "COUNT(DISTINCT external_effect_id)"
+                    if kind == "call"
+                    else "COALESCE(SUM(CASE WHEN status='SETTLED' THEN actual_tokens "
+                    "ELSE GREATEST(actual_tokens,estimated_tokens) END),0)"
+                )
+                cursor.execute(
+                    f"""
+                    SELECT {aggregate}
+                    FROM authority_budget_reservation
+                    WHERE {where} AND stable_idempotency_key <> %s
+                      AND {provider_usage_accounted_sql()}
+                    """,
+                    [*params, request.stable_idempotency_key],
+                )
+                committed = int(cursor.fetchone()[0])
+                requested = 1 if kind == "call" else tokens
+                if committed + requested > cap:
+>                   raise KernelError(
+                        f"BUDGET_{kind.upper()}_CAP_EXCEEDED",
+                        f"{dimension} {kind} budget cap would be exceeded",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: BUDGET_CALL_CAP_EXCEEDED: project_total call budget cap would be exceeded
+
+src/novel_forge/modules/command_kernel/budget_runtime.py:3855: KernelError
+=============================== warnings summary ===============================
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+1 failed, 1 passed, 4 warnings in 32.70s

@@ -1,0 +1,95 @@
+{
+  "schema_version": "first-novel-pilot-helper-source-protocol-evidence.v1",
+  "timestamp": "2026-09-12T10:43:31.895879+00:00",
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "head_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "files": {
+    "tests/integration/test_knowledge_closure_helper_source_postgres.py": "sha256:b59b15cf5e4b4ff8d5b59c69cba7480a2c73994b247b2c5ee8d3b5f1fffb5ff6",
+    "scripts/prepare_knowledge_closure.py": "sha256:7394a5bdceb9bd490598135920ba87d42992a99696be2f8364c5aeb37381f602",
+    "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py": "sha256:b388f579c458654251a858cf2ce02f6ecdd21dfff3807d2334ff8af923a712a1",
+    "src/novel_forge/modules/source_authority/consumption.py": "sha256:49fb22baaa06f93951909629eab06edc0727e5a3daaba9e934f608ca8609d3ac",
+    "src/novel_forge/modules/provider_qualification/source_binding.py": "sha256:98bf9f5623d11790154e9e557d9ad9a9eb413700c7fb4d0681bf417d207c2aa4",
+    "src/novel_forge/modules/mkaos_authority/application.py": "sha256:4d0b84e5886853eccc71753dcf5e81833270ea4fec88d5335714c4865e352c69"
+  },
+  "owned_change": "Only independent integration test tests/integration/test_knowledge_closure_helper_source_postgres.py; no production changes for this follow-up",
+  "checks": [
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-accounting-test> PYTHONPATH=src:. .venv/bin/pytest -q -s tests/integration/test_knowledge_closure_helper_source_postgres.py",
+      "result": "2 passed, 4 warnings in 37.79s",
+      "log": "helper-source-chain.log"
+    },
+    {
+      "command": ".venv/bin/ruff check tests/integration/test_knowledge_closure_helper_source_postgres.py",
+      "result": "PASS"
+    }
+  ],
+  "flow": [
+    "prepare() original default inputs frozen and generated manifest hash checked",
+    "Unchanged generated PRODUCTION_REFERENCE manifest posted to native Corpus import",
+    "Native canonical-work resolution and frozen exact curated revision",
+    "Exact helper ABSTRACT_GENERATION purpose/target admitted to native corpus/analyze",
+    "Full existing scripted Source stages complete (paginated native results all SUCCEEDED/REUSED); terminal AWAITING_GOVERNANCE preserves manual review boundary",
+    "Actual Source-derived NEEDS_REVIEW Candidate retains fixture_protocol_only and real_provider_proven=false",
+    "Exact Source qualification refuses fixture; ordinary production approval refuses fixture",
+    "Existing test-mode approval creates fixture-marked Card idempotently without D0 binding; ordinary Planning refuses consumption",
+    "No Book and no D0 qualification records created"
+  ],
+  "fixtures": [
+    {
+      "analysis_job_id": "source-import:462e59d7-2cad-45ce-a4ff-4b79bbf8ec0e",
+      "analysis_status": "AWAITING_GOVERNANCE",
+      "candidate_asset_version_id": "knowledge-candidate:corpus-d6b243bf-82e3-4eca-b222-c0f33ae3978e:cb526393d00a50cdf4a8cc09fdfe1d9cdd1d793904280260349f9bf73731aca5:v1",
+      "completed_source_stages": 18,
+      "curated_revision_id": "corpus-curated-revision:04574a734b64b88dc075f29dc0c028e7bc67cc4b553998e2c35de3289a624f66",
+      "evidence_class": "SCRIPTED_SOURCE_PROTOCOL_ONLY",
+      "finite_scripted_call_ceiling": 120,
+      "fixture_card_asset_version_id": "knowledge-card:corpus-d6b243bf-82e3-4eca-b222-c0f33ae3978e:62f75727926c6aa757f920f6886df80800e6776d51fad64dd001d0226bfc00df:v1",
+      "helper_manifest_hash": "sha256:dfeda27eed5268d2858fb8e5fb511fd744a2ca1feda51acc0da0727edbb467f8",
+      "import_job_id": "source-import:44b6f5b0-49b4-4449-b9bb-66a6f67f7784",
+      "production_approval": "BLOCKED_FIXTURE_EVIDENCE",
+      "real_d0_binding": "NOT_PROVEN",
+      "real_provider_execution": "NOT_RUN",
+      "sample": "professional",
+      "settled_scripted_calls": 15
+    },
+    {
+      "analysis_job_id": "source-import:1d523133-8681-42f4-867e-cbdfae26d5bc",
+      "analysis_status": "AWAITING_GOVERNANCE",
+      "candidate_asset_version_id": "knowledge-candidate:corpus-60afee96-ee22-4a3f-910e-c520146e54cf:4e310a78452f45b30bb7b7d30f5e2340a0db62c8e9ec07093d4591709a5aeb8d:v1",
+      "completed_source_stages": 60,
+      "curated_revision_id": "corpus-curated-revision:581c69f2e9f675048b09d51b9bc67231b500f0bbe9f69deab61542bdf43c8279",
+      "evidence_class": "SCRIPTED_SOURCE_PROTOCOL_ONLY",
+      "finite_scripted_call_ceiling": 120,
+      "fixture_card_asset_version_id": "knowledge-card:corpus-60afee96-ee22-4a3f-910e-c520146e54cf:7253c98a869fd0a47ec3856d94396b6f6d7ec3047088cdafc849d7fe23c2626b:v1",
+      "helper_manifest_hash": "sha256:3558636ec0862e00605895d4df1e1feaa44ff9953c2b9f0e8a015c1e8acdea66",
+      "import_job_id": "source-import:066d7c94-e5b5-4e12-bae3-f734cb9ef466",
+      "production_approval": "BLOCKED_FIXTURE_EVIDENCE",
+      "real_d0_binding": "NOT_PROVEN",
+      "real_provider_execution": "NOT_RUN",
+      "sample": "fiction",
+      "settled_scripted_calls": 57
+    }
+  ],
+  "evidence_ceiling": "SCRIPTED_SOURCE_PROTOCOL_ONLY",
+  "classification_fixture": "Only classification result fixed to PROFESSIONAL_KNOWLEDGE/WEB_NOVEL for the corresponding original sample; all downstream response fixtures reuse existing runtime fixture handler",
+  "real_provider_execution": "NOT_RUN",
+  "real_source_runtime_qualification": "NOT_PROVEN",
+  "production_knowledge_approval": "BLOCKED_FIXTURE_EVIDENCE",
+  "relation_to_accounting_evidence": "Separate from ACCOUNT_ENTITLEMENT D0 persisted protocol/receipt/recovery tests; these two fixture evidence sets do not combine into a real Source-to-production approval claim",
+  "remaining_real_path": [
+    "New scoped authorization",
+    "Exact actual Source Provider receipt and measurable finite account budget",
+    "D0 qualification bound to identical account/model/runtime/capability and entitlement snapshot",
+    "Explicit review of actual Candidate version before production Card approval"
+  ],
+  "development_failures": [
+    {
+      "log": "helper-source-fixture-budget-block.log",
+      "cause": "Six-chapter fiction analysis requires 57 scripted calls; initial explicit test allowance50 correctly triggered BUDGET_CALL_CAP_EXCEEDED. Only test request allowance increased to finite120; production defaults and real authorization unchanged."
+    },
+    {
+      "log": "helper-source-status-expectation.log",
+      "cause": "Added status assertion initially expected COMPLETED despite pending manual knowledge review. Corrected test to documented AWAITING_GOVERNANCE and retained all-stage SUCCEEDED/REUSED assertion; production state machine unchanged."
+    }
+  ]
+}

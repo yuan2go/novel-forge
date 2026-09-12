@@ -1,0 +1,1405 @@
+{
+  "entries": [
+    {
+      "id": "hydraulics-01",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-01:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-01.json",
+      "manifest_hash": "sha256:a3158d95bb119620c723f4c946805370b48f8368d4c5fd1fe93dc9a03f490e2f",
+      "source_hash": "sha256:135ee4179252987221dfcc000e72ee49ce3ed1b6d339d3ac65339d8b702c80f3",
+      "import_job_id": "source-import:7c86095e-4c48-46f5-b9a3-d9b94367348d",
+      "operation_id": "7c86095e-4c48-46f5-b9a3-d9b94367348d",
+      "admission_replayed": true,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 0.5968416249961592,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-01-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "7c86095e-4c48-46f5-b9a3-d9b94367348d",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:a14cd3372ea80053dce2c278a8b62d7d72a06fd5fbc7c17bdb7e1b6d5cf78c0a",
+                "operation_id": "e4c524b1-4060-4d20-aecd-4c2b3f9e5654"
+              }
+            ],
+            "rights_id": "corpus-rights:5356404607e0e39bddeda121f3fca3f6c1075c136b189783c2dd37a2ec3cc521",
+            "source_id": "corpus-source:c4bcd686cbfa1e03727c6f10e006a7a619621498b157e85f8380f93ded2aff96",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:0055ff9ba992459f48627238c0cd00a848247d2c349af7a0dc38b31fa7e8f9f6",
+            "actual_bytes": 136652,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "307a6f55-0f3f-4a1f-b5c2-860ba1b46d23"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "e4c524b1-4060-4d20-aecd-4c2b3f9e5654",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:a14cd3372ea80053dce2c278a8b62d7d72a06fd5fbc7c17bdb7e1b6d5cf78c0a",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:0055ff9ba992459f48627238c0cd00a848247d2c349af7a0dc38b31fa7e8f9f6",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:c42d79acae82a7a4f46370922312a782e42b3318ab1e0412fad776b32e6fefe1",
+            "source_work_id": "source-work:96c2aad36804f702135ea0157d420d7b75e64975ea35db616054262612db1c5c",
+            "normalized_hash": "sha256:a614e8bbcdafe6808c53a9088f1622c14dc091f79da68485b9df27152695f5a4",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:f6f409cb6cb693145482ea9b0eb8be0d6b88374288d22f65f7193b62d82acca5",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:f922754eadcbfc85345c04fd596e95fbbd247564b72e0f4cf8323ca6c08f4052",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:f6f409cb6cb693145482ea9b0eb8be0d6b88374288d22f65f7193b62d82acca5:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "6350e254-6e81-47a0-985b-2acc39075290",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:f922754eadcbfc85345c04fd596e95fbbd247564b72e0f4cf8323ca6c08f4052:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-02",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-02:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-02.json",
+      "manifest_hash": "sha256:d9e3dea93faccef3676dd801a7762f0161d92b77ed1f34af75b4129c7bd9e580",
+      "source_hash": "sha256:8ea646393c49dea81f0c8384e9d0aac666742c0e65c16e64cf9b302636b63b4f",
+      "import_job_id": "source-import:de4e6e2b-b1df-434b-8352-d61ec0ff7ce1",
+      "operation_id": "de4e6e2b-b1df-434b-8352-d61ec0ff7ce1",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.6535603330121376,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-02-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "de4e6e2b-b1df-434b-8352-d61ec0ff7ce1",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:330b5e4c07ae811bbacdbc2ec1ed0b6aa805c2174f211040d50313ccc26b5633",
+                "operation_id": "703f68ca-5a28-4bfa-a90a-505f7f484acc"
+              }
+            ],
+            "rights_id": "corpus-rights:cafe32691e4c073ad1f2e81103b2745a1e748f2cddc0d796b62a7758354d5bd8",
+            "source_id": "corpus-source:92a08d284bd1b63c18969aecb62ae838735092a2742b2342ae78c7a715f63486",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:2747650927fc1ce17dfa352a8f6abe42913ab51c673ca03106a995d8b91cc9e7",
+            "actual_bytes": 128220,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "726ec894-0f97-4645-bf11-38a57b8f0b10"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "703f68ca-5a28-4bfa-a90a-505f7f484acc",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:330b5e4c07ae811bbacdbc2ec1ed0b6aa805c2174f211040d50313ccc26b5633",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:2747650927fc1ce17dfa352a8f6abe42913ab51c673ca03106a995d8b91cc9e7",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:672d56d442253a1ed83387f7565182b1dc6a5ab22d6e0f23ba34067870040d24",
+            "source_work_id": "source-work:2d2de3d1b4475e379f8781cd53fcd4f7552bca76f71dfdeaff67e4e5a07298cc",
+            "normalized_hash": "sha256:7edc5cef606f2ba82e3468e80c959c281c6b1de29d68190c99330da6564f588d",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:daaf3028513b3e1fb4615315854608472a5b59ace67913fc6aad6977c170a89b",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:824f46fb7a050c3242b1fcf1997907f83b2086b644d9aef914cbe958b15b2d32",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:daaf3028513b3e1fb4615315854608472a5b59ace67913fc6aad6977c170a89b:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "a48e4e99-ae01-4b51-98e8-89e9c255a01e",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:824f46fb7a050c3242b1fcf1997907f83b2086b644d9aef914cbe958b15b2d32:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-03",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-03:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-03.json",
+      "manifest_hash": "sha256:466e3d41bec964722ed4646914ecb32edd91461f532e31b598cc5cc10c56fdeb",
+      "source_hash": "sha256:8f41183a7a3ec1d3a098ad761f12743d10a7a444de7737d0f1273db3e4a442dd",
+      "import_job_id": "source-import:36bb4ddb-8abc-4ec8-b4f5-869c74fdbd68",
+      "operation_id": "36bb4ddb-8abc-4ec8-b4f5-869c74fdbd68",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.62540120902122,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-03-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "36bb4ddb-8abc-4ec8-b4f5-869c74fdbd68",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:1cfc2dd68051c7fdb7ae935d6abaee3b37edcd2f82ee57ec5fc6bd29090aefeb",
+                "operation_id": "27543abe-5d4d-411c-8a5f-c59352996b40"
+              }
+            ],
+            "rights_id": "corpus-rights:a87e6f7697c6cacc065278b0df1b8220a98ee473861c3031244daa3b39b01376",
+            "source_id": "corpus-source:5f0b1f229364ed315c557b6ddd0f3f8b04a4e96bc6b080278a51474787393917",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:a97ab9aeb4ab9c7b0c734a72dfa3b4840526a4ea894faa4358504be9657145a0",
+            "actual_bytes": 130626,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "637f00f0-e673-45bf-844f-633361faf61e"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "27543abe-5d4d-411c-8a5f-c59352996b40",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:1cfc2dd68051c7fdb7ae935d6abaee3b37edcd2f82ee57ec5fc6bd29090aefeb",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:a97ab9aeb4ab9c7b0c734a72dfa3b4840526a4ea894faa4358504be9657145a0",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:705d77a8d60b81ba6b22279f79220fd22335ede0e29d1038ef9f0c62bd1a6bbb",
+            "source_work_id": "source-work:48e7d2d1b6f09e5df392d5c10612613cd8a50bd8afbeab8bff091f726deb4c88",
+            "normalized_hash": "sha256:22a834ff4fa0a2876ba00c5bdbbb78669057e8e56ece7b6046169237871f9741",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:b7c940f5d1865bad8b8b501db95af52f063afbdb46e23763676ca34146d6e5af",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:ff5b19a2abcdf30ece3dcce3464bff0482a2589443845266c096b405610bfbc0",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:b7c940f5d1865bad8b8b501db95af52f063afbdb46e23763676ca34146d6e5af:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "14558df9-d564-44b3-bed9-79768506746a",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:ff5b19a2abcdf30ece3dcce3464bff0482a2589443845266c096b405610bfbc0:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-04",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-04:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-04.json",
+      "manifest_hash": "sha256:b39c3b50b780e1e3bc4f2d44e13ecbb7577cd4eef1aca6192ee1a0ab0131fa1d",
+      "source_hash": "sha256:ac32f24fb8305f73fc2215f7f976639325d72905dd789c2560dc000df5c5cd9b",
+      "import_job_id": "source-import:a41a6dc4-4fff-44f7-88c9-86e64ae717d3",
+      "operation_id": "a41a6dc4-4fff-44f7-88c9-86e64ae717d3",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.6439900000113994,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-04-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "a41a6dc4-4fff-44f7-88c9-86e64ae717d3",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:1031e88a2463f3b1dc51eb9f6c530a544003d91ace7a3a1e5ee19d929a2436c5",
+                "operation_id": "40dde22b-6eb8-44cc-aa89-ded77bd7315e"
+              }
+            ],
+            "rights_id": "corpus-rights:3c2a8af41fb56d8bf711e1d4f09230381e83c8c9a4413225e317a07f8963ab88",
+            "source_id": "corpus-source:b135750d401db2a6979fe43c3c5ce773c6eced619bd1bbe2cfcfd8ee389a0f49",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:7964cbe2c73226c0c43df0de3e52b597d62a3941237718c266fafb19e4ac193b",
+            "actual_bytes": 132614,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "62d88df6-7b68-42d0-82cb-9a8948586a07"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "40dde22b-6eb8-44cc-aa89-ded77bd7315e",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:1031e88a2463f3b1dc51eb9f6c530a544003d91ace7a3a1e5ee19d929a2436c5",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:7964cbe2c73226c0c43df0de3e52b597d62a3941237718c266fafb19e4ac193b",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:219f09699eb45ea0b9dac312e767e338835e8e1e5200272ea502443619740a4b",
+            "source_work_id": "source-work:262616cadb5e74d115f31702eac5603548f1aff10c03b9bcbc9325be65cd1033",
+            "normalized_hash": "sha256:c41177dfa230a7416de47f3ab97bafdb6ce8f8813e777e28fefe4297dd8a9188",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:2f658a77be580a2c27620bd20a0bc6f38e46b98fffb7ffd3cf0416b450a174a4",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:b5f5f589389184e5d14d03d491f4b38f53e62cf45a8f1e379251b0b1eb220e9d",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:2f658a77be580a2c27620bd20a0bc6f38e46b98fffb7ffd3cf0416b450a174a4:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "8a51cec1-38c1-449d-8a12-15c69195e43d",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:b5f5f589389184e5d14d03d491f4b38f53e62cf45a8f1e379251b0b1eb220e9d:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-05",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-05:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-05.json",
+      "manifest_hash": "sha256:5e15101cca0992a5722a0d2440e04df2c5c7cc7dd28a8e49c12e102df9859510",
+      "source_hash": "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16",
+      "import_job_id": "source-import:b0bca781-e9fc-468b-89b5-f35d211f8a89",
+      "operation_id": "b0bca781-e9fc-468b-89b5-f35d211f8a89",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.7649110830097925,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-05-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "b0bca781-e9fc-468b-89b5-f35d211f8a89",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+                "operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80"
+              }
+            ],
+            "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+            "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+            "actual_bytes": 130448,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "bae3bef2-46ca-44cc-9548-7be900808c27"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:a6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367",
+            "source_work_id": "source-work:a7c8581dbca752ff36cacf0a93c2aabd7af08b05fd5b5284bcd0ee6a8f37c4c0",
+            "normalized_hash": "sha256:369f268fdfb7225f792868d8cca5e973e31099a813c0d3a2b42f8d6360125c9a",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:b3c0ceb2d59d3388a3915aa3ec35574ba24b16f3e2cb7e81146ebb94d5b2126e",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:45a9f396bd190905e4c594bc55f2a1d13b87a30185d2635f11f783b6d5ac5a50",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:b3c0ceb2d59d3388a3915aa3ec35574ba24b16f3e2cb7e81146ebb94d5b2126e:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "9fa6ca40-bf9b-46a9-8b7f-b4e18f60d533",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:45a9f396bd190905e4c594bc55f2a1d13b87a30185d2635f11f783b6d5ac5a50:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-06",
+      "batch_id": "pilot-materials-01",
+      "run_key": "pilot-materials-01:hydraulics-06:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-06.json",
+      "manifest_hash": "sha256:95c80b9fbb83685f9f9040b7be493b492ac28489bdaf4038b70827b31276b3cc",
+      "source_hash": "sha256:eee5b52bd4dd628c1f348f98c95b6208586641e4d52978c485d0c129fe992bc5",
+      "import_job_id": "source-import:d2438529-d020-425c-9fa2-a7eb42eb81ed",
+      "operation_id": "d2438529-d020-425c-9fa2-a7eb42eb81ed",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3442465420230292,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-06-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "d2438529-d020-425c-9fa2-a7eb42eb81ed",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:767a4f46db871fc95bcdee944f7a90f9c560dbda48faec6227d05337d0c4dd66",
+                "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6"
+              }
+            ],
+            "rights_id": "corpus-rights:f94a74c50c6628a81b71d65806077972ad3144be029337f27cb74af2afd34712",
+            "source_id": "corpus-source:9197aa8fecac7169a5f9ad626a136349ec44890ef51ae45d93c473cbb09f30c2",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+            "actual_bytes": 131452,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "3c38222a-f76e-4f1d-96e4-dc07ebf5c05f"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "c3deef89-9d0e-471d-ad5a-d84b39fa04d6",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:767a4f46db871fc95bcdee944f7a90f9c560dbda48faec6227d05337d0c4dd66",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:e72cdccc9ea5a14b631ef057b3f408b7d240861291210cbf5fe7c66a787432fd",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:b6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed",
+            "source_work_id": "source-work:c6f946bb7c20ea2a2f1d6ffa9fd568abf61931b1e0ba7e714d9f7b40556aba05",
+            "normalized_hash": "sha256:bd44b3a9b4776898eeeb1ce39df9525339a8e9f8ecf8c0879049f4477a5871d4",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:4451048bae61b2108359302c2b220f3669e78c90c1d5208b83032c79c4d6b437",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:d430fd7dba2c5231b7d65967d1365a522cf5f0d95c148ab28cd3288b2da76efc",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:4451048bae61b2108359302c2b220f3669e78c90c1d5208b83032c79c4d6b437:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "68d05e8f-f064-4aa5-ad11-a00c048cbbe8",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:d430fd7dba2c5231b7d65967d1365a522cf5f0d95c148ab28cd3288b2da76efc:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-07",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-07:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-07.json",
+      "manifest_hash": "sha256:036dbb80a1f4042739da52e1ea0270e7995146a538403e1bf03c8e840cacbb8d",
+      "source_hash": "sha256:871122f09d3066aac26649f7e1f2df60d9894086a011204a199d090bd250b80d",
+      "import_job_id": "source-import:66e73318-d637-449a-b80d-08e04da34583",
+      "operation_id": "66e73318-d637-449a-b80d-08e04da34583",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3663461659743916,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-07-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "66e73318-d637-449a-b80d-08e04da34583",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:e5ebab0379c36ae43f360a295ea63c722da54d4f9c7c11fb541097acf35ad412",
+                "operation_id": "31f3f224-bf2f-469e-9070-3cb383dea865"
+              }
+            ],
+            "rights_id": "corpus-rights:f18631ed1195f75a89677e7d0928eef767cfae21ec86cfdf51fe45c4ad67fbcb",
+            "source_id": "corpus-source:41a2d9fe65ddb8fd61544145eb7d31dc25db1211bb91302421b5f63e5085b4d9",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:ad2913c519d458a05adadd108c97de3619a62e6c4715f939ccff1ab018a14e21",
+            "actual_bytes": 132054,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "d68de61a-5159-4743-9c3e-6038ca142d4b"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "31f3f224-bf2f-469e-9070-3cb383dea865",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:e5ebab0379c36ae43f360a295ea63c722da54d4f9c7c11fb541097acf35ad412",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:ad2913c519d458a05adadd108c97de3619a62e6c4715f939ccff1ab018a14e21",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:2a3eb4c808d9c63d877e1ff0328401143814cd81acf774f08b23cce85290a9de",
+            "source_work_id": "source-work:f75330ae7e9718a57dc5c4a342ef341b0860d0dafb5b5486bfd9fccf297dd895",
+            "normalized_hash": "sha256:18781092da69d0d7fae3c02e5c38d48e99484045c6f2baa96eb16bbae2c0e378",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:474c5839778d515f3a334ad15755da3d315fc96cb487d06985a7e1c4dcbbe766",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:db6017516e552c4d4e4e60a6524e2f237c325e9484ad93412e1fd573892456e1",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:474c5839778d515f3a334ad15755da3d315fc96cb487d06985a7e1c4dcbbe766:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "4a484c76-f676-4aba-9860-1fa855dd4090",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:db6017516e552c4d4e4e60a6524e2f237c325e9484ad93412e1fd573892456e1:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-08",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-08:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-08.json",
+      "manifest_hash": "sha256:e13878f3ca4d981355c877fbdd89fe8f3a4d06ee20f720c7c0add99dbadf4bd6",
+      "source_hash": "sha256:43854709708e085160df915a006a2e57002811a8a047d08a480ac0db872ab6dd",
+      "import_job_id": "source-import:a6d30585-7f8c-429a-813d-8069e9371f55",
+      "operation_id": "a6d30585-7f8c-429a-813d-8069e9371f55",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3774754170153756,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-08-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "a6d30585-7f8c-429a-813d-8069e9371f55",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:dac8259d9e6a9b350cbc40b06b18d454daec437d7318765fbae8008e13b16335",
+                "operation_id": "b3831b7a-a550-4dac-b2cd-20ab1cbeb078"
+              }
+            ],
+            "rights_id": "corpus-rights:27a2d49e1c8cadef1882614283c372bba31ed2732c7f9d241d45444f9eb80e9b",
+            "source_id": "corpus-source:e2caf6e859788dd3277bf46d6fd9566aa65732d86d9476aa6dba75b67bbb110c",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:37bd06ddf349c5b705f32f9b2c67435ae151e0074c5b6e8b2c4771b6af120867",
+            "actual_bytes": 132075,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "e6adf7c8-d99e-4f3f-b6fe-df65fa3de131"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "b3831b7a-a550-4dac-b2cd-20ab1cbeb078",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:dac8259d9e6a9b350cbc40b06b18d454daec437d7318765fbae8008e13b16335",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:37bd06ddf349c5b705f32f9b2c67435ae151e0074c5b6e8b2c4771b6af120867",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:570b62038e9b9e4dca6e78be58add941fc74dc89ae40c3d2d6c652a684dfe4d5",
+            "source_work_id": "source-work:bc1db18b542cb30a13ac84b8f04278deff654db685019764878fedab4335ce2e",
+            "normalized_hash": "sha256:de0fe19c92f5ce403efa68055635cc4cd2c985442fc6183b7efd3481a4c88478",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:0cfac0d2e4913d7371d1704922fb4cf6e184979e90fc490e35ec1aeab27a3a95",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:067488abdf0e32de9ef1dee9dacd6991b446ea911aa95bc816408414c2b1626e",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:0cfac0d2e4913d7371d1704922fb4cf6e184979e90fc490e35ec1aeab27a3a95:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "9495cccb-e353-4c57-9381-1685006e7e66",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:067488abdf0e32de9ef1dee9dacd6991b446ea911aa95bc816408414c2b1626e:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-09",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-09:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-09.json",
+      "manifest_hash": "sha256:212e3ada2a39d3e89b013ea7466c7de9ecf6d69f94b3bdc6ead65f3bf60e66f7",
+      "source_hash": "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31",
+      "import_job_id": "source-import:4fdda093-cd24-40d3-aacc-b092b1d44ebb",
+      "operation_id": "4fdda093-cd24-40d3-aacc-b092b1d44ebb",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3417815839929972,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-09-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "4fdda093-cd24-40d3-aacc-b092b1d44ebb",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:e2d3fbf74a9d534fe407c4321b268706bd41c75e795480471b2f64ff9b9f4746",
+                "operation_id": "e1c65b13-ba3d-4fe0-aa31-f38619f90ac0"
+              }
+            ],
+            "rights_id": "corpus-rights:a861649c874e8707810bab20bc49debcd9b77ca65394561223714d003b4cac3d",
+            "source_id": "corpus-source:735f9593d904053f8cf4e11cadca1c883bda6b390cd0c6c610af548b8a4eaeb0",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:6a5d0d948335837e226a811ede87d6824622312ed6f59b2adb133e9b9ca2f506",
+            "actual_bytes": 129577,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "48703cef-9e62-4796-8cdc-8498c61db8b3"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "e1c65b13-ba3d-4fe0-aa31-f38619f90ac0",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:e2d3fbf74a9d534fe407c4321b268706bd41c75e795480471b2f64ff9b9f4746",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:6a5d0d948335837e226a811ede87d6824622312ed6f59b2adb133e9b9ca2f506",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:0cb64d77f20aed4e2df8992382ae0cf257f04908ecb90bee4db6caa1c0092afc",
+            "source_work_id": "source-work:0e45374dff0fb335e2d2393874b14287b74b8782999e29cea3f4214e5e82174d",
+            "normalized_hash": "sha256:e487b188b79229c7d3d042494ad287226e6b76731ea9ccd39bdf1234b8931fda",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:0d948ce0666708018493a7f58a637f2e092cd3f089643b0a2795eeb8e5c3cdf4",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:02e1168b86179ddf02bd99d21b18a32c54bdbf14b1bb7a3f852ec05c38cde09a",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:0d948ce0666708018493a7f58a637f2e092cd3f089643b0a2795eeb8e5c3cdf4:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "03e84748-a1b7-479d-a2da-e90bd254b480",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:02e1168b86179ddf02bd99d21b18a32c54bdbf14b1bb7a3f852ec05c38cde09a:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-10",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-10:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-10.json",
+      "manifest_hash": "sha256:0d6b9a5cf168eae38e76bd02425670bf67ed1517aaedfafde71e5381580becbb",
+      "source_hash": "sha256:db93eca06f8417080e17c6196b8ea0148ac844425ca349b41844f239542bfba2",
+      "import_job_id": "source-import:74e55828-3cbb-4f41-8e4f-a8fdcc420f91",
+      "operation_id": "74e55828-3cbb-4f41-8e4f-a8fdcc420f91",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.4583836670208257,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-10-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "74e55828-3cbb-4f41-8e4f-a8fdcc420f91",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:859d58fe3353908327b7e867fdaea1cf5866b12203341b997662660054337168",
+                "operation_id": "0f44cbb6-3286-486b-8362-a6e5daa137d4"
+              }
+            ],
+            "rights_id": "corpus-rights:35057abd4611d5ac957514160c843623a67c278d75627ce5cf4b05b1f0f1f263",
+            "source_id": "corpus-source:95acb013cb96b2db8e45e93b7793c5d0d5e90718517fdea55e79dc0d09015ec8",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:fef9a5b07e8178b73a753b855eff9c0615aa534d706dc6a2edc9f055e8dc45e2",
+            "actual_bytes": 135630,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "37e158ee-366f-4594-acdf-8a20ebda115d"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "0f44cbb6-3286-486b-8362-a6e5daa137d4",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:859d58fe3353908327b7e867fdaea1cf5866b12203341b997662660054337168",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:fef9a5b07e8178b73a753b855eff9c0615aa534d706dc6a2edc9f055e8dc45e2",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:c831377e9df6554caa5fb9a2be40699a8c98a258abe34eb613476765097ce437",
+            "source_work_id": "source-work:304f1ab596cd6f853bc0e329eb89418c151595365f125adf4d48c7bc7367a41a",
+            "normalized_hash": "sha256:e091a650d389077301a432b78145361de85a55099e3c6ee462e54f741e82b4d8",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:f9c2b53d4727aee291c2e5508da02c6145914b191f692247194adecd8b39d5e3",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:f4b0137c12fe96ec772c37a13fcfbe1e77bf3ff8e039fe273d34b1ca984d84fe",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:f9c2b53d4727aee291c2e5508da02c6145914b191f692247194adecd8b39d5e3:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "8df93d10-6326-43a0-bd02-1c187dcd8063",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:f4b0137c12fe96ec772c37a13fcfbe1e77bf3ff8e039fe273d34b1ca984d84fe:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-11",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-11:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-11.json",
+      "manifest_hash": "sha256:8963309de0fc31e26711da7c67306ff4a0e7df131d8177fd45e3391149786ea7",
+      "source_hash": "sha256:1a8160cefb90f353cb20fe1ae8dead4718e69b42dfb3d0379d8028ad106c8656",
+      "import_job_id": "source-import:8f8b2d21-a070-4f08-ba96-05669c146601",
+      "operation_id": "8f8b2d21-a070-4f08-ba96-05669c146601",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.4754918340186123,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-11-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "8f8b2d21-a070-4f08-ba96-05669c146601",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:d6ff4f9f8cfc2ff0c0b6c69c7365efab0a3a7618fb8543f3f6bf10720405d012",
+                "operation_id": "e53a1cb8-2e66-4227-8287-e865308e3333"
+              }
+            ],
+            "rights_id": "corpus-rights:ca9d5b4393a73105340f9a5e9d7d698e32dd3c580f72bdb71175a97281d5cdf4",
+            "source_id": "corpus-source:53a273609c1db27affdc2a91daecf48de6dc1a265fca5292e963a64652b091ad",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:a7401d63e33339ba143f88ce8ad871667de5d8eff04a0a5269f5d8a6fa67dc42",
+            "actual_bytes": 129909,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "815ff943-4f53-4e16-a3a7-c798d81bf535"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "e53a1cb8-2e66-4227-8287-e865308e3333",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:d6ff4f9f8cfc2ff0c0b6c69c7365efab0a3a7618fb8543f3f6bf10720405d012",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:a7401d63e33339ba143f88ce8ad871667de5d8eff04a0a5269f5d8a6fa67dc42",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:511d682e68d2b98e48b8462e7c7572c96ca66647943b4e07eafbd51c5bba16fe",
+            "source_work_id": "source-work:4799cbf4501cc91dc867ba2c6220a8d5f3205c87a683e4603ddabeab7f76b387",
+            "normalized_hash": "sha256:c12cbe59bac5ee07b9b3c3416a5a19667077aeffbcad60467ca2d26ab8202894",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:78882644b5d1bde5f44b11b5504e97020f374c5d3ac519b8e4a98d2af7ef745c",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:7237485d12677d37f43fb79da14f21cdbada5d446f610a3d5a7620511e0147c1",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:78882644b5d1bde5f44b11b5504e97020f374c5d3ac519b8e4a98d2af7ef745c:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "241ac7fd-d958-4578-ac9b-cf1e4de60fdc",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:7237485d12677d37f43fb79da14f21cdbada5d446f610a3d5a7620511e0147c1:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-12",
+      "batch_id": "pilot-materials-02",
+      "run_key": "pilot-materials-02:hydraulics-12:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-12.json",
+      "manifest_hash": "sha256:291c2febaf6c733f4b475a32f0b817db7e0a0bd373f0fd68819da03db197d5e3",
+      "source_hash": "sha256:e84554701af0f2737ded142a17f8e6193bee5bbf44fc8a501c0c9f9ca85fec78",
+      "import_job_id": "source-import:58679569-1c39-4446-8ce9-6ab44b70dc00",
+      "operation_id": "58679569-1c39-4446-8ce9-6ab44b70dc00",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3144201659888495,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-12-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "58679569-1c39-4446-8ce9-6ab44b70dc00",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:25ceba4232992cb069bfa3de75963c3c94d72c1c776205bd3e4b5890cca1eaa5",
+                "operation_id": "79e47100-9f5c-4ba7-981f-4a2043a3fbb6"
+              }
+            ],
+            "rights_id": "corpus-rights:7d7fb526d2fe45d76bcfb87179fe2df078ccc90044919e8f652691c3836c6375",
+            "source_id": "corpus-source:ac4fe823099bf0f3a7e1e44f6359487bf71e5008015b95cc50dc3fc4e41fec07",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:91e0dec7885439c17de5fa13b2508ed84a92b8116abcf474060529ebba35817b",
+            "actual_bytes": 127162,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "936b8b63-fe07-4fa7-a780-33ef5cd79aaa"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "79e47100-9f5c-4ba7-981f-4a2043a3fbb6",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:25ceba4232992cb069bfa3de75963c3c94d72c1c776205bd3e4b5890cca1eaa5",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:91e0dec7885439c17de5fa13b2508ed84a92b8116abcf474060529ebba35817b",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+            "source_work_id": "source-work:389a6bdce564de7ceaa9f43216a4708506b2003a98abecc781ef82a34ab36b44",
+            "normalized_hash": "sha256:d921725e365fce236e6b1d16001dcfdfae2000647c5a347637962a3a1c99b652",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:3145eb6ced2d5d348a9e1cdb4960b4178af43b361f03edd0d970d163c10c64ab",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:f8b393ce1cc888e1b22c6e854c163f10d4abec355eff5cf63176991de67b1022",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:3145eb6ced2d5d348a9e1cdb4960b4178af43b361f03edd0d970d163c10c64ab:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "e9407dc0-1b02-4ea1-80dd-be5cb4eeb5e4",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:f8b393ce1cc888e1b22c6e854c163f10d4abec355eff5cf63176991de67b1022:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-13",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-13:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-13.json",
+      "manifest_hash": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282",
+      "source_hash": "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984",
+      "import_job_id": "source-import:c97ba847-2361-416d-bc99-b03cd624c9c5",
+      "operation_id": "c97ba847-2361-416d-bc99-b03cd624c9c5",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.317392666998785,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-13-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "c97ba847-2361-416d-bc99-b03cd624c9c5",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:e11e478e4624eed140a5c6974ac8403ebe0398544ebfe3b1415a50a2d744fd5a",
+                "operation_id": "51eb5df3-b2b6-41f5-91aa-ac595841ce0f"
+              }
+            ],
+            "rights_id": "corpus-rights:ae533171200687e98b36d25f01fc028cede7bd358e2759218ef7f0b08979a7d8",
+            "source_id": "corpus-source:e6247ce6871c0e1fb9886f60e2ea13c91ef1a0287faddca7eb20ce968d07d1a5",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:7f8e398fb91f7270b9d83232a6d4bbe10808caaaa377078b5518431cb8ec1520",
+            "actual_bytes": 130569,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "fd7329ef-3673-4675-b1e2-afd9fdab96b7"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "51eb5df3-b2b6-41f5-91aa-ac595841ce0f",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:e11e478e4624eed140a5c6974ac8403ebe0398544ebfe3b1415a50a2d744fd5a",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:7f8e398fb91f7270b9d83232a6d4bbe10808caaaa377078b5518431cb8ec1520",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:55f3e8c6122e47d9b298ab56c39f0d549acd53c7c268dbead1ab7550c9ed3aba",
+            "source_work_id": "source-work:61393f502653198707b1b9afe81e50c97bac8c937c94c05b350c040e5a466aba",
+            "normalized_hash": "sha256:31fc6e8160c7b88f67ebbd3909301a0c2c36e8569338bf0c99422823154694ba",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:97549d465275758beb4cb160605bc537fdf8f6cd460e76be21aa6947e4c4bca3",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:83c4317a42f165330893fec4548c81bbf4fd43581cae58dd8b211ca14cbecdea",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:97549d465275758beb4cb160605bc537fdf8f6cd460e76be21aa6947e4c4bca3:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "661650a5-55a7-4d85-8764-8e7f9d61e6f9",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:83c4317a42f165330893fec4548c81bbf4fd43581cae58dd8b211ca14cbecdea:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-14",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-14:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-14.json",
+      "manifest_hash": "sha256:d091af952c8c1dcf30ecba1af8338fe245b44f59821728e4e7ff27ceb776bf5c",
+      "source_hash": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+      "import_job_id": "source-import:049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+      "operation_id": "049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3364300829998683,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-14-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "049ae4f1-e86d-4c63-8471-fa7eedb4cabb",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+                "operation_id": "3cde7bb9-1c01-48af-8b53-bb8aa100abab"
+              }
+            ],
+            "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+            "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349",
+            "actual_bytes": 128390,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "aab02f86-cbb9-4741-806a-213a624d64ba"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "3cde7bb9-1c01-48af-8b53-bb8aa100abab",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+            "source_work_id": "source-work:9130836f57d37c78a626c9e34043b7221b454d0182176dd87f41f6b62330bf04",
+            "normalized_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:625dabe3ab5e54d0d5888fe08b697c73ece0c54606bbdb4e3338adeed9d83fb0",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:d9272c181f5aeab270f20fb8c925cbad3160b5b3023344c5980a0e15337671e8",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:625dabe3ab5e54d0d5888fe08b697c73ece0c54606bbdb4e3338adeed9d83fb0:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "028183e4-9921-417d-8ffa-1bb18a6d17da",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:d9272c181f5aeab270f20fb8c925cbad3160b5b3023344c5980a0e15337671e8:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-15",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-15:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-15.json",
+      "manifest_hash": "sha256:898ee0703d390e06f50db54b03ec08cefb569e7b74f12798c548b92cebd469de",
+      "source_hash": "sha256:13ce632f5417fe6adf3597a0b967436e9f3daaf8e29b2aeca96c3f6955b2cc8d",
+      "import_job_id": "source-import:81a683e8-91b5-41db-8cef-6f45788a8d45",
+      "operation_id": "81a683e8-91b5-41db-8cef-6f45788a8d45",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3500368339882698,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-15-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "81a683e8-91b5-41db-8cef-6f45788a8d45",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:5139ac9a2f0d0aece47abf698b5d68561ffea4f70eecd580ee49e4a57680899b",
+                "operation_id": "da107016-b1a6-4d3a-842e-9a45e58cfe7b"
+              }
+            ],
+            "rights_id": "corpus-rights:8c96241a6ec4573739bbd156b35c3455ebe7f95fff5f40a0d07c732128e8fce7",
+            "source_id": "corpus-source:055b4dd44aa7c19b1c96119d6568d7ac2ffc358106151533369bccb78c1885eb",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:00878382d52f54274844f9a43bbdaea25966b400dd0affa4858e425ebcee22b6",
+            "actual_bytes": 129139,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "1ccbfe44-2c05-4a24-9150-9f0c9966b30b"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "da107016-b1a6-4d3a-842e-9a45e58cfe7b",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:5139ac9a2f0d0aece47abf698b5d68561ffea4f70eecd580ee49e4a57680899b",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:00878382d52f54274844f9a43bbdaea25966b400dd0affa4858e425ebcee22b6",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:02a0124e2c3e9607d924d6df0c98183e4f6265e437b61a6eda50e8f1e35abeb9",
+            "source_work_id": "source-work:5b413f651eab17f7c13396168832d87be6677de40e8331d367c240d9e300c95d",
+            "normalized_hash": "sha256:63f2c2cc75f3ebc61c157eb1235fb5f6095e172386d6c102bf7756b5d3b22489",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:885c6ff83cef945d433aaca798fa09874f038d8ef1911f30fffba8d56e695e1c",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:bc82a2cfeda7e1bccf1a3d2d980584de0c630061277da9d79136713bfdbe4ebf",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:885c6ff83cef945d433aaca798fa09874f038d8ef1911f30fffba8d56e695e1c:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "c7b5aa88-0f78-4e5d-9775-013585a20c78",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:bc82a2cfeda7e1bccf1a3d2d980584de0c630061277da9d79136713bfdbe4ebf:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-16",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-16:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-16.json",
+      "manifest_hash": "sha256:3222d393c47f636124681bf6ddcf2c94e49091ef3ce6f87018f90b9d4aca7151",
+      "source_hash": "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c",
+      "import_job_id": "source-import:4501f386-a5ca-4900-b481-593f76ae0782",
+      "operation_id": "4501f386-a5ca-4900-b481-593f76ae0782",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.4014447499939706,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-16-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "4501f386-a5ca-4900-b481-593f76ae0782",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:b646935bb4aea147423035ca4f866ce3e0b38e9d7018d6a180544b1e1b50a008",
+                "operation_id": "26b21a9e-f31c-4919-b674-194588d1101f"
+              }
+            ],
+            "rights_id": "corpus-rights:c8d96f755a41aef1606e985696d113e9bd30c55077e001e7da783fd24243c788",
+            "source_id": "corpus-source:df72939b80e323c6a22c5ab33deec6e8d6ff7908ef52a9aab41836a47f3a0029",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:acf2674c4d571fd2a4067eb0320c7a12319c7792a47fb3698f33ba7690278c72",
+            "actual_bytes": 127385,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "ed30eb37-b9cd-4d66-8845-bcbb2bebccc1"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "26b21a9e-f31c-4919-b674-194588d1101f",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:b646935bb4aea147423035ca4f866ce3e0b38e9d7018d6a180544b1e1b50a008",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:acf2674c4d571fd2a4067eb0320c7a12319c7792a47fb3698f33ba7690278c72",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+            "source_work_id": "source-work:fa63f3fcd3e3d1b026813118b86186d1d09c4f61178ca6264aa3d323b21e0de5",
+            "normalized_hash": "sha256:e40515d97cb97120e1c2918acc58a74c368c3dd34a557466e84f04ea07e860cf",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:57ffbbed1dcdde36fa0696c3c0c125ccf1b217df669ed212c027adf4f552d030",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:ace92c053360e28010991700da23712540ea8cb3d815080c3efa07dbdd7cecb8",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:57ffbbed1dcdde36fa0696c3c0c125ccf1b217df669ed212c027adf4f552d030:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "eae99576-7288-4213-985e-bf51ff7d35b4",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:ace92c053360e28010991700da23712540ea8cb3d815080c3efa07dbdd7cecb8:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "hydraulics-17",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:hydraulics-17:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/hydraulics-17.json",
+      "manifest_hash": "sha256:d2140ad44f1de9de9408ecab5b2ecba18eefa024d6f842b33f54aca3c996577b",
+      "source_hash": "sha256:977d76df0013e7e271b1c663a91be66a66a0c84663b696ae139d76c4197f2868",
+      "import_job_id": "source-import:a7328b9b-712f-48a1-af62-b2c979775dee",
+      "operation_id": "a7328b9b-712f-48a1-af62-b2c979775dee",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 1.3280091250198893,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/hydraulics-17-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "a7328b9b-712f-48a1-af62-b2c979775dee",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:f82659e2695a116b913247375bf7f48181f407c2de9828ebfb6f824a9581b7d9",
+                "operation_id": "079884f4-caea-435e-a517-3db28982942d"
+              }
+            ],
+            "rights_id": "corpus-rights:391b61a10023930a72ddbf8d28b08cc5a6c0fa6670f54ee60cb6ba05ee0bcd5b",
+            "source_id": "corpus-source:46a25d3d1caea74973d567188dbe60b5fba441db42f311c4250c515545338cbc",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:d642dee2570bc89173b8052c8abe1faca09a5a1996191ba86b51c0883b026dde",
+            "actual_bytes": 128720,
+            "parsed_records": 1,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "7414608c-d607-4ad7-b5ec-412b94cc5f09"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "079884f4-caea-435e-a517-3db28982942d",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:f82659e2695a116b913247375bf7f48181f407c2de9828ebfb6f824a9581b7d9",
+            "unit_count": 1,
+            "chunk_count": 1,
+            "snapshot_id": "corpus-snapshot:d642dee2570bc89173b8052c8abe1faca09a5a1996191ba86b51c0883b026dde",
+            "completeness": "EXCERPT",
+            "processing_id": "corpus-processing:b91afb73fadbb26e62cc4b55b06782b842d0532fae865aaa6e5ec36bf704078a",
+            "source_work_id": "source-work:e2b80eac9e2be405333a94b2e2acd6a4dc789a6ec2808b5fbc9adcbd63bc9b27",
+            "normalized_hash": "sha256:ef70c8f34a45245ca75802a9e30cc41b4ed70c23e5a9df33c3e739d41ebd4ee8",
+            "structure_usable": true,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:6a0d7055e97d7f65f67fe113232fe351c33febbf51cb5dc0329d1359ae4e789a",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:74ec5503c51246b755068250887af9077d4b7484b30d0e3b553f2dbafc2d78ce",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:6a0d7055e97d7f65f67fe113232fe351c33febbf51cb5dc0329d1359ae4e789a:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "ecc4a1b6-1a70-4988-bd09-9b92cd2b8a4d",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:74ec5503c51246b755068250887af9077d4b7484b30d0e3b553f2dbafc2d78ce:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "railway-children",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:railway-children:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/railway-children.json",
+      "manifest_hash": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca",
+      "source_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+      "import_job_id": "source-import:c79e4030-a88f-41b8-ad80-89d2f723d184",
+      "operation_id": "c79e4030-a88f-41b8-ad80-89d2f723d184",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 3.5300271659798454,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/railway-children-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "c79e4030-a88f-41b8-ad80-89d2f723d184",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+                "operation_id": "52f424eb-bab7-4865-a9e7-919626337c04"
+              }
+            ],
+            "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+            "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3",
+            "actual_bytes": 363344,
+            "parsed_records": 16,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "18f26aa3-326e-409e-ad5e-03063639dda3"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "52f424eb-bab7-4865-a9e7-919626337c04",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+            "unit_count": 16,
+            "chunk_count": 38,
+            "snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3",
+            "completeness": "REVIEW_REQUIRED",
+            "processing_id": "corpus-processing:e48ee1359efae10153db4d90b5ea48ef15163aa400654e2782916b4df50583a7",
+            "source_work_id": "source-work:a0c4e180d965222b39f1d4ff26c5f8bf48dca75ba524e4d3c3cf1072778a9252",
+            "normalized_hash": "sha256:2fe1b5b35a6356abf874109e70c2c09b8f94118fd829db35307ea1fa42599b44",
+            "structure_usable": false,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:0d9b5645dc5efa07c855a81acf8fa0a95e43d5190b72331d209aa0c674620464",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:06fa586627fa91ba2c3246af5afa6662de0710cc11d9442e838a5d2ad05246f1",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:0d9b5645dc5efa07c855a81acf8fa0a95e43d5190b72331d209aa0c674620464:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "79741921-decd-421f-a448-2a6f2e2bb65a",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:06fa586627fa91ba2c3246af5afa6662de0710cc11d9442e838a5d2ad05246f1:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "thirty-nine-steps",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:thirty-nine-steps:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/thirty-nine-steps.json",
+      "manifest_hash": "sha256:1a1d4ef2392fdb6b04c07fadff252f6a604ff29dd1bd7ce547effe67b38b1d6f",
+      "source_hash": "sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f",
+      "import_job_id": "source-import:9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+      "operation_id": "9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 2.959859583002981,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/thirty-nine-steps-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "9b0ec93b-1031-4bd6-b113-2338d71a46ab",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:bf4bfcb22fb42fad9628f5f8b8a9563b8bd60039457bfc68370f7625b43f3533",
+                "operation_id": "a0e37fdd-228a-4988-afe4-b7df803c414b"
+              }
+            ],
+            "rights_id": "corpus-rights:89f9ba461d6a02cb931c875f16f2be3b9dad6cc7b5cafae1f839bd382ed54e4f",
+            "source_id": "corpus-source:4022d4c186df6090ba08cec97b5d4ea279b627416b0db62a9a8dc0bdf91f054f",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:fc0dd379027f366d41fbed6c5f11c156ec6c298ffaa032967281d1f56deb0143",
+            "actual_bytes": 242116,
+            "parsed_records": 12,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "090583d5-7c38-4136-b9dc-879684516000"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "a0e37fdd-228a-4988-afe4-b7df803c414b",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:bf4bfcb22fb42fad9628f5f8b8a9563b8bd60039457bfc68370f7625b43f3533",
+            "unit_count": 12,
+            "chunk_count": 27,
+            "snapshot_id": "corpus-snapshot:fc0dd379027f366d41fbed6c5f11c156ec6c298ffaa032967281d1f56deb0143",
+            "completeness": "REVIEW_REQUIRED",
+            "processing_id": "corpus-processing:4cd6aae2092680c63b07daca35dde7642190d7ee1a1ea06f031d0373e3b1f633",
+            "source_work_id": "source-work:d1bb611817396c5d05d60f9718ab22f5c8a6afdf239a013c4ffc9a19f5dbc458",
+            "normalized_hash": "sha256:8d3fd3a635922939adfc4d8827b09d737c8d3e0a7be09d56d01e63a183ffecff",
+            "structure_usable": false,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:4fffa2d0709116de70c125de506f1d5989557c35d26716a2eeac53bac98ac9a3",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:4c59d8b0d03da7acae708ac1b18d59a2b1dec6e3883cbedeb84e21070847749c",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:4fffa2d0709116de70c125de506f1d5989557c35d26716a2eeac53bac98ac9a3:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "b12efd03-cdd9-4b7c-b664-cd27cea98706",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:4c59d8b0d03da7acae708ac1b18d59a2b1dec6e3883cbedeb84e21070847749c:v1"
+          },
+          "failure": {}
+        }
+      ]
+    },
+    {
+      "id": "study-in-scarlet",
+      "batch_id": "pilot-materials-03",
+      "run_key": "pilot-materials-03:study-in-scarlet:v1",
+      "manifest": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/manifests/study-in-scarlet.json",
+      "manifest_hash": "sha256:07de355e5061c10ae7d72b93b9cdbcdbf3b41c594f4fd8a327ae2e25f864ae51",
+      "source_hash": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+      "import_job_id": "source-import:0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+      "operation_id": "0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+      "admission_replayed": false,
+      "status": "IMPORTED",
+      "effective_status": "IMPORTED",
+      "run_seconds": 3.0240257500263397,
+      "lineage_export": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/study-in-scarlet-lineage.json",
+      "stage_results": [
+        {
+          "operation_id": "0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+          "kind": "DISCOVERY",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "ACQUIRED",
+            "children": [
+              {
+                "status": "READY",
+                "edition_id": "corpus-edition:ca543999291227320e06079d5c5043a11c999c47beb26a6a0504e79ad7758df5",
+                "operation_id": "243a62da-ec85-4550-bf8a-fa325270ec9a"
+              }
+            ],
+            "rights_id": "corpus-rights:110839f6d78d04f2e78b6026c531a7cdfa2fe3bedabda2f6855e5b7fb797e2d0",
+            "source_id": "corpus-source:93b9c24ab88ac4f4775b1796a808a193b2a19f4d8b6ddae2517cffcad04b2e25",
+            "work_count": 1,
+            "snapshot_id": "corpus-snapshot:434e25ee4c259704f224a7fa4495d2e99652690b4122f35181ad87ae8c955030",
+            "actual_bytes": 268777,
+            "parsed_records": 16,
+            "verified_files": 1,
+            "analysis_called": false,
+            "acquisition_effect_id": "6d38e5b5-2e40-4e90-b217-4a4f3464708c"
+          },
+          "failure": {}
+        },
+        {
+          "operation_id": "243a62da-ec85-4550-bf8a-fa325270ec9a",
+          "kind": "WORK",
+          "status": "SUCCEEDED",
+          "result": {
+            "stage": "CONTENT_IMPORTED",
+            "edition_id": "corpus-edition:ca543999291227320e06079d5c5043a11c999c47beb26a6a0504e79ad7758df5",
+            "unit_count": 16,
+            "chunk_count": 29,
+            "snapshot_id": "corpus-snapshot:434e25ee4c259704f224a7fa4495d2e99652690b4122f35181ad87ae8c955030",
+            "completeness": "REVIEW_REQUIRED",
+            "processing_id": "corpus-processing:18c38de58b2bcb46a728c577c295061d5d763e0ac56c88afe1b3053a84ec81e4",
+            "source_work_id": "source-work:9e0b23d9f37ecf0add4233794abe35fe59e7a6f2e3ecf599ad00e4979c2008e6",
+            "normalized_hash": "sha256:72babd5f39561f8d04a9bd9f48d67eb5be13767e4f595237b6c6cc0360e7d38b",
+            "structure_usable": false,
+            "analysis_scheduled": false,
+            "knowledge_approved": false,
+            "source_document_id": "source-document:first-novel-pilot-20260912:d64b4e43b89b2e70f8270eba1ff575886fafc8604e9dda6941127b98c1336026",
+            "source_transform_id": "source-transform:first-novel-pilot-20260912:3c7c18b01aabd760a66618177135d4c8eab84d68a1063ae86aa3c029699c3db8",
+            "provider_model_calls": 0,
+            "source_asset_version_id": "source-document:first-novel-pilot-20260912:d64b4e43b89b2e70f8270eba1ff575886fafc8604e9dda6941127b98c1336026:v1",
+            "source_work_version_reused": false,
+            "invalidated_descendant_count": 0,
+            "source_work_asset_version_id": "8888b8d3-69ea-4335-8c60-f3c75ac97392",
+            "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:3c7c18b01aabd760a66618177135d4c8eab84d68a1063ae86aa3c029699c3db8:v1"
+          },
+          "failure": {}
+        }
+      ]
+    }
+  ],
+  "authority": "Native PostgreSQL query exports; no model analysis scheduled"
+}

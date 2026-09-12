@@ -1,0 +1,26 @@
+A
+flow control valve
+is a specialized hydraulic valve designed to
+regulate the speed of actuators
+by controlling fluid flow. It combines two key components in a single body:
+A
+needle valve
+, which will be used to
+restrict flow in one direction
+, controlling the actuator speed
+A
+check valve
+, which
+allows free flow in the opposite direction
+, preventing unnecessary restriction when the flow direction changes
+This design is especially useful in
+bi-directional actuator circuits
+, where different speeds are required for the forward and return strokes. For instance, a hydraulic cylinder may need to extend
+slowly
+while retracting
+quickly
+. By installing a flow control valve in the return line, fluid flow can be unrestricted in one direction, ensuring a
+rapid retraction
+, while controlled restriction in the opposite direction ensures a
+steady and controlled extension speed
+.

@@ -1,0 +1,21 @@
+{
+  "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+  "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+  "current": true,
+  "source_work_asset_version_id": "028183e4-9921-417d-8ffa-1bb18a6d17da",
+  "units": [
+    {
+      "source_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+      "source_unit_id": "source-unit:0c06bd0d7c201f4ddbdfb66f2ce1c305ebc6a409a5a2b7d0ae06df044fae9321",
+      "ordinal": 1,
+      "kind": "chapter",
+      "title": "14.1: Check Valves in Hydraulic Systems",
+      "normalized_content_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+      "characters": 2421,
+      "status": "AVAILABLE",
+      "volume_id": "",
+      "volume_scope": null
+    }
+  ],
+  "next_after": null
+}

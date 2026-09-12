@@ -1,0 +1,7 @@
+INFO:     Started server process [25624]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:51009 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62788 - "GET /product/source-imports?project_id=first-novel-pilot-20260912&limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62790 - "GET /product/mkaos/knowledge-candidates?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62791 - "GET /product/mkaos/knowledge-cards?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK

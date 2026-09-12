@@ -1,0 +1,110 @@
+{
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "tested_head_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "uncommitted_changes": true,
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "real_provider_execution": "NOT_RUN",
+  "human_review": "NOT_RUN",
+  "full_book_completion": "NOT_PROVEN",
+  "source_files": {
+    "scripts/creation_pilot.py": "sha256:66855ea28d36701ddf66e7a0c0e25a5dbe3c1af69f5323ada539b5882415f901",
+    "scripts/prepare_knowledge_closure.py": "sha256:7394a5bdceb9bd490598135920ba87d42992a99696be2f8364c5aeb37381f602",
+    "scripts/run_creation_synthesis.py": "sha256:142b20950d94542eb7b824672d64ff90476240c21fd6667bac07d5a2aa0d65c9",
+    "scripts/run_world_production_smoke.py": "sha256:2f90b71ddd441f00eb38baa8e0e05154c4bb3410b8b1dbbe4854cf0d82e19d00",
+    "src/novel_forge/modules/book_authority/queries.py": "sha256:594cdcc869eb857f774f5aeee310b029f0fa54bb78e4ea620cc61611d2785f45",
+    "src/novel_forge/api/routers/book_authority.py": "sha256:c289e9f94a1734cbb5ace6a2d2444378235ae3ed1980aea25a29361b020a826f",
+    "tests/unit/test_creation_pilot.py": "sha256:c0f19f163502ea853b47d77503948c80a0ea0b92ffa7c98fe817ad7feef48771",
+    "tests/unit/test_creation_export.py": "sha256:4be5ab3cf4d70d2d637d99de32b1cc7a272a227b9f53869a7c75c08d6d146cb9",
+    "tests/integration/operator_plan_change_support.py": "sha256:1117b18bcd019e1f6fc2e6e64529157061303f35f3a7ae51e76c74b1f59ac2c0",
+    "tests/integration/test_core_functional_loops_postgres.py": "sha256:69d0a8848d28145ff1af9fa13ddcce70ee6e589bbbed32c98f989b92a26eb235"
+  },
+  "tests": {
+    "unit": "......................................................                   [100%]\n54 passed in 0.64s",
+    "postgres": "..                                                                       [100%]\n2 passed in 277.30s (0:04:37)",
+    "ruff": "All checks passed!"
+  },
+  "native_exports": [
+    {
+      "path": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "book_target": 180,
+      "accepted_through_chapter": 6,
+      "book_state": "PAUSED",
+      "group_ids": [
+        "chapter-group-run:9c96c13d-43a0-4ee4-ab43-627dc38e8229",
+        "chapter-group-run:9863f47b-8ce3-477f-a2e6-d877a153b829"
+      ],
+      "group_ranges": [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "files": {
+        "accepted-chapter-1.txt": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+        "accepted-chapter-2.txt": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a",
+        "accepted-chapter-3.txt": "sha256:ccf8043073366d8e022c9696899499baf92f3c7871d5a2dde717283a5de1aac9",
+        "accepted-chapter-4.txt": "sha256:2acaef6b80b414f88933ffa8a31cb7279e519f4854e9bec8d6bb22d95b242de9",
+        "accepted-chapter-5.txt": "sha256:e934d68975500fbde85fbee9843eb5598a6ac87e64cf9c7b2cd654b866953a89",
+        "accepted-chapter-6.txt": "sha256:1ac16ebb182a404b826c0ca588535d3751fdab8b210f6c37afbb7795ec513e6b",
+        "book.json": "sha256:8127bbd722937017f85a161cffacba0ea0049c4a6b74f46b47a093e6ff408730",
+        "chapter-groups.json": "sha256:3e9313d5538199aa802de735f36675f0c5a7a39daa222bafe044e3372a7d218a",
+        "chapter-workspaces.json": "sha256:5cc0ebfe94f345fb1497ee234860c87f2fa49a6c106dde08d74f7578251eb357",
+        "knowledge-runtime-usage.json": "sha256:92608276ae5c4fd1c718278e5ec88a1039cff5984c1208736751d9d06c817689",
+        "pilot-events.json": "sha256:4828a34cf27f293b845205b9191620ad362d168fec6f36765cd1b3069f39015c",
+        "realities.json": "sha256:6536d93dd796460dc7e1cd8ae1d795b87e6a70ba1212931b6e6f573065997b05",
+        "workspace-export-status.json": "sha256:94a5a445531a74f3a4588134337e604bded738577cb8f81697fd8061d2cf080f"
+      }
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412",
+      "book_run_id": "book-run:103532dd-4777-427e-92fc-defd00487412",
+      "book_target": 6,
+      "accepted_through_chapter": 6,
+      "book_state": "READY",
+      "group_ids": [
+        "chapter-group-run:c800b82e-65c1-4f0b-a117-42d1407dffad",
+        "chapter-group-run:a7d2e7a7-65d4-4713-ad64-5cc500b1659a"
+      ],
+      "group_ranges": [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "files": {
+        "accepted-chapter-1.txt": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+        "accepted-chapter-2.txt": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a",
+        "accepted-chapter-3.txt": "sha256:ccf8043073366d8e022c9696899499baf92f3c7871d5a2dde717283a5de1aac9",
+        "accepted-chapter-4.txt": "sha256:2acaef6b80b414f88933ffa8a31cb7279e519f4854e9bec8d6bb22d95b242de9",
+        "accepted-chapter-5.txt": "sha256:e934d68975500fbde85fbee9843eb5598a6ac87e64cf9c7b2cd654b866953a89",
+        "accepted-chapter-6.txt": "sha256:1ac16ebb182a404b826c0ca588535d3751fdab8b210f6c37afbb7795ec513e6b",
+        "book.json": "sha256:243c36524c9b7aaf4d918dbf571f031b64f69257189921c3ca38deea024a8ecc",
+        "chapter-groups.json": "sha256:4d9c3a121a7720d3c527584f08703dfa4fc07f8022d79067821e31c8894e3030",
+        "chapter-workspaces.json": "sha256:404bdbb243899c9127a078777938427c2c1da26f2a3a20d4a15eb0c9655a2a7c",
+        "knowledge-runtime-usage.json": "sha256:9402b2698f756873a63ce120ada97226e24edf7443bc8a7b183313955b8c2302",
+        "pilot-events.json": "sha256:6d723a53ae2590154a9e3ee0eeb41f0dcb6880bdc6d1b25e2bad5ccaa9c8b8af",
+        "realities.json": "sha256:09c7b9b0a3cd740b18f5694f993f53409920773090a6e3d79ce4b75eac9a6cf2",
+        "workspace-export-status.json": "sha256:94a5a445531a74f3a4588134337e604bded738577cb8f81697fd8061d2cf080f"
+      }
+    }
+  ],
+  "post_pg_changes": {
+    "description": "Both CLI main entry points now preserve explicit isolated object storage configuration through IndustrialSettings.from_env; tested by interception before execution composition and dummy-only settings. PG drive/export implementation unchanged.",
+    "unit_log": "runner-settings-and-final-unit.log",
+    "results": "........................................................                 [100%]\n56 passed in 0.72s",
+    "source_files": {
+      "scripts/run_creation_synthesis.py": "sha256:b1ec812b8fadf0602f6a2d5a1066004f0dd811452d38b41a9c8800741dcb332f",
+      "scripts/run_world_production_smoke.py": "sha256:871172624232473d188d6f5e13bc5d3319bc963baf3070a9bbf0f426c9b611c0",
+      "tests/unit/test_creation_runner_settings.py": "sha256:ebe9ebf02e95f7223469ec9557f19fb29c0709fef18abb57f19b0988fbdebf96"
+    }
+  }
+}

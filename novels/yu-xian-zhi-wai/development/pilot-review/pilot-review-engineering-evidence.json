@@ -1,0 +1,84 @@
+{
+  "schema_version": "first-novel-pilot-initialization-review-evidence.v1",
+  "timestamp": "2026-09-12T10:31:35.466311+00:00",
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "head_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "evidence_ceiling": "ISOLATED_POSTGRES_AND_UNIT_CONTROL_FLOW_ONLY",
+  "real_provider_execution": "NOT_RUN",
+  "files": {
+    "scripts/creation_pilot.py": "sha256:66855ea28d36701ddf66e7a0c0e25a5dbe3c1af69f5323ada539b5882415f901",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py": "sha256:6ee7692998abe577a9eea40cadf6bae4abce151956693992a51364e8dfe56b97",
+    "scripts/run_world_production_smoke.py": "sha256:2f90b71ddd441f00eb38baa8e0e05154c4bb3410b8b1dbbe4854cf0d82e19d00",
+    "scripts/prepare_knowledge_closure.py": "sha256:7394a5bdceb9bd490598135920ba87d42992a99696be2f8364c5aeb37381f602"
+  },
+  "owned_changes": [
+    "scripts/creation_pilot.py imports + prepare_pilot_book existing ACTIVE project/primaryworkspace check",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py"
+  ],
+  "topology_decision": "Preserve native one-workspace-one-Book guard. Reuse existing Source project+primary workspace for A. Create independent B project/workspace through unchanged Project and Book commands. Parent freezes non-transferable project subcaps whose sum never exceeds actual authorization; no cross-project budget platform or new workspace command.",
+  "review_findings": [
+    {
+      "finding": "Pilot accepted6 inside Group5-7 falsely returned successful pilot completion",
+      "owner": "context_fidelity",
+      "red": "repros-red.log",
+      "green": "repros-green.log"
+    },
+    {
+      "finding": "Future intervention3 inside Group3-5 dispatched chapter4 before intervention",
+      "owner": "context_fidelity",
+      "red": "repros-red.log",
+      "green": "repros-green.log"
+    },
+    {
+      "finding": "Explicit partial evidence export still produced blind material",
+      "owner": "context_fidelity",
+      "red": "repros-red.log",
+      "green": "repros-green.log"
+    },
+    {
+      "finding": "Existing Source project initialization repeated project create and failed",
+      "owner": "knowledge_selection",
+      "red": "shared-project-red.log",
+      "green": "shared-project-final.log"
+    }
+  ],
+  "checks": [
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-accounting-test> PYTHONPATH=src:. .venv/bin/pytest -q tests/integration/test_creation_pilot_shared_project_postgres.py",
+      "result": "6 passed",
+      "log": "shared-project-final.log",
+      "coverage": [
+        "native existing Source document/chunk preserved",
+        "A initialize and same-key replay",
+        "project version/current asset/title and creation operation unchanged",
+        "existing HELD_UNKNOWN reservation exact JSON preserved; cap still rejects new reservation",
+        "same workspace second Book rejected by unchanged native guard",
+        "new B project Book initialization and replay; DENY_ALL; no Source copy",
+        "foreign workspace, inactive project, absent permission denied"
+      ]
+    },
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/pytest -q tests/unit/test_creation_pilot.py",
+      "result": "27 passed",
+      "log": "pilot-units.log"
+    },
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/pytest -q <evidence>/development/pilot-review/test_review_regressions.py",
+      "result": "3 passed",
+      "log": "repros-green.log"
+    },
+    {
+      "command": ".venv/bin/ruff check scripts/creation_pilot.py tests/integration/test_creation_pilot_shared_project_postgres.py",
+      "result": "PASS"
+    }
+  ],
+  "development_failures": [
+    "Original shared-project RED imported a unittest helper by class and inadvertently collected four existing fixture cases; final test imports its module and runs only six focused cases.",
+    "The expanded initial PG run had an incorrect expected cap error token and reused global fixture run keys; corrected the fixture to exact BUDGET_CALL_CAP_EXCEEDED and project-prefixed stable keys. No production assertions or guards weakened."
+  ],
+  "not_run": [
+    "full applicable repository matrix (root owned)",
+    "real initialization under approved Provider execution",
+    "human/editorial/creative benefit judgments"
+  ]
+}

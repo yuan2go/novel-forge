@@ -1,0 +1,30 @@
+{
+  "native_selected": {
+    "canary": {
+      "corpus_id": "corpus-curated-corpus:83a4dfe85ac31154388642108d5a4b21f3e9883125317a3578cad1fb7cd5f664",
+      "revision_id": "corpus-curated-revision:d7202836d9753903ba45e9f8ef3d4282696cdde7580f45c7c6cd92deee12bb10",
+      "selected_source_ids": [
+        "hydraulics-12"
+      ],
+      "source_processings": {
+        "hydraulics-12": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512"
+      }
+    },
+    "next": {
+      "corpus_id": "corpus-curated-corpus:4a0bdc51eb94f57878b1a54bb4b038943a530625a0f02c1514ac09c5d9dee94b",
+      "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+      "selected_source_ids": [
+        "hydraulics-14",
+        "hydraulics-16",
+        "railway-children"
+      ],
+      "source_processings": {
+        "hydraulics-14": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+        "hydraulics-16": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+        "railway-children": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf"
+      }
+    }
+  },
+  "analysis": "NOT_RUN",
+  "knowledge_approval": "NOT_RUN"
+}
