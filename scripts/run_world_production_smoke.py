@@ -477,7 +477,8 @@ def export(
     )
     if errors:
         raise RuntimeError(
-            "Partial workspace export; inspect workspace-export-status.json"
+            "Partial workspace export; inspect workspace-export-status.json: "
+            + json.dumps(errors, ensure_ascii=False)
         )
 
 
