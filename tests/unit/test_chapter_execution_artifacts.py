@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -83,6 +84,111 @@ def _accepted(asset_type: str, asset_id: str) -> dict:
             "narrative_obligation": [{"obligation_id": "promise-1", "status": "OPEN"}]
         },
     }
+
+
+def test_intent_context_preserves_obligations_without_observer_only_constraints() -> None:
+    from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
+    from novel_forge.modules.chapter_authority.provider_views import (
+        build_provider_context_view,
+        build_provider_task_view,
+    )
+
+    plan = {**_plan(), "premise": "A public promise has a private cost.", "beats": ["choice"]}
+    plan["knowledge_boundaries"].append(
+        {"layer": "CHARACTER_KNOWLEDGE", "character_id": "protagonist", "fact_id": "observer", "status": "UNKNOWN"}
+    )
+    plan["scene_plan"][0]["accessible_knowledge"] = ["cost"]
+    state = _accepted("story_state_snapshot", "state-v4")
+    public_obligations = [
+        {
+            "source_event_id": f"event:promise:{index}",
+            "state": {
+                "obligation_id": f"promise:{index}",
+                "status": "OPEN",
+                "due_chapter": 5,
+                "expected_payoff": "Preserve the public promise in full. " * (80 if index == 12 else 1),
+            },
+        }
+        for index in range(13)
+    ]
+    private_requirement = {
+        "requirement_id": "PRIVATE_OBSERVER_RULE_ID",
+        "state_kind": "world_state",
+        "entity_key": "council-inquiry",
+        "field": "phase",
+        "operator": "EQUALS",
+        "value": 2,
+    }
+    internal_obligation = {
+        "source_event_id": "event:preparation",
+        "state": {
+            "obligation_id": "causal-debt:verify-records",
+            "status": "OPEN",
+            "due_chapter": 5,
+            "current_development": "The gathered records still need verification.",
+            "fact_origin": {"kind": "GOVERNED_PREPARATION"},
+            "world_transition": {"action": "PRIVATE_PLANNED_CAUSAL_HYPOTHESIS"},
+            "causal_requirement": {"payload_json": json.dumps(private_requirement)},
+            "expected_payoff": private_requirement,
+        },
+    }
+    state["current_state"]["narrative_obligation"] = [
+        *public_obligations,
+        internal_obligation,
+    ]
+    intent = build_chapter_execution_intent(
+        project_id="project-1",
+        operation_id="operation-intent",
+        chapter_plan_asset_version_id="chapter-plan-v5",
+        chapter_plan_content_hash="sha256:" + "a" * 64,
+        chapter_plan=plan,
+        accepted_inputs=(state, _accepted("canon_snapshot", "canon-v4")),
+    )
+    frozen_intent = deepcopy(intent)
+    context = build_context_bundle(
+        plan=plan,
+        plan_asset_version_id="chapter-plan-v5",
+        plan_content_hash="sha256:" + "a" * 64,
+        project_id="project-1",
+        created_by_operation_id="context-operation",
+        execution_intent=intent,
+        execution_intent_asset_version_id="intent-v5",
+    )
+    segment = next(
+        item for item in context["context_segments"]
+        if item["asset_type"] == "chapter_execution_intent"
+    )
+    projected = json.loads(segment["safe_summary"])
+    assert projected["active_obligations"][:13] == public_obligations
+    retained = projected["active_obligations"][13]
+    assert retained["source_event_id"] == internal_obligation["source_event_id"]
+    assert retained["state"]["obligation_id"] == "causal-debt:verify-records"
+    assert retained["state"]["due_chapter"] == 5
+    assert retained["state"]["current_development"] == internal_obligation["state"]["current_development"]
+    assert projected["chapter_mission"] == intent["chapter_mission"]
+    assert projected["scene_plans"] == intent["scene_plans"]
+    assert projected["source_chapter_plan"] == intent["source_chapter_plan"]
+    assert projected["intent_fingerprint"] == intent["intent_fingerprint"]
+    assert segment["asset_version_id"] == "intent-v5"
+    assert intent == frozen_intent
+    assert "PRIVATE_OBSERVER_RULE_ID" not in segment["safe_summary"]
+    assert "PRIVATE_PLANNED_CAUSAL_HYPOTHESIS" not in segment["safe_summary"]
+    for stage in ("draft", "review", "revision", "rereview"):
+        view = build_provider_context_view(stage, context, {})
+        assert "PRIVATE_OBSERVER_RULE_ID" not in json.dumps(view), stage
+    observer = build_provider_task_view(
+        "canon_extraction",
+        {
+            "execution_expectations": {
+                "world_observation_constraints": {
+                    "contract_version": "world-observer-constraints.v1",
+                    "role": "ACTUAL_OBSERVER",
+                    "transitions": [{"transition_id": "verify-records", "requirements": [private_requirement]}],
+                }
+            }
+        },
+    )
+    assert observer["execution_expectations"]["world_observation_constraints"]["transitions"][0]["requirements"] == [private_requirement]
 
 
 def test_intent_locks_plan_scene_children_and_immediate_accepted_boundary() -> None:

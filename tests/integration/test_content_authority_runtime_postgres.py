@@ -1303,6 +1303,27 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "campaign_contract_identity": campaign_identity,
             },
         )
+        directive = "Change the future rescue route while retaining accepted history and water cost."
+        proposed_change = self.run_op(
+            "planning.change_request.author",
+            payload={"content": {
+                "book_id": book_id,
+                "target_plan_version_id": f"{self.project_id}:future-group:v1",
+                "accepted_through_chapter": 3,
+                "affected_scope": "CHAPTER_GROUP",
+                "directive": directive,
+                "preserved_invariants": ["Accepted chapters 1–3 and the water cost"],
+                "safe_summary": directive,
+                "structured_facts": [],
+            }},
+        )
+        change = self.read_content(proposed_change["asset_version_id"])
+        self.assertEqual(change["book_id"], book_id)
+        self.assertEqual(change["accepted_through_chapter"], 3)
+        self.assertEqual(change["directive"], directive)
+        self.assertEqual(change["authority_boundary"], "FUTURE_PLAN_PROPOSAL_ONLY")
+        self.assertFalse(change["direct_plan_mutation_allowed"])
+        self.assertFalse(change["canon_mutation_allowed"])
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(

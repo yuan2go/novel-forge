@@ -38,6 +38,7 @@ from novel_forge.modules.chapter_authority.execution_artifacts import (
 )
 
 from novel_forge.modules.canon_graph.background import world_observation_constraints
+from novel_forge.modules.narrative_state.information import disclosed_fact_projection
 
 
 def build_chapter_plan(
@@ -332,6 +333,11 @@ def build_context_bundle(
             if asset_type == "retrieval_result"
             else {key: value for key, value in content.items() if key != "execution_evidence"}
         )
+        if asset_type == "chapter_execution_intent":
+            rendered_content["active_obligations"] = [
+                disclosed_fact_projection(item)
+                for item in content.get("active_obligations") or ()
+            ]
         rendered = json.dumps(
             rendered_content,
             ensure_ascii=False,
