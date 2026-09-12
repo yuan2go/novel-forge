@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `030f350293f5fdb1ef633f1e90471188321c75f1`
+Reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
 Baseline implementation identity:
-`sha256:76dd1182c6fcee8f093f2d59bb796617512312fed322925340f653cbe6b6b749`
+`sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-12",
+  "reviewed_on": "2026-09-13",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "030f350293f5fdb1ef633f1e90471188321c75f1",
-    "implementation_tree_sha": "sha256:76dd1182c6fcee8f093f2d59bb796617512312fed322925340f653cbe6b6b749"
+    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
+    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -137,6 +137,9 @@ Baseline implementation identity:
   ]
 }
 -->
+
+Current implementation review (2026-09-13): The changed storage scope appends only the experiment-budget policy owner and immutable reservation-proof trigger. Frozen runner input bytes are validated before parsing, without changing accepted memory, Context ownership, Digest, retention, GC or cutover semantics. The remaining decisions and PR-B through PR-E work remain outstanding. No real Provider or independent editorial evidence is added by this review.
+
 
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen
 replay contract, eligibility decisions and Provider admission accounting. Revision-bound

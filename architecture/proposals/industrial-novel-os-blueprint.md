@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `81ec8e55bcdf8be87fc07f92c5773de8135fd029`
-Baseline implementation identity: `sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4338b2bef11b7fe58966081413f`
+Current-reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
+Baseline implementation identity: `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-12",
+  "reviewed_on": "2026-09-13",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "81ec8e55bcdf8be87fc07f92c5773de8135fd029",
-    "implementation_tree_sha": "sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4338b2bef11b7fe58966081413f"
+    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
+    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -190,6 +190,9 @@ Baseline implementation identity: `sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4
   "remaining_work": []
 }
 -->
+
+Current implementation review (2026-09-13): The changed budget and storage seams reuse Command Kernel reservations and versioned runtime policies for bounded creative experiments. They add no narrative Authority, trajectory layer, literary judgment or automatic project approval. The seven remaining architecture decisions are unchanged. No real Provider or independent editorial evidence is added by this review.
+
 
 The retained scope is the seven unresolved decisions below. Typed Chapter Mission and
 Scene Architecture, immutable Foundation bindings, versioned execution/reader policy,

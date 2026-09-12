@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `81ec8e55bcdf8be87fc07f92c5773de8135fd029`
+Reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
 Baseline implementation identity:
-`sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4338b2bef11b7fe58966081413f`
+`sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-12",
+  "reviewed_on": "2026-09-13",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "81ec8e55bcdf8be87fc07f92c5773de8135fd029",
-    "implementation_tree_sha": "sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4338b2bef11b7fe58966081413f"
+    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
+    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -101,6 +101,9 @@ Baseline implementation identity:
   ]
 }
 -->
+
+Current implementation review (2026-09-13): The changed Source and Provider budget seams now bind fixed experiment allocations, cumulative phase grants, curated target-Book use and retry receipts. This does not run or qualify the proposed four-arm classical-corpus experiment; G3/G4 remain outstanding. The Rain pilot authorization is separate from this proposal. No real Provider or independent editorial evidence is added by this review.
+
 
 ## 1. Decision and proof boundary
 
