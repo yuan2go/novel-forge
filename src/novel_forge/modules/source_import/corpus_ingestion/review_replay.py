@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.corpus import corpus_hash
@@ -8,21 +9,22 @@ from novel_forge.modules.source_authority.corpus import corpus_hash
 
 def source_evidence_key(evidence: dict[str, Any]) -> str:
     locator = evidence["locator"]
+    fields = (
+        "path", "container_path", "record", "href", "original_byte_offset",
+        "original_byte_end", "extracted_unicode_start", "extracted_unicode_end",
+    )
+    if (
+        isinstance(locator.get("original_byte_offset"), int)
+        and isinstance(locator.get("original_byte_end"), int)
+        and 0 <= locator["original_byte_offset"] < locator["original_byte_end"]
+    ):
+        fields = tuple(key for key in fields if key != "record")
     return corpus_hash(
         {
             "content_hash": evidence["content_hash"],
             "locator": {
                 k: locator.get(k)
-                for k in (
-                    "path",
-                    "container_path",
-                    "record",
-                    "href",
-                    "original_byte_offset",
-                    "original_byte_end",
-                    "extracted_unicode_start",
-                    "extracted_unicode_end",
-                )
+                for k in fields
             },
         }
     )
@@ -172,6 +174,14 @@ def carry_review(
                         "excluded_unit_ids": [u["chapter_id"] for u in excluded],
                     }
                 )
+            elif replacements := _non_body_partition(old, document):
+                resolutions.append({
+                    "issue_id": old["issue_id"],
+                    "resolution": "RESEGMENTED_EXACT_SOURCE",
+                    "evidence": old["evidence"],
+                    "replacement_issue_ids": replacements,
+                    "blocking_non_body_review_retained": True,
+                })
             elif _epub_volume_repair(old, document):
                 resolutions.append(
                     {
@@ -210,6 +220,41 @@ def carry_review(
         assessment["coverage"] = "REVIEW_REQUIRED"
     elif assessment["coverage"] == "REVIEW_REQUIRED":
         assessment["coverage"] = "COMPLETE" if assessment["toc_matches"] else "UNKNOWN"
+
+
+def _non_body_partition(finding: dict[str, Any], document: dict[str, Any]) -> list[str]:
+    if finding["code"] != "NON_BODY_UNIT" or not finding["evidence"]:
+        return []
+    replacements = []
+    for evidence in finding["evidence"]:
+        locator = evidence["locator"]
+        start, end = locator.get("original_byte_offset"), locator.get("original_byte_end")
+        if not isinstance(start, int) or not isinstance(end, int) or not 0 <= start < end:
+            return []
+        rows = []
+        for row in document["units"]:
+            position = row["source_locator"]
+            left, right = position.get("original_byte_offset"), position.get("original_byte_end")
+            if (all(position.get(key) == locator.get(key) for key in ("path", "container_path", "href"))
+                    and isinstance(left, int) and isinstance(right, int)
+                    and start <= left < right <= end):
+                rows.append(row)
+        rows.sort(key=lambda row: row["source_locator"]["original_byte_offset"])
+        if (len(rows) < 2 or rows[0]["source_locator"]["original_byte_offset"] != start
+                or rows[-1]["source_locator"]["original_byte_end"] != end
+                or any(a["source_locator"]["original_byte_end"] != b["source_locator"]["original_byte_offset"]
+                       for a, b in zip(rows, rows[1:]))
+                or any(row.get("unit_kind") not in {"AUTHOR_NOTE", "VOLUME"} for row in rows)
+                or "sha256:" + hashlib.sha256("".join(row["text"] for row in rows).encode()).hexdigest() != evidence["content_hash"]):
+            return []
+        notes = {row["chapter_id"] for row in rows if row["unit_kind"] == "AUTHOR_NOTE"}
+        findings = [item for item in document["integrity"]["issues"]
+                    if item["code"] == "NON_BODY_UNIT" and item["blocking"]
+                    and {e["unit_id"] for e in item["evidence"]} <= notes]
+        if not notes or {e["unit_id"] for item in findings for e in item["evidence"]} != notes:
+            return []
+        replacements.extend(item["issue_id"] for item in findings)
+    return sorted(set(replacements))
 
 
 def _epub_volume_repair(finding: dict[str, Any], document: dict[str, Any]) -> bool:

@@ -1164,6 +1164,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except (KernelError, ValueError, RuntimeError) as exc:
             raise _http_error(exc) from exc
 
+    @router.get("/runs/{book_run_id}/chapter-groups")
+    def chapter_group_lineage(book_run_id: str, offset: int = 0, limit: int = 100) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).query.chapter_group_execution_lineage(
+                project_id=book["project_id"], book_run_id=book_run_id, offset=offset, limit=limit,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
     @router.get("/runs/{book_run_id}/corrective-actions")
     def corrective_actions(
         book_run_id: str,

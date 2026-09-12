@@ -389,6 +389,10 @@ def require_curated_operation_current(
     availability = curated_availability(repository, project, selected)
     if len(selected) != 1 or any(not r["available"] for r in availability):
         raise KernelError("CURATED_PROVIDER_INPUT_STALE", str(availability))
+    from .consumption import require_curated_consumption
+    intent = binding.get("requested_manifest", {})
+    require_curated_consumption(repository, project, frozen, selected,
+                                intended_use=intent.get("intended_use", "SOURCE_ANALYSIS"), target_book_id=intent.get("target_book_id", ""))
     return binding["budget"]
 
 

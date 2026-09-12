@@ -70,3 +70,86 @@ def test_non_reasoning_route_is_preserved_and_revoked_qualification_blocks_conte
     assert _context_eligible_card(card, {"usage_scope": "PRODUCTION"})
     card["runtime_qualification_current"] = False
     assert not _context_eligible_card(card, {"usage_scope": "PRODUCTION"})
+
+
+def entitlement_cost():
+    from novel_forge.modules.production_execution.backends import CodexAccountEntitlementSnapshot
+    snapshot = CodexAccountEntitlementSnapshot(
+        authorization_ref="authorization:source-bounded-fixture",
+        account_identity_ref="account:source-fixture", cli_version="fixture-cli-v1",
+        executable_sha256="sha256:" + "a" * 64, configuration_ref="config:source-fixture",
+    )
+    return {"availability": "UNAVAILABLE", "measurement": "UNKNOWN", "model": "fixture-model",
+            "currency": "UNKNOWN", "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "reason": "monetary_cost_not_observable", "authorization_ref": snapshot.authorization_ref,
+            "entitlement_snapshot_hash": snapshot.snapshot_hash,
+            "entitlement_snapshot": snapshot.to_dict(), "provider_billed": "UNKNOWN"}
+
+
+def live_payload(cost):
+    return {
+        "schema_version": "d0-live-qualification-evidence.v1", "release_sha": "a" * 40,
+        "implementation_identity": "sha256:" + "b" * 64, "source_operation_id": "source:fixture",
+        "external_effect_id": "effect:fixture", "request_object_ref": "s3://fixture/request",
+        "response_object_ref": "s3://fixture/response", "auth_profile_ref": "auth:fixture",
+        "provider": "codex-cli", "backend_id": "codex-cli", "model": "fixture-model",
+        "model_version": "fixture-model", "route_snapshot_id": "route:fixture",
+        "route_snapshot_hash": "sha256:" + "c" * 64, "prompt_version": "prompt:v1",
+        "prompt_hash": "sha256:" + "d" * 64, "instruction_version": "instruction:v1",
+        "instruction_hash": "sha256:" + "e" * 64, "skill_version": "skill:v1",
+        "skill_hash": "sha256:" + "f" * 64, "request_hash": "sha256:" + "1" * 64,
+        "response_hash": "sha256:" + "2" * 64, "provider_execution_id": "execution:fixture",
+        "provider_request_identity": "receipt:fixture",
+        "usage": {"measurement": "MEASURED", "input_tokens": 11, "output_tokens": 3, "total_tokens": 14},
+        "cost": cost, "latency": {"duration_ms": 42},
+        "controlled_failure": {"checkpoint": "after_provider_response_before_effect_receipt", "failure_kind": "response_loss", "request_sent": True},
+        "recovery": {"external_state_was_ambiguous": True, "recovered_without_resend": True, "replayed": True},
+        "fixture_protocol_only": False, "real_model_call": True,
+    }
+
+
+def test_source_runtime_identity_binds_entitlement_account_and_never_invents_price():
+    from novel_forge.modules.provider_qualification.source_binding import source_runtime_identity
+    evidence = provider_receipt()
+    evidence["cost"] = entitlement_cost()
+    evidence["cost"]["model"] = evidence["model_id"]
+    identity = source_runtime_identity(evidence)
+    assert identity["accounting_scope"]["account_identity_ref"] == "account:source-fixture"
+    assert identity["accounting_scope"]["authorization_ref"] == "authorization:source-bounded-fixture"
+    assert "amount" not in evidence["cost"]
+    invalid = deepcopy(evidence)
+    invalid["cost"]["entitlement_snapshot"]["account_identity_ref"] = "another-account"
+    with pytest.raises(KernelError, match="SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
+        source_runtime_identity(invalid)
+
+
+def test_d0_entitlement_cost_unknown_is_valid_but_usage_unknown_and_fake_price_are_not():
+    from novel_forge.modules.provider_qualification import D0LiveQualificationEvidence
+    payload = live_payload(entitlement_cost())
+    evidence = D0LiveQualificationEvidence.from_mapping(payload)
+    assert evidence.cost["measurement"] == "UNKNOWN"
+    assert "amount" not in evidence.cost
+    for cost in ({**entitlement_cost(), "amount": "0"},
+                 {**entitlement_cost(), "pricing_snapshot_hash": "sha256:" + "4" * 64},
+                 {**entitlement_cost(), "authorization_ref": "different-authorization"}):
+        with pytest.raises(ValueError, match="entitlement"):
+            D0LiveQualificationEvidence.from_mapping(live_payload(cost))
+    with pytest.raises(ValueError, match="measured Provider usage"):
+        D0LiveQualificationEvidence.from_mapping({**payload, "usage": {"availability": "UNAVAILABLE", "measurement": "UNKNOWN"}})
+
+
+def test_source_qualification_entitlement_preview_requires_authorization_without_dispatch(monkeypatch):
+    from types import SimpleNamespace
+    from scripts import source_qualification
+    monkeypatch.setattr(source_qualification, "inspect_source_operation", lambda *args, **kwargs: {"status": "READY"})
+    monkeypatch.setenv("NOVEL_FORGE_CODEX_ACCOUNTING_MODE", "ACCOUNT_ENTITLEMENT")
+    result = source_qualification.run_source_qualification(
+        SimpleNamespace(database_url="unused", source_project_id="p", source_operation_id="op",
+                        source_capability="mkaos.knowledge.extract", execute=False),
+        root=None, commit_sha="a" * 40, implementation_identity="sha256:" + "b" * 64,
+    )
+    assert result["status"] == "READY_FOR_AUTHORIZATION"
+    assert result["required_route_contract"]["accounting_basis"] == "ACCOUNT_ENTITLEMENT"
+    assert result["required_route_contract"]["monetary_cost"] == "UNKNOWN"
+    assert result["required_route_contract"]["finite_project_call_and_token_limits_required"] is True
+    assert result["provider_request_sent"] is False

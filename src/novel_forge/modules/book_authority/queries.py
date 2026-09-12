@@ -996,6 +996,107 @@ class PostgresBookProductionQuery:
             row = uow.cursor.fetchone()
         return str(row[0]) if row is not None else ""
 
+    def chapter_group_execution_lineage(
+        self, *, project_id: str, book_run_id: str, offset: int = 0, limit: int = 100
+    ) -> dict[str, Any]:
+        if offset < 0 or not 1 <= limit <= 500:
+            raise ValueError("ChapterGroup lineage requires offset >= 0 and limit 1..500")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            uow.cursor.execute(
+                "SELECT book_id, accepted_through_chapter FROM authority_book_production WHERE project_id=%s AND book_run_id=%s",
+                [project_id, book_run_id],
+            )
+            book = uow.cursor.fetchone()
+            if book is None:
+                raise KernelError("BOOK_PRODUCTION_NOT_FOUND", "ChapterGroup lineage requires the exact owned Book Run")
+            uow.cursor.execute(
+                """
+                SELECT to_jsonb(g), version.content_hash, version.content,
+                       binding.project_id, binding.book_id, binding.parent_version_id
+                FROM authority_chapter_group_production AS g
+                JOIN authority_asset_version AS version ON version.asset_version_id=g.group_plan_version_id
+                LEFT JOIN story_plan_binding AS binding ON binding.asset_version_id=g.group_plan_version_id
+                  AND binding.contract_type='CHAPTER_GROUP'
+                WHERE g.project_id=%s AND g.book_run_id=%s
+                ORDER BY g.chapter_start, g.created_at, g.group_run_id
+                LIMIT %s OFFSET %s
+                """,
+                [project_id, book_run_id, limit + 1, offset],
+            )
+            rows = uow.cursor.fetchall()
+            groups = []
+            for raw, digest, content, owner, book_id, parent in rows[:limit]:
+                if (
+                    raw["book_id"] != book[0] or (owner, book_id) != (project_id, book[0])
+                    or parent != raw["volume_plan_version_id"]
+                    or content.get("chapter_range") != [raw["chapter_start"], raw["chapter_end"]]
+                    or canonical_hash(content) != digest
+                ):
+                    raise KernelError("BOOK_CHAPTER_GROUP_LINEAGE_INVALID", "Group Run scope and immutable plan binding differ")
+                uow.cursor.execute(
+                    """
+                    SELECT to_jsonb(child), to_jsonb(request), to_jsonb(acceptance)
+                    FROM authority_chapter_group_chapter AS child
+                    JOIN authority_book_chapter_request AS request USING(chapter_request_id)
+                    LEFT JOIN authority_book_chapter_acceptance AS acceptance USING(chapter_request_id)
+                    WHERE child.group_run_id=%s
+                    ORDER BY child.chapter_number
+                    """, [raw["group_run_id"]],
+                )
+                chapters = []
+                for child, request, accepted in uow.cursor.fetchall():
+                    number = child["chapter_number"]
+                    if (
+                        child["project_id"] != project_id
+                        or request["project_id"] != project_id or request["book_run_id"] != book_run_id
+                        or request["chapter_number"] != number
+                        or request["chapter_plan_version"] != child["chapter_plan_version_id"]
+                        or request["chapter_root_operation_id"] != child["child_root_operation_id"]
+                        or not raw["chapter_start"] <= number <= raw["chapter_end"]
+                    ):
+                        raise KernelError("BOOK_CHAPTER_GROUP_LINEAGE_INVALID", "Group child differs from its owned Chapter request")
+                    if child["status"] == "ACCEPTED" and (
+                        not accepted or accepted["status"] != "COMMITTED"
+                        or accepted["project_id"] != project_id or accepted["book_run_id"] != book_run_id
+                        or accepted["chapter_number"] != number or number > book[1]
+                        or accepted["acceptance_operation_id"] != child["acceptance_operation_id"]
+                        or accepted["delegation_id"] != child["child_delegation_id"]
+                        or accepted["chapter_outcome_asset_version_id"] != child["chapter_outcome_version_id"]
+                        or not accepted.get("story_state_asset_version_id") or not accepted.get("canon_snapshot_asset_version_id")
+                    ):
+                        raise KernelError("BOOK_CHAPTER_GROUP_LINEAGE_INVALID", "Accepted group child has no matching committed Book outcome")
+                    chapters.append({
+                        **{key: child[key] for key in (
+                            "chapter_number", "chapter_plan_version_id", "chapter_request_id", "child_root_operation_id",
+                            "status", "acceptance_operation_id", "chapter_outcome_version_id",
+                        )},
+                        "acceptance_id": (accepted or {}).get("acceptance_id"),
+                        "acceptance_status": (accepted or {}).get("status"),
+                        "story_state_asset_version_id": (accepted or {}).get("story_state_asset_version_id"),
+                        "canon_snapshot_asset_version_id": (accepted or {}).get("canon_snapshot_asset_version_id"),
+                    })
+                if raw["state"] == "COMPLETED" and (
+                    [item["chapter_number"] for item in chapters] != list(range(raw["chapter_start"], raw["chapter_end"] + 1))
+                    or any(item["status"] != "ACCEPTED" for item in chapters)
+                    or raw["accepted_through_chapter"] != raw["chapter_end"]
+                ):
+                    raise KernelError("BOOK_CHAPTER_GROUP_LINEAGE_INVALID", "Completed Group lacks complete accepted Chapter coverage")
+                groups.append({
+                    **{key: raw[key] for key in (
+                        "group_run_id", "project_id", "book_id", "book_run_id", "root_operation_id",
+                        "group_plan_version_id", "volume_plan_version_id", "state", "accepted_through_chapter",
+                    )},
+                    "chapter_range": [raw["chapter_start"], raw["chapter_end"]],
+                    "plan": {"asset_version_id": raw["group_plan_version_id"], "content_hash": digest, "content": content},
+                    "chapters": chapters,
+                })
+        return {
+            "contract_version": "book-chapter-group-lineage.v1", "project_id": project_id,
+            "book_id": book[0], "book_run_id": book_run_id, "accepted_through_chapter": book[1],
+            "groups": groups, "offset": offset, "limit": limit, "has_more": len(rows) > limit,
+        }
+
     def checkpointable_chapter_request_id(
         self, *, book_run_id: str, accepted_through_chapter: int
     ) -> str:

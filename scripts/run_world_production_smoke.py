@@ -156,11 +156,46 @@ def drive(
     maximum_ticks: int,
     deadline: float,
     stop_after_chapter: int = 0,
+    pilot_stop_after_chapter: int = 0,
 ):
     jobs = RuntimeJobAuthority(composition.authority.database_url)
     for _ in range(maximum_ticks):
         book = composition.authority.require(book_run_id)
-        if book["accepted_through_chapter"] >= book["target_chapter_count"]:
+        stop_cursor = pilot_stop_after_chapter or book["target_chapter_count"]
+        if book["accepted_through_chapter"] >= stop_cursor:
+            group_id = composition.query.active_chapter_group_run_id(
+                project_id=book["project_id"], book_run_id=book_run_id,
+            )
+            if group_id:
+                group = composition.chapter_groups.require(group_id)
+                if pilot_stop_after_chapter and book["accepted_through_chapter"] < group["chapter_end"]:
+                    if group["state"] == "CHAPTER_RUNNING":
+                        composition.chapter_groups.reconcile_and_accept(group_id, principal=composition.principal)
+                    if book["state"] != "PAUSED":
+                        composition.authority.pause(book_run_id, principal=composition.principal,
+                                                    reason="Frozen pilot cursor intersects an incomplete ChapterGroup")
+                    events({"kind": "PILOT_CURSOR_PARTIAL_GROUP_BLOCKED", "group_run_id": group_id,
+                            "accepted_through_chapter": book["accepted_through_chapter"],
+                            "chapter_range": [group["chapter_start"], group["chapter_end"]]})
+                    return "PILOT_CURSOR_PARTIAL_GROUP_BLOCKED"
+                if book["accepted_through_chapter"] >= group["chapter_end"]:
+                    if group["state"] == "CHAPTER_RUNNING":
+                        group = composition.chapter_groups.reconcile_and_accept(group_id, principal=composition.principal)
+                    if group["state"] == "CLOSURE_PENDING":
+                        group = composition.chapter_groups.close(group_id, principal=composition.principal)
+                        events({"kind": "ACCEPTED_GROUP_CLOSED", "group_run_id": group_id})
+                    if group["state"] != "COMPLETED":
+                        return "WAITING_ACCEPTED_GROUP_CLOSURE"
+            if pilot_stop_after_chapter:
+                if book["accepted_through_chapter"] != pilot_stop_after_chapter:
+                    return "PILOT_CURSOR_ALREADY_PASSED"
+                if book["state"] != "PAUSED":
+                    composition.authority.pause(book_run_id, principal=composition.principal,
+                                                reason=f"Frozen pilot accepted cursor {pilot_stop_after_chapter}; full Book target {book['target_chapter_count']} remains")
+                events({"kind": "PILOT_ACCEPTED_CURSOR_REACHED", "book_run_id": book_run_id,
+                        "accepted_through_chapter": book["accepted_through_chapter"],
+                        "target_chapter_count": book["target_chapter_count"], "full_book_completion": "NOT_PROVEN"})
+                return "PILOT_ACCEPTED_CURSOR_REACHED"
             return "ACCEPTED_TARGET_REACHED"
         future_group = (
             composition.query.active_plan_covering_chapter(
@@ -168,6 +203,17 @@ def drive(
                 contract_type="CHAPTER_GROUP", chapter_number=stop_after_chapter + 1,
             ) if stop_after_chapter and book["accepted_through_chapter"] >= stop_after_chapter else None
         )
+        if stop_after_chapter and book["accepted_through_chapter"] >= stop_after_chapter:
+            blocked = "FUTURE_PLAN_CHANGE_CURSOR_PASSED" if book["accepted_through_chapter"] > stop_after_chapter else (
+                "FUTURE_PLAN_CHANGE_SCOPE_BLOCKED" if future_group and future_group["content"]["chapter_range"][0] <= stop_after_chapter else ""
+            )
+            if blocked:
+                if book["state"] != "PAUSED":
+                    composition.authority.pause(book_run_id, principal=composition.principal,
+                                                reason="Frozen future-plan boundary requires an unexecuted plan scope")
+                events({"kind": blocked, "book_run_id": book_run_id,
+                        "accepted_through_chapter": book["accepted_through_chapter"], "future_plan": future_group})
+                return blocked
         if future_group and future_group["content"]["chapter_range"][0] > stop_after_chapter:
             if book["state"] != "PAUSED":
                 composition.authority.pause(
@@ -295,6 +341,17 @@ def export(
         json.dumps(book, default=str, indent=2) + "\n"
     )
     errors = []
+    try:
+        groups = composition.query.chapter_group_execution_lineage(
+            project_id=book["project_id"], book_run_id=book_run_id, limit=500,
+        )
+        (destination / "chapter-groups.json").write_text(
+            json.dumps(groups, default=str, ensure_ascii=False, indent=2) + "\n"
+        )
+        if groups["has_more"]:
+            raise RuntimeError("500 ChapterGroup bound reached; use the paged native lineage query")
+    except Exception as error:
+        errors.append({"stage": "chapter_groups", "error": redact_secret_text(str(error))})
     if include_artifacts:
         try:
             export_artifacts(
@@ -343,6 +400,24 @@ def export(
     (destination / "chapter-workspaces.json").write_text(
         json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n"
     )
+    try:
+        from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
+        usage = MkaosAuthorityQuery(composition.authority.database_url).list_runtime_usage(
+            project_id=book["project_id"], book_id=book["book_id"], limit=500,
+        )
+        context_ids = {item["asset_version_id"] for workspace in workspaces
+                       for item in workspace["artifacts"].get("inputs", [])
+                       if item.get("asset_type") == "context_bundle"}
+        (destination / "knowledge-runtime-usage.json").write_text(json.dumps({
+            "contract_version": "book-knowledge-runtime-export.v1", "project_id": book["project_id"],
+            "book_id": book["book_id"], "book_run_id": book_run_id,
+            "status": "PARTIAL" if len(usage) == 500 else "COMPLETE", "bounded": len(usage) == 500,
+            "records": [item for item in usage if item["context_bundle_asset_version_id"] in context_ids],
+        }, default=str, ensure_ascii=False, indent=2))
+        if len(usage) == 500:
+            raise RuntimeError("Knowledge delivery export reached its 500 receipt bound; retain PostgreSQL for inspection")
+    except Exception as error:
+        errors.append({"stage": "knowledge_runtime_usage", "error": redact_secret_text(str(error))})
     realities = []
     for number in range(1, min(500, book["accepted_through_chapter"]) + 1):
         try:
@@ -475,12 +550,7 @@ def main(argv=None):
             require_disposable_database_name(
                 connection.execute("SELECT current_database()").fetchone()[0]
             )
-        settings = IndustrialSettings(
-            root=str(args.root),
-            environment=values["NOVEL_FORGE_ENVIRONMENT"],
-            storage_authority="postgresql",
-            database_url=database_url,
-        )
+        settings = IndustrialSettings.from_env(values, root=args.root)
         execution = build_production_execution_composition(settings, env=values)
         if any(
             route.model_profile.model_provider == "scripted_provider_v2"

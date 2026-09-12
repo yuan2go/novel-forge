@@ -49,24 +49,42 @@ def source_runtime_identity(evidence: Mapping[str, Any]) -> dict[str, Any]:
     materialization["output_schema_hash"] = runtime.get("output_schema_hash")
     if not all(materialization.values()):
         raise _blocked("compiled Source instruction, Skill and output Schema identities are required")
-    return {"capability": request["capability"], "transport": handle["transport"],
+    from .accounting import accounting_scope_from_cost
+    try:
+        accounting_scope = accounting_scope_from_cost(evidence.get("cost") or {})
+        if accounting_scope and (evidence.get("cost") or {}).get("model") != evidence.get("model_id"):
+            raise ValueError("entitlement receipt model differs from the Source route")
+    except ValueError as exc:
+        raise _blocked(str(exc)) from exc
+    return {**({"accounting_scope": accounting_scope} if accounting_scope else {}),
+            "capability": request["capability"], "transport": handle["transport"],
             "route": {key: route[key] for key in _RUNTIME_FIELDS}, "materialization": materialization}
 
 
-def _receipt(cursor: Any, *, project_id: str, effect_id: str) -> dict[str, Any]:
+def _receipt_rows(cursor: Any, *, project_id: str, effect_ids: tuple[str, ...]) -> dict[str, list[Any]]:
+    if not effect_ids:
+        return {}
     cursor.execute(
         """
-        SELECT effect.status,effect.provider,effect.model_id,effect.capability,
+        SELECT effect.external_effect_id,effect.status,effect.provider,effect.model_id,effect.capability,
                effect.request_hash,effect.request_payload,effect.operation_id,
                operation.workspace_id,dispatch.status,receipt.external_receipt_id,receipt.payload
         FROM authority_external_effect effect
         JOIN authority_operation operation ON operation.operation_id=effect.operation_id
         JOIN authority_external_effect_dispatch dispatch ON dispatch.external_effect_id=effect.external_effect_id
         JOIN authority_external_receipt receipt ON receipt.dispatch_id=dispatch.dispatch_id
-        WHERE effect.external_effect_id=%s AND effect.project_id=%s
-        """, [effect_id, project_id],
+        WHERE effect.external_effect_id=ANY(%s::text[]) AND effect.project_id=%s
+        """, [list(effect_ids), project_id],
     )
-    rows = cursor.fetchall()
+    result: dict[str, list[Any]] = {}
+    for row in cursor.fetchall():
+        result.setdefault(str(row[0]), []).append(tuple(row[1:]))
+    return result
+
+
+def _receipt(cursor: Any, *, project_id: str, effect_id: str,
+             batch: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    rows = (_receipt_rows(cursor, project_id=project_id, effect_ids=(effect_id,)) if batch is None else batch["receipts"]).get(effect_id, [])
     if len(rows) != 1:
         raise _blocked("Source effect needs one immutable confirmed receipt")
     status, provider, model, capability, input_hash, payload, operation, workspace, dispatch_status, receipt_id, receipt = rows[0]
@@ -90,8 +108,50 @@ def _receipt(cursor: Any, *, project_id: str, effect_id: str) -> dict[str, Any]:
         or request.get("workspace_id") != str(workspace) or request_hash(payload) != input_hash
     ):
         raise _blocked("Source receipt does not match its final Authority effect and request")
+    from .accounting import require_entitlement_budget
+    try:
+        accounting_evidence = require_entitlement_budget(
+            cursor, project_id=project_id, effect_id=effect_id,
+            cost=evidence.get("cost") or {}, usage=evidence.get("usage") or {},
+            reservation_rows=None if batch is None else batch["budgets"].get(effect_id, []),
+        )
+    except ValueError as exc:
+        raise _blocked(str(exc)) from exc
     return {"evidence": evidence, "receipt_id": str(receipt_id), "request_hash": str(input_hash),
-            "response_hash": request_hash(evidence), "workspace_id": str(workspace)}
+            "response_hash": request_hash(evidence), "workspace_id": str(workspace),
+            "accounting_evidence": accounting_evidence}
+
+
+def _qualification_rows(cursor: Any, *, project_id: str, workspace_ids: tuple[str, ...],
+                        report_ids: tuple[str, ...] | None) -> list[Any]:
+    cursor.execute(
+            """
+            SELECT run.workspace_id,run.qualification_run_id,run.report_asset_version_id,version.content_hash,
+                   version.content,operation.command_payload,scenario.external_effect_id,
+                   scenario.request_hash,scenario.response_hash
+            FROM authority_d0_qualification_run run
+            JOIN authority_operation operation ON operation.operation_id=run.operation_id
+            JOIN authority_asset_version version ON version.asset_version_id=run.report_asset_version_id
+            JOIN authority_d0_scenario_evidence scenario ON scenario.qualification_run_id=run.qualification_run_id AND scenario.scenario='D0-F'
+            WHERE run.project_id=%s AND run.workspace_id=ANY(%s::text[]) AND run.fixture_protocol_only=FALSE
+              AND run.status='COMPLETED' AND run.decision='QUALIFIED' AND operation.status='SUCCEEDED'
+              AND version.lifecycle='ACTIVE' AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
+              AND (%s OR run.report_asset_version_id=ANY(%s::text[]))
+            ORDER BY run.created_at DESC,run.qualification_run_id
+            FOR SHARE OF run,version,operation
+            """, [project_id, list(workspace_ids), report_ids is None, list(report_ids or ())],
+    )
+    return cursor.fetchall()
+
+
+def _execution_rows(cursor: Any, *, project_id: str, asset_ids: tuple[str, ...]) -> dict[str, Any]:
+    cursor.execute(
+        """SELECT version.asset_version_id,version.content,version.content_hash,version.lifecycle,version.eligibility,version.governance
+           FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+           WHERE version.asset_version_id=ANY(%s::text[]) AND asset.project_id=%s AND asset.asset_type='model_call_log'
+           FOR SHARE OF version,asset""", [list(asset_ids), project_id],
+    )
+    return {str(row[0]): tuple(row[1:]) for row in cursor.fetchall()}
 
 
 def require_source_runtime_qualification(
@@ -99,17 +159,13 @@ def require_source_runtime_qualification(
     execution_asset_version_id: str, execution_content_hash: str,
     candidate_payload_hash: str, frozen: Mapping[str, Any] | None = None,
     approval_cursor: Any | None = None,
+    _batch: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     scope = AuthorityUnitOfWork(database_url) if approval_cursor is None else nullcontext(SimpleNamespace(cursor=approval_cursor))
     with scope as uow:
         cursor = uow.cursor
-        cursor.execute(
-            """SELECT version.content,version.content_hash,version.lifecycle,version.eligibility,version.governance
-               FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
-               WHERE version.asset_version_id=%s AND asset.project_id=%s AND asset.asset_type='model_call_log'""",
-            [execution_asset_version_id, project_id],
-        )
-        row = cursor.fetchone()
+        rows = _execution_rows(cursor, project_id=project_id, asset_ids=(execution_asset_version_id,)) if _batch is None else _batch["executions"]
+        row = rows.get(execution_asset_version_id)
         if row is None or tuple(row[2:]) != ("ACTIVE", "ELIGIBLE", "CLEAR") or row[1] != execution_content_hash or request_hash(row[0]) != row[1]:
             raise _blocked("exact active Source execution evidence is unavailable")
         execution = dict(row[0])
@@ -119,41 +175,28 @@ def require_source_runtime_qualification(
             raise _blocked("only real Source execution evidence can use Source runtime qualification")
         production = execution.get("production_execution") or {}
         effect_id = str((production.get("execution_request") or {}).get("external_effect_id") or "")
-        actual = _receipt(cursor, project_id=project_id, effect_id=effect_id)
+        actual = _receipt(cursor, project_id=project_id, effect_id=effect_id, batch=_batch)
         evidence = actual["evidence"]
         if (actual["workspace_id"] != workspace_id or evidence.get("production_execution") != production
                 or evidence.get("usage") != execution.get("usage") or evidence.get("cost") != execution.get("cost")
                 or request_hash(evidence.get("result") or {}) != candidate_payload_hash):
             raise _blocked("candidate or execution log differs from the confirmed Source output")
         identity = source_runtime_identity(evidence)
-        cursor.execute(
-            """
-            SELECT run.qualification_run_id,run.report_asset_version_id,version.content_hash,
-                   version.content,operation.command_payload,scenario.external_effect_id,
-                   scenario.request_hash,scenario.response_hash
-            FROM authority_d0_qualification_run run
-            JOIN authority_operation operation ON operation.operation_id=run.operation_id
-            JOIN authority_asset_version version ON version.asset_version_id=run.report_asset_version_id
-            JOIN authority_d0_scenario_evidence scenario ON scenario.qualification_run_id=run.qualification_run_id AND scenario.scenario='D0-F'
-            WHERE run.project_id=%s AND run.workspace_id=%s AND run.fixture_protocol_only=FALSE
-              AND run.status='COMPLETED' AND run.decision='QUALIFIED' AND operation.status='SUCCEEDED'
-              AND version.lifecycle='ACTIVE' AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
-              AND (%s='' OR run.report_asset_version_id=%s)
-            ORDER BY run.created_at DESC,run.qualification_run_id
-            FOR SHARE OF run,version,operation
-            """, [project_id, workspace_id, str((frozen or {}).get("report_asset_version_id") or ""),
-                    str((frozen or {}).get("report_asset_version_id") or "")],
-        )
-        qualification_rows = cursor.fetchall()
+        report_id = str((frozen or {}).get("report_asset_version_id") or "")
+        available = _qualification_rows(cursor, project_id=project_id, workspace_ids=(workspace_id,),
+                                        report_ids=(report_id,) if report_id else None) if _batch is None else _batch["qualifications"]
+        qualification_rows = [row[1:] for row in available if str(row[0]) == workspace_id and (not report_id or str(row[2]) == report_id)]
         for run_id, report_id, report_hash, report, command, qualified_effect_id, qualified_request_hash, qualified_response_hash in qualification_rows:
             config = (command or {}).get("config") or (command or {}).get("input", {}).get("config") or {}
             if (request_hash(report) != report_hash or config.get("capability") != identity["capability"] or report.get("schema_version") != "d0-provider-probe-report.v3"
+                    or (config.get("accounting_scope") or {}) != identity.get("accounting_scope", {})
+                    or (report.get("accounting_scope") or {}) != identity.get("accounting_scope", {})
                     or report.get("status") != "PASSED" or report.get("fixture_protocol_only") is not False
                     or report.get("gates") != {key: True for key in D0_GATE_NAMES}
                     or report.get("route_snapshot", {}).get("release_sha") != identity["route"]["release_sha"]):
                 continue
             try:
-                qualified = _receipt(cursor, project_id=project_id, effect_id=str(qualified_effect_id))
+                qualified = _receipt(cursor, project_id=project_id, effect_id=str(qualified_effect_id), batch=_batch)
                 qualified_identity = source_runtime_identity(qualified["evidence"])
             except KernelError:
                 continue
@@ -170,8 +213,50 @@ def require_source_runtime_qualification(
                 "source_request_hash": actual["request_hash"], "source_response_hash": actual["response_hash"],
                 "execution_asset_version_id": execution_asset_version_id, "execution_content_hash": execution_content_hash,
                 "scope": identity, "semantic_correctness_proven": False, "production_effect_proven": False,
+                **({"source_accounting_evidence": actual["accounting_evidence"],
+                    "qualification_accounting_evidence": qualified["accounting_evidence"]}
+                   if identity.get("accounting_scope") else {}),
             }
             if frozen is not None and dict(frozen) != binding:
                 raise _blocked("frozen runtime qualification identity changed; automatic replacement is forbidden")
             return binding
     raise _blocked("no current exact Source capability/profile qualification exists; run the scoped D0 Source scenario and retain manual knowledge review")
+
+
+def source_runtime_qualifications_current(database_url: str, *, project_id: str,
+                                        requests: Mapping[str, Mapping[str, Any]],
+                                        approval_cursor: Any | None = None) -> dict[str, bool]:
+    if not requests:
+        return {}
+    scope = AuthorityUnitOfWork(database_url) if approval_cursor is None else nullcontext(SimpleNamespace(cursor=approval_cursor))
+    with scope as uow:
+        valid = {key: value for key, value in requests.items() if isinstance(value.get("frozen"), Mapping)
+                 and all(value.get(field) for field in ("workspace_id", "execution_asset_version_id", "execution_content_hash", "candidate_payload_hash"))
+                 and value["frozen"].get("report_asset_version_id")}
+        result = {key: False for key in requests}
+        if not valid:
+            return result
+        cursor = uow.cursor
+        executions = _execution_rows(cursor, project_id=project_id,
+                                     asset_ids=tuple({str(value["execution_asset_version_id"]) for value in valid.values()}))
+        qualifications = _qualification_rows(cursor, project_id=project_id,
+                                             workspace_ids=tuple({str(value["workspace_id"]) for value in valid.values()}),
+                                             report_ids=tuple({str(value["frozen"]["report_asset_version_id"]) for value in valid.values()}))
+        effect_ids = {str(((row[0].get("production_execution") or {}).get("execution_request") or {}).get("external_effect_id") or "")
+                      for row in executions.values()}
+        effect_ids.update(str(row[6]) for row in qualifications)
+        effect_ids.discard("")
+        receipts = _receipt_rows(cursor, project_id=project_id, effect_ids=tuple(effect_ids))
+        from .accounting import entitlement_budget_rows
+        entitlement_effects = tuple(effect_id for effect_id, rows in receipts.items()
+                                    if any((((row[-1] or {}).get("evidence") or {}).get("cost") or {}).get("accounting_basis") == "ACCOUNT_ENTITLEMENT" for row in rows))
+        batch = {"executions": executions, "qualifications": qualifications, "receipts": receipts,
+                 "budgets": entitlement_budget_rows(cursor, project_id=project_id, effect_ids=entitlement_effects)}
+        for key, value in valid.items():
+            try:
+                require_source_runtime_qualification(database_url, project_id=project_id,
+                                                     approval_cursor=cursor, _batch=batch, **dict(value))
+                result[key] = True
+            except (KernelError, KeyError):
+                pass
+        return result

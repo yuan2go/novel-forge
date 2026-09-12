@@ -179,6 +179,8 @@ def preview_reading(
     max_calls=0,
     max_tokens=0,
     authorization_ref="",
+    intended_use="SOURCE_ANALYSIS",
+    target_book_id="",
 ):
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     from novel_forge.storage.source_authority_repositories import (
@@ -207,6 +209,9 @@ def preview_reading(
         availability = curated_availability(repository, project, selected)
         if any(not a["available"] for a in availability):
             raise KernelError("CURATED_MEMBERS_UNAVAILABLE", str(availability))
+        from novel_forge.modules.source_authority.consumption import require_curated_consumption
+        consumption = require_curated_consumption(repository, project, frozen, selected,
+                                                   intended_use=intended_use, target_book_id=target_book_id)
         from novel_forge.modules.command_kernel.budget_runtime import (
             unresolved_cli_outcomes,
         )
@@ -257,6 +262,8 @@ def preview_reading(
         with AuthorityUnitOfWork(database_url) as uow:
             repository = SourceAuthorityRepository(uow.cursor)
             repository.corpus_authorization_lock(project)
+            consumption = require_curated_consumption(repository, project, frozen, selected,
+                                                       intended_use=intended_use, target_book_id=target_book_id)
             current = repository.catalog_current(
                 "curated", project, frozen["corpus_id"]
             )
@@ -296,6 +303,7 @@ def preview_reading(
     )
     return {
         "revision_id": revision_id,
+        "consumption_admission": consumption,
         "reading_plans": plans,
         "target_chapters": chapters,
         "planned_calls_without_repairs": 2 * chapters + 4 * len(plans),

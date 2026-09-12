@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 from pydantic import Field, model_serializer
 from .reading_scope import ChapterReadingScope, freeze_reading_scope
@@ -35,12 +35,17 @@ class CuratedAnalysisRequest(CorpusContract):
     authorization_ref: Text
     intelligence_policy: dict[str, Any] = Field(default_factory=dict)
     reading_scopes: tuple[ChapterReadingScope, ...] = Field(default=(), max_length=100)
+    intended_use: Literal["SOURCE_ANALYSIS", "ABSTRACT_GENERATION"] = "SOURCE_ANALYSIS"
+    target_book_id: str = Field(default="", max_length=512)
 
     @model_serializer(mode="wrap")
     def preserve_frozen_request(self, handler: Any) -> dict:
         result = handler(self)
         if not self.reading_scopes:
             result.pop("reading_scopes", None)
+        if self.intended_use == "SOURCE_ANALYSIS" and not self.target_book_id:
+            result.pop("intended_use", None)
+            result.pop("target_book_id", None)
         return result
 
 
@@ -99,6 +104,9 @@ def admit_curated_analysis(
         availability = curated_availability(repository, request.project_id, selected)
         if any(not r["available"] for r in availability):
             raise KernelError("CURATED_MEMBERS_UNAVAILABLE", str(availability))
+        from novel_forge.modules.source_authority.consumption import require_curated_consumption
+        consumption = require_curated_consumption(repository, request.project_id, corpus, selected,
+                                                   intended_use=request.intended_use, target_book_id=request.target_book_id)
         reading_plans = (
             freeze_reading_scope(
                 repository, request.project_id, selected, request.reading_scopes
@@ -126,6 +134,8 @@ def admit_curated_analysis(
         if reading_plans:
             payload["reading_plans"] = reading_plans
             payload["budget"]["reading_runtime"] = runtime_identity
+        if request.intended_use == "ABSTRACT_GENERATION":
+            payload["consumption_admission"] = consumption
         operation = app._admit_child(
             definition_name=OPERATION,
             project_id=request.project_id,
@@ -193,6 +203,7 @@ def admit_curated_analysis(
         "selected_members": len(selected),
         "model_calls": 0,
         "budget": payload["budget"],
+        "consumption_admission": consumption,
         **({"reading_plans": reading_plans} if reading_plans else {}),
     }
 
@@ -351,3 +362,7 @@ def ensure_selection_active(
             "CURATED_SELECTION_CHANGED",
             "frozen history remains readable; new execution requires current explicit selection",
         )
+    from novel_forge.modules.source_authority.consumption import require_curated_consumption
+    intent = payload.get("requested_manifest", {})
+    require_curated_consumption(repository, project, frozen, payload["members"],
+                                intended_use=intent.get("intended_use", "SOURCE_ANALYSIS"), target_book_id=intent.get("target_book_id", ""))

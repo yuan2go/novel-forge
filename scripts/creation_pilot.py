@@ -11,6 +11,8 @@ from novel_forge.modules.project_authority.application import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
+from novel_forge.modules.project_authority.query import ProjectAuthorityQuery
+from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def freeze_routes(routes: Any) -> dict[str, Any]:
@@ -41,6 +43,16 @@ def freeze_routes(routes: Any) -> dict[str, Any]:
         }
         for key, route in sorted(routes.items())
     }
+
+
+def pilot_stop_cursor(policy: dict[str, Any], *, book_target: int) -> int:
+    cursor = policy.get("pilot_stop_after_chapter", 0)
+    if type(cursor) is not int or cursor < 0 or cursor >= book_target:
+        raise ValueError("pilot_stop_after_chapter must be a nonnegative integer below the full Book target")
+    intervention = (policy.get("future_plan_change") or {}).get("after_chapter", 0)
+    if cursor and intervention >= cursor:
+        raise ValueError("Future plan intervention must precede the frozen pilot stop cursor")
+    return cursor
 
 
 def verify_future_plan_change(*, composition: Any, book_run_id: str, proposal_id: str,
@@ -139,27 +151,39 @@ def prepare_pilot_book(
 ) -> dict[str, Any]:
     application = composition.formation.generation.book_design
     if initialize:
+        principal.require("book_design.authority.execute", project_id)
         if not workspace_id:
             raise ValueError(
                 "Initializing a pilot requires an explicit isolated workspace id"
             )
-        ProjectAuthorityApplication(
-            application.database_url,
-            application_build_id=application.application_build_id,
-            commit_sha=application.commit_sha,
-        ).execute(
-            ProjectAuthorityCommand(
-                definition_name="project_lifecycle.create",
-                project_id=project_id,
-                workspace_id=workspace_id,
-                actor_id=principal.principal_id,
-                idempotency_key=f"{run_key}:project",
-                trace_id=f"trace:{run_key}",
-                correlation_id=run_key,
-                payload={"title": title},
-            ),
-            principal=principal,
-        )
+        query = ProjectAuthorityQuery(application.database_url)
+        try:
+            project = query.require_project(project_id)
+        except KernelError as exc:
+            if exc.code != "PROJECT_NOT_FOUND":
+                raise
+            ProjectAuthorityApplication(
+                application.database_url,
+                application_build_id=application.application_build_id,
+                commit_sha=application.commit_sha,
+            ).execute(
+                ProjectAuthorityCommand(
+                    definition_name="project_lifecycle.create",
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    actor_id=principal.principal_id,
+                    idempotency_key=f"{run_key}:project",
+                    trace_id=f"trace:{run_key}",
+                    correlation_id=run_key,
+                    payload={"title": title},
+                ),
+                principal=principal,
+            )
+            project = query.require_project(project_id)
+        if project["status"] != "ACTIVE":
+            raise ValueError("Pilot initialization requires an ACTIVE project")
+        if project["workspace_id"] != workspace_id:
+            raise ValueError("Pilot initialization requires the existing project's primary workspace")
         application.execute(
             BookDesignAuthorityCommand(
                 definition_name="book.create",

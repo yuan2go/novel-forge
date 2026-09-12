@@ -609,10 +609,12 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         self.assertFalse(preview["provider_request_sent"])
         self.assertEqual(preview["required_route_contract"]["accounting_basis"], "PRICED")
         with patch.dict(os.environ, {"NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT"}):
-            blocked = run_source_qualification(preview_args, root=Path.cwd(), commit_sha="a" * 40,
+            entitlement_preview = run_source_qualification(preview_args, root=Path.cwd(), commit_sha="a" * 40,
                                                implementation_identity="sha256:" + "b" * 64)
-        self.assertEqual(blocked["status"], "BLOCKED_UNSUPPORTED_QUALIFICATION_MODE")
-        self.assertFalse(blocked["provider_request_sent"])
+        self.assertEqual(entitlement_preview["status"], "READY_FOR_AUTHORIZATION")
+        self.assertEqual(entitlement_preview["required_route_contract"]["accounting_basis"], "ACCOUNT_ENTITLEMENT")
+        self.assertEqual(entitlement_preview["required_route_contract"]["monetary_cost"], "UNKNOWN")
+        self.assertFalse(entitlement_preview["provider_request_sent"])
         self.assertTrue(inspect_source_operation(DATABASE_URL, project_id=self.project_id, operation_id=operation_id, capability=capability)["inject_response_loss"])
         with self.assertRaises(ValueError):
             inspect_source_operation(DATABASE_URL, project_id=self.project_id + ":other", operation_id=operation_id, capability=capability)

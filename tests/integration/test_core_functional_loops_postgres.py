@@ -1406,6 +1406,7 @@ def _activate_plan_chain(
                 "creative_reject_deleted",
                 "creative_reject_memo",
                 "operator_plan_change",
+                "long_novel_pilot",
             )
         ],
     ],
@@ -1538,7 +1539,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
     generic = _seed_inputs(
         project_id,
         book_id,
-        target_chapter_count=6 if autonomous_world == "operator_plan_change" else 3,
+        target_chapter_count=180 if autonomous_world == "long_novel_pilot" else 6 if autonomous_world == "operator_plan_change" else 3,
         world_foundation=approved_world,
         world_production_policy={"planning_window_chapters": 2}
         if autonomous_world == "preparation_expiry"
@@ -1654,9 +1655,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         if str(autonomous_world).startswith("creative_reject_"):
             from tests.integration.creative_grounding_support import CreativeGroundingTransport
             native_transport = CreativeGroundingTransport(negative=str(autonomous_world).removeprefix("creative_reject_"))
-        if autonomous_world == "operator_plan_change":
+        if autonomous_world in {"operator_plan_change", "long_novel_pilot"}:
             from tests.integration.operator_plan_change_support import OperatorPlanChangeTransport
-            native_transport = OperatorPlanChangeTransport()
+            native_transport = OperatorPlanChangeTransport(long_novel=autonomous_world == "long_novel_pilot")
         execution = build_production_execution_composition(
             settings,
             env=env,
@@ -1828,7 +1829,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         assert replay.opening_run_id == admission.opening_run_id
         assert replay.runtime_job_id == admission.runtime_job_id
         assert opening_run["lifecycle"] == "COMPLETE"
-        opening_search_count = 5 if autonomous_world == "operator_plan_change" else 4
+        opening_search_count = 6 if autonomous_world == "long_novel_pilot" else 5 if autonomous_world == "operator_plan_change" else 4
         assert len(opened["search_ids"]) == opening_search_count
         assert opened["book_design_version"] == generic["book_design"]
         assert snapshot.book_plan_version == opened["book_plan_version"]
@@ -1907,11 +1908,13 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             assert str(budget_binding[1]).startswith("budget-scope:")
             assert budget_binding[2] == 1
 
-        if autonomous_world == "operator_plan_change":
+        if autonomous_world in {"operator_plan_change", "long_novel_pilot"}:
             from tests.integration.operator_plan_change_support import execute_operator_plan_change_vertical
             native_evidence = execute_operator_plan_change_vertical(
                 composition=composition, chapter=chapter_application, snapshot=snapshot,
                 settings=settings, authority_api=authority_api,
+                book_target=180 if autonomous_world == "long_novel_pilot" else 6,
+                pilot_cursor=6 if autonomous_world == "long_novel_pilot" else 0,
             )
             test_case.user_properties.append(("operator_plan_change_vertical", json.dumps(native_evidence, sort_keys=True)))
             execution.close()

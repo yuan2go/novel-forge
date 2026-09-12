@@ -36,6 +36,7 @@ def add_corpus_parser(subparsers: Any) -> None:
         "action",
         choices=(
             "work",
+            "jobs",
             "curated",
             "resolve-work",
             "relate",
@@ -74,6 +75,8 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--work-id", default="")
     parser.add_argument("--corpus-id", default="")
     parser.add_argument("--revision-id", default="")
+    parser.add_argument("--intended-use", choices=("SOURCE_ANALYSIS", "ABSTRACT_GENERATION"), default="SOURCE_ANALYSIS")
+    parser.add_argument("--target-book-id", default="")
     parser.add_argument("--inspect-local-codex", action="store_true")
     parser.add_argument("--max-calls", type=int, default=0)
     parser.add_argument("--max-tokens", type=int, default=0)
@@ -90,6 +93,12 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--byte-start", type=int, default=0)
     parser.add_argument("--byte-end", type=int, default=0)
     parser.add_argument("--after", default="")
+    parser.add_argument("--status", default="")
+    parser.add_argument("--source-type", default="")
+    parser.add_argument(
+        "--run-key-prefix", default="",
+        help="literal run-key prefix for jobs from Corpus import/preview only",
+    )
     parser.add_argument("--historical", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--max-stages", type=int, default=100)
@@ -104,6 +113,7 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         if args.action
         in {
             "status",
+            "jobs",
             "results",
             "targets",
             "reading-preview",
@@ -121,6 +131,14 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
     )
     build, sha = authority_release_identity()
     query = SourceImportQuery(settings.database_url)
+    if args.action == "jobs":
+        rows = query.list_imports(
+            project_id=project, status=args.status, limit=args.limit,
+            after=args.after, source_type=args.source_type,
+            run_key_prefix=args.run_key_prefix, principal=principal,
+        )
+        return {"items": rows, "after": args.after,
+                "next_after": rows[-1]["import_job_id"] if len(rows) == args.limit else ""}
     if args.action == "evidence":
         from novel_forge.modules.source_import.corpus_ingestion.reading_scope import (
             read_evidence,
@@ -181,6 +199,8 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             max_calls=args.max_calls,
             max_tokens=args.max_tokens,
             authorization_ref=args.authorization_ref,
+            intended_use=args.intended_use,
+            target_book_id=args.target_book_id,
         )
     if args.action == "analyze":
         from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
@@ -203,6 +223,8 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
             authorization_ref=args.authorization_ref,
             intelligence_policy=policy,
             reading_scopes=reading_scopes,
+            intended_use=args.intended_use,
+            target_book_id=args.target_book_id,
         )
         app = SourceImportApplication(
             settings.database_url, application_build_id=build, commit_sha=sha
