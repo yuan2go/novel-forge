@@ -8,7 +8,8 @@ import pytest
 
 @pytest.mark.parametrize('runner_name', ['run_creation_synthesis', 'run_world_production_smoke'])
 def test_native_creation_runners_preserve_isolated_object_store_configuration(monkeypatch, tmp_path, runner_name):
-    from scripts import run_creation_synthesis, run_world_production_smoke
+    import scripts.run_creation_synthesis as run_creation_synthesis
+    import scripts.run_world_production_smoke as run_world_production_smoke
     runner = run_creation_synthesis if runner_name == 'run_creation_synthesis' else run_world_production_smoke
     values = {
         'NOVEL_FORGE_ENVIRONMENT': 'production',
