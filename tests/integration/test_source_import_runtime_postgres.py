@@ -576,6 +576,68 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             )
             self.assertGreater(cursor.fetchone()[0], 0)
 
+    def test_source_qualification_uses_existing_stage_and_fixture_cannot_qualify(self) -> None:
+        from argparse import Namespace
+        from scripts.source_qualification import SourceResponseLoss, inspect_source_operation, run_source_qualification
+        from scripts.run_real_provider_qualification import _effect_evidence
+        from novel_forge.modules.provider_qualification.source_binding import _receipt, source_runtime_identity
+
+        self._create_import("source-d0-scope", self.commit_a)
+        for _ in range(40):
+            pending = self._ready_operations("source.import.mkaos.extract")
+            if pending:
+                break
+            ready = self._ready_source_operation_ids()
+            assert ready, "native Source analysis must create an extraction stage"
+            self.scheduler.run_or_recover(operation_id=ready[0], project_id=self.project_id)
+        else:
+            self.fail("Source did not produce a bounded extraction stage")
+        operation_id = pending[0]
+        with transaction() as connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT command_payload#>>'{payload,capability}' FROM authority_operation WHERE operation_id=%s", [operation_id])
+            capability = cursor.fetchone()[0]
+        scope = inspect_source_operation(DATABASE_URL, project_id=self.project_id, operation_id=operation_id, capability=capability)
+        self.assertTrue(scope["inject_response_loss"])
+        preview_args = Namespace(database_url=DATABASE_URL, source_project_id=self.project_id,
+                                 source_operation_id=operation_id, source_capability=capability, execute=False)
+        preview = run_source_qualification(
+            preview_args,
+            root=Path.cwd(), commit_sha="a" * 40, implementation_identity="sha256:" + "b" * 64,
+        )
+        self.assertEqual(preview["result"], "NOT_RUN")
+        self.assertFalse(preview["provider_request_sent"])
+        self.assertEqual(preview["required_route_contract"]["accounting_basis"], "PRICED")
+        with patch.dict(os.environ, {"NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT"}):
+            blocked = run_source_qualification(preview_args, root=Path.cwd(), commit_sha="a" * 40,
+                                               implementation_identity="sha256:" + "b" * 64)
+        self.assertEqual(blocked["status"], "BLOCKED_UNSUPPORTED_QUALIFICATION_MODE")
+        self.assertFalse(blocked["provider_request_sent"])
+        self.assertTrue(inspect_source_operation(DATABASE_URL, project_id=self.project_id, operation_id=operation_id, capability=capability)["inject_response_loss"])
+        with self.assertRaises(ValueError):
+            inspect_source_operation(DATABASE_URL, project_id=self.project_id + ":other", operation_id=operation_id, capability=capability)
+        original = self.execution_port.transport
+        fault = SourceResponseLoss(original, enabled=True)
+        self.execution_port.transport = fault
+        with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+            self.scheduler.run_or_recover(operation_id=operation_id, project_id=self.project_id)
+        self.assertTrue(fault.triggered)
+        waiting = inspect_source_operation(DATABASE_URL, project_id=self.project_id, operation_id=operation_id, capability=capability)
+        self.assertFalse(waiting["inject_response_loss"])
+        self.execution_port.transport = original
+        recovered = self.scheduler.run_or_recover(operation_id=operation_id, project_id=self.project_id)
+        self.assertEqual(recovered["status"], "SUCCEEDED")
+        replay = self.scheduler.run_or_recover(operation_id=operation_id, project_id=self.project_id)
+        self.assertTrue(replay["replayed"])
+        _effect, evidence, dispatches, receipts, reconciliations, _ = _effect_evidence(DATABASE_URL, operation_id=operation_id, capability=capability)
+        self.assertEqual((dispatches, receipts, reconciliations), (1, 1, 1))
+        self.assertTrue(evidence["fixture_protocol_only"])
+        with transaction() as connection, self.assertRaisesRegex(KernelError, "SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
+            _receipt(connection.cursor(), project_id=self.project_id, effect_id=str(_effect["external_effect_id"]))
+        self.assertNotIn("capability_runtime", evidence)
+        with self.assertRaisesRegex(KernelError, "SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
+            source_runtime_identity(evidence)
+
     def test_unknown_effect_checkpoints_and_reconciles_without_redispatch(self) -> None:
         adapter = _UnknownOnceGitAdapter(self.git_adapter)
         self.application.git_adapter = adapter

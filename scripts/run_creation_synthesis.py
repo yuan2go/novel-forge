@@ -63,6 +63,8 @@ def main(argv=None):
     parser.add_argument("--brief", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--formation-policy", type=Path, required=True)
+    parser.add_argument("--knowledge-policy", type=Path, help="Exact approved Book knowledge access policy, frozen before Formation")
+    parser.add_argument("--plan-change-proposal-id", default="", help="Owned ACTIVE future change required to continue past the configured intervention")
     parser.add_argument("--project-id", required=True)
     parser.add_argument(
         "--book-id",
@@ -94,6 +96,13 @@ def main(argv=None):
     brief, policy, formation_policy = (
         json.loads(path.read_text())
         for path in (args.brief, args.policy, args.formation_policy)
+    )
+    from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
+    profile = policy["profiles"]["production_profile"]["content"]
+    if args.knowledge_policy:
+        profile["knowledge_access_policy"] = json.loads(args.knowledge_policy.read_text())
+    knowledge_access = resolve_book_knowledge_access_policy(
+        production_profile=profile, project_id=args.project_id, book_id=args.book_id,
     )
     validate_creative_brief(brief)
     StoryFormationInput(
@@ -127,6 +136,7 @@ def main(argv=None):
         "human_editorial": "NOT_RUN",
         "longitudinal": "NOT_PROVEN",
         "creation_policy": policy,
+        "knowledge_access_policy": knowledge_access,
         "formation_policy": formation_policy,
         "brief_input_hash": "sha256:"
         + hashlib.sha256(
@@ -265,6 +275,20 @@ def main(argv=None):
         record(
             {"kind": "PREPARATION", "book_id": args.book_id, "version": book["version"]}
         )
+        if policy.get("chapter_group_execution"):
+            from novel_forge.modules.chapter_group_authority.policy import (
+                ChapterGroupExecutionPolicy, PostgresChapterGroupExecutionPolicyAuthority,
+            )
+            group_policy = PostgresChapterGroupExecutionPolicyAuthority(
+                database_url, application_build_id=composition.authority.application_build_id,
+                commit_sha=composition.authority.commit_sha,
+            ).configure(
+                project_id=args.project_id, workspace_id=book["workspace_id"], principal=principal,
+                policy=ChapterGroupExecutionPolicy(**policy["chapter_group_execution"]),
+                idempotency_key=f"{args.run_key}:chapter-group-policy",
+                trace_id=f"trace:{args.run_key}", correlation_id=args.run_key,
+            )
+            record({"kind": "CHAPTER_GROUP_POLICY", "result": group_policy})
         deadline = time.monotonic() + args.max_seconds
         formation = composition.formation
         report["stage"] = "FORMATION"
@@ -455,6 +479,15 @@ def main(argv=None):
         book_run_id = admitted.book_run_id
         report["book_run_id"] = book_run_id
         report["stage"] = "CHAPTER_PRODUCTION"
+        intervention = policy.get("future_plan_change") or {}
+        stop_after = int(intervention.get("after_chapter") or 0)
+        if args.plan_change_proposal_id:
+            from scripts.creation_pilot import verify_future_plan_change
+            report["future_plan_change"] = verify_future_plan_change(
+                composition=composition, book_run_id=book_run_id,
+                proposal_id=args.plan_change_proposal_id, intervention=intervention,
+            )
+            stop_after = 0
         report["status"] = drive(
             composition=composition,
             chapter=chapter,
@@ -463,6 +496,7 @@ def main(argv=None):
             events=record,
             maximum_ticks=80,
             deadline=deadline,
+            stop_after_chapter=stop_after,
         )
         report["real_provider"] = "EXECUTED_SEE_RECEIPTS"
         return 0 if report["status"] == "ACCEPTED_TARGET_REACHED" else 2

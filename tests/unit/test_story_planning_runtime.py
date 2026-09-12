@@ -2146,7 +2146,7 @@ def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
             "content_hash": HASH,
             "content": {
                 "premise": "A governed premise",
-                "operational_noise": "x" * 80_000,
+                "soft_suggestions": ["x" * 80_000],
             },
         }
     ]
@@ -2176,6 +2176,11 @@ def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
     assert manifest["token_accounting"]["accepted_tokens"] > 0
     assert manifest["token_accounting"]["accepted_tokens"] < 16_000
     assert manifest["token_accounting"]["precision"] == "ESTIMATE_ONLY"
+    compiled = manifest["provider_context_view"]["compiled_view"]
+    assert compiled["segments"][0]["content"]["premise"] == "A governed premise"
+    assert manifest["projection_audit"]["loss_records"][0]["reason"] == "OPTIONAL_CONTEXT_BUDGET"
+    assert compiled["selection_explanation"]["loss_receipt"]["loss_record_count"] == 1
+    assert manifest["provider_context_view"]["source_input_hash"].startswith("sha256:")
     assert all(
         item["reason"] != "ACCEPTED_BOUNDARY_MISSING"
         for item in manifest["candidate_decisions"]

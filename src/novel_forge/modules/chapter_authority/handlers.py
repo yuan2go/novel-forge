@@ -183,6 +183,9 @@ class DeterministicFixtureChapterProvider:
     def structured_fixture_output(
         stage: str, payload: dict[str, Any], output: dict[str, Any]
     ) -> dict[str, Any]:
+        if stage in {"review", "rereview"}:
+            from .execution_gateway import _fixture_knowledge_checks
+            return {**output, "knowledge_checks": _fixture_knowledge_checks(payload)}
         if stage not in {"draft", "revision"}:
             return output
         text = str(output["text"])
@@ -1320,10 +1323,12 @@ class _ReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         context = request.require_input("context_bundle")
+        from novel_forge.modules.review.knowledge import knowledge_review_targets
+        targets = knowledge_review_targets(context.content)
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={"draft": draft.content},
+            payload={"draft": draft.content, "knowledge_review_targets": targets},
         )
         return _model_output(
             ChapterNode.REVIEW,
@@ -1334,6 +1339,7 @@ class _ReviewHandler:
                 provider_evidence=_provider_evidence(reviewed),
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
+                knowledge_targets=targets,
             ),
             request=request,
             generated=reviewed,
@@ -1417,6 +1423,8 @@ class _ReReviewHandler:
         review = request.require_input("review_report")
         revision = request.require_input("draft_version")
         context = request.require_input("context_bundle")
+        from novel_forge.modules.review.knowledge import knowledge_review_targets
+        targets = knowledge_review_targets(context.content)
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
@@ -1425,6 +1433,7 @@ class _ReReviewHandler:
                 "original_draft": draft.content,
                 "review": review.content,
                 "revision": revision.content,
+                "knowledge_review_targets": targets,
             },
         )
         return _model_output(
@@ -1439,6 +1448,7 @@ class _ReReviewHandler:
                 result=reviewed.output,
                 provider_evidence=_provider_evidence(reviewed),
                 project_id=request.project_id,
+                knowledge_targets=targets,
             ),
             request=request,
             generated=reviewed,

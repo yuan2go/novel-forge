@@ -52,6 +52,11 @@ def _authority_parser() -> argparse.ArgumentParser:
     detail = subparsers.add_parser("authority-chapter-detail", help="query one authoritative chapter run")
     detail.add_argument("--project-id", required=True)
     detail.add_argument("--root-operation-id", required=True)
+    trace = subparsers.add_parser("authority-knowledge-trace", help="trace one exact knowledge version through plans, requests and accepted prose")
+    trace.add_argument("--project-id", required=True)
+    trace.add_argument("--knowledge-card-asset-version-id", required=True)
+    trace.add_argument("--book-id", default="")
+    trace.add_argument("--limit", type=int, default=50)
     pack = subparsers.add_parser(
         "authority-capability-pack",
         help="manage PostgreSQL Capability Pack Authority lifecycle",
@@ -100,6 +105,18 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
             return 0
         if args.command == "serve-api":
             _serve_authority_api(settings, args.host, args.port, args.reload)
+            return 0
+        if args.command == "authority-knowledge-trace":
+            from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+            from novel_forge.modules.mkaos_authority.trace import require_knowledge_trace
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("mkaos.authority.query", args.project_id)
+            result = require_knowledge_trace(
+                settings.database_url, project_id=args.project_id,
+                knowledge_card_asset_version_id=args.knowledge_card_asset_version_id,
+                book_id=args.book_id, limit=args.limit,
+            )
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
             return 0
         if args.command == "authority-migrate":
             from novel_forge.storage.migrations import get_migration_status, run_migrations

@@ -582,6 +582,7 @@ def normalize_review_result(
     provider_evidence: dict[str, Any],
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
+    knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return evaluate_review_result(
         project_id=project_id,
@@ -591,6 +592,7 @@ def normalize_review_result(
         result=result,
         provider_evidence=provider_evidence,
         prose_text=str(draft.get("text") or ""),
+        knowledge_targets=knowledge_targets,
     )
 
 
@@ -628,6 +630,7 @@ def normalize_rereview_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
     project_id: str,
+    knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return evaluate_rereview_result(
         project_id=project_id,
@@ -639,6 +642,7 @@ def normalize_rereview_result(
         revision=revision,
         result=result,
         provider_evidence=provider_evidence,
+        knowledge_targets=knowledge_targets,
     )
 
 

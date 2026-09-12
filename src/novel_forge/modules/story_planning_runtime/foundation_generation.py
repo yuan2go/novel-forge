@@ -228,9 +228,23 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
-    validate_chapter_provider_output_against_schema(
-        generator, foundation_output_schema(generator), payload
-    )
+    schema = foundation_output_schema(generator)
+    translations = payload.get("knowledge_translations")
+    if translations:
+        from .knowledge_translation import add_translation_contract
+
+        if not isinstance(translations, list) or any(not isinstance(item, Mapping) for item in translations):
+            raise KernelError("PLANNING_KNOWLEDGE_TRANSLATION_INVALID", "Foundation translations must be structured decisions")
+        schema = add_translation_contract(schema, {
+            "policy_version": "knowledge-grounded-selection-v2",
+            "selected": [{
+                "knowledge_card_asset_version_id": item.get("knowledge_card_asset_version_id", ""),
+                "content_hash": item.get("content_hash", ""),
+            } for item in translations],
+        })
+    elif translations == []:
+        payload.pop("knowledge_translations")
+    validate_chapter_provider_output_against_schema(generator, schema, payload)
     if generator == "character.cast.generate":
         ids = [character["character_id"] for character in payload["characters"]]
         if len(ids) != len(set(ids)) or any(

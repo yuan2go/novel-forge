@@ -30,6 +30,24 @@ def _request(name: str, content: dict) -> AuthorityHandlerRequest:
     )
 
 
+def test_operator_future_change_is_native_content_evidence_only():
+    name = "planning.change_request.author"
+    content = {
+        "book_id": "book:input", "target_plan_version_id": "plan:future",
+        "directive": "Change the rescue route after the flood; retain the water cost.",
+        "preserved_invariants": ["Chapters 1–3 remain accepted history"],
+        "affected_scope": "CHAPTER_GROUP", "accepted_through_chapter": 3,
+        "safe_summary": "Future route change", "structured_facts": [],
+    }
+    output = CONTENT_CODECS[name].execute(_request(name, content))
+    assert output.asset_type == "replan_request"
+    assert output.content["directive"] == content["directive"]
+    assert output.content["authority_boundary"] == "FUTURE_PLAN_PROPOSAL_ONLY"
+    assert output.content["evidence_level"] == "OPERATOR_AUTHORED"
+    with pytest.raises(ValueError, match="boundary"):
+        CONTENT_CODECS[name].execute(_request(name, {**content, "accepted_through_chapter": -1}))
+
+
 @pytest.mark.parametrize(
     ("name", "asset_type", "specific"),
     (

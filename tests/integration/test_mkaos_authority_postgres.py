@@ -414,6 +414,23 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
         self.assertIn(("knowledge_pack", replacement["asset_version_id"]), invalidated)
         self.assertNotIn(("knowledge_pack", pack["asset_version_id"]), invalidated)
 
+    def test_fixture_source_card_retains_lineage_without_production_entitlement(self) -> None:
+        from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed, resolve_book_knowledge_access_policy
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from tests.integration.knowledge_closure_support import create_approved_cooling_card
+
+        source = create_approved_cooling_card(database_url=DATABASE_URL, project_id=self.project_id, workspace_id=self.workspace_id)
+        card = AuthorityAssetQuery(DATABASE_URL).require(project_id=self.project_id, asset_version_id=source["card_asset_version_id"])
+        self.assertTrue(card.content["source_policy"]["fixture_protocol_only"])
+        self.assertEqual(card.content["lineage"]["observation_asset_version_ids"], [source["observation_asset_version_id"]])
+        self.assertEqual(card.content["lineage"]["source_chunk_asset_version_ids"], [source["source_chunk_asset_version_id"]])
+        need = NarrativeIntelligenceNeed(scope="CHAPTER", target_stage="chapter_plan.generate", conflict_tags=("water", "cooling"))
+        selection = self.query.resolve_narrative_intelligence(project_id=self.project_id, need=need)
+        self.assertEqual(selection["selected"], [])
+        policy = resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": source["knowledge_access_policy"]}, project_id=self.project_id, book_id="fixture-book")
+        with self.assertRaisesRegex(KernelError, "PLANNING_KNOWLEDGE_ALLOWLIST_INELIGIBLE"):
+            self.query.resolve_narrative_intelligence(project_id=self.project_id, book_id="fixture-book", need=need, knowledge_access_policy=policy)
+
     def test_raw_source_field_and_cross_project_lineage_fail_closed(self) -> None:
         chunk_version_id = self._source_chunk_version()
         execution_version_id = self._insert_asset_version(

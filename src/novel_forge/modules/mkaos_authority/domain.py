@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field as dataclass_field
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -8,6 +8,7 @@ import re
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from .applicability import USAGE_ROLES, assess_applicability, validate_applicability_contract
 
 
 FORBIDDEN_SOURCE_KEYS = frozenset(
@@ -58,7 +59,7 @@ NARRATIVE_INTELLIGENCE_KINDS = frozenset(
     {"NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"}
 )
 NARRATIVE_INTELLIGENCE_SCOPES = frozenset({"STORY", "ARC", "CHAPTER", "SCENE"})
-NARRATIVE_INTELLIGENCE_POLICY_VERSION = "structured-narrative-intelligence-v1"
+NARRATIVE_INTELLIGENCE_POLICY_VERSION = "knowledge-grounded-selection-v2"
 BOOK_KNOWLEDGE_ACCESS_MODES = frozenset(
     {"PROJECT_DEFAULT", "ALLOW_ONLY", "DENY_ALL"}
 )
@@ -119,6 +120,8 @@ class NarrativeIntelligenceNeed:
     hard_constraints: tuple[str, ...] = ()
     recently_used_repetition_keys: tuple[str, ...] = ()
     semantic_families: tuple[str, ...] = ()
+    required_card_asset_version_ids: tuple[str, ...] = ()
+    condition_sources: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
         scope = self.scope.strip().upper()
@@ -137,8 +140,13 @@ class NarrativeIntelligenceNeed:
             "theme_tags",
             "hard_constraints",
             "recently_used_repetition_keys",
+            "required_card_asset_version_ids",
         ):
-            normalized = _bounded_terms(getattr(self, field), field)
+            normalized = (
+                tuple(sorted({str(item).strip() for item in self.hard_constraints if str(item).strip()}))
+                if field == "hard_constraints"
+                else _bounded_terms(getattr(self, field), field)
+            )
             object.__setattr__(self, field, normalized)
         families = tuple(
             sorted({str(item).strip().upper() for item in self.semantic_families})
@@ -154,7 +162,14 @@ class NarrativeIntelligenceNeed:
         return _canonical_hash(self.to_dict(include_digest=False))
 
     def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
-        payload = asdict(self)
+        payload = {
+            name: getattr(self, name) for name in self.__dataclass_fields__
+            if name != "condition_sources"
+        }
+        payload["condition_sources"] = {
+            role: {key: source.get(key, "") for key in ("asset_version_id", "content_hash")}
+            for role, source in self.condition_sources.items()
+        }
         for key, value in tuple(payload.items()):
             if isinstance(value, tuple):
                 payload[key] = list(value)
@@ -347,6 +362,10 @@ def validate_knowledge_candidate(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise KernelError("MKAOS_CANDIDATE_INVALID", "candidate must be an object")
     candidate = dict(payload)
+    if "applicability_contract" in candidate:
+        validate_applicability_contract(candidate["applicability_contract"])
+    if "usage_role" in candidate and candidate["usage_role"] not in USAGE_ROLES:
+        raise KernelError("MKAOS_CANDIDATE_INVALID", "knowledge usage_role is invalid")
     required_strings = (
         "concept_name",
         "discipline",
@@ -406,6 +425,9 @@ def select_narrative_intelligence(
     if limit < 1 or limit > 12:
         raise ValueError("Narrative Intelligence selection limit must be within 1..12")
     recent = {item.casefold() for item in need.recently_used_repetition_keys}
+    required_ids = set(need.required_card_asset_version_ids)
+    if len(required_ids) > limit:
+        raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_SCOPE_TOO_LARGE", "required inherited mechanisms exceed this planning scope; split the scope before generation")
     requested_tags = {
         "genre": {item.casefold() for item in need.genre_tags},
         "conflict": {item.casefold() for item in need.conflict_tags},
@@ -416,7 +438,7 @@ def select_narrative_intelligence(
         (*need.current_state_terms, *need.desired_transformation_terms)
     )
     ranked: list[dict[str, Any]] = []
-    rejected: list[dict[str, str]] = []
+    rejected: list[dict[str, Any]] = []
     seen_versions: set[str] = set()
     for card in cards:
         asset_version_id = str(card.get("asset_version_id") or "").strip()
@@ -444,17 +466,32 @@ def select_narrative_intelligence(
         if not isinstance(lineage, Mapping):
             lineage = {}
         normalized = _normalized_intelligence_content(abstract)
+        assessment = assess_applicability(
+            abstract, sources=need.condition_sources, hard_constraints=need.hard_constraints
+        )
+        if assessment["status"] == "REJECTED":
+            rejected.append({
+                "knowledge_card_asset_version_id": asset_version_id,
+                "content_hash": content_hash,
+                "reason": "KNOWLEDGE_APPLICABILITY_REJECTED",
+                "applicability_assessment": assessment,
+            })
+            continue
         repetition_key = normalized["repetition_key"]
-        if repetition_key.casefold() in recent:
+        if repetition_key.casefold() in recent and assessment["usage_role"] == "INSPIRATION" and asset_version_id not in required_ids:
             rejected.append(
                 {
                     "knowledge_card_asset_version_id": asset_version_id,
                     "reason": "RECENT_REPETITION_RISK",
+                    "applicability_assessment": assessment,
                 }
             )
             continue
         score = 0
         reasons: list[str] = []
+        if asset_version_id in required_ids:
+            score += 1
+            reasons.append("REQUIRED_BY_ACTIVE_PARENT_TRANSLATION")
         family = normalized["semantic_family"]
         explicit_family = "semantic_family" in abstract
         if not need.semantic_families:
@@ -488,6 +525,7 @@ def select_narrative_intelligence(
                 {
                     "knowledge_card_asset_version_id": asset_version_id,
                     "reason": "NO_STRUCTURED_MATCH",
+                    "applicability_assessment": assessment,
                 }
             )
             continue
@@ -508,11 +546,18 @@ def select_narrative_intelligence(
                 ),
                 "score": score,
                 "match_reasons": reasons,
+                "usage_role": assessment["usage_role"],
+                "applicability_assessment": assessment,
                 "selected_content": normalized,
             }
         )
+    unavailable = required_ids - {item["knowledge_card_asset_version_id"] for item in ranked}
+    if unavailable:
+        raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "inherited knowledge is revoked, excluded or conflicts with current inputs: " + ", ".join(sorted(unavailable)))
     ranked.sort(
         key=lambda item: (
+            0 if item["knowledge_card_asset_version_id"] in required_ids else 1,
+            {"APPLICABLE": 0, "CONDITIONAL": 1, "UNKNOWN": 2}[item["applicability_assessment"]["status"]],
             -int(item["score"]),
             str(item["knowledge_card_asset_version_id"]),
         )
@@ -525,6 +570,7 @@ def select_narrative_intelligence(
                     item["knowledge_card_asset_version_id"]
                 ),
                 "reason": "NARRATIVE_BANDWIDTH_LIMIT",
+                "applicability_assessment": item["applicability_assessment"],
             }
         )
     result: dict[str, Any] = {
@@ -741,6 +787,15 @@ def _normalized_intelligence_content(abstract: Mapping[str, Any]) -> dict[str, A
         "copyright_boundaries": _string_list(abstract.get("copyright_boundaries")),
         "selection_tags": normalized_tags,
         "repetition_key": repetition_key,
+        **{
+            key: abstract[key]
+            for key in (
+                "applicability_contract", "preconditions", "exceptions", "misuse_risks",
+                "epistemic_status", "evidence_class", "verification_basis", "usage_role",
+                "source_finding_codes",
+            )
+            if key in abstract
+        },
     }
 
 

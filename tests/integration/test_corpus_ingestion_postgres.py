@@ -2155,6 +2155,7 @@ def transport(stage, inputs):
   if invalid=='EMPTY' and 'review_target' not in inputs:
    return {'findings':[],'entities':[],'confidence':0.0,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Scripted empty findings with actual bounded input and accepting review; no semantic quality claim.'}
   if 'review_target' in inputs:
+   assert 'evidence_spans' in inputs['review_target'] and inputs['review_target']['execution_asset_version_id']
    if context['repair_round']==0:
     return {'decision':'REVISE','issues':[{'issue_id':'fixture-specificity','finding_code':'choice','category':'VAGUE_SUMMARY','severity':'BLOCKING','reason':'State the evidenced choice and cost, not a generic summary.','repair_goal':'Tie the statement to the action in the exact supplied span.','acceptance_condition':'The observation names the supported action and distinguishes unknown consequence.'}],'resolved_issue_ids':[],'preserve_requirements':['Keep the exact input boundary and uncertainty.'],'scope_limitations':'Scripted diagnostic, not an independent editorial review.'}
    if os.environ.get('SOURCE_READING_BAD_REVIEW'):
@@ -2167,7 +2168,8 @@ def transport(stage, inputs):
   segments=inputs.get('source_segments') or []
   evidence=[]
   if segments:
-   segment=segments[0];lines=segment['content'].splitlines(keepends=True);prefix=''.join(lines[:-1]);value=lines[-1]
+   target_chunks={r['source_chunk_asset_version_id'] for unit in context['unit_bindings'] if unit['role']=='TARGET' for r in unit['chunk_ranges']}
+   segment=next(s for s in segments if s['source_chunk_asset_version_id'] in target_chunks);lines=segment['content'].splitlines(keepends=True);prefix=''.join(lines[:-1]);value=lines[-1]
    evidence=[{'chunk_id':segment['source_chunk_asset_version_id'],'byte_start':len(prefix.encode()),'byte_end':len((prefix+value).encode()),'support_text':value}]
   return {'findings':[{'finding_code':'choice','statement':'The character makes a costly choice in this bounded source window; later consequences remain unknown.' if context['repair_round'] else 'A choice occurs.', 'dimension':context['dimensions'][0],'certainty':'SUPPORTED_INFERENCE','perspective':'ANALYST_INFERENCE','entity_ids':[],'caused_by':[],'causal_basis':'','details':{k:'UNKNOWN' for k in ('preconditions','action_or_change','choice','cost','outcome','information_basis','scope_boundary')},'supports':evidence,'input_observation_asset_version_ids':inputs.get('input_observation_asset_version_ids') or []}],'entities':[],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED','scope_limitations':'Only the provided units or lower observations; no external plot knowledge.'}
  return content_intelligence_fixture_response(stage,inputs)
@@ -2475,6 +2477,8 @@ sys.exit(main(sys.argv[1:]))
                     "max_chapters": 2,
                     "first_unit_version_id": versions[0],
                     "last_unit_version_id": versions[-1],
+                    "context_before": 1,
+                    "context_after": 1,
                     "max_repairs": 1,
                 }
             )
@@ -2651,6 +2655,10 @@ sys.exit(main(sys.argv[1:]))
         narrative = [stage["narrative"] for stage in stages if stage.get("narrative")]
         observed = [n for n in narrative if n["phase"] == "OBSERVE"]
         assert len({u for n in observed for u in n["coverage"]["target_units"]}) == 4
+        assert all(len(n["coverage"]["target_units"]) == 1 for n in observed)
+        assert all(len(n["coverage"]["supporting_units"]) == 1 for n in observed)
+        assert all({s["role"] for s in n["coverage"]["actual_text_inputs"]} == {"TARGET_TEXT", "SUPPORTING_CONTEXT"} for n in observed)
+        assert all(not n["coverage"]["allowed_context_not_read"] for n in observed)
         assert all(
             n["coverage"]["actual_text_inputs"]
             and not n["coverage"]["lower_observation_inputs"]

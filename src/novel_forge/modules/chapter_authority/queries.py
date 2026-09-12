@@ -393,6 +393,14 @@ class ChapterAuthorityQuery:
             except (KernelError, KeyError, TypeError, ValueError) as error:
                 workspace["accepted_manuscript"] = {"status": "EVIDENCE_INCOMPLETE_OR_CONFLICTING",
                     "error": outcome_error or {"code": getattr(error, "code", "EXPORT_CONTRACT_INVALID"), "message": str(error)}}
+        from novel_forge.modules.mkaos_authority.trace import workspace_knowledge_trace
+        try:
+            workspace["knowledge_trace"] = workspace_knowledge_trace(workspace)
+        except KernelError as error:
+            workspace["knowledge_trace"] = {
+                "status": "EVIDENCE_INCOMPLETE_OR_CONFLICTING", "code": error.code,
+                "message": str(error),
+            }
         return workspace
 
     def require_operation_control_state(

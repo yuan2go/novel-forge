@@ -40,6 +40,9 @@ LIST_FIELDS = frozenset({
     "knowledge_boundaries", "disclosures", "required_state_transitions", "scene_plan",
     "obligation_actions", "required_arc_contributions",
 })
+KNOWLEDGE_PLAN_FIELDS = (
+    "knowledge_translations", "knowledge_translation_policy_version",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,7 +186,8 @@ def normalize_authoritative_chapter_plan(
         normalized[field] = list(value) if field in LIST_FIELDS and isinstance(value, (list, tuple)) else (
             [] if field in LIST_FIELDS else value
         )
-    known = {"project_id", "chapter", "title", "premise", "objective", "beats", "scenes", "closing_hook", "schema_version", "contract_version", *PLAN_FIELDS}
+    normalized.update({key: content[key] for key in KNOWLEDGE_PLAN_FIELDS if key in content})
+    known = {"project_id", "chapter", "title", "premise", "objective", "beats", "scenes", "closing_hook", "schema_version", "contract_version", *PLAN_FIELDS, *KNOWLEDGE_PLAN_FIELDS}
     normalized["source_extensions"] = {
         key: value for key, value in content.items() if key not in known
     }
@@ -245,6 +249,7 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],
+        **{key: plan[key] for key in KNOWLEDGE_PLAN_FIELDS if key in plan},
     }
 
 

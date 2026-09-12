@@ -69,6 +69,7 @@ SEMANTIC_FIELDS = {
     "commitment_contract": "COMMITMENT_CONTRACT_CHANGED",
     "world_realization": "WORLD_REALIZATION_CHANGED",
     "character_realization": "CHARACTER_REALIZATION_CHANGED",
+    "knowledge_translations": "KNOWLEDGE_TRANSLATION_CHANGED",
 }
 
 HIGH_RISK_FIELDS = frozenset(
@@ -146,6 +147,7 @@ def classify_plan_change_risk(
         "setups",
         "payoffs",
         "knowledge_boundaries",
+        "knowledge_translations",
         "disclosures",
         "narrative_realization_slice",
         "narrative_event_chain",

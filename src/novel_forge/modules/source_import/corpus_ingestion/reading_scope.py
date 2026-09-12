@@ -32,12 +32,18 @@ class ChapterReadingScope(CorpusContract):
             "conflict",
             "emotion_curve",
             "world_rules",
+            "core_concept",
+            "credibility_rule",
+            "misuse_risk",
+            "review_check",
+            "assumption",
+            "source_reliability",
         ],
         ...,
     ] = Field(
         default=("causal_constraints", "character_choice_cost", "information_gap"),
         min_length=1,
-        max_length=9,
+        max_length=15,
     )
 
     @field_validator("dimensions")
@@ -201,7 +207,9 @@ def preview_reading(
         availability = curated_availability(repository, project, selected)
         if any(not a["available"] for a in availability):
             raise KernelError("CURATED_MEMBERS_UNAVAILABLE", str(availability))
-        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+        from novel_forge.modules.command_kernel.budget_runtime import (
+            unresolved_cli_outcomes,
+        )
 
         execution_blockers = unresolved_cli_outcomes(uow.cursor, project)
         plans = freeze_reading_scope(

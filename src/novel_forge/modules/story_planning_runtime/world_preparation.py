@@ -99,6 +99,7 @@ class PlanningWorldPreparation:
         operation_id: str,
         command: Any,
         execute_stage: Callable[[PlanningProviderStage], Any],
+        knowledge_selection: Mapping[str, Any] | None = None,
     ) -> Any:
         if command.repair_of_candidate_id:
             action = require_world_action(
@@ -180,19 +181,25 @@ class PlanningWorldPreparation:
             for item in source.get("preparation_sources", [])
         ]
         generation_document = self._read(command.project_id, f"{prefix}/generation")
+        knowledge_selection = dict(knowledge_selection or {})
+        from .knowledge_translation import add_translation_contract, validate_knowledge_translations
+
         if generation_document is None:
             task = self._task(source, source_ref, "WORLD_REASONER")
+            task["narrative_intelligence"] = knowledge_selection
             generated = execute_stage(
                 PlanningProviderStage(
                     "world_candidates.generate",
                     task,
-                    world_generation_schema(
+                    add_translation_contract(world_generation_schema(
                         policy,
                         audience_scoped=source["contract_version"]
                         == "world-preparation-source.v2",
-                    ),
+                    ), knowledge_selection),
                 )
             )
+            if knowledge_selection.get("policy_version") == "knowledge-grounded-selection-v2":
+                validate_knowledge_translations(generated.raw_output, knowledge_selection)
             generation_document = self._store(
                 command,
                 operation_id,
@@ -202,6 +209,7 @@ class PlanningWorldPreparation:
                     "source": source_ref,
                     "output": dict(generated.raw_output),
                     "evidence": asdict(generated.evidence),
+                    "knowledge_selection_digest": knowledge_selection.get("selection_digest", ""),
                 },
             )
         generation = generation_document.content["contract"]
@@ -210,7 +218,10 @@ class PlanningWorldPreparation:
                 "WORLD_PREPARATION_RECEIPT_DRIFT",
                 "generation belongs to another frozen source",
             )
-        decoded = decode_world_generation(generation["output"])
+        decoded = decode_world_generation({
+            key: value for key, value in generation["output"].items()
+            if key != "knowledge_translations"
+        })
         candidates = validate_generated_candidates(decoded, policy)
         self._validate_references(source, candidates, command)
         evaluation_document = self._read(command.project_id, f"{prefix}/evaluation")
@@ -223,6 +234,8 @@ class PlanningWorldPreparation:
                 **self._task(source, source_ref, "DIRECTOR"),
                 "generated_portfolio": decoded,
                 "generation_ref": generation_ref,
+                "narrative_intelligence": knowledge_selection,
+                "knowledge_translations": generation["output"].get("knowledge_translations", []),
             }
             evaluated = execute_stage(
                 PlanningProviderStage(

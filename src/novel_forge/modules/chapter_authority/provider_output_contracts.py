@@ -203,11 +203,20 @@ def _review_schema() -> dict[str, Any]:
         "preservation": {"enum": ["PRESERVED", "REGRESSED", "UNCERTAIN"]},
         "evidence": location, "reason": text,
     }
+    knowledge_fields = {
+        "knowledge_card_asset_version_id": text,
+        "status": {"enum": ["VERIFIED_IN_PROSE", "MISAPPLIED", "NOT_OBSERVED", "NOT_USED", "UNKNOWN"]},
+        "evidence": _nullable(location), "reason": text,
+        "conditions_checked": {"type": "array", "items": text},
+        "exceptions_checked": {"type": "array", "items": text},
+        "issue_codes": {"type": "array", "items": text},
+    }
     return _object_schema({
         "score": {"type": "number", "minimum": 0, "maximum": 100},
         "issues": {"type": "array", "maxItems": 32, "items": _object_schema(issue_fields, required=tuple(issue_fields))},
         "resolution_checks": {"type": "array", "maxItems": 32, "items": _object_schema(check_fields, required=tuple(check_fields))},
-    }, required=("score", "issues", "resolution_checks"))
+        "knowledge_checks": {"type": "array", "items": _object_schema(knowledge_fields, required=tuple(knowledge_fields))},
+    }, required=("score", "issues", "resolution_checks", "knowledge_checks"))
 
 
 def _revision_schema() -> dict[str, Any]:
@@ -882,6 +891,8 @@ def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False
     version = (
         ("v19" if causal_batch else "v18")
         if stage == "canon_extraction"
+        else "v3"
+        if stage in {"review", "rereview"}
         else "v2"
         if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
         else "v1"

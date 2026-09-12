@@ -111,6 +111,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         _authorize("mkaos.authority.query", project_id)
         return query.list_cards(project_id=project_id, status=status, limit=limit)
 
+    @router.get("/product/mkaos/knowledge-cards/{asset_version_id}/trace")
+    def knowledge_trace(
+        asset_version_id: str, project_id: str, book_id: str = "",
+        limit: int = Query(default=50, ge=1, le=50),
+    ) -> dict[str, Any]:
+        _authorize("mkaos.authority.query", project_id)
+        from novel_forge.modules.mkaos_authority.trace import require_knowledge_trace
+        try:
+            return require_knowledge_trace(
+                query.database_url, project_id=project_id,
+                knowledge_card_asset_version_id=asset_version_id, book_id=book_id, limit=limit,
+            )
+        except KernelError as exc:
+            raise _conflict(exc) from exc
+
     @router.post("/product/mkaos/knowledge-packs", status_code=202)
     def build_pack(
         request: AuthorityMkaosKnowledgePackRequest,

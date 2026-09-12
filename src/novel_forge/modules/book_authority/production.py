@@ -1707,10 +1707,12 @@ class PostgresBookAuthority:
         return self.require(book_run_id)
 
     def resume(
-        self, book_run_id: str, *, reason: str, principal: Principal
+        self, book_run_id: str, *, reason: str, principal: Principal, expected_version: int | None = None,
     ) -> dict[str, Any]:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
+        if expected_version is not None and int(book["version"]) != expected_version:
+            raise KernelError("BOOK_MUTATION_CONFLICT", "Book checkpoint changed before its requested resume")
         if book["state"] != BookProductionState.PAUSED.value:
             raise KernelError(
                 "BOOK_GATE_NOT_PAUSED", "only a paused Book production can resume"
@@ -1761,7 +1763,7 @@ class PostgresBookAuthority:
                 "FAILED_TERMINAL": BookProductionState.CHAPTER_FAILED_TERMINAL,
             }.get(str(request["status_reference"]), BookProductionState.READY)
         current = self.require(book_run_id)
-        expected_version = int(current["version"])
+        expected_version = int(current["version"]) if expected_version is None else expected_version
 
         def commit_resume(
             uow: AuthorityUnitOfWork,
@@ -1865,6 +1867,7 @@ class PostgresBookAuthority:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
         if target_state not in {
+            BookProductionState.PAUSED,
             BookProductionState.READY,
             BookProductionState.CHAPTER_GROUP_REQUIRED,
             BookProductionState.CHAPTER_PLAN_REQUIRED,

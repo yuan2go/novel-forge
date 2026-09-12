@@ -319,6 +319,14 @@ retained. The result establishes Provider runtime qualification only; it does no
 chapter acceptance, literary quality, human evidence, long-form stability or production
 operation.
 
+The default D0 `model.retrieval` scenario qualifies only that declared capability. Source
+production knowledge approval requires a separate exact `mkaos.knowledge.extract`,
+`mkaos.rule.extract` or `mkaos.template.extract` scenario through the same runner and
+Gateway; it cannot inherit retrieval qualification. D0 reports are evidence-only
+`INELIGIBLE` assets. A completed report Operation does not turn a blocked fixture report
+into `QUALIFIED` or make the report creative context. The Source procedure below reuses
+one native extraction stage and its original call/token/cost authorization.
+
 Every non-fixture Provider route also requires a route-bound admission contract before an
 ExternalEffect can be created. Configure the actual model context limit, accounting
 method, immutable evidence reference, framing allowance, safety margin and Source output
@@ -825,9 +833,21 @@ allowance. Preview grants none. Calls without repairs are estimated; classificat
 review, repair, synthesis and extraction share the actual ledger ceiling. Token admission
 meters the final materialized request; byte limits are not token estimates. Budget
 exhaustion is partial/blocked, never implicit scope reduction. Inspect `reading_quality`,
-per-stage `narrative.coverage`, diagnostics and output IDs. Adjacent context is permission,
-not a claim of reading; the current path reads the target and synthesizes verified lower
-observations. Source-external outcomes remain unknown.
+per-stage `narrative.coverage`, diagnostics and output IDs. Each target request includes
+its declared `context_before` / `context_after` neighbors from the frozen units. The final
+manifest distinguishes `target_units`, `supporting_units` and chunk `unit_ranges`; a
+supporting unit does not become another processed target. A finding needs target evidence
+and may additionally cite delivered supporting evidence. Unread units remain unknown;
+synthesis reads verified lower observations without rereading or enlarging source coverage.
+
+Professional sections may use `core_concept`, `causal_constraints`, `credibility_rule`,
+`misuse_risk`, `review_check`, `assumption` and `source_reliability`. Professional
+classification selects the mechanism observation contract within the same bounded reading,
+review, repair and synthesis path. It retains concepts, mechanisms, premises, applicability,
+exceptions, failure conditions, misuse risks and explicit/inferred/hypothetical/unknown
+claims. Fiction dimensions retain choices, costs, consequences, information and delayed
+payoffs. Literal support spans are checked against delivered bytes and passed with the
+candidate execution version to review; matching bytes alone do not prove semantic truth.
 
 Evidence offsets address the actual input chunk, not original EPUB bytes or chapter
 numbers. Both endpoints must be UTF-8 boundaries, with at most 4096 bytes per request.
@@ -846,8 +866,11 @@ and accepted targets. Use `corpus targets --project-id "$PROJECT" --job-id "$JOB
 --limit 20 --after 0` for the bounded target page (HTTP GET
 `/product/source-imports/corpus/jobs/{job_id}/reading-targets`). Status embeds at most 20
 targets; result assets remain separate references. An absent chapter task has outcome
-`NOT_EXPANDED`, never “no findings”. An empty observation requires a valid accepting
-review before `NO_APPLICABLE_FINDINGS`. Target counts deduplicate retries and revisions.
+`NOT_EXPANDED`, never “no findings”. An empty observation requires an explicit bounded
+explanation and a valid accepting review before `NO_APPLICABLE_FINDINGS`; it creates no
+knowledge candidate. Generic document analysis also retains an explained empty observation
+and skips extraction, but the explicit reading-scope path supplies the review cycle.
+Target counts deduplicate retries, revisions and overlapping supporting reads.
 
 Planning success, first reading Operation/Work and READY registration share the owning
 transaction. Observation/review/revision/next-chapter transitions and synthesis-to-MKAOS
@@ -883,6 +906,165 @@ Effects survive lease takeover, unknown outcomes reconcile. `attempt_count` and
 `fence_reacquisitions` distinguish a new attempt from a new lease on the same attempt.
 Candidates follow existing MKAOS decisions and Pack selection; successful analysis does
 not approve a Card or authorize production consumption.
+
+The original professional and fiction fixtures for the six-chapter comparison live under
+`config/production/knowledge-closure/`. Freeze them with the existing preparation helper;
+its import manifests disable automatic analysis. Set `FROZEN_SOURCE_DIR` to a new directory,
+`SOURCE_EVIDENCE` to a separate output directory, and use the configured local Corpus roots,
+project/workspace and Source principal described above. No model authorization is needed
+for this import/inspection sequence. The files describe synthetic resource/information
+models and original fiction, not validated real-world professional advice.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare --output "$FROZEN_SOURCE_DIR"
+mkdir -p "$SOURCE_EVIDENCE"
+for kind in professional fiction; do
+  novel-forge corpus import --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+    --manifest "$FROZEN_SOURCE_DIR/$kind-import.json" --run-key "$RUN-$kind-import" > "$SOURCE_EVIDENCE/$kind-job.json"
+  SOURCE_JOB=$(jq -r .import_job_id "$SOURCE_EVIDENCE/$kind-job.json")
+  novel-forge corpus run --project-id "$PROJECT" --job-id "$SOURCE_JOB" --max-stages 10
+  novel-forge corpus lineage --project-id "$PROJECT" --job-id "$SOURCE_JOB" > "$SOURCE_EVIDENCE/$kind-lineage.json"
+  SOURCE_EDITION=$(jq -r '.editions[0].edition_id' "$SOURCE_EVIDENCE/$kind-lineage.json")
+  novel-forge corpus inspect --project-id "$PROJECT" --edition-id "$SOURCE_EDITION" > "$SOURCE_EVIDENCE/$kind-processing.json"
+  novel-forge corpus chapters --project-id "$PROJECT" \
+    --processing-id "$(jq -r .processing_id "$SOURCE_EVIDENCE/$kind-processing.json")" --limit 100 > "$SOURCE_EVIDENCE/$kind-units.json"
+done
+```
+
+Inspect both returned assessments and the source files before the identity/selection
+commands below. Stop on blocking structure or rights issues and use the existing scoped
+review/reprocessing commands. This sample freezes the two inspected fixture members only.
+
+```bash
+for kind in professional fiction; do
+  SOURCE_HASH=$(jq -r --arg name "$kind.jsonl" '.files[$name]' "$FROZEN_SOURCE_DIR/freeze.json")
+  jq --arg key "knowledge-closure-$kind" --arg evidence "$SOURCE_HASH" '
+    {action:"resolve_canonical_works",reason:"Inspected original fixture identity",
+     changes:[{work_key:$key,title:$key,language:"zh",metadata_evidence:[$evidence],
+       members:[{processing_id:.processing_id,relation:"SAME_WORK",evidence_refs:[$evidence]}]}]}' \
+    "$SOURCE_EVIDENCE/$kind-processing.json" > "$SOURCE_EVIDENCE/$kind-work-decision.json"
+  novel-forge corpus resolve-work --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+    --decision "$SOURCE_EVIDENCE/$kind-work-decision.json" --run-key "$RUN-$kind-work" > "$SOURCE_EVIDENCE/$kind-work.json"
+done
+jq -n --slurpfile p "$SOURCE_EVIDENCE/professional-work.json" --slurpfile f "$SOURCE_EVIDENCE/fiction-work.json" \
+  '{action:"revise_curated_corpus",corpus_key:"knowledge-closure-sources",title:"Original closure fixtures",
+    purpose:"RESEARCH",filters:{work_ids:[$p[0].revisions[0].work_id,$f[0].revisions[0].work_id]},
+    reason:"Inspected bounded fixture sources"}' > "$SOURCE_EVIDENCE/curate.json"
+novel-forge corpus curate --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+  --decision "$SOURCE_EVIDENCE/curate.json" --run-key "$RUN-source-candidates" > "$SOURCE_EVIDENCE/curated.json"
+jq --slurpfile c "$SOURCE_EVIDENCE/curated.json" --slurpfile p "$SOURCE_EVIDENCE/professional-processing.json" \
+  --slurpfile f "$SOURCE_EVIDENCE/fiction-processing.json" '. + {previous_id:$c[0].revision_id,state:"FROZEN",
+    choices:[$p[0],$f[0]] | map({processing_id:.processing_id,selected:true,
+      reason:"Original fixture scope inspected",evidence_refs:[.processing_id]})}' \
+  "$SOURCE_EVIDENCE/curate.json" > "$SOURCE_EVIDENCE/freeze-selection.json"
+novel-forge corpus curate --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+  --decision "$SOURCE_EVIDENCE/freeze-selection.json" --run-key "$RUN-source-freeze" > "$SOURCE_EVIDENCE/selection.json"
+CURATED_REVISION=$(jq -r .revision_id "$SOURCE_EVIDENCE/selection.json")
+python3 - "$SOURCE_EVIDENCE" <<'PY_SCOPE'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+scopes = []
+for kind, count, dimensions in (
+    ("professional", 3, ["core_concept", "causal_constraints", "misuse_risk"]),
+    ("fiction", 6, ["character_choice_cost", "information_gap", "foreshadowing_payoff"]),
+):
+    processing = json.loads((root / f"{kind}-processing.json").read_text())
+    units = [u for u in json.loads((root / f"{kind}-units.json").read_text())["units"]
+             if u["kind"] == "chapter" and u["status"] == "AVAILABLE"]
+    assert len(units) == count, "inspect source structure before changing the frozen range"
+    scopes.append({"processing_id": processing["processing_id"],
+                   "first_unit_version_id": units[0]["source_unit_version_id"],
+                   "last_unit_version_id": units[-1]["source_unit_version_id"],
+                   "max_chapters": count, "context_before": 1, "context_after": 1,
+                   "max_repairs": 1, "dimensions": dimensions})
+(root / "reading-scopes.json").write_text(json.dumps(scopes, indent=2))
+PY_SCOPE
+novel-forge corpus reading-preview --project-id "$PROJECT" --revision-id "$CURATED_REVISION" \
+  --reading-scopes "$SOURCE_EVIDENCE/reading-scopes.json" > "$SOURCE_EVIDENCE/reading-preview.json"
+```
+
+After actual authorization, use the `analyze` / `run` commands above with this
+`CURATED_REVISION`, `--reading-scopes "$SOURCE_EVIDENCE/reading-scopes.json"` and `--limit 2`.
+Without it retain the preview and `READY_FOR_AUTHORIZATION` / `NOT_RUN` evidence. The same
+frozen request budgets include both sources and every review/repair/extraction call.
+
+For production approval of real Source candidates, qualify the exact extraction capability
+on the current authorized Source route. Keep the standalone `source-import-worker` stopped
+while using this operator-controlled stage (`docker compose stop source-import-worker`),
+and run the authorized analysis one stage at a time until `corpus results` exposes a
+`MKAOS_EXTRACTION` stage with `operation_status=READY`. Existing Observations must already
+exist; the qualification command does not fabricate them or start a second extraction.
+
+```bash
+novel-forge corpus run --project-id "$PROJECT" --job-id "$JOB" --max-stages 1
+novel-forge corpus results --project-id "$PROJECT" --job-id "$JOB" --limit 100 > "$SOURCE_EVIDENCE/stages.json"
+jq '.stages[] | select(.kind=="MKAOS_EXTRACTION" and .operation_status=="READY") | {operation_id,capability}' "$SOURCE_EVIDENCE/stages.json"
+```
+
+Inspect each page and follow `next_after` with `corpus results --after` when needed. Set
+`SOURCE_EXTRACTION_OPERATION` and `SOURCE_CAPABILITY` to the selected exact pair. With a
+clean current checkout and the same configured Source environment, preview the existing
+qualification runner. `SOURCE_RUNTIME_ROOT` must be outside the repository and contain
+the existing `NOVEL_FORGE_CODEX_EXECUTION_ROOT` at `codex-executions`; the runner preserves
+the configured account, runtime identity and budget settings.
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m scripts.run_real_provider_qualification \
+  --source-project-id "$PROJECT" --source-operation-id "$SOURCE_EXTRACTION_OPERATION" \
+  --source-capability "$SOURCE_CAPABILITY" --expected-sha "$(git rev-parse HEAD)" \
+  --provider "$AUTHORIZED_PROVIDER" --model "$AUTHORIZED_MODEL" --reasoning-effort "$AUTHORIZED_EFFORT" \
+  --database-url "$NOVEL_FORGE_DATABASE_URL" --runtime-root "$SOURCE_RUNTIME_ROOT" \
+  --minio-endpoint "$NOVEL_FORGE_MINIO_ENDPOINT" --output "$SOURCE_EVIDENCE/source-qualification.json"
+```
+
+Without `--execute` this remains `NOT_RUN` / `READY_FOR_AUTHORIZATION` after preflight;
+missing credentials, accounting or release identity remain explicit preflight blockers.
+An account-entitlement configuration reports `BLOCKED_UNSUPPORTED_QUALIFICATION_MODE`;
+authorization alone cannot make that mode a supported D0 priced route. Preview records the
+required exact Provider/model/profile, account/runtime, purpose and shared total
+call/token/cost/repair fields without granting any allowance.
+Add `--execute` only under existing explicit authorization for this Source stage and its
+total allowance. The existing D0 contract requires priced accounting with immutable
+pricing evidence; account-entitlement billing is rejected before dispatch, never silently
+converted. The probe consumes the original Source job budget. Native Kernel lease/fence
+ownership prevents competition; active leases block takeover. A returned result is
+checkpointed, deliberately loses its immediate response, then reconciles the original
+receipt without resend. Unknown outcomes must recover the same operation. An ordinary
+successful stage without the required recovery evidence cannot be relabeled as this
+probe or resent just to acquire qualification. Resume the worker after this bounded step
+with `docker compose start source-import-worker`.
+
+The resulting D0 qualification binds the actual Source capability, Provider/model,
+account/runtime host, release, model profile, route, instruction/Prompt/Skill/schema hashes
+and immutable effect/receipt. Production approval freezes that binding at admission and
+rechecks it at commit. A changed or revoked qualification blocks approval and future
+knowledge consumption without rewriting accepted history. A missing qualification leaves
+the Candidate pending review. `production_verified` remains false: runtime qualification
+and a successful structured output do not establish semantic correctness, literary
+benefit or production effects. Scripted Source fixtures cannot acquire this qualification.
+
+Knowledge approval uses the existing MKAOS API and worker, not a Corpus CLI approval
+command. With the local API and MKAOS worker running, inspect candidate content and
+Observation lineage, then set `CANDIDATE_VERSION` to the exact candidate actually reviewed
+and `REVIEW_RATIONALE` to that decision. Do not bulk-approve all project candidates.
+
+```bash
+curl -fsS --get "$API/product/mkaos/knowledge-candidates" --data-urlencode "project_id=$PROJECT" > "$SOURCE_EVIDENCE/knowledge-candidates.json"
+jq -n --arg project "$PROJECT" --arg workspace "$WORKSPACE" --arg key "$RUN-approve-$CANDIDATE_VERSION" \
+  --arg rationale "$REVIEW_RATIONALE" '{project_id:$project,workspace_id:$workspace,
+    policy_version:"knowledge-closure-review.v1",rationale:$rationale,idempotency_key:$key}' > "$SOURCE_EVIDENCE/knowledge-approval.json"
+curl -fsS -H 'Content-Type: application/json' --data-binary @"$SOURCE_EVIDENCE/knowledge-approval.json" \
+  "$API/product/mkaos/knowledge-candidates/$CANDIDATE_VERSION/approve" > "$SOURCE_EVIDENCE/approval-operation.json"
+curl -fsS --get "$API/product/mkaos/knowledge-cards" --data-urlencode "project_id=$PROJECT" > "$SOURCE_EVIDENCE/knowledge-cards.json"
+```
+
+HTTP 202 is admission, not approval completion. Requery after the existing MKAOS worker
+finishes; require the matching candidate, `operation_status=SUCCEEDED`, `card_status=ACTIVE`,
+`lifecycle=ACTIVE`, `eligibility=ELIGIBLE` and `governance=CLEAR`. Retain only those explicitly
+reviewed Card AssetVersion IDs in the JSON array supplied to preparation's
+`--approved-card-versions`; they become arm A's exact allowlist. Empty findings need no
+approval. Source analysis, Card approval, delivered context and correct prose realization
+remain separate evidence states; no command above records human literary approval.
 
 The EPUB logical profile example selects v5. Copy it locally, retain original work constants
 and any validated continuation declarations, then use `corpus reprocess --edition-id
@@ -939,3 +1121,92 @@ without rewriting their terminal history. Local process termination is not proof
 cancellation; missing remote identifiers or receipts can require external evidence.
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
+
+## Knowledge-grounded six-chapter comparison
+
+`config/production/knowledge-closure` contains original synthetic professional and fiction
+fixtures, one shared brief, six-chapter Formation/creation policies and an empty external
+knowledge control. These fixtures are test inputs, not real-world professional evidence.
+Preparation makes no Provider call and invents no approved Card or human verdict:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare --output /tmp/kg-frozen
+PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
+  --brief /tmp/kg-frozen/brief.json --policy /tmp/kg-frozen/creation.json \
+  --formation-policy /tmp/kg-frozen/formation.json --knowledge-policy /tmp/kg-frozen/deny-all.json \
+  --project-id kg-control --book-id kg-control-book --workspace-id kg-control-workspace \
+  --root /tmp/kg-control-runtime --run-key kg-control-01 --evidence-dir /tmp/kg-control-config
+```
+
+Follow the bounded deconstruction commands above to import, inspect, analyze and review
+the samples in the treatment project. After actual knowledge approval, save the exact
+Card AssetVersion IDs as a JSON string array. Freeze another directory with
+`prepare --approved-card-versions approved-card-versions.json --output /tmp/kg-approved`.
+This creates `allow-only.json`; execution rechecks ownership, version, withdrawal, rights
+and Book access. Do not give the control project any treatment plans. `DENY_ALL` removes
+external knowledge while retaining its own accepted Canon and memory.
+
+Before either real run, bind both arms to the same explicitly authorized backend, model,
+account, Prompt/Skill versions, word targets and revision budget. Supply the total call,
+token and monetary/account allowances through the existing Provider controls. The frozen
+manifest is `READY_FOR_AUTHORIZATION`; a preview, arbitrary authorization string or
+subscription availability supplies no grant. No deterministic seed is assumed.
+
+Execute the same runner command separately for the two project/Book identities, adding
+`--initialize --execute --expected-sha "$SHA" --authorization-ref "$AUTHORIZATION_REF"`
+and, for priced execution, `--authorized-total-usd "$ARM_AUTHORIZED_USD"`. Treatment uses
+`--knowledge-policy /tmp/kg-approved/allow-only.json`; control uses `deny-all.json`.
+The two arm allocations plus source analysis and repairs must fit the authorized total.
+Use new evidence directories for every invocation and retain each export. Resume keeps
+the same brief, policies, run key, Book and frozen routes; changing them requires an
+explicit new experiment rather than silently continuing an old run.
+
+After Chapter 3 acceptance, the runner prepares the wholly future ChapterGroup, pauses
+before Chapter 4 dispatch and reports `FUTURE_PLAN_CHANGE_REQUIRED`. Its event records
+the target plan, accepted boundary and input snapshot. The directive is frozen in
+`creation.json` at `future_plan_change.directive`. Apply it using the existing native
+authorities; all paths below are relative to the local API URL:
+
+| Step | Native operation and required input |
+|---|---|
+| Record the change | POST `/product/content-authority/commands`, `definition_name: planning.change_request.author`, project/workspace/actor/idempotency/trace/correlation fields, no input assets, `payload.content` containing `book_id`, `target_plan_version_id`, `accepted_through_chapter: 3`, `affected_scope: CHAPTER_GROUP`, `safe_summary` set to the frozen directive, `structured_facts: []`, the frozen `directive` and nonempty `preserved_invariants` |
+| Inspect the old plan | GET `/product/production/book-authority/books/{book}/planning-candidates/{target_plan_version_id}?project_id={project}`; retain candidate and `frozen_command` |
+| Generate the replacement | Clone `frozen_command`, set a fresh `idempotency_key`, set `change_evidence_version_ids` to the completed change-request AssetVersion, clear the old `narrative_search_` fields (`id`, `branch_key`, `parent_state_asset_version_id`, `strategy_directive` to empty strings; `accepted_through_chapter` to 0; `planning_horizon`/`desired_transformation` to empty objects; `hard_constraints` to an empty list), and keep `auto_approve_low_risk: false`; POST `/product/production/book-authority/books/{book}/planning-generations` |
+| Inspect generation | GET `/product/production/book-authority/books/{book}/planning-generations/{operation_id}?project_id={project}`; workers perform existing Provider and semantic qualification stages; inspect failures before proceeding |
+| Propose | POST `/product/production/book-authority/books/{book}/plan-changes` with project/workspace/book/actor/trace/correlation, fresh `stable_idempotency_key`, `source_type: HUMAN_FEEDBACK`, `source_evidence_version_id`, `target_asset_version_id` and qualified `proposed_asset_version_id` |
+| Decide and activate | POST the proposal's `/decisions` with `{project_id, actor_id, approved, reason}`; only after approval POST its `/activate` with `{project_id, actor_id}` |
+| Resume | Reinvoke the creation runner with the same frozen inputs and `--plan-change-proposal-id "$PROPOSAL"`; it verifies the directive and original boundary, rebinds the existing Book snapshot and continues Chapters 4–6 |
+
+The lower-level resume API is POST
+`/product/production/book-authority/runs/{run}/plan-changes/{proposal}/resume` with
+`{project_id, actor_id}`. It accepts an owned active wholly future ChapterGroup change;
+replay after later acceptance returns the prior binding receipt without resetting Book
+state. Accepted Chapters 1–3 remain immutable. Rejection leaves the Book paused for a
+new candidate; unknown Provider effects require reconciliation before another dispatch.
+
+The runner's `creation-run.json`, `events.jsonl`, `chapter-workspaces.json`, exported
+Context/Card/Pack assets and ledger preserve originals, diagnoses, revisions, selection,
+acceptance and later state. Inspect `knowledge_trace` in Chapter workspaces, or query an
+exact Card from either direction:
+
+```bash
+novel-forge authority-knowledge-trace --project-id "$PROJECT" \
+  --knowledge-card-asset-version-id "$CARD_VERSION" --book-id "$BOOK" --limit 50
+PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure blind \
+  /tmp/kg-treatment-export /tmp/kg-control-export --output /tmp/kg-blind
+```
+
+The HTTP trace is GET `/product/mkaos/knowledge-cards/{version}/trace` with `project_id`,
+optional `book_id` and `limit`. It separates selection, actual delivery receipts,
+planning claims, checks against exact candidate prose and the formally accepted version.
+It reports bounded results explicitly; it cannot certify independent editorial approval.
+
+Blind export requires six exactly bound accepted manuscripts per arm, distinct Books and
+plans, matching frozen routes, targets and budgets, and the applied third-chapter change.
+It validates each accepted Context against the frozen Book knowledge policy and rejects
+external Card deliveries outside the treatment allowlist or inside the control arm.
+It emits randomized chapter/arc packs and empty seven-axis forms for knowledge accuracy,
+natural integration, causality, character, pacing, voice and desire to continue. Keep the
+private mappings away from reviewers. Assign actual reviewers and collect their own
+responses; generated empty forms are `NOT_REVIEWED`. A completed six-chapter comparison
+can establish a bounded result, not long-novel stability or real-reader benefit.

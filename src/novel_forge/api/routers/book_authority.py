@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 from uuid import uuid4
 
@@ -34,6 +34,27 @@ from novel_forge.modules.chapter_group_authority.policy import (
 )
 from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
 from novel_forge.modules.book_authority.control_policy import ControlPolicy
+from novel_forge.modules.plan_change_authority import PlanChangeProposalCommand
+from novel_forge.modules.story_planning_runtime import StoryPlanningGenerationCommand, StoryPlanningEvaluationCommand
+
+
+@dataclass
+class PlanChangeDecisionRequest:
+    project_id: str
+    actor_id: str
+    approved: bool
+    reason: str
+
+
+@dataclass
+class PlanChangeControlRequest:
+    project_id: str
+    actor_id: str
+
+
+def _planning_scope(record: dict[str, Any], *, project_id: str, book_id: str) -> None:
+    if record.get("project_id") != project_id or record.get("book_id") != book_id:
+        raise KernelError("BOOK_PLANNING_SCOPE_MISMATCH", "Planning request belongs to another Book")
 
 
 @dataclass
@@ -124,6 +145,128 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
     )
+
+    @router.post("/books/{book_id}/planning-generations")
+    def generate_plan(book_id: str, request: StoryPlanningGenerationCommand) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            _planning_scope({"project_id": request.project_id, "book_id": request.book_id}, project_id=request.project_id, book_id=book_id)
+            result = _composition(ctx).planning.generate(replace(request, actor_id=principal.principal_id, auto_approve_low_risk=False), principal=principal)
+            return asdict(result)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/books/{book_id}/planning-generations/{operation_id}")
+    def planning_generation(book_id: str, operation_id: str, project_id: str) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            result = _composition(ctx).planning.require_generation(operation_id)
+            _planning_scope(result, project_id=project_id, book_id=book_id)
+            return {**result, "frozen_command": _composition(ctx).planning.frozen_generation_command(operation_id)}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/books/{book_id}/planning-candidates/{asset_version_id}")
+    def planning_candidate(book_id: str, asset_version_id: str, project_id: str) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            planning = _composition(ctx).planning
+            result = planning.require_candidate(asset_version_id)
+            _planning_scope(result, project_id=project_id, book_id=book_id)
+            return {**result, "frozen_command": planning.frozen_generation_command(result["generation_operation_id"])}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/planning-evaluations")
+    def evaluate_plan(book_id: str, request: StoryPlanningEvaluationCommand) -> dict[str, Any]:
+        try:
+            resolver = build_trusted_principal_resolver()
+            operator = resolver.resolve_api_principal(claimed_actor_id=request.actor_id)
+            operator.require("story_planning.authority.execute", request.project_id)
+            _planning_scope({"project_id": request.project_id, "book_id": request.book_id}, project_id=request.project_id, book_id=book_id)
+            if request.evaluator_execution_class != "MODEL_PROVIDER":
+                raise KernelError("PLANNING_PROVIDER_EVALUATION_REQUIRED", "this native endpoint requires independent governed Provider evaluation")
+            evaluator = resolver.resolve_narrative_evaluator_principal()
+            result = _composition(ctx).planning.evaluate_candidate(replace(request, actor_id=evaluator.principal_id), principal=evaluator, transition_principal=operator)
+            return asdict(result)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/plan-changes")
+    def propose_plan_change(book_id: str, request: PlanChangeProposalCommand) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            _planning_scope({"project_id": request.project_id, "book_id": request.book_id}, project_id=request.project_id, book_id=book_id)
+            return _composition(ctx).plan_change.propose(replace(request, actor_id=principal.principal_id), principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/books/{book_id}/plan-changes/{proposal_id}")
+    def plan_change_detail(book_id: str, proposal_id: str, project_id: str) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            result = _composition(ctx).plan_change.require(proposal_id)
+            _planning_scope(result, project_id=project_id, book_id=book_id)
+            return result
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/plan-changes/{proposal_id}/decisions")
+    def decide_plan_change(book_id: str, proposal_id: str, request: PlanChangeDecisionRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            principal.require("book.authority.execute", request.project_id)
+            authority = _composition(ctx).plan_change
+            _planning_scope(authority.require(proposal_id), project_id=request.project_id, book_id=book_id)
+            if not request.reason.strip():
+                raise ValueError("PlanChange decision requires a reason")
+            return authority.decide(proposal_id, approved=request.approved, authority_type="OPERATOR", authority_version="operator-plan-change-v1", evidence={"reason": request.reason, "actor_id": principal.principal_id}, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/plan-changes/{proposal_id}/activate")
+    def activate_plan_change(book_id: str, proposal_id: str, request: PlanChangeControlRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            principal.require("book.authority.execute", request.project_id)
+            authority = _composition(ctx).plan_change
+            _planning_scope(authority.require(proposal_id), project_id=request.project_id, book_id=book_id)
+            return authority.activate(proposal_id, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/plan-changes/{proposal_id}/resume")
+    def resume_plan_change(book_run_id: str, proposal_id: str, request: PlanChangeControlRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            principal.require("book.authority.execute", request.project_id)
+            composition = _composition(ctx)
+            book = composition.authority.require(book_run_id)
+            _planning_scope(book, project_id=request.project_id, book_id=book["book_id"])
+            return composition.resume_after_plan_change(book_run_id=book_run_id, proposal_id=proposal_id, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
 
     @router.put("/policies/book-control")
     def configure_book_control(request: BookControlPolicyRequest) -> dict[str, Any]:

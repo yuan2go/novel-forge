@@ -664,41 +664,21 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
     )
 
 
-def test_planning_provider_context_is_deterministically_bounded() -> None:
-    view = build_provider_context_view(
-        "book_plan.generate",
-        {
-            "schema_version": "novelos.planning_context_bundle.v1",
-            "input_versions": [
-                {
+def test_planning_provider_context_blocks_oversized_required_semantics() -> None:
+    with pytest.raises(KernelError, match="required Planning Provider Context exceeds its budget"):
+        build_provider_context_view(
+            "book_plan.generate",
+            {
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "input_versions": [{
                     "role": "book_design",
                     "asset_version_id": "book-design:v1",
                     "asset_type": "book_design",
                     "content": {"premise": "x" * 70_000},
-                }
-            ],
-        },
-        build_provider_task_view(
-            "book_plan.generate",
-            {
-                "planning_command": {"logical_key": "book:main"},
-                "frozen_inputs": [
-                    {
-                        "role": "book_design",
-                        "asset_version_id": "book-design:v1",
-                        "asset_type": "book_design",
-                        "content_hash": "sha256:" + "a" * 64,
-                    }
-                ],
-                "authoritative_narrative_load": _authoritative_load(),
-                "arc_working_set": _arc_working_set(),
-                "narrative_intelligence": _narrative_intelligence(),
+                }],
             },
-        ),
-    )
-
-    assert len(json.dumps(view, ensure_ascii=False)) < 65_536
-    assert view["selection_explanation"]["truncated_character_count"] == 68_000
+            {},
+        )
 
 
 def test_planning_provider_context_projects_frozen_accepted_boundary() -> None:
@@ -844,8 +824,9 @@ def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
     )
 
     repair = view["repair_context"]
-    assert view["segments"] == []
-    assert view["selection_explanation"]["omitted_segment_count"] == 1
+    assert view["segments"][0]["asset_version_id"] == "book-design:v1"
+    assert view["segments"][0]["content"] == {"premise": "Expose the concealed audit."}
+    assert view["selection_explanation"]["omitted_segment_count"] == 0
     assert view["selection_explanation"]["policy"] == (
         "minimum-sufficient-planning-repair-context-v1"
     )

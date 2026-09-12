@@ -33,6 +33,9 @@ def open_diagnoses(review: dict[str, Any]) -> list[dict[str, Any]]:
             merged["origin_review_issue_id"] = previous.get("origin_review_issue_id", previous.get("review_issue_id"))
             if previous["severity"] == "blocking":
                 merged["severity"] = "blocking"
+            for field in ("preserve", "acceptance_criteria"):
+                if field in previous or field in merged:
+                    merged[field] = list(dict.fromkeys([*previous.get(field, []), *merged.get(field, [])]))
         result[code] = merged
     if set(review.get("remaining_issue_codes", [])) - set(result):
         raise KernelError("REVIEW_EVIDENCE_REQUIRED", "unresolved issue codes require their immutable diagnoses")

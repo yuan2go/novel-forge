@@ -2354,6 +2354,18 @@ class ExternalEffectExecutionSessionStore:
             ) from exc
 
 
+def _fixture_knowledge_checks(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"],
+            "status": "NOT_USED", "evidence": None,
+            "reason": "Scripted transport does not demonstrate semantic knowledge use.",
+            "conditions_checked": [], "exceptions_checked": [], "issue_codes": [],
+        }
+        for item in inputs.get("knowledge_review_targets", [])
+    ]
+
+
 def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -2541,6 +2553,7 @@ def default_chapter_fixture_response(
         return {
             "score": 72,
             "resolution_checks": [],
+            "knowledge_checks": _fixture_knowledge_checks(inputs),
             "issues": [
                 {
                     "code": "COST_NOT_CONCRETE",
@@ -2582,6 +2595,7 @@ def default_chapter_fixture_response(
         return {
             "score": 90,
             "issues": [],
+            "knowledge_checks": _fixture_knowledge_checks(inputs),
             "resolution_checks": [
                 {
                     "code": issue["code"],
@@ -3621,7 +3635,14 @@ def _stage_semantic_contract(
             "Separate semantic conflicts, uncertain judgments and aesthetic suggestions. Provider opinions "
             "are not deterministic proof; taste preferences alone are minor. Do not invent defects from "
             "a plan target that prose deliberately leaves unfulfilled. Return resolution_checks=[] on "
-            "initial review. Evidence must identify a concrete defect and an observable repair condition.",
+            "initial review. Evidence must identify a concrete defect and an observable repair condition. "
+            "For every knowledge_review_target return a knowledge_check using its exact card version. "
+            "Check mechanism, prerequisites, exceptions, cost and consequences in actual prose, including "
+            "knowledge/disclosure boundaries, future leakage and false payoff. VERIFIED_IN_PROSE needs "
+            "literal evidence and explicit conditions_checked/ exceptions_checked; terminology or Writer "
+            "used_fact_ids is insufficient. Unused inspiration is NOT_USED, uncertainty is UNKNOWN. "
+            "MISAPPLIED requires linked actionable issue_codes; unresolved CONSTRAINT requires a blocking issue. "
+            "Return knowledge_checks=[] if no targets. Never call this formal proof or human approval.",
             required_language,
         )
     if stage == "rereview":
@@ -3635,7 +3656,12 @@ def _stage_semantic_contract(
             "For EVERY prior diagnosis return a resolution_check tied to its acceptance criteria, with "
             "a literal revised-prose evidence location and preservation assessment. SATISFIED requires "
             "the repair to be present and required content preserved. A claimed fix, issue omission, "
-            "or a higher score never establishes resolution; report UNRESOLVED/UNCERTAIN when needed.",
+            "or a higher score never establishes resolution; report UNRESOLVED/UNCERTAIN when needed. "
+            "Recheck every knowledge_review_target against this revised prose in knowledge_checks. "
+            "Use its exact card version and literal evidence; check mechanisms, prerequisites, exceptions "
+            "and narrative consequences. MISAPPLIED requires linked actionable issue_codes; unresolved "
+            "CONSTRAINT requires a blocking issue. Prior verification never transfers to changed prose. "
+            "Unused inspiration may be NOT_USED; report UNKNOWN for uncertainty; no targets means [].",
             required_language,
         )
     if stage == "memo":

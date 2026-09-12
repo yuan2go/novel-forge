@@ -23,20 +23,33 @@ from .narrative_contracts import reconcile_review
 
 
 def narrative_strategy(strategy: Any) -> Any:
+    from .narrative_contracts import MECHANISM_OBSERVATION_SCHEMA
+
+    professional = strategy.content_type.value in {
+        "PROFESSIONAL_KNOWLEDGE",
+        "WRITING_THEORY",
+        "HISTORY_SOCIAL_SCIENCE",
+        "PHILOSOPHY_ESSAY",
+        "PLATFORM_RULES",
+    }
     analyzer = replace(
         strategy.analyzers[0],
         analyzer_id="bounded-narrative." + strategy.analyzers[0].dimension,
-        analyzer_version="1.0.0",
-        schema_version="source-narrative-observation.v1",
-        prompt_id="source.bounded-narrative",
-        prompt_version="1.0.0",
+        analyzer_version="2.0.0",
+        schema_version=MECHANISM_OBSERVATION_SCHEMA
+        if professional
+        else "source-narrative-observation.v1",
+        prompt_id="source.bounded-mechanism"
+        if professional
+        else "source.bounded-narrative",
+        prompt_version="2.0.0",
         recommended_scales=("CHAPTER", "CHAPTER_WINDOW"),
     )
     return replace(
         strategy,
         analyzers=(analyzer,),
         profile_id="bounded-narrative." + strategy.profile_id,
-        profile_version="1.0.0",
+        profile_version="2.0.0",
     )
 
 
@@ -188,17 +201,26 @@ def execute_reading(app, worker, payload):
     targets = [u for u in plan["units"] if u["role"] == "TARGET"]
     index = payload["unit_index"]
     aggregate = index == len(targets)
-    units = [] if aggregate else [targets[index]]
+    target = None if aggregate else targets[index]
+    units = []
+    if target is not None:
+        position = plan["units"].index(target)
+        first = max(0, position - plan["contract"].get("context_before", 0))
+        last = position + plan["contract"].get("context_after", 0) + 1
+        units = [
+            {**unit, "role": "TARGET" if unit == target else "ALLOWED_CONTEXT"}
+            for unit in plan["units"][first:last]
+        ]
     analyzer = AnalyzerContract(
         **{k: v for k, v in payload["analyzer"].items() if k != "fingerprint"}
     )
     scope = ObservationScope(
         scale="CHAPTER_WINDOW" if aggregate else "CHAPTER",
-        range_start=targets[0]["ordinal"] if aggregate else units[0]["ordinal"],
-        range_end=targets[-1]["ordinal"] if aggregate else units[0]["ordinal"],
+        range_start=targets[0]["ordinal"] if aggregate else target["ordinal"],
+        range_end=targets[-1]["ordinal"] if aggregate else target["ordinal"],
         source_document_ids=(payload["source_document_id"],),
         label=plan["identity"]
-        + (":synthesis" if aggregate else ":" + units[0]["source_unit_version_id"]),
+        + (":synthesis" if aggregate else ":" + target["source_unit_version_id"]),
     )
     port = app._require_execution_port()
     segments, spans = _source_inputs(app, worker, units) if units else ((), ())
@@ -222,14 +244,30 @@ def execute_reading(app, worker, payload):
         "source_transform_id": plan["source_transform_id"],
         "unit_bindings": [
             {
-                k: u[k]
-                for k in (
-                    "source_unit_version_id",
-                    "normalized_content_hash",
-                    "normalized_byte_start",
-                    "normalized_byte_end",
-                    "role",
-                )
+                **{
+                    k: u[k]
+                    for k in (
+                        "source_unit_version_id",
+                        "ordinal",
+                        "normalized_content_hash",
+                        "normalized_byte_start",
+                        "normalized_byte_end",
+                        "role",
+                    )
+                },
+                "chunk_ranges": [
+                    {
+                        "source_chunk_asset_version_id": c["asset_version_id"],
+                        "byte_start": max(
+                            0, u["normalized_byte_start"] - c["source_byte_start"]
+                        ),
+                        "byte_end": min(
+                            c["byte_size"],
+                            u["normalized_byte_end"] - c["source_byte_start"],
+                        ),
+                    }
+                    for c in u["chunks"]
+                ],
             }
             for u in units
         ],
@@ -248,7 +286,7 @@ def execute_reading(app, worker, payload):
         else [],
         "coverage_claim": "VERIFIED_LOWER_OBSERVATIONS_ONLY"
         if aggregate
-        else "EXACT_TARGET_UNIT_TEXT",
+        else "EXACT_TARGET_WITH_DECLARED_SUPPORTING_UNITS",
         "outside_range": "UNKNOWN",
         "repair_round": payload["repair_round"],
         "prior_issues": payload["prior_issues"],
@@ -270,6 +308,8 @@ def execute_reading(app, worker, payload):
             narrative_context=context,
             review_target={
                 "observation": candidate["observation"],
+                "evidence_spans": candidate["evidence_spans"],
+                "execution_asset_version_id": candidate["execution_asset_version_id"],
                 "prior_issues": payload["prior_issues"],
             }
             if review
@@ -364,7 +404,7 @@ def execute_reading(app, worker, payload):
                 "observation_id": formal["observation_id"],
                 "source_unit_version_id": None
                 if aggregate
-                else units[0]["source_unit_version_id"],
+                else target["source_unit_version_id"],
                 "ordinal": index,
                 "observation_asset_version_id": formal["asset_version_id"],
                 "execution_asset_version_id": candidate["execution_asset_version_id"],

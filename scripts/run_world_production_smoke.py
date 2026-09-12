@@ -155,12 +155,29 @@ def drive(
     events,
     maximum_ticks: int,
     deadline: float,
+    stop_after_chapter: int = 0,
 ):
     jobs = RuntimeJobAuthority(composition.authority.database_url)
     for _ in range(maximum_ticks):
         book = composition.authority.require(book_run_id)
         if book["accepted_through_chapter"] >= book["target_chapter_count"]:
             return "ACCEPTED_TARGET_REACHED"
+        future_group = (
+            composition.query.active_plan_covering_chapter(
+                project_id=book["project_id"], book_id=book["book_id"],
+                contract_type="CHAPTER_GROUP", chapter_number=stop_after_chapter + 1,
+            ) if stop_after_chapter and book["accepted_through_chapter"] >= stop_after_chapter else None
+        )
+        if future_group and future_group["content"]["chapter_range"][0] > stop_after_chapter:
+            if book["state"] != "PAUSED":
+                composition.authority.pause(
+                    book_run_id, reason=f"Frozen creative experiment intervention after chapter {stop_after_chapter}",
+                    principal=composition.principal,
+                )
+            events({"kind": "FUTURE_PLAN_CHANGE_REQUIRED", "accepted_through_chapter": book["accepted_through_chapter"],
+                    "target_plan_version_id": future_group["asset_version_id"],
+                    "input_snapshot_id": book.get("input_snapshot_id"), "book_run_id": book_run_id})
+            return "FUTURE_PLAN_CHANGE_REQUIRED"
         if time.monotonic() >= deadline:
             return "BOUNDED_TIME_EXHAUSTED"
         schedule_book_coordination_jobs(
@@ -222,6 +239,9 @@ def export_artifacts(
         "cost_ledger",
         "execution_recovery_session",
         "provider_request_admission_manifest",
+        "context_bundle",
+        "knowledge_card",
+        "knowledge_pack",
     )
     errors = []
     for kind in dict.fromkeys((*kinds, *extra_kinds)):

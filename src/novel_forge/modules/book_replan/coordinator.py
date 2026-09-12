@@ -1926,7 +1926,73 @@ class BookReplanCoordinator:
             result[role] = version
         return result
 
-    def _resolve_new_snapshot(self, book: dict[str, Any], causation: str):
+    def resume_operator_plan_change(self, *, book_run_id: str, proposal_id: str, principal: Principal) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+        book = self.book.require(book_run_id)
+        principal.require("book.authority.execute", book["project_id"])
+        proposal = self.plan_change.require(proposal_id)
+        if (proposal["project_id"], proposal["book_id"], proposal["status"], proposal["source_type"]) != (book["project_id"], book["book_id"], "ACTIVE", "HUMAN_FEEDBACK"):
+            raise KernelError("BOOK_OPERATOR_PLAN_CHANGE_INVALID", "resume requires an active operator PlanChange for this Book")
+        query = AuthorityAssetQuery(self.database_url)
+        source = query.require(project_id=book["project_id"], asset_version_id=proposal["source_evidence_version_id"])
+        replacement = query.require(project_id=book["project_id"], asset_version_id=proposal["proposed_asset_version_id"])
+        boundary = source.content.get("accepted_through_chapter")
+        chapter_range = replacement.content.get("chapter_range")
+        if (
+            source.content.get("contract_version") != "operator-planning-change-request.v1"
+            or source.content.get("book_id") != book["book_id"]
+            or source.content.get("target_plan_version_id") != proposal["target_asset_version_id"]
+            or not isinstance(boundary, int) or isinstance(boundary, bool)
+            or proposal["target_contract_type"] != "CHAPTER_GROUP"
+            or not isinstance(chapter_range, list) or len(chapter_range) != 2
+            or not all(isinstance(value, int) and not isinstance(value, bool) for value in chapter_range)
+            or chapter_range[0] <= boundary or chapter_range[1] < chapter_range[0]
+        ):
+            raise KernelError("BOOK_OPERATOR_PLAN_CHANGE_SCOPE_INVALID", "bounded operator resume requires a wholly future ChapterGroup and its original accepted boundary")
+        causation = proposal["activation_operation_id"]
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.snapshot_id, operation.status,
+                       (operation.command_payload #>> '{input,expected_version}')::bigint
+                FROM authority_book_production_input_binding binding
+                JOIN authority_operation operation ON operation.operation_id=binding.bound_by_operation_id
+                WHERE binding.book_run_id=%s AND operation.causation_operation_id=%s
+                ORDER BY binding.binding_version DESC LIMIT 1
+                """, [book_run_id, causation],
+            )
+            applied = uow.cursor.fetchone()
+        if applied is not None and applied[1] != "SUCCEEDED":
+            raise KernelError("BOOK_OPERATOR_PLAN_CHANGE_RECONCILE_REQUIRED", "input binding exists without a confirmed successful owning Operation")
+        receipt = {"proposal_id": proposal_id, "book_run_id": book_run_id,
+                   "source_evidence_version_id": source.asset_version_id,
+                   "proposed_asset_version_id": replacement.asset_version_id,
+                   "accepted_through_chapter": boundary}
+        if applied is not None:
+            if (
+                int(book["accepted_through_chapter"]) == boundary and book["state"] == "PAUSED"
+                and book.get("input_snapshot_id") == applied[0]
+                and applied[2] is not None and int(book["version"]) == int(applied[2]) + 1
+            ):
+                book = self.book.resume(book_run_id, reason=f"PlanChange {proposal_id} applied", principal=principal, expected_version=int(book["version"]))
+            return {**receipt, "snapshot_id": str(applied[0]), "state": book["state"], "replayed": True}
+        if book["state"] != "PAUSED" or int(book["accepted_through_chapter"]) != boundary:
+            raise KernelError("BOOK_OPERATOR_PLAN_CHANGE_CHECKPOINT_REQUIRED", "pause exactly at the change request's accepted boundary before rebinding")
+        if book.get("active_chapter_request_id"):
+            request = self.book.require_chapter_request(str(book["active_chapter_request_id"]))
+            if int(request["chapter_number"]) > boundary:
+                raise KernelError("BOOK_OPERATOR_PLAN_CHANGE_INFLIGHT", "finish or recover the dispatched Chapter before changing its inputs")
+        snapshot = self._resolve_new_snapshot(book, causation, principal=principal)
+        bound = self.book.bind_replanned_input_snapshot(
+            book_run_id, snapshot_id=snapshot.snapshot_id, causation_operation_id=causation,
+            target_state=BookProductionState.PAUSED, expected_version=int(book["version"]), principal=principal,
+        )
+        resumed = self.book.resume(book_run_id, reason=f"PlanChange {proposal_id} applied", principal=principal, expected_version=int(bound["version"]))
+        return {**receipt, "snapshot_id": snapshot.snapshot_id, "state": resumed["state"], "replayed": False}
+
+    def _resolve_new_snapshot(self, book: dict[str, Any], causation: str, *, principal: Principal | None = None):
+        principal = principal or self.principal
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1946,13 +2012,13 @@ class BookReplanCoordinator:
                 narrative_chapter_cursor=max(
                     1, int(book.get("accepted_through_chapter") or 0) + 1
                 ),
-                actor_id=self.principal.principal_id,
+                actor_id=principal.principal_id,
                 idempotency_key=f"{book['stable_idempotency_key']}:replan-input:{causation}",
                 trace_id=f"{causation}:book-input",
                 correlation_id=causation,
                 role_asset_version_overrides=self._new_snapshot_role_overrides(book),
             ),
-            principal=self.principal,
+            principal=principal,
         )
 
     def _new_snapshot_role_overrides(

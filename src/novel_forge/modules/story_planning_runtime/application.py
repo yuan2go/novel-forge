@@ -192,6 +192,23 @@ class _PlanningGenerationHandler:
             definition=definition,
         )
         evidence = candidate.evidence.to_dict()
+        knowledge_policy = ""
+        knowledge_refs: tuple[str, ...] = ()
+        if self.database_url and candidate.evidence.context_bundle_asset_version_id:
+            from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+            from .knowledge_translation import validate_knowledge_translations
+
+            context = AuthorityAssetQuery(self.database_url).require(
+                project_id=command.project_id,
+                asset_version_id=candidate.evidence.context_bundle_asset_version_id,
+            )
+            selection = context.content.get("narrative_intelligence") or {}
+            if selection.get("policy_version") == "knowledge-grounded-selection-v2":
+                validate_knowledge_translations(candidate.candidate_payload, selection)
+                knowledge_policy = selection["policy_version"]
+            knowledge_refs = tuple(
+                item["knowledge_card_asset_version_id"] for item in selection.get("selected") or ()
+            )
         if (
             evidence["operation_id"] != request.operation_id
             or evidence["attempt_id"] != request.attempt_id
@@ -264,16 +281,17 @@ class _PlanningGenerationHandler:
             asset_type="planning_generation_candidate",
             output_key="story_planning.candidate",
             role="primary",
-            content=candidate.authority_content(
+            content={**candidate.authority_content(
                 project_id=command.project_id,
                 book_id=command.book_id,
                 constraint_envelope=envelope,
-            ),
+            ), **({"knowledge_translation_policy_version": knowledge_policy} if knowledge_policy else {})},
             qualification_policy="story-planning-candidate-only-v1",
             reference_asset_version_ids=(
                 *(item.asset_version_id for item in inputs),
                 *command.change_evidence_version_ids,
                 *world_refs,
+                *knowledge_refs,
             ),
             evidence=evidence,
             # INVARIANT: Generation only creates an immutable candidate.  Semantic
@@ -1418,6 +1436,9 @@ class StoryPlanningGenerationApplication:
             binding,
             True,
         )
+
+    def frozen_generation_command(self, operation_id: str) -> dict[str, Any]:
+        return _command_payload(self._generation_command(operation_id))
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

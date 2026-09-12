@@ -604,7 +604,7 @@ def _runtime_environment(
 
 
 def _effect_evidence(
-    database_url: str, *, operation_id: str
+    database_url: str, *, operation_id: str, capability: str = "model.retrieval"
 ) -> tuple[dict[str, Any], dict[str, Any], int, int, int, dict[str, Any]]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
@@ -618,15 +618,15 @@ def _effect_evidence(
               ON dispatch.external_effect_id=effect.external_effect_id
             LEFT JOIN authority_external_receipt AS receipt
               ON receipt.dispatch_id=dispatch.dispatch_id
-            WHERE effect.operation_id=%s AND effect.capability='model.retrieval'
+            WHERE effect.operation_id=%s AND effect.capability=%s
             GROUP BY effect.external_effect_id,effect.request_hash,
                      effect.request_payload,effect.status
             """,
-            [operation_id],
+            [operation_id, capability],
         )
         row = uow.cursor.fetchone()
         if row is None:
-            raise RuntimeError("qualification has no retrieval Provider effect")
+            raise RuntimeError("qualification has no exact-capability Provider effect")
         uow.cursor.execute(
             """
             SELECT payload
@@ -777,6 +777,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     preflight = _current_preflight(args)
     if preflight["status"] != "READY_FOR_LIVE_QUALIFICATION":
         return preflight
+    if args.source_operation_id:
+        from scripts.source_qualification import run_source_qualification
+        return run_source_qualification(args, root=ROOT, commit_sha=commit_sha,
+            implementation_identity=build_implementation_tree_identity(ROOT)["implementation_tree_sha"])
     output = Path(args.output).expanduser().resolve()
     runtime_root = Path(args.runtime_root).expanduser().resolve()
     if not _outside_repository(output) or not _outside_repository(runtime_root):
@@ -1136,6 +1140,10 @@ def main() -> int:
         "--provider", choices=("codex-cli", "openai"), default="codex-cli"
     )
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--source-operation-id", default="")
+    parser.add_argument("--source-project-id", default="")
+    parser.add_argument("--source-capability", choices=("mkaos.knowledge.extract", "mkaos.rule.extract", "mkaos.template.extract"), default="mkaos.knowledge.extract")
+    parser.add_argument("--execute", action="store_true", help="Execute the explicitly authorized Source qualification stage; otherwise it remains NOT_RUN")
     parser.add_argument(
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
@@ -1159,6 +1167,8 @@ def main() -> int:
     )
     parser.add_argument("--minio-secure", action="store_true")
     args = parser.parse_args()
+    if args.source_operation_id and not args.source_project_id:
+        parser.error("Source qualification requires --source-project-id")
     if not args.preflight_only and not all(
         (args.database_url, args.runtime_root, args.minio_endpoint)
     ):

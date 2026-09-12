@@ -200,14 +200,16 @@ def _properties_without_explicit_type(
 
 def test_codex_source_output_schemas_type_every_declared_property() -> None:
     from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
-    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import narrative_schema, review_schema
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import narrative_schema, review_schema, mechanism_observation_schema
+    from novel_forge.modules.source_import.execution_contracts import grounded_knowledge_output_schema
 
     schemas = (
         content_intelligence_output_schema(CLASSIFICATION_STAGE),
         content_intelligence_output_schema(DECONSTRUCTION_STAGE),
         content_intelligence_output_schema(MKAOS_STAGE),
         compound_deconstruction_output_schema(),
-        narrative_schema(), review_schema(),
+        narrative_schema(), review_schema(), mechanism_observation_schema(),
+        grounded_knowledge_output_schema(),
     )
     assert [
         missing
@@ -563,3 +565,104 @@ def test_source_local_timeout_is_unknown_remote_outcome():
     result.started_at = None
     adapted = _source_gateway_provider_result(binding=binding, session=session, handle=handle, result=result)
     assert adapted.outcome == "cancelled"
+
+
+def test_bounded_reading_delivers_frozen_neighbors_without_promoting_targets(monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.source_authority.deconstruction import default_analyzer_contracts
+    from novel_forge.modules.source_import.corpus_ingestion import narrative_execution as execution
+    from novel_forge.modules.source_import.corpus_ingestion.runtime import CorpusIngestionRuntime
+
+    units = [
+        {"source_unit_version_id": f"unit:{i}", "ordinal": i,
+         "role": "TARGET" if i in (1, 2) else "ALLOWED_CONTEXT"}
+        for i in range(4)
+    ]
+    plan = {"identity": "frozen", "units": units,
+            "contract": {"context_before": 1, "context_after": 1}}
+    payload = {"narrative_reading": plan, "unit_index": 0,
+               "source_document_id": "source:1",
+               "analyzer": default_analyzer_contracts()["conflict"].to_dict()}
+    monkeypatch.setattr(CorpusIngestionRuntime, "_load", lambda *_: ({"status": "RUNNING"}, {}, None))
+    monkeypatch.setattr(execution, "curated_provider_gate", lambda *_: None)
+    delivered = []
+    class InputCaptured(Exception):
+        pass
+    def capture(app, worker, selected):
+        delivered.extend(selected)
+        raise InputCaptured()
+    monkeypatch.setattr(execution, "_source_inputs", capture)
+    with pytest.raises(InputCaptured):
+        execution.execute_reading(SimpleNamespace(database_url="unused", _require_execution_port=lambda: None), None, payload)
+    assert [u["source_unit_version_id"] for u in delivered] == ["unit:0", "unit:1", "unit:2"]
+    assert [u["role"] for u in delivered] == ["ALLOWED_CONTEXT", "TARGET", "ALLOWED_CONTEXT"]
+    assert units[2]["role"] == "TARGET"
+
+
+def test_delivered_neighbor_receipt_counts_only_target_coverage():
+    from novel_forge.modules.source_import.corpus_ingestion.reading_evidence import materialized_input_manifest, receipt_input_evidence
+
+    bindings = [
+        {"source_unit_version_id": "neighbor", "role": "ALLOWED_CONTEXT", "chunk_ranges": [
+            {"source_chunk_asset_version_id": "c0", "byte_start": 0, "byte_end": 3}]},
+        {"source_unit_version_id": "target", "role": "TARGET", "chunk_ranges": [
+            {"source_chunk_asset_version_id": "c1", "byte_start": 0, "byte_end": 3}]},
+    ]
+    inputs = {"source_segments": [{"source_chunk_asset_version_id": "c0", "content": "甲"}, {"source_chunk_asset_version_id": "c1", "content": "乙"}],
+              "reading_context": {"reading_identity": "frozen", "unit_versions": ["neighbor", "target"], "unit_bindings": bindings}}
+    manifest = materialized_input_manifest(inputs, {}, {})
+    assert manifest["target_units"] == ["target"]
+    assert manifest["supporting_units"] == ["neighbor"]
+    assert [s["role"] for s in manifest["actual_text_inputs"]] == ["SUPPORTING_CONTEXT", "TARGET_TEXT"]
+    assert manifest["actual_text_inputs"][0]["unit_ranges"][0]["source_unit_version_id"] == "neighbor"
+    result = receipt_input_evidence([{"manifest": manifest, "returned": True}], {"narrative_reading": {"identity": "frozen", "processing_id": "p", "units": bindings}})
+    assert result["coverage"]["allowed_context_not_read"] == []
+
+
+def test_empty_observation_retains_bounded_evidence_without_forcing_knowledge():
+    from novel_forge.modules.source_authority.deconstruction import ObservationEvidenceSpan, validate_observation_payload
+    payload = {"findings": [], "confidence": 0.0, "knowledge_status": "NOT_ABSTRACTED",
+               "scope_limitations": "No supported mechanism in the actual supplied section."}
+    span = ObservationEvidenceSpan("chunk:v1", 0, 3, "sha256:" + "a" * 64)
+    assert validate_observation_payload(payload, evidence_spans=(span,)) == payload
+    with pytest.raises(KernelError):
+        validate_observation_payload({**payload, "scope_limitations": ""}, evidence_spans=(span,))
+
+
+def test_mechanism_observation_preserves_conditions_and_uncertainty():
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import (
+        mechanism_observation_schema, validate_narrative, validate_abstraction_lineage,
+    )
+    text = "Only a sealed vessel retains pressure; an open vent defeats this mechanism."
+    inputs = {"observation_contract": {"version": "v2"}, "analyzer": {"dimension": "causal_constraints"},
+              "source_segments": [{"source_chunk_asset_version_id": "chunk:v3", "content": text}]}
+    output = content_intelligence_fixture_response(DECONSTRUCTION_STAGE, inputs)
+    finding = output["findings"][0]
+    finding["certainty"] = "TEXT_EXPLICIT"
+    finding["details"].update(mechanism="Enclosure retains pressure", preconditions="Vessel is sealed", exceptions="An open vent", failure_conditions="Seal breaks", misuse_risks="Assuming an open vessel is pressurized")
+    validate_content_intelligence_output(DECONSTRUCTION_STAGE, mechanism_observation_schema(), output)
+    observed, spans = validate_narrative(output, segments=tuple(inputs["source_segments"]), lower_ids=(), dimensions=["causal_constraints"])
+    assert observed["findings"][0]["details"]["exceptions"] == "An open vent"
+    assert spans[0].chunk_byte_end == len(text.encode())
+    assert "supports" not in observed["findings"][0]
+    candidate = {"source_finding_codes": [finding["finding_code"]], "epistemic_status": "SUPPORTED_INFERENCE"}
+    validate_abstraction_lineage(candidate, observed)
+    observed["findings"][0]["certainty"] = "HYPOTHESIS"
+    with pytest.raises(KernelError, match="SOURCE_ABSTRACTION_EPISTEMIC_PROMOTION"):
+        validate_abstraction_lineage(candidate, observed)
+    with pytest.raises(KernelError, match="SOURCE_ABSTRACTION_FINDING_UNKNOWN"):
+        validate_abstraction_lineage({**candidate, "source_finding_codes": ["unread"]}, observed)
+
+
+def test_neighbor_evidence_cannot_be_counted_as_target_observation():
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_contracts import validate_narrative
+    inputs = {"observation_contract": {}, "analyzer": {"dimension": "causal_constraints"},
+              "source_segments": [{"source_chunk_asset_version_id": "neighbor", "content": "甲"}]}
+    inputs["observation_contract"] = {"version": "v2"}
+    output = content_intelligence_fixture_response(DECONSTRUCTION_STAGE, inputs)
+    bindings = ({"source_unit_version_id": "unit:v1", "role": "ALLOWED_CONTEXT", "chunk_ranges": [{"source_chunk_asset_version_id": "neighbor", "byte_start": 0, "byte_end": 3}]},)
+    with pytest.raises(KernelError, match="NARRATIVE_TARGET_SUPPORT_REQUIRED"):
+        validate_narrative(output, segments=tuple(inputs["source_segments"]), lower_ids=(), dimensions=["causal_constraints"], unit_bindings=bindings)
+    bindings = ({**bindings[0], "role": "TARGET"},)
+    observed, _ = validate_narrative(output, segments=tuple(inputs["source_segments"]), lower_ids=(), dimensions=["causal_constraints"], unit_bindings=bindings)
+    assert observed["findings"][0]["source_unit_evidence"][0]["source_unit_version_id"] == "unit:v1"

@@ -180,6 +180,18 @@ class ProductionPreparationService:
                     }
                 )
 
+        knowledge_projection: dict[str, dict[str, Any]] = {}
+        plans = selected_by_type.get("chapter_plan") or []
+        if plans and (
+            "knowledge_translations" in plans[0].content
+            or plans[0].content.get("knowledge_translation_policy_version") == "knowledge-grounded-selection-v2"
+        ):
+            knowledge_projection = self._bind_translated_knowledge(
+                request=request, plan=plans[0], selected_by_type=selected_by_type,
+                selections=selections, rejections=rejections, blocked=blocked,
+                knowledge_access=knowledge_access,
+            )
+
         missing: list[str] = []
         for requirement in requirements:
             if not requirement.required or selected_by_type.get(requirement.asset_type):
@@ -192,6 +204,10 @@ class ProductionPreparationService:
             risk for risk in risks if not self._risk_approved(risk, approvals, request)
         )
         repair_actions = [self._repair_action(kind) for kind in missing]
+        repair_actions.extend(
+            "replan the Chapter knowledge translation or restore the approved exact Card: " + item.get("asset_version_id", "")
+            for item in blocked if item["asset_type"] == "knowledge_card"
+        )
         repair_actions.extend(
             f"obtain {risk.approval_type} for {risk.code}" for risk in unmet_risks
         )
@@ -312,6 +328,7 @@ class ProductionPreparationService:
                 chapter=request.chapter,
                 book_id=request.book_id,
                 accepted_boundary=accepted_boundary,
+                knowledge_projection=knowledge_projection.get(item.asset_version_id),
             )
             for item in selected
         )
@@ -337,6 +354,92 @@ class ProductionPreparationService:
                 idempotency_key=request.idempotency_key,
             ),
         )
+
+    def _bind_translated_knowledge(
+        self, *, request, plan, selected_by_type, selections, rejections, blocked,
+        knowledge_access,
+    ) -> dict[str, dict[str, Any]]:
+        from novel_forge.modules.mkaos_authority.applicability import assess_applicability, prose_applicability_view
+        from novel_forge.modules.story_planning_runtime.execution import _required_selection_terms
+
+        adopted: dict[str, dict[str, Any]] = {}
+        for translation in plan.content.get("knowledge_translations") or ():
+            if translation.get("decision") in {"ADOPT", "ADAPT"}:
+                adopted[translation["knowledge_card_asset_version_id"]] = dict(translation)
+        existing = {
+            item.asset_version_id: item
+            for item in selected_by_type.get("knowledge_card") or ()
+        }
+        for kind in ("knowledge_card", "knowledge_pack"):
+            for item in selected_by_type.pop(kind, []):
+                if item.asset_version_id not in adopted:
+                    rejections.append(ProductionInputRejection(
+                        item.asset_version_id, kind, "KNOWLEDGE_NOT_ADOPTED_BY_CHAPTER_PLAN",
+                        "Only knowledge explicitly translated into the active Chapter plan may enter this generation Context.",
+                    ))
+        selections[:] = [item for item in selections if item.asset_type not in {"knowledge_card", "knowledge_pack"}]
+        sources = {
+            kind: {"content": values[0].content, "asset_version_id": values[0].asset_version_id, "content_hash": values[0].content_hash}
+            for kind, values in selected_by_type.items() if values
+        }
+        if "story_state_snapshot" in sources:
+            sources["story_state"] = sources["story_state_snapshot"]
+        result: dict[str, dict[str, Any]] = {}
+        for identity, translation in adopted.items():
+            try:
+                item = existing.get(identity) or self.resolver.resolve_override(
+                    project_id=request.project_id, asset_version_id=identity,
+                )
+                issue = self._knowledge_access_issue(item, knowledge_access=knowledge_access)
+                issue = issue or self._asset_fit_issue(
+                    asset_type="knowledge_card", asset=item,
+                    requested_chapter=request.chapter, requested_book_id=request.book_id,
+                    stage=request.stage, forbidden_types=STAGE_PROFILES[request.stage].forbidden_asset_types,
+                )
+                if item.project_id != request.project_id or item.asset_type != "knowledge_card" or item.content_hash != translation["content_hash"]:
+                    issue = "KNOWLEDGE_TRANSLATION_VERSION_DRIFT"
+                if not issue and hasattr(self.resolver, "require_current_knowledge"):
+                    self.resolver.require_current_knowledge(
+                        project_id=request.project_id, book_id=request.book_id,
+                        asset_version_id=identity, content_hash=translation["content_hash"],
+                        knowledge_access_policy=knowledge_access,
+                    )
+                assessment = assess_applicability(
+                    item.content["abstract_content"], sources=sources,
+                    hard_constraints=_required_selection_terms([plan.content], {"hard_constraints", "forbidden_events", "prohibited_outcomes"}),
+                )
+                if not issue and assessment["status"] == "REJECTED":
+                    issue = "KNOWLEDGE_TRANSLATION_APPLICABILITY_CHANGED"
+                if (
+                    not issue
+                    and translation.get("decision") == "ADOPT"
+                    and translation.get("usage_role") in {"MECHANISM", "CONSTRAINT"}
+                    and assessment["status"] != "APPLICABLE"
+                ):
+                    issue = "KNOWLEDGE_TRANSLATION_ADOPTION_REQUIRES_REPLAN"
+                if issue:
+                    blocked.append({
+                        "asset_type": "knowledge_card", "asset_version_id": identity,
+                        "code": issue, "translation": translation,
+                        "chapter_plan_asset_version_id": plan.asset_version_id,
+                        "chapter_plan_content_hash": plan.content_hash,
+                        "current_applicability_assessment": assessment,
+                    })
+                    continue
+            except KernelError as error:
+                blocked.append({"asset_type": "knowledge_card", "asset_version_id": identity, "code": error.code})
+                continue
+            selected_by_type.setdefault("knowledge_card", []).append(item)
+            selections.append(ProductionInputSelection(
+                identity, "knowledge_card", "context", "EXACT_ACTIVE_CHAPTER_TRANSLATION",
+            ))
+            result[identity] = {
+                "applicability_assessment": prose_applicability_view(assessment),
+                "translation": translation,
+                "chapter_plan_asset_version_id": plan.asset_version_id,
+                "chapter_plan_content_hash": plan.content_hash,
+            }
+        return result
 
     def _candidates(
         self,
@@ -508,6 +611,7 @@ class ProductionPreparationService:
         chapter: int,
         book_id: str,
         accepted_boundary: dict[str, object],
+        knowledge_projection: dict[str, Any] | None = None,
     ) -> dict[str, object]:
         declared_scope = dict(item.content.get("scope") or {})
         declared_book_id = str(item.content.get("book_id") or declared_scope.get("book_id") or "")
@@ -580,9 +684,17 @@ class ProductionPreparationService:
                     "semantic_family",
                     "selection_tags",
                     "repetition_key",
+                    "applicability_contract",
+                    "preconditions",
+                    "exceptions",
+                    "misuse_risks",
+                    "epistemic_status",
+                    "source_finding_codes",
                 )
                 if abstract_content.get(key) not in (None, "", [])
             }
+            if knowledge_projection:
+                projected.update(knowledge_projection)
             safe_summary = json.dumps(
                 projected,
                 ensure_ascii=False,
@@ -660,7 +772,7 @@ class ProductionPreparationService:
                     )
                     // 4,
                 )
-                if item.asset_type in _STATE_ASSET_TYPES
+                if item.asset_type in _STATE_ASSET_TYPES or knowledge_projection
                 else item.content.get("estimated_tokens")
                 or projection.get("estimated_tokens")
                 or max(1, len(safe_summary + repr(structured_facts)) // 4)
@@ -675,9 +787,9 @@ class ProductionPreparationService:
             "source_use_mode": str(item.content.get("source_use_mode") or "generation"),
             "entity_id": str(item.content.get("entity_id") or ""),
             "scope": dict(item.content.get("scope") or {}),
-            "context_class": str(projection.get("context_class") or "RETRIEVABLE"),
+            "context_class": "PROTECTED" if knowledge_projection else str(projection.get("context_class") or "RETRIEVABLE"),
             "compression_method": str(
-                projection.get("compression_method") or "safe_summary"
+                "authority_projection" if knowledge_projection else projection.get("compression_method") or "safe_summary"
             ),
             "semantic_projection": bool(
                 projection.get("semantic_projection", True)
@@ -687,6 +799,11 @@ class ProductionPreparationService:
                     "provenance": {
                         "authority": "MKAOS",
                         "knowledge_card_asset_version_ids": knowledge_card_ids,
+                        **({"knowledge_card_usages": [{
+                            "knowledge_card_asset_version_id": entry["knowledge_card_asset_version_id"],
+                            "usage_role": entry["usage_role"],
+                        } for entry in item.content.get("items") or ()]}
+                           if item.asset_type == "knowledge_pack" else {}),
                     }
                 }
                 if item.asset_type in {"knowledge_card", "knowledge_pack"}
