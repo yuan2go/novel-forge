@@ -1,0 +1,277 @@
+{
+  "contract_version": "creation-input-policy.v1",
+  "purpose": "作者指导型单书十二章原生试生产；分组审阅，不代表额度授权或知识A/B。",
+  "profiles": {
+    "production_profile": {
+      "operation": "book.production_profile.author",
+      "content": {
+        "type": "production_profile",
+        "safe_summary": "180章长篇方向，当前连续12章试生产；每组三章原生接纳后读稿，第6章全段审阅，通过后续写7—12；12章暂停，书未完成。",
+        "structured_facts": [],
+        "profile_id": "yu-xian-zhi-wai-author-guided-v2",
+        "target_chapter_count": 180,
+        "language_contract": {
+          "language": "zh",
+          "script": "Hans"
+        },
+        "authority_boundary": "FUTURE_INTENT",
+        "knowledge_access_policy": {
+          "policy_id": "yu-xian-zhi-wai-author-guided-original-v1",
+          "policy_version": 1,
+          "mode": "DENY_ALL",
+          "allowed_knowledge_card_asset_version_ids": []
+        }
+      }
+    },
+    "previous_volume_outcome": {
+      "operation": "book.previous_volume_outcome.author",
+      "content": {
+        "type": "previous_volume_outcome",
+        "safe_summary": "Explicit bounded creation policy: previous_volume_outcome; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_VOLUME",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "previous_chapter_group_outcome": {
+      "operation": "book.previous_chapter_group_outcome.author",
+      "content": {
+        "type": "previous_chapter_group_outcome",
+        "safe_summary": "Explicit bounded creation policy: previous_chapter_group_outcome; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_CHAPTER_GROUP",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "previous_chapter_outcome": {
+      "operation": "book.previous_chapter_outcome.author",
+      "content": {
+        "type": "previous_chapter_outcome",
+        "safe_summary": "Explicit bounded creation policy: previous_chapter_outcome; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_CHAPTER",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "arc_portfolio": {
+      "operation": "book.arc_portfolio.author",
+      "content": {
+        "type": "arc_portfolio",
+        "safe_summary": "Explicit bounded creation policy: arc_portfolio; no accepted history.",
+        "structured_facts": [],
+        "portfolio_id": "initial-arc-window",
+        "contract_version": "v1",
+        "authority_boundary": "FUTURE_INTENT"
+      }
+    },
+    "ending_reachability": {
+      "operation": "book.ending_reachability.author",
+      "content": {
+        "type": "ending_reachability",
+        "safe_summary": "Explicit bounded creation policy: ending_reachability; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "PLANNED_NOT_ACTUAL",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "conflict_state": {
+      "operation": "book.conflict_state.author",
+      "content": {
+        "type": "conflict_state",
+        "safe_summary": "Explicit bounded creation policy: conflict_state; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "foreshadowing_ledger": {
+      "operation": "book.foreshadowing_ledger.author",
+      "content": {
+        "type": "foreshadowing_ledger",
+        "safe_summary": "Explicit bounded creation policy: foreshadowing_ledger; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "character_state": {
+      "operation": "book.character_state.author",
+      "content": {
+        "type": "character_state_snapshot",
+        "safe_summary": "Explicit bounded creation policy: character_state; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "foreshadowing_state": {
+      "operation": "book.foreshadowing_state.author",
+      "content": {
+        "type": "foreshadow_snapshot",
+        "safe_summary": "Explicit bounded creation policy: foreshadowing_state; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "reward_ledger": {
+      "operation": "book.reward_ledger.author",
+      "content": {
+        "type": "reward_ledger_snapshot",
+        "safe_summary": "Explicit bounded creation policy: reward_ledger; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "promise_ledger": {
+      "operation": "book.promise_ledger.author",
+      "content": {
+        "type": "promise_ledger_snapshot",
+        "safe_summary": "Explicit bounded creation policy: promise_ledger; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "reader_segment": {
+      "operation": "book.reader_segment.author",
+      "content": {
+        "type": "reader_segment_profile",
+        "safe_summary": "Explicit bounded creation policy: reader_segment; no accepted history.",
+        "structured_facts": [],
+        "profile_id": "bounded-reader-proxy",
+        "profile_version": "reader-outcome-v3",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "reader_contract": {
+      "operation": "book.reader_contract.author",
+      "content": {
+        "type": "reader_contract",
+        "safe_summary": "Explicit bounded creation policy: reader_contract; no accepted history.",
+        "structured_facts": [],
+        "profile_id": "bounded-reader-proxy",
+        "profile_version": "reader-outcome-v3",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "reader_state": {
+      "operation": "book.reader_state.author",
+      "content": {
+        "type": "reader_state",
+        "safe_summary": "Explicit bounded creation policy: reader_state; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "reader-state-genesis-v1",
+        "profile_version": "reader-outcome-v3",
+        "status": "NOT_OBSERVED",
+        "accepted_through_chapter": 0,
+        "observations": [],
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "quality_trend": {
+      "operation": "book.quality_trend.author",
+      "content": {
+        "type": "quality_trend",
+        "safe_summary": "Explicit bounded creation policy: quality_trend; no accepted history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_ACCEPTED_CHAPTERS",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "platform_profile": {
+      "operation": "chapter.platform_profile.author",
+      "content": {
+        "type": "platform_profile",
+        "safe_summary": "作者指导型单书，12章，每章2000–3500汉字；读稿独立于人工文学评价。",
+        "structured_facts": [
+          {
+            "key": "platform_rules",
+            "value": {
+              "chapter_length": {
+                "unit": "HAN_CHARACTERS_V1",
+                "minimum": 2000,
+                "maximum": 3500
+              },
+              "format": {
+                "paragraph_max": 500
+              },
+              "sensitive_content": [],
+              "ai_content": {
+                "mode": "internal"
+              },
+              "opening": [
+                "通过具体行动建立当前冲突与人物所知边界"
+              ],
+              "rhythm": [
+                "建立、推进、兑现须有可定位的正文证据"
+              ],
+              "publish_metadata": {
+                "title_required": true
+              }
+            }
+          }
+        ],
+        "profile_id": "chinese-author-guided-twelve-v1",
+        "constraints": [
+          "全书方向180章、三卷，约45万至60万汉字，可随真实结果调整；首弧约24章。当前试生产连续12章、每章2000–3500汉字，四个真实三章组；停止游标不是全书完成。",
+          "第三人称限知，固定岑禾视角。未知、传闻、作者幕后预案、未来计划、客观已发生事实、角色所知和读者所知分别表达。",
+          "资源变化必须有来源、成本、行动、授权与接收；角色不可代别人签收，不能为了查账拖延已有合法救助。",
+          "前六章完成首批交付及其去向承诺；后六章由实际后果继续，不能重复揭晓已解决的谜底。",
+          "角色通过自己的欲望、误解、有代价的选择改变局面；允许主角犯错与别人保留异议，不用术语说明代替剧情。",
+          "每个章组读完接纳正文及相关前文，定位问题并复核修订；第六章全段审阅后才继续第七章。独立人工评审缺席时保持NOT_REVIEWED。",
+          "前三章接纳后仅依据真实已接纳证据更新未来规划。有触发才通过原生PlanChange变更未执行行动，保留接纳历史、资源及未完成义务；无触发则暂停说明，不能捏造此前计划。",
+          "第十二章完成一个具体阶段变化并保留可追的未满足需求；不结束首弧或全书，不预先穷举180章场景。"
+        ]
+      }
+    },
+    "quality_rubric": {
+      "operation": "chapter.quality_rubric.author",
+      "content": {
+        "type": "quality_rubric",
+        "safe_summary": "Explicit bounded creation policy: quality_rubric; no accepted history.",
+        "structured_facts": [],
+        "profile_id": "grounded-creation",
+        "dimensions": [
+          "continuity",
+          "causality",
+          "character_consistency",
+          "pacing",
+          "style"
+        ]
+      }
+    }
+  },
+  "chapter_group_execution": {
+    "policy_version": "yu-xian-zhi-wai-author-guided-three-chapters-v1",
+    "maximum_chapters": 3,
+    "preferred_chapters": 3
+  },
+  "future_plan_change": {
+    "after_chapter": 3,
+    "directive": "前三章接纳后核对实际28张已交付、另8张实际是否在用与可归还条件；只有正文及已激活未来计划确实支持时，撤去“本次取回8张补两点余额”的未来假设，改为兑现解释、承担轮休与营业代价并保留需求。若原计划没有该假设或现场前提不成立，记录具体差异并通过合法未来计划流程处理，不伪造原计划或事件；前三章历史、资源、知情及承诺保持。"
+  },
+  "pilot_stop_after_chapter": 12,
+  "reading_checkpoints": [
+    3,
+    6,
+    9,
+    12
+  ]
+}

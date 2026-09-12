@@ -1313,6 +1313,9 @@ class _DraftHandler:
             "scene_directives": list(memo.content.get("scene_directives") or []),
             "authority": "CREATIVE_SUGGESTION_ONLY",
         }
+        author_guidance = build_draft_plan_view(plan.content).get("author_design_guidance")
+        if author_guidance:
+            content["author_design_guidance"] = author_guidance
         return _model_output(ChapterNode.DRAFT, content, request=request, generated=generated)
 
 
@@ -1328,7 +1331,7 @@ class _ReviewHandler:
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={"draft": draft.content, "knowledge_review_targets": targets},
+            payload={"draft": draft.content, "knowledge_review_targets": targets, "author_design_review_targets": draft.content.get("author_design_guidance") or {}},
         )
         return _model_output(
             ChapterNode.REVIEW,
@@ -1434,6 +1437,7 @@ class _ReReviewHandler:
                 "review": review.content,
                 "revision": revision.content,
                 "knowledge_review_targets": targets,
+                "author_design_review_targets": draft.content.get("author_design_guidance") or {},
             },
         )
         return _model_output(

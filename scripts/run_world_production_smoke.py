@@ -157,10 +157,27 @@ def drive(
     deadline: float,
     stop_after_chapter: int = 0,
     pilot_stop_after_chapter: int = 0,
+    checkpoints: tuple[int, ...] = (),
+    resume_after_checkpoint: int = 0,
+    checkpoint_review_decision_id: str = "",
 ):
+    if checkpoints and (tuple(sorted(set(checkpoints))) != checkpoints or checkpoints[-1] != pilot_stop_after_chapter):
+        raise ValueError("Reading checkpoints must end at the frozen pilot stop cursor")
+    if resume_after_checkpoint and resume_after_checkpoint not in checkpoints[:-1]:
+        raise ValueError("Resume checkpoint must be an intermediate frozen reading cursor")
     jobs = RuntimeJobAuthority(composition.authority.database_url)
     for _ in range(maximum_ticks):
         book = composition.authority.require(book_run_id)
+        if checkpoints:
+            from scripts.creation_pilot import reading_checkpoint_gate
+            blocked = reading_checkpoint_gate(
+                composition=composition, book=book, checkpoints=checkpoints,
+                resume_after_checkpoint=resume_after_checkpoint,
+                decision_version_id=checkpoint_review_decision_id, events=events,
+            )
+            if blocked:
+                return blocked
+            book = composition.authority.require(book_run_id)
         stop_cursor = pilot_stop_after_chapter or book["target_chapter_count"]
         if book["accepted_through_chapter"] >= stop_cursor:
             group_id = composition.query.active_chapter_group_run_id(
@@ -341,6 +358,7 @@ def export(
         json.dumps(book, default=str, indent=2) + "\n"
     )
     errors = []
+    groups = None
     try:
         groups = composition.query.chapter_group_execution_lineage(
             project_id=book["project_id"], book_run_id=book_run_id, limit=500,
@@ -400,6 +418,12 @@ def export(
     (destination / "chapter-workspaces.json").write_text(
         json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n"
     )
+    try:
+        from scripts.creation_reading import accepted_reading_manifest, write_accepted_reading
+        reading = accepted_reading_manifest(book=book, workspaces=workspaces, lineage=groups or {})
+        write_accepted_reading(reading, destination=destination, book=book)
+    except Exception as error:
+        errors.append({"stage": "accepted_reading", "error": redact_secret_text(str(error))})
     try:
         from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
         usage = MkaosAuthorityQuery(composition.authority.database_url).list_runtime_usage(

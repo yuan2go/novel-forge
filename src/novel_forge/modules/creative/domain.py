@@ -23,6 +23,13 @@ EVALUATION_FIELDS = (
 
 
 def validate_creative_brief(brief: dict[str, Any]) -> dict[str, Any]:
+    if brief.get("creative_brief_contract_version") == "creative-brief-v3":
+        from novel_forge.modules.story_design_authority.author_input import validate_author_design
+        author = validate_author_design(brief.get("author_design") or {})
+        base = {key: value for key, value in brief.items() if key != "author_design"}
+        base["creative_brief_contract_version"] = "creative-brief-v2"
+        validate_creative_brief(base)
+        return {**brief, "author_design": author}
     if brief.get("creative_brief_contract_version") == "creative-brief-v2":
         if set(brief) != {"creative_brief_contract_version", "idea", "genre", "audience", "constraints", "source_boundaries"}:
             raise ValueError("Natural-language CreativeBrief fields must match exactly")

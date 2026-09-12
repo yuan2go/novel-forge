@@ -147,6 +147,29 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_reading_checklist_cannot_replace_chapter_governance_or_enter_explicitly(self) -> None:
+        assets = {kind: [_asset(kind)] for kind in (
+            "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
+        )}
+        chapter_checklist = _asset("operator_checklist")
+        reading = replace(chapter_checklist, asset_id="reading", asset_version_id="reading:v1", content={
+            **chapter_checklist.content, "contract_version": "author-reading-review.v1",
+            "allowed_use": "evidence_only", "safe_summary": "Operator-only reading evidence",
+        })
+        assets["operator_checklist"] = [reading, chapter_checklist]
+        service = ProductionPreparationService(_MultiResolver(assets))
+        request = ProductionPreparationRequest(
+            project_id="project-1", workspace_id="workspace-1", book_id="book-1", chapter=1,
+            idempotency_key="reading-purpose", capability_required_asset_types=("operator_checklist",),
+        )
+        result = service.prepare(request)
+        self.assertEqual(result.report.decision, "READY")
+        selected = [item for item in result.command.context_candidates if item["asset_type"] == "operator_checklist"]
+        self.assertEqual([item["asset_version_id"] for item in selected], [chapter_checklist.asset_version_id])
+        rejected = service.prepare(replace(request, explicit_asset_version_overrides={"operator_checklist": reading.asset_version_id}))
+        self.assertEqual(rejected.report.decision, "BLOCKED")
+        self.assertEqual(rejected.report.blocked_assets[0]["code"], "OPERATOR_CHECKLIST_PURPOSE_MISMATCH")
+
     def test_preparation_revalidates_adoption_against_current_mechanism_inputs(self) -> None:
         import json
 

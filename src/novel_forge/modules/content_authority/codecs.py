@@ -149,9 +149,13 @@ def _many(request: AuthorityHandlerRequest, *types: str) -> list[AuthorityInputA
 
 
 def _creative_brief(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    brief = validate_creative_brief(_payload(request)["brief"])
+    if brief.get("author_design"):
+        from novel_forge.modules.story_design_authority.author_input import validate_author_design
+        validate_author_design(brief["author_design"], project_id=request.project_id)
     return {
         "project_id": request.project_id,
-        **validate_creative_brief(_payload(request)["brief"]),
+        **brief,
     }
 
 

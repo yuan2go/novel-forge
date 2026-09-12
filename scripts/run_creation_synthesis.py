@@ -47,6 +47,7 @@ from scripts.creation_pilot import (
     freeze_routes,
     prepare_pilot_book,
     pilot_stop_cursor,
+    reading_checkpoints,
 )
 from scripts.run_world_production_smoke import (
     drive,
@@ -69,15 +70,18 @@ def main(argv=None):
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--formation-policy", type=Path, required=True)
     parser.add_argument("--knowledge-policy", type=Path, help="Exact approved Book knowledge access policy, frozen before Formation")
-    parser.add_argument("--comparison-budget", type=Path, help="Immutable creative experiment opportunity plan; native phase authorization is separate")
+    parser.add_argument("--comparison-budget", "--production-budget", dest="comparison_budget", type=Path, help="Immutable A/B or single-Book stage plan; native authorization is separate")
     parser.add_argument("--freeze-dir", type=Path)
     parser.add_argument("--freeze-manifest-hash", help="Pinned final-byte SHA-256 of freeze.json")
     parser.add_argument("--plan-change-proposal-id", default="", help="Owned ACTIVE future change required to continue past the configured intervention")
+    parser.add_argument("--resume-after-checkpoint", type=int, default=0)
+    parser.add_argument("--checkpoint-review-decision-id", default="")
+    parser.add_argument("--register-input-only", action="store_true", help="Register the exact author brief through Content without Provider, Formation or Book activation")
     parser.add_argument("--project-id", required=True)
     parser.add_argument(
         "--book-id",
         required=True,
-        help="An existing new Book registered through /authority/books",
+        help="Stable Book identity; --initialize creates it through Authority after authorization, while input-only registration binds the intended identity",
     )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--run-key", required=True)
@@ -120,6 +124,9 @@ def main(argv=None):
         production_profile=profile, project_id=args.project_id, book_id=args.book_id,
     )
     validate_creative_brief(brief)
+    if brief.get("author_design"):
+        from novel_forge.modules.story_design_authority.author_input import validate_author_design
+        validate_author_design(brief["author_design"], project_id=args.project_id, book_id=args.book_id)
     StoryFormationInput(
         creative_brief_asset_version_id="configuration-check",
         creative_brief_content_hash="sha256:" + "0" * 64,
@@ -135,6 +142,7 @@ def main(argv=None):
         )
     try:
         pilot_cursor = pilot_stop_cursor(policy, book_target=formation_policy["target_chapters"])
+        checkpoints = reading_checkpoints(policy, book_target=formation_policy["target_chapters"])
     except ValueError as exc:
         parser.error(str(exc))
     repo = Path(__file__).resolve().parents[1]
@@ -160,6 +168,8 @@ def main(argv=None):
         "formation_policy": formation_policy,
         "book_target_chapter_count": formation_policy["target_chapters"],
         "pilot_stop_after_chapter": pilot_cursor,
+        "reading_checkpoints": list(checkpoints),
+        "production_scope": "AUTHOR_GUIDED_SINGLE_BOOK" if brief.get("author_design") else "CREATIVE_BRIEF_PRODUCTION",
         "full_book_completion": "NOT_PROVEN",
         "brief_input_hash": "sha256:"
         + hashlib.sha256(
@@ -181,6 +191,26 @@ def main(argv=None):
     database_url = ""
     budget_binding = None
     try:
+        if args.register_input_only:
+            if args.execute or args.expected_sha != source_sha or subprocess.check_output(["git", "status", "--porcelain"], cwd=repo, text=True).strip():
+                raise ValueError("Input registration requires a clean exact SHA and cannot also execute production")
+            if not args.workspace_id:
+                raise ValueError("Input registration requires the existing project workspace")
+            values = dict(os.environ)
+            settings = IndustrialSettings.from_env(values, root=args.root)
+            principal = build_trusted_principal_resolver(env=values).resolve_api_principal()
+            content = build_content_authority_application(settings, env=values)
+            authored = content.execute(ContentOperationRequest(
+                definition_name="creative.brief.create", project_id=args.project_id,
+                workspace_id=args.workspace_id, actor_id=principal.principal_id,
+                trace_id=f"trace:{args.run_key}", correlation_id=args.run_key,
+                idempotency_key=f"{args.run_key}:brief", payload={"brief": brief},
+            ), principal=principal)
+            report.update(status="AUTHOR_INPUT_REGISTERED_NOT_APPROVED", author_input={
+                "asset_version_id": authored.asset_version_id, "content_hash": authored.content_hash,
+                "operation_id": authored.operation_id, "provider_calls": 0,
+            })
+            return 0
         if not args.execute:
             report["status"] = "CONFIGURATION_VALIDATED_NO_PROVIDER_CALL"
             return 0
@@ -540,6 +570,9 @@ def main(argv=None):
             deadline=deadline,
             stop_after_chapter=stop_after,
             pilot_stop_after_chapter=pilot_cursor,
+            checkpoints=checkpoints,
+            resume_after_checkpoint=args.resume_after_checkpoint,
+            checkpoint_review_decision_id=args.checkpoint_review_decision_id,
         )
         report["real_provider"] = "EXECUTED_SEE_RECEIPTS"
         return 0 if report["status"] in {"ACCEPTED_TARGET_REACHED", "PILOT_ACCEPTED_CURSOR_REACHED"} else 2

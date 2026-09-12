@@ -13,6 +13,75 @@ from novel_forge.modules.project_authority.application import (
 )
 from novel_forge.modules.project_authority.query import ProjectAuthorityQuery
 from novel_forge.modules.command_kernel.errors import KernelError
+from scripts.creation_checkpoints import (
+    decide_reading_review,
+    reading_checkpoints,
+    register_reading_review,
+    require_reading_decision,
+)
+
+
+__all__ = ["authorize_execution", "authorize_total", "freeze_routes", "pilot_stop_cursor",
+           "prepare_pilot_book", "verify_future_plan_change", "reading_checkpoint_gate",
+           "decide_reading_review", "reading_checkpoints", "register_reading_review", "require_reading_decision"]
+
+
+def reading_checkpoint_gate(*, composition: Any, book: dict, checkpoints: tuple[int, ...],
+                            resume_after_checkpoint: int, decision_version_id: str, events: Any) -> str:
+    cursor = book["accepted_through_chapter"]
+    current_evidence = {}
+    for boundary in checkpoints[:-1]:
+        if boundary < cursor or boundary == cursor == resume_after_checkpoint:
+            try:
+                evidence = require_reading_decision(
+                    composition=composition, book_run_id=book["book_run_id"], boundary=boundary,
+                    decision_version_id=decision_version_id if boundary == resume_after_checkpoint else "",
+                )
+            except (KernelError, ValueError) as exc:
+                if book["state"] != "PAUSED":
+                    composition.authority.pause(book["book_run_id"], principal=composition.principal,
+                                                reason="Accepted reading checkpoint requires resolved editorial evidence")
+                events({"kind": "AUTHOR_READING_REVIEW_REQUIRED", "after_chapter": boundary, "reason": str(exc)})
+                return "AUTHOR_READING_REVIEW_REQUIRED"
+            if boundary == cursor:
+                current_evidence = evidence
+            events({"kind": "AUTHOR_READING_DECISION_VERIFIED", **evidence})
+    if cursor not in checkpoints[:-1]:
+        return ""
+    group_id = composition.query.active_chapter_group_run_id(project_id=book["project_id"], book_run_id=book["book_run_id"])
+    if group_id:
+        group = composition.chapter_groups.require(group_id)
+        if group.get("chapter_start", 1) > cursor:
+            group = {"state": "COMPLETED"}
+        elif group["chapter_end"] != cursor:
+            if book["state"] != "PAUSED":
+                composition.authority.pause(book["book_run_id"], principal=composition.principal,
+                                            reason="Reading checkpoint crosses an incomplete ChapterGroup")
+            events({"kind": "AUTHOR_READING_CHECKPOINT_GROUP_BLOCKED", "after_chapter": cursor, "group_run_id": group_id})
+            return "AUTHOR_READING_CHECKPOINT_GROUP_BLOCKED"
+        if group["state"] == "CHAPTER_RUNNING":
+            group = composition.chapter_groups.reconcile_and_accept(group_id, principal=composition.principal)
+        if group["state"] == "CLOSURE_PENDING":
+            group = composition.chapter_groups.close(group_id, principal=composition.principal)
+            events({"kind": "ACCEPTED_GROUP_CLOSED", "group_run_id": group_id})
+        if group["state"] != "COMPLETED":
+            return "WAITING_ACCEPTED_GROUP_CLOSURE"
+    if resume_after_checkpoint != cursor:
+        if book["state"] != "PAUSED":
+            composition.authority.pause(book["book_run_id"], principal=composition.principal,
+                                        reason=f"Frozen author reading checkpoint after chapter {cursor}")
+        events({"kind": "AUTHOR_READING_CHECKPOINT_REQUIRED", "book_run_id": book["book_run_id"],
+                "after_chapter": cursor, "independent_human_review": "NOT_REVIEWED"})
+        return "AUTHOR_READING_CHECKPOINT_REQUIRED"
+    current = composition.authority.require(book["book_run_id"])
+    if current["state"] == "PAUSED":
+        if current_evidence.get("paused_book_version") != current["version"]:
+            events({"kind": "AUTHOR_READING_PAUSE_VERSION_CHANGED", "after_chapter": cursor,
+                    "reason": "An earlier reading approval cannot release a subsequent operator pause"})
+            return "AUTHOR_READING_PAUSE_VERSION_CHANGED"
+        composition.authority.resume(book["book_run_id"], principal=composition.principal,
+                                     expected_version=current["version"], reason=f"Native reading decision permits continuation after chapter {cursor}")
+    return ""
 
 
 def freeze_routes(routes: Any) -> dict[str, Any]:
@@ -151,12 +220,16 @@ def prepare_pilot_book(
     budget_binding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     registered_frozen = frozen
+    single_book = False
     if frozen.get("comparison_budget"):
         from scripts.creation_comparison import creation_resume_semantics
         registered_frozen = creation_resume_semantics(frozen, budget_binding)
-        creation_caps = budget_binding["authorization"]["authorized_cumulative_caps"]["CREATION"]
-        if creation_caps["calls"] <= 0 or creation_caps["tokens"] <= 0:
-            raise ValueError("Pilot initialization or resume requires positive CREATION calls and tokens")
+        single_book = frozen["comparison_budget"].get("contract_version") == "creative-single-book-budget.v2"
+        authorization = budget_binding["authorization"]
+        if not single_book:
+            creation_caps = authorization["authorized_cumulative_caps"]["CREATION"]
+            if creation_caps["calls"] <= 0 or creation_caps["tokens"] <= 0:
+                raise ValueError("Pilot initialization or resume requires positive CREATION calls and tokens")
     application = composition.formation.generation.book_design
     if initialize:
         principal.require("book_design.authority.execute", project_id)
@@ -164,6 +237,17 @@ def prepare_pilot_book(
             raise ValueError(
                 "Initializing a pilot requires an explicit isolated workspace id"
             )
+        if single_book:
+            try:
+                BookDesignAuthorityQuery(application.database_url).require_book(project_id=project_id, book_id=book_id)
+            except KernelError as exc:
+                if exc.code != "BOOK_NOT_FOUND":
+                    raise
+                if not authorization["business_scope"]["design_allowed"]:
+                    raise ValueError("Pilot initialization requires native design authorization") from exc
+                design_caps = authorization["authorized_cumulative_caps"]["DESIGN"]
+                if design_caps["calls"] <= 0 or design_caps["tokens"] <= 0:
+                    raise ValueError("Pilot initialization requires positive DESIGN calls and tokens") from exc
         query = ProjectAuthorityQuery(application.database_url)
         try:
             project = query.require_project(project_id)

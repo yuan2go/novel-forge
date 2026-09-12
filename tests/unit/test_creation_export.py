@@ -75,7 +75,7 @@ def test_knowledge_trace_keeps_selection_and_actual_accepted_prose_check_separat
         workspace_knowledge_trace(workspace)
 
 
-def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=True):
+def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=True, chapter_count=6):
     from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
     from tests.unit.test_creation_comparison import comparison_identities
     comparison = comparison_identities(tmp_path, book_names=("treatment", "control"), target_chapters=6)
@@ -90,7 +90,7 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
         folder = tmp_path / arm
         folder.mkdir()
         rows = []
-        for chapter in range(1, 7):
+        for chapter in range(1, chapter_count + 1):
             original = accepted_workspace()
             identities = {item["asset_version_id"] for item in original["artifacts"]["history"]} | {"outcome", "plan", "original"}
             def rewrite(value):
@@ -141,7 +141,7 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
             })
         (folder / "chapter-groups.json").write_text(json.dumps({
             "contract_version": "book-chapter-group-lineage.v1", "project_id": project_id, "book_id": arm,
-            "book_run_id": f"{arm}:book-run", "accepted_through_chapter": 6,
+            "book_run_id": f"{arm}:book-run", "accepted_through_chapter": chapter_count,
             "groups": groups, "offset": 0, "limit": 500, "has_more": False,
         }))
         for name in ("asset-export-status.json", "workspace-export-status.json"):

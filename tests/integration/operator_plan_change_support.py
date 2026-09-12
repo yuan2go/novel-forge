@@ -45,7 +45,7 @@ class OperatorPlanChangeTransport:
         return default_chapter_fixture_response(stage, inputs)
 
 
-def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, settings, authority_api, book_target=6, pilot_cursor=0):
+def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, settings, authority_api, book_target=6, pilot_cursor=0, checkpoint_observer=None):
     principal = composition.principal
     project_id, workspace_id, book_id = snapshot.project_id, snapshot.workspace_id, snapshot.book_id
     authority = composition.authority
@@ -77,6 +77,8 @@ def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, set
         assert len(accepted_history) == 3
         uow.cursor.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>3", [book_run_id])
         assert uow.cursor.fetchone() == (0,)
+    if checkpoint_observer is not None:
+        checkpoint_observer(composition=composition, book_run_id=book_run_id, boundary=3)
     trusted = SimpleNamespace(resolve_api_principal=lambda **_values: replace(principal, permissions=principal.permissions | {"book.authority.query"}),
                               resolve_narrative_evaluator_principal=lambda: principal)
 

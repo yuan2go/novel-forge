@@ -65,6 +65,7 @@ def apply_revision_result(
         "text": text,
         "source_draft_version_id": draft_asset_version_id,
         "creative_execution": dict(draft.get("creative_execution") or {}),
+        **({"author_design_guidance": dict(draft["author_design_guidance"])} if draft.get("author_design_guidance") else {}),
         "review_version_id": review_asset_version_id,
         "context_bundle_version_id": context_bundle_version_id,
         "resolved_issue_codes": resolved,

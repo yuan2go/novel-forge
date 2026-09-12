@@ -194,6 +194,7 @@ class _PlanningGenerationHandler:
         evidence = candidate.evidence.to_dict()
         knowledge_policy = ""
         knowledge_refs: tuple[str, ...] = ()
+        author_projection: dict[str, Any] = {}
         if self.database_url and candidate.evidence.context_bundle_asset_version_id:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
             from .knowledge_translation import validate_knowledge_translations
@@ -203,6 +204,9 @@ class _PlanningGenerationHandler:
                 asset_version_id=candidate.evidence.context_bundle_asset_version_id,
             )
             selection = context.content.get("narrative_intelligence") or {}
+            from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
+            author_projection = dict(context.content.get("author_design_projection") or {})
+            validate_author_decisions(candidate.candidate_payload, author_projection)
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 validate_knowledge_translations(candidate.candidate_payload, selection)
                 knowledge_policy = selection["policy_version"]
@@ -232,6 +236,12 @@ class _PlanningGenerationHandler:
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
         )
+        if envelope.get("author_design"):
+            from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
+            envelope["author_design_projection"] = author_projection
+            frozen_author_projection({"constraint_envelope": envelope}, generator=command.generator_operation_name, logical_key=command.logical_key)
+            if "envelope_digest" in envelope:
+                envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
         if command.world_preparation_request:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
             from .world_preparation import require_world_action

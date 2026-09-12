@@ -82,13 +82,52 @@ def _effect_identity(cursor: Any, effect_id: str, project_id: str) -> dict[str, 
                 e.request_payload #>> '{_production_execution,attempt_id}',
                 (SELECT s.attempt_id FROM authority_attempt_capability_pack_snapshot s
                  WHERE s.snapshot_id=e.request_payload #>> '{_production_execution,capability_runtime,snapshot_id}'))),
-            CASE WHEN NOT EXISTS(SELECT 1 FROM authority_attempt a WHERE a.operation_id=o.operation_id) THEN 1 END)
+            CASE WHEN NOT EXISTS(SELECT 1 FROM authority_attempt a WHERE a.operation_id=o.operation_id) THEN 1 END),e.request_hash
         FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
         WHERE e.external_effect_id=%s AND e.project_id=%s AND o.project_id=%s""", [effect_id, project_id, project_id])
     row = cursor.fetchone()
     if row is None:
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Provider effect has no owned operation")
-    return dict(zip(("operation_name", "capability", "request_payload", "command_payload", "attempt_no"), row, strict=True))
+    return dict(zip(("operation_name", "capability", "request_payload", "command_payload", "attempt_no", "request_hash"), row, strict=True))
+
+
+def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, generation: int = 1) -> dict[str, Any]:
+    from novel_forge.modules.command_kernel.creative_budget_scope import classify_business_scope
+    if identity["operation_name"] == "story_design.semantic_evaluate":
+        request = identity["request_payload"]
+        target = (request.get("input") or {}).get("evaluation_target") or {}
+        metadata = request.get("_production_execution") or {}
+        command = identity["command_payload"]
+        command = command.get("payload", command)
+        identities = {
+            "generation_operation_id": target.get("generation_operation_id"),
+            "candidate_asset_version_id": target.get("candidate_asset_version_id"),
+            "candidate_content_hash": target.get("candidate_content_hash"),
+        }
+        if any(not isinstance(value, str) or not value for value in identities.values()) or any(command.get(key) != value for key, value in identities.items()):
+            raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "semantic review target differs from the admitted exact generation/candidate")
+        for key, expected in (("generation_operation_id", identities["generation_operation_id"]), ("target_asset_version_id", identities["candidate_asset_version_id"]), ("target_content_hash", identities["candidate_content_hash"])):
+            if metadata.get(key) != expected:
+                raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "semantic review Provider metadata differs from its exact target")
+        cursor.execute("""SELECT operation.definition_name,operation.command_payload,version.content_hash
+            FROM authority_operation operation
+            JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id
+            JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id
+            WHERE operation.project_id=%s AND operation.operation_id=%s AND output.asset_version_id=%s""",
+            [project_id, identities["generation_operation_id"], identities["candidate_asset_version_id"]])
+        rows = cursor.fetchall()
+        if len(rows) != 1 or rows[0][2] != identities["candidate_content_hash"]:
+            raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "semantic review has no exact owned generation output")
+        original = rows[0][1]
+        original_payload = original.get("payload", original)
+        original_books = {value.get("book_id") for value in (original, original_payload) if value.get("book_id")}
+        if original_books != {command.get("book_id")}:
+            raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "semantic review origin belongs to another Book")
+        identity = {**identity, "evaluation_origin": {
+            "definition_name": rows[0][0], "command_payload": original,
+            "source_ref": identities,
+        }}
+    return classify_business_scope(identity, dispatch_generation=generation)
 
 
 def _phase(identity: dict[str, Any]) -> str:
@@ -111,7 +150,7 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
         ORDER BY created_at,reservation_id""", [projects, exclude_reservation])
     rows = cursor.fetchall()
     usage = {"contract_hash": _contract().contract_hash(plan), "project_id": project_id,
-        "book_id": _arm(plan, project_id)["book_id"], "phases": {p: _empty_usage() for p in PHASES},
+        "book_id": _arm(plan, project_id)["book_id"], "phases": {p: _empty_usage() for p in _contract().budget_phases(plan)},
         "project_total": _empty_usage(), "shared_total": _empty_usage(), "reservation_ids": [],
         "evidence_class": "POSTGRESQL_BUDGET_LEDGER", "creation_opportunity": None}
     seen: set[str] = set()
@@ -125,8 +164,13 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
             if proof["contract_hash"] != usage["contract_hash"]:
                 raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "historical ledger uses another allocation plan")
             phase = proof["phase"]
+            if plan["contract_version"] == _contract().SINGLE_BOOK_VERSION:
+                scope = proof.get("business_scope")
+                if not isinstance(scope, dict) or scope.get("phase") != phase:
+                    raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "historical reservation lost its frozen business classification")
         else:
-            phase = _phase(_effect_identity(cursor, effect_id, owner_project))
+            identity = _effect_identity(cursor, effect_id, owner_project)
+            phase = _business_scope(cursor, identity, project_id=owner_project)["phase"] if plan["contract_version"] == _contract().SINGLE_BOOK_VERSION else _phase(identity)
         actual = max(int(actual or 0), int(dict(evidence or {}).get("actual_tokens") or 0))
         counted = actual if status == "SETTLED" else max(actual, int(estimate))
         amounts = {"calls_used_or_reserved": 1, "conservative_tokens": counted,
@@ -153,7 +197,7 @@ def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str |
     arm = _arm(plan, usage["project_id"])
     pairs = [("project_total", usage["project_total"], arm["project_total"], calls, tokens),
              ("shared_total", usage["shared_total"], plan["shared_total"], calls, tokens)]
-    for candidate in PHASES:
+    for candidate in _contract().budget_phases(plan):
         addition = (calls, tokens) if candidate == phase else (0, 0)
         pairs.append((candidate, usage["phases"][candidate], policy["authorization"]["authorized_cumulative_caps"][candidate], *addition))
     for name, used, cap, extra_calls, extra_tokens in pairs:
@@ -199,6 +243,14 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
     phase = _phase(identity)
     if generation > 1 and phase != "SOURCE":
         phase = "REPAIR"
+    business_scope = None
+    if policy["comparison_budget"]["contract_version"] == _contract().SINGLE_BOOK_VERSION:
+        from novel_forge.modules.command_kernel.creative_budget_scope import require_business_scope
+        business_scope = _business_scope(uow.cursor, identity, project_id=request.project_id, generation=max(1, generation))
+        require_business_scope(policy, business_scope)
+        if request.chapter is not None and business_scope["chapter_number"] != request.chapter:
+            raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "budget request chapter differs from frozen Provider and Operation scope")
+        phase = business_scope["phase"]
     command = dict(identity["command_payload"] or {})
     book_id = (command.get("payload") or {}).get("book_id") or command.get("book_id")
     if phase == "SOURCE":
@@ -207,13 +259,16 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
         intended = (lineage or {}).get("requested_manifest") or {}
         if intended.get("intended_use") != "ABSTRACT_GENERATION" or intended.get("target_book_id") != policy["authorization"]["book_id"]:
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Source requires the curated consumption lineage for the exact authorized Book and use")
+        if business_scope is not None:
+            business_scope["scope_sources"].append({"path": "native_curated_consumption", "value": {"intended_use": intended["intended_use"], "target_book_id": intended["target_book_id"]}})
     elif book_id != policy["authorization"]["book_id"]:
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "creative Effect must belong to the exact authorized Book")
     usage = _usage(uow.cursor, policy["comparison_budget"], request.project_id)
     _check_limits(policy, usage, phase=phase, tokens=request.estimated_tokens, calls=1)
     return {"owner": OWNER, "policy_version": policy["policy_version"], "policy_hash": snapshot["policy_hash"],
         "contract_hash": _contract().contract_hash(policy["comparison_budget"]), "subject_id": snapshot["subject_id"],
-        "authorization": policy["authorization"], "phase": phase}
+        "authorization": policy["authorization"], "phase": phase,
+        **({"business_scope": business_scope} if business_scope is not None else {})}
 
 
 def check_creative_settlement_in_uow(uow: AuthorityUnitOfWork, row: dict[str, Any], actual_tokens: int) -> None:

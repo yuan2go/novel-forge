@@ -1,0 +1,262 @@
+{
+  "contract_version": "author-design-revision-rationale.v1",
+  "task": "WP-AUTHOR-GUIDED-TWELVE-CHAPTER-PRODUCTION-01",
+  "design_version": "v2.1",
+  "lifecycle": "AUTHOR_DRAFT",
+  "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+  "provider_execution": "NOT_RUN",
+  "human_approval": "NOT_GIVEN",
+  "canon_status": "NOT_ACCEPTED",
+  "native_asset_registration": "PENDING_NATIVE_REGISTRATION",
+  "baseline_sha": "5cce48a798b0eaaf3d1e395038ac101544701b99",
+  "source_file_hashes": {
+    "novels/yu-xian-zhi-wai/current/group-a/01-premise-and-world.md": "sha256:a9e73bc22827d0796c3fbee2cb9ba759063f956665a6bafb479b9950600484a5",
+    "novels/yu-xian-zhi-wai/current/group-a/02-characters.md": "sha256:9a9013d6034cf658317e6de214434e6e1c8e6e4a3634a2ac49172cc83f27a288",
+    "novels/yu-xian-zhi-wai/current/group-a/03-three-volume-direction.md": "sha256:afc504eab72f9f3f6e6c545dfd5277125c204129802c5cab0313d9ab62ca7a5e",
+    "novels/yu-xian-zhi-wai/current/group-a/04-first-arc-author-only.md": "sha256:a163b693908544783074d161c69348e6b18bf0fa0883fc4ba9f2ebafcc8d5606",
+    "novels/yu-xian-zhi-wai/current/group-a/05-six-chapter-scenes.md": "sha256:552a28286c66b6f8b1149562db417328b5db8f4d8ef1717f2f1b3f0f80bed2cd",
+    "novels/yu-xian-zhi-wai/current/group-a/06-voice-and-original-samples.md": "sha256:df7212812919bfb53b18674e1f226e002b3cbefded5608decb0708584dd66da6",
+    "novels/yu-xian-zhi-wai/current/group-a/source-adaptation.operator-only.md": "sha256:c8bba299572379251e4e9741057da3387b36afc560e6f3081462634472a0a787"
+  },
+  "current_documents": [
+    "01-premise-and-world.md",
+    "02-characters.md",
+    "03-three-volume-direction.md",
+    "04-first-arc-author-only.md",
+    "06-voice-and-original-samples.md",
+    "07-twelve-chapter-scenes.md"
+  ],
+  "current_document_hashes": {
+    "01-premise-and-world.md": "sha256:1274915a04e4bb803f14713bafdaef1d5f7e58ee7b95c00a53cc8ed95284d10f",
+    "02-characters.md": "sha256:4493bcc2218ab8848a84b639471e9c4e1db57214fab03f89c07956264e69d5ff",
+    "03-three-volume-direction.md": "sha256:bc37ae8c02ff023b1fcc3e5bbe85fefd2a236acfadb20076a489a52ae8f99052",
+    "04-first-arc-author-only.md": "sha256:aab40592bcababbb35389c7b67dd12cf3bc38a67ce5d660e8b13617ecc453d70",
+    "06-voice-and-original-samples.md": "sha256:975981ffdada94036fc353bae239d9a161785d6099c8a8246ab31bf60aff3cd7",
+    "07-twelve-chapter-scenes.md": "sha256:f19d65a6e3d135e4cdd2c852c84ef1514c192b9e94aa300bda064ecc546322d1"
+  },
+  "historical_only": [
+    "05-six-chapter-scenes.md",
+    "source-adaptation.operator-only.md"
+  ],
+  "delivery_scope": {
+    "world_and_characters": "ROLE_AND_NARRATIVE_SCOPE_REQUIRED",
+    "04-first-arc-author-only.md": "PLANNING_AND_DESIGN_REVIEW_ONLY",
+    "07-twelve-chapter-scenes.md": "ONE_CURRENT_CHAPTER_SCOPE_PLUS_ACCEPTED_PRIOR_FACTS",
+    "06-voice-and-original-samples.md": "STYLE_GUIDANCE_ONLY_NOT_MANUSCRIPT",
+    "raw_reference_sources": "EXCLUDED"
+  },
+  "changes": [
+    {
+      "id": "EARLY_DELIVERY",
+      "problem": "v1让无争议28张等待另8张查清，至第四章才出库",
+      "change": "第1章核实两点最低现需与部分履行权限，07:30放行；第2章09:10前20/8实收",
+      "preserved": [
+        "36张及F29—F36",
+        "岑禾原签名责任",
+        "两点各4余量"
+      ],
+      "targets": [
+        "01",
+        "02",
+        "04",
+        "06",
+        "07:chapters1-2"
+      ],
+      "reason": "救助不得成为调查主角的等待成本"
+    },
+    {
+      "id": "CLOSED_FIRST_MYSTERY",
+      "problem": "三卷方向曾让同一8张床的答案拖至24章",
+      "change": "第3章实见、第5章责任确认、第6章说明并关闭；7—24承接余量、损失与人员登记",
+      "targets": [
+        "03",
+        "04",
+        "07:chapters3-12"
+      ],
+      "reason": "兑现短承诺，后续推进已发生选择的后果"
+    },
+    {
+      "id": "ACTION_AND_RELATIONSHIP_COST",
+      "problem": "4—6过度集中在协商和整理记录，人物代价抽象",
+      "change": "学校分发换短休、主动改约陪同、食堂挪桌经营损失、核实运费与争议部分分开、当面更正及回访",
+      "targets": [
+        "02",
+        "06",
+        "07:chapters4-6"
+      ],
+      "reason": "代价来自合理行动和相互不同的利益，不靠疾病或事故强行升级"
+    },
+    {
+      "id": "TWELVE_CHAPTER_CONTINUATION",
+      "problem": "仅有六章窗口，无后一阶段完整行动路径",
+      "change": "第7实际4人到，第8核条件，第9纠正本次办结口径，第10协商候选，第11真实退4，第12留2转2与具名续办",
+      "targets": [
+        "01",
+        "03",
+        "04",
+        "07:chapters7-12"
+      ],
+      "reason": "既有线索有新解释，延后后果带来真实资源与关系变化"
+    },
+    {
+      "id": "FIXED_TIME_AND_RESOURCE_LEDGER",
+      "problem": "时点、签字与借用先后、未来床位可用性容易混淆",
+      "change": "明确D0借出20:22/签名21:10；D1早盘28后仓0；D2实际离校才释放F17—F20，末态18+10+8=36",
+      "targets": [
+        "01",
+        "02",
+        "04",
+        "06",
+        "07"
+      ],
+      "reason": "不将预计、在途、历史盘点或铺垫当作当前床资源"
+    },
+    {
+      "id": "DIFFERENT_VOICES_AND_POWER",
+      "problem": "人物容易共享说明主题的声音、主角权力靠正确解释扩张",
+      "change": "各人以工作与生活对象说话；新增有限联络台负责人周铎；十二章末仅取得三天两点联络任务",
+      "targets": [
+        "01",
+        "02",
+        "03",
+        "06",
+        "07"
+      ],
+      "reason": "能力升级要有来源、边界及别人不认同的代价"
+    },
+    {
+      "id": "KNOWLEDGE_AND_HISTORY_BOUNDARY",
+      "problem": "旧设备场及作者适配笔记可能绕过批准知识进入当前创作",
+      "change": "技术场移出必需链；05和素材笔记明确历史禁用；作者后台仅限规划审阅，正文只获自身范围",
+      "targets": [
+        "04",
+        "05",
+        "07",
+        "source-adaptation.operator-only.md"
+      ],
+      "reason": "作者引导不是Card、Provider产物或Canon，保留来源且不伪造批准"
+    },
+    {
+      "id": "volume-two-consequence-v2.1",
+      "reason": "第二卷原卷末仍重复公开错误与工作损失，改为执行不利的补偿交换、熟人实际等待及长期合作成本。",
+      "documents": [
+        "novels/yu-xian-zhi-wai/current/group-a/03-three-volume-direction.md"
+      ],
+      "canon_mutation": false,
+      "native_generation": "NOT_RUN"
+    }
+  ],
+  "continuity": {
+    "time_basis": "D0=盘点前夜; D1=开篇当天; D2=次日",
+    "initial_beds": 36,
+    "end_chapter2": {
+      "warehouse": 0,
+      "school": 20,
+      "food_point": 8,
+      "pump_annex": 8,
+      "in_transit": 0
+    },
+    "end_chapter6": {
+      "warehouse": 0,
+      "school": 20,
+      "food_point": 8,
+      "pump_annex": 8,
+      "in_transit": 0,
+      "unmet_school_beds": 4,
+      "unmet_food_point_beds": 4
+    },
+    "end_chapter12": {
+      "warehouse": 0,
+      "school": 18,
+      "food_point": 10,
+      "pump_annex": 8,
+      "in_transit": 0,
+      "unmet_school_beds": 2,
+      "unmet_food_point_beds": 2
+    },
+    "transferred_ids": [
+      "F19",
+      "F20"
+    ],
+    "school_new_rest_ids": [
+      "F17",
+      "F18"
+    ],
+    "non_bed_support": "两张林绥自家铺垫；不计床，不关闭需求",
+    "new_arrivals_not_pump_residents": true,
+    "school_departures_not_food_arrivals": true
+  },
+  "design_assumptions_requiring_author_confirmation": [
+    "片区虚构权限允许已登记申请部分履行；严批准出库，接收者确认数量但到物后才实签",
+    "D1道路和既有运输安排允许07:30出发、09:10前完成两处直接交付，不能声称现实路线已验证",
+    "食堂已登记十二人临时空间，林自有两张可供自愿短时使用的干燥铺垫，不据此认证长期安置条件",
+    "学校第二章设置的一户四口在第十一章自主投亲并实际交回F17—F20，若正文不成立必须改未来分配",
+    "新人物周铎只负责片区当班联络与职责内调配；第十二章的三天联络任务不扩大岑禾法定权力",
+    "第十二章2留2转是当前作者候选，须经正文实际各方确认；不固定为拒绝反证的成功结局"
+  ],
+  "validation": {
+    "method": "AI_DOCUMENT_CROSS_CHECK_ONLY",
+    "status": "CHECKED_WITHIN_AUTHOR_DRAFT",
+    "checks": [
+      "12 ordered chapter plans",
+      "9 resource nodes each sum to 36",
+      "final exact bed partition school18/food10/pump8",
+      "early authorization and chapter2 actual delivery",
+      "first mystery closed by chapter6",
+      "chapter10 proposal does not decrement actual outstanding needs",
+      "first return of school beds only after chapter11 departure",
+      "chapter12 movement plus remaining 2+2 needs",
+      "historic v1 scene body retained and excluded",
+      "current local Markdown links resolve",
+      "current document SHA-256 bindings match"
+    ],
+    "resource_nodes": [
+      {
+        "node": "D1 06:40，第一章实盘",
+        "total_beds": 36
+      },
+      {
+        "node": "D1 07:30，第一章放行",
+        "total_beds": 36
+      },
+      {
+        "node": "D1 08:15，第二章学校实收",
+        "total_beds": 36
+      },
+      {
+        "node": "D1 09:10，第二章高街实收",
+        "total_beds": 36
+      },
+      {
+        "node": "D1 11:00，第三章现场核齐",
+        "total_beds": 36
+      },
+      {
+        "node": "第四至十章",
+        "total_beds": 36
+      },
+      {
+        "node": "D2 15:30，第十一章退床核实",
+        "total_beds": 36
+      },
+      {
+        "node": "D2 16:00，第十二章新调配",
+        "total_beds": 36
+      },
+      {
+        "node": "D2 17:00，第十二章实收",
+        "total_beds": 36
+      }
+    ],
+    "tests_or_provider_proof": false,
+    "independent_human_review": "NOT_PERFORMED"
+  },
+  "evidence_limits": [
+    "NOT_PROVIDER_GENERATED",
+    "NOT_HUMAN_APPROVED",
+    "NOT_ACCEPTED_PROSE",
+    "NOT_CANON",
+    "NOT_KNOWLEDGE_CARD_APPROVAL",
+    "NOT_CREATIVE_BENEFIT_PROOF"
+  ]
+}

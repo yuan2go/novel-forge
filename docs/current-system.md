@@ -537,6 +537,26 @@ compiler does not infer unstated requirements. The source survives in the revisi
 Intent, while each downstream target receives only its applicable constraint fields.
 The existing Story Design validation, approval and activation lifecycle still applies.
 
+Versioned `creative-brief-v3` can register explicit author document bytes and exact
+fragment spans through Content. Story Planning freezes role/range projections alongside
+the existing constraint envelope and requires candidate adoption decisions with actual
+output locations. Required intent is protected by the final request budget; overflow
+blocks before dispatch. Provider views preserve every selected fragment's text and
+semantic identity; source-directory metadata stays in the full frozen Context with a
+hash-bound pointer receipt. Replay checks the compiled view against that exact source.
+AUTHOR_ONLY fragments remain private planning intent, not public
+candidate fields, Canon or viewpoint knowledge. Scoped guidance follows Chapter Plan,
+Draft and both revision paths; Review receives the same targets. Located adoption is a
+planning claim, not proof that prose realizes it. Semantic review and accepted history
+retain their existing Authority boundaries.
+
+The existing creative budget ledger also accepts `creative-single-book-budget.v2`:
+Source, design, chapters 1–6, chapters 7–12 and repair have distinct allocations under
+one total. Authorization limits Source/design permissions and the maximum chapter,
+including the original scope of repairs and semantic reviews. Old v1 A/B allocations
+and reservations remain valid and cannot be replaced to reset usage. Unknown effects
+retain their reservation. These grants govern permitted operations, not literary merit.
+
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots
 carry actor-local knowledge. The Draft and Revision contracts require complete slot
