@@ -108,6 +108,7 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         state = "PARTIAL"
     else:
         state = "AWAITING_GOVERNANCE" if knowledge["review_required"] else "COMPLETED"
+    budget = repository.analysis_budget(job["project_id"], job["import_job_id"])
     return {
         "job_kind": "CURATED_ANALYSIS",
         "purpose": purpose,
@@ -165,8 +166,10 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         else sum(r["count"] for r in counts),
         "knowledge": knowledge,
         "knowledge_approved_by_import": False,
-        "budget": repository.analysis_budget(job["project_id"], job["import_job_id"]),
-        "next_action": "RESUME"
+        "budget": budget,
+        "next_action": "RECONCILE_CLI_OUTCOME"
+        if budget.get("unresolved_cli_outcomes")
+        else "RESUME"
         if state == "PAUSED"
         else "NEW_AUTHORIZATION_OR_SELECTION_REQUIRED"
         if blocked_members

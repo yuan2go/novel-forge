@@ -66,7 +66,7 @@ def receipt_input_evidence(records: list[dict], payload: dict) -> dict:
             "CONFIRMED_RETURNED"
             if returned
             else "UNKNOWN"
-            if record.get("status")
+            if record.get("external_state_unknown") or record.get("status")
             in {
                 "DISPATCHING",
                 "DISPATCHED",

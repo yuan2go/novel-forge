@@ -231,6 +231,12 @@ def test_codex_jsonl_requires_terminal_measured_usage() -> None:
 
 
 def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() -> None:
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    canonical_schema = {"type": "object", "properties": {
+        "caused_by": {"type": "array", "items": {"type": "string"}, "uniqueItems": True}
+    }}
     _capability, profile, policy, route, manifest, request = contracts(
         backend_id="codex-cli",
         runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
@@ -258,7 +264,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
             working_directory=tmp,
             timeout_seconds=5,
             output_schema_version="schema:test:v1",
-            output_schema={"type": "object"},
+            output_schema=canonical_schema,
         )
         backend = CodexCliExecutionBackend(
             admission=admission,
@@ -279,6 +285,11 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
         )
         frozen = admission.admit(request, backend.capability_profile)
         prepared = backend._prepare_payload(request, payload, frozen)
+        projected = json.loads(Path(prepared.command[prepared.command.index("--output-schema") + 1]).read_text())
+        assert "uniqueItems" not in projected["properties"]["caused_by"]
+        assert canonical_schema["properties"]["caused_by"]["uniqueItems"] is True
+        with pytest.raises(KernelError, match="SCHEMA_INVALID"):
+            validate_chapter_provider_output_against_schema("draft", canonical_schema, {"caused_by": ["a", "a"]})
         evidence = backend._model_authority_evidence(
             frozen,
             prepared.command,
@@ -595,3 +606,14 @@ def test_local_codex_preflight_observes_process_and_reports_drift_without_author
     assert report["remote_availability"] == "NOT_TESTED"
     assert "NOVEL_FORGE_QUALITY_MODEL" in report["missing_configuration"]
     assert report["model_calls"] == 0
+
+
+def test_codex_protocol_schema_rejection_is_distinct_from_transient_failure():
+    from novel_forge.modules.production_execution.backends import codex_protocol_failure
+
+    rejected = {"type": "error", "message": json.dumps({"status": 400,
+        "error": {"code": "invalid_json_schema", "message": "uniqueItems is not permitted"}})}
+    assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
+    for value in ("[]", "not json", json.dumps({"type": "error", "message": "timeout"}),
+        json.dumps({"type": "error", "message": json.dumps({"status": 429, "error": {"code": "rate_limit"}})})):
+        assert codex_protocol_failure(value) is None

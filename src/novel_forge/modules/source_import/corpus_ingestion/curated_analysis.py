@@ -106,11 +106,10 @@ def admit_curated_analysis(
             if request.reading_scopes
             else {}
         )
-        uow.cursor.execute(
-            "SELECT count(DISTINCT external_effect_id),COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens ELSE greatest(actual_tokens,estimated_tokens) END),0) FROM authority_budget_reservation WHERE project_id=%s AND (status IN ('RESERVED','HELD_UNKNOWN','SETTLED') OR (status='RELEASED' AND actual_tokens>0))",
-            [request.project_id],
-        )
-        spent = uow.cursor.fetchone()
+        from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage
+
+        require_known_cli_outcomes(uow.cursor, request.project_id)
+        spent = provider_project_usage(uow.cursor, request.project_id)
         payload = {
             "requested_manifest": frozen,
             "manifest": {"curated_revision_id": request.revision_id},
@@ -118,8 +117,8 @@ def admit_curated_analysis(
             "members": selected,
             "intelligence_policy": asdict(policy),
             "budget": {
-                "project_call_ceiling": int(spent[0]) + request.max_calls,
-                "project_token_ceiling": int(spent[1]) + request.max_tokens,
+                "project_call_ceiling": spent["calls_used_or_reserved"] + request.max_calls,
+                "project_token_ceiling": spent["conservative_tokens"] + request.max_tokens,
                 "authorization_ref": request.authorization_ref,
                 "accounting_scope": "PROJECT_TOTAL_CONSERVATIVE_SHARED_CEILING",
             },
@@ -307,8 +306,21 @@ def curated_provider_gate(database_url: str, worker: Any) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         require_current_fence(uow, worker)
         repository = SourceAuthorityRepository(uow.cursor)
+        require_known_cli_outcomes(uow.cursor, worker.project_id)
         return require_curated_operation_current(
             repository, worker.project_id, worker.causation_id
+        )
+
+
+def require_known_cli_outcomes(cursor: Any, project: str) -> None:
+    from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+
+    unresolved = unresolved_cli_outcomes(cursor, project)
+    if unresolved:
+        raise KernelError(
+            "SOURCE_CLI_OUTCOME_RECONCILIATION_REQUIRED",
+            "No new model dispatch while the original CLI remote outcome or usage is unknown: "
+            + str([item["external_effect_id"] for item in unresolved]),
         )
 
 

@@ -269,6 +269,15 @@ def _source_gateway_provider_result(
         ExecutionOutcome.FINAL_FAILURE: "final_failure",
         ExecutionOutcome.CANCELLED: "cancelled",
     }.get(result.outcome, "unknown")
+    if (
+        handle.transport is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+        and result.outcome in {ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED}
+        and result.started_at is not None
+        and not result.usage_receipt_ref
+    ):
+        evidence["external_state_unknown"] = True
+        evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"
+        outcome = "unknown"
     failure_code = record.raw_evidence.get("failure_code")
     if result.raw_output_ref and failure_code in {
         "INVALID_JSON",
@@ -469,7 +478,27 @@ class PostgresContentIntelligenceExecutionPort:
         )
 
         route = self.transport.routes["quality_source_originality"]
+        provider_schemas = {}
+        if route.model_profile.model_provider == "codex-cli":
+            from novel_forge.modules.production_execution.codex_configuration import (
+                CODEX_SCHEMA_PROJECTION_VERSION, codex_output_schema,
+            )
+
+            provider_schemas = {
+                "version": CODEX_SCHEMA_PROJECTION_VERSION,
+                "schema_hashes": {
+                    name: _hash(codex_output_schema(schema))
+                    for name, schema in {
+                        "observation": narrative_schema(),
+                        "review": review_schema(),
+                        "classification": content_intelligence_output_schema(CLASSIFICATION_STAGE),
+                        "extraction": content_intelligence_output_schema(MKAOS_STAGE),
+                    }.items()
+                },
+                "remote_acceptance": "NOT_TESTED_BY_PREVIEW",
+            }
         return {
+            **({"provider_schemas": provider_schemas} if provider_schemas else {}),
             "version": "source-reading-runtime.v2",
             "input_evidence_version": "source-actual-input.v1",
             "provider": route.model_profile.model_provider,
@@ -484,6 +513,10 @@ class PostgresContentIntelligenceExecutionPort:
             },
             "output_token_reserve": self.provider_output_token_reserve,
             "timeout_seconds": self.provider_timeout_seconds,
+            "provider_max_attempts": self.provider_max_attempts,
+            "local_process_timeout_seconds": _provider_process_timeout_seconds(
+                self.provider_timeout_seconds, max_attempts=self.provider_max_attempts
+            ),
             "budget_contract_hash": _hash(
                 {
                     "basis": self.cost_accounting_basis,
@@ -495,6 +528,11 @@ class PostgresContentIntelligenceExecutionPort:
                 }
             ),
         }
+
+    @property
+    def provider_max_attempts(self) -> int:
+        route = self.transport.routes["quality_source_originality"]
+        return 1 if route.model_profile.model_provider == "codex-cli" else 2
 
     @property
     def source_sample_byte_limit(self) -> int:
@@ -1267,7 +1305,7 @@ class PostgresContentIntelligenceExecutionPort:
             input_text=prompt,
             max_output_tokens=self.provider_output_token_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
-                provider_timeout, max_attempts=2
+                provider_timeout, max_attempts=self.provider_max_attempts
             ),
             stable_idempotency_key=stable_key,
         )
@@ -1411,7 +1449,7 @@ class PostgresContentIntelligenceExecutionPort:
             capability=spec.capability,
             stable_idempotency_key=stable_key,
             request_payload=request_payload,
-            max_attempts=2,
+            max_attempts=self.provider_max_attempts,
             reversible=False,
             completion_policy="synchronous_final",
             model_id=base_route.model_profile.model_id,
@@ -1500,6 +1538,13 @@ class PostgresContentIntelligenceExecutionPort:
                 reservation_id=str(reservation["reservation_id"]),
                 project_id=worker.project_id,
             )
+            provider_evidence = dispatched.get("provider_evidence") or {}
+            process_evidence = provider_evidence.get("production_execution", {}).get("process_evidence", {})
+            if process_evidence.get("failure_code") == "PROVIDER_SCHEMA_REJECTED":
+                raise KernelError(
+                    "SOURCE_PROVIDER_SCHEMA_REJECTED",
+                    "Provider rejected the structured Schema; freeze a corrected request using the remaining shared allowance",
+                )
             raise KernelError(
                 "SOURCE_PEP_EXECUTION_FAILED",
                 f"Source Provider outcome was {dispatched.get('outcome')}",

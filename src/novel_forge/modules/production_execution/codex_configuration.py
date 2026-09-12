@@ -29,6 +29,31 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v2"
+
+
+def codex_output_schema(schema: dict) -> dict:
+    result = {k: v for k, v in schema.items() if k != "uniqueItems"}
+    choices = [result["const"]] if "const" in result else result.get("enum", [])
+    if "type" not in result and choices:
+        types = {type(value) for value in choices}
+        primitive_types = {str: "string", bool: "boolean", int: "integer", float: "number", type(None): "null"}
+        if not types <= primitive_types.keys():
+            raise ValueError("Codex enum/const requires explicit non-primitive Schema types")
+        inferred = sorted(primitive_types[t] for t in types)
+        result["type"] = inferred[0] if len(inferred) == 1 else inferred
+    for key in ("properties", "$defs", "definitions", "patternProperties"):
+        if isinstance(result.get(key), dict):
+            result[key] = {k: codex_output_schema(v) for k, v in result[key].items()}
+    for key in ("items", "additionalProperties", "not", "if", "then", "else"):
+        if isinstance(result.get(key), dict):
+            result[key] = codex_output_schema(result[key])
+    for key in ("allOf", "anyOf", "oneOf", "prefixItems"):
+        if isinstance(result.get(key), list):
+            result[key] = [codex_output_schema(v) for v in result[key]]
+    return result
+
+
 def require_codex_home(value: str) -> str:
     path = Path(value)
     if not value or not path.is_absolute() or not path.is_dir():

@@ -49,6 +49,7 @@ class SourceImportOperationsRecords:
                     "normalized_output_ref",
                     "usage_receipt_ref",
                     "cost_receipt_ref",
+                    "process_receipt_ref",
                 )
                 if execution.get(k)
             }
@@ -57,6 +58,13 @@ class SourceImportOperationsRecords:
                     "effect_id": row[0],
                     "origin_operation_id": row[1],
                     "status": row[2],
+                    "external_state_unknown": bool(evidence.get("external_state_unknown")) or (
+                        execution.get("outcome") in {"TIMED_OUT", "CANCELLED", "ORPHANED"}
+                        and bool(execution.get("started_at"))
+                        and not execution.get("usage_receipt_ref")
+                        and evidence.get("production_execution", {}).get("execution_handle", {}).get("transport")
+                        == "LOCAL_CLI_REMOTE_INFERENCE"
+                    ),
                     "manifest": row[3],
                     "receipt_id": row[4],
                     "diagnostic_refs": refs,
@@ -431,9 +439,14 @@ class SourceImportOperationsRecords:
             WHERE w.project_id=%s AND w.import_job_id=%s GROUP BY e.status ORDER BY e.status""",
             [project, job],
         )
+        effects = dict(self.cursor.fetchall())
+        from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage, unresolved_cli_outcomes
+
         return {
             "reservations": rows,
-            "effects": dict(self.cursor.fetchall()),
+            "effects": effects,
+            "project_cumulative": provider_project_usage(self.cursor, project),
+            "unresolved_cli_outcomes": unresolved_cli_outcomes(self.cursor, project),
             "scope": "JOB_OWNED_EFFECTS_ONLY",
             "hidden_backend_usage": "NOT_OBSERVED",
         }
