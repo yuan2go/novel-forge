@@ -69,6 +69,17 @@ class ChapterGroupExecutionPolicyRequest:
 
 
 @dataclass
+class CreativeExperimentBudgetRequest:
+    project_id: str
+    actor_id: str
+    policy: dict[str, Any]
+    workspace_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+
+@dataclass
 class ReaderProxyPolicyRequest:
     project_id: str
     actor_id: str
@@ -285,6 +296,33 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
             arguments = {key: value for key, value in asdict(request).items() if key != "actor_id"}
             return _composition(ctx).controls.decide(book_run_id=book_run_id, principal=principal, **arguments)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.put("/policies/creative-experiment-budget")
+    def configure_experiment_budget(request: CreativeExperimentBudgetRequest) -> dict[str, Any]:
+        from novel_forge.api.authority_dependencies import authority_release_identity
+        from novel_forge.modules.command_kernel.creative_budget_runtime import configure_creative_budget
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            build_id, sha = authority_release_identity()
+            arguments = {key: value for key, value in asdict(request).items() if key != "actor_id"}
+            return configure_creative_budget(database_url=ctx.app_settings.database_url, principal=principal,
+                application_build_id=build_id, commit_sha=sha, **arguments)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/projects/{project_id}/creative-experiment-budget")
+    def query_experiment_budget(project_id: str) -> dict[str, Any]:
+        from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            return get_creative_budget(ctx.app_settings.database_url, project_id)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

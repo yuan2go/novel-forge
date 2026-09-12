@@ -4,6 +4,8 @@
 
 当前实际状态：真实模型调用 0，批准 Card 0，接纳章节 0，独立评审 NOT_REVIEWED。长篇目标为 180 章，近期停止游标为 6；目前没有真实生成的章节正文。
 
+本轮可阅读的首弧作者设计、素材适配和新操作入口见 [当前创作导航](current/README.md)。它们是未审批草案，与下列历史冻结、fixture 和交付证据分开保存。
+
 - [原创方向、人物、读者承诺与约束](frozen-pilot-final/brief.json)
 - [长篇及近期章组创作输入](frozen-pilot-final/creation.json)
 - [Formation 输入](frozen-pilot-final/formation.json)
@@ -14,7 +16,7 @@
 - [前一工作包交付报告](DELIVERY.md)与[完整证据索引](DELIVERY.json)
 - [文件哈希、压缩及脱敏记录](publication-manifest.json)
 
-`development/` 中的章节文件属于工程 fixture，不是《雨线之外》的真实正文。`final-qualification/` 是此前验证过的代码版本的历史证据；本次提交和合并没有运行测试。历史报告中的“未 push / PR / 合并”描述其生成时点，本目录的上传以 Git 历史为准。
+`development/` 中的章节文件属于工程 fixture，不是《雨线之外》的真实正文。`final-qualification/` 是此前验证过的代码版本的历史证据；最初上传归档的 PR #80 没有运行测试。历史报告中的“未 push / PR / 合并”描述其生成时点，本目录的上传以 Git 历史为准。
 
 原文件基本按原路径保留，源文件没有改写。唯一超过 GitHub 单文件限制的 PostgreSQL JUnit XML 采用 `.xml.gz` 无损保存，可用 `gzip -dk <文件>.xml.gz` 还原；源文件和压缩文件哈希见清单。三份历史命令/失败日志中的带口令连接地址在上传副本中脱敏，清单保留原始哈希及变换类型。
 

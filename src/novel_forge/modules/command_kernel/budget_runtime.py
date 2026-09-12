@@ -2814,6 +2814,7 @@ def reserve_provider_budget_in_uow(
             accounting_basis,
             call_caps,
             token_caps,
+            request.cost_authorization_ref,
         )
         actual = (
             str(existing[1]),
@@ -2827,6 +2828,7 @@ def reserve_provider_budget_in_uow(
             str(existing[11]),
             dict(existing[14] or {}).get("call_caps", {}),
             dict(existing[14] or {}).get("token_caps", {}),
+            str(dict(existing[14] or {}).get("cost_authorization_ref") or ""),
         )
         if actual != expected:
             raise KernelError(
@@ -2856,6 +2858,8 @@ def reserve_provider_budget_in_uow(
                 "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
         }
+    from novel_forge.modules.command_kernel.creative_budget_runtime import reserve_creative_budget_in_uow
+    creative_budget = reserve_creative_budget_in_uow(uow, request)
     budget_scope_revision: int | None = None
     if locked_budget_scope is not None:
         budget_scope_revision = effective_budget_scope_revision
@@ -2918,6 +2922,7 @@ def reserve_provider_budget_in_uow(
             "token_caps": token_caps,
             "budget_scope_id": effective_budget_scope_id,
             "budget_scope_revision": budget_scope_revision,
+            **({"creative_experiment": creative_budget} if creative_budget is not None else {}),
         }
     )
     insert_values: list[Any] = [
@@ -3336,15 +3341,24 @@ def settle_provider_budget_in_uow(
                     "pre_call_token_control": "APPLICATION_VISIBLE_ONLY",
                 }
             )
+    from novel_forge.modules.command_kernel.creative_budget_runtime import check_creative_settlement_in_uow
+    try:
+        check_creative_settlement_in_uow(uow, row, actual_tokens)
+    except KernelError as exc:
+        if exc.code != "CREATIVE_BUDGET_EXHAUSTED":
+            raise
+        token_overrun = True
+        entitlement_usage_cap_error = exc.code
     if monetary_breach or token_overrun:
         uow.cursor.execute(
             """
             UPDATE authority_budget_reservation
-            SET budget_breach=TRUE,status='HELD_UNKNOWN',
+            SET budget_breach=TRUE,status='HELD_UNKNOWN',actual_tokens=GREATEST(actual_tokens,%s),
                 evidence=evidence || %s,version=version+1,updated_at=NOW()
             WHERE reservation_id=%s AND project_id=%s
             """,
             [
+                actual_tokens,
                 Jsonb(
                     {
                         **settlement_evidence,

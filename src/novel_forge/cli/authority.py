@@ -87,6 +87,8 @@ def _authority_parser() -> argparse.ArgumentParser:
     pack.add_argument("--limit", type=int, default=100)
     from novel_forge.cli.corpus import add_corpus_parser
     add_corpus_parser(subparsers)
+    from novel_forge.cli.creative_budget import add_creative_budget_parser
+    add_creative_budget_parser(subparsers)
     return parser
 
 
@@ -96,6 +98,10 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     try:
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
+        if args.command == "authority-creative-budget":
+            from novel_forge.cli.creative_budget import run_creative_budget_command
+            print(json.dumps(run_creative_budget_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
         if args.command == "corpus":
             from novel_forge.cli.corpus import run_corpus_command, format_corpus_report
             result = run_corpus_command(settings, args)

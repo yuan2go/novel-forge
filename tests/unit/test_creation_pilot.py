@@ -44,6 +44,27 @@ def test_account_entitlement_uses_exact_reference_and_no_fake_usd_budget():
     assert "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP" not in values
 
 
+@pytest.mark.parametrize("calls,tokens", [(0, 0), (1, 0), (0, 100)])
+def test_creation_initialization_requires_both_positive_native_dimensions_before_commands(tmp_path, calls, tokens):
+    from novel_forge.storage.versioned_policy_repository import policy_hash
+    from scripts.creation_pilot import prepare_pilot_book
+    from tests.unit.test_creation_comparison import comparison_identities
+    identity = comparison_identities(tmp_path)[0]
+    frozen, binding = identity["frozen_configuration"], identity["budget_binding"]
+    binding["authorization"]["authorized_cumulative_caps"]["CREATION"] = {"calls": calls, "tokens": tokens}
+    binding["policy_hash"] = policy_hash({
+        "policy_version": binding["policy_version"], "comparison_budget": frozen["comparison_budget"],
+        "authorization": binding["authorization"],
+    })
+    with pytest.raises(ValueError, match="requires positive CREATION calls and tokens"):
+        prepare_pilot_book(
+            composition=None, principal=None, project_id=identity["project_id"],
+            workspace_id=frozen["runtime_identity"]["workspace_id"], book_id=identity["book_id"],
+            run_key=identity["run_key"], title="No command may run", frozen=frozen,
+            initialize=True, budget_binding=binding,
+        )
+
+
 @pytest.mark.parametrize(
     "amount,reference",
     [("1", "approval:classical-corpus"), ("", ""), ("", "another-approval")],
@@ -217,7 +238,7 @@ def test_custom_pilot_input_freeze_preserves_rights_and_does_not_invent_sources(
     (source / 'real-import.json').write_text(json.dumps(manifest))
     (source / 'creation.json').write_text(json.dumps({'pilot_stop_after_chapter': 6}))
     destination = tmp_path / 'frozen'
-    assert main(['prepare', '--input-dir', str(source), '--output', str(destination), '--target-book-id', 'treatment-book']) == 0
+    assert main(['prepare', '--input-dir', str(source), '--input-names', 'real-import.json', 'creation.json', '--output', str(destination), '--target-book-id', 'treatment-book']) == 0
     assert (destination / 'real-import.json').read_bytes() == (source / 'real-import.json').read_bytes()
     assert not (destination / 'professional-import.json').exists()
     assert not (destination / 'fiction-import.json').exists()

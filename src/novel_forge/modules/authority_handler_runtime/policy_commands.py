@@ -33,6 +33,7 @@ def owned_policy_definition(
         "CHAPTER_GROUP_EXECUTION": "chapter_group.execution_policy.configure",
         "READER_PROXY": "reader_proxy.policy.configure",
         "BOOK_CONTROL": "book.control_policy.configure",
+        "CREATIVE_EXPERIMENT_BUDGET": "creative.experiment_budget.configure",
     }[owner]
     handler_key = f"novel_forge.owned_policy.{name}"
     policy_schema = {
@@ -51,6 +52,9 @@ def owned_policy_definition(
             for key in content
         },
     }
+    if owner == "CREATIVE_EXPERIMENT_BUDGET":
+        from novel_forge.modules.command_kernel.creative_budget_contract import POLICY_SCHEMA
+        policy_schema = POLICY_SCHEMA
     result_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -128,6 +132,12 @@ def configure_owned_policy(
     fault_injector: TransactionCheckpoint | None = None,
 ) -> dict[str, Any]:
     principal.require("book.authority.execute", project_id)
+    if owner == "CREATIVE_EXPERIMENT_BUDGET":
+        from novel_forge.modules.authority_security import PrincipalType
+        from novel_forge.modules.command_kernel.creative_budget_contract import validate_policy
+        validate_policy(content)
+        if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise PermissionError("only an authenticated operator can grant experiment phase budgets")
     if owner == "BOOK_CONTROL":
         from novel_forge.modules.authority_security import PrincipalType
         from novel_forge.modules.book_authority.control_policy import ControlPolicy
@@ -148,6 +158,9 @@ def configure_owned_policy(
     def handler(
         uow: AuthorityUnitOfWork, operation_id: str, checkpoint: TransactionCheckpoint
     ) -> dict[str, Any]:
+        if owner == "CREATIVE_EXPERIMENT_BUDGET":
+            from novel_forge.modules.command_kernel.creative_budget_runtime import validate_selection_in_uow
+            validate_selection_in_uow(uow, project_id=project_id, content=content)
         VersionedPolicyRepository(
             uow.cursor, owner=owner, project_id=project_id
         ).select(content, actor_id=principal.principal_id, operation_id=operation_id)

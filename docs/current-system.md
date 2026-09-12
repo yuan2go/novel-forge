@@ -65,6 +65,16 @@ usage settles after execution while unavailable monetary cost remains `UNKNOWN`.
 controls do not turn post-call usage into an exact pre-call remote token hard limit and do
 not permit silent rerouting to another model, account or billing method.
 
+Creative experiments additionally select an immutable allocation plan and append explicit
+operator phase grants through the existing versioned runtime policy mechanism. Command
+Kernel reservations classify the actual Effect as Source, creation or repair and freeze
+the grant on that Effect. The existing PostgreSQL budget ledger enforces cumulative phase,
+project and shared totals, including unresolved usage; new run keys and evidence directories
+do not create allowances. Source uses its curated consumption lineage to identify the
+authorized Book, rather than its internal synthetic Source Book. Allocation plans are not
+authorization. This phase contract currently supports account entitlement; priced runs
+without this experiment contract retain their existing monetary controls.
+
 ## Governed corpus works and Book knowledge isolation
 
 Source Import represents a collection as versioned `SourceWork` and ordered `SourceUnit`

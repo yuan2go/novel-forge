@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260912_0129_corpus_member_fk_indexes",
+  "migration_head": "20260912_0130_creative_experiment_budget",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4760,6 +4760,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
           "symbol": "reconcile_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+          "symbol": "configure_creative_budget"
         }
       ],
       "state_ownership": {
@@ -4804,6 +4808,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_account_entitlement_budget.py",
           "locator": "MIGRATION_ID = \"20260908_0121_account_entitlement_budget\"",
           "id": "20260908_0121_account_entitlement_budget"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260912_0130_creative_experiment_budget.py",
+          "locator": "MIGRATION_ID = \"20260912_0130_creative_experiment_budget\"",
+          "id": "20260912_0130_creative_experiment_budget"
         }
       ],
       "external_effects": {
@@ -4838,6 +4847,10 @@
         {
           "path": "tests/unit/test_provider_adapter_v2.py",
           "symbol": "ProviderAdapterV2Tests.test_controlled_provider_composition_fails_closed_without_credentials"
+        },
+        {
+          "path": "tests/integration/test_creative_experiment_budget_postgres.py",
+          "symbol": "test_source_only_grant_and_unused_source_cannot_fund_creation_or_repair"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7816,7 +7829,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:eae3a827d86c05bab157f4bca38e3be53da858d98cf29eac6adbb60b9fe58da1"
+    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
