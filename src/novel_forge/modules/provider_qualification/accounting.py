@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from novel_forge.modules.production_execution.backends import CodexAccountEntitlementSnapshot
+from novel_forge.modules.production_execution import CodexAccountEntitlementSnapshot
 
 
 def accounting_scope_from_cost(cost: Mapping[str, Any]) -> dict[str, str]:
